@@ -407,8 +407,17 @@ namespace DefaultValues {
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
       FEX_CONFIG_OPT(PathName, OUTPUTLOG);
-      if (PathName() != "stdout" && PathName() != "stderr") {
+      if (PathName() != "stdout" && PathName() != "stderr" && PathName() != "server") {
         ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
+      }
+    }
+
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_DUMPIR) &&
+        !FEXCore::Config::Exists(FEXCore::Config::CONFIG_PASSMANAGERDUMPIR)) {
+      // If DumpIR is set but no PassManagerDumpIR configuration is set, then default to `afteropt`
+      FEX_CONFIG_OPT(PathName, DUMPIR);
+      if (PathName() != "no") {
+        EraseSet(FEXCore::Config::ConfigOption::CONFIG_PASSMANAGERDUMPIR, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::PassManagerDumpIR::AFTEROPT)));
       }
     }
 

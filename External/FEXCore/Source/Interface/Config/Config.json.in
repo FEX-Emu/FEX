@@ -198,7 +198,7 @@
         "Default": "no",
         "Desc": [
           "Folder to dump the IR in to.",
-          "[no, stdout, stderr, <Folder>]"
+          "[no, stdout, stderr, server, <Folder>]"
         ]
       },
       "PassManagerDumpIR": {
@@ -207,8 +207,8 @@
         "Enums": {
           "BEFOREOPT": "beforeopt",
           "AFTEROPT": "afteropt",
-          "BEFORE": "beforepass",
-          "AFTER": "afterpass"
+          "BEFOREPASS": "beforepass",
+          "AFTERPASS": "afterpass"
         },
         "Desc": [
           "Allows controlling when FEX dumps its IR.",

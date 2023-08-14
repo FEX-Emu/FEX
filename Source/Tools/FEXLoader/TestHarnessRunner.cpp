@@ -211,6 +211,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
+
+  FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
