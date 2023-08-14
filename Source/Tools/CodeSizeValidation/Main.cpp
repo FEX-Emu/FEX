@@ -382,7 +382,7 @@ int main(int argc, char **argv, char **const envp) {
   // Enable block disassembly.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISASSEMBLE, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::Disassemble::BLOCKS | FEXCore::Config::Disassemble::STATS)));
   // Choose bitness.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : 0);
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
 
   // Host feature override. Only supports overriding SVE width.
   enum HostFeatures {
