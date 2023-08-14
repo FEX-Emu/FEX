@@ -236,7 +236,7 @@ void AssertHandler(char const *Message) {
 }
 
 struct TestInfo {
-  char TestInst[32];
+  char TestInst[128];
   uint64_t Optimal;
   int64_t ExpectedInstructionCount;
   uint64_t CodeSize;

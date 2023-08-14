@@ -453,7 +453,7 @@ void InitializeVEXTables() {
 
     {OPD(3, 0b01, 0x5C), 1, X86InstInfo{"VFMADDSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x5D), 1, X86InstInfo{"VFMADDSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x5E), 1, X86InstInfo{"VMFSUBADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x5E), 1, X86InstInfo{"VFMSUBADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x5F), 1, X86InstInfo{"VFMSUBADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(3, 0b01, 0x60), 1, X86InstInfo{"VPCMPESTRM", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},

@@ -140,7 +140,7 @@ def parse_json_data(json_data, output_binary_path):
         #   TestInfo Tests[NumTests];
         # };
         # struct TestInfo {
-        #   char InstName[32];
+        #   char InstName[128];
         #   uint64_t Optimal;
         #   int64_t ExpectedInstructionCount;
         #   uint64_t CodeSize;
@@ -157,7 +157,7 @@ def parse_json_data(json_data, output_binary_path):
 
     # Add each test
     for key, item in TestDataMap.items():
-        MemData += struct.pack('32s', item.Name.encode("ascii"))
+        MemData += struct.pack('128s', item.Name.encode("ascii"))
         MemData += struct.pack('Q', item.Optimal)
         MemData += struct.pack('q', item.ExpectedInstructionCount)
         MemData += struct.pack('Q', len(item.Code))
