@@ -49,6 +49,93 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     return ret;
 };
 
+// Custom sort algorithm that works with partial orders.
+//
+// In contrast, std::sort requires that any two different elements A and B of
+// the input range compare either A<B or B<A. This requirement is violated e.g.
+// for dependency relations: Elements A and B might not depend on each other,
+// but they both might depend on some third element C. BubbleSort then ensures
+// C preceeds both A and B in the sorted range, while leaving the relative
+// order of A and B undetermined. In effect when iterating over the sorted
+// range, each dependency is visited before any of its dependees.
+template<std::forward_iterator It>
+void BubbleSort(It begin, It end,
+                std::relation<std::iter_value_t<It>, std::iter_value_t<It>> auto compare) {
+    repeat:
+    while (true) {
+        bool fixpoint = true;
+        for (auto it = begin; it != end; ++it) {
+            for (auto it2 = std::next(it); it2 != end; ++it2) {
+                if (compare(*it2, *it)) {
+                    std::swap(*it, *it2);
+                    fixpoint = false;
+                    goto repeat; // TODO: Drop. Instead, wind back to it
+                }
+            }
+        }
+
+        if (fixpoint) {
+            return;
+        }
+    }
+}
+
+// Compares such that A < B if B contains A as a member and requires A to be completely defined (i.e. non-pointer/non-reference).
+// This applies recursively to structs contained by B.
+struct compare_by_struct_dependency {
+    clang::ASTContext& context;
+
+    bool operator()(const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& a,
+                    const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& b) const {
+      return (*this)(a.first, b.first);
+    }
+
+    bool operator()(const clang::Type* a, const clang::Type* b) const {
+        auto* b_as_array = llvm::dyn_cast<clang::ConstantArrayType>(b);
+        if (b_as_array) {
+            // TODO: Why do we register array types like VkMemoryHeap[16] to begin with?
+            return context.hasSameType(b_as_array->getArrayElementTypeNoTypeQual(), a);
+        }
+
+        auto* b_as_struct = b->getAsStructureType();
+        if (!b_as_struct) {
+            // Not a struct => no dependency
+            return false;
+        }
+
+        for (auto* child : b_as_struct->getDecl()->fields()) {
+            if (child->getType()->isPointerType()) {
+                // Pointers don't need the definition to be available
+                continue;
+            }
+
+            auto element_type = a->isArrayType() ? a->getArrayElementTypeNoTypeQual() : a;
+            if (context.hasSameType(child->getType().getTypePtr(), element_type)) {
+                return true;
+            }
+
+//            if (context.hasSameType(child->getType().getTypePtr(), b)) {
+//                // Pointer to the struct itself, no need to recurse
+//                continue;
+//            }
+
+//                    // If this is a pointer (and not a fixed-size array), we don't need a complete definition
+//                    if (!child.pointer_chain.empty() && std::none_of(child.pointer_chain.begin(), child.pointer_chain.end(),
+//                                                                      [](const PointerInfo& ptr) { return ptr.array_size.has_value(); })) {
+//                         continue;
+//                    }
+
+            if ((*this)(a, child->getType().getTypePtr())) {
+                // Child depends on A => transitive dependency
+                return true;
+            }
+        }
+
+        // No dependency found
+        return false;
+    }
+};
+
 void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
     ErrorReporter report_error { context };
 
@@ -247,6 +334,110 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
     // Files used host-side
     if (!output_filenames.host.empty()) {
         std::ofstream file(output_filenames.host);
+
+    // TODO: Move to dedicated function
+    {
+        // Sort struct types by dependency so that repacking code is emitted in an order that compiles file
+        auto& types2 = types;
+        std::vector<std::pair<const clang::Type*, RepackedType>> types { types2.begin(), types2.end() };
+        BubbleSort(types.begin(), types.end(), compare_by_struct_dependency { context });
+
+        for (const auto& [type, type_repack_info] : types) {
+            auto struct_name = get_type_name(context, type);
+
+            // Opaque types don't need layout definitions
+            if (type_repack_info.is_opaque && type_repack_info.pointers_only) {
+                if (abi.pointer_size != 4) {
+                    fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}*> = true;\n", struct_name);
+                }
+                continue;
+            } else if (type_repack_info.is_opaque) {
+                // TODO: Handle more cleanly
+                type_compat[type] = TypeCompatibility::Full;
+            }
+
+            // These must be handled later since they are not canonicalized and hence must be de-duplicated first
+            if (type->isBuiltinType()) {
+                continue;
+            }
+
+            // TODO: Instead, map these names back to *some* type that's named?
+            if (struct_name.starts_with("unnamed_")) {
+                continue;
+            }
+
+            if (type->isEnumeralType()) {
+                fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+                fmt::print(file, "  using type = {}int{}_t;\n",
+                           type->isUnsignedIntegerOrEnumerationType() ? "u" : "",
+                           abi.at(struct_name).get_if_simple_or_struct()->size_bits);
+                fmt::print(file, "  type data;\n");
+                fmt::print(file, "}};\n");
+                continue;
+            }
+
+            // Guest layout definition
+            fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+            if (type_compat.at(type) == TypeCompatibility::Full) {
+                fmt::print(file, "  using type = {};\n", struct_name);
+            } else {
+                fmt::print(file, "  struct type {{\n");
+                // TODO: Insert any required padding bytes
+                for (auto& member : abi.at(struct_name).get_if_struct()->members) {
+                    fmt::print(file, "    guest_layout<{}> {};\n", member.type_name, member.member_name);
+                }
+                fmt::print(file, "  }};\n");
+            }
+            fmt::print(file, "  type data;\n");
+            fmt::print(file, "}};\n");
+
+            fmt::print(file, "template<>\nstruct guest_layout<const {}> : guest_layout<{}> {{\n", struct_name, struct_name);
+            fmt::print(file, "  guest_layout& operator=(const guest_layout<{}>& other) {{ memcpy(this, &other, sizeof(other)); return *this; }}\n", struct_name);
+            fmt::print(file, "}};\n");
+
+            // Host layout definition
+            fmt::print(file, "template<>\n");
+            fmt::print(file, "struct host_layout<{}> {{\n", struct_name);
+            fmt::print(file, "  using type = {};\n", struct_name);
+            fmt::print(file, "  type data;\n");
+            fmt::print(file, "\n");
+            fmt::print(file, "  host_layout(const guest_layout<{}>& from) :\n", struct_name);
+            if (type_compat.at(type) == TypeCompatibility::Full) {
+                fmt::print(file, "    data {{ from.data }} {{\n");
+            } else {
+                fmt::print(file, "    data {{\n");
+                fmt::print(file, "      // Constructor performs layout repacking.\n");
+                fmt::print(file, "      // Each initializer itself is wrapped in host_layout<> to enable recursive layout repacking\n");
+                auto map_field = [&file](clang::FieldDecl* member, bool skip_arrays) {
+                    auto decl_name = member->getNameAsString();
+                    auto type_name = member->getType().getAsString();
+                    auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(member->getType());
+                    if (!array_type && skip_arrays) {
+                        fmt::print(file, "      .{} = host_layout<{}> {{ from.data.{} }}.data,\n", decl_name, type_name, decl_name);
+                    } else if (array_type && !skip_arrays) {
+                        // Copy element-wise below
+                        fmt::print(file, "      for (size_t i = 0; i < {}; ++i) {{\n", array_type->getSize().getZExtValue());
+                        fmt::print(file, "        data.{}[i] = host_layout<{}> {{ from.data.{} }}.data[i];\n", decl_name, type_name, decl_name);
+                        fmt::print(file, "      }}\n");
+                    }
+                };
+                // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
+                for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                    map_field(member, true);
+                }
+                fmt::print(file, "    }} {{\n");
+                for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                    map_field(member, false);
+                }
+            }
+            fmt::print(file, "  }}\n");
+            fmt::print(file, "}};\n\n");
+
+            if (type_compat.at(type) == TypeCompatibility::Full) {
+                fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}> = true;\n", struct_name);
+            }
+        }
+    }
 
         // Forward declarations for symbols loaded from the native host library
         for (auto& import : thunked_api) {

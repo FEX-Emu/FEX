@@ -5,6 +5,7 @@ $end_info$
 */
 
 #pragma once
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -113,10 +114,246 @@ struct ParameterAnnotations {
     bool is_opaque = false;
 };
 
+// Generator emits specializations for this for each type that has compatible layout
+template<typename T>
+inline constexpr bool has_compatible_data_layout =
+  std::is_integral_v<T> || std::is_enum_v<T> || std::is_floating_point_v<T>
+#ifndef IS_32BIT_THUNK
+  // If none of the previous predicates matched, the thunk generator did *not* emit a specialization for T.
+  // This should not happen on 64-bit with the currently thunked libraries, since their types
+  // * either have fully consistent data layout across 64-bit architectures.
+  // * or use custom repacking, in which case has_compatible_data_layout isn't used
+  //
+  // Throwing a fake exception here will trigger a build failure.
+  || (throw "Instantiated on a type that was expected to be compatible", true)
+#endif
+;
+
+#ifndef IS_32BIT_THUNK
+// Pointers have the same size, hence data layout compatibility only depends on the pointee type
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T*> = has_compatible_data_layout<std::remove_cv_t<T>>;
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T* const> = has_compatible_data_layout<std::remove_cv_t<T>*>;
+
+// void* and void** are assumed to be compatible to simplify handling of libraries that use them ubiquitously
+template<> inline constexpr bool has_compatible_data_layout<void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<void**> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void**> = true;
+#endif
+
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
 struct guest_layout {
+  static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
+  static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
+
+  static_assert(std::is_fundamental_v<T> || has_compatible_data_layout<T>, "Default guest_layout may not be used for non-compatible data");
+
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
+  type data;
+
+  // TODO: Make this conversion explicit
+  guest_layout& operator=(const T from) {
+    data = from;
+    return *this;
+  }
+
+  // Allow conversion of integral types of same size and sign to each other.
+  // This is useful for handling "long"/"long long" on 64-bit, as well as uint8_t/char.
+  // TODO: Make this conversion explicit
+  template<typename U>
+  guest_layout& operator=(const guest_layout<U>& from) requires (std::is_integral_v<U> && sizeof(U) == sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) {
+    data = static_cast<T>(from.data);
+    return *this;
+  }
+};
+
+#if IS_32BIT_THUNK
+// Specialized for uint32_t so that members annotated as "size_t" can automatically be converted from 64-bit to 32-bit
+template<>
+struct guest_layout<uint32_t> {
+  using type = uint32_t;
+  type data;
+
+  // TODO: Make this conversion explicit
+  guest_layout& operator=(const uint32_t from) {
+    data = from;
+    return *this;
+  }
+  guest_layout& operator=(const guest_layout<size_t>& from) {
+    if (from.data > 0xffffffff) {
+      fprintf(stderr, "ERROR: Tried to truncate large size_t value passed across thunk boundaries\n");
+      std::abort();
+    }
+    data = (uint32_t)from.data;
+    return *this;
+  }
+
+  guest_layout() = default;
+  guest_layout(const guest_layout<size_t>& from) {
+    if (from.data > 0xffffffff) {
+      fprintf(stderr, "ERROR: Tried to truncate large size_t value passed across thunk boundaries\n");
+      std::abort();
+    }
+    data = (uint32_t)from.data;
+  }
+  guest_layout(const guest_layout& from) : data { from.data } {
+  }
+  guest_layout(uint32_t from) : data { from } {
+  }
+};
+#endif
+
+template<typename T, std::size_t N>
+struct guest_layout<T[N]> {
+  // TODO: Check that the underlying type is ABI compatible
+//  static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
+
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
+  std::array<guest_layout<type>, N> data;
+};
+
+template<typename T>
+struct host_layout;
+
+template<typename T>
+struct guest_layout<T*> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // TODO: Make this conversion explicit
+  guest_layout& operator=(const T* from) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct guest_layout<T* const> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // TODO: Make this conversion explicit
+  guest_layout& operator=(const T* from) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct host_layout {
+  static_assert(!std::is_class_v<T>, "No host_layout specialization generated for struct/class type");
+  static_assert(!std::is_union_v<T>, "No host_layout specialization generated for union type");
+  static_assert(!std::is_void_v<T>, "Attempted to get host layout of void. Missing annotation for void pointer?");
+
+  // TODO: This generic implementation shouldn't be needed. Instead, auto-specialize host_layout for all types used as members.
+
   T data;
+
+  host_layout(const guest_layout<T>& from) requires (!std::is_enum_v<T>) : data { from.data } {
+    // NOTE: This is not strictly neccessary since differently sized types may
+    //       be used across architectures. It's important that the host type
+    //       can represent all guest values without loss, however.
+    static_assert(sizeof(data) == sizeof(from));
+  }
+
+  host_layout(const guest_layout<T>& from) requires (std::is_enum_v<T>) : data { static_cast<T>(from.data) } {
+  }
+
+  // Allow conversion of integral types of same size and sign to each other.
+  // This is useful for handling "long"/"long long" on 64-bit, as well as uint8_t/char.
+  template<typename U>
+  host_layout(const guest_layout<U>& from) requires (std::is_integral_v<U> && sizeof(U) == sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { static_cast<T>(from.data) } {
+  }
+
+  host_layout(T from) requires (std::is_enum_v<T>) : data { from } {
+  }
+};
+
+// Explicitly turn a host type into its corresponding host_layout
+template<typename T>
+const host_layout<T>& to_host_layout(const T& t) {
+  static_assert(std::is_same_v<decltype(host_layout<T>::data), T>);
+  return reinterpret_cast<const host_layout<T>&>(t);
+}
+
+// Specialization for size_t, which is 64-bit on 64-bit but 32-bit on 32-bit
+template<>
+struct host_layout<size_t> {
+  size_t data;
+
+  host_layout(const guest_layout<uint32_t>& from) : data { from.data } {
+  }
+
+  // TODO: Shouldn't be needed
+  host_layout(const guest_layout<size_t>& from) : data { from.data } {
+  }
+};
+
+template<typename T, size_t N>
+struct host_layout<T[N]> {
+  std::array<T, N> data;
+
+  host_layout(const guest_layout<T[N]>& from) {
+    for (size_t i = 0; i < N; ++i) {
+      data[i] = host_layout<T> { from.data[i] }.data;
+    }
+  }
+};
+
+template<typename T>
+struct host_layout<T*> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  host_layout(const guest_layout<T*>& from) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // TODO: Make this explicit?
+  host_layout() = default;
+};
+
+template<typename T>
+struct host_layout<T* const> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  host_layout(const guest_layout<T* const>& from) : data { (T*)(uintptr_t)from.data } {
+  }
 };
 
 template<typename>
