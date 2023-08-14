@@ -25,18 +25,18 @@ void PassManager::Finalize() {
 
   auto it = Passes.begin();
   // Walk the passes and add them where asked.
-  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFORE) {
+  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) {
     // Insert at the start.
     it = InsertAt(it, Debug::CreateIRDumper());
     ++it; // Skip what we inserted.
   }
 
-  if ((PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) ||
-      (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT)) {
+  if ((PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREPASS) ||
+      (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTERPASS)) {
 
-    bool SkipFirstBefore = PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFORE;
+    bool SkipFirstBefore = PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT;
     for (; it != Passes.end();) {
-      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) {
+      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREPASS) {
         if (SkipFirstBefore) {
           // If we need to skip the first one, then continue.
           SkipFirstBefore = false;
@@ -50,15 +50,15 @@ void PassManager::Finalize() {
       }
 
       ++it; // Skip current pass.
-      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT) {
+      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTERPASS) {
         // Insert after
         it = InsertAt(it, Debug::CreateIRDumper());
         ++it; // Skip what we inserted.
       }
     }
   }
-  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTER) {
-    if (!(PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT)) {
+  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT) {
+    if (!(PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTERPASS)) {
       // Insert final IRDumper.
       it = InsertAt(it, Debug::CreateIRDumper());
     }
