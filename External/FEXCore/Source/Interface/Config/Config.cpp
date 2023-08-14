@@ -407,7 +407,7 @@ namespace DefaultValues {
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
       FEX_CONFIG_OPT(PathName, OUTPUTLOG);
-      if (PathName() != "stdout" && PathName() != "stderr") {
+      if (PathName() != "stdout" && PathName() != "stderr" && PathName() != "server") {
         ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
       }
     }
