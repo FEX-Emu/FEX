@@ -92,6 +92,10 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableCLZERO = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECLZERO;
   LogMan::Throw::AFmt(!(DisableCLZERO && EnableCLZERO), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableAtomics = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEATOMICS;
+  const bool EnableAtomics = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEATOMICS;
+  LogMan::Throw::AFmt(!(DisableAtomics && EnableAtomics), "Disabling and Enabling CPU features are mutually exclusive");
+
   if (EnableAVX) {
     Features->SupportsAVX = true;
   }
@@ -145,6 +149,12 @@ static void OverrideFeatures(HostFeatures *Features) {
   }
   else if (DisableCLZERO) {
     Features->SupportsCLZERO = false;
+  }
+  if (EnableAtomics) {
+    Features->SupportsAtomics = true;
+  }
+  else if (DisableAtomics) {
+    Features->SupportsAtomics = false;
   }
 }
 
