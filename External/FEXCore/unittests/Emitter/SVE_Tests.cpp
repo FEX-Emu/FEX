@@ -4492,6 +4492,36 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ac
   TEST_SINGLE(fnmsb(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmsb z30.d, p7/m, z29.d, z28.d");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus scalar)") {
+  TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6,  Reg::r29,  Reg::r30), "st2b {z31.b, z0.b}, p6, [x29, x30]");
+  TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6,  Reg::r29,  Reg::r30), "st2b {z26.b, z27.b}, p6, [x29, x30]");
+  TEST_SINGLE(st3b(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6,  Reg::r29, Reg::r30), "st3b {z31.b, z0.b, z1.b}, p6, [x29, x30]");
+  TEST_SINGLE(st3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6,  Reg::r29, Reg::r30), "st3b {z26.b, z27.b, z28.b}, p6, [x29, x30]");
+  TEST_SINGLE(st4b(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, Reg::r30), "st4b {z31.b, z0.b, z1.b, z2.b}, p6, [x29, x30]");
+  TEST_SINGLE(st4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, Reg::r30), "st4b {z26.b, z27.b, z28.b, z29.b}, p6, [x29, x30]");
+
+  TEST_SINGLE(st2h(ZReg::z31, ZReg::z0,  PReg::p6,  Reg::r29,  Reg::r30), "st2h {z31.h, z0.h}, p6, [x29, x30, lsl #1]");
+  TEST_SINGLE(st2h(ZReg::z26, ZReg::z27, PReg::p6,  Reg::r29,  Reg::r30), "st2h {z26.h, z27.h}, p6, [x29, x30, lsl #1]");
+  TEST_SINGLE(st3h(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6,  Reg::r29, Reg::r30), "st3h {z31.h, z0.h, z1.h}, p6, [x29, x30, lsl #1]");
+  TEST_SINGLE(st3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6,  Reg::r29, Reg::r30), "st3h {z26.h, z27.h, z28.h}, p6, [x29, x30, lsl #1]");
+  TEST_SINGLE(st4h(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, Reg::r30), "st4h {z31.h, z0.h, z1.h, z2.h}, p6, [x29, x30, lsl #1]");
+  TEST_SINGLE(st4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, Reg::r30), "st4h {z26.h, z27.h, z28.h, z29.h}, p6, [x29, x30, lsl #1]");
+
+  TEST_SINGLE(st2w(ZReg::z31, ZReg::z0,  PReg::p6,  Reg::r29,  Reg::r30), "st2w {z31.s, z0.s}, p6, [x29, x30, lsl #2]");
+  TEST_SINGLE(st2w(ZReg::z26, ZReg::z27, PReg::p6,  Reg::r29,  Reg::r30), "st2w {z26.s, z27.s}, p6, [x29, x30, lsl #2]");
+  TEST_SINGLE(st3w(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6,  Reg::r29, Reg::r30), "st3w {z31.s, z0.s, z1.s}, p6, [x29, x30, lsl #2]");
+  TEST_SINGLE(st3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6,  Reg::r29, Reg::r30), "st3w {z26.s, z27.s, z28.s}, p6, [x29, x30, lsl #2]");
+  TEST_SINGLE(st4w(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, Reg::r30), "st4w {z31.s, z0.s, z1.s, z2.s}, p6, [x29, x30, lsl #2]");
+  TEST_SINGLE(st4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, Reg::r30), "st4w {z26.s, z27.s, z28.s, z29.s}, p6, [x29, x30, lsl #2]");
+
+  TEST_SINGLE(st2d(ZReg::z31, ZReg::z0,  PReg::p6,  Reg::r29,  Reg::r30), "st2d {z31.d, z0.d}, p6, [x29, x30, lsl #3]");
+  TEST_SINGLE(st2d(ZReg::z26, ZReg::z27, PReg::p6,  Reg::r29,  Reg::r30), "st2d {z26.d, z27.d}, p6, [x29, x30, lsl #3]");
+  TEST_SINGLE(st3d(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6,  Reg::r29, Reg::r30), "st3d {z31.d, z0.d, z1.d}, p6, [x29, x30, lsl #3]");
+  TEST_SINGLE(st3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6,  Reg::r29, Reg::r30), "st3d {z26.d, z27.d, z28.d}, p6, [x29, x30, lsl #3]");
+  TEST_SINGLE(st4d(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, Reg::r30), "st4d {z31.d, z0.d, z1.d, z2.d}, p6, [x29, x30, lsl #3]");
+  TEST_SINGLE(st4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, Reg::r30), "st4d {z26.d, z27.d, z28.d, z29.d}, p6, [x29, x30, lsl #3]");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");

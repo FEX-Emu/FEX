@@ -3200,12 +3200,61 @@ public:
   // XXX:
   // SVE2 32-bit scatter non-temporal store (vector plus scalar)
   // XXX:
+
   // SVE store multiple structures (scalar plus scalar)
-  // XXX:
+  void st2b(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i8Bit, 0b01, zt1, pg, rn, rm);
+  }
+  void st3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i8Bit, 0b10, zt1, pg, rn, rm);
+  }
+  void st4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i8Bit, 0b11, zt1, pg, rn, rm);
+  }
+  void st2h(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i16Bit, 0b01, zt1, pg, rn, rm);
+  }
+  void st3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i16Bit, 0b10, zt1, pg, rn, rm);
+  }
+  void st4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i16Bit, 0b11, zt1, pg, rn, rm);
+  }
+  void st2w(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i32Bit, 0b01, zt1, pg, rn, rm);
+  }
+  void st3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i32Bit, 0b10, zt1, pg, rn, rm);
+  }
+  void st4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i32Bit, 0b11, zt1, pg, rn, rm);
+  }
+  void st2d(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i64Bit, 0b01, zt1, pg, rn, rm);
+  }
+  void st3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i64Bit, 0b10, zt1, pg, rn, rm);
+  }
+  void st4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
+    SVEContiguousLoadStoreMultipleScalar(true, SubRegSize::i64Bit, 0b11, zt1, pg, rn, rm);
+  }
 
   // SVE Memory - Contiguous Store with Immediate Offset
   // SVE contiguous non-temporal store (scalar plus immediate)
   // XXX:
+
   // SVE store multiple structures (scalar plus immediate)
   void st2b(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
@@ -4402,7 +4451,7 @@ private:
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(rm != Reg::rsp, "rm cannot be the stack pointer");
 
-    uint32_t Instr = 0b1010'0100'0000'0000'1100'0000'0000'0000;
+    uint32_t Instr = 0b1010'0100'0000'0000'0000'0000'0000'0000;
     if (is_store) {
       Instr |= 0x40006000U;
     } else {
