@@ -112,7 +112,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x66, 1, X86InstInfo{"PCMPGTD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x67, 1, X86InstInfo{"PACKUSWB",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x68, 1, X86InstInfo{"PUNPCKHBW",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
-    {0x69, 1, X86InstInfo{"PUNPCKHBD",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
+    {0x69, 1, X86InstInfo{"PUNPCKHWD",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6A, 1, X86InstInfo{"PUNPCKHDQ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6B, 1, X86InstInfo{"PACKSSDW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6C, 2, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},

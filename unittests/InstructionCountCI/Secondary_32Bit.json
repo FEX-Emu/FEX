@@ -1,0 +1,32 @@
+{
+  "Features": {
+    "Bitness": 32,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "push fs": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa0"
+    },
+    "pop fs": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa1"
+    },
+    "push gs": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa8"
+    },
+    "pop gs": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa9"
+    }
+  }
+}
