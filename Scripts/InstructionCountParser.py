@@ -45,12 +45,13 @@ class HostFeatures(Flag) :
     FEATURE_SVE128 = (1 << 0)
     FEATURE_SVE256 = (1 << 1)
     FEATURE_CLZERO = (1 << 2)
-
+    FEATURE_RNG    = (1 << 3)
 
 HostFeaturesLookup = {
     "SVE128"  : HostFeatures.FEATURE_SVE128,
     "SVE256"  : HostFeatures.FEATURE_SVE256,
     "CLZERO"  : HostFeatures.FEATURE_CLZERO,
+    "RNG"     : HostFeatures.FEATURE_RNG,
 }
 
 def GetHostFeatures(data):
