@@ -2544,8 +2544,29 @@ public:
   // XXX:
   // SVE 32-bit gather prefetch (vector plus immediate)
   // XXX:
+
   // SVE load and broadcast element
-  // XXX:
+  void ld1rb(SubRegSize esize, ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(false, esize, SubRegSize::i8Bit, zt, pg, rn, imm);
+  }
+  void ld1rsb(SubRegSize esize, ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(true, esize, SubRegSize::i8Bit, zt, pg, rn, imm);
+  }
+  void ld1rh(SubRegSize esize, ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(false, esize, SubRegSize::i16Bit, zt, pg, rn, imm);
+  }
+  void ld1rsh(SubRegSize esize, ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(true, esize, SubRegSize::i16Bit, zt, pg, rn, imm);
+  }
+  void ld1rw(SubRegSize esize, ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(false, esize, SubRegSize::i32Bit, zt, pg, rn, imm);
+  }
+  void ld1rsw(ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(true, SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, rn, imm);
+  }
+  void ld1rd(ZRegister zt, PRegisterZero pg, Register rn, uint32_t imm = 0) {
+    SVELoadAndBroadcastElement(false, SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, rn, imm);
+  }
 
   // SVE contiguous non-temporal load (scalar plus immediate)
   // XXX:
@@ -4460,6 +4481,54 @@ private:
     Instr |= FEXCore::ToUnderlying(msz) << 23;
     Instr |= opc << 21;
     Instr |= rm.Idx() << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= zt.Idx();
+    dc32(Instr);
+  }
+
+  void SVELoadAndBroadcastElement(bool is_signed, SubRegSize esize, SubRegSize msize,
+                                  ZRegister zt, PRegister pg, Register rn, uint32_t imm) {
+    LOGMAN_THROW_AA_FMT(esize != SubRegSize::i128Bit, "Cannot use 128-bit elements.");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    if (is_signed) {
+      // The element size needs to be larger than memory size, otherwise you tell
+      // me how we're gonna sign extend this bad boy in memory.
+      LOGMAN_THROW_AA_FMT(esize > msize,
+                          "Signed broadcast element size must be greater than memory size.");
+    }
+
+    const auto esize_value = FEXCore::ToUnderlying(esize);
+    const auto msize_value = FEXCore::ToUnderlying(msize);
+
+    const auto data_size_bytes = 1U << msize_value;
+    [[maybe_unused]] const auto max_imm = (64U << msize_value) - data_size_bytes;
+    LOGMAN_THROW_AA_FMT((imm % data_size_bytes) == 0 && imm <= max_imm,
+                        "imm must be a multiple of {} and be within [0, {}]",
+                        data_size_bytes, max_imm);
+
+    const auto sanitized_imm = imm / data_size_bytes;
+
+    auto dtypeh = msize_value;
+    auto dtypel = esize_value;
+    if (is_signed) {
+      // Signed forms of the broadcast instructions are encoded in such a way
+      // that msize will always be greater than esize, which, conveniently,
+      // works out by just XORing the would-be unsigned dtype values by 3.
+      dtypeh ^= 0b11;
+      dtypel ^= 0b11;
+    }
+    // Guards against bogus combinations of element size and memory size values
+    // being passed in. Unsigned variants will always have dtypeh be less than
+    // or equal to dtypel. The only time this isn't the case is with signed variants. 
+    LOGMAN_THROW_AA_FMT(is_signed == (dtypeh > dtypel),
+                        "Invalid element size used with load broadcast instruction "
+                        "(esize: {}, msize: {})", esize_value, msize_value);
+
+    uint32_t Instr = 0b1000'0100'0100'0000'1000'0000'0000'0000;
+    Instr |= dtypeh << 23;
+    Instr |= sanitized_imm << 16;
+    Instr |= dtypel << 13;
     Instr |= pg.Idx() << 10;
     Instr |= rn.Idx() << 5;
     Instr |= zt.Idx();

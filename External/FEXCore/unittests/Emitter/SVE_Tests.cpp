@@ -4073,6 +4073,73 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
   TEST_SINGLE(ldr(ZReg::z30, XReg::x29, -256), "ldr z30, [x29, #-256, mul vl]");
   TEST_SINGLE(ldr(ZReg::z30, XReg::x29, 255), "ldr z30, [x29, #255, mul vl]");
 }
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast element") {
+  TEST_SINGLE(ld1rb(SubRegSize::i8Bit,   ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rb {z30.b}, p6/z, [x29]");
+  TEST_SINGLE(ld1rb(SubRegSize::i8Bit,   ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.b}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rb(SubRegSize::i8Bit,   ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.b}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rb(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rb {z30.h}, p6/z, [x29]");
+  TEST_SINGLE(ld1rb(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.h}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rb(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.h}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rb(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rb {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rb(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.s}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rb(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.s}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rb(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rb {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rb(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.d}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rb(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.d}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rsb {z30.h}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.h}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.h}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rsb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rsb {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.s}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.s}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rsb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),  "ld1rsb {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.d}, p6/z, [x29, #31]");
+  TEST_SINGLE(ld1rsb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.d}, p6/z, [x29, #63]");
+
+  TEST_SINGLE(ld1rh(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rh {z30.h}, p6/z, [x29]");
+  TEST_SINGLE(ld1rh(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64),  "ld1rh {z30.h}, p6/z, [x29, #64]");
+  TEST_SINGLE(ld1rh(SubRegSize::i16Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rh {z30.h}, p6/z, [x29, #126]");
+
+  TEST_SINGLE(ld1rh(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rh {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rh(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64),  "ld1rh {z30.s}, p6/z, [x29, #64]");
+  TEST_SINGLE(ld1rh(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rh {z30.s}, p6/z, [x29, #126]");
+
+  TEST_SINGLE(ld1rh(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rh {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rh(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64),  "ld1rh {z30.d}, p6/z, [x29, #64]");
+  TEST_SINGLE(ld1rh(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rh {z30.d}, p6/z, [x29, #126]");
+
+  TEST_SINGLE(ld1rsh(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rsh {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsh(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64),  "ld1rsh {z30.s}, p6/z, [x29, #64]");
+  TEST_SINGLE(ld1rsh(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rsh {z30.s}, p6/z, [x29, #126]");
+
+  TEST_SINGLE(ld1rsh(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rsh {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsh(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64),  "ld1rsh {z30.d}, p6/z, [x29, #64]");
+  TEST_SINGLE(ld1rsh(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rsh {z30.d}, p6/z, [x29, #126]");
+
+  TEST_SINGLE(ld1rw(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rw {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rw(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 128), "ld1rw {z30.s}, p6/z, [x29, #128]");
+  TEST_SINGLE(ld1rw(SubRegSize::i32Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 252), "ld1rw {z30.s}, p6/z, [x29, #252]");
+
+  TEST_SINGLE(ld1rw(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rw {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rw(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 128), "ld1rw {z30.d}, p6/z, [x29, #128]");
+  TEST_SINGLE(ld1rw(SubRegSize::i64Bit,  ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 252), "ld1rw {z30.d}, p6/z, [x29, #252]");
+
+  TEST_SINGLE(ld1rsw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rsw {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rsw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 128), "ld1rsw {z30.d}, p6/z, [x29, #128]");
+  TEST_SINGLE(ld1rsw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 252), "ld1rsw {z30.d}, p6/z, [x29, #252]");
+
+  TEST_SINGLE(ld1rd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),   "ld1rd {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 256), "ld1rd {z30.d}, p6/z, [x29, #256]");
+  TEST_SINGLE(ld1rd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 504), "ld1rd {z30.d}, p6/z, [x29, #504]");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (scalar plus scalar)") {
   TEST_SINGLE(ld2b(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld2b {z31.b, z0.b}, p6/z, [x29, x30]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld2b {z26.b, z27.b}, p6/z, [x29, x30]");
