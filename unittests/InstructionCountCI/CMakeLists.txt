@@ -55,6 +55,7 @@ add_custom_target(
   instcountci_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
+  DEPENDS instcountci_test_files
   COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*.instcountci$$")
 
 add_custom_target(
