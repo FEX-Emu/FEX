@@ -1,4 +1,4 @@
-name: Vixl Simulator run
+name: Instruction Count CI run
 
 on:
   push:
@@ -20,8 +20,7 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        # Only the x86-64 runner is fast enough to run this
-        arch: [[self-hosted, x64], [self-hosted, ARMv8.4]]
+        arch: [[self-hosted, ARM64]]
       fail-fast: false
 
     steps:
@@ -65,52 +64,25 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=True -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=False -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build . --config $BUILD_TYPE --target CodeSizeValidation instcountci_test_files
 
-    - name: ASM Tests
+    - name: Instruction Count Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      run: cmake --build . --config $BUILD_TYPE --target instcountci_tests
 
-    - name: ASM Test Results move
+    - name: Instruction Count Test Results move
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
-
-    - name: ASM Tests 128-bit
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      env:
-        FEX_HOSTFEATURES: "disableavx"
-        FEX_FORCESVEWIDTH: "128"
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
-
-    - name: ASM Test 128-bit Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM128bit.log || true
-
-    - name: IR Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target ir_tests
-
-    - name: IR Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_InstCountCI.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
