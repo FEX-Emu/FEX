@@ -374,7 +374,7 @@
       ]
     },
     "vrsqrtps ymm0, ymm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
