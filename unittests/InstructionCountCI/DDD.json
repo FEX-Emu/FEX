@@ -21,6 +21,13 @@
         "This lowers throughput from 1 IPC to 1/2IPC",
         "This instruction implementation might not be correct.",
         "0x0f 0x0f 0x0c"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "mov v4.h[1], v4.h[2]",
+        "sxtl v4.4s, v4.4h",
+        "scvtf v4.4s, v4.4s",
+        "str d4, [x28, #752]"
       ]
     },
     "pi2fd mm0, mm1": {
@@ -30,6 +37,11 @@
         "FPConvert instruction using 128-bit conversion instead of 64-bit.",
         "This lowers throughput from 1 IPC to 1/2IPC",
         "0x0f 0x0f 0x0d"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "scvtf v4.4s, v4.4s",
+        "str d4, [x28, #752]"
       ]
     },
     "pf2iw mm0, mm1": {
@@ -40,6 +52,13 @@
         "This lowers throughput from 1 IPC to 1/2IPC",
         "This instruction implementation might not be correct.",
         "0x0f 0x0f 0x1c"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fcvtzs v4.4s, v4.4s",
+        "mov v4.h[1], v4.h[2]",
+        "sxtl v4.4s, v4.4h",
+        "str d4, [x28, #752]"
       ]
     },
     "pf2id mm0, mm1": {
@@ -49,6 +68,11 @@
         "FPConvert instruction using 128-bit conversion instead of 64-bit.",
         "This lowers throughput from 1 IPC to 1/2IPC",
         "0x0f 0x0f 0x1d"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fcvtzs v4.4s, v4.4s",
+        "str d4, [x28, #752]"
       ]
     },
     "pfrcpv mm0, mm1": {
@@ -57,6 +81,12 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x86"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fmov v0.4s, #0x70 (1.0000)",
+        "fdiv v4.4s, v0.4s, v4.4s",
+        "str d4, [x28, #752]"
       ]
     },
     "pfrsqrtv mm0, mm1": {
@@ -65,27 +95,68 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x87"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fmov v0.4s, #0x70 (1.0000)",
+        "fsqrt v1.4s, v4.4s",
+        "fdiv v4.4s, v0.4s, v1.4s",
+        "str d4, [x28, #752]"
       ]
     },
     "pfnacc mm0, mm1": {
       "ExpectedInstructionCount": 8,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0x8a"
+      "Comment": "0x0f 0x0f 0x8a",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "ldr d5, [x28, #768]",
+        "dup v6.4s, v4.s[1]",
+        "dup v7.4s, v5.s[1]",
+        "fsub s4, s4, s6",
+        "fsub s5, s5, s7",
+        "mov v4.s[1], v5.s[0]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfpnacc mm0, mm1": {
       "ExpectedInstructionCount": 7,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0x8e"
+      "Comment": "0x0f 0x0f 0x8e",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "ldr d5, [x28, #768]",
+        "dup v6.4s, v4.s[1]",
+        "fsub s4, s4, s6",
+        "faddp v5.4s, v5.4s, v5.4s",
+        "mov v4.s[1], v5.s[0]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfcmpge mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0x90"
+      "Comment": "0x0f 0x0f 0x90",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fcmge v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfmin mm0, mm1": {
       "ExpectedInstructionCount": 7,
       "Optimal": "No",
-      "Comment": "0x0f 0x0f 0x94"
+      "Comment": "0x0f 0x0f 0x94",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fcmgt v0.4s, v4.4s, v5.4s",
+        "mov v1.16b, v5.16b",
+        "bif v1.16b, v4.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrcp mm0, mm1": {
       "ExpectedInstructionCount": 5,
@@ -93,6 +164,13 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x96"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fmov s0, #0x70 (1.0000)",
+        "fdiv s4, s0, s4",
+        "dup v4.4s, v4.s[0]",
+        "str d4, [x28, #752]"
       ]
     },
     "pfrsqrt mm0, mm1": {
@@ -101,72 +179,149 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x97"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "fmov s0, #0x70 (1.0000)",
+        "fsqrt s1, s4",
+        "fdiv s4, s0, s1",
+        "dup v4.4s, v4.s[0]",
+        "str d4, [x28, #752]"
       ]
     },
     "pfsub mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0x9a"
+      "Comment": "0x0f 0x0f 0x9a",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fsub v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfadd mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0x9e"
+      "Comment": "0x0f 0x0f 0x9e",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fadd v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfcmpgt mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xa0"
+      "Comment": "0x0f 0x0f 0xa0",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fcmgt v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfmax mm0, mm1": {
       "ExpectedInstructionCount": 7,
       "Optimal": "No",
-      "Comment": "0x0f 0x0f 0xa4"
+      "Comment": "0x0f 0x0f 0xa4",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fcmgt v0.4s, v4.4s, v5.4s",
+        "mov v1.16b, v5.16b",
+        "bit v1.16b, v4.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrcpit1 mm0, mm1": {
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xa6"
+      "Comment": "0x0f 0x0f 0xa6",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrcpit1 mm0, mm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0x0f 0x0f 0xa6"
+      "Comment": "0x0f 0x0f 0xa6",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrsqit1 mm0, mm1": {
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xa7"
+      "Comment": "0x0f 0x0f 0xa7",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrsqit1 mm0, mm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0x0f 0x0f 0xa7"
+      "Comment": "0x0f 0x0f 0xa7",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfsubr mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xaa"
+      "Comment": "0x0f 0x0f 0xaa",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fsub v4.4s, v4.4s, v5.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfcmpeq mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xb0"
+      "Comment": "0x0f 0x0f 0xb0",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fcmeq v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfmul mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xb4"
+      "Comment": "0x0f 0x0f 0xb4",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "fmul v4.4s, v5.4s, v4.4s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrcpit2 mm0, mm1": {
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xb6"
+      "Comment": "0x0f 0x0f 0xb6",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "str d4, [x28, #752]"
+      ]
     },
     "pfrcpit2 mm0, mm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0x0f 0x0f 0xb6"
+      "Comment": "0x0f 0x0f 0xb6",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "str d4, [x28, #752]"
+      ]
     },
     "db 0x0f, 0x0f, 0xc1, 0xb7": {
       "ExpectedInstructionCount": 8,
@@ -176,17 +331,38 @@
         "pmulhrw mm0, mm1",
         "Might be able to use sqdmulh",
         "0x0f 0x0f 0xb7"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #752]",
+        "ldr d5, [x28, #768]",
+        "smull v4.4s, v4.4h, v5.4h",
+        "mov x20, #0x800000008000",
+        "dup v5.2d, x20",
+        "add v4.4s, v4.4s, v5.4s",
+        "shrn v4.4h, v4.4s, #16",
+        "str d4, [x28, #752]"
       ]
     },
     "pswapd mm0, mm1": {
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xbb"
+      "Comment": "0x0f 0x0f 0xbb",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "rev64 v4.2s, v4.2s",
+        "str d4, [x28, #752]"
+      ]
     },
     "pavgusb mm0, mm1": {
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
-      "Comment": "0x0f 0x0f 0xbf"
+      "Comment": "0x0f 0x0f 0xbf",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "urhadd v4.16b, v5.16b, v4.16b",
+        "str d4, [x28, #752]"
+      ]
     }
   }
 }

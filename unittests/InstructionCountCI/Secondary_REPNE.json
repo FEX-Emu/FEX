@@ -11,27 +11,44 @@
     "movsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x10"
+      "Comment": "0xf2 0x0f 0x10",
+      "ExpectedArm64ASM": [
+        "mov v16.d[0], v17.d[0]"
+      ]
     },
     "movsd xmm0, [rax]": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x10"
+      "Comment": "0xf2 0x0f 0x10",
+      "ExpectedArm64ASM": [
+        "ldr d16, [x4]"
+      ]
     },
     "movsd [rax], xmm0": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x11"
+      "Comment": "0xf2 0x0f 0x11",
+      "ExpectedArm64ASM": [
+        "str d16, [x4]"
+      ]
     },
     "movddup xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x12"
+      "Comment": "0xf2 0x0f 0x12",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "dup v16.2d, v4.d[0]"
+      ]
     },
     "movddup xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x12"
+      "Comment": "0xf2 0x0f 0x12",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
+        "dup v16.2d, v4.d[0]"
+      ]
     },
     "cvtsi2sd xmm0, eax": {
       "ExpectedInstructionCount": 3,
@@ -39,6 +56,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ubfx x20, x4, #0, #32",
+        "scvtf d4, w20",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cvtsi2sd xmm0, dword [rax]": {
@@ -47,6 +69,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr w20, [x4]",
+        "scvtf d4, w20",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cvtsi2sd xmm0, rax": {
@@ -55,6 +82,10 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "scvtf d4, x4",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cvtsi2sd xmm0, qword [rax]": {
@@ -63,52 +94,97 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x4]",
+        "scvtf d4, x20",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "movntsd [rax], xmm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2b"
+      "Comment": "0xf2 0x0f 0x2b",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v16.8b",
+        "str d4, [x4]"
+      ]
     },
     "cvttsd2si eax, xmm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2c"
+      "Comment": "0xf2 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v16.8b",
+        "fcvtzs w4, d4"
+      ]
     },
     "cvttsd2si eax, qword [rbx]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2c"
+      "Comment": "0xf2 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x7]",
+        "fcvtzs w4, d4"
+      ]
     },
     "cvttsd2si rax, xmm0": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2c"
+      "Comment": "0xf2 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v16.8b",
+        "fcvtzs x4, d4"
+      ]
     },
     "cvttsd2si rax, qword [rbx]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x2c"
+      "Comment": "0xf2 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x7]",
+        "fcvtzs x4, d4"
+      ]
     },
     "cvtsd2si eax, xmm0": {
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2d"
+      "Comment": "0xf2 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v16.8b",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
+      ]
     },
     "cvtsd2si eax, qword [rbx]": {
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x2d"
+      "Comment": "0xf2 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x7]",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
+      ]
     },
     "cvtsd2si rax, xmm0": {
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x2d"
+      "Comment": "0xf2 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v16.8b",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
+      ]
     },
     "cvtsd2si rax, qword [rbx]": {
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x2d"
+      "Comment": "0xf2 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x7]",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
+      ]
     },
     "sqrtsd xmm0, xmm1": {
       "ExpectedInstructionCount": 3,
@@ -116,6 +192,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x51"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fsqrt d4, d4",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "addsd xmm0, xmm1": {
@@ -124,6 +205,10 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x58"
+      ],
+      "ExpectedArm64ASM": [
+        "fadd d4, d16, d17",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "mulsd xmm0, xmm1": {
@@ -132,6 +217,10 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x59"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul d4, d16, d17",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cvtsd2ss xmm0, xmm1": {
@@ -140,6 +229,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5a"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcvt s4, d4",
+        "mov v16.s[0], v4.s[0]"
       ]
     },
     "cvtsd2ss xmm0, [rax]": {
@@ -148,6 +242,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
+        "fcvt s4, d4",
+        "mov v16.s[0], v4.s[0]"
       ]
     },
     "subsd xmm0, xmm1": {
@@ -156,6 +255,10 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5c"
+      ],
+      "ExpectedArm64ASM": [
+        "fsub d4, d16, d17",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "minsd xmm0, xmm1": {
@@ -164,6 +267,12 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5d"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmp d16, d4",
+        "fcsel d4, d16, d4, mi",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "divsd xmm0, xmm1": {
@@ -172,6 +281,10 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5e"
+      ],
+      "ExpectedArm64ASM": [
+        "fdiv d4, d16, d17",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "maxsd xmm0, xmm1": {
@@ -180,22 +293,58 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5f"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmp d16, d4",
+        "fcsel d4, d4, d16, mi",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "pshuflw xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x70"
+      "Comment": "0xf2 0x0f 0x70",
+      "ExpectedArm64ASM": [
+        "mov v0.16b, v17.16b",
+        "mov v0.h[0], v17.h[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.h[1], v17.h[0]",
+        "mov v4.h[2], v17.h[0]",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[3], v17.h[0]",
+        "mov v16.16b, v0.16b"
+      ]
     },
     "pshuflw xmm0, xmm1, 1": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x70"
+      "Comment": "0xf2 0x0f 0x70",
+      "ExpectedArm64ASM": [
+        "mov v0.16b, v17.16b",
+        "mov v0.h[0], v17.h[1]",
+        "mov v4.16b, v0.16b",
+        "mov v4.h[1], v17.h[0]",
+        "mov v4.h[2], v17.h[0]",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[3], v17.h[0]",
+        "mov v16.16b, v0.16b"
+      ]
     },
     "pshuflw xmm0, xmm1, 0xff": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x70"
+      "Comment": "0xf2 0x0f 0x70",
+      "ExpectedArm64ASM": [
+        "mov v0.16b, v17.16b",
+        "mov v0.h[0], v17.h[3]",
+        "mov v4.16b, v0.16b",
+        "mov v4.h[1], v17.h[3]",
+        "mov v4.h[2], v17.h[3]",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[3], v17.h[3]",
+        "mov v16.16b, v0.16b"
+      ]
     },
     "insertq xmm0, xmm1, 0, 0": {
       "ExpectedInstructionCount": 7,
@@ -236,12 +385,32 @@
     "haddps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0x7c"
+      "Comment": "0xf2 0x0f 0x7c",
+      "ExpectedArm64ASM": [
+        "faddp v16.4s, v16.4s, v17.4s"
+      ]
     },
     "hsubps xmm0, xmm1": {
       "ExpectedInstructionCount": 15,
       "Optimal": "No",
-      "Comment": "0xf2 0x0f 0x7d"
+      "Comment": "0xf2 0x0f 0x7d",
+      "ExpectedArm64ASM": [
+        "fneg v4.4s, v16.4s",
+        "fneg v5.4s, v17.4s",
+        "mov v0.16b, v16.16b",
+        "mov v0.s[1], v4.s[1]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[3], v4.s[3]",
+        "mov v4.16b, v0.16b",
+        "mov v0.16b, v17.16b",
+        "mov v0.s[1], v5.s[1]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[3], v5.s[3]",
+        "mov v5.16b, v0.16b",
+        "faddp v16.4s, v4.4s, v5.4s"
+      ]
     },
     "cmpsd xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 3,
@@ -249,6 +418,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmeq d4, d16, d4",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 1": {
@@ -257,6 +431,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmgt d4, d4, d16",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 2": {
@@ -265,6 +444,11 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmge d4, d4, d16",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 3": {
@@ -273,6 +457,14 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmge d0, d16, d4",
+        "fcmgt d1, d4, d16",
+        "orr v4.8b, v0.8b, v1.8b",
+        "mvn v4.8b, v4.8b",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 4": {
@@ -281,6 +473,12 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmeq d4, d16, d4",
+        "mvn v4.8b, v4.8b",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 5": {
@@ -289,6 +487,12 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmgt d4, d4, d16",
+        "mvn v4.16b, v4.16b",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 6": {
@@ -297,6 +501,12 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmge d4, d4, d16",
+        "mvn v4.16b, v4.16b",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 7": {
@@ -305,27 +515,52 @@
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v4.8b, v17.8b",
+        "fcmge d0, d16, d4",
+        "fcmgt d1, d4, d16",
+        "orr v4.8b, v0.8b, v1.8b",
+        "mov v16.d[0], v4.d[0]"
       ]
     },
     "addsubps xmm0, xmm1": {
       "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0xd0"
+      "Comment": "0xf2 0x0f 0xd0",
+      "ExpectedArm64ASM": [
+        "fadd v4.4s, v16.4s, v17.4s",
+        "fsub v5.4s, v16.4s, v17.4s",
+        "uzp1 v5.4s, v5.4s, v5.4s",
+        "uzp2 v4.4s, v4.4s, v4.4s",
+        "zip1 v16.4s, v5.4s, v4.4s"
+      ]
     },
     "movdq2q mm0, xmm0": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0xd6"
+      "Comment": "0xf2 0x0f 0xd6",
+      "ExpectedArm64ASM": [
+        "str d16, [x28, #752]"
+      ]
     },
     "cvtpd2dq xmm0, xmm1": {
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0xe6"
+      "Comment": "0xf2 0x0f 0xe6",
+      "ExpectedArm64ASM": [
+        "fcvtn v4.2s, v17.2d",
+        "frinti v16.4s, v4.4s",
+        "fcvtzs v16.4s, v16.4s"
+      ]
     },
     "lddqu xmm0, [rax]": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
-      "Comment": "0xf2 0x0f 0xf0"
+      "Comment": "0xf2 0x0f 0xf0",
+      "ExpectedArm64ASM": [
+        "ldr q16, [x4]"
+      ]
     }
   }
 }
