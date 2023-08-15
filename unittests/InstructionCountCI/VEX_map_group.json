@@ -428,7 +428,7 @@
       ]
     },
     "vldmxcsr [rax]": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map group 15 0b010"

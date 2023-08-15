@@ -11,7 +11,7 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 48,
+      "ExpectedInstructionCount": 44,
       "Optimal": "No",
       "Comment": "0xF 0x01 /2 RM-0"
     },
