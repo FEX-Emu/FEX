@@ -357,6 +357,83 @@ struct host_layout<T* const> {
   }
 };
 
+// Storage for unpacked parameters. May carry additional data for aiding conversion (such as short-lived, stack-allocated data instances to repoint pointer arguments to).
+// Not suitable for nested struct repacking
+// TODO: Update this comment. Originally it was written for unpacked_arg!
+template<typename T>
+struct unpacked_arg_base;
+template<typename T>
+struct unpacked_arg_base<T*> {
+  unpacked_arg_base(host_layout<T>* data_) : data(data_) {
+  }
+
+  unpacked_arg_base(host_layout<const T>* data_) : data(data_) {
+  }
+
+  T* get() {
+    static_assert(sizeof(T) == sizeof(host_layout<T>));
+    static_assert(alignof(T) == alignof(host_layout<T>));
+    return &data->data;
+  }
+
+  host_layout<T>* data;
+};
+
+// TODO: This shouldn't hold temporary storage for pointers that don't need repacking!
+template<typename T>
+struct unpacked_arg_with_storage;
+template<typename T>
+struct unpacked_arg_with_storage<T*> : unpacked_arg_base<T*> {
+  // Silence -Wuninitialized warning from taking a pointer to opt
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wuninitialized"
+  unpacked_arg_with_storage(const guest_layout<T*>& data_) : unpacked_arg_base<T*>(data_.get_pointer() ? &opt.extra : nullptr),
+    opt {
+      data_.get_pointer() ? Opt { *data_.get_pointer() }
+      : Opt { .uninit = {} }
+    } {
+  }
+
+  unpacked_arg_with_storage(const guest_layout<const T*>& data_) : unpacked_arg_base<T*>(data_.get_pointer() ? &opt.extra : nullptr),
+  #pragma GCC diagnostic pop
+    opt {
+      data_.get_pointer() ? Opt { *data_.get_pointer() }
+      : Opt { .uninit = {} }
+    } {
+  }
+
+  // NOTE: Copying/moving this type would invalidate the reference to opt.extra,
+  //       so disallow these operations altogether.
+  unpacked_arg_with_storage(const unpacked_arg_with_storage& other) = delete;
+  unpacked_arg_with_storage(unpacked_arg_with_storage&&) = delete;
+  unpacked_arg_with_storage& operator=(const unpacked_arg_with_storage&) = delete;
+  unpacked_arg_with_storage& operator=(unpacked_arg_with_storage&&) = delete;
+
+  // Crude hack to allow leaving this uninitialized for nullptrs
+  // NOTE: We can't use std::optional here since the storage must always be valid (even before initialization)
+  union Opt {
+    host_layout<T> extra; // Temporary storage for layout-repacked data
+    char uninit;
+  } opt;
+};
+
+
+template<>
+struct unpacked_arg_with_storage<char*> {
+  using type = char*;
+
+  unpacked_arg_with_storage(/*const */guest_layout<const char*>& data) : data(reinterpret_cast<uint64_t>(data.get_pointer())) {
+  }
+  unpacked_arg_with_storage(/*const */guest_layout<char*>& data) : data(reinterpret_cast<uint64_t>(data.get_pointer())) {
+  }
+
+  type get() {
+    return reinterpret_cast<type>(data);
+  }
+
+  uint64_t data;
+};
+
 template<typename T>
 inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
   if constexpr (std::is_enum_v<T>) {
@@ -380,6 +457,68 @@ inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
 template<typename>
 struct CallbackUnpack;
 
+// Wrapper around unpacked_arg (for on-stack repacked argument structs) that implicitly converts to the represented type
+template<typename T, typename GuestT>
+struct unpacked_arg_wrapper {
+  static_assert(std::is_pointer_v<T>);
+
+  // Strip "const" from pointee type. Managing const-correctness would be a pain otherwise.
+  using ActualT = std::add_pointer_t<std::remove_cv_t<std::remove_pointer_t<T>>>;
+
+  unpacked_arg_with_storage<ActualT> data;
+  guest_layout<T>& orig_arg;
+
+  unpacked_arg_wrapper(guest_layout<GuestT>& orig_arg_) : data(orig_arg_), orig_arg(orig_arg_) {
+  }
+
+  ~unpacked_arg_wrapper() {
+    // TODO: Properly detect opaque types
+    if constexpr (requires(guest_layout<T> t, decltype(data) h) { t.get_pointer(); (bool)h.data; *data.data; }) {
+      if constexpr (!std::is_const_v<std::remove_pointer_t<T>>) { // Skip exit-repacking for const pointees
+        if (data.data) {
+          constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+          if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+            *orig_arg.get_pointer() = to_guest(*data.data); // TODO: Only if annotated as out-parameter
+          }
+        }
+      }
+    }
+  }
+
+  operator ActualT() {
+    return data.get();
+  }
+};
+
+template<typename T, ParameterAnnotations Annotation>
+constexpr bool IsCompatible() {
+  if constexpr (Annotation.is_opaque) {
+    return true;
+  } else if constexpr (has_compatible_data_layout<T>) {
+    return true;
+  } else {
+    if constexpr (std::is_pointer_v<T>) {
+      return has_compatible_data_layout<std::remove_cv_t<std::remove_pointer_t<T>>>;
+    } else {
+      return false;
+    }
+  }
+}
+
+template<ParameterAnnotations Annotation, typename HostT, typename T>
+auto Projection(guest_layout<T>& data) {
+  constexpr bool is_compatible = IsCompatible<T, Annotation>() && std::is_same_v<T, HostT>;
+  if constexpr (Annotation.is_passthrough) {
+    return data;
+  } else if constexpr (is_compatible || !std::is_pointer_v<T>) {
+    return host_layout<HostT> { data }.data;
+  } else {
+    // This argument requires temporary storage for repacked data
+    // *and* it needs to call custom repack functions (if any)
+    return unpacked_arg_wrapper<HostT, T> { data };
+  }
+}
+
 template<typename Result, typename... Args>
 struct CallbackUnpack<Result(Args...)> {
   static Result CallGuestPtr(Args... args) {
@@ -395,15 +534,6 @@ struct CallbackUnpack<Result(Args...)> {
     }
   }
 };
-
-template<ParameterAnnotations Annotation, typename T>
-auto Projection(guest_layout<T>& data) {
-  if constexpr (Annotation.is_passthrough) {
-    return data;
-  } else {
-    return host_layout<T> { data }.data;
-  }
-}
 
 template<typename>
 struct GuestWrapperForHostFunction;

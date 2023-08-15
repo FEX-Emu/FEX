@@ -593,7 +593,9 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                     // Fully compatible
                     fmt::print(file, "  host_layout<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
-                    throw report_error(thunk.decl->getLocation(), "Pointer parameter %1 of function %0 requires automatic repacking, which is not implemented yet").AddString(function_name).AddTaggedVal(param_type);
+                    // TODO: Require opt-in for this to be emitted since it's single-element only; otherwise, pointers-to-arrays arguments will cause stack trampling
+                    // TODO: Rename to repacked_arg
+                    fmt::print(file, "  unpacked_arg_with_storage<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else {
                     throw report_error(thunk.decl->getLocation(), "Cannot generate unpacking function for function %0 with unannotated pointer parameter %1").AddString(function_name).AddTaggedVal(param_type);
                 }
