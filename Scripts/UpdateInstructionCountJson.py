@@ -13,7 +13,11 @@ def update_performance_numbers(performance_json_path, performance_json, new_json
         if not key in performance_json["Instructions"]:
             logging.error("{} didn't exist in performance json file?".format(key))
             return 1
-        performance_json["Instructions"][key]["ExpectedInstructionCount"] = items
+
+        if "ExpectedInstructionCount" in items:
+            performance_json["Instructions"][key]["ExpectedInstructionCount"] = items["ExpectedInstructionCount"]
+        if "ExpectedArm64ASM" in items:
+            performance_json["Instructions"][key]["ExpectedArm64ASM"] = items["ExpectedArm64ASM"]
 
     # Output to the original file.
     with open(performance_json_path, "w") as json_file:

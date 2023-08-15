@@ -270,7 +270,6 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
   }
 
   bool TestsPassed {true};
-  bool InstructionCountChanged {};
 
   // Get all the data for the instructions compiled.
   CurrentTest = &TestHeaderData->Tests[0];
@@ -294,7 +293,6 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
     if (INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount) {
       LogMan::Msg::EFmt("Fail: '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
       LogMan::Msg::EFmt("Fail: Test took {} instructions but we expected {} instructions!", INSTStats->first.HostCodeInstructions, CurrentTest->ExpectedInstructionCount);
-      InstructionCountChanged = true;
 
       if (CurrentTest->Optimal) {
         // Don't count the test as a failure if it's known non-optimal.
@@ -309,11 +307,6 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
   if (UpdatedInstructionCountsPath) {
     // Unlink the file.
     unlink(UpdatedInstructionCountsPath);
-
-    if (!InstructionCountChanged) {
-      // If no instruction count changed then just return the results.
-      return TestsPassed;
-    }
 
     FEXCore::File::File FD(UpdatedInstructionCountsPath, FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
 
@@ -331,9 +324,21 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
       // Get the instruction stats.
       auto INSTStats = CodeSize::Validation.GetDataForRIP(CodeRIP);
 
+      FD.Write(fextl::fmt::format("\t\"{}\": {{\n", CurrentTest->TestInst));
+
       if (INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount) {
-        FD.Write(fextl::fmt::format("\t\"{}\": {},\n", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions));
+        FD.Write(fextl::fmt::format("\t\t\"ExpectedInstructionCount\": {},\n", INSTStats->first.HostCodeInstructions));
       }
+
+      FD.Write(fextl::fmt::format("\t\t\"ExpectedArm64ASM\": [\n", INSTStats->first.HostCodeInstructions));
+      for (auto it = INSTStats->second.begin(); it != INSTStats->second.end(); ++it) {
+        const auto &Line = *it;
+        const auto NextIt = it + 1;
+        FD.Write(fextl::fmt::format("\t\t\t\"{}\"{}\n", Line, NextIt != INSTStats->second.end() ? "," : ""));
+      }
+      FD.Write(fextl::fmt::format("\t\t]\n", INSTStats->first.HostCodeInstructions));
+
+      FD.Write(fextl::fmt::format("\t}},\n", CurrentTest->TestInst));
 
       // Go to the next test.
       CurrentTest = reinterpret_cast<TestInfo const*>(&CurrentTest->Code[CurrentTest->CodeSize]);
