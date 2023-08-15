@@ -531,7 +531,6 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             }
 
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(" << struct_name << "* args) {\n";
-            file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
 
             for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
                 if (thunk.callbacks.contains(param_idx) && thunk.callbacks.at(param_idx).is_stub) {
@@ -558,6 +557,7 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 if (!param_type->isPointerType() || (is_opaque || pointee_compat == TypeCompatibility::Full) ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible
+                    fmt::print(file, "  host_layout<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
                     throw report_error(thunk.decl->getLocation(), "Pointer parameter %1 of function %0 requires automatic repacking, which is not implemented yet").AddString(function_name).AddTaggedVal(param_type);
                 } else {
@@ -565,19 +565,30 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 }
             }
 
+            file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
             {
                 auto format_param = [&](std::size_t idx) {
-                    std::string raw_arg = fmt::format("args->a_{}.data", idx);
+                    std::string raw_arg = fmt::format("a_{}.data", idx);
 
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return fmt::format("fex_guest_function_ptr {{ {} }}", raw_arg);
+                        auto arg_name = fmt::format("args->a_{}.data", idx); // Use parameter directly
+                        if (thunk.custom_host_impl) {
+                            return fmt::format("({})", arg_name);
+                        } else {
+                            return fmt::format("(({})(uint64_t {{ {}.data }}))", get_type_name(context, thunk.param_types[idx].getTypePtr()), arg_name);
+                        }
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = fmt::format("args->a_{}.data", idx);
+                        auto arg_name = fmt::format("args->a_{}", idx); // Use parameter directly
                         // Use comma operator to inject a function call before returning the argument
-                        return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
+                        // TODO: Avoid casting away the guest_layout
+                        if (thunk.custom_host_impl) {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), {})", arg_name, arg_name);
+                        } else {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), ({})(uint64_t {{ {}.data }}))", arg_name, get_type_name(context, thunk.param_types[idx].getTypePtr()), arg_name);
+                        }
                     } else if (thunk.param_annotations[idx].is_passthrough) {
                         // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);

@@ -287,11 +287,24 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "};\n"
         "\n"
         "template<typename T>\n"
-        "struct host_layout {\n"
-        "  T data;\n"
+        "struct guest_layout<T*> {\n"
+        "#ifdef IS_32BIT_THUNK\n"
+        "  using type = uint32_t;\n"
+        "#else\n"
+        "  using type = uint64_t;\n"
+        "#endif\n"
+        "  type data;\n"
         "};\n"
         "\n"
-        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
+        "template<typename T>\n"
+        "struct host_layout {\n"
+        "  T data;\n"
+        "\n"
+        "  host_layout(const guest_layout<T>& from);\n"
+        "};\n"
+        "\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(const guest_layout<F*>&);\n";
 
     auto& filename = output_filenames.host;
     {
@@ -421,7 +434,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             hasDescendant(callExpr(callee(functionDecl(hasName("FinalizeHostTrampolineForGuestFunction"))), hasArgument(0, expr().bind("funcptr"))))
         )).check_binding("funcptr", +[](const clang::Expr* funcptr) {
             // Check that the argument type matches the function pointer
-            return funcptr->getType().getAsString() == "int (*)(char, char)";
+            return funcptr->getType().getAsString() == "guest_layout<int (*)(char, char)>";
         }));
 
     // Host should export the unpacking function for function pointer arguments

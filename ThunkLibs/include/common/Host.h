@@ -9,6 +9,7 @@ $end_info$
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <dlfcn.h>
 
 #include "PackedArguments.h"
@@ -58,7 +59,7 @@ typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
  * This prevents accidental calls to foreign function pointers while still
  * allowing us to label function pointers as such.
  */
-struct fex_guest_function_ptr {
+struct [[deprecated]] fex_guest_function_ptr {
 private:
     void* value = nullptr;
 
@@ -218,9 +219,6 @@ struct guest_layout<T[N]> {
 };
 
 template<typename T>
-struct host_layout;
-
-template<typename T>
 struct guest_layout<T*> {
 #ifdef IS_32BIT_THUNK
   using type = uint32_t;
@@ -269,6 +267,9 @@ struct guest_layout<T* const> {
     return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
   }
 };
+
+template<typename T>
+struct host_layout;
 
 template<typename T>
 struct host_layout {
@@ -380,7 +381,7 @@ auto Projection(guest_layout<T>& data) {
   if constexpr (Annotation.is_passthrough) {
     return data;
   } else {
-    return data.data;
+    return host_layout<T> { data }.data;
   }
 }
 
@@ -451,6 +452,14 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
     Invoke(f, *args);
   }
 };
+
+// TODO: Move?
+template<typename F>
+void FinalizeHostTrampolineForGuestFunction(const guest_layout<F*>& PreallocatedTrampolineForGuestFunction) {
+  FEXCore::FinalizeHostTrampolineForGuestFunction(
+      (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction.data,
+      (void*)&CallbackUnpack<F>::CallGuestPtr);
+}
 
 template<typename FuncType>
 void MakeHostTrampolineForGuestFunctionAt(uintptr_t GuestTarget, uintptr_t GuestUnpacker, FuncType **Func) {

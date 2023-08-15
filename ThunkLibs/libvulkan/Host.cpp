@@ -76,11 +76,21 @@ static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, co
     }
   }
 
-  return LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, a_2.data);
+  VkInstance out;
+  auto ret = LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, &out);
+  if (ret == VK_SUCCESS) {
+    *a_2.get_pointer() = out;
+  }
+  return ret;
 }
 
 static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, guest_layout<VkDevice*> a_3){
-  return LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, a_3.data);
+  VkDevice out;
+  auto ret = LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, &out);
+  if (ret == VK_SUCCESS) {
+    *a_3.get_pointer() = out;
+  }
+  return ret;
 }
 
 static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3){
