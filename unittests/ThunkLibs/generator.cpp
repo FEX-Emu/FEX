@@ -274,7 +274,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  uintptr_t GuestTarget;\n"
         "};\n"
         "struct ParameterAnnotations {};\n"
-        "template<typename>\n"
+        "template<typename, typename...>\n"
         "struct GuestWrapperForHostFunction {\n"
         "  template<ParameterAnnotations...> static void Call(void*);\n"
         "};\n"

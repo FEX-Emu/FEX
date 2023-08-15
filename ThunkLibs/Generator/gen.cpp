@@ -660,10 +660,22 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
         }
 
         // Endpoints for Guest->Host invocation of runtime host-function pointers
+        // NOTE: The function parameters may differ slightly between guest and host,
+        //       e.g. due to differing sizes or due to data layout differences.
+        //       Hence, two separate parameter lists are managed here.
         for (auto& host_funcptr_entry : funcptr_types) {
             auto& [type, param_annotations] = host_funcptr_entry.second;
+            auto func_type = type->getAs<clang::FunctionProtoType>();
             std::string mangled_name = clang::QualType { type, 0 }.getAsString();
-            auto info = LookupGuestFuncPtrInfo(host_funcptr_entry.first.c_str());
+            FuncPtrInfo info = { };
+
+            info.result = func_type->getReturnType().getAsString();
+            info.param_annotations = param_annotations;
+
+            // TODO: Respect param_annotations
+            for (auto arg : func_type->getParamTypes()) {
+                info.args.push_back(arg.getAsString());
+            }
 
             std::string annotations;
             for (int param_idx = 0; param_idx < info.args.size(); ++param_idx) {
@@ -682,8 +694,10 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 }
                 annotations += "}";
             }
-            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&GuestWrapperForHostFunction<{}({})>::Call<{}>}}, // {}\n",
-                        fmt::join(info.sha256, "\\x"), info.result, fmt::join(info.args, ", "), annotations, host_funcptr_entry.first);
+            auto guest_info = LookupGuestFuncPtrInfo(host_funcptr_entry.first.c_str());
+            // TODO: Consider differences in guest/host return types
+            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&GuestWrapperForHostFunction<{}({}){}{}>::Call<{}>}}, // {}\n",
+                        fmt::join(guest_info.sha256, "\\x"), guest_info.result, fmt::join(info.args, ", "), guest_info.args.empty() ? "" : ", ", fmt::join(guest_info.args, ", "), annotations, host_funcptr_entry.first);
         }
 
         file << "  { nullptr, nullptr }\n";
