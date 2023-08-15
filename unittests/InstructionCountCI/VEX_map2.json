@@ -297,7 +297,7 @@
       ]
     },
     "vpabsb xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x1c 128-bit"
@@ -311,7 +311,7 @@
       ]
     },
     "vpabsw xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x1d 128-bit"
@@ -325,7 +325,7 @@
       ]
     },
     "vpabsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x1e 128-bit"

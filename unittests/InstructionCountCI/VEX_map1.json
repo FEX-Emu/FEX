@@ -322,7 +322,7 @@
       ]
     },
     "vsqrtps xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x51 128-bit"
@@ -336,7 +336,7 @@
       ]
     },
     "vsqrtpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x51 128-bit"
@@ -350,7 +350,7 @@
       ]
     },
     "vsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -358,7 +358,7 @@
       ]
     },
     "vsqrtsd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -366,7 +366,7 @@
       ]
     },
     "vrsqrtps xmm0, xmm1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
@@ -382,7 +382,7 @@
       ]
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
@@ -390,7 +390,7 @@
       ]
     },
     "vrcpps xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
@@ -406,7 +406,7 @@
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",

@@ -760,10 +760,11 @@ void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Elem
     // Insert the lower bits
     Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
   }
-  if (Is128Bit) {
-    // Clear the upper lane.
-    Result = _VMov(16, Result);
-  }
+
+  // NOTE: We don't need to clear the upper lanes here, since the
+  //       IR ops make use of 128-bit AdvSimd for 128-bit cases,
+  //       which, on hardware with SVE, zero-extends as part of
+  //       storing into the destination.
 
   StoreResult(FPRClass, Op, Result, -1);
 }
