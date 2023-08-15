@@ -1,0 +1,331 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "movsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x10"
+    },
+    "movsd xmm0, [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x10"
+    },
+    "movsd [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x11"
+    },
+    "movddup xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x12"
+    },
+    "movddup xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x12"
+    },
+    "cvtsi2sd xmm0, eax": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x2a"
+      ]
+    },
+    "cvtsi2sd xmm0, dword [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x2a"
+      ]
+    },
+    "cvtsi2sd xmm0, rax": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x2a"
+      ]
+    },
+    "cvtsi2sd xmm0, qword [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x2a"
+      ]
+    },
+    "movntsd [rax], xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2b"
+    },
+    "cvttsd2si eax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2c"
+    },
+    "cvttsd2si eax, qword [rbx]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2c"
+    },
+    "cvttsd2si rax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2c"
+    },
+    "cvttsd2si rax, qword [rbx]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x2c"
+    },
+    "cvtsd2si eax, xmm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2d"
+    },
+    "cvtsd2si eax, qword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x2d"
+    },
+    "cvtsd2si rax, xmm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x2d"
+    },
+    "cvtsd2si rax, qword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x2d"
+    },
+    "sqrtsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x51"
+      ]
+    },
+    "addsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x58"
+      ]
+    },
+    "mulsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x59"
+      ]
+    },
+    "cvtsd2ss xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5a"
+      ]
+    },
+    "cvtsd2ss xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5a"
+      ]
+    },
+    "subsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5c"
+      ]
+    },
+    "minsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5d"
+      ]
+    },
+    "divsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5e"
+      ]
+    },
+    "maxsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0x5f"
+      ]
+    },
+    "pshuflw xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x70"
+    },
+    "pshuflw xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x70"
+    },
+    "pshuflw xmm0, xmm1, 0xff": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x70"
+    },
+    "insertq xmm0, xmm1, 0, 0": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "SSE4a",
+        "0xf2 0x0f 0x78"
+      ]
+    },
+    "insertq xmm0, xmm1, 64, 0": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "SSE4a",
+        "0xf2 0x0f 0x78"
+      ]
+    },
+    "insertq xmm0, xmm1, 32, 32": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "SSE4a",
+        "0xf2 0x0f 0x78"
+      ]
+    },
+    "insertq xmm0, xmm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "SSE4a",
+        "0xf2 0x0f 0x79"
+      ]
+    },
+    "haddps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0x7c"
+    },
+    "hsubps xmm0, xmm1": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0xf2 0x0f 0x7d"
+    },
+    "cmpsd xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 2": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 3": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 4": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 5": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 6": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 7": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf2 0x0f 0xc2"
+      ]
+    },
+    "addsubps xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0xd0"
+    },
+    "movdq2q mm0, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0xd6"
+    },
+    "cvtpd2dq xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0xe6"
+    },
+    "lddqu xmm0, [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf2 0x0f 0xf0"
+    }
+  }
+}
