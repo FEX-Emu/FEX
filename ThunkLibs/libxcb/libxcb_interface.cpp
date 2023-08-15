@@ -3,9 +3,6 @@
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 
-#include <common/CrossArchEvent.h>
-#include "WorkEventData.h"
-
 template<auto>
 struct fex_gen_config {
     unsigned version = 1;
@@ -23,12 +20,10 @@ template<> struct fex_gen_type<xcb_client_message_data_t> : fexgen::assume_compa
 void FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
 size_t FEX_usable_size(void*);
 void FEX_free_on_host(void*);
-void FEX_GiveEvents(CrossArchEvent*, CrossArchEvent*, CBWork*);
 
 template<> struct fex_gen_config<FEX_xcb_init_extension> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<FEX_usable_size> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<FEX_free_on_host> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<FEX_GiveEvents> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
 
 template<> struct fex_gen_config<xcb_flush> {};
 template<> struct fex_gen_config<xcb_get_maximum_request_length> {};
@@ -71,7 +66,7 @@ template<> struct fex_gen_config<xcb_send_request_with_fds> {};
 template<> struct fex_gen_config<xcb_send_request64> {};
 template<> struct fex_gen_config<xcb_send_request_with_fds64> {};
 template<> struct fex_gen_config<xcb_send_fd> {};
-template<> struct fex_gen_config<xcb_take_socket> : fexgen::callback_guest, fexgen::custom_host_impl {};
+template<> struct fex_gen_config<xcb_take_socket> {};
 
 template<> struct fex_gen_config<xcb_writev> {};
 template<> struct fex_gen_config<xcb_wait_for_reply> : fexgen::custom_guest_entrypoint {};
