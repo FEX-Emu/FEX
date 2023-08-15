@@ -1018,10 +1018,9 @@ DEF_OP(VFRSqrt) {
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
-    fmov(SubRegSize.Vector, VTMP1.Z(), 1.0);
-    fsqrt(SubRegSize.Vector, VTMP2.Z(), Pred, Vector.Z());
-    fdiv(SubRegSize.Vector, VTMP1.Z(), Pred, VTMP1.Z(), VTMP2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    fsqrt(SubRegSize.Vector, VTMP1.Z(), Pred, Vector.Z());
+    fmov(SubRegSize.Vector, Dst.Z(), 1.0);
+    fdiv(SubRegSize.Vector, Dst.Z(), Pred, Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0);
