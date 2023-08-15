@@ -1,0 +1,138 @@
+{
+  "Features": {
+    "Bitness": 32,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "push es": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x06"
+    },
+    "pop es": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x07"
+    },
+    "push cs": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0e"
+    },
+    "push ss": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x16"
+    },
+    "pop ss": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x17"
+    },
+    "push ds": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x1e"
+    },
+    "pop ds": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x1f"
+    },
+    "daa": {
+      "ExpectedInstructionCount": 70,
+      "Optimal": "No",
+      "Comment": "0x27"
+    },
+    "das": {
+      "ExpectedInstructionCount": 70,
+      "Optimal": "No",
+      "Comment": "0x2f"
+    },
+    "aaa": {
+      "ExpectedInstructionCount": 36,
+      "Optimal": "No",
+      "Comment": "0x37"
+    },
+    "aas": {
+      "ExpectedInstructionCount": 37,
+      "Optimal": "No",
+      "Comment": "0x3f"
+    },
+    "inc ax": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "0x40"
+    },
+    "inc eax": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": "0x40"
+    },
+    "dec ax": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "0x48"
+    },
+    "dec eax": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": "0x48"
+    },
+    "pusha": {
+      "ExpectedInstructionCount": "25",
+      "Optimal": "No",
+      "Comment": "0x60"
+    },
+    "pushad": {
+      "ExpectedInstructionCount": "25",
+      "Optimal": "No",
+      "Comment": "0x60"
+    },
+    "popa": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "0x61"
+    },
+    "popad": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "0x61"
+    },
+    "aam": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": "0xd4"
+    },
+    "aad": {
+      "ExpectedInstructionCount": 30,
+      "Optimal": "No",
+      "Comment": "0xd5"
+    },
+    "db 0xd4, 0x40": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": [
+        "aam with a different immediate byte base",
+        "0xd4"
+      ]
+    },
+    "db 0xd5, 0x40": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": [
+        "aad with a different immediate byte base",
+        "0xd5"
+      ]
+    },
+    "salc": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0xd6"
+    }
+  }
+}

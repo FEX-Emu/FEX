@@ -102,7 +102,7 @@ def parse_json_data(json_data, output_binary_path):
         logging.info("'{}' -> '{}' -> '{}'".format(key, tmp_asm, tmp_asm_out))
 
         with open(tmp_asm, "w") as tmp_asm_file:
-            tmp_asm_file.write("BITS 64;\n")
+            tmp_asm_file.write("BITS {};\n".format(Bitness))
             tmp_asm_file.write("{}\n".format(key))
 
         Process = subprocess.Popen(["nasm", tmp_asm, "-o", tmp_asm_out])
