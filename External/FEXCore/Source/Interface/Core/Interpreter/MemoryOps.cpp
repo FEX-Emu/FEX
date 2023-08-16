@@ -418,6 +418,42 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
+DEF_OP(VBroadcastFromMem) {
+  const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto NumElements = OpSize / ElementSize;
+
+  const auto *MemData = *GetSrc<const uint8_t**>(Data->SSAData, Op->Address);
+
+  const auto BroadcastElement = [NumElements]<typename T>(void* Dst, const T* MemPtr) {
+    auto* DstU8 = static_cast<uint8_t*>(Dst);
+
+    for (size_t i = 0; i < NumElements; i++) {
+      std::memcpy(DstU8 + (i * sizeof(T)), MemPtr, sizeof(T));
+    }
+  };
+
+  switch (ElementSize) {
+  case 1:
+    BroadcastElement(GDP, MemData);
+    break;
+  case 2:
+    BroadcastElement(GDP, reinterpret_cast<const uint16_t*>(MemData));
+    break;
+  case 4:
+    BroadcastElement(GDP, reinterpret_cast<const uint32_t*>(MemData));
+    break;
+  case 8:
+    BroadcastElement(GDP, reinterpret_cast<const uint64_t*>(MemData));
+    break;
+  default:
+    LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
+    break;
+  }
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
   const int32_t Size = Op->Size;

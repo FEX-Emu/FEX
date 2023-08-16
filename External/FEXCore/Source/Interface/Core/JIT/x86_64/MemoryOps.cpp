@@ -844,6 +844,58 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
+DEF_OP(VBroadcastFromMem) {
+  const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto Dst = GetDst(Node);
+
+  const Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Address.ID());
+
+  if (Is256Bit) {
+    const auto DstYMM = ToYMM(Dst);
+
+    switch (ElementSize) {
+    case 1:
+      vpbroadcastb(DstYMM, byte [MemReg]);
+      break;
+    case 2:
+      vpbroadcastw(DstYMM, word [MemReg]);
+      break;
+    case 4:
+      vpbroadcastd(DstYMM, dword [MemReg]);
+      break;
+    case 8:
+      vpbroadcastq(DstYMM, qword [MemReg]);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
+      return;
+    }
+  } else {
+    switch (ElementSize) {
+    case 1:
+      vpbroadcastb(Dst, byte [MemReg]);
+      break;
+    case 2:
+      vpbroadcastw(Dst, word [MemReg]);
+      break;
+    case 4:
+      vpbroadcastd(Dst, dword [MemReg]);
+      break;
+    case 8:
+      vpbroadcastq(Dst, qword [MemReg]);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
+      return;
+    }
+  }
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
@@ -1125,6 +1177,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREMEMTSO,         StoreMem);
   REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
   REGISTER_OP(VSTOREVECTORMASKED,  VStoreVectorMasked);
+  REGISTER_OP(VBROADCASTFROMMEM,   VBroadcastFromMem);
   REGISTER_OP(MEMSET,              MemSet);
   REGISTER_OP(MEMCPY,              MemCpy);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);

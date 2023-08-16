@@ -499,6 +499,12 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
+      "FPR = VBroadcastFromMem u8:#RegisterSize, u8:#ElementSize, GPR:$Address": {
+        "Desc": ["Broadcasts an ElementSize value from memory into each element of a vector."],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+
       "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."

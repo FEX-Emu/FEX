@@ -1265,8 +1265,17 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
-    Result = _VDupElement(DstSize, ElementSize, Src, 0);
+    if constexpr (ElementSize == 16) {
+      // TODO: Make 128-bit loads go through the broadcast path.
+      OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
+      Result = _VDupElement(DstSize, ElementSize, Src, 0);
+    } else {
+      // Get the address to broadcast from into a GPR.
+      OrderedNode *Address = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags, -1, false);
+      Address = AppendSegmentOffset(Address, Op->Flags);
+
+      Result = _VBroadcastFromMem(DstSize, ElementSize, Address);
+    }
   }
 
   if (Is128Bit) {

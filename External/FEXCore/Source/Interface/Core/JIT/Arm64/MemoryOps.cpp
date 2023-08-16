@@ -1429,6 +1429,68 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
+DEF_OP(VBroadcastFromMem) {
+  const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto MemReg = GetReg(Op->Address.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8,
+                      "Invalid element size");
+
+  if (HostSupportsSVE128 || HostSupportsSVE256) {
+    if (Is256Bit) {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use SVE 256-bit broadcast");
+    }
+
+    const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B.Zeroing()
+                                             : PRED_TMP_16B.Zeroing();
+
+    switch (ElementSize) {
+    case 1:
+      ld1rb(ARMEmitter::SubRegSize::i8Bit, Dst.Z(),
+            GoverningPredicate, MemReg);
+      break;
+    case 2:
+      ld1rh(ARMEmitter::SubRegSize::i16Bit, Dst.Z(),
+            GoverningPredicate, MemReg);
+      break;
+    case 4:
+      ld1rw(ARMEmitter::SubRegSize::i32Bit, Dst.Z(),
+            GoverningPredicate, MemReg);
+      break;
+    case 8:
+      ld1rd(Dst.Z(), GoverningPredicate, MemReg);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
+      return;
+    }
+  } else {
+    switch (ElementSize) {
+    case 1:
+      ld1r<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), MemReg);
+      break;
+    case 2:
+      ld1r<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), MemReg);
+      break;
+    case 4:
+      ld1r<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), MemReg);
+      break;
+    case 8:
+      ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
+      return;
+    }
+  }
+}
+
 DEF_OP(StoreMem) {
   const auto Op = IROp->C<IR::IROp_StoreMem>();
   const auto OpSize = IROp->Size;
