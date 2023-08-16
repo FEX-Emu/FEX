@@ -213,17 +213,6 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     Segments = 2;
   }
 
-  // If this can be loaded with a mov bitmask.
-  const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Constant, RegSizeInBits(s));
-  if (IsImm) {
-    orr(s, Reg, ARMEmitter::Reg::zr, Constant);
-    if (NOPPad) {
-      nop(); nop(); nop();
-    }
-    return;
-  }
-
-  int NumMoves = 1;
   int RequiredMoveSegments{};
 
   // Count the number of move segments
@@ -232,6 +221,20 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
     if (Part != 0) {
       ++RequiredMoveSegments;
+    }
+  }
+
+  // If this can be loaded with a mov bitmask.
+  if (RequiredMoveSegments > 1) {
+    // Only try to use this path if the number of segments is > 1.
+    // `movz` is better than `orr` since hardware will rename or merge if possible when `movz` is used.
+    const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Constant, RegSizeInBits(s));
+    if (IsImm) {
+      orr(s, Reg, ARMEmitter::Reg::zr, Constant);
+      if (NOPPad) {
+        nop(); nop(); nop();
+      }
+      return;
     }
   }
 
@@ -244,6 +247,8 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
 
   // Offset from aligned PC
   int64_t AlignedOffset = static_cast<int64_t>(Constant) - static_cast<int64_t>(AlignedPC);
+
+  int NumMoves = 0;
 
   // If the aligned offset is within the 4GB window then we can use ADRP+ADD
   // and the number of move segments more than 1
@@ -268,13 +273,29 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     }
   }
   else {
-    movz(s, Reg, (Constant) & 0xFFFF, 0);
-    for (int i = 1; i < Segments; ++i) {
-      uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
+    int CurrentSegment = 0;
+    for (; CurrentSegment < Segments; ++CurrentSegment) {
+      uint16_t Part = (Constant >> (CurrentSegment * 16)) & 0xFFFF;
       if (Part) {
-        movk(s, Reg, Part, i * 16);
+        movz(s, Reg, Part, CurrentSegment * 16);
+        ++CurrentSegment;
+        ++NumMoves;
+        break;
+      }
+    }
+
+    for (; CurrentSegment < Segments; ++CurrentSegment) {
+      uint16_t Part = (Constant >> (CurrentSegment * 16)) & 0xFFFF;
+      if (Part) {
+        movk(s, Reg, Part, CurrentSegment * 16);
         ++NumMoves;
       }
+    }
+
+    if (NumMoves == 0) {
+      // If we didn't move anything that means this is a zero move. Special case this.
+      movz(s, Reg, 0);
+      ++NumMoves;
     }
   }
 
