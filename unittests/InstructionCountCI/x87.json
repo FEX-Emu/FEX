@@ -9,539 +9,539 @@
   },
   "Instructions": {
     "fadd dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /0"
       ]
     },
     "fmul dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /1"
       ]
     },
     "fcom dword [rax]": {
-      "ExpectedInstructionCount": 107,
+      "ExpectedInstructionCount": 99,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /2"
       ]
     },
     "fcomp dword [rax]": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 110,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /3"
       ]
     },
     "fsub dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /4"
       ]
     },
     "fsubr dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /5"
       ]
     },
     "fdiv dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /6"
       ]
     },
     "fdivr dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /7"
       ]
     },
     "fadd st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ]
     },
     "fadd st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc1 /0"
       ]
     },
     "fadd st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc2 /0"
       ]
     },
     "fadd st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc3 /0"
       ]
     },
     "fadd st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc4 /0"
       ]
     },
     "fadd st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc5 /0"
       ]
     },
     "fadd st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc6 /0"
       ]
     },
     "fadd st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc7 /0"
       ]
     },
     "fmul st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc8 /1"
       ]
     },
     "fmul st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc9 /1"
       ]
     },
     "fmul st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xca /1"
       ]
     },
     "fmul st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xcb /1"
       ]
     },
     "fmul st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xcc /1"
       ]
     },
     "fmul st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xcd /1"
       ]
     },
     "fmul st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xce /1"
       ]
     },
     "fmul st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xcf /1"
       ]
     },
     "fcom st0, st0": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd0 /2"
       ]
     },
     "fcom st0, st1": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd1 /2"
       ]
     },
     "fcom st0, st2": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd2 /2"
       ]
     },
     "fcom st0, st3": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd3 /2"
       ]
     },
     "fcom st0, st4": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd4 /2"
       ]
     },
     "fcom st0, st5": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd5 /2"
       ]
     },
     "fcom st0, st6": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd6 /2"
       ]
     },
     "fcom st0, st7": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd7 /2"
       ]
     },
     "fcomp st0, st0": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd8 /3"
       ]
     },
     "fcomp st0, st1": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd9 /3"
       ]
     },
     "fcomp st0, st2": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xda /3"
       ]
     },
     "fcomp st0, st3": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdb /3"
       ]
     },
     "fcomp st0, st4": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdc /3"
       ]
     },
     "fcomp st0, st5": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdd /3"
       ]
     },
     "fcomp st0, st6": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xde /3"
       ]
     },
     "fcomp st0, st7": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdf /3"
       ]
     },
     "fsub st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe0 /4"
       ]
     },
     "fsub st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe1 /4"
       ]
     },
     "fsub st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe2 /4"
       ]
     },
     "fsub st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe3 /4"
       ]
     },
     "fsub st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe4 /4"
       ]
     },
     "fsub st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe5 /4"
       ]
     },
     "fsub st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe6 /4"
       ]
     },
     "fsub st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe7 /4"
       ]
     },
     "fsubr st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe8 /5"
       ]
     },
     "fsubr st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xe9 /5"
       ]
     },
     "fsubr st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xea /5"
       ]
     },
     "fsubr st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xeb /5"
       ]
     },
     "fsubr st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xec /5"
       ]
     },
     "fsubr st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xed /5"
       ]
     },
     "fsubr st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xee /5"
       ]
     },
     "fsubr st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xef /5"
       ]
     },
     "fdiv st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf0 /6"
       ]
     },
     "fdiv st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf1 /6"
       ]
     },
     "fdiv st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf2 /6"
       ]
     },
     "fdiv st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf3 /6"
       ]
     },
     "fdiv st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf4 /6"
       ]
     },
     "fdiv st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf5 /6"
       ]
     },
     "fdiv st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf6 /6"
       ]
     },
     "fdiv st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf7 /6"
       ]
     },
     "fdivr st0, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf8 /7"
       ]
     },
     "fdivr st0, st1": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xf9 /7"
       ]
     },
     "fdivr st0, st2": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xfa /7"
       ]
     },
     "fdivr st0, st3": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xfb /7"
       ]
     },
     "fdivr st0, st4": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xfc /7"
       ]
     },
     "fdivr st0, st5": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xfd /7"
       ]
     },
     "fdivr st0, st6": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xfe /7"
       ]
     },
     "fdivr st0, st7": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xff /7"
       ]
     },
     "fld dword [rax]": {
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 55,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /0"
       ]
     },
     "fst dword [rax]": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 45,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /2"
       ]
     },
     "fstp dword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /3"
       ]
     },
     "fldenv [rax]": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /4"
       ]
     },
     "fldcw [rax]": {
-      "ExpectedInstructionCount": 45,
+      "ExpectedInstructionCount": 41,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /5"
@@ -695,7 +695,7 @@
       ]
     },
     "ftst": {
-      "ExpectedInstructionCount": 61,
+      "ExpectedInstructionCount": 57,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xe4 /4"
@@ -758,42 +758,42 @@
       ]
     },
     "f2xm1": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 48,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf0 /6"
       ]
     },
     "fyl2x": {
-      "ExpectedInstructionCount": 67,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf1 /6"
       ]
     },
     "fptan": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 66,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf2 /6"
       ]
     },
     "fpatan": {
-      "ExpectedInstructionCount": 67,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf3 /6"
       ]
     },
     "fxtract": {
-      "ExpectedInstructionCount": 110,
+      "ExpectedInstructionCount": 102,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf4 /6"
       ]
     },
     "fprem1": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf5 /6"
@@ -814,112 +814,112 @@
       ]
     },
     "fprem": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf8 /7"
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 121,
+      "ExpectedInstructionCount": 113,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ]
     },
     "fsqrt": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 48,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfa /7"
       ]
     },
     "fsincos": {
-      "ExpectedInstructionCount": 112,
+      "ExpectedInstructionCount": 104,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfb /7"
       ]
     },
     "frndint": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 48,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfc /7"
       ]
     },
     "fscale": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfd /7"
       ]
     },
     "fsin": {
-      "ExpectedInstructionCount": 54,
+      "ExpectedInstructionCount": 50,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfe /7"
       ]
     },
     "fcos": {
-      "ExpectedInstructionCount": 54,
+      "ExpectedInstructionCount": 50,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xff /7"
       ]
     },
     "fiadd dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /0"
       ]
     },
     "fimul dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /1"
       ]
     },
     "ficom dword [rax]": {
-      "ExpectedInstructionCount": 107,
+      "ExpectedInstructionCount": 99,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /2"
       ]
     },
     "ficomp dword [rax]": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 110,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /3"
       ]
     },
     "fisub dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /4"
       ]
     },
     "fisubr dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /5"
       ]
     },
     "fidiv dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /6"
       ]
     },
     "fidivr dword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /7"
@@ -1150,35 +1150,35 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 83,
+      "ExpectedInstructionCount": 79,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xe9 /5"
       ]
     },
     "fild dword [rax]": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /5"
       ]
     },
     "fisttp dword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdb !11b /1"
       ]
     },
     "fist dword [rax]": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 45,
       "Optimal": "No",
       "Comment": [
         "0xdb !11b /2"
       ]
     },
     "fistp dword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /7"
@@ -1430,182 +1430,182 @@
       ]
     },
     "fninit": {
-      "ExpectedInstructionCount": 53,
+      "ExpectedInstructionCount": 49,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xe3 /4"
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xe8 /5"
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xe9 /5"
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xea /5"
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xeb /5"
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xec /5"
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xed /5"
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xee /5"
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xef /5"
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf0 /6"
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf1 /6"
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf2 /6"
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf3 /6"
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf4 /6"
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf5 /6"
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf6 /6"
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 62,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf7 /6"
       ]
     },
     "fadd qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /0"
       ]
     },
     "fmul qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /1"
       ]
     },
     "fcom qword [rax]": {
-      "ExpectedInstructionCount": 107,
+      "ExpectedInstructionCount": 99,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /2"
       ]
     },
     "fcomp qword [rax]": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 110,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /3"
       ]
     },
     "fsub qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /4"
       ]
     },
     "fsubr qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /5"
       ]
     },
     "fdiv qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /6"
       ]
     },
     "fdivr qword [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /7"
       ]
     },
     "db 0xdc, 0xc0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fadd st0, st0",
@@ -1614,56 +1614,56 @@
       ]
     },
     "fadd st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc1 /0"
       ]
     },
     "fadd st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc2 /0"
       ]
     },
     "fadd st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc3 /0"
       ]
     },
     "fadd st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc4 /0"
       ]
     },
     "fadd st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc5 /0"
       ]
     },
     "fadd st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc6 /0"
       ]
     },
     "fadd st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc7 /0"
       ]
     },
     "db 0xdc, 0xc8": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fmul st0, st0",
@@ -1672,56 +1672,56 @@
       ]
     },
     "fmul st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xc9 /1"
       ]
     },
     "fmul st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xca /1"
       ]
     },
     "fmul st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xcb /1"
       ]
     },
     "fmul st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xcc /1"
       ]
     },
     "fmul st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xcd /1"
       ]
     },
     "fmul st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xce /1"
       ]
     },
     "fmul st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xcf /1"
       ]
     },
     "db 0xdc, 0xe0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fsubr st0, st0",
@@ -1730,56 +1730,56 @@
       ]
     },
     "fsubr st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe1 /4"
       ]
     },
     "fsubr st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe2 /4"
       ]
     },
     "fsubr st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe3 /4"
       ]
     },
     "fsubr st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe4 /4"
       ]
     },
     "fsubr st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe5 /4"
       ]
     },
     "fsubr st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe6 /4"
       ]
     },
     "fsubr st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe7 /4"
       ]
     },
     "db 0xdc, 0xe8": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fsub st0, st0",
@@ -1788,56 +1788,56 @@
       ]
     },
     "fsub st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xe9 /5"
       ]
     },
     "fsub st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xea /5"
       ]
     },
     "fsub st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xeb /5"
       ]
     },
     "fsub st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xec /5"
       ]
     },
     "fsub st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xed /5"
       ]
     },
     "fsub st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xee /5"
       ]
     },
     "fsub st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xef /5"
       ]
     },
     "db 0xdc, 0xf0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fdivr st0, st0",
@@ -1846,56 +1846,56 @@
       ]
     },
     "fdivr st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf1 /6"
       ]
     },
     "fdivr st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf2 /6"
       ]
     },
     "fdivr st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf3 /6"
       ]
     },
     "fdivr st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf4 /6"
       ]
     },
     "fdivr st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf5 /6"
       ]
     },
     "fdivr st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf6 /6"
       ]
     },
     "fdivr st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf7 /6"
       ]
     },
     "db 0xdc, 0xf8": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "fdiv st0, st0",
@@ -1904,91 +1904,91 @@
       ]
     },
     "fdiv st1, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xf9 /7"
       ]
     },
     "fdiv st2, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xfa /7"
       ]
     },
     "fdiv st3, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xfb /7"
       ]
     },
     "fdiv st4, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xfc /7"
       ]
     },
     "fdiv st5, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xfd /7"
       ]
     },
     "fdiv st6, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xfe /7"
       ]
     },
     "fdiv st7, st0": {
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xdc 11b 0xff /7"
       ]
     },
     "fld qword [rax]": {
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 55,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /0"
       ]
     },
     "fisttp qword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /1"
       ]
     },
     "fst qword [rax]": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 45,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /2"
       ]
     },
     "fstp qword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /3"
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 114,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /4"
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 125,
+      "ExpectedInstructionCount": 121,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /6"
@@ -2170,294 +2170,294 @@
       ]
     },
     "fucom st0": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe0 /4"
       ]
     },
     "fucom st1": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe1 /4"
       ]
     },
     "fucom st2": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe2 /4"
       ]
     },
     "fucom st3": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe3 /4"
       ]
     },
     "fucom st4": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe4 /4"
       ]
     },
     "fucom st5": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe5 /4"
       ]
     },
     "fucom st6": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe6 /4"
       ]
     },
     "fucom st7": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe7 /4"
       ]
     },
     "fucomp st0": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe8 /5"
       ]
     },
     "fucomp st1": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe9 /5"
       ]
     },
     "fucomp st2": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xea /5"
       ]
     },
     "fucomp st3": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xeb /5"
       ]
     },
     "fucomp st4": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xec /5"
       ]
     },
     "fucomp st5": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xed /5"
       ]
     },
     "fucomp st6": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xee /5"
       ]
     },
     "fucomp st7": {
-      "ExpectedInstructionCount": 75,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xef /5"
       ]
     },
     "fiadd word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /0"
       ]
     },
     "fimul word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /1"
       ]
     },
     "ficom word [rax]": {
-      "ExpectedInstructionCount": 107,
+      "ExpectedInstructionCount": 99,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /2"
       ]
     },
     "ficomp word [rax]": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 110,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /3"
       ]
     },
     "fisub word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /4"
       ]
     },
     "fisubr word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /5"
       ]
     },
     "fidiv word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /6"
       ]
     },
     "fidivr word [rax]": {
-      "ExpectedInstructionCount": 101,
+      "ExpectedInstructionCount": 93,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /7"
       ]
     },
     "faddp st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ]
     },
     "faddp st1": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc1 /0"
       ]
     },
     "faddp st2": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc2 /0"
       ]
     },
     "faddp st3": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc3 /0"
       ]
     },
     "faddp st4": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc4 /0"
       ]
     },
     "faddp st5": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc5 /0"
       ]
     },
     "faddp st6": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc6 /0"
       ]
     },
     "faddp st7": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc7 /0"
       ]
     },
     "fmulp st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc8 /1"
       ]
     },
     "fmulp st1": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xc9 /1"
       ]
     },
     "fmulp st2": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xca /1"
       ]
     },
     "fmulp st3": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xcb /1"
       ]
     },
     "fmulp st4": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xcc /1"
       ]
     },
     "fmulp st5": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xcd /1"
       ]
     },
     "fmulp st6": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xce /1"
       ]
     },
     "fmulp st7": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xcf /1"
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 83,
+      "ExpectedInstructionCount": 79,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xd9 /3"
       ]
     },
     "db 0xde, 0xe0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "fsubrp st0, st0",
@@ -2466,56 +2466,56 @@
       ]
     },
     "fsubrp st1, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe1 /4"
       ]
     },
     "fsubrp st2, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe2 /4"
       ]
     },
     "fsubrp st3, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe3 /4"
       ]
     },
     "fsubrp st4, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe4 /4"
       ]
     },
     "fsubrp st5, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe5 /4"
       ]
     },
     "fsubrp st6, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe6 /4"
       ]
     },
     "fsubrp st7, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe7 /4"
       ]
     },
     "db 0xde, 0xe8": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "fsubp st0, st0",
@@ -2524,56 +2524,56 @@
       ]
     },
     "fsubp st1, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xe9 /5"
       ]
     },
     "fsubp st2, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xea /5"
       ]
     },
     "fsubp st3, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xeb /5"
       ]
     },
     "fsubp st4, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xec /5"
       ]
     },
     "fsubp st5, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xed /5"
       ]
     },
     "fsubp st6, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xee /5"
       ]
     },
     "fsubp st7, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xef /5"
       ]
     },
     "db 0xde, 0xf0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "fdivrp st0, st0",
@@ -2582,56 +2582,56 @@
       ]
     },
     "fdivrp st1, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf1 /6"
       ]
     },
     "fdivrp st2, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf2 /6"
       ]
     },
     "fdivrp st3, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf3 /6"
       ]
     },
     "fdivrp st4, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf4 /6"
       ]
     },
     "fdivrp st5, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf5 /6"
       ]
     },
     "fdivrp st6, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf6 /6"
       ]
     },
     "fdivrp st7, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf7 /6"
       ]
     },
     "db 0xde, 0xf8": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "fdivp st0, st0",
@@ -2640,91 +2640,91 @@
       ]
     },
     "fdivp st1, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xf9 /7"
       ]
     },
     "fdivp st2, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xfa /7"
       ]
     },
     "fdivp st3, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xfb /7"
       ]
     },
     "fdivp st4, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xfc /7"
       ]
     },
     "fdivp st5, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xfd /7"
       ]
     },
     "fdivp st6, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xfe /7"
       ]
     },
     "fdivp st7, st0": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 65,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xff /7"
       ]
     },
     "fild word [rax]": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /0"
       ]
     },
     "fisttp word [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /1"
       ]
     },
     "fist word [rax]": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 45,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /2"
       ]
     },
     "fistp word [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /3"
       ]
     },
     "fbld tword [rax]": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /4"
       ]
     },
     "fbstp tword [rax]": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /6"
@@ -2794,112 +2794,112 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xe8 /5"
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xe9 /5"
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xea /5"
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xeb /5"
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xec /5"
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xed /5"
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xee /5"
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xef /5"
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf0 /6"
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf1 /6"
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf2 /6"
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf3 /6"
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf4 /6"
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf5 /6"
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf6 /6"
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 77,
+      "ExpectedInstructionCount": 73,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf7 /6"

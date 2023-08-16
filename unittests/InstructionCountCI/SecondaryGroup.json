@@ -497,7 +497,7 @@
       "Comment": "GROUP15 0x0F 0xAE /0"
     },
     "fxrstor [rax]": {
-      "ExpectedInstructionCount": 106,
+      "ExpectedInstructionCount": 103,
       "Optimal": "No",
       "Comment": "GROUP15 0x0F 0xAE /1"
     },
@@ -512,7 +512,7 @@
       "Comment": "GROUP15 0x0F 0xAE /1"
     },
     "ldmxcsr [rax]": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": "GROUP15 0x0F 0xAE /2"
     },
@@ -552,7 +552,7 @@
       "Comment": "GROUP15 0x0F 0xAE /5"
     },
     "xrstor [rax]": {
-      "ExpectedInstructionCount": 198,
+      "ExpectedInstructionCount": 191,
       "Optimal": "No",
       "Comment": "GROUP15 0x0F 0xAE /5"
     },
