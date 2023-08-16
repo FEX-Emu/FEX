@@ -1115,7 +1115,7 @@ DEF_OP(Bfi) {
     mov(EmitSize, TMP1, SrcDst);
     bfi(EmitSize, TMP1, Src, Op->lsb, Op->Width);
 
-    if (OpSize == 8) {
+    if (OpSize >= 4) {
       mov(EmitSize, Dst, TMP1.R());
     }
     else {
