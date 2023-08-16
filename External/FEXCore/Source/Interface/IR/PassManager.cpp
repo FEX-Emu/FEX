@@ -60,7 +60,7 @@ void PassManager::Finalize() {
   if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT) {
     if (!(PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTERPASS)) {
       // Insert final IRDumper.
-      it = InsertAt(it, Debug::CreateIRDumper());
+      InsertAt(Passes.end(), Debug::CreateIRDumper());
     }
   }
 }
