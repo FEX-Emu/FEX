@@ -1679,13 +1679,11 @@
       ]
     },
     "clwb [rax]": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP15 0x0F 0xAE /6",
       "ExpectedArm64ASM": [
-        "mov x0, x4",
-        "dc cvac, x0",
-        "add x0, x0, #0x40 (64)"
+        "dc cvac, x4"
       ]
     },
     "sfence": {
@@ -1697,24 +1695,20 @@
       ]
     },
     "clflush [rax]": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "GROUP15 0x0F 0xAE /7",
       "ExpectedArm64ASM": [
-        "mov x0, x4",
-        "dc civac, x0",
-        "add x0, x0, #0x40 (64)",
+        "dc civac, x4",
         "dsb ish"
       ]
     },
     "clflushopt [rax]": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP15 0x0F 0xAE /7",
       "ExpectedArm64ASM": [
-        "mov x0, x4",
-        "dc civac, x0",
-        "add x0, x0, #0x40 (64)"
+        "dc civac, x4"
       ]
     },
     "prefetchnta [rax]": {
