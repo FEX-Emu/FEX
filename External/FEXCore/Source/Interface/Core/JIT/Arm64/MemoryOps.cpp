@@ -2229,10 +2229,16 @@ DEF_OP(CacheLineClear) {
 
   // Clear dcache only
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
-  mov(TMP1, MemReg.X());
-  for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
-    dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
-    add(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
+  if (CTX->HostFeatures.DCacheLineSize >= 64U) {
+    dc(ARMEmitter::DataCacheOperation::CIVAC, MemReg);
+  }
+  else {
+    auto CurrentWorkingReg = MemReg.X();
+    for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
+      dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
+      add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
+      CurrentWorkingReg = TMP1;
+    }
   }
 
   if (Op->Serialize) {
@@ -2247,10 +2253,16 @@ DEF_OP(CacheLineClean) {
   auto MemReg = GetReg(Op->Addr.ID());
 
   // Clean dcache only
-  mov(TMP1, MemReg.X());
-  for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
-    dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
-    add(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
+  if (CTX->HostFeatures.DCacheLineSize >= 64U) {
+    dc(ARMEmitter::DataCacheOperation::CVAC, MemReg);
+  }
+  else {
+    auto CurrentWorkingReg = MemReg.X();
+    for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
+      dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
+      add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
+      CurrentWorkingReg = TMP1;
+    }
   }
 }
 
