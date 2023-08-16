@@ -14,6 +14,10 @@
         "SVE 128-bit load already zero's the upper bits",
         "Spurious move afterwards",
         "Map 1 0b00 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovups ymm0, [rax]": {
@@ -22,6 +26,10 @@
       "Comment": [
         "Doesn't load directly in to destination",
         "Map 1 0b00 0x10 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovupd xmm0, [rax]": {
@@ -31,6 +39,10 @@
         "SVE 128-bit load already zero's the upper bits",
         "Spurious move afterwards",
         "Map 1 0b01 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovupd ymm0, [rax]": {
@@ -39,6 +51,10 @@
       "Comment": [
         "Doesn't load directly in to destination",
         "Map 1 0b01 0x10 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovss xmm0, [rax]": {
@@ -48,6 +64,10 @@
         "32-bit vector load already zero's the upper bits",
         "Spurious move afterwards",
         "Map 1 0b10 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovss xmm0, xmm1, xmm2": {
@@ -56,6 +76,16 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b10 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovsd xmm0, [rax]": {
@@ -65,6 +95,10 @@
         "32-bit vector load already zero's the upper bits",
         "Spurious move afterwards",
         "Map 1 0b11 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovsd xmm0, xmm1, xmm2": {
@@ -73,6 +107,14 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b11 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovups [rax], xmm0": {
@@ -80,6 +122,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovups [rax], ymm0": {
@@ -87,6 +133,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x11 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vmovupd [rax], xmm0": {
@@ -94,6 +144,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovupd [rax], ymm0": {
@@ -101,6 +155,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x11 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vmovss [rax], xmm0": {
@@ -108,6 +166,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "str s4, [x4]"
       ]
     },
     "db 0xc5, 0xf2, 0x11, 0xc2": {
@@ -118,6 +183,16 @@
         "Need to manually encode since nasm won't encode this",
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b10 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z16.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z18.d, p7/m, z4.d"
       ]
     },
     "vmovsd [rax], xmm0": {
@@ -125,6 +200,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "str d4, [x4]"
       ]
     },
     "db 0xc5, 0xf3, 0x11, 0xc2": {
@@ -135,6 +215,14 @@
         "Need to manually encode since nasm won't encode this",
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b11 0x11 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z16.d",
+        "mov v5.8b, v5.8b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z18.d, p7/m, z4.d"
       ]
     },
     "vmovlps xmm0, xmm1, [rax]": {
@@ -143,6 +231,14 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b00 0x12 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovlpd xmm0, xmm1, [rax]": {
@@ -151,6 +247,14 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b01 0x12 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovsldup xmm0, [rax]": {
@@ -158,6 +262,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x12 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[3], v4.s[2]",
+        "mov v5.16b, v0.16b",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[1], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovsldup ymm0, [rax]": {
@@ -165,6 +281,38 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x12 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[2]",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[6]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovddup xmm0, [rax]": {
@@ -172,6 +320,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x12 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
+        "mov v4.d[1], v4.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovddup ymm0, [rax]": {
@@ -179,6 +334,24 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x12 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, d4",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovlps [rax], xmm0": {
@@ -186,6 +359,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x13 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str d4, [x4]"
       ]
     },
     "vmovlpd [rax], xmm0": {
@@ -193,6 +370,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x13 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str d4, [x4]"
       ]
     },
     "vunpcklps xmm0, xmm1, [rax]": {
@@ -200,6 +381,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x14 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "zip1 v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpcklps ymm0, ymm1, [rax]": {
@@ -207,6 +395,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x14 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ld1b {z5.b}, p7/z, [x4]",
+        "zip1 z6.s, z4.s, z5.s",
+        "zip2 z4.s, z4.s, z5.s",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpcklpd xmm0, xmm1, [rax]": {
@@ -214,6 +416,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x14 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "zip1 v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpcklpd ymm0, ymm1, [rax]": {
@@ -221,6 +430,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x14 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ld1b {z5.b}, p7/z, [x4]",
+        "zip1 z6.d, z4.d, z5.d",
+        "zip2 z4.d, z4.d, z5.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpckhps xmm0, xmm1, [rax]": {
@@ -228,6 +451,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x15 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "zip2 v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpckhps ymm0, ymm1, [rax]": {
@@ -235,6 +465,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x15 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ld1b {z5.b}, p7/z, [x4]",
+        "zip1 z6.s, z4.s, z5.s",
+        "zip2 z4.s, z4.s, z5.s",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpckhpd xmm0, xmm1, [rax]": {
@@ -242,6 +486,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x15 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ldr q5, [x4]",
+        "zip2 v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vunpckhpd ymm0, ymm1, [rax]": {
@@ -249,6 +500,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x15 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ld1b {z5.b}, p7/z, [x4]",
+        "zip1 z6.d, z4.d, z5.d",
+        "zip2 z4.d, z4.d, z5.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovhps xmm0, xmm1, [rax]": {
@@ -256,6 +521,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x16 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.8b, v4.8b",
+        "ldr d5, [x4]",
+        "mov v4.d[1], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovhpd xmm0, xmm1, [rax]": {
@@ -263,6 +537,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x16 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.8b, v4.8b",
+        "ldr d5, [x4]",
+        "mov v4.d[1], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovshdup xmm0, [rax]": {
@@ -270,6 +553,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x16 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[2], v4.s[3]",
+        "mov v5.16b, v0.16b",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[0], v4.s[1]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovshdup ymm0, [rax]": {
@@ -277,6 +572,38 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x16 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[3]",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[1]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[5]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[7]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovhps [rax], xmm0": {
@@ -284,6 +611,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x17 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.d[0], v4.d[1]",
+        "str d4, [x4]"
       ]
     },
     "vmovhpd [rax], xmm0": {
@@ -291,6 +623,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x17 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.d[0], v4.d[1]",
+        "str d4, [x4]"
       ]
     },
     "vmovmskps rax, xmm0": {
@@ -298,6 +635,26 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "mov z4.d, p7/m, z16.d",
+        "mov w21, v4.s[0]",
+        "ubfx x21, x21, #31, #1",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[1]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #1",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[2]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #2",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[3]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #3",
+        "orr x20, x20, x21",
+        "ubfx x4, x20, #0, #32"
       ]
     },
     "vmovmskps rax, ymm0": {
@@ -305,6 +662,50 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "mov z4.d, p7/m, z16.d",
+        "mov w21, v4.s[0]",
+        "ubfx x21, x21, #31, #1",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[1]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #1",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[2]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #2",
+        "orr x20, x20, x21",
+        "mov w21, v4.s[3]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #3",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov w21, v4.s[0]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #4",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov w21, v4.s[1]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #5",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov w21, v4.s[2]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #6",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov w21, v4.s[3]",
+        "ubfx x21, x21, #31, #1",
+        "lsl w21, w21, #7",
+        "orr x20, x20, x21",
+        "ubfx x4, x20, #0, #32"
       ]
     },
     "vmovmskpd rax, xmm0": {
@@ -312,6 +713,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "mov z4.d, p7/m, z16.d",
+        "mov x21, v4.d[0]",
+        "lsr x21, x21, #63",
+        "orr x20, x20, x21",
+        "mov x21, v4.d[1]",
+        "lsr x21, x21, #63",
+        "lsl x21, x21, #1",
+        "orr x20, x20, x21",
+        "ubfx x4, x20, #0, #32"
       ]
     },
     "vmovmskpd rax, ymm0": {
@@ -319,6 +732,30 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "mov z4.d, p7/m, z16.d",
+        "mov x21, v4.d[0]",
+        "lsr x21, x21, #63",
+        "orr x20, x20, x21",
+        "mov x21, v4.d[1]",
+        "lsr x21, x21, #63",
+        "lsl x21, x21, #1",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov x21, v4.d[0]",
+        "lsr x21, x21, #63",
+        "lsl x21, x21, #2",
+        "orr x20, x20, x21",
+        "not p0.b, p7/z, p6.b",
+        "compact z0.d, p0, z4.d",
+        "mov x21, v4.d[1]",
+        "lsr x21, x21, #63",
+        "lsl x21, x21, #3",
+        "orr x20, x20, x21",
+        "ubfx x4, x20, #0, #32"
       ]
     },
     "vsqrtps xmm0, xmm1": {
@@ -326,6 +763,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fsqrt v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsqrtps ymm0, ymm1": {
@@ -333,6 +776,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fsqrt z4.s, p7/m, z4.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsqrtpd xmm0, xmm1": {
@@ -340,6 +788,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fsqrt v4.2d, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsqrtpd ymm0, ymm1": {
@@ -347,6 +801,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fsqrt z4.d, p7/m, z4.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsqrtss xmm0, xmm1, xmm2": {
@@ -355,6 +814,19 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b10 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov z5.d, p7/m, z17.d",
+        "fsqrt s4, s4",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsqrtsd xmm0, xmm1, xmm2": {
@@ -363,6 +835,17 @@
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b11 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z18.d",
+        "mov v4.8b, v4.8b",
+        "mov z5.d, p7/m, z17.d",
+        "fsqrt d4, d4",
+        "mov v0.16b, v5.16b",
+        "mov v0.d[0], v4.d[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrsqrtps xmm0, xmm1": {
@@ -371,6 +854,14 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x52 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fmov v0.4s, #0x70 (1.0000)",
+        "fsqrt v1.4s, v4.4s",
+        "fdiv v4.4s, v0.4s, v1.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrsqrtps ymm0, ymm1": {
@@ -379,6 +870,13 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x52 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fsqrt z0.s, p7/m, z4.s",
+        "fmov z4.s, #0x70 (1.0000)",
+        "fdiv z4.s, p7/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
@@ -387,6 +885,21 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x52 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov z5.d, p7/m, z17.d",
+        "fmov s0, #0x70 (1.0000)",
+        "fsqrt s1, s4",
+        "fdiv s4, s0, s1",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrcpps xmm0, xmm1": {
@@ -395,6 +908,13 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x53 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fmov v0.4s, #0x70 (1.0000)",
+        "fdiv v4.4s, v0.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrcpps ymm0, ymm1": {
@@ -403,6 +923,13 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x53 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fmov z0.s, #0x70 (1.0000)",
+        "fdiv z0.s, p7/m, z0.s, z4.s",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
@@ -411,6 +938,20 @@
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x53 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov z5.d, p7/m, z17.d",
+        "fmov s0, #0x70 (1.0000)",
+        "fdiv s4, s0, s4",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandps xmm0, xmm1": {
@@ -418,6 +959,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x54 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "and v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandps ymm0, ymm1": {
@@ -425,6 +974,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x54 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "and z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandpd xmm0, xmm1": {
@@ -432,6 +987,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x54 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "and v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandpd ymm0, ymm1": {
@@ -439,6 +1002,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x54 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "and z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandnps xmm0, xmm1": {
@@ -446,6 +1015,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x55 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "bic v4.16b, v5.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandnps ymm0, ymm1": {
@@ -453,6 +1030,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x55 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "bic z4.d, z5.d, z4.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandnpd xmm0, xmm1": {
@@ -460,6 +1043,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x55 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "bic v4.16b, v5.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vandnpd ymm0, ymm1": {
@@ -467,6 +1058,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x55 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "bic z4.d, z5.d, z4.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vorps xmm0, xmm1": {
@@ -474,6 +1071,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x56 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "orr v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vorps ymm0, ymm1": {
@@ -481,6 +1086,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x56 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "orr z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vorpd xmm0, xmm1": {
@@ -488,6 +1099,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x56 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "orr v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vorpd ymm0, ymm1": {
@@ -495,6 +1114,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x56 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "orr z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vxorps xmm0, xmm1": {
@@ -502,6 +1127,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "eor v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vxorps ymm0, ymm1": {
@@ -509,6 +1142,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "eor z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vxorpd xmm0, xmm1": {
@@ -516,6 +1155,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "eor v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vxorpd ymm0, ymm1": {
@@ -523,6 +1170,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "eor z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklbw xmm0, xmm1, xmm2": {
@@ -530,6 +1183,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x60 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklbw ymm0, ymm1, ymm2": {
@@ -537,6 +1197,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x60 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.b, z4.b, z5.b",
+        "zip2 z4.b, z4.b, z5.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklwd xmm0, xmm1, xmm2": {
@@ -544,6 +1218,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x61 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklwd ymm0, ymm1, ymm2": {
@@ -551,6 +1232,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x61 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.h, z4.h, z5.h",
+        "zip2 z4.h, z4.h, z5.h",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckldq xmm0, xmm1, xmm2": {
@@ -558,6 +1253,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x62 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckldq ymm0, ymm1, ymm2": {
@@ -565,6 +1267,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x62 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.s, z4.s, z5.s",
+        "zip2 z4.s, z4.s, z5.s",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpacksswb xmm0, xmm1, xmm2": {
@@ -572,6 +1288,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x63 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtn v4.8b, v4.8h",
+        "mov v0.16b, v4.16b",
+        "sqxtn2 v0.16b, v5.8h",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpacksswb ymm0, ymm1, ymm2": {
@@ -579,6 +1306,31 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x63 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtnb z4.b, z4.h",
+        "uzp1 z4.b, z4.b, z4.b",
+        "sqxtnb z1.b, z5.h",
+        "uzp1 z1.b, z1.b, z1.b",
+        "movprfx z4, z4",
+        "splice z4.b, p6, z4.b, z1.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtb xmm0, xmm1, xmm2": {
@@ -586,6 +1338,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x64 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmgt v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtb ymm0, ymm1, ymm2": {
@@ -593,6 +1353,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x64 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpgt p0.b, p7/z, z4.b, z5.b",
+        "not z0.b, p0/m, z4.b",
+        "movprfx z4.b, p0/z, z4.b",
+        "orr z4.b, p0/m, z4.b, z0.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtw xmm0, xmm1, xmm2": {
@@ -600,6 +1369,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x65 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmgt v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtw ymm0, ymm1, ymm2": {
@@ -607,6 +1384,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x65 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpgt p0.h, p7/z, z4.h, z5.h",
+        "not z0.h, p0/m, z4.h",
+        "movprfx z4.h, p0/z, z4.h",
+        "orr z4.h, p0/m, z4.h, z0.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtd xmm0, xmm1, xmm2": {
@@ -614,6 +1400,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x66 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmgt v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpgtd ymm0, ymm1, ymm2": {
@@ -621,6 +1415,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x66 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpgt p0.s, p7/z, z4.s, z5.s",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackuswb xmm0, xmm1, xmm2": {
@@ -628,6 +1431,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x67 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtun v4.8b, v4.8h",
+        "mov v0.16b, v4.16b",
+        "sqxtun2 v0.16b, v5.8h",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackuswb ymm0, ymm1, ymm2": {
@@ -635,6 +1449,31 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x67 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtunb z4.b, z4.h",
+        "uzp1 z4.b, z4.b, z4.b",
+        "sqxtunb z1.b, z5.h",
+        "uzp1 z1.b, z1.b, z1.b",
+        "movprfx z4, z4",
+        "splice z4.b, p6, z4.b, z1.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd xmm0, xmm1, 00b": {
@@ -642,6 +1481,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[0]",
+        "mov v5.16b, v0.16b",
+        "mov v5.s[1], v4.s[0]",
+        "mov v5.s[2], v4.s[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[3], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd xmm0, xmm1, 01b": {
@@ -649,6 +1501,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[1]",
+        "mov v5.16b, v0.16b",
+        "mov v5.s[1], v4.s[0]",
+        "mov v5.s[2], v4.s[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[3], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd xmm0, xmm1, 10b": {
@@ -656,6 +1521,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[2]",
+        "mov v5.16b, v0.16b",
+        "mov v5.s[1], v4.s[0]",
+        "mov v5.s[2], v4.s[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[3], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd xmm0, xmm1, 11b": {
@@ -663,6 +1541,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[3]",
+        "mov v5.16b, v0.16b",
+        "mov v5.s[1], v4.s[0]",
+        "mov v5.s[2], v4.s[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.s[3], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd ymm0, ymm1, 00b": {
@@ -670,6 +1561,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd ymm0, ymm1, 01b": {
@@ -677,6 +1628,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[1]",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[5]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd ymm0, ymm1, 10b": {
@@ -684,6 +1695,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[2]",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[6]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufd ymm0, ymm1, 11b": {
@@ -691,6 +1762,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[3]",
+        "mov z5.d, z4.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[7]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z5.d, z5.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z5.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw xmm0, xmm1, 00b": {
@@ -698,6 +1829,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[4], v4.h[4]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[5], v4.h[4]",
+        "mov v5.h[6], v4.h[4]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[7], v4.h[4]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw xmm0, xmm1, 01b": {
@@ -705,6 +1849,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[4], v4.h[5]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[5], v4.h[4]",
+        "mov v5.h[6], v4.h[4]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[7], v4.h[4]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw xmm0, xmm1, 10b": {
@@ -712,6 +1869,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[4], v4.h[6]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[5], v4.h[4]",
+        "mov v5.h[6], v4.h[4]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[7], v4.h[4]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw xmm0, xmm1, 11b": {
@@ -719,6 +1889,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[4], v4.h[7]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[5], v4.h[4]",
+        "mov v5.h[6], v4.h[4]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[7], v4.h[4]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw ymm0, ymm1, 00b": {
@@ -726,6 +1909,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x400",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "add z0.b, p0/m, z0.b, z0.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw ymm0, ymm1, 01b": {
@@ -733,6 +1976,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[5]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[13]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x400",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "add z0.b, p0/m, z0.b, z0.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw ymm0, ymm1, 10b": {
@@ -740,6 +2043,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[6]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[14]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x400",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "add z0.b, p0/m, z0.b, z0.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshufhw ymm0, ymm1, 11b": {
@@ -747,6 +2110,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[7]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[15]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x400",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "add z0.b, p0/m, z0.b, z0.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[4]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[12]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw xmm0, xmm1, 00b": {
@@ -754,6 +2177,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[0], v4.h[0]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[1], v4.h[0]",
+        "mov v5.h[2], v4.h[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[3], v4.h[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw xmm0, xmm1, 01b": {
@@ -761,6 +2197,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[0], v4.h[1]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[1], v4.h[0]",
+        "mov v5.h[2], v4.h[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[3], v4.h[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw xmm0, xmm1, 10b": {
@@ -768,6 +2217,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[0], v4.h[2]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[1], v4.h[0]",
+        "mov v5.h[2], v4.h[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[3], v4.h[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw xmm0, xmm1, 11b": {
@@ -775,6 +2237,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.h[0], v4.h[3]",
+        "mov v5.16b, v0.16b",
+        "mov v5.h[1], v4.h[0]",
+        "mov v5.h[2], v4.h[0]",
+        "mov v0.16b, v5.16b",
+        "mov v0.h[3], v4.h[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw ymm0, ymm1, 00b": {
@@ -782,6 +2257,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x40",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw ymm0, ymm1, 01b": {
@@ -789,6 +2324,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[1]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[9]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x40",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw ymm0, ymm1, 10b": {
@@ -796,6 +2391,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[2]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[10]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x40",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpshuflw ymm0, ymm1, 11b": {
@@ -803,6 +2458,66 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[3]",
+        "mov z5.d, z4.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[11]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x4",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, h4",
+        "mov z5.d, z5.d",
+        "mov z5.h, p0/m, z1.h",
+        "b #+0x8",
+        "udf #0x40",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.h, z4.h[8]",
+        "mov z4.d, z5.d",
+        "mov z4.h, p0/m, z1.h",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqb xmm0, xmm1, xmm2": {
@@ -810,6 +2525,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x74 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmeq v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqb ymm0, ymm1, ymm2": {
@@ -817,6 +2540,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x74 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpeq p0.b, p7/z, z4.b, z5.b",
+        "not z0.b, p0/m, z4.b",
+        "movprfx z4.b, p0/z, z4.b",
+        "orr z4.b, p0/m, z4.b, z0.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqw xmm0, xmm1, xmm2": {
@@ -824,6 +2556,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x75 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmeq v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqw ymm0, ymm1, ymm2": {
@@ -831,6 +2571,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x75 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpeq p0.h, p7/z, z4.h, z5.h",
+        "not z0.h, p0/m, z4.h",
+        "movprfx z4.h, p0/z, z4.h",
+        "orr z4.h, p0/m, z4.h, z0.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqd xmm0, xmm1, xmm2": {
@@ -838,6 +2587,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x76 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmeq v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpcmpeqd ymm0, ymm1, ymm2": {
@@ -845,6 +2602,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x76 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "cmpeq p0.s, p7/z, z4.s, z5.s",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vzeroupper": {
@@ -852,6 +2618,56 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x77 L=0"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov z17.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z18.d",
+        "mov v4.16b, v4.16b",
+        "mov z18.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z19.d",
+        "mov v4.16b, v4.16b",
+        "mov z19.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z20.d",
+        "mov v4.16b, v4.16b",
+        "mov z20.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z21.d",
+        "mov v4.16b, v4.16b",
+        "mov z21.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z22.d",
+        "mov v4.16b, v4.16b",
+        "mov z22.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z23.d",
+        "mov v4.16b, v4.16b",
+        "mov z23.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z24.d",
+        "mov v4.16b, v4.16b",
+        "mov z24.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z25.d",
+        "mov v4.16b, v4.16b",
+        "mov z25.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z26.d",
+        "mov v4.16b, v4.16b",
+        "mov z26.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z27.d",
+        "mov v4.16b, v4.16b",
+        "mov z27.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z28.d",
+        "mov v4.16b, v4.16b",
+        "mov z28.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z29.d",
+        "mov v4.16b, v4.16b",
+        "mov z29.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z30.d",
+        "mov v4.16b, v4.16b",
+        "mov z30.d, p7/m, z4.d",
+        "mov z4.d, p7/m, z31.d",
+        "mov v4.16b, v4.16b",
+        "mov z31.d, p7/m, z4.d"
       ]
     },
     "vzeroall": {
@@ -860,6 +2676,25 @@
       "Comment": [
         "Should use movi for all registers",
         "Map 1 0b01 0x77 L=1"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, #0",
+        "mov z16.d, p7/m, z4.d",
+        "mov z17.d, p7/m, z4.d",
+        "mov z18.d, p7/m, z4.d",
+        "mov z19.d, p7/m, z4.d",
+        "mov z20.d, p7/m, z4.d",
+        "mov z21.d, p7/m, z4.d",
+        "mov z22.d, p7/m, z4.d",
+        "mov z23.d, p7/m, z4.d",
+        "mov z24.d, p7/m, z4.d",
+        "mov z25.d, p7/m, z4.d",
+        "mov z26.d, p7/m, z4.d",
+        "mov z27.d, p7/m, z4.d",
+        "mov z28.d, p7/m, z4.d",
+        "mov z29.d, p7/m, z4.d",
+        "mov z30.d, p7/m, z4.d",
+        "mov z31.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x00": {
@@ -867,6 +2702,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x00": {
@@ -874,6 +2717,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq p0.s, p7/z, z4.s, z5.s",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x01": {
@@ -881,6 +2733,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v4.4s, v5.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x01": {
@@ -888,6 +2748,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.s, p7/z, z5.s, z4.s",
+        "not z0.s, p0/m, z5.s",
+        "movprfx z4.s, p0/z, z5.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x02": {
@@ -895,6 +2764,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v4.4s, v5.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x02": {
@@ -902,6 +2779,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge p0.s, p7/z, z5.s, z4.s",
+        "not z0.s, p0/m, z5.s",
+        "movprfx z4.s, p0/z, z5.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x03": {
@@ -909,6 +2795,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v0.4s, v4.4s, v5.4s",
+        "fcmgt v1.4s, v5.4s, v4.4s",
+        "orr v4.16b, v0.16b, v1.16b",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x03": {
@@ -916,6 +2813,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmuo p0.s, p7/z, z4.s, z5.s",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x04": {
@@ -923,6 +2829,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq v4.4s, v4.4s, v5.4s",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x04": {
@@ -930,6 +2845,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmne p0.s, p7/z, z4.s, z5.s",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x05": {
@@ -937,6 +2861,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v4.4s, v5.4s, v4.4s",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x05": {
@@ -944,6 +2877,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.s, p7/z, z5.s, z4.s",
+        "not z0.s, p0/m, z5.s",
+        "movprfx z4.s, p0/z, z5.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "not z4.b, p7/m, z4.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x06": {
@@ -951,6 +2894,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v4.4s, v5.4s, v4.4s",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x06": {
@@ -958,6 +2910,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge p0.s, p7/z, z5.s, z4.s",
+        "not z0.s, p0/m, z5.s",
+        "movprfx z4.s, p0/z, z5.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "not z4.b, p7/m, z4.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x07": {
@@ -965,6 +2927,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v0.4s, v4.4s, v5.4s",
+        "fcmgt v1.4s, v5.4s, v4.4s",
+        "orr v4.16b, v0.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpps ymm0, ymm1, ymm2, 0x07": {
@@ -972,6 +2944,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmuo p0.s, p7/z, z4.s, z5.s",
+        "not p0.b, p7/z, p0.b",
+        "not z0.s, p0/m, z4.s",
+        "movprfx z4.s, p0/z, z4.s",
+        "orr z4.s, p0/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x00": {
@@ -979,6 +2961,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x00": {
@@ -986,6 +2976,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq p0.d, p7/z, z4.d, z5.d",
+        "not z0.d, p0/m, z4.d",
+        "movprfx z4.d, p0/z, z4.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x01": {
@@ -993,6 +2992,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v4.2d, v5.2d, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x01": {
@@ -1000,6 +3007,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.d, p7/z, z5.d, z4.d",
+        "not z0.d, p0/m, z5.d",
+        "movprfx z4.d, p0/z, z5.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x02": {
@@ -1007,6 +3023,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v4.2d, v5.2d, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x02": {
@@ -1014,6 +3038,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge p0.d, p7/z, z5.d, z4.d",
+        "not z0.d, p0/m, z5.d",
+        "movprfx z4.d, p0/z, z5.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x03": {
@@ -1021,6 +3054,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v0.2d, v4.2d, v5.2d",
+        "fcmgt v1.2d, v5.2d, v4.2d",
+        "orr v4.16b, v0.16b, v1.16b",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x03": {
@@ -1028,6 +3072,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmuo p0.d, p7/z, z4.d, z5.d",
+        "not z0.d, p0/m, z4.d",
+        "movprfx z4.d, p0/z, z4.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x04": {
@@ -1035,6 +3088,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmeq v4.2d, v4.2d, v5.2d",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x04": {
@@ -1042,6 +3104,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmne p0.d, p7/z, z4.d, z5.d",
+        "not z0.d, p0/m, z4.d",
+        "movprfx z4.d, p0/z, z4.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x05": {
@@ -1049,6 +3120,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v4.2d, v5.2d, v4.2d",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x05": {
@@ -1056,6 +3136,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.d, p7/z, z5.d, z4.d",
+        "not z0.d, p0/m, z5.d",
+        "movprfx z4.d, p0/z, z5.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "not z4.b, p7/m, z4.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x06": {
@@ -1063,6 +3153,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v4.2d, v5.2d, v4.2d",
+        "mvn v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x06": {
@@ -1070,6 +3169,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge p0.d, p7/z, z5.d, z4.d",
+        "not z0.d, p0/m, z5.d",
+        "movprfx z4.d, p0/z, z5.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "not z4.b, p7/m, z4.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd xmm0, xmm1, xmm2, 0x07": {
@@ -1077,6 +3186,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmge v0.2d, v4.2d, v5.2d",
+        "fcmgt v1.2d, v5.2d, v4.2d",
+        "orr v4.16b, v0.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmppd ymm0, ymm1, ymm2, 0x07": {
@@ -1084,6 +3203,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmuo p0.d, p7/z, z4.d, z5.d",
+        "not p0.b, p7/z, p0.b",
+        "not z0.d, p0/m, z4.d",
+        "movprfx z4.d, p0/z, z4.d",
+        "orr z4.d, p0/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x00": {
@@ -1091,6 +3220,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmeq s5, s4, s5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x01": {
@@ -1098,6 +3239,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmgt s5, s5, s4",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x02": {
@@ -1105,6 +3258,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmge s5, s5, s4",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x03": {
@@ -1112,6 +3277,21 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmge s0, s4, s5",
+        "fcmgt s1, s5, s4",
+        "orr v5.8b, v0.8b, v1.8b",
+        "mvn v5.8b, v5.8b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x04": {
@@ -1119,6 +3299,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmeq s5, s4, s5",
+        "mvn v5.8b, v5.8b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x05": {
@@ -1126,6 +3319,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmgt s5, s5, s4",
+        "mvn v5.16b, v5.16b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x06": {
@@ -1133,6 +3339,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmge s5, s5, s4",
+        "mvn v5.16b, v5.16b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x07": {
@@ -1140,6 +3359,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmge s0, s4, s5",
+        "fcmgt s1, s5, s4",
+        "orr v5.8b, v0.8b, v1.8b",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x00": {
@@ -1147,6 +3380,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmeq d5, d4, d5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x01": {
@@ -1154,6 +3397,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmgt d5, d5, d4",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x02": {
@@ -1161,6 +3414,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmge d5, d5, d4",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x03": {
@@ -1168,6 +3431,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmge d0, d4, d5",
+        "fcmgt d1, d5, d4",
+        "orr v5.8b, v0.8b, v1.8b",
+        "mvn v5.8b, v5.8b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x04": {
@@ -1175,6 +3451,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmeq d5, d4, d5",
+        "mvn v5.8b, v5.8b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x05": {
@@ -1182,6 +3469,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmgt d5, d5, d4",
+        "mvn v5.16b, v5.16b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x06": {
@@ -1189,6 +3487,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmge d5, d5, d4",
+        "mvn v5.16b, v5.16b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x07": {
@@ -1196,6 +3505,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmge d0, d4, d5",
+        "fcmgt d1, d5, d4",
+        "orr v5.8b, v0.8b, v1.8b",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 000b": {
@@ -1203,6 +3524,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth x20, w4",
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov v4.h[0], w20",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 001b": {
@@ -1210,6 +3540,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth x20, w4",
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov v4.h[1], w20",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 111b": {
@@ -1217,6 +3556,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth x20, w4",
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov v4.h[7], w20",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpextrw eax, xmm0, 000b": {
@@ -1224,6 +3572,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "umov w20, v4.h[0]",
+        "uxth x4, w20"
       ]
     },
     "vpextrw eax, xmm0, 001b": {
@@ -1231,6 +3584,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "umov w20, v4.h[1]",
+        "uxth x4, w20"
       ]
     },
     "vpextrw eax, xmm0, 111b": {
@@ -1238,6 +3596,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "umov w20, v4.h[7]",
+        "uxth x4, w20"
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 00b": {
@@ -1245,6 +3608,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[0]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[1], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.s[2], v5.s[0]",
+        "mov v4.s[3], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps ymm0, ymm1, ymm2, 00b": {
@@ -1252,6 +3629,67 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z6.d, z4.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z6.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 01b": {
@@ -1259,6 +3697,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[1]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[1], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.s[2], v5.s[0]",
+        "mov v4.s[3], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps ymm0, ymm1, ymm2, 01b": {
@@ -1266,6 +3718,67 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[1]",
+        "mov z6.d, z4.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[5]",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z6.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 10b": {
@@ -1273,6 +3786,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[2]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[1], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.s[2], v5.s[0]",
+        "mov v4.s[3], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps ymm0, ymm1, ymm2, 10b": {
@@ -1280,6 +3807,67 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[2]",
+        "mov z6.d, z4.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[6]",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z6.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 11b": {
@@ -1287,6 +3875,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v0.16b, v4.16b",
+        "mov v0.s[0], v4.s[3]",
+        "mov v6.16b, v0.16b",
+        "mov v0.16b, v6.16b",
+        "mov v0.s[1], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov v4.s[2], v5.s[0]",
+        "mov v4.s[3], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufps ymm0, ymm1, ymm2, 11b": {
@@ -1294,6 +3896,67 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[3]",
+        "mov z6.d, z4.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[7]",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s4",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z4.d, z6.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, s5",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z4.d, z4.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "adr x0, #+0x0",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufpd xmm0, xmm1, xmm2, 0b": {
@@ -1301,6 +3964,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v4.d[0], v4.d[0]",
+        "mov v4.d[1], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufpd ymm0, ymm1, ymm2, 0b": {
@@ -1308,6 +3979,39 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, d4",
+        "mov z6.d, z4.d",
+        "mov z6.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, d5",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z5.d[2]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufpd xmm0, xmm1, xmm2, 1b": {
@@ -1315,6 +4019,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v4.d[0], v4.d[1]",
+        "mov v4.d[1], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vshufpd ymm0, ymm1, ymm2, 1b": {
@@ -1322,6 +4034,39 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z6.d, z4.d",
+        "mov z6.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x1",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, d5",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z5.d[2]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovaps xmm0, [rax]": {
@@ -1329,6 +4074,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x28 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovaps ymm0, [rax]": {
@@ -1336,6 +4085,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x28 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovapd xmm0, [rax]": {
@@ -1343,6 +4096,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x28 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovapd ymm0, [rax]": {
@@ -1350,6 +4107,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x28 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovaps [rax], xmm0": {
@@ -1357,6 +4118,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x29 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovaps [rax], ymm0": {
@@ -1364,6 +4129,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x29 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vmovapd [rax], xmm0": {
@@ -1371,6 +4140,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x29 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovapd [rax], ymm0": {
@@ -1378,6 +4151,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x29 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vcvtsi2ss xmm0, xmm1, eax": {
@@ -1385,6 +4162,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ubfx x20, x4, #0, #32",
+        "scvtf s5, w20",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtsi2ss xmm0, xmm1, rax": {
@@ -1392,6 +4177,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "scvtf s5, x4",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtsi2sd xmm0, xmm1, eax": {
@@ -1399,6 +4191,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "ubfx x20, x4, #0, #32",
+        "scvtf d5, w20",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtsi2sd xmm0, xmm1, rax": {
@@ -1406,6 +4206,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "scvtf d5, x4",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovntps [rax], xmm0": {
@@ -1413,6 +4220,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2B 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovntps [rax], ymm0": {
@@ -1420,6 +4231,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2B 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vmovntpd [rax], xmm0": {
@@ -1427,6 +4242,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2B 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovntpd [rax], ymm0": {
@@ -1434,6 +4253,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2B 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vcvttss2si eax, xmm0": {
@@ -1441,6 +4264,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "fcvtzs w4, s4"
       ]
     },
     "vcvttss2si rax, xmm0": {
@@ -1448,6 +4278,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "fcvtzs x4, s4"
       ]
     },
     "vcvttsd2si eax, xmm0": {
@@ -1455,6 +4290,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "fcvtzs w4, d4"
       ]
     },
     "vcvttsd2si rax, xmm0": {
@@ -1462,6 +4302,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "fcvtzs x4, d4"
       ]
     },
     "vcvtss2si eax, xmm0": {
@@ -1469,6 +4314,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "frinti s0, s4",
+        "fcvtzs w4, s0"
       ]
     },
     "vcvtss2si rax, xmm0": {
@@ -1476,6 +4329,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "frinti s0, s4",
+        "fcvtzs x4, s0"
       ]
     },
     "vcvtsd2si eax, xmm0": {
@@ -1483,6 +4342,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
       ]
     },
     "vcvtsd2si rax, xmm0": {
@@ -1490,6 +4355,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "frinti d0, d4",
+        "fcvtzs x4, d0"
       ]
     },
     "vucomiss xmm0, xmm1": {
@@ -1497,6 +4368,33 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "fcmp s4, s5",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "ldr w23, [x28, #728]",
+        "mov w0, w23",
+        "bfi w0, w21, #29, #1",
+        "lsr w21, w0, #0",
+        "bfi w21, w22, #30, #1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "strb w20, [x28, #708]",
+        "bfi w21, w20, #31, #1",
+        "mov w0, w21",
+        "bfi w0, w20, #28, #1",
+        "lsr w20, w0, #0",
+        "str w20, [x28, #728]"
       ]
     },
     "vucomisd xmm0, xmm1": {
@@ -1504,6 +4402,33 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "fcmp d4, d5",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "ldr w23, [x28, #728]",
+        "mov w0, w23",
+        "bfi w0, w21, #29, #1",
+        "lsr w21, w0, #0",
+        "bfi w21, w22, #30, #1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "strb w20, [x28, #708]",
+        "bfi w21, w20, #31, #1",
+        "mov w0, w21",
+        "bfi w0, w20, #28, #1",
+        "lsr w20, w0, #0",
+        "str w20, [x28, #728]"
       ]
     },
     "vcomiss xmm0, xmm1": {
@@ -1511,6 +4436,33 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "fcmp s4, s5",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "ldr w23, [x28, #728]",
+        "mov w0, w23",
+        "bfi w0, w21, #29, #1",
+        "lsr w21, w0, #0",
+        "bfi w21, w22, #30, #1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "strb w20, [x28, #708]",
+        "bfi w21, w20, #31, #1",
+        "mov w0, w21",
+        "bfi w0, w20, #28, #1",
+        "lsr w20, w0, #0",
+        "str w20, [x28, #728]"
       ]
     },
     "vcomisd xmm0, xmm1": {
@@ -1518,6 +4470,33 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov z5.d, p7/m, z17.d",
+        "fcmp d4, d5",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "ldr w23, [x28, #728]",
+        "mov w0, w23",
+        "bfi w0, w21, #29, #1",
+        "lsr w21, w0, #0",
+        "bfi w21, w22, #30, #1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "strb w20, [x28, #708]",
+        "bfi w21, w20, #31, #1",
+        "mov w0, w21",
+        "bfi w0, w20, #28, #1",
+        "lsr w20, w0, #0",
+        "str w20, [x28, #728]"
       ]
     },
     "vaddps xmm0, xmm1, xmm2": {
@@ -1525,6 +4504,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x58 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddps ymm0, ymm1, ymm2": {
@@ -1532,6 +4519,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x58 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddpd xmm0, xmm1, xmm2": {
@@ -1539,6 +4532,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x58 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddpd ymm0, ymm1, ymm2": {
@@ -1546,6 +4547,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x58 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddss xmm0, xmm1, xmm2": {
@@ -1553,6 +4560,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x58 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd s5, s4, s5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsd xmm0, xmm1, xmm2": {
@@ -1560,6 +4576,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x58 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd d5, d4, d5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulps xmm0, xmm1, xmm2": {
@@ -1567,6 +4592,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x59 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulps ymm0, ymm1, ymm2": {
@@ -1574,6 +4607,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x59 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulpd xmm0, xmm1, xmm2": {
@@ -1581,6 +4620,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x59 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulpd ymm0, ymm1, ymm2": {
@@ -1588,6 +4635,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x59 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulss xmm0, xmm1, xmm2": {
@@ -1595,6 +4648,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x59 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul s5, s4, s5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmulsd xmm0, xmm1, xmm2": {
@@ -1602,6 +4664,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x59 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fmul d5, d4, d5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtps2pd xmm0, xmm1": {
@@ -1609,6 +4680,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.8b, v4.8b",
+        "fcvtl v4.2d, v4.2s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtpd2ps xmm0, xmm1": {
@@ -1616,6 +4695,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtn v4.2s, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtss2sd xmm0, xmm1, xmm2": {
@@ -1623,6 +4709,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcvt d5, s5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtsd2ss xmm0, xmm1, xmm2": {
@@ -1630,6 +4727,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcvt s5, d5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtdq2ps xmm0, xmm1": {
@@ -1637,6 +4743,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "scvtf v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtdq2ps ymm0, ymm1": {
@@ -1644,6 +4757,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5b 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "scvtf z4.s, p7/m, z4.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtps2dq xmm0, xmm1": {
@@ -1651,6 +4769,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "frinti v4.4s, v4.4s",
+        "fcvtzs v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtps2dq ymm0, ymm1": {
@@ -1658,6 +4784,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5b 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "frinti z4.s, p7/m, z4.s",
+        "fcvtzs z4.s, p7/m, z4.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvttps2dq xmm0, xmm1": {
@@ -1665,6 +4797,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtzs v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvttps2dq ymm0, ymm1": {
@@ -1672,6 +4811,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5b 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtzs z4.s, p7/m, z4.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubps xmm0, xmm1, xmm2": {
@@ -1679,6 +4823,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubps ymm0, ymm1, ymm2": {
@@ -1686,6 +4838,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5c 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubpd xmm0, xmm1, xmm2": {
@@ -1693,6 +4851,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubpd ymm0, ymm1, ymm2": {
@@ -1700,6 +4866,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5c 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubss xmm0, xmm1, xmm2": {
@@ -1707,6 +4879,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub s5, s4, s5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vsubsd xmm0, xmm1, xmm2": {
@@ -1714,6 +4895,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x5c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fsub d5, d4, d5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminps xmm0, xmm1, xmm2": {
@@ -1721,6 +4911,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v0.4s, v5.4s, v4.4s",
+        "mov v1.16b, v4.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminps ymm0, ymm1, ymm2": {
@@ -1728,6 +4929,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.s, p7/z, z5.s, z4.s",
+        "not p0.b, p7/z, p0.b",
+        "mov z0.d, z4.d",
+        "mov z0.s, p0/m, z5.s",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminpd xmm0, xmm1, xmm2": {
@@ -1735,6 +4946,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v0.2d, v5.2d, v4.2d",
+        "mov v1.16b, v4.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminpd ymm0, ymm1, ymm2": {
@@ -1742,6 +4964,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.d, p7/z, z5.d, z4.d",
+        "not p0.b, p7/z, p0.b",
+        "mov z0.d, z4.d",
+        "mov z0.d, p0/m, z5.d",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminss xmm0, xmm1, xmm2": {
@@ -1749,6 +4981,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmp s4, s5",
+        "fcsel s5, s4, s5, mi",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vminsd xmm0, xmm1, xmm2": {
@@ -1756,6 +5001,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x5d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmp d4, d5",
+        "fcsel d5, d4, d5, mi",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivps xmm0, xmm1, xmm2": {
@@ -1763,6 +5019,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fdiv v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivps ymm0, ymm1, ymm2": {
@@ -1770,6 +5034,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "fdiv z0.s, p7/m, z0.s, z5.s",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivpd xmm0, xmm1, xmm2": {
@@ -1777,6 +5049,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fdiv v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivpd ymm0, ymm1, ymm2": {
@@ -1784,6 +5064,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "fdiv z0.d, p7/m, z0.d, z5.d",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivss xmm0, xmm1, xmm2": {
@@ -1791,6 +5079,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fdiv s5, s4, s5",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vdivsd xmm0, xmm1, xmm2": {
@@ -1798,6 +5095,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x5e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fdiv d5, d4, d5",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxps xmm0, xmm1, xmm2": {
@@ -1805,6 +5111,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v0.4s, v5.4s, v4.4s",
+        "mov v1.16b, v4.16b",
+        "bit v1.16b, v5.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxps ymm0, ymm1, ymm2": {
@@ -1812,6 +5129,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5f 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.s, p7/z, z5.s, z4.s",
+        "mov z0.d, z4.d",
+        "mov z0.s, p0/m, z5.s",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxpd xmm0, xmm1, xmm2": {
@@ -1819,6 +5145,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt v0.2d, v5.2d, v4.2d",
+        "mov v1.16b, v4.16b",
+        "bit v1.16b, v5.16b, v0.16b",
+        "mov v4.16b, v1.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxpd ymm0, ymm1, ymm2": {
@@ -1826,6 +5163,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5f 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fcmgt p0.d, p7/z, z5.d, z4.d",
+        "mov z0.d, z4.d",
+        "mov z0.d, p0/m, z5.d",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxss xmm0, xmm1, xmm2": {
@@ -1833,6 +5179,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v5.s[0]",
+        "mov v5.16b, v0.16b",
+        "fcmp s4, s5",
+        "fcsel s5, s5, s4, mi",
+        "mov v4.s[0], v5.s[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaxsd xmm0, xmm1, xmm2": {
@@ -1840,6 +5199,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x5f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v5.8b, v5.8b",
+        "fcmp d4, d5",
+        "fcsel d5, d5, d4, mi",
+        "mov v4.d[0], v5.d[0]",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhbw xmm0, xmm1, xmm2": {
@@ -1847,6 +5217,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x68 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip2 v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhbw ymm0, ymm1, ymm2": {
@@ -1854,6 +5231,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x68 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.b, z4.b, z5.b",
+        "zip2 z4.b, z4.b, z5.b",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhwd xmm0, xmm1, xmm2": {
@@ -1861,6 +5252,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x69 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip2 v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhwd ymm0, ymm1, ymm2": {
@@ -1868,6 +5266,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x69 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.h, z4.h, z5.h",
+        "zip2 z4.h, z4.h, z5.h",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhdq xmm0, xmm1, xmm2": {
@@ -1875,6 +5287,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip2 v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhdq ymm0, ymm1, ymm2": {
@@ -1882,6 +5301,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6a 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.s, z4.s, z5.s",
+        "zip2 z4.s, z4.s, z5.s",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackssdw xmm0, xmm1, xmm2": {
@@ -1889,6 +5322,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtn v4.4h, v4.4s",
+        "mov v0.16b, v4.16b",
+        "sqxtn2 v0.8h, v5.4s",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackssdw ymm0, ymm1, ymm2": {
@@ -1896,6 +5340,31 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6b 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqxtnb z4.h, z4.s",
+        "uzp1 z4.h, z4.h, z4.h",
+        "sqxtnb z1.h, z5.s",
+        "uzp1 z1.h, z1.h, z1.h",
+        "movprfx z4, z4",
+        "splice z4.h, p6, z4.h, z1.h",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklqdq xmm0, xmm1, xmm2": {
@@ -1903,6 +5372,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpcklqdq ymm0, ymm1, ymm2": {
@@ -1910,6 +5386,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6c 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.d, z4.d, z5.d",
+        "zip2 z4.d, z4.d, z5.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhqdq xmm0, xmm1, xmm2": {
@@ -1917,6 +5407,13 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip2 v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpunpckhqdq ymm0, ymm1, ymm2": {
@@ -1924,6 +5421,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6d 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "zip1 z6.d, z4.d, z5.d",
+        "zip2 z4.d, z4.d, z5.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, z6.q[1]",
+        "mov z4.d, z4.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x101",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovd xmm0, dword [rax]": {
@@ -1931,6 +5442,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr w20, [x4]",
+        "fmov s4, w20",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovq xmm0, qword [rax]": {
@@ -1938,6 +5455,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovdqa xmm0, [rax]": {
@@ -1945,6 +5466,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovdqa [rax], xmm0": {
@@ -1952,6 +5477,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovdqu xmm0, [rax]": {
@@ -1959,6 +5488,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x6f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovdqu [rax], xmm0": {
@@ -1966,6 +5499,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x6f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vhaddpd xmm0, xmm1, xmm2": {
@@ -1973,6 +5510,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "faddp v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhaddpd ymm0, ymm1, ymm2": {
@@ -1980,6 +5525,30 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7c 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "faddp z0.d, p7/m, z0.d, z5.d",
+        "uzp1 z4.d, z0.d, z0.d",
+        "uzp2 z1.d, z0.d, z0.d",
+        "splice z4.d, p6, z4.d, z1.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhaddps xmm0, xmm1, xmm2": {
@@ -1987,6 +5556,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "faddp v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhaddps ymm0, ymm1, ymm2": {
@@ -1994,6 +5571,30 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7c 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "faddp z0.s, p7/m, z0.s, z5.s",
+        "uzp1 z4.s, z0.s, z0.s",
+        "uzp2 z1.s, z0.s, z0.s",
+        "splice z4.d, p6, z4.d, z1.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubpd xmm0, xmm1, xmm2": {
@@ -2001,6 +5602,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fneg v6.2d, v4.2d",
+        "fneg v7.2d, v5.2d",
+        "mov v4.d[1], v6.d[1]",
+        "mov v5.d[1], v7.d[1]",
+        "faddp v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubpd ymm0, ymm1, ymm2": {
@@ -2008,6 +5620,38 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7d 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fneg z6.d, p7/m, z4.d",
+        "fneg z7.d, p7/m, z5.d",
+        "uzp1 z4.d, z4.d, z4.d",
+        "uzp1 z5.d, z5.d, z5.d",
+        "uzp2 z6.d, z6.d, z6.d",
+        "uzp2 z7.d, z7.d, z7.d",
+        "zip1 z4.d, z4.d, z6.d",
+        "zip1 z5.d, z5.d, z7.d",
+        "movprfx z0, z4",
+        "faddp z0.d, p7/m, z0.d, z5.d",
+        "uzp1 z4.d, z0.d, z0.d",
+        "uzp2 z1.d, z0.d, z0.d",
+        "splice z4.d, p6, z4.d, z1.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubps xmm0, xmm1, xmm2": {
@@ -2015,6 +5659,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fneg v6.4s, v4.4s",
+        "fneg v7.4s, v5.4s",
+        "mov v4.s[1], v6.s[1]",
+        "mov v4.s[3], v6.s[3]",
+        "mov v5.s[1], v7.s[1]",
+        "mov v5.s[3], v7.s[3]",
+        "faddp v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubps ymm0, ymm1, ymm2": {
@@ -2022,6 +5679,38 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7d 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fneg z6.s, p7/m, z4.s",
+        "fneg z7.s, p7/m, z5.s",
+        "uzp1 z4.s, z4.s, z4.s",
+        "uzp1 z5.s, z5.s, z5.s",
+        "uzp2 z6.s, z6.s, z6.s",
+        "uzp2 z7.s, z7.s, z7.s",
+        "zip1 z4.s, z4.s, z6.s",
+        "zip1 z5.s, z5.s, z7.s",
+        "movprfx z0, z4",
+        "faddp z0.s, p7/m, z0.s, z5.s",
+        "uzp1 z4.s, z0.s, z0.s",
+        "uzp2 z1.s, z0.s, z0.s",
+        "splice z4.d, p6, z4.d, z1.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovd dword [rax], xmm0": {
@@ -2029,6 +5718,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "movi v0.2d, #0x0",
+        "mov v0.s[0], v4.s[0]",
+        "mov v4.16b, v0.16b",
+        "mov w20, v4.s[0]",
+        "str w20, [x4]"
       ]
     },
     "vmovq qword [rax], xmm0": {
@@ -2036,6 +5733,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "str d4, [x4]"
       ]
     },
     "vmovdqa ymm0, [rax]": {
@@ -2043,6 +5745,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovdqa [rax], ymm0": {
@@ -2050,6 +5756,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vmovdqu ymm0, [rax]": {
@@ -2057,6 +5767,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x7f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovdqu [rax], ymm0": {
@@ -2064,6 +5778,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x7f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vaddsubpd xmm0, xmm1, xmm2": {
@@ -2071,6 +5789,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd v6.2d, v4.2d, v5.2d",
+        "fsub v4.2d, v4.2d, v5.2d",
+        "uzp1 v4.2d, v4.2d, v4.2d",
+        "uzp2 v5.2d, v6.2d, v6.2d",
+        "zip1 v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
@@ -2078,6 +5808,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd z6.d, z4.d, z5.d",
+        "fsub z4.d, z4.d, z5.d",
+        "uzp1 z4.d, z4.d, z4.d",
+        "uzp2 z5.d, z6.d, z6.d",
+        "zip1 z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
@@ -2085,6 +5825,18 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd v6.4s, v4.4s, v5.4s",
+        "fsub v4.4s, v4.4s, v5.4s",
+        "uzp1 v4.4s, v4.4s, v4.4s",
+        "uzp2 v5.4s, v6.4s, v6.4s",
+        "zip1 v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
@@ -2092,6 +5844,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "fadd z6.s, z4.s, z5.s",
+        "fsub z4.s, z4.s, z5.s",
+        "uzp1 z4.s, z4.s, z4.s",
+        "uzp2 z5.s, z6.s, z6.s",
+        "zip1 z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrlw xmm0, xmm1, xmm2": {
@@ -2099,6 +5861,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd1 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.8h, v5.h[0]",
+        "neg v0.8h, v0.8h",
+        "ushl v4.8h, v4.8h, v0.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrlw ymm0, ymm1, xmm2": {
@@ -2106,6 +5884,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd1 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.h, h5",
+        "movprfx z4, z4",
+        "lsr z4.h, p7/m, z4.h, z0.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrld xmm0, xmm1, xmm2": {
@@ -2113,6 +5905,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.4s, v5.s[0]",
+        "neg v0.4s, v0.4s",
+        "ushl v4.4s, v4.4s, v0.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrld ymm0, ymm1, xmm2": {
@@ -2120,6 +5928,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.s, s5",
+        "movprfx z4, z4",
+        "lsr z4.s, p7/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrlq xmm0, xmm1, xmm2": {
@@ -2127,6 +5949,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x40",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.2d, v5.d[0]",
+        "neg v0.2d, v0.2d",
+        "ushl v4.2d, v4.2d, v0.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrlq ymm0, ymm1, xmm2": {
@@ -2134,6 +5972,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x40",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.d, d5",
+        "movprfx z4, z4",
+        "lsr z4.d, p7/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddq xmm0, xmm1, xmm2": {
@@ -2141,6 +5993,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddq ymm0, ymm1, ymm2": {
@@ -2148,6 +6008,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd4 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmullw xmm0, xmm1, xmm2": {
@@ -2155,6 +6021,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mul v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmullw ymm0, ymm1, ymm2": {
@@ -2162,6 +6036,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd4 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mul z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovq [rax], xmm0": {
@@ -2169,6 +6049,11 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov v4.8b, v4.8b",
+        "str d4, [x4]"
       ]
     },
     "vpmovmskb rax, xmm0": {
@@ -2176,6 +6061,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov x20, #0x201",
+        "movk x20, #0x804, lsl #16",
+        "movk x20, #0x2010, lsl #32",
+        "movk x20, #0x8040, lsl #48",
+        "dup v5.2d, x20",
+        "cmlt v4.16b, v4.16b, #0",
+        "and v4.16b, v4.16b, v5.16b",
+        "addp v4.16b, v4.16b, v4.16b",
+        "addp v4.8b, v4.8b, v4.8b",
+        "addp v4.8b, v4.8b, v4.8b",
+        "umov w4, v4.h[0]"
       ]
     },
     "vpmovmskb rax, ymm0": {
@@ -2183,6 +6082,28 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "mov x20, #0x201",
+        "movk x20, #0x804, lsl #16",
+        "movk x20, #0x2010, lsl #32",
+        "movk x20, #0x8040, lsl #48",
+        "mov z5.d, x20",
+        "mov z0.d, #0",
+        "cmplt p0.b, p7/z, z4.b, #0",
+        "not z0.b, p0/m, z4.b",
+        "orr z0.b, p0/m, z0.b, z4.b",
+        "mov z4.d, z0.d",
+        "and z4.d, z4.d, z5.d",
+        "movprfx z0, z4",
+        "addp z0.b, p7/m, z0.b, z4.b",
+        "uzp1 z4.b, z0.b, z0.b",
+        "uzp2 z1.b, z0.b, z0.b",
+        "splice z4.d, p6, z4.d, z1.d",
+        "addp v4.16b, v4.16b, v4.16b",
+        "addp v4.8b, v4.8b, v4.8b",
+        "mov w4, v4.s[0]"
       ]
     },
     "vpsubusb xmm0, xmm1, xmm2": {
@@ -2190,6 +6111,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd8 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqsub v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubusb ymm0, ymm1, ymm2": {
@@ -2197,6 +6126,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd8 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqsub z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubusw xmm0, xmm1, xmm2": {
@@ -2204,6 +6139,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqsub v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubusw ymm0, ymm1, ymm2": {
@@ -2211,6 +6154,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd9 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqsub z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpminub xmm0, xmm1, xmm2": {
@@ -2218,6 +6167,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xda 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "umin v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpminub ymm0, ymm1, ymm2": {
@@ -2225,6 +6182,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xda 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "umin z0.b, p7/m, z0.b, z5.b",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpand xmm0, xmm1, xmm2": {
@@ -2232,6 +6197,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdb 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "and v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpand ymm0, ymm1, ymm2": {
@@ -2239,6 +6212,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdb 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "and z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddusb xmm0, xmm1, xmm2": {
@@ -2246,6 +6225,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdc 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqadd v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddusb ymm0, ymm1, ymm2": {
@@ -2253,6 +6240,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdc 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqadd z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddusw xmm0, xmm1, xmm2": {
@@ -2260,6 +6253,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdd 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqadd v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddusw ymm0, ymm1, ymm2": {
@@ -2267,6 +6268,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdd 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uqadd z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaxub xmm0, xmm1, xmm2": {
@@ -2274,6 +6281,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdd 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "umax v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaxub ymm0, ymm1, ymm2": {
@@ -2281,6 +6296,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xde 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "umax z0.b, p7/m, z0.b, z5.b",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpandn xmm0, xmm1, xmm2": {
@@ -2288,6 +6311,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdf 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "bic v4.16b, v5.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpandn ymm0, ymm1, ymm2": {
@@ -2295,6 +6326,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xdf 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "bic z4.d, z5.d, z4.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpavgb xmm0, xmm1, xmm2": {
@@ -2302,6 +6339,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "urhadd v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpavgb ymm0, ymm1, ymm2": {
@@ -2309,6 +6354,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "urhadd z0.b, p7/m, z0.b, z5.b",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsraw xmm0, xmm1, xmm2": {
@@ -2316,6 +6369,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe1 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.8h, v5.h[0]",
+        "neg v0.8h, v0.8h",
+        "sshl v4.8h, v4.8h, v0.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsraw ymm0, ymm1, xmm2": {
@@ -2323,6 +6392,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe1 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.h, h5",
+        "movprfx z4, z4",
+        "asr z4.h, p7/m, z4.h, z0.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrad xmm0, xmm1, xmm2": {
@@ -2330,6 +6413,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.4s, v5.s[0]",
+        "neg v0.4s, v0.4s",
+        "sshl v4.4s, v4.4s, v0.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsrad ymm0, ymm1, xmm2": {
@@ -2337,6 +6436,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.s, s5",
+        "movprfx z4, z4",
+        "asr z4.s, p7/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpavgw xmm0, xmm1, xmm2": {
@@ -2344,6 +6457,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "urhadd v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpavgw ymm0, ymm1, ymm2": {
@@ -2351,6 +6472,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "urhadd z0.h, p7/m, z0.h, z5.h",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmulhuw xmm0, xmm1, xmm2": {
@@ -2358,6 +6487,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "umull v6.4s, v4.4h, v5.4h",
+        "umull2 v4.4s, v4.8h, v5.8h",
+        "shrn v5.4h, v6.4s, #16",
+        "mov v0.16b, v5.16b",
+        "shrn2 v0.8h, v4.4s, #16",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmulhuw ymm0, ymm1, ymm2": {
@@ -2365,6 +6507,23 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe4 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "umullb z0.s, z4.h, z5.h",
+        "umullt z1.s, z4.h, z5.h",
+        "zip1 z6.s, z0.s, z1.s",
+        "umullb z0.s, z4.h, z5.h",
+        "umullt z1.s, z4.h, z5.h",
+        "zip2 z4.s, z0.s, z1.s",
+        "shrnb z5.h, z6.s, #16",
+        "uzp1 z5.h, z5.h, z5.h",
+        "shrnb z1.h, z4.s, #16",
+        "uzp1 z1.h, z1.h, z1.h",
+        "movprfx z4, z5",
+        "splice z4.h, p6, z4.h, z1.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmulhw xmm0, xmm1, xmm2": {
@@ -2372,6 +6531,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "smull v6.4s, v4.4h, v5.4h",
+        "smull2 v4.4s, v4.8h, v5.8h",
+        "shrn v5.4h, v6.4s, #16",
+        "mov v0.16b, v5.16b",
+        "shrn2 v0.8h, v4.4s, #16",
+        "mov v4.16b, v0.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmulhw ymm0, ymm1, ymm2": {
@@ -2379,6 +6551,23 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe5 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "smullb z0.s, z4.h, z5.h",
+        "smullt z1.s, z4.h, z5.h",
+        "zip1 z6.s, z0.s, z1.s",
+        "smullb z0.s, z4.h, z5.h",
+        "smullt z1.s, z4.h, z5.h",
+        "zip2 z4.s, z0.s, z1.s",
+        "shrnb z5.h, z6.s, #16",
+        "uzp1 z5.h, z5.h, z5.h",
+        "shrnb z1.h, z4.s, #16",
+        "uzp1 z1.h, z1.h, z1.h",
+        "movprfx z4, z5",
+        "splice z4.h, p6, z4.h, z1.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvttpd2dq xmm0, xmm1": {
@@ -2386,6 +6575,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtn v4.2s, v4.2d",
+        "fcvtzs v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvttpd2dq xmm0, ymm1": {
@@ -2393,6 +6590,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtnt z4.s, p7/m, z4.d",
+        "uzp2 z4.s, z4.s, z4.s",
+        "fcvtzs z4.s, p7/m, z4.s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtdq2pd xmm0, xmm1": {
@@ -2400,6 +6605,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xe6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.8b, v4.8b",
+        "sxtl v4.2d, v4.2s",
+        "scvtf v4.2d, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtdq2pd ymm0, xmm1": {
@@ -2407,6 +6621,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xe6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "sunpklo z4.d, z4.s",
+        "scvtf z4.d, p7/m, z4.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtpd2dq xmm0, xmm1": {
@@ -2414,6 +6634,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xe6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtn v4.2s, v4.2d",
+        "frinti v4.4s, v4.4s",
+        "fcvtzs v4.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtpd2dq xmm0, ymm1": {
@@ -2421,6 +6650,15 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xe6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "fcvtnt z4.s, p7/m, z4.d",
+        "uzp2 z4.s, z4.s, z4.s",
+        "frinti z4.s, p7/m, z4.s",
+        "fcvtzs z4.s, p7/m, z4.s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovntdq [rax], xmm0": {
@@ -2428,6 +6666,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe7 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "str q4, [x4]"
       ]
     },
     "vmovntdq [rax], ymm0": {
@@ -2435,6 +6677,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe7 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z16.d",
+        "st1b {z4.b}, p7, [x4]"
       ]
     },
     "vpsubsb xmm0, xmm1, xmm2": {
@@ -2442,6 +6688,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe8 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqsub v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubsb ymm0, ymm1, ymm2": {
@@ -2449,6 +6703,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe8 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqsub z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubsw xmm0, xmm1, xmm2": {
@@ -2456,6 +6716,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqsub v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubsw ymm0, ymm1, ymm2": {
@@ -2463,6 +6731,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xe9 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqsub z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpminsw xmm0, xmm1, xmm2": {
@@ -2470,6 +6744,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xea 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "smin v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpminsw ymm0, ymm1, ymm2": {
@@ -2477,6 +6759,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xea 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "smin z0.h, p7/m, z0.h, z5.h",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpor xmm0, xmm1, xmm2": {
@@ -2484,6 +6774,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xeb 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpor ymm0, ymm1, ymm2": {
@@ -2491,6 +6789,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xeb 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddsb xmm0, xmm1, xmm2": {
@@ -2498,6 +6802,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xec 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqadd v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddsb ymm0, ymm1, ymm2": {
@@ -2505,6 +6817,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xec 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqadd z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddsw xmm0, xmm1, xmm2": {
@@ -2512,6 +6830,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xed 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqadd v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddsw ymm0, ymm1, ymm2": {
@@ -2519,6 +6845,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xed 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sqadd z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaxsw xmm0, xmm1, xmm2": {
@@ -2526,6 +6858,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xee 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "smax v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaxsw ymm0, ymm1, ymm2": {
@@ -2533,6 +6873,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xee 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "movprfx z0, z4",
+        "smax z0.h, p7/m, z0.h, z5.h",
+        "mov z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpxor xmm0, xmm1, xmm2": {
@@ -2540,6 +6888,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xef 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "eor v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpxor ymm0, ymm1, ymm2": {
@@ -2547,6 +6903,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xef 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "eor z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vlddqu xmm0, [rax]": {
@@ -2554,6 +6916,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xf0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q4, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vlddqu ymm0, [rax]": {
@@ -2561,6 +6927,10 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xf0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsllw xmm0, xmm1, xmm2": {
@@ -2568,6 +6938,21 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf1 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.8h, v5.h[0]",
+        "ushl v4.8h, v4.8h, v0.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsllw ymm0, ymm1, xmm2": {
@@ -2575,6 +6960,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf1 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x10",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.h, h5",
+        "movprfx z4, z4",
+        "lsl z4.h, p7/m, z4.h, z0.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpslld xmm0, xmm1, xmm2": {
@@ -2582,6 +6981,21 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.4s, v5.s[0]",
+        "ushl v4.4s, v4.4s, v0.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpslld ymm0, ymm1, xmm2": {
@@ -2589,6 +7003,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x20",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.s, s5",
+        "movprfx z4, z4",
+        "lsl z4.s, p7/m, z4.s, z0.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsllq xmm0, xmm1, xmm2": {
@@ -2596,6 +7024,21 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x40",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "dup v0.2d, v5.d[0]",
+        "ushl v4.2d, v4.2d, v0.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsllq ymm0, ymm1, xmm2": {
@@ -2603,6 +7046,20 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "orr w0, wzr, #0x40",
+        "dup v6.2d, x0",
+        "cmhi v0.2d, v5.2d, v6.2d",
+        "mov v1.16b, v6.16b",
+        "bif v1.16b, v5.16b, v0.16b",
+        "mov v5.16b, v1.16b",
+        "mov z0.d, d5",
+        "movprfx z4, z4",
+        "lsl z4.d, p7/m, z4.d, z0.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmuludq xmm0, xmm1, xmm2": {
@@ -2610,6 +7067,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "mov v4.s[1], v4.s[2]",
+        "mov v5.s[1], v5.s[2]",
+        "umull v4.2d, v4.2s, v5.2s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmuludq ymm0, ymm1, ymm2": {
@@ -2617,6 +7084,56 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf4 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[2]",
+        "mov z6.d, z4.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[2]",
+        "mov z7.d, z5.d",
+        "mov z7.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x10",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[4]",
+        "mov z6.d, z6.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z4.s[6]",
+        "mov z4.d, z6.d",
+        "mov z4.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[4]",
+        "mov z6.d, z7.d",
+        "mov z6.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.s, z5.s[6]",
+        "mov z5.d, z6.d",
+        "mov z5.s, p0/m, z1.s",
+        "b #+0x8",
+        "udf #0x1000",
+        "umullb z0.d, z4.s, z5.s",
+        "umullt z1.d, z4.s, z5.s",
+        "zip1 z4.d, z0.d, z1.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaddwd xmm0, xmm1, xmm2": {
@@ -2624,6 +7141,19 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sxtl v6.4s, v4.4h",
+        "sxtl2 v4.4s, v4.8h",
+        "sxtl v7.4s, v5.4h",
+        "sxtl2 v5.4s, v5.8h",
+        "mul v6.4s, v6.4s, v7.4s",
+        "mul v4.4s, v4.4s, v5.4s",
+        "addp v4.4s, v6.4s, v4.4s",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpmaddwd ymm0, ymm1, ymm2": {
@@ -2631,6 +7161,22 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf5 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sunpklo z6.s, z4.h",
+        "sunpkhi z4.s, z4.h",
+        "sunpklo z7.s, z5.h",
+        "sunpkhi z5.s, z5.h",
+        "mul z6.s, z6.s, z7.s",
+        "mul z4.s, z4.s, z5.s",
+        "movprfx z0, z6",
+        "addp z0.s, p7/m, z0.s, z4.s",
+        "uzp1 z4.s, z0.s, z0.s",
+        "uzp2 z1.s, z0.s, z0.s",
+        "splice z4.d, p6, z4.d, z1.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsadbw xmm0, xmm1, xmm2": {
@@ -2638,6 +7184,17 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf6 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uabdl v6.8h, v4.8b, v5.8b",
+        "uabdl2 v4.8h, v4.16b, v5.16b",
+        "addv h5, v6.8h",
+        "addv h4, v4.8h",
+        "zip1 v4.2d, v5.2d, v4.2d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsadbw ymm0, ymm1, ymm2": {
@@ -2645,6 +7202,52 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf6 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "uabdlb z0.h, z4.b, z5.b",
+        "uabdlt z1.h, z4.b, z5.b",
+        "zip1 z6.h, z0.h, z1.h",
+        "uabdlb z0.h, z4.b, z5.b",
+        "uabdlt z1.h, z4.b, z5.b",
+        "zip2 z4.h, z0.h, z1.h",
+        "addv h5, v6.8h",
+        "addv h7, v4.8h",
+        "zip1 z5.d, z5.d, z7.d",
+        "mov z6.q, z6.q[1]",
+        "mov z4.q, z4.q[1]",
+        "addv h6, v6.8h",
+        "addv h4, v4.8h",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, d4",
+        "mov z4.d, z6.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.q, q4",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[1]",
+        "mov z5.d, z4.d",
+        "mov z5.d, p0/m, z1.d",
+        "b #+0x8",
+        "unallocated (Unallocated)",
+        "adr x0, #+0x18",
+        "ldr p0, [x0]",
+        "mov z1.d, z4.d[2]",
+        "mov z4.d, z5.d",
+        "mov z4.d, p0/m, z1.d",
+        "b #+0x8",
+        "udf #0x100",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmaskmovdqu xmm0, xmm1": {
@@ -2652,6 +7255,16 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf7 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "cmlt v4.16b, v4.16b, #0",
+        "mov z5.d, p7/m, z16.d",
+        "ldr q6, [x11]",
+        "mov v0.16b, v4.16b",
+        "bsl v0.16b, v5.16b, v6.16b",
+        "mov v4.16b, v0.16b",
+        "str q4, [x11]"
       ]
     },
     "vpsubb xmm0, xmm1, xmm2": {
@@ -2659,6 +7272,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf8 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubb ymm0, ymm1, ymm2": {
@@ -2666,6 +7287,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf8 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubw xmm0, xmm1, xmm2": {
@@ -2673,6 +7300,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubw ymm0, ymm1, ymm2": {
@@ -2680,6 +7315,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf9 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubd xmm0, xmm1, xmm2": {
@@ -2687,6 +7328,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfa 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubd ymm0, ymm1, ymm2": {
@@ -2694,6 +7343,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfa 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubq xmm0, xmm1, xmm2": {
@@ -2701,6 +7356,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfb 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub v4.2d, v4.2d, v5.2d",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsubq ymm0, ymm1, ymm2": {
@@ -2708,6 +7371,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfb 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "sub z4.d, z4.d, z5.d",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddb xmm0, xmm1, xmm2": {
@@ -2715,6 +7384,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfc 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add v4.16b, v4.16b, v5.16b",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddb ymm0, ymm1, ymm2": {
@@ -2722,6 +7399,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfc 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add z4.b, z4.b, z5.b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddw xmm0, xmm1, xmm2": {
@@ -2729,6 +7412,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfd 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add v4.8h, v4.8h, v5.8h",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddw ymm0, ymm1, ymm2": {
@@ -2736,6 +7427,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfd 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add z4.h, z4.h, z5.h",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddd xmm0, xmm1, xmm2": {
@@ -2743,6 +7440,14 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfe 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add v4.4s, v4.4s, v5.4s",
+        "mov v4.16b, v4.16b",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpaddd ymm0, ymm1, ymm2": {
@@ -2750,6 +7455,12 @@
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xfe 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "add z4.s, z4.s, z5.s",
+        "mov z16.d, p7/m, z4.d"
       ]
     }
   }
