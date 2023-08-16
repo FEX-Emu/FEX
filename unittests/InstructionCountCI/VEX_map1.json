@@ -5865,7 +5865,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -5888,7 +5888,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -5909,7 +5909,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -5932,7 +5932,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -5953,7 +5953,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x40",
+        "mov w0, #0x40",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -5976,7 +5976,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x40",
+        "mov w0, #0x40",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6373,7 +6373,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6396,7 +6396,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6417,7 +6417,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6440,7 +6440,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6942,7 +6942,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6964,7 +6964,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x10",
+        "mov w0, #0x10",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -6985,7 +6985,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -7007,7 +7007,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x20",
+        "mov w0, #0x20",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -7028,7 +7028,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x40",
+        "mov w0, #0x40",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
@@ -7050,7 +7050,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "orr w0, wzr, #0x40",
+        "mov w0, #0x40",
         "dup v6.2d, x0",
         "cmhi v0.2d, v5.2d, v6.2d",
         "mov v1.16b, v6.16b",
