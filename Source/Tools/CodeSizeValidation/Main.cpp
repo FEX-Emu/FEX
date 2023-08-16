@@ -59,6 +59,12 @@ namespace CodeSize {
   constexpr std::string_view DisassembleEndMessage = "Disassemble End";
   constexpr std::string_view BlowUpMsg = "Blow-up Amt: ";
 
+  static std::string_view SanitizeDisassembly(std::string_view Message) {
+    auto it = Message.find(" (addr");
+    // If it contains an address calculation, strip it out.
+    return Message.substr(0, it);
+  }
+
   bool CodeSizeValidation::ParseMessage(char const *Message) {
     // std::string_view doesn't have contains until c++23.
     std::string_view MessageView {Message};
@@ -107,7 +113,7 @@ namespace CodeSize {
 
     if (ConsumingDisassembly) {
       // Currently consuming disassembly. Each line will be a single line of disassembly.
-      CurrentStats->second.push_back(Message);
+      CurrentStats->second.push_back(fextl::string(SanitizeDisassembly(Message)));
       return false;
     }
 
