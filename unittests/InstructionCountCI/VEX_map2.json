@@ -1097,14 +1097,13 @@
       ]
     },
     "vbroadcastf128 ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x1a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "mov z4.q, q4",
+        "ld1rqb {z4.b}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -2436,14 +2435,13 @@
       ]
     },
     "vbroadcasti128 ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x5a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "mov z4.q, q4",
+        "ld1rqb {z4.b}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },

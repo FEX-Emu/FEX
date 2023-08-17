@@ -1439,8 +1439,9 @@ DEF_OP(VBroadcastFromMem) {
   const auto Dst = GetVReg(Node);
   const auto MemReg = GetReg(Op->Address.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8,
-                      "Invalid element size");
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 ||
+                      ElementSize == 4 || ElementSize == 8 ||
+                      ElementSize == 16, "Invalid element size");
 
   if (HostSupportsSVE128 || HostSupportsSVE256) {
     if (Is256Bit) {
@@ -1466,6 +1467,9 @@ DEF_OP(VBroadcastFromMem) {
     case 8:
       ld1rd(Dst.Z(), GoverningPredicate, MemReg);
       break;
+    case 16:
+      ld1rqb(Dst.Z(), GoverningPredicate, MemReg);
+      break;
     default:
       LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
       return;
@@ -1483,6 +1487,10 @@ DEF_OP(VBroadcastFromMem) {
       break;
     case 8:
       ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg);
+      break;
+    case 16:
+      // Normal load, like ld1rqb with 128-bit regs.
+      ldr(Dst.Q(), MemReg);
       break;
     default:
       LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
