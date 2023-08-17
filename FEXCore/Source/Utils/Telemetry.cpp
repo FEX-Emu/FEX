@@ -24,6 +24,14 @@ namespace FEXCore::Telemetry {
     "64bit CAS Tear",
     "128bit CAS Tear",
     "Crash mask",
+    "Write 32-bit Segment ES",
+    "Write 32-bit Segment SS",
+    "Write 32-bit Segment CS",
+    "Write 32-bit Segment DS",
+    "Uses 32-bit Segment ES",
+    "Uses 32-bit Segment SS",
+    "Uses 32-bit Segment CS",
+    "Uses 32-bit Segment DS",
   };
   void Initialize() {
     auto DataDirectory = Config::GetDataDirectory();

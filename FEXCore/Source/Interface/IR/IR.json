@@ -665,6 +665,13 @@
                  "Dest is the value prior to operating on the value in memory"
                 ],
         "DestSize": "Size"
+      },
+      "TelemetrySetValue GPR:$Value, u8:$TelemetryValueIndex": {
+        "HasSideEffects": true,
+        "Desc": ["Set Telemetry value if the passed in 32-bit value isn't zero.",
+                 "Only useful for 32-bit applications."
+                ],
+        "DestSize": "8"
       }
     },
     "ALU": {

@@ -7,7 +7,18 @@ namespace FEXCore {
 namespace CPU {
 
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
-    : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {}
+    : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
+
+#ifndef FEX_DISABLE_TELEMETRY
+  auto &Common = ThreadState->CurrentFrame->Pointers.Common;
+
+  // Fill in telemetry values
+  for (size_t i = 0; i < FEXCore::Telemetry::TYPE_LAST; ++i) {
+    auto &Telem = FEXCore::Telemetry::GetTelemetryValue(static_cast<FEXCore::Telemetry::TelemetryType>(i));
+    Common.TelemetryValueAddresses[i] = reinterpret_cast<uint64_t>(Telem.GetAddr());
+  }
+#endif
+}
 
 CPUBackend::~CPUBackend() {
   for (auto CodeBuffer : CodeBuffers) {

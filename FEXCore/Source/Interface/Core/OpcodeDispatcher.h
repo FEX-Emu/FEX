@@ -87,6 +87,9 @@ public:
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
+
+    // New block needs to reset segment telemetry.
+    SegmentsNeedReadCheck = ~0U;
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -1763,6 +1766,11 @@ private:
   }
 
   void InstallHostSpecificOpcodeHandlers();
+
+  ///< Segment telemetry tracking
+  uint32_t SegmentsNeedReadCheck{~0U};
+  void CheckLegacySegmentWrite(OrderedNode *NewNode, uint32_t SegmentReg);
+  void CheckLegacySegmentRead(OrderedNode *NewNode, uint32_t SegmentReg);
 };
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode);

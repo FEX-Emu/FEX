@@ -5,6 +5,7 @@ desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
 $end_info$
 */
 
+#include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
@@ -4832,22 +4833,32 @@ OrderedNode *OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefi
       Prefix = DefaultPrefix;
     }
     // With the segment register optimization we store the GDT bases directly in the segment register to remove indexed loads
+    OrderedNode *SegmentResult{};
     switch (Prefix) {
       case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
+        break;
       case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, cs_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, cs_cached));
+        break;
       case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ss_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ss_cached));
+        break;
       case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ds_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ds_cached));
+        break;
       case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
+        break;
       case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
-        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
+        SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
+        break;
       default:
         break; // Do nothing
     }
+
+    CheckLegacySegmentRead(SegmentResult, Prefix);
+    return SegmentResult;
   }
   return nullptr;
 }
@@ -4861,11 +4872,87 @@ OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t
   return Value;
 }
 
+
+void OpDispatchBuilder::CheckLegacySegmentRead(OrderedNode *NewNode, uint32_t SegmentReg) {
+#ifndef FEX_DISABLE_TELEMETRY
+  if (SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX ||
+      SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    // FS and GS segments aren't considered legacy.
+    return;
+  }
+
+  if (!(SegmentsNeedReadCheck & SegmentReg)) {
+    // If the block has done multiple reads of a segment register then skip redundant read checks.
+    // Segment write will cause another read check.
+    return;
+  }
+
+  FEXCore::Telemetry::TelemetryType TelemIndex{};
+  switch (SegmentReg) {
+    case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_ES;
+      SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_CS;
+      SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_SS;
+      SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_DS;
+      SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX;
+      break;
+    default: FEX_UNREACHABLE;
+  }
+
+  // Will set the telemetry value if NewNode is != 0
+  _TelemetrySetValue(NewNode, TelemIndex);
+#endif
+}
+
+void OpDispatchBuilder::CheckLegacySegmentWrite(OrderedNode *NewNode, uint32_t SegmentReg) {
+#ifndef FEX_DISABLE_TELEMETRY
+  if (SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX ||
+      SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    // FS and GS segments aren't considered legacy.
+    return;
+  }
+
+  FEXCore::Telemetry::TelemetryType TelemIndex{};
+  switch (SegmentReg) {
+    case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_ES;
+      SegmentsNeedReadCheck |= FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_CS;
+      SegmentsNeedReadCheck |= FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_SS;
+      SegmentsNeedReadCheck |= FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX;
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
+      TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_DS;
+      SegmentsNeedReadCheck |= FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX;
+      break;
+    default: FEX_UNREACHABLE;
+  }
+
+  // Will set the telemetry value if NewNode is != 0
+  _TelemetrySetValue(NewNode, TelemIndex);
+#endif
+}
+
 void OpDispatchBuilder::UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t SegmentReg) {
   // Use BFE to extract the selector index in bits [15,3] of the segment register.
   // In some cases the upper 16-bits of the 32-bit GPR contain garbage to ignore.
   Segment = _Bfe(4, 16 - 3, 3, Segment);
   auto NewSegment = _LoadContextIndexed(Segment, 4, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
+  CheckLegacySegmentWrite(NewSegment, SegmentReg);
   switch (SegmentReg) {
     case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
       _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, es_cached));
