@@ -740,7 +740,6 @@ void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
 void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
   const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = [&] {
     const auto SrcIndex = Scalar ? 1 : 0;
