@@ -836,6 +836,16 @@ private:
   OrderedNode* flagsOpDestSigned{};
   OrderedNode* flagsOpSrcSigned{};
 
+  constexpr static unsigned FullNZCVMask =
+    (1U << FEXCore::X86State::RFLAG_CF_LOC) |
+    (1U << FEXCore::X86State::RFLAG_ZF_LOC) |
+    (1U << FEXCore::X86State::RFLAG_SF_LOC) |
+    (1U << FEXCore::X86State::RFLAG_OF_LOC);
+
+  static bool ContainsNZCV(unsigned BitMask) {
+    return (BitMask & FullNZCVMask) != 0;
+  }
+
   static bool IsNZCV(unsigned BitOffset) {
     switch (BitOffset) {
       case FEXCore::X86State::RFLAG_CF_LOC:
@@ -1069,6 +1079,22 @@ private:
       default: FEX_UNREACHABLE;
     }
   }
+  static inline constexpr unsigned NZCVIndexMask(unsigned BitMask) {
+    unsigned NZCVMask{};
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC);
+    }
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_CF_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC);
+    }
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_ZF_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC);
+    }
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_SF_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC);
+    }
+    return NZCVMask;
+  }
 
   OrderedNode *GetNZCV() {
     if (!CachedNZCV) {
@@ -1167,6 +1193,8 @@ private:
     else
       _StoreFlag(Value, BitOffset);
   }
+
+  void ZeroMultipleFlags(uint32_t BitMask);
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {
     if (IsNZCV(BitOffset)) {
