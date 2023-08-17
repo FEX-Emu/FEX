@@ -1257,21 +1257,27 @@ void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
 template <size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   OrderedNode *Result{};
 
   if (Op->Src[0].IsGPR()) {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
-    Result = _VDupElement(DstSize, ElementSize, Src, 0);
+    if constexpr (ElementSize == 16) {
+      // TODO: Make 128-bit loads go through the broadcast path.
+      OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
+      Result = _VDupElement(DstSize, ElementSize, Src, 0);
+    } else {
+      // Get the address to broadcast from into a GPR.
+      OrderedNode *Address = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags, -1, false);
+      Address = AppendSegmentOffset(Address, Op->Flags);
+
+      Result = _VBroadcastFromMem(DstSize, ElementSize, Address);
+    }
   }
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
+  // No need to zero-extend result, since implementations
+  // use zero extending AdvSIMD or zeroing SVE loads internally.
 
   StoreResult(FPRClass, Op, Result, -1);
 }

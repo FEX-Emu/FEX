@@ -1063,40 +1063,36 @@
       ]
     },
     "vbroadcastss xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x18 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "dup v4.4s, v4.s[0]",
-        "mov v4.16b, v4.16b",
+        "ld1rw {z4.s}, p6/z, [x4]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vbroadcastss ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x18 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "mov z4.s, s4",
+        "ld1rw {z4.s}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vbroadcastsd ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x19 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr d4, [x4]",
-        "mov z4.d, d4",
+        "ld1rd {z4.d}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -2343,7 +2339,7 @@
       ]
     },
     "vpbroadcastd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x58 128-bit"
@@ -2352,20 +2348,17 @@
         "mov z4.d, p7/m, z17.d",
         "dup v4.4s, v4.s[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastd xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x58 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "dup v4.4s, v4.s[0]",
-        "mov v4.16b, v4.16b",
+        "ld1rw {z4.s}, p6/z, [x4]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2383,19 +2376,18 @@
       ]
     },
     "vpbroadcastd ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x58 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "mov z4.s, s4",
+        "ld1rw {z4.s}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastq xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x59 128-bit"
@@ -2404,20 +2396,17 @@
         "mov z4.d, p7/m, z17.d",
         "dup v4.2d, v4.d[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastq xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x59 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr d4, [x4]",
-        "dup v4.2d, v4.d[0]",
-        "mov v4.16b, v4.16b",
+        "ld1rd {z4.d}, p6/z, [x4]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2440,10 +2429,9 @@
       "Comment": [
         "Map 2 0b01 0x59 256-bit"
       ],
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr d4, [x4]",
-        "mov z4.d, d4",
+        "ld1rd {z4.d}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -2460,7 +2448,7 @@
       ]
     },
     "vpbroadcastb xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x78 128-bit"
@@ -2469,20 +2457,17 @@
         "mov z4.d, p7/m, z17.d",
         "dup v4.16b, v4.b[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastb xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x78 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr b4, [x4]",
-        "dup v4.16b, v4.b[0]",
-        "mov v4.16b, v4.16b",
+        "ld1rb {z4.b}, p6/z, [x4]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2505,15 +2490,14 @@
       "Comment": [
         "Map 2 0b01 0x78 256-bit"
       ],
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr b4, [x4]",
-        "mov z4.b, b4",
+        "ld1rb {z4.b}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastw xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x79 128-bit"
@@ -2522,20 +2506,17 @@
         "mov z4.d, p7/m, z17.d",
         "dup v4.8h, v4.h[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpbroadcastw xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x79 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr h4, [x4]",
-        "dup v4.8h, v4.h[0]",
-        "mov v4.16b, v4.16b",
+        "ld1rh {z4.h}, p6/z, [x4]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2558,10 +2539,9 @@
       "Comment": [
         "Map 2 0b01 0x79 256-bit"
       ],
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr h4, [x4]",
-        "mov z4.h, h4",
+        "ld1rh {z4.h}, p7/z, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
