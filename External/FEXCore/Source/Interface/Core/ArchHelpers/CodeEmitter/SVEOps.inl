@@ -3011,7 +3011,30 @@ public:
   }
 
   // SVE load and broadcast quadword (scalar plus immediate)
-  // XXX:
+  void ld1rqb(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b00, 0b00, zt, pg, rn, imm);
+  }
+  void ld1rob(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b00, 0b01, zt, pg, rn, imm);
+  }
+  void ld1rqh(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b01, 0b00, zt, pg, rn, imm);
+  }
+  void ld1roh(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b01, 0b01, zt, pg, rn, imm);
+  }
+  void ld1rqw(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b10, 0b00, zt, pg, rn, imm);
+  }
+  void ld1row(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b10, 0b01, zt, pg, rn, imm);
+  }
+  void ld1rqd(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b11, 0b00, zt, pg, rn, imm);
+  }
+  void ld1rod(ZRegister zt, PRegisterZero pg, Register rn, int imm = 0) {
+    SVELoadBroadcastQuadScalarPlusImm(0b11, 0b01, zt, pg, rn, imm);
+  }
 
   // SVE contiguous load (scalar plus immediate)
   template<SubRegSize size>
@@ -3070,8 +3093,32 @@ public:
 
   // SVE contiguous non-fault load (scalar plus immediate)
   // XXX:
+
   // SVE load and broadcast quadword (scalar plus scalar)
-  // XXX:
+  void ld1rqb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b00, 0b00, zt, pg, rn, rm);
+  }
+  void ld1rob(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b00, 0b01, zt, pg, rn, rm);
+  }
+  void ld1rqh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b01, 0b00, zt, pg, rn, rm);
+  }
+  void ld1roh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b01, 0b01, zt, pg, rn, rm);
+  }
+  void ld1rqw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b10, 0b00, zt, pg, rn, rm);
+  }
+  void ld1row(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b10, 0b01, zt, pg, rn, rm);
+  }
+  void ld1rqd(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b11, 0b00, zt, pg, rn, rm);
+  }
+  void ld1rod(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVELoadBroadcastQuadScalarPlusScalar(0b11, 0b01, zt, pg, rn, rm);
+  }
 
   // SVE contiguous load (scalar plus scalar)
   template<SubRegSize size>
@@ -4480,6 +4527,45 @@ private:
     }
     Instr |= FEXCore::ToUnderlying(msz) << 23;
     Instr |= opc << 21;
+    Instr |= rm.Idx() << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= zt.Idx();
+    dc32(Instr);
+  }
+
+  void SVELoadBroadcastQuadScalarPlusImm(uint32_t msz, uint32_t ssz, ZRegister zt,
+                                         PRegister pg, Register rn, int imm) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto esize = static_cast<int>(16 << ssz);
+    [[maybe_unused]] const auto max_imm = (esize << 3) - esize;
+    [[maybe_unused]] const auto min_imm = -(max_imm + esize);
+
+    LOGMAN_THROW_AA_FMT((imm % esize) == 0, "imm ({}) must be a multiple of {}", imm, esize);
+    LOGMAN_THROW_AA_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]",
+                        imm, min_imm, max_imm);
+
+    const auto sanitized_imm = static_cast<uint32_t>(imm / esize) & 0b1111;
+
+    uint32_t Instr = 0b1010'0100'0000'0000'0010'0000'0000'0000;
+    Instr |= msz << 23;
+    Instr |= ssz << 21;
+    Instr |= sanitized_imm << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= zt.Idx();
+    dc32(Instr);
+  }
+
+  void SVELoadBroadcastQuadScalarPlusScalar(uint32_t msz, uint32_t ssz, ZRegister zt,
+                                            PRegister pg, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(rm != Reg::rsp, "rm may not be the stack pointer");
+
+    uint32_t Instr = 0b1010'0100'0000'0000'0000'0000'0000'0000;
+    Instr |= msz << 23;
+    Instr |= ssz << 21;
     Instr |= rm.Idx() << 16;
     Instr |= pg.Idx() << 10;
     Instr |= rn.Idx() << 5;
