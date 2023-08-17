@@ -1489,6 +1489,11 @@ DEF_OP(VBroadcastFromMem) {
       return;
     }
   }
+
+  // Emit a half-barrier if TSO is enabled.
+  if (CTX->IsAtomicTSOEnabled()) {
+    dmb(ARMEmitter::BarrierScope::ISHLD);
+  }
 }
 
 DEF_OP(StoreMem) {
