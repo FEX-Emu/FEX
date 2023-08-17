@@ -6533,8 +6533,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> RepModOpTable[] = {
     {0x10, 2, &OpDispatchBuilder::MOVSSOp},
-    {0x12, 1, &OpDispatchBuilder::MOVSLDUPOp},
-    {0x16, 1, &OpDispatchBuilder::MOVSHDUPOp},
+    {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
+    {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<4>},
     {0x2B, 1, &OpDispatchBuilder::MOVVectorOp},
