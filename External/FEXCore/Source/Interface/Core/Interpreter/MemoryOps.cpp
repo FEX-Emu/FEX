@@ -448,6 +448,9 @@ DEF_OP(VBroadcastFromMem) {
   case 8:
     BroadcastElement(GDP, reinterpret_cast<const uint64_t*>(MemData));
     break;
+  case 16:
+    BroadcastElement(GDP, reinterpret_cast<const __uint128_t*>(MemData));
+    break;
   default:
     LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
     break;

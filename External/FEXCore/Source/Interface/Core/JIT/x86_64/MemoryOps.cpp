@@ -871,6 +871,9 @@ DEF_OP(VBroadcastFromMem) {
     case 8:
       vpbroadcastq(DstYMM, qword [MemReg]);
       break;
+    case 16:
+      vbroadcasti128(DstYMM, xword [MemReg]);
+      break;
     default:
       LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
       return;
@@ -888,6 +891,9 @@ DEF_OP(VBroadcastFromMem) {
       break;
     case 8:
       vpbroadcastq(Dst, qword [MemReg]);
+      break;
+    case 16:
+      vmovaps(Dst, xword [MemReg]);
       break;
     default:
       LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem element size: {}", ElementSize);
