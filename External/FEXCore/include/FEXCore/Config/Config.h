@@ -286,7 +286,13 @@ namespace Type {
     }
 
     operator T() const { return ValueData; }
+
+    template <typename TT = T> requires (!std::is_same_v<TT, fextl::string>)
     T operator()() const { return ValueData; }
+
+    template <typename TT = T> requires (std::is_same_v<TT, fextl::string>)
+    const T& operator()() const { return ValueData; }
+
     Value<T>(T Value) { ValueData = std::move(Value); }
     fextl::list<T> &All() { return AppendList; }
 

@@ -77,7 +77,7 @@ public:
   // vfs
   uint64_t Statfs(const char *path, void *buf);
 
-  std::optional<fextl::string> GetSelf(const char *Pathname);
+  std::optional<std::string_view> GetSelf(const char *Pathname);
 
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
 
