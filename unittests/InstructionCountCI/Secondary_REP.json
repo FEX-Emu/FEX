@@ -33,30 +33,20 @@
       ]
     },
     "movsldup xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x12",
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.s[3], v17.s[2]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[1], v17.s[0]",
-        "mov v16.16b, v0.16b"
+        "trn1 v16.4s, v17.4s, v17.4s"
       ]
     },
     "movsldup xmm0, [rax]": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x12",
       "ExpectedArm64ASM": [
         "ldr q4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[3], v4.s[2]",
-        "mov v5.16b, v0.16b",
-        "mov v0.16b, v5.16b",
-        "mov v0.s[1], v4.s[0]",
-        "mov v16.16b, v0.16b"
+        "trn1 v16.4s, v4.4s, v4.4s"
       ]
     },
     "movshdup xmm0, xmm1": {

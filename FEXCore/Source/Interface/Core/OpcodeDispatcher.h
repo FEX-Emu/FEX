@@ -317,7 +317,6 @@ public:
   void MOVUPSOp(OpcodeArgs);
   void MOVLPOp(OpcodeArgs);
   void MOVSHDUPOp(OpcodeArgs);
-  void MOVSLDUPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>

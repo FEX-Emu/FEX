@@ -258,60 +258,27 @@
       ]
     },
     "vmovsldup xmm0, [rax]": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[3], v4.s[2]",
-        "mov v5.16b, v0.16b",
-        "mov v0.16b, v5.16b",
-        "mov v0.s[1], v4.s[0]",
-        "mov v4.16b, v0.16b",
-        "mov v4.16b, v4.16b",
+        "trn1 v4.4s, v4.4s, v4.4s",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovsldup ymm0, [rax]": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x12 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ld1b {z4.b}, p7/z, [x4]",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.s, z4.s[2]",
-        "mov z5.d, z4.d",
-        "mov z5.s, p0/m, z1.s",
-        "b #+0x8",
-        "udf #0x1000",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.s, s4",
-        "mov z5.d, z5.d",
-        "mov z5.s, p0/m, z1.s",
-        "b #+0x8",
-        "udf #0x10",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.s, z4.s[4]",
-        "mov z5.d, z5.d",
-        "mov z5.s, p0/m, z1.s",
-        "b #+0x8",
-        "unallocated (Unallocated)",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.s, z4.s[6]",
-        "mov z4.d, z5.d",
-        "mov z4.s, p0/m, z1.s",
-        "b #+0x8",
-        "adr x0, #+0x0",
+        "trn1 z4.s, z4.s, z4.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },
