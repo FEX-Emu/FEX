@@ -984,8 +984,8 @@
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "movi v4.2d, #0x0",
-        "ext v16.16b, v16.16b, v4.16b, #0"
+        "mov v4.16b, v16.16b",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psrldq xmm0, 15": {

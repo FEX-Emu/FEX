@@ -1753,14 +1753,15 @@ void OpDispatchBuilder::VPSRAOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Size = GetDstSize(Op);
-
   OrderedNode *Result = _VectorZero(Size);
-  if (Shift < Size) {
+
+  if (Shift == 0) [[unlikely]] {
+    Result = Dest;
+  } else if (Shift < Size) {
     Result = _VExtr(Size, 1, Result, Dest, Shift);
   }
 
@@ -1776,17 +1777,23 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *Result = _VectorZero(DstSize);
-  if (Is128Bit) {
-    if (Shift < DstSize) {
-      Result = _VExtr(DstSize, 1, Result, Src, Shift);
-    }
+  OrderedNode *Result{};
+  if (Shift == 0) [[unlikely]] {
+    Result = Src;
   } else {
-    if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
-      OrderedNode *ResultBottom = _VExtr(16, 1, Result, Src, Shift);
-      OrderedNode *ResultTop    = _VExtr(DstSize, 1, Result, Src, 16 + Shift);
+    Result = _VectorZero(DstSize);
 
-      Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
+    if (Is128Bit) {
+      if (Shift < DstSize) {
+        Result = _VExtr(DstSize, 1, Result, Src, Shift);
+      }
+    } else {
+      if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
+        OrderedNode *ResultBottom = _VExtr(16, 1, Result, Src, Shift);
+        OrderedNode *ResultTop    = _VExtr(DstSize, 1, Result, Src, 16 + Shift);
+
+        Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
+      }
     }
   }
 
