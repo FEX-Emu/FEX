@@ -1614,10 +1614,7 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *Result = Dest;
-  if (ShiftConstant != 0) {
-    Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
-  }
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1638,10 +1635,7 @@ void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *Result = Src;
-  if (ShiftConstant != 0) {
-    Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
-  }
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
