@@ -4169,6 +4169,41 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (
   TEST_SINGLE(ld4d(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld4d {z31.d, z0.d, z1.d, z2.d}, p6/z, [x29, x30, lsl #3]");
   TEST_SINGLE(ld4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld4d {z26.d, z27.d, z28.d, z29.d}, p6/z, [x29, x30, lsl #3]");
 }
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast quadword (scalar plus immediate)") {
+  TEST_SINGLE(ld1rqb(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rqb {z30.b}, p6/z, [x29]");
+  TEST_SINGLE(ld1rqb(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -128), "ld1rqb {z30.b}, p6/z, [x29, #-128]");
+  TEST_SINGLE(ld1rqb(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 112),  "ld1rqb {z30.b}, p6/z, [x29, #112]");
+
+  TEST_SINGLE(ld1rob(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rob {z30.b}, p6/z, [x29]");
+  TEST_SINGLE(ld1rob(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -256), "ld1rob {z30.b}, p6/z, [x29, #-256]");
+  TEST_SINGLE(ld1rob(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 224),  "ld1rob {z30.b}, p6/z, [x29, #224]");
+
+  TEST_SINGLE(ld1rqh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rqh {z30.h}, p6/z, [x29]");
+  TEST_SINGLE(ld1rqh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -128), "ld1rqh {z30.h}, p6/z, [x29, #-128]");
+  TEST_SINGLE(ld1rqh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 112),  "ld1rqh {z30.h}, p6/z, [x29, #112]");
+
+  TEST_SINGLE(ld1roh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1roh {z30.h}, p6/z, [x29]");
+  TEST_SINGLE(ld1roh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -256), "ld1roh {z30.h}, p6/z, [x29, #-256]");
+  TEST_SINGLE(ld1roh(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 224),  "ld1roh {z30.h}, p6/z, [x29, #224]");
+
+  TEST_SINGLE(ld1rqw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rqw {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1rqw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -128), "ld1rqw {z30.s}, p6/z, [x29, #-128]");
+  TEST_SINGLE(ld1rqw(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 112),  "ld1rqw {z30.s}, p6/z, [x29, #112]");
+
+  TEST_SINGLE(ld1row(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1row {z30.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1row(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -256), "ld1row {z30.s}, p6/z, [x29, #-256]");
+  TEST_SINGLE(ld1row(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 224),  "ld1row {z30.s}, p6/z, [x29, #224]");
+
+  TEST_SINGLE(ld1rqd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rqd {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rqd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -128), "ld1rqd {z30.d}, p6/z, [x29, #-128]");
+  TEST_SINGLE(ld1rqd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 112),  "ld1rqd {z30.d}, p6/z, [x29, #112]");
+
+  TEST_SINGLE(ld1rod(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0),    "ld1rod {z30.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1rod(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, -256), "ld1rod {z30.d}, p6/z, [x29, #-256]");
+  TEST_SINGLE(ld1rod(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 224),  "ld1rod {z30.d}, p6/z, [x29, #224]");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (scalar plus immediate)") {
   TEST_SINGLE(ld2b(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2b {z31.b, z0.b}, p6/z, [x29]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 0), "ld2b {z26.b, z27.b}, p6/z, [x29]");
