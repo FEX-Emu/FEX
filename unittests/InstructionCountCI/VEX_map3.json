@@ -6396,7 +6396,7 @@
         "unimplemented (Unimplemented)",
         "ldr q2, pc+24",
         "tbl v0.16b, {v0.16b}, v2.16b",
-        "orr x0, xzr, #0xff00000000",
+        "mov x0, #0xff00000000",
         "dup v1.2d, x0",
         "eor v4.16b, v0.16b, v1.16b",
         "b #+0x14",

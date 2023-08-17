@@ -816,13 +816,13 @@
         "ubfx x20, x20, #13, #3",
         "and x0, x20, #0x3",
         "cmp x0, #0x2 (2)",
-        "orr w2, wzr, #0x1",
+        "mov w2, #0x1",
         "csel x1, x2, xzr, eq",
         "cmp x0, #0x1 (1)",
-        "orr w2, wzr, #0x2",
+        "mov w2, #0x2",
         "csel x1, x2, x1, eq",
         "cmp x0, #0x3 (3)",
-        "orr w2, wzr, #0x3",
+        "mov w2, #0x3",
         "csel x1, x2, x1, eq",
         "mrs x0, fpcr",
         "bfi x0, x1, #22, #2",
@@ -838,18 +838,18 @@
         "Map group 15 0b011"
       ],
       "ExpectedArm64ASM": [
-        "orr w20, wzr, #0x1f80",
+        "mov w20, #0x1f80",
         "mrs x21, fpcr",
         "lsr x21, x21, #22",
         "and x0, x21, #0x3",
         "cmp x0, #0x1 (1)",
-        "orr w2, wzr, #0x2",
+        "mov w2, #0x2",
         "csel x1, x2, xzr, eq",
         "cmp x0, #0x2 (2)",
-        "orr w2, wzr, #0x1",
+        "mov w2, #0x1",
         "csel x1, x2, x1, eq",
         "cmp x0, #0x3 (3)",
-        "orr w2, wzr, #0x3",
+        "mov w2, #0x3",
         "csel x1, x2, x1, eq",
         "orr x21, x21, x1",
         "bfxil x21, x1, #0, #2",
@@ -864,7 +864,7 @@
         "Map group 17 0b001 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "orr w20, wzr, #0x1",
+        "mov w20, #0x1",
         "ubfx x21, x7, #0, #32",
         "sub x22, x21, #0x1 (1)",
         "and x22, x22, x21",
@@ -887,7 +887,7 @@
         "Map group 17 0b001 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "orr w20, wzr, #0x1",
+        "mov w20, #0x1",
         "sub x21, x7, #0x1 (1)",
         "and x4, x21, x7",
         "mov w21, #0x0",
@@ -908,7 +908,7 @@
         "Map group 17 0b010 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "orr w20, wzr, #0x1",
+        "mov w20, #0x1",
         "ubfx x21, x7, #0, #32",
         "sub x22, x21, #0x1 (1)",
         "eor x22, x22, x21",
@@ -934,7 +934,7 @@
         "Map group 17 0b010 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "orr w20, wzr, #0x1",
+        "mov w20, #0x1",
         "sub x21, x7, #0x1 (1)",
         "eor x4, x21, x7",
         "mov w21, #0x0",
@@ -962,7 +962,7 @@
         "neg w21, w20",
         "and w4, w20, w21",
         "mov w20, #0x0",
-        "orr w21, wzr, #0x1",
+        "mov w21, #0x1",
         "tst w4, w4",
         "mrs x22, nzcv",
         "strb w20, [x28, #708]",
@@ -983,7 +983,7 @@
         "neg x20, x7",
         "and x4, x7, x20",
         "mov w20, #0x0",
-        "orr w21, wzr, #0x1",
+        "mov w21, #0x1",
         "tst x4, x4",
         "mrs x22, nzcv",
         "strb w20, [x28, #708]",
