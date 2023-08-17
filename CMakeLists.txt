@@ -427,7 +427,7 @@ if (BUILD_TESTS)
 endif()
 
 add_subdirectory(FEXHeaderUtils/)
-add_subdirectory(External/FEXCore)
+add_subdirectory(FEXCore/)
 
 # Binfmt_misc files must be installed prior to Source/ installs
 add_subdirectory(Data/binfmts/)
