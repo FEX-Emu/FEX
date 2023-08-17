@@ -283,41 +283,27 @@
       ]
     },
     "vmovddup xmm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "mov v4.d[1], v4.d[0]",
-        "mov v4.16b, v4.16b",
+        "dup v4.2d, v4.d[0]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovddup ymm0, [rax]": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x12 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ld1b {z4.b}, p7/z, [x4]",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.d, d4",
-        "mov z5.d, z4.d",
-        "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
-        "mov z1.d, z4.d[2]",
-        "mov z4.d, z5.d",
-        "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "trn1 z4.d, z4.d, z4.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },

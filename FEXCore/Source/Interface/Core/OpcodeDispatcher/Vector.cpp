@@ -1933,12 +1933,11 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = IsSrcGPR ? LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1)
                               : LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], MemSize, Op->Flags, -1);
 
-  OrderedNode *Res = _VInsElement(SrcSize, 8, 1, 0, Src, Src);
+  OrderedNode *Res{};
   if (Is256Bit) {
-    Res = _VInsElement(SrcSize, 8, 3, 2, Res, Src);
+    Res = _VTrn(SrcSize, 8, Src, Src);
   } else {
-    // Clear the upper lane
-    Res = _VMov(16, Res);
+    Res = _VDupElement(SrcSize, 8, Src, 0);
   }
 
   StoreResult(FPRClass, Op, Res, -1);
