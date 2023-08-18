@@ -835,9 +835,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->C<IR::IROp_Bfe>();
       uint64_t Constant;
       if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         SourceMask <<= Op->lsb;
 
         uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
@@ -872,9 +870,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       uint64_t Constant;
       if (IREmit->IsValueConstant(Op->Src, &Constant)) {
         // SBFE of a constant can be converted to a constant.
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         SourceMask <<= Op->lsb;
 
         int64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
@@ -894,10 +890,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       bool SrcIsConstant = IREmit->IsValueConstant(Op->Header.Args[1], &ConstantSrc);
 
       if (DestIsConstant && SrcIsConstant) {
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
-
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         uint64_t NewConstant = ConstantDest & ~(SourceMask << Op->lsb);
         NewConstant |= (ConstantSrc & SourceMask) << Op->lsb;
 
@@ -907,10 +900,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       else if (SrcIsConstant && HasConsecutiveBits(ConstantSrc, Op->Width)) {
         // We are trying to insert constant, if it is a bitfield of only set bits then we can orr or and it.
         IREmit->SetWriteCursor(CodeNode);
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
-
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         uint64_t NewConstant = SourceMask << Op->lsb;
 
         if (ConstantSrc & 1) {
