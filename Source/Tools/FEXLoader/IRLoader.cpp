@@ -38,37 +38,7 @@ namespace FEXCore::Context {
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message)
 {
-  const char *CharLevel{nullptr};
-
-  switch (Level)
-  {
-  case LogMan::NONE:
-    CharLevel = "NONE";
-    break;
-  case LogMan::ASSERT:
-    CharLevel = "ASSERT";
-    break;
-  case LogMan::ERROR:
-    CharLevel = "ERROR";
-    break;
-  case LogMan::DEBUG:
-    CharLevel = "DEBUG";
-    break;
-  case LogMan::INFO:
-    CharLevel = "Info";
-    break;
-  case LogMan::STDOUT:
-    CharLevel = "STDOUT";
-    break;
-  case LogMan::STDERR:
-    CharLevel = "STDERR";
-    break;
-  default:
-    CharLevel = "???";
-    break;
-  }
-
-  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
   fflush(stdout);
 }
 

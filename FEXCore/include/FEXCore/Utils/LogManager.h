@@ -17,6 +17,28 @@ enum DebugLevels {
   STDERR = 6, ///< Meant to go to STDERR
 };
 
+static inline const char *DebugLevelStr(uint32_t Level) {
+  switch (Level) {
+  case NONE:
+    return "NONE";
+  case ASSERT:
+    return "ASSERT";
+  case ERROR:
+    return "ERROR";
+  case DEBUG:
+    return "DEBUG";
+  case INFO:
+    return "INFO";
+  case STDOUT:
+    return "STDOUT";
+  case STDERR:
+    return "STDERR";
+  default:
+    return "???";
+    break;
+  }
+}
+
 constexpr DebugLevels MSG_LEVEL = INFO;
 
 // Note that all logging functions with the Fmt or _FMT suffix on them expect
