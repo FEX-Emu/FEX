@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 #endif
 
+#include <new>
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
@@ -135,8 +136,16 @@ namespace FEXCore::Allocator {
       return FEXCore::Allocator::malloc(size);
     }
 
+    void *operator new(size_t size, std::align_val_t align) {
+      return FEXCore::Allocator::aligned_alloc(static_cast<size_t>(align), size);
+    }
+
     void operator delete(void *ptr) {
       return FEXCore::Allocator::free(ptr);
+    }
+
+    void operator delete(void *ptr, std::align_val_t align) {
+      return FEXCore::Allocator::aligned_free(ptr);
     }
   };
 }
