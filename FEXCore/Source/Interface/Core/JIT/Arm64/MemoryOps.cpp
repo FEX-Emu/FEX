@@ -1504,6 +1504,77 @@ DEF_OP(VBroadcastFromMem) {
   }
 }
 
+DEF_OP(Push) {
+  const auto Op = IROp->C<IR::IROp_Push>();
+  const auto ValueSize = Op->ValueSize;
+  const auto Src = GetReg(Op->Value.ID());
+  const auto AddrSrc = GetReg(Op->Addr.ID());
+  const auto Dst = GetReg(Node);
+
+  bool NeedsMoveAfterwards = false;
+  if (Dst != AddrSrc) {
+    if (Dst == Src) {
+      NeedsMoveAfterwards = true;
+      // Need to be careful here, incoming source might be reused afterwards.
+    }
+    else {
+      // RA constraints would let this always be true.
+      mov(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc);
+    }
+  }
+
+  if (NeedsMoveAfterwards) {
+    switch (ValueSize) {
+      case 1: {
+        sturb(Src.W(), AddrSrc, -ValueSize);
+        break;
+      }
+      case 2: {
+        sturh(Src.W(), AddrSrc, -ValueSize);
+        break;
+      }
+      case 4: {
+        stur(Src.W(), AddrSrc, -ValueSize);
+        break;
+      }
+      case 8: {
+        stur(Src.X(), AddrSrc, -ValueSize);
+        break;
+      }
+      default: {
+        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+        break;
+      }
+    }
+
+    sub(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc, ValueSize);
+  }
+  else {
+    switch (ValueSize) {
+      case 1: {
+        strb<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+        break;
+      }
+      case 2: {
+        strh<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+        break;
+      }
+      case 4: {
+        str<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+        break;
+      }
+      case 8: {
+        str<ARMEmitter::IndexType::PRE>(Src.X(), Dst, -ValueSize);
+        break;
+      }
+      default: {
+        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+        break;
+      }
+    }
+  }
+}
+
 DEF_OP(StoreMem) {
   const auto Op = IROp->C<IR::IROp_StoreMem>();
   const auto OpSize = IROp->Size;
