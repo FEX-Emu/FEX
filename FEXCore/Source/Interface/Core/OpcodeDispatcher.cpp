@@ -508,15 +508,13 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto Constant = _Constant(Size);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OldSP, Constant);
+
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  // Store our value to the new stack location
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
@@ -524,22 +522,17 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Constant = _Constant(Size);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OldSP, Constant);
-
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  // Store our value to the new stack location
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   // 32bit only
   const uint8_t Size = GetSrcSize(Op);
 
-  auto Constant = _Constant(Size);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
   // PUSHA order:
@@ -555,36 +548,31 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
   OrderedNode *Src{};
   OrderedNode *NewSP = OldSP;
-  NewSP = _Sub(NewSP, Constant);
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
   Src = LoadGPRRegister(X86State::REG_RAX);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RCX);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RDX);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RBX);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
-  _StoreMem(GPRClass, Size, NewSP, OldSP, Size);
+  // Push old-sp
+  NewSP = _Push(GPRSize, Size, OldSP, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RBP);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RSI);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
-  NewSP = _Sub(NewSP, Constant);
   Src = LoadGPRRegister(X86State::REG_RDI);
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+  NewSP = _Push(GPRSize, Size, Src, NewSP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
@@ -595,12 +583,7 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
-  auto Constant = _Constant(DstSize);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   OrderedNode *Src{};
   if (!CTX->Config.Is64BitMode()) {
@@ -650,10 +633,14 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
     }
   }
 
+  const uint8_t GPRSize = CTX->GetGPRSize();
   // Store our value to the new stack location
   // AMD hardware zexts segment selector to 32bit
   // Intel hardware inserts segment selector
-  _StoreMem(GPRClass, DstSize, NewSP, Src, DstSize);
+  auto NewSP = _Push(GPRSize, DstSize, Src, OldSP);
+
+  // Store the new stack pointer
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
@@ -3701,11 +3688,11 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint16_t AllocSpace = Value & 0xFFFF;
   const uint8_t Level = (Value >> 16) & 0x1F;
 
-  const auto PushValue = [&](uint8_t Size, OrderedNode *Src) {
-    auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+  const auto PushValue = [&](uint8_t Size, OrderedNode *Src) -> OrderedNode* {
+    const uint8_t GPRSize = CTX->GetGPRSize();
 
-    auto NewSP = _Sub(OldSP, _Constant(Size));
-    _StoreMem(GPRClass, Size, NewSP, Src, Size);
+    auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+    auto NewSP = _Push(GPRSize, Size, Src, OldSP);
 
     // Store the new stack pointer
     StoreGPRRegister(X86State::REG_RSP, NewSP);
@@ -4304,15 +4291,13 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
     Src = _Bfe(Size * 8, 0, Src);
   }
 
-  auto Constant = _Constant(Size);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OldSP, Constant);
+
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  // Store our value to the new stack location
-  _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
