@@ -9,15 +9,14 @@
   },
   "Instructions": {
     "push fs": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xa0",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #146]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "pop fs": {
@@ -37,15 +36,14 @@
       ]
     },
     "push gs": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xa8",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #144]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "pop gs": {
