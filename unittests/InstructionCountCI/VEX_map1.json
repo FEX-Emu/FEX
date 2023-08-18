@@ -4284,7 +4284,7 @@
       ]
     },
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
@@ -4310,15 +4310,13 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "strb w20, [x28, #708]",
-        "bfi w21, w20, #31, #1",
-        "mov w0, w21",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
+        "and w20, w21, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "str w20, [x28, #728]"
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
@@ -4344,15 +4342,13 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "strb w20, [x28, #708]",
-        "bfi w21, w20, #31, #1",
-        "mov w0, w21",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
+        "and w20, w21, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "str w20, [x28, #728]"
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
@@ -4378,15 +4374,13 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "strb w20, [x28, #708]",
-        "bfi w21, w20, #31, #1",
-        "mov w0, w21",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
+        "and w20, w21, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "str w20, [x28, #728]"
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
@@ -4412,10 +4406,8 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "strb w20, [x28, #708]",
-        "bfi w21, w20, #31, #1",
-        "mov w0, w21",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
+        "and w20, w21, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "str w20, [x28, #728]"
       ]
     },

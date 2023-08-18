@@ -811,8 +811,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -857,8 +857,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -895,8 +895,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -941,8 +941,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -1014,8 +1014,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -1056,8 +1056,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]
@@ -4103,7 +4103,7 @@
         "csel w4, w20, w22, hi",
         "mov w20, #0x0",
         "ldr w22, [x28, #728]",
-        "bfi w22, w20, #28, #1",
+        "and w22, w22, #0xefffffff",
         "strb w20, [x28, #708]",
         "strb w20, [x28, #706]",
         "cmp x4, #0x0 (0)",
@@ -4132,7 +4132,7 @@
         "csel x4, x7, x21, hi",
         "mov w21, #0x0",
         "ldr w22, [x28, #728]",
-        "bfi w22, w21, #28, #1",
+        "and w22, w22, #0xefffffff",
         "strb w21, [x28, #708]",
         "strb w21, [x28, #706]",
         "cmp x4, #0x0 (0)",

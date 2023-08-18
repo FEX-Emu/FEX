@@ -203,13 +203,12 @@
       ]
     },
     "btr ax, 0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
-        "mov w21, #0x1",
-        "bic w21, w20, w21",
+        "and w21, w20, #0xfffffffe",
         "bfxil x4, x21, #0, #16",
         "ubfx x20, x20, #0, #1",
         "ldr w21, [x28, #728]",
@@ -220,13 +219,12 @@
       ]
     },
     "btr eax, 0": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
-        "mov w21, #0x1",
-        "bic w4, w20, w21",
+        "and w4, w20, #0xfffffffe",
         "ubfx x20, x20, #0, #1",
         "ldr w21, [x28, #728]",
         "mov w0, w21",
@@ -236,13 +234,12 @@
       ]
     },
     "btr rax, 0": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov x20, x4",
-        "mov w21, #0x1",
-        "bic x4, x20, x21",
+        "and x4, x20, #0xfffffffffffffffe",
         "ubfx x20, x20, #0, #1",
         "ldr w21, [x28, #728]",
         "mov w0, w21",
@@ -252,14 +249,13 @@
       ]
     },
     "btr ax, 15": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "lsr w21, w20, #15",
-        "mov w22, #0x8000",
-        "bic w20, w20, w22",
+        "and w20, w20, #0xffff7fff",
         "bfxil x4, x20, #0, #16",
         "ubfx x20, x21, #0, #1",
         "ldr w21, [x28, #728]",
@@ -270,14 +266,13 @@
       ]
     },
     "btr eax, 31": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
         "lsr w21, w20, #31",
-        "mov w22, #0x80000000",
-        "bic w4, w20, w22",
+        "and w4, w20, #0x7fffffff",
         "ubfx x20, x21, #0, #1",
         "ldr w21, [x28, #728]",
         "mov w0, w21",
@@ -287,13 +282,12 @@
       ]
     },
     "btr rax, 63": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "lsr x20, x4, #63",
-        "mov x21, #0x8000000000000000",
-        "bic x4, x4, x21",
+        "and x4, x4, #0x7fffffffffffffff",
         "ubfx x20, x20, #0, #1",
         "ldr w21, [x28, #728]",
         "mov w0, w21",
