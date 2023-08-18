@@ -56,10 +56,12 @@ ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) 
 }
 
 #else
-// TODO: Should be rewritten using WIN32 specific APIs.
 template<typename T>
 static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
   std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
+  if (f.fail()) {
+    return false;
+  }
   auto Size = f.tellg();
   f.seekg(0, std::ios::beg);
   Data.resize(Size);
