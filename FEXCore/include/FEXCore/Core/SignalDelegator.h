@@ -109,6 +109,10 @@ namespace Core {
       Config = _Config;
     }
 
+    const SignalDelegatorConfig &GetConfig() const {
+      return Config;
+    }
+
     /**
      * @brief Signals a thread with a specific core event.
      *
