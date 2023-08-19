@@ -651,13 +651,18 @@ template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
 void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
-  const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
+  // In the event of a scalar operation and a vector source, then
+  // we can specify the entire vector length in order to avoid
+  // unnecessary sign extension on the element to be operated on.
+  // In the event of a memory operand, we load the exact element size.
+  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto OpSize = Scalar ? ElementSize : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
 
-  auto ALUOp = _VFSqrt(Size, ElementSize, Src);
+  auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
@@ -702,19 +707,24 @@ template
 void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
 
 void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
-  const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
+  // In the event of a scalar operation and a vector source, then
+  // we can specify the entire vector length in order to avoid
+  // unnecessary sign extension on the element to be operated on.
+  // In the event of a memory operand, we load the exact element size.
+  const auto SrcSize = Scalar && Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto OpSize = Scalar ? ElementSize : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Src = [&] {
     const auto SrcIndex = Scalar ? 1 : 0;
-    return LoadSource(FPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    return LoadSource_WithOpSize(FPRClass, Op, Op->Src[SrcIndex], SrcSize, Op->Flags, -1);
   }();
   OrderedNode *Dest = [&] {
     const auto& Operand = Scalar ? Op->Src[0] : Op->Dest;
     return LoadSource_WithOpSize(FPRClass, Op, Operand, DstSize, Op->Flags, -1);
   }();
 
-  auto ALUOp = _VFSqrt(Size, ElementSize, Src);
+  auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 

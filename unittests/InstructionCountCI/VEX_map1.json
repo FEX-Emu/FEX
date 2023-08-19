@@ -729,7 +729,7 @@
       ]
     },
     "vsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -737,9 +737,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "mov z5.d, p7/m, z17.d",
         "fsqrt s4, s4",
         "mov v0.16b, v5.16b",
@@ -750,7 +747,7 @@
       ]
     },
     "vsqrtsd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -758,7 +755,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov v4.8b, v4.8b",
         "mov z5.d, p7/m, z17.d",
         "fsqrt d4, d4",
         "mov v0.16b, v5.16b",
@@ -800,7 +796,7 @@
       ]
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
@@ -808,9 +804,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "mov z5.d, p7/m, z17.d",
         "fmov s0, #0x70 (1.0000)",
         "fsqrt s1, s4",
@@ -853,7 +846,7 @@
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
@@ -861,9 +854,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "mov z5.d, p7/m, z17.d",
         "fmov s0, #0x70 (1.0000)",
         "fdiv s4, s0, s4",
