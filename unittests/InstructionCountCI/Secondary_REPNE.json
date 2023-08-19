@@ -262,16 +262,15 @@
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "fcmp d16, d4",
-        "fcsel d4, d16, d4, mi",
+        "fcmp d16, d17",
+        "fcsel d4, d16, d17, mi",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -288,16 +287,15 @@
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "fcmp d16, d4",
-        "fcsel d4, d4, d16, mi",
+        "fcmp d16, d17",
+        "fcsel d4, d17, d16, mi",
         "mov v16.d[0], v4.d[0]"
       ]
     },
