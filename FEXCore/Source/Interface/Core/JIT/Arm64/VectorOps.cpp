@@ -1493,18 +1493,48 @@ DEF_OP(VBSL) {
     // NOTE: Slight parameter difference from ASIMD
     //       ASIMD -> BSL Mask, True, False
     //       SVE   -> BSL True, True, False, Mask
+    //       ASIMD -> BIT True, False, Mask
+    //       ASIMD -> BIF False, True, Mask
     movprfx(VTMP1.Z(), VectorTrue.Z());
     bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
     mov(Dst.Z(), VTMP1.Z());
   } else {
-    if (OpSize == 8) {
-      mov(VTMP1.D(), VectorMask.D());
-      bsl(VTMP1.D(), VectorTrue.D(), VectorFalse.D());
-      mov(Dst.D(), VTMP1.D());
-    } else {
-      mov(VTMP1.Q(), VectorMask.Q());
-      bsl(VTMP1.Q(), VectorTrue.Q(), VectorFalse.Q());
-      mov(Dst.Q(), VTMP1.Q());
+    if (VectorMask == Dst) {
+      // Can use BSL without any moves.
+      if (OpSize == 8) {
+        bsl(Dst.D(), VectorTrue.D(), VectorFalse.D());
+      }
+      else {
+        bsl(Dst.Q(), VectorTrue.Q(), VectorFalse.Q());
+      }
+    }
+    else if (VectorTrue == Dst) {
+      // Can use BIF without any moves.
+      if (OpSize == 8) {
+        bif(Dst.D(), VectorFalse.D(), VectorMask.D());
+      }
+      else {
+        bif(Dst.Q(), VectorFalse.Q(), VectorMask.Q());
+      }
+    }
+    else if (VectorFalse == Dst) {
+      // Can use BIT without any moves.
+      if (OpSize == 8) {
+        bit(Dst.D(), VectorTrue.D(), VectorMask.D());
+      }
+      else {
+        bit(Dst.Q(), VectorTrue.Q(), VectorMask.Q());
+      }
+    }
+    else {
+      // Needs moves.
+      if (OpSize == 8) {
+        mov(Dst.D(), VectorMask.D());
+        bsl(Dst.D(), VectorTrue.D(), VectorFalse.D());
+      } else {
+        mov(Dst.Q(), VectorMask.Q());
+        bsl(Dst.Q(), VectorTrue.Q(), VectorFalse.Q());
+      }
     }
   }
 }
