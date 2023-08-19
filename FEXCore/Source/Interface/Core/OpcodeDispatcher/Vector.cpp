@@ -220,7 +220,7 @@ void OpDispatchBuilder::VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
     StoreResult(FPRClass, Op, Src, -1);
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, ElementSize, -1);
   }
 }
