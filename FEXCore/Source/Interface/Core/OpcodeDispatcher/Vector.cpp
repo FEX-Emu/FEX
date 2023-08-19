@@ -2123,8 +2123,13 @@ void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 OrderedNode* OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
                                                               const X86Tables::DecodedOperand& Src1Op,
                                                               const X86Tables::DecodedOperand& Src2Op) {
+  // In the case of vectors, we can just specify the full vector length,
+  // so that we don't unnecessarily zero-extend the entire vector.
+  // Otherwise, if it's a memory load, then we only want to load its exact size.
+  const auto Src2Size = Src2Op.IsGPR() ? 16U : SrcElementSize;
+
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcElementSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, Src2Size, Op->Flags, -1);
 
   OrderedNode *Converted = _Float_FToF(DstElementSize, SrcElementSize, Src2);
 

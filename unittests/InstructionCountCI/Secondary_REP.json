@@ -275,14 +275,11 @@
       ]
     },
     "cvtss2sd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcvt d4, s4",
+        "fcvt d4, s17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
