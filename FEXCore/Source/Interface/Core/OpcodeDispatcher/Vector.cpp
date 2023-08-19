@@ -4481,10 +4481,19 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const auto Selector = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *Result = _VectorZero(DstSize);
-  for (size_t i = 0; i < DstSize / 8; i++) {
-    const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
-    Result = _VInsElement(DstSize, 8, i, SrcIndex, Result, Src);
+  OrderedNode *Result{};
+
+  // If we're just broadcasting one element in particular across the vector
+  // then this can be done fairly simply without any individual inserts.
+  if (Selector == 0x00 || Selector == 0x55 || Selector == 0xAA || Selector == 0xFF) {
+    const auto Index = Selector & 0b11;
+    Result = _VDupElement(DstSize, 8, Src, Index);
+  } else {
+    Result = _VectorZero(DstSize);
+    for (size_t i = 0; i < DstSize / 8; i++) {
+      const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
+      Result = _VInsElement(DstSize, 8, i, SrcIndex, Result, Src);
+    }
   }
   StoreResult(FPRClass, Op, Result, -1);
 }

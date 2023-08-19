@@ -2977,18 +2977,7 @@ DEF_OP(VInsElement) {
   if (Is256Bit) {
     // Whether or not the index is in the upper lane.
     const auto IsUpperIdx = [ElementSize](uint32_t Index) {
-      switch (ElementSize) {
-        case 1:
-          return Index >= 16;
-        case 2:
-          return Index >= 8;
-        case 4:
-          return Index >= 4;
-        case 8:
-          return Index >= 2;
-        default:
-          return false;
-      }
+      return Index >= (16U / ElementSize);
     };
 
     const auto SrcIsUpper = IsUpperIdx(SrcIdx);
@@ -2996,30 +2985,10 @@ DEF_OP(VInsElement) {
 
     // Sanitizes indices based on whether or not its accessing the upper lane.
     const auto SanitizeIndex = [ElementSize](uint32_t Index, bool IsUpper) -> uint32_t {
-      switch (ElementSize) {
-        case 1:
-          if (IsUpper) {
-            return Index - 16;
-          }
-          return Index;
-        case 2:
-          if (IsUpper) {
-            return Index - 8;
-          }
-          return Index;
-        case 4:
-          if (IsUpper) {
-            return Index - 4;
-          }
-          return Index;
-        case 8:
-          if (IsUpper) {
-            return Index - 2;
-          }
-          return Index;
-        default:
-          return 0;
+      if (IsUpper) {
+        return Index - (16U / ElementSize);
       }
+      return Index;
     };
 
     // Helpers to get the source and destination vectors depending on
@@ -3077,7 +3046,7 @@ DEF_OP(VDupElement) {
   const auto Op = IROp->C<IR::IROp_VDupElement>();
   const auto OpSize = IROp->Size;
 
-  const auto Index = Op->Index;
+  auto Index = Op->Index;
   const auto ElementSize = Op->Header.ElementSize;
   const auto ElementSizeBits = ElementSize * 8;
   const auto BitOffset = ElementSizeBits * Index;
@@ -3104,6 +3073,12 @@ DEF_OP(VDupElement) {
                      "ElementSize={}, Index={}",
                      ElementSize, Index);
     return;
+  }
+
+  // If we're in the upper lane, we need to adjust the index down,
+  // since we operate on halves here.
+  if (IsInUpperLane) {
+    Index -= 16U / ElementSize;
   }
 
   const auto Dst = GetDst(Node);
