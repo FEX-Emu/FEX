@@ -3077,7 +3077,7 @@ DEF_OP(VDupElement) {
   const auto Op = IROp->C<IR::IROp_VDupElement>();
   const auto OpSize = IROp->Size;
 
-  const auto Index = Op->Index;
+  auto Index = Op->Index;
   const auto ElementSize = Op->Header.ElementSize;
   const auto ElementSizeBits = ElementSize * 8;
   const auto BitOffset = ElementSizeBits * Index;
@@ -3104,6 +3104,12 @@ DEF_OP(VDupElement) {
                      "ElementSize={}, Index={}",
                      ElementSize, Index);
     return;
+  }
+
+  // If we're in the upper lane, we need to adjust the index down,
+  // since we operate on halves here.
+  if (IsInUpperLane) {
+    Index -= 16U / ElementSize;
   }
 
   const auto Dst = GetDst(Node);
