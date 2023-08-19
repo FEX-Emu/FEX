@@ -1444,24 +1444,18 @@ OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize,
                                           OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
 
-  auto ZeroVec = _VectorZero(Size);
-  auto NegVec = _VNeg(Size, ElementSize, Src1);
-
-  OrderedNode *CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
-  OrderedNode *CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
-  OrderedNode *CmpGT = _VCMPGTZ(Size, ElementSize, Src2);
-
-  // Negative elements return -dest
-  CmpLT = _VAnd(Size, ElementSize, CmpLT, NegVec);
-
-  // Zero elements return 0
-  CmpEQ = _VAnd(Size, ElementSize, CmpEQ, ZeroVec);
-
-  // Positive elements return dest
-  CmpGT = _VAnd(Size, ElementSize, CmpGT, Src1);
-
-  // Or our results
-  return _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
+  if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
+    OrderedNode *Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
+    Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
+    return _VSMul(Size, ElementSize, Src1, Control);
+  }
+  else {
+    auto NegVec = _VNeg(Size, ElementSize, Src1);
+    OrderedNode *CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
+    OrderedNode *CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
+    auto BSLResult = _VBSL(Size, CmpLT, NegVec, Src1);
+    return _VBic(Size, Size, BSLResult, CmpEQ);
+  }
 }
 
 template <size_t ElementSize>
@@ -1469,7 +1463,7 @@ void OpDispatchBuilder::PSIGN(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode* Res = PSIGNImpl(Op, ElementSize, Dest, Src);
-  
+
   StoreResult(FPRClass, Op, Res, -1);
 }
 

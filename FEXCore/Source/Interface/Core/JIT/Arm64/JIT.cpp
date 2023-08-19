@@ -1215,6 +1215,7 @@ CPUBackendFeatures GetArm64JITBackendFeatures() {
     .SupportsStaticRegisterAllocation = true,
     .SupportsShiftedBitwise = true,
     .SupportsFlags = true,
+    .SupportsSaturatingRoundingShifts = true,
   };
 }
 
