@@ -5769,7 +5769,7 @@
       ]
     },
     "vblendvps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4a 128-bit"
@@ -5779,9 +5779,7 @@
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
         "sshr v6.4s, v6.4s, #31",
-        "mov v0.16b, v6.16b",
-        "bsl v0.16b, v5.16b, v4.16b",
-        "mov v4.16b, v0.16b",
+        "bit v4.16b, v5.16b, v6.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -5805,7 +5803,7 @@
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4b 128-bit"
@@ -5815,9 +5813,7 @@
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
         "sshr v6.2d, v6.2d, #63",
-        "mov v0.16b, v6.16b",
-        "bsl v0.16b, v5.16b, v4.16b",
-        "mov v4.16b, v0.16b",
+        "bit v4.16b, v5.16b, v6.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -5841,7 +5837,7 @@
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4c 128-bit"
@@ -5851,9 +5847,7 @@
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
         "sshr v6.16b, v6.16b, #7",
-        "mov v0.16b, v6.16b",
-        "bsl v0.16b, v5.16b, v4.16b",
-        "mov v4.16b, v0.16b",
+        "bit v4.16b, v5.16b, v6.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

@@ -1145,15 +1145,13 @@
       ]
     },
     "maskmovdqu xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf7",
       "ExpectedArm64ASM": [
         "cmlt v4.16b, v17.16b, #0",
         "ldr q5, [x11]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v16.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v16.16b, v5.16b",
         "str q4, [x11]"
       ]
     },

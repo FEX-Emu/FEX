@@ -7085,7 +7085,7 @@
       ]
     },
     "vmaskmovdqu xmm0, xmm1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xf7 128-bit"
@@ -7095,9 +7095,7 @@
         "cmlt v4.16b, v4.16b, #0",
         "mov z5.d, p7/m, z16.d",
         "ldr q6, [x11]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v5.16b, v6.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v5.16b, v6.16b",
         "str q4, [x11]"
       ]
     },

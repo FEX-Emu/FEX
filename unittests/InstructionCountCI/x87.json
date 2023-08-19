@@ -8015,7 +8015,7 @@
       ]
     },
     "fcmovb st0, st0": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc0 /0"
@@ -8035,16 +8035,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc1 /0"
@@ -8064,16 +8062,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc2 /0"
@@ -8093,16 +8089,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st3": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc3 /0"
@@ -8122,16 +8116,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st4": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc4 /0"
@@ -8151,16 +8143,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st5": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc5 /0"
@@ -8180,16 +8170,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st6": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc6 /0"
@@ -8209,16 +8197,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovb st0, st7": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc7 /0"
@@ -8238,16 +8224,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmove st0, st0": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc8 /1"
@@ -8269,16 +8253,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc9 /1"
@@ -8300,16 +8282,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xca /1"
@@ -8331,16 +8311,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st3": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcb /1"
@@ -8362,16 +8340,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st4": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcc /1"
@@ -8393,16 +8369,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st5": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcd /1"
@@ -8424,16 +8398,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st6": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xce /1"
@@ -8455,16 +8427,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmove st0, st7": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcf /1"
@@ -8486,16 +8456,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovbe st0, st0": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd0 /0"
@@ -8517,16 +8485,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd1 /0"
@@ -8548,16 +8514,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd2 /0"
@@ -8579,16 +8543,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st3": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd3 /0"
@@ -8610,16 +8572,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st4": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd4 /0"
@@ -8641,16 +8601,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st5": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd5 /0"
@@ -8672,16 +8630,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st6": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd6 /0"
@@ -8703,16 +8659,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovbe st0, st7": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd7 /0"
@@ -8734,16 +8688,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovu st0, st0": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd8 /1"
@@ -8769,15 +8721,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd9 /1"
@@ -8803,15 +8753,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st2": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xda /1"
@@ -8837,15 +8785,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st3": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdb /1"
@@ -8871,15 +8817,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st4": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdc /1"
@@ -8905,15 +8849,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st5": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdd /1"
@@ -8939,15 +8881,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st6": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xde /1"
@@ -8973,15 +8913,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovu st0, st7": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdf /1"
@@ -9007,9 +8945,7 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
@@ -9378,7 +9314,7 @@
       ]
     },
     "fcmovnb st0, st0": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc0 /0"
@@ -9398,16 +9334,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc1 /0"
@@ -9427,16 +9361,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc2 /0"
@@ -9456,16 +9388,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st3": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc3 /0"
@@ -9485,16 +9415,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st4": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc4 /0"
@@ -9514,16 +9442,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st5": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc5 /0"
@@ -9543,16 +9469,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st6": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc6 /0"
@@ -9572,16 +9496,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnb st0, st7": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc7 /0"
@@ -9601,16 +9523,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovne st0, st0": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc8 /1"
@@ -9632,16 +9552,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc9 /1"
@@ -9663,16 +9581,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xca /1"
@@ -9694,16 +9610,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st3": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcb /1"
@@ -9725,16 +9639,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st4": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcc /1"
@@ -9756,16 +9668,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st5": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcd /1"
@@ -9787,16 +9697,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st6": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xce /1"
@@ -9818,16 +9726,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovne st0, st7": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcf /1"
@@ -9849,16 +9755,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]",
         "str w21, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st0": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd0 /2"
@@ -9880,16 +9784,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd1 /2"
@@ -9911,16 +9813,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd2 /2"
@@ -9942,16 +9842,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st3": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd3 /2"
@@ -9973,16 +9871,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st4": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd4 /2"
@@ -10004,16 +9900,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st5": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd5 /2"
@@ -10035,16 +9929,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st6": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd6 /2"
@@ -10066,16 +9958,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnbe st0, st7": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd7 /2"
@@ -10097,16 +9987,14 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x22, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x21, lsl #4",
         "str q4, [x0, #752]",
         "str w20, [x28, #728]"
       ]
     },
     "fcmovnu st0, st0": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd8 /3"
@@ -10132,15 +10020,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd9 /3"
@@ -10166,15 +10052,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st2": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xda /3"
@@ -10200,15 +10084,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st3": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdb /3"
@@ -10234,15 +10116,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st4": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdc /3"
@@ -10268,15 +10148,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st5": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdd /3"
@@ -10302,15 +10180,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st6": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xde /3"
@@ -10336,15 +10212,13 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
     },
     "fcmovnu st0, st7": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdf /3"
@@ -10370,9 +10244,7 @@
         "ldr q5, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr q6, [x0, #752]",
-        "mov v0.16b, v4.16b",
-        "bsl v0.16b, v6.16b, v5.16b",
-        "mov v4.16b, v0.16b",
+        "bsl v4.16b, v6.16b, v5.16b",
         "add x0, x28, x20, lsl #4",
         "str q4, [x0, #752]"
       ]
