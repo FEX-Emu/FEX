@@ -210,8 +210,8 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
 void OpDispatchBuilder::VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Src[1].IsGPR()) {
     // VMOVSS/SD xmm1, xmm2, xmm3
-    OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
-    OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags, -1);
+    OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
     OrderedNode *Result = _VInsElement(16, ElementSize, 0, 0, Src1, Src2);
     StoreResult(FPRClass, Op, Result, -1);
   } else if (Op->Dest.IsGPR()) {

@@ -71,7 +71,7 @@
       ]
     },
     "vmovss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -80,9 +80,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v5.s[0]",
-        "mov v5.16b, v0.16b",
         "mov v4.s[0], v5.s[0]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
@@ -102,7 +99,7 @@
       ]
     },
     "vmovsd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -111,7 +108,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov v5.8b, v5.8b",
         "mov v4.d[0], v5.d[0]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
@@ -176,7 +172,7 @@
       ]
     },
     "db 0xc5, 0xf2, 0x11, 0xc2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "vmovss xmm2, xmm1, xmm0",
@@ -187,9 +183,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z16.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v5.s[0]",
-        "mov v5.16b, v0.16b",
         "mov v4.s[0], v5.s[0]",
         "mov v4.16b, v4.16b",
         "mov z18.d, p7/m, z4.d"
@@ -208,7 +201,7 @@
       ]
     },
     "db 0xc5, 0xf3, 0x11, 0xc2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "vmovsd xmm2, xmm1, xmm0",
@@ -219,7 +212,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z16.d",
-        "mov v5.8b, v5.8b",
         "mov v4.d[0], v5.d[0]",
         "mov v4.16b, v4.16b",
         "mov z18.d, p7/m, z4.d"
