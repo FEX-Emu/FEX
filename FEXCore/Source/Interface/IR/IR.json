@@ -1176,6 +1176,20 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
+      "FPR = VSRSHR u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "Desc": ["Signed rounding shift right by immediate",
+                 "Exactly matching Arm64 srshr semantics"
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VSQSHL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "Desc": ["Signed satuating shift left by immediate",
+                 "Exactly matching Arm64 sqshl semantics"
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
 
       "FPR = VRev64 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 64-bit halfwords",

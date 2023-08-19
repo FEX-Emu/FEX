@@ -2940,6 +2940,72 @@ DEF_OP(VSQXTUN2) {
   }
 }
 
+DEF_OP(VSRSHR) {
+  const auto Op = IROp->C<IR::IROp_VSRSHR>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    // SVE SRSHR is destructive, so lets set up the destination.
+    movprfx(Dst.Z(), Vector.Z());
+    srshr(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+  } else {
+    if (OpSize == 8) {
+      srshr(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    }
+    else {
+      srshr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+    }
+  }
+}
+
+DEF_OP(VSQSHL) {
+  const auto Op = IROp->C<IR::IROp_VSQSHL>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    // SVE SQSHL is destructive, so lets set up the destination.
+    movprfx(Dst.Z(), Vector.Z());
+    sqshl(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+  } else {
+    if (OpSize == 8) {
+      sqshl(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    }
+    else {
+      sqshl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+    }
+  }
+}
+
 DEF_OP(VMul) {
   const auto Op = IROp->C<IR::IROp_VUMul>();
   const auto OpSize = IROp->Size;
