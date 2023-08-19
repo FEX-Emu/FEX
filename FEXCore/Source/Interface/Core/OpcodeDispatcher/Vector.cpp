@@ -601,10 +601,14 @@ template
 void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
 
 void OpDispatchBuilder::AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, -1);
 
   // If OpSize == ElementSize then it only does the lower scalar op
   auto ALUOp = _VAdd(ElementSize, ElementSize, Src1, Src2);
