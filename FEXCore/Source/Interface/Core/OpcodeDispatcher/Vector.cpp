@@ -3872,8 +3872,11 @@ OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
 
 template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VectorRound(OpcodeArgs) {
-  const auto Size = GetDstSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  // No need to zero extend the vector in the event we have a
+  // scalar source, especially since it's only inserted into another vector.
+  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Mode = Op->Src[1].Data.Literal.Value;
@@ -3882,8 +3885,8 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
 
   if constexpr (Scalar) {
     // Insert the lower bits
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags, -1);
-    auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Src);
+    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+    auto Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   } else {
     StoreResult(FPRClass, Op, Src, -1);
@@ -3912,24 +3915,20 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
     }
   };
 
-  const auto GetSrc = [&] {
-    if constexpr (Scalar) {
-      return LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-    } else {
-      return LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    }
-  };
+  // No need to zero extend the vector in the event we have a
+  // scalar source, especially since it's only inserted into another vector.
+  const auto SrcIdx = Scalar ? 1 : 0;
+  const auto SrcSize = Scalar && Op->Src[SrcIdx].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  const auto Size = GetDstSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  OrderedNode *Src = GetSrc();
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[SrcIdx], SrcSize, Op->Flags, -1);
   OrderedNode *Result = VectorRoundImpl(Op, ElementSize, Src, GetMode());
 
   if constexpr (Scalar) {
     // Insert the lower bits
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags, -1);
-    Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
+    Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
   }
   if (Is128Bit) {
     Result = _VMov(16, Result);
