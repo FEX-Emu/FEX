@@ -1057,7 +1057,7 @@
         "0x66 0x0f 0x38 0xdc"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v16.16b",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
@@ -1071,7 +1071,7 @@
         "0x66 0x0f 0x38 0xdd"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v16.16b",
         "unimplemented (Unimplemented)",
         "eor v16.16b, v0.16b, v17.16b"
@@ -1084,7 +1084,7 @@
         "0x66 0x0f 0x38 0xde"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v16.16b",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
@@ -1098,7 +1098,7 @@
         "0x66 0x0f 0x38 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v16.16b",
         "unimplemented (Unimplemented)",
         "eor v16.16b, v0.16b, v17.16b"

@@ -27,7 +27,7 @@ DEF_OP(AESEnc) {
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
   mov(VTMP1.Q(), State.Q());
   aese(VTMP1, VTMP2);
   aesmc(VTMP1, VTMP1);
@@ -45,7 +45,7 @@ DEF_OP(AESEncLast) {
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
   mov(VTMP1.Q(), State.Q());
   aese(VTMP1, VTMP2);
   eor(Dst.Q(), VTMP1.Q(), Key.Q());
@@ -62,7 +62,7 @@ DEF_OP(AESDec) {
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
   mov(VTMP1.Q(), State.Q());
   aesd(VTMP1, VTMP2);
   aesimc(VTMP1, VTMP1);
@@ -80,7 +80,7 @@ DEF_OP(AESDecLast) {
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
   mov(VTMP1.Q(), State.Q());
   aesd(VTMP1, VTMP2);
   eor(Dst.Q(), VTMP1.Q(), Key.Q());
@@ -93,7 +93,7 @@ DEF_OP(AESKeyGenAssist) {
   ARMEmitter::ForwardLabel PastConstant;
 
   // Do a "regular" AESE step
-  eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
   mov(VTMP1.Q(), GetVReg(Op->Src.ID()).Q());
   aese(VTMP1, VTMP2);
 
