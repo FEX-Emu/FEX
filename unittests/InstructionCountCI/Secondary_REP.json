@@ -600,36 +600,42 @@
       ]
     },
     "cmpss xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmeq s4, s16, s4",
+        "fcmeq s4, s16, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmgt s4, s4, s16",
+        "fcmgt s4, s17, s16",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmge s4, s17, s16",
+        "mov v16.s[0], v4.s[0]"
+      ]
+    },
+    "cmpss xmm0, xmm1, 3": {
       "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
@@ -637,92 +643,62 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmge s4, s4, s16",
-        "mov v16.s[0], v4.s[0]"
-      ]
-    },
-    "cmpss xmm0, xmm1, 3": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
-        "0xf3 0x0f 0xc2"
-      ],
-      "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmge s0, s16, s4",
-        "fcmgt s1, s4, s16",
+        "fcmge s0, s16, s17",
+        "fcmgt s1, s17, s16",
         "orr v4.8b, v0.8b, v1.8b",
         "mvn v4.8b, v4.8b",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 4": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmeq s4, s16, s4",
+        "fcmeq s4, s16, s17",
         "mvn v4.8b, v4.8b",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 5": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmgt s4, s4, s16",
+        "fcmgt s4, s17, s16",
         "mvn v4.16b, v4.16b",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 6": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmge s4, s4, s16",
+        "fcmge s4, s17, s16",
         "mvn v4.16b, v4.16b",
         "mov v16.s[0], v4.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 7": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "fcmge s0, s16, s4",
-        "fcmgt s1, s4, s16",
+        "fcmge s0, s16, s17",
+        "fcmgt s1, s17, s16",
         "orr v4.8b, v0.8b, v1.8b",
         "mov v16.s[0], v4.s[0]"
       ]

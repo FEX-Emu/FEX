@@ -2384,9 +2384,12 @@ OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool
 
 template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
+  // No need for zero-extending in the scalar case, since
+  // all we need is an insert at the end of the operation.
+  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   const uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
@@ -2406,6 +2409,9 @@ void OpDispatchBuilder::VFCMPOp<8, true>(OpcodeArgs);
 
 template <size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
+  // No need for zero-extending in the scalar case, since
+  // all we need is an insert at the end of the operation.
+  const auto SrcSize = Scalar && Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2413,7 +2419,7 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Data.Literal.Value;
 
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, -1);
   OrderedNode *Result = VFCMPOpImpl(Op, ElementSize, Scalar, Src1, Src2, CompType);
 
   if (Is128Bit) {
