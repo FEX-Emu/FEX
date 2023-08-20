@@ -220,15 +220,14 @@
       ]
     },
     "cvtsd2ss xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "fcvt s4, d4",
+        "fcvt s4, d17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
