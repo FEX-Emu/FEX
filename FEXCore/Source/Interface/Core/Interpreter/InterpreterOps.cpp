@@ -107,6 +107,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(ATOMICFETCHOR,          AtomicFetchOr);
   REGISTER_OP(ATOMICFETCHXOR,         AtomicFetchXor);
   REGISTER_OP(ATOMICFETCHNEG,         AtomicFetchNeg);
+  REGISTER_OP(TELEMETRYSETVALUE,      TelemetrySetValue);
 
   // Branch ops
   REGISTER_OP(CALLBACKRETURN,         CallbackReturn);

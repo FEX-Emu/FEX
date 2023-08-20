@@ -304,6 +304,7 @@ private:
   DEF_OP(AtomicFetchOr);
   DEF_OP(AtomicFetchXor);
   DEF_OP(AtomicFetchNeg);
+  DEF_OP(TelemetrySetValue);
 
   ///< Branch ops
   DEF_OP(CallbackReturn);

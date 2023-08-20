@@ -628,23 +628,38 @@ DEF_OP(AtomicFetchNeg) {
   }
 }
 
+DEF_OP(TelemetrySetValue) {
+#ifndef FEX_DISABLE_TELEMETRY
+  auto Op = IROp->C<IR::IROp_TelemetrySetValue>();
+  auto Src = GetSrc<RA_32>(Op->Value.ID());
+
+  xor_(TMP1, TMP1);
+  mov(TMP2, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.TelemetryValueAddresses[Op->TelemetryValueIndex])]);
+  test(Src, Src);
+  setne(TMP1.cvt8());
+  lock(); or_(qword [TMP2], TMP1);
+#endif
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterAtomicHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
-  REGISTER_OP(CASPAIR,        CASPair);
-  REGISTER_OP(CAS,            CAS);
-  REGISTER_OP(ATOMICADD,      AtomicAdd);
-  REGISTER_OP(ATOMICSUB,      AtomicSub);
-  REGISTER_OP(ATOMICAND,      AtomicAnd);
-  REGISTER_OP(ATOMICOR,       AtomicOr);
-  REGISTER_OP(ATOMICXOR,      AtomicXor);
-  REGISTER_OP(ATOMICSWAP,     AtomicSwap);
-  REGISTER_OP(ATOMICFETCHADD, AtomicFetchAdd);
-  REGISTER_OP(ATOMICFETCHSUB, AtomicFetchSub);
-  REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
-  REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
-  REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
-  REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
+  REGISTER_OP(CASPAIR,           CASPair);
+  REGISTER_OP(CAS,               CAS);
+  REGISTER_OP(ATOMICADD,         AtomicAdd);
+  REGISTER_OP(ATOMICSUB,         AtomicSub);
+  REGISTER_OP(ATOMICAND,         AtomicAnd);
+  REGISTER_OP(ATOMICOR,          AtomicOr);
+  REGISTER_OP(ATOMICXOR,         AtomicXor);
+  REGISTER_OP(ATOMICSWAP,        AtomicSwap);
+  REGISTER_OP(ATOMICFETCHADD,    AtomicFetchAdd);
+  REGISTER_OP(ATOMICFETCHSUB,    AtomicFetchSub);
+  REGISTER_OP(ATOMICFETCHAND,    AtomicFetchAnd);
+  REGISTER_OP(ATOMICFETCHOR,     AtomicFetchOr);
+  REGISTER_OP(ATOMICFETCHXOR,    AtomicFetchXor);
+  REGISTER_OP(ATOMICFETCHNEG,    AtomicFetchNeg);
+  REGISTER_OP(TELEMETRYSETVALUE, TelemetrySetValue);
+
 #undef REGISTER_OP
 }
 }

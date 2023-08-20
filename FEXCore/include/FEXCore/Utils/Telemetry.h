@@ -38,6 +38,16 @@ namespace FEXCore::Telemetry {
     TYPE_CAS_64BIT_TEAR,
     TYPE_CAS_128BIT_TEAR,
     TYPE_CRASH_MASK,
+    // If a 32-bit application is writing a non-zero value to segments.
+    TYPE_WRITES_32BIT_SEGMENT_ES,
+    TYPE_WRITES_32BIT_SEGMENT_SS,
+    TYPE_WRITES_32BIT_SEGMENT_CS,
+    TYPE_WRITES_32BIT_SEGMENT_DS,
+    // If a 32-bit application is prefix/using a non-zero segment on memory access.
+    TYPE_USES_32BIT_SEGMENT_ES,
+    TYPE_USES_32BIT_SEGMENT_SS,
+    TYPE_USES_32BIT_SEGMENT_CS,
+    TYPE_USES_32BIT_SEGMENT_DS,
     TYPE_LAST,
   };
 

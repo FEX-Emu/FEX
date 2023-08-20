@@ -10,6 +10,7 @@ desc: Main glue logic of the arm64 splatter backend
 $end_info$
 */
 
+#include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
@@ -622,7 +623,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
 
-
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
 
@@ -915,6 +915,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
         REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
         REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
+        REGISTER_OP(TELEMETRYSETVALUE, TelemetrySetValue);
 
         // Branch ops
         REGISTER_OP(CALLBACKRETURN,    CallbackReturn);

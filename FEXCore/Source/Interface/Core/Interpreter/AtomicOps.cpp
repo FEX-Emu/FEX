@@ -771,6 +771,20 @@ DEF_OP(AtomicFetchNeg) {
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
+DEF_OP(TelemetrySetValue) {
+#ifndef FEX_DISABLE_TELEMETRY
+  auto Op = IROp->C<IR::IROp_TelemetrySetValue>();
+  uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
+
+  auto TelemetryPtr = reinterpret_cast<std::atomic<uint64_t>*>(Data->State->CurrentFrame->Pointers.Common.TelemetryValueAddresses[Op->TelemetryValueIndex]);
+  uint64_t Set{};
+  if (Src != 0) {
+    Set = 1;
+  }
+
+  *TelemetryPtr |= Set;
+#endif
+}
 
 #undef DEF_OP
 

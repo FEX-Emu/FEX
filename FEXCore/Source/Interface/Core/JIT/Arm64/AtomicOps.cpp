@@ -6,6 +6,7 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
+#include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
@@ -435,6 +436,31 @@ DEF_OP(AtomicFetchNeg) {
   stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
   cbnz(EmitSize, TMP4, &LoopTop);
   mov(EmitSize, GetReg(Node), TMP2.R());
+}
+
+DEF_OP(TelemetrySetValue) {
+#ifndef FEX_DISABLE_TELEMETRY
+  auto Op = IROp->C<IR::IROp_TelemetrySetValue>();
+  auto Src = GetReg(Op->Value.ID());
+
+  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.TelemetryValueAddresses[Op->TelemetryValueIndex]));
+
+  // Cortex fuses cmp+cset.
+  cmp(ARMEmitter::Size::i32Bit, Src, 0);
+  cset(ARMEmitter::Size::i32Bit, TMP1, ARMEmitter::Condition::CC_NE);
+
+  if (CTX->HostFeatures.SupportsAtomics) {
+    stsetl(ARMEmitter::SubRegSize::i64Bit, TMP1, TMP2);
+  }
+  else {
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP2);
+    orr(ARMEmitter::Size::i32Bit, TMP3, TMP3, Src);
+    stlxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP3, TMP2);
+    cbnz(ARMEmitter::Size::i32Bit, TMP3, &LoopTop);
+  }
+#endif
 }
 
 #undef DEF_OP
