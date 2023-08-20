@@ -36,11 +36,7 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *NewVec{};
-  NewVec = _VInsElement(16, 4, 3, 1, Dest, Dest);
-  NewVec = _VInsElement(16, 4, 2, 0, NewVec, Dest);
-  NewVec = _VInsElement(16, 4, 1, 3, NewVec, Src);
-  NewVec = _VInsElement(16, 4, 0, 2, NewVec, Src);
+  OrderedNode *NewVec = _VExtr(16, 8, Dest, Src, 1);
 
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
   OrderedNode *Result = _VXor(16, 1, Dest, NewVec);
