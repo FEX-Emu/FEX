@@ -183,15 +183,14 @@
       ]
     },
     "sqrtsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x51"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "fsqrt d4, d4",
+        "fsqrt d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
