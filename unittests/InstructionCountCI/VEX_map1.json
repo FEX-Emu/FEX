@@ -4243,10 +4243,10 @@
         "bfi w21, w22, #30, #1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic w21, w21, w22",
         "strb w20, [x28, #708]",
-        "and w20, w21, #0x7fffffff",
-        "and w20, w20, #0xefffffff",
-        "str w20, [x28, #728]"
+        "str w21, [x28, #728]"
       ]
     },
     "vucomisd xmm0, xmm1": {
@@ -4275,10 +4275,10 @@
         "bfi w21, w22, #30, #1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic w21, w21, w22",
         "strb w20, [x28, #708]",
-        "and w20, w21, #0x7fffffff",
-        "and w20, w20, #0xefffffff",
-        "str w20, [x28, #728]"
+        "str w21, [x28, #728]"
       ]
     },
     "vcomiss xmm0, xmm1": {
@@ -4307,10 +4307,10 @@
         "bfi w21, w22, #30, #1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic w21, w21, w22",
         "strb w20, [x28, #708]",
-        "and w20, w21, #0x7fffffff",
-        "and w20, w20, #0xefffffff",
-        "str w20, [x28, #728]"
+        "str w21, [x28, #728]"
       ]
     },
     "vcomisd xmm0, xmm1": {
@@ -4339,10 +4339,10 @@
         "bfi w21, w22, #30, #1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic w21, w21, w22",
         "strb w20, [x28, #708]",
-        "and w20, w21, #0x7fffffff",
-        "and w20, w20, #0xefffffff",
-        "str w20, [x28, #728]"
+        "str w21, [x28, #728]"
       ]
     },
     "vaddps xmm0, xmm1, xmm2": {
