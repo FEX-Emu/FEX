@@ -1520,7 +1520,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v17.16b",
         "unimplemented (Unimplemented)",
         "ldr q2, pc+12",
@@ -1539,7 +1539,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v17.16b",
         "unimplemented (Unimplemented)",
         "ldr q2, pc+24",

@@ -6124,7 +6124,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v4.16b",
         "unimplemented (Unimplemented)",
         "ldr q2, pc+12",
@@ -6147,7 +6147,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "eor v1.16b, v1.16b, v1.16b",
+        "movi v1.2d, #0x0",
         "mov v0.16b, v4.16b",
         "unimplemented (Unimplemented)",
         "ldr q2, pc+24",
