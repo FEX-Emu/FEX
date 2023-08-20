@@ -2344,7 +2344,7 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -2352,9 +2352,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frinti v4.4s, v4.4s",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2366,7 +2363,7 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
@@ -2374,9 +2371,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frintm v4.4s, v4.4s",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2388,7 +2382,7 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
@@ -2396,9 +2390,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frintp v4.4s, v4.4s",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2410,7 +2401,7 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
@@ -2418,9 +2409,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frintz v4.4s, v4.4s",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2432,7 +2420,7 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "host mode rounding",
@@ -2440,9 +2428,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frinti v4.4s, v4.4s",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2454,7 +2439,7 @@
       ]
     },
     "vroundsd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -2462,7 +2447,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "frinti v4.2d, v4.2d",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2474,7 +2458,7 @@
       ]
     },
     "vroundsd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
@@ -2482,7 +2466,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "frintm v4.2d, v4.2d",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2494,7 +2477,7 @@
       ]
     },
     "vroundsd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
@@ -2502,7 +2485,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "frintp v4.2d, v4.2d",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2514,7 +2496,7 @@
       ]
     },
     "vroundsd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
@@ -2522,7 +2504,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "frintz v4.2d, v4.2d",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
@@ -2534,7 +2515,7 @@
       ]
     },
     "vroundsd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "host mode rounding",
@@ -2542,7 +2523,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "frinti v4.2d, v4.2d",
         "mov z5.d, p7/m, z16.d",
         "mov v0.16b, v5.16b",
