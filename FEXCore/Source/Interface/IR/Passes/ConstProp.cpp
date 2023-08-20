@@ -47,6 +47,17 @@ uint64_t getMask(IROp_Header* Op) {
   return (~0ULL) >> (64 - NumBits);
 }
 
+// Returns true if the number bits from [0:width) contain the same bit.
+// Ensuring that the consecutive bits in the range are entirely 0 or 1.
+static bool HasConsecutiveBits(uint64_t imm, unsigned width) {
+  if (width == 0) {
+    return true;
+  }
+
+  // Credit to https://github.com/dougallj for this implementation.
+  return ((imm ^ (imm >> 1)) & ((1ULL << (width - 1)) - 1)) == 0;
+}
+
 #if JIT_ARM64
 //aarch64 heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { if (width < 32) width = 32; return vixl::aarch64::Assembler::IsImmLogical(imm, width); }
@@ -824,9 +835,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->C<IR::IROp_Bfe>();
       uint64_t Constant;
       if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         SourceMask <<= Op->lsb;
 
         uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
@@ -861,9 +870,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       uint64_t Constant;
       if (IREmit->IsValueConstant(Op->Src, &Constant)) {
         // SBFE of a constant can be converted to a constant.
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         SourceMask <<= Op->lsb;
 
         int64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
@@ -879,19 +886,36 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->C<IR::IROp_Bfi>();
       uint64_t ConstantDest{};
       uint64_t ConstantSrc{};
+      bool DestIsConstant = IREmit->IsValueConstant(Op->Header.Args[0], &ConstantDest);
+      bool SrcIsConstant = IREmit->IsValueConstant(Op->Header.Args[1], &ConstantSrc);
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &ConstantDest) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &ConstantSrc)) {
-
-        uint64_t SourceMask = (1ULL << Op->Width) - 1;
-        if (Op->Width == 64)
-          SourceMask = ~0ULL;
-
+      if (DestIsConstant && SrcIsConstant) {
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
         uint64_t NewConstant = ConstantDest & ~(SourceMask << Op->lsb);
         NewConstant |= (ConstantSrc & SourceMask) << Op->lsb;
 
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
+      }
+      else if (SrcIsConstant && HasConsecutiveBits(ConstantSrc, Op->Width)) {
+        // We are trying to insert constant, if it is a bitfield of only set bits then we can orr or and it.
+        IREmit->SetWriteCursor(CodeNode);
+        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
+        uint64_t NewConstant = SourceMask << Op->lsb;
+
+        if (ConstantSrc & 1) {
+          auto orr = IREmit->_Or(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
+          orr.first->Header.Size = IROp->Size;
+          IREmit->ReplaceAllUsesWith(CodeNode, orr);
+          Changed = true;
+        }
+        else {
+          // We are wanting to clear the bitfield.
+          auto andn = IREmit->_Andn(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
+          andn.first->Header.Size = IROp->Size;
+          IREmit->ReplaceAllUsesWith(CodeNode, andn);
+          Changed = true;
+        }
       }
       break;
     }
@@ -1093,6 +1117,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       case OP_OR:
       case OP_XOR:
       case OP_AND:
+      case OP_ANDN:
       {
         auto Op = IROp->CW<IR::IROp_Or>();
 

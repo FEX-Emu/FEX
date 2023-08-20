@@ -484,8 +484,8 @@
         "mov w20, w0",
         "bfi w20, w21, #29, #1",
         "strb w22, [x28, #708]",
-        "bfi w20, w22, #31, #1",
-        "bfi w20, w22, #28, #1",
+        "and w20, w20, #0x7fffffff",
+        "and w20, w20, #0xefffffff",
         "strb w22, [x28, #706]",
         "str w20, [x28, #728]"
       ]

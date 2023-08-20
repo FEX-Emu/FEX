@@ -3210,12 +3210,11 @@
       ]
     },
     "mov ax, gs": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "bfxil x4, x20, #0, #16"
+        "and x4, x4, #0xffffffffffff0000"
       ]
     },
     "mov eax, gs": {
@@ -3235,12 +3234,11 @@
       ]
     },
     "mov ax, fs": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "bfxil x4, x20, #0, #16"
+        "and x4, x4, #0xffffffffffff0000"
       ]
     },
     "mov eax, fs": {
@@ -5305,12 +5303,11 @@
       ]
     },
     "mov al, 0xff": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "No",
       "Comment": "0xb0",
       "ExpectedArm64ASM": [
-        "mov w20, #0xff",
-        "bfxil x4, x20, #0, #8"
+        "orr x4, x4, #0xff"
       ]
     },
     "mov al, 0x82": {
@@ -5323,12 +5320,11 @@
       ]
     },
     "mov ax, 0xffff": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "No",
       "Comment": "0xb8",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffff",
-        "bfxil x4, x20, #0, #16"
+        "orr x4, x4, #0xffff"
       ]
     },
     "mov ax, 0x4243": {
@@ -5403,28 +5399,22 @@
       ]
     },
     "clc": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": "0xf8",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ldr w20, [x28, #728]",
+        "and w20, w20, #0xdfffffff",
         "str w20, [x28, #728]"
       ]
     },
     "stc": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": "0xf9",
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ldr w20, [x28, #728]",
+        "orr w20, w20, #0x20000000",
         "str w20, [x28, #728]"
       ]
     },
