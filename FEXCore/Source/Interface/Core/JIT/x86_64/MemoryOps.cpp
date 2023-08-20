@@ -902,6 +902,35 @@ DEF_OP(VBroadcastFromMem) {
   }
 }
 
+DEF_OP(Push) {
+  const auto Op = IROp->C<IR::IROp_Push>();
+  const auto ValueSize = Op->ValueSize;
+
+  const Xbyak::Reg Value = GetSrc<RA_64>(Op->Value.ID());
+  const Xbyak::Reg AddrSrc = GetSrc<RA_64>(Op->Addr.ID());
+  const auto Dst = GetSrc<RA_64>(Node);
+
+  switch (ValueSize) {
+  case 1:
+    mov(byte [AddrSrc - ValueSize], Value.cvt8());
+    break;
+  case 2:
+    mov(word [AddrSrc - ValueSize], Value.cvt16());
+    break;
+  case 4:
+    mov(dword [AddrSrc - ValueSize], Value.cvt32());
+    break;
+  case 8:
+    mov(qword [AddrSrc - ValueSize], Value);
+    break;
+  default:
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+    break;
+  }
+
+  lea(Dst, qword [AddrSrc - ValueSize]);
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
@@ -1184,6 +1213,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
   REGISTER_OP(VSTOREVECTORMASKED,  VStoreVectorMasked);
   REGISTER_OP(VBROADCASTFROMMEM,   VBroadcastFromMem);
+  REGISTER_OP(PUSH,                Push);
   REGISTER_OP(MEMSET,              MemSet);
   REGISTER_OP(MEMCPY,              MemCpy);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);

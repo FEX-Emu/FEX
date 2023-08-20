@@ -188,6 +188,7 @@ namespace FEXCore::CPU {
   DEF_OP(VLoadVectorMasked);
   DEF_OP(VStoreVectorMasked);
   DEF_OP(VBroadcastFromMem);
+  DEF_OP(Push);
   DEF_OP(MemSet);
   DEF_OP(MemCpy);
   DEF_OP(CacheLineClear);

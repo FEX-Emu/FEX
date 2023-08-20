@@ -504,7 +504,15 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-
+      "GPR = Push u8:#Size, u8:$ValueSize, GPR:$Value, GPR:$Addr": {
+        "Desc": [
+          "Pushes a value to the address, returning the new pointer after incrementing.",
+          "The address is decremented by the value size while.",
+          "The return value size is the size of the current operating mode"
+        ],
+        "HasSideEffects": true,
+        "DestSize": "Size"
+      },
       "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."

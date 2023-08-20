@@ -9,15 +9,14 @@
   },
   "Instructions": {
     "push es": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x06",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #136]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "pop es": {
@@ -37,27 +36,25 @@
       ]
     },
     "push cs": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0e",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #138]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "push ss": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x16",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #140]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "pop ss": {
@@ -77,15 +74,14 @@
       ]
     },
     "push ds": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x1e",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x20, x20, #0x4 (4)",
-        "bfxil x8, x20, #0, #32",
         "ldrh w21, [x28, #142]",
-        "str w21, [x20]"
+        "str w21, [x20, #-4]!",
+        "bfxil x8, x20, #0, #32"
       ]
     },
     "pop ds": {
@@ -454,66 +450,54 @@
       ]
     },
     "pusha": {
-      "ExpectedInstructionCount": "25",
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x21, x20, #0x4 (4)",
-        "mov w22, w4",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "mov w21, w4",
+        "stur w21, [x20, #-4]",
+        "sub w21, w20, #0x4 (4)",
         "mov w22, w5",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
         "mov w22, w6",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
         "mov w22, w7",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
-        "str w20, [x21]",
-        "sub x20, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
+        "stur w20, [x21, #-4]",
+        "sub w20, w21, #0x4 (4)",
         "mov w21, w9",
-        "str w21, [x20]",
-        "sub x20, x20, #0x4 (4)",
+        "str w21, [x20, #-4]!",
         "mov w21, w10",
-        "str w21, [x20]",
-        "sub x20, x20, #0x4 (4)",
+        "str w21, [x20, #-4]!",
         "mov w21, w11",
-        "str w21, [x20]",
+        "str w21, [x20, #-4]!",
         "bfxil x8, x20, #0, #32"
       ]
     },
     "pushad": {
-      "ExpectedInstructionCount": "25",
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
-        "sub x21, x20, #0x4 (4)",
-        "mov w22, w4",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "mov w21, w4",
+        "stur w21, [x20, #-4]",
+        "sub w21, w20, #0x4 (4)",
         "mov w22, w5",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
         "mov w22, w6",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
         "mov w22, w7",
-        "str w22, [x21]",
-        "sub x21, x21, #0x4 (4)",
-        "str w20, [x21]",
-        "sub x20, x21, #0x4 (4)",
+        "str w22, [x21, #-4]!",
+        "stur w20, [x21, #-4]",
+        "sub w20, w21, #0x4 (4)",
         "mov w21, w9",
-        "str w21, [x20]",
-        "sub x20, x20, #0x4 (4)",
+        "str w21, [x20, #-4]!",
         "mov w21, w10",
-        "str w21, [x20]",
-        "sub x20, x20, #0x4 (4)",
+        "str w21, [x20, #-4]!",
         "mov w21, w11",
-        "str w21, [x20]",
+        "str w21, [x20, #-4]!",
         "bfxil x8, x20, #0, #32"
       ]
     },

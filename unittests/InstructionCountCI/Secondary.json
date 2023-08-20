@@ -1853,13 +1853,12 @@
       ]
     },
     "push fs": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xa0",
       "ExpectedArm64ASM": [
-        "sub x8, x8, #0x8 (8)",
         "ldr x20, [x28, #176]",
-        "str x20, [x8]"
+        "str x20, [x8, #-8]!"
       ]
     },
     "pop fs": {
@@ -2376,13 +2375,12 @@
       ]
     },
     "push gs": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xa8",
       "ExpectedArm64ASM": [
-        "sub x8, x8, #0x8 (8)",
         "ldr x20, [x28, #168]",
-        "str x20, [x8]"
+        "str x20, [x8, #-8]!"
       ]
     },
     "pop gs": {

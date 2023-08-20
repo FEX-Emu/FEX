@@ -457,6 +457,37 @@ DEF_OP(VBroadcastFromMem) {
   }
 }
 
+DEF_OP(Push) {
+  const auto Op = IROp->C<IR::IROp_Push>();
+  const auto ValueSize = Op->ValueSize;
+
+  uint64_t MemData = *GetSrc<uint64_t*>(Data->SSAData, Op->Addr);
+
+  switch (ValueSize) {
+    case 1: {
+      *reinterpret_cast<uint8_t*>(MemData - ValueSize) = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
+      break;
+    }
+    case 2: {
+      *reinterpret_cast<uint16_t*>(MemData - ValueSize) = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
+      break;
+    }
+    case 4: {
+      *reinterpret_cast<uint32_t*>(MemData - ValueSize) = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
+      break;
+    }
+    case 8: {
+      *reinterpret_cast<uint64_t*>(MemData - ValueSize) = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+      break;
+  }
+
+  GD = MemData - ValueSize;
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
   const int32_t Size = Op->Size;
