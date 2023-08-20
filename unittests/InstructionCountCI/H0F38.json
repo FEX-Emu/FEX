@@ -782,18 +782,13 @@
       ]
     },
     "sha1msg1 xmm0, xmm1": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0xc9"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[3], v16.s[1]",
-        "mov v4.16b, v0.16b",
-        "mov v4.s[2], v16.s[0]",
-        "mov v4.s[1], v17.s[3]",
-        "mov v4.s[0], v17.s[2]",
+        "ext v4.16b, v17.16b, v16.16b, #8",
         "eor v16.16b, v16.16b, v4.16b"
       ]
     },
