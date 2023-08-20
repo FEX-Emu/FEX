@@ -1540,6 +1540,7 @@ namespace FEX::HLE {
       (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
 
+#ifndef FEX_DISABLE_TELEMETRY
       // In the case of signals that cause coredump or terminate, save telemetry early.
       // FEX is hard crashing at this point and won't hit regular shutdown routines.
       // Add the signal to the crash mask.
@@ -1547,6 +1548,7 @@ namespace FEX::HLE {
       if (!ApplicationName.empty()) {
         FEXCore::Telemetry::Shutdown(ApplicationName);
       }
+#endif
 
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
