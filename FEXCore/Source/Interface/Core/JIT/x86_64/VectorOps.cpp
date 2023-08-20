@@ -3191,13 +3191,13 @@ DEF_OP(VExtr) {
 
   const auto Index = Op->Index;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto ByteIndex = uint32_t{Index} * ElementSize;
 
   const auto Dst = GetDst(Node);
   const auto VectorLower = GetSrc(Op->VectorLower.ID());
   const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   if (Is256Bit) {
-    const auto ByteIndex = Index * ElementSize;
     const auto IsUpperVectorZero = ByteIndex >= OpSize;
     const auto SanitizedByteIndex = IsUpperVectorZero ? ByteIndex - OpSize
                                                       : ByteIndex;
@@ -3227,9 +3227,9 @@ DEF_OP(VExtr) {
     vpxor(xmm14, xmm14, xmm14);
     movq(xmm15, VectorUpper);
     vshufpd(xmm15, xmm15, VectorLower, 0b00);
-    vpalignr(Dst, xmm14, xmm15, Index);
+    vpalignr(Dst, xmm14, xmm15, ByteIndex);
   } else {
-    vpalignr(Dst, VectorLower, VectorUpper, Index);
+    vpalignr(Dst, VectorLower, VectorUpper, ByteIndex);
   }
 }
 
