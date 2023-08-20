@@ -1966,7 +1966,11 @@ void OpDispatchBuilder::AVXCVTGPR_To_FPR<8>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  // If loading a vector, use the full size, so we don't
+  // unnecessarily zero extend the vector. Otherwise, if
+  // memory, then we want to load the element size exactly.
+  const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
   // GPR size is determined by REX.W
   // Source Element size is determined by instruction

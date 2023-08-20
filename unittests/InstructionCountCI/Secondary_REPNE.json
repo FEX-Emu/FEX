@@ -111,17 +111,16 @@
       ]
     },
     "cvttsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "fcvtzs w4, d4"
+        "fcvtzs w4, d16"
       ]
     },
     "cvttsd2si eax, qword [rbx]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d4, [x7]",
@@ -129,12 +128,11 @@
       ]
     },
     "cvttsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "fcvtzs x4, d4"
+        "fcvtzs x4, d16"
       ]
     },
     "cvttsd2si rax, qword [rbx]": {
@@ -147,12 +145,11 @@
       ]
     },
     "cvtsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "frinti d0, d4",
+        "frinti d0, d16",
         "fcvtzs x4, d0"
       ]
     },
@@ -167,12 +164,11 @@
       ]
     },
     "cvtsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "frinti d0, d4",
+        "frinti d0, d16",
         "fcvtzs x4, d0"
       ]
     },

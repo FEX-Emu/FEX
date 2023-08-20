@@ -4168,105 +4168,93 @@
       ]
     },
     "vcvttss2si eax, xmm0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "fcvtzs w4, s4"
       ]
     },
     "vcvttss2si rax, xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "fcvtzs x4, s4"
       ]
     },
     "vcvttsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "fcvtzs w4, d4"
       ]
     },
     "vcvttsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "fcvtzs x4, d4"
       ]
     },
     "vcvtss2si eax, xmm0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v4.s[0]",
-        "mov v4.16b, v0.16b",
         "frinti s0, s4",
         "fcvtzs w4, s0"
       ]
     },
     "vcvtss2si rax, xmm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "frinti s0, s4",
         "fcvtzs x4, s0"
       ]
     },
     "vcvtsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "frinti d0, d4",
         "fcvtzs x4, d0"
       ]
     },
     "vcvtsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "frinti d0, d4",
         "fcvtzs x4, d0"
       ]
