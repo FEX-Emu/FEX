@@ -318,6 +318,7 @@ public:
   void MOVLPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
+  void MOVSSOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
@@ -376,7 +377,6 @@ public:
   void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);
   void LZCNT(OpcodeArgs);
-  void MOVSSOp(OpcodeArgs);
   template<size_t ElementSize, bool Scalar>
   void VFCMPOp(OpcodeArgs);
   template<size_t ElementSize>
@@ -973,6 +973,7 @@ private:
                       const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
 
+  void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
   void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
 
   OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,

@@ -165,53 +165,40 @@ void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
-    // MOVSS xmm1, xmm2
+    // MOVSS/SD xmm1, xmm2
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
+    auto Result = _VInsElement(16, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
   else if (Op->Dest.IsGPR()) {
-    // MOVSS xmm1, mem32
-    // xmm1[127:0] <- zext(mem32)
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    // MOVSS/SD xmm1, mem32/mem64
+    // xmm1[127:0] <- zext(mem32/mem64)
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
     StoreResult(FPRClass, Op, Src, -1);
   }
   else {
-    // MOVSS mem32, xmm1
+    // MOVSS/SD mem32/mem64, xmm1
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 4, -1);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, ElementSize, -1);
   }
 }
 
+void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
+  MOVScalarOpImpl(Op, 4);
+}
+
 void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
-  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
-    // xmm1[63:0] <- xmm2[63:0]
-    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
-    StoreResult(FPRClass, Op, Result, -1);
-  }
-  else if (Op->Dest.IsGPR()) {
-    // xmm1[127:0] <- zext(mem64)
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 8, Op->Flags, -1);
-    StoreResult(FPRClass, Op, Src, -1);
-  }
-  else {
-    // In this case memory is the destination and the low bits of the XMM are source
-    // Mem64 = xmm2[63:0]
-    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, -1);
-  }
+  MOVScalarOpImpl(Op, 8);
 }
 
 void OpDispatchBuilder::VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Src[1].IsGPR()) {
     // VMOVSS/SD xmm1, xmm2, xmm3
-    OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
-    OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags, -1);
+    OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
     OrderedNode *Result = _VInsElement(16, ElementSize, 0, 0, Src1, Src2);
     StoreResult(FPRClass, Op, Result, -1);
   } else if (Op->Dest.IsGPR()) {
@@ -220,7 +207,7 @@ void OpDispatchBuilder::VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
     StoreResult(FPRClass, Op, Src, -1);
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, ElementSize, -1);
   }
 }
