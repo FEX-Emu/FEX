@@ -4648,6 +4648,9 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUSHLS,            VUShlS);
   REGISTER_OP(VUSHRS,            VUShrS);
   REGISTER_OP(VSSHRS,            VSShrS);
+  REGISTER_OP(VUSHRSWIDE,        VUShrS);
+  REGISTER_OP(VSSHRSWIDE,        VSShrS);
+  REGISTER_OP(VUSHLSWIDE,        VUShlS);
   REGISTER_OP(VINSELEMENT,       VInsElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);

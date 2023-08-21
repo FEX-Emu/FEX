@@ -1384,6 +1384,18 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
+      "FPR = VUShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VSShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VUShlSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "FPR = VInsElement u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, u8:$SrcIdx, FPR:$DestVector, FPR:$SrcVector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"

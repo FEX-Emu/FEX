@@ -1064,6 +1064,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VSSHR,             VSShr);
         REGISTER_OP(VUSHLS,            VUShlS);
         REGISTER_OP(VUSHRS,            VUShrS);
+        REGISTER_OP(VUSHRSWIDE,        VUShrSWide);
+        REGISTER_OP(VSSHRSWIDE,        VSShrSWide);
+        REGISTER_OP(VUSHLSWIDE,        VUShlSWide);
         REGISTER_OP(VSSHRS,            VSShrS);
         REGISTER_OP(VINSELEMENT,       VInsElement);
         REGISTER_OP(VDUPELEMENT,       VDupElement);

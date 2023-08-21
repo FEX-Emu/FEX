@@ -63,6 +63,16 @@
   }                                                 \
   break;                                            \
   }
+#define DO_VECTOR_SCALAR_WIDE_OP(size, type, func)\
+  case size: {                                      \
+  auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+  auto *Src1_d = reinterpret_cast<type*>(Src1); \
+  for (uint8_t i = 0; i < Elements; ++i) {          \
+    Dst_d[i] = func(Src1_d[i], Src2);          \
+  }                                                 \
+  break;                                            \
+  }
+
 #define DO_VECTOR_0SRC_OP(size, type, func)              \
   case size: {                                      \
   auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \

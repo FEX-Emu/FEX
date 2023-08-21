@@ -1507,10 +1507,7 @@ OrderedNode* OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
   const auto Size = GetSrcSize(Op);
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
-  ShiftVec = _VUMin(8, 8, MaxShift, ShiftVec);
-
-  return _VUShrS(Size, ElementSize, Src, ShiftVec);
+  return _VUShrSWide(Size, ElementSize, Src, ShiftVec);
 }
 
 template<size_t ElementSize>
@@ -1658,13 +1655,10 @@ void OpDispatchBuilder::VPSLLIOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
                                          OrderedNode *Src, OrderedNode *ShiftVec) {
-  const auto DstSize = GetDstSize(Op);
+  const auto Size = GetDstSize(Op);
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
-  ShiftVec = _VUMin(8, 8, MaxShift, ShiftVec);
-
-  return _VUShlS(DstSize, ElementSize, Src, ShiftVec);
+  return _VUShlSWide(Size, ElementSize, Src, ShiftVec);
 }
 
 template<size_t ElementSize>
@@ -1710,10 +1704,7 @@ OrderedNode* OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize,
   const auto Size = GetDstSize(Op);
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
-  ShiftVec = _VUMin(8, 8, MaxShift, ShiftVec);
-
-  return _VSShrS(Size, ElementSize, Src, ShiftVec);
+  return _VSShrSWide(Size, ElementSize, Src, ShiftVec);
 }
 
 template<size_t ElementSize>
