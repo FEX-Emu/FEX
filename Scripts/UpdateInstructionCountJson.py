@@ -22,6 +22,7 @@ def update_performance_numbers(performance_json_path, performance_json, new_json
     # Output to the original file.
     with open(performance_json_path, "w") as json_file:
         json.dump(performance_json, json_file, indent=2)
+        json_file.write("\n")
 
 def main():
     if sys.version_info[0] < 3:
