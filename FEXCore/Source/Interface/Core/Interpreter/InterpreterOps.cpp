@@ -346,8 +346,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::I
 
   auto BlockEnd = CurrentIR->GetBlocks().end();
 
-  constexpr size_t ListEntrySizeInBytes = sizeof(InterpVector256);
-  const size_t SSADataSize = ListSize * ListEntrySizeInBytes;
+  // SSA data elements must be able to accommodate data that would
+  // fit inside the largest vector size (otherwise vector operations
+  // go kaboom, and we don't want that).
+  const size_t SSADataSize = ListSize * MaxInterpeterVectorSize;
 
   InterpreterOps::IROpData OpData{
     .State = Frame->Thread,
