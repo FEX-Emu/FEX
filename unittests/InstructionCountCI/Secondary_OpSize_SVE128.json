@@ -1,0 +1,83 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128"
+    ],
+    "DisabledHostFeatures": []
+  },
+  "Instructions": {
+    "psrlw xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xd1",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsr z16.h, p6/m, z16.h, z0.d"
+      ]
+    },
+    "psrld xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xd2",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsr z16.s, p6/m, z16.s, z0.d"
+      ]
+    },
+    "psrlq xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xd3",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsr z16.d, p6/m, z16.d, z0.d"
+      ]
+    },
+    "psraw xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xe1",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "asr z16.h, p6/m, z16.h, z0.d"
+      ]
+    },
+    "psrad xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xe2",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "asr z16.s, p6/m, z16.s, z0.d"
+      ]
+    },
+    "psllw xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xf1",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsl z16.h, p6/m, z16.h, z0.d"
+      ]
+    },
+    "pslld xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xf2",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsl z16.s, p6/m, z16.s, z0.d"
+      ]
+    },
+    "psllq xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0xf3",
+      "ExpectedArm64ASM": [
+        "mov z0.d, d17",
+        "lsl z16.d, p6/m, z16.d, z0.d"
+      ]
+    }
+  }
+}

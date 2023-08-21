@@ -1,0 +1,117 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128"
+    ],
+    "DisabledHostFeatures": [
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "psrlw mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd1",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsr z4.h, p6/m, z4.h, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psrld mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd2",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsr z4.s, p6/m, z4.s, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psrlq mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd3",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsr z4.d, p6/m, z4.d, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psraw mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xe1",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "asr z4.h, p6/m, z4.h, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psrad mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xe2",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "asr z4.s, p6/m, z4.s, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psllw mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf1",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsl z4.h, p6/m, z4.h, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "pslld mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf2",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsl z4.s, p6/m, z4.s, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    },
+    "psllq mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf3",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x28, #768]",
+        "ldr d5, [x28, #752]",
+        "mov z0.d, d4",
+        "movprfx z4, z5",
+        "lsl z4.d, p6/m, z4.d, z0.d",
+        "str d4, [x28, #752]"
+      ]
+    }
+  }
+}

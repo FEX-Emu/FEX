@@ -759,49 +759,37 @@
       ]
     },
     "psrlw xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd1",
       "ExpectedArm64ASM": [
-        "mov w0, #0x10",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.8h, v4.h[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.8h, v0.h[0]",
         "neg v0.8h, v0.8h",
         "ushl v16.8h, v16.8h, v0.8h"
       ]
     },
     "psrld xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd2",
       "ExpectedArm64ASM": [
-        "mov w0, #0x20",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.4s, v4.s[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.4s, v0.s[0]",
         "neg v0.4s, v0.4s",
         "ushl v16.4s, v16.4s, v0.4s"
       ]
     },
     "psrlq xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd3",
       "ExpectedArm64ASM": [
-        "mov w0, #0x40",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.2d, v4.d[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.2d, v0.d[0]",
         "neg v0.2d, v0.2d",
         "ushl v16.2d, v16.2d, v0.2d"
       ]
@@ -913,33 +901,25 @@
       ]
     },
     "psraw xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe1",
       "ExpectedArm64ASM": [
-        "mov w0, #0x10",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.8h, v4.h[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.8h, v0.h[0]",
         "neg v0.8h, v0.8h",
         "sshl v16.8h, v16.8h, v0.8h"
       ]
     },
     "psrad xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe2",
       "ExpectedArm64ASM": [
-        "mov w0, #0x20",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.4s, v4.s[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.4s, v0.s[0]",
         "neg v0.4s, v0.4s",
         "sshl v16.4s, v16.4s, v0.4s"
       ]
@@ -1060,47 +1040,35 @@
       ]
     },
     "psllw xmm0, xmm1": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf1",
       "ExpectedArm64ASM": [
-        "mov w0, #0x10",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.8h, v4.h[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.8h, v0.h[0]",
         "ushl v16.8h, v16.8h, v0.8h"
       ]
     },
     "pslld xmm0, xmm1": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf2",
       "ExpectedArm64ASM": [
-        "mov w0, #0x20",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.4s, v4.s[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.4s, v0.s[0]",
         "ushl v16.4s, v16.4s, v0.4s"
       ]
     },
     "psllq xmm0, xmm1": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf3",
       "ExpectedArm64ASM": [
-        "mov w0, #0x40",
-        "dup v4.2d, x0",
-        "cmhi v0.2d, v17.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v4.16b, v1.16b",
-        "dup v0.2d, v4.d[0]",
+        "uqshl d0, d17, #57",
+        "ushr d0, d0, #57",
+        "dup v0.2d, v0.d[0]",
         "ushl v16.2d, v16.2d, v0.2d"
       ]
     },

@@ -432,6 +432,9 @@ private:
   DEF_OP(VUShlS);
   DEF_OP(VUShrS);
   DEF_OP(VSShrS);
+  DEF_OP(VUShrSWide);
+  DEF_OP(VSShrSWide);
+  DEF_OP(VUShlSWide);
   DEF_OP(VInsElement);
   DEF_OP(VDupElement);
   DEF_OP(VExtr);

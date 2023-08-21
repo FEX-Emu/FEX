@@ -1578,6 +1578,83 @@ DEF_OP(VSShrS) {
   memcpy(GDP, Tmp, OpSize);
 }
 
+DEF_OP(VUShlSWide) {
+  const auto Op = IROp->C<IR::IROp_VUShlSWide>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto Func = [](auto a, uint64_t b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
+
+  switch (ElementSize) {
+    DO_VECTOR_SCALAR_WIDE_OP(1, uint8_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(2, uint16_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(4, uint32_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(8, uint64_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(16, __uint128_t, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp, OpSize);
+}
+
+DEF_OP(VUShrSWide) {
+  const auto Op = IROp->C<IR::IROp_VUShrS>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto Func = [](auto a, uint64_t b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
+
+  switch (ElementSize) {
+    DO_VECTOR_SCALAR_WIDE_OP(1, uint8_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(2, uint16_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(4, uint32_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(8, uint64_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(16, __uint128_t, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp, OpSize);
+}
+
+DEF_OP(VSShrSWide) {
+  const auto Op = IROp->C<IR::IROp_VSShrS>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto Func = [](auto a, uint64_t b) {
+    return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b;
+  };
+
+  switch (ElementSize) {
+    DO_VECTOR_SCALAR_WIDE_OP(1, int8_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(2, int16_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(4, int32_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(8, int64_t, Func)
+    DO_VECTOR_SCALAR_WIDE_OP(16, __int128_t, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp, OpSize);
+}
+
 DEF_OP(VInsElement) {
   const auto Op = IROp->C<IR::IROp_VInsElement>();
   const auto OpSize = IROp->Size;

@@ -2257,6 +2257,185 @@ DEF_OP(VUShrS) {
   }
 }
 
+DEF_OP(VUShrSWide) {
+  const auto Op = IROp->C<IR::IROp_VUShrSWide>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  }
+  else if (HostSupportsSVE128) {
+    const auto Mask = PRED_TMP_16B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  } else {
+    // uqshl + ushr of 57-bits leaves 7-bits remaining.
+    // This saturates the 64-bit shift value from an arbitrary 64-bit length
+    // variable to maximum of 0x7F.
+    // This allows the shift to fit within the width of the signed 8-bits
+    // that ASIMD's vector shift requires.
+    uqshl(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, ShiftScalar, 57);
+    ushr(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, VTMP1, 57);
+    dup(SubRegSize, VTMP1.Q(), VTMP1.Q(), 0);
+    neg(SubRegSize, VTMP1.Q(), VTMP1.Q());
+    ushl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VSShrSWide) {
+  const auto Op = IROp->C<IR::IROp_VSShrSWide>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  }
+  else if (HostSupportsSVE128) {
+    const auto Mask = PRED_TMP_16B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  } else {
+    // uqshl + ushr of 57-bits leaves 7-bits remaining.
+    // This saturates the 64-bit shift value from an arbitrary 64-bit length
+    // variable to maximum of 0x7F.
+    // This allows the shift to fit within the width of the signed 8-bits
+    // that ASIMD's vector shift requires.
+    uqshl(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, ShiftScalar, 57);
+    ushr(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, VTMP1, 57);
+    dup(SubRegSize, VTMP1.Q(), VTMP1.Q(), 0);
+    neg(SubRegSize, VTMP1.Q(), VTMP1.Q());
+    sshl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VUShlSWide) {
+  const auto Op = IROp->C<IR::IROp_VUShlSWide>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  }
+  else if (HostSupportsSVE128) {
+    const auto Mask = PRED_TMP_16B.Merging();
+
+    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    if (Dst != Vector) {
+      // NOTE: SVE LSR is a destructive operation.
+      movprfx(Dst.Z(), Vector.Z());
+    }
+    if (ElementSize == 8) {
+      lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+    else {
+      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+    }
+  } else {
+    // uqshl + ushr of 57-bits leaves 7-bits remaining.
+    // This saturates the 64-bit shift value from an arbitrary 64-bit length
+    // variable to maximum of 0x7F.
+    // This allows the shift to fit within the width of the signed 8-bits
+    // that ASIMD's vector shift requires.
+    uqshl(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, ShiftScalar, 57);
+    ushr(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, VTMP1, 57);
+    dup(SubRegSize, VTMP1.Q(), VTMP1.Q(), 0);
+    ushl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(VSShrS) {
   const auto Op = IROp->C<IR::IROp_VSShrS>();
   const auto OpSize = IROp->Size;
