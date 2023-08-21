@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include <FEXCore/Core/CoreState.h>
@@ -433,13 +434,14 @@ namespace FEXCore::CPU {
     return IROp->Size;
   }
 
+  // The maximum size a vector can be within FEX's interpreter.
+  // NOTE: If we ever support AVX-512, this should be changed
+  //       to 64 bytes in size.
+  static constexpr size_t MaxInterpeterVectorSize = Core::CPUState::XMM_AVX_REG_SIZE;
+
   // Alias for specifying temporary data that is operated on
   // before storing into a destination.
-  //
-  // NOTE: This should be the maximum size a vector can be within
-  //       FEX. e.g. If we ever support AVX-512, this should be changed
-  //       to be 64 bytes in size.
-  using TempVectorDataArray = std::array<uint8_t, Core::CPUState::XMM_AVX_REG_SIZE>;
+  using TempVectorDataArray = std::array<uint8_t, MaxInterpeterVectorSize>;
 
   };
 } // namespace FEXCore::CPU
