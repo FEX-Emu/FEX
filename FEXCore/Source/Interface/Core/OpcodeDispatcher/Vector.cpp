@@ -3575,28 +3575,9 @@ OrderedNode* OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::Decoded
   OrderedNode *Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
   OrderedNode *Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
-  // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  OrderedNode *Src1_Neg = _VNeg(Size, ElementSize, Src1V);
-  OrderedNode *Src2_Neg = _VNeg(Size, ElementSize, Src2V);
-
-  // Now we need to swizzle the values
-  OrderedNode *Swizzle_Src1{};
-  OrderedNode *Swizzle_Src2{};
-  if (Size == 8 && ElementSize == 4) {
-    Swizzle_Src1 = _VInsElement(Size, ElementSize, 1, 1, Src1V, Src1_Neg);
-    Swizzle_Src2 = _VInsElement(Size, ElementSize, 1, 1, Src2V, Src2_Neg);
-  } else {
-    OrderedNode *UzpSrc1 = _VUnZip(Size, ElementSize, Src1V, Src1V);
-    OrderedNode *UzpSrc2 = _VUnZip(Size, ElementSize, Src2V, Src2V);
-
-    OrderedNode *UzpSrc1Neg = _VUnZip2(Size, ElementSize, Src1_Neg, Src1_Neg);
-    OrderedNode *UzpSrc2Neg = _VUnZip2(Size, ElementSize, Src2_Neg, Src2_Neg);
-
-    Swizzle_Src1 = _VZip(Size, ElementSize, UzpSrc1, UzpSrc1Neg);
-    Swizzle_Src2 = _VZip(Size, ElementSize, UzpSrc2, UzpSrc2Neg);
-  }
-
-  return _VAddP(Size, ElementSize, Swizzle_Src1, Swizzle_Src2);
+  auto Even = _VUnZip(Size, ElementSize, Src1V, Src2V);
+  auto Odd = _VUnZip2(Size, ElementSize, Src1V, Src2V);
+  return _VSub(Size, ElementSize, Even, Odd);
 }
 
 template<size_t ElementSize>
