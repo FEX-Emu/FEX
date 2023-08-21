@@ -1,5 +1,7 @@
 #pragma once
-#include <stdint.h>
+
+#include <array>
+#include <cstdint>
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
@@ -47,7 +49,6 @@ namespace FEXCore::CPU {
   };
 
   class InterpreterOps {
-
     public:
       static void InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::IR::IRListView const *IR);
       static void FillFallbackIndexPointers(uint64_t *Info);
@@ -431,6 +432,14 @@ namespace FEXCore::CPU {
     auto IROp = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Node);
     return IROp->Size;
   }
+
+  // Alias for specifying temporary data that is operated on
+  // before storing into a destination.
+  //
+  // NOTE: This should be the maximum size a vector can be within
+  //       FEX. e.g. If we ever support AVX-512, this should be changed
+  //       to be 64 bytes in size.
+  using TempVectorDataArray = std::array<uint8_t, Core::CPUState::XMM_AVX_REG_SIZE>;
 
   };
 } // namespace FEXCore::CPU
