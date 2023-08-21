@@ -3344,27 +3344,25 @@ OrderedNode* OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::Dec
     return _VSQXTN(Size * 2, 4, ResAdd);
   }
 
+  // V{U,S}XTL{,2}/ and VUnZip{,2} can be optimized in this solution to save about one instruction.
+  // We can up-front zero extend and sign extend the elements in-place.
+  // This means extracting even and odd elements up-front so the unzips aren't required.
+  // Requires implementing IR ops for BIC (vector, immediate) although.
+
   // Src1 is unsigned
   auto Src1_16b_L = _VUXTL(Size, 1, Src1);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
-  auto Src1_16b_H = _VUXTL2(Size, 1, Src1);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+  auto Src2_16b_L = _VSXTL(Size, 1, Src2);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+  auto ResMul_L   = _VSMul(Size, 2, Src1_16b_L, Src2_16b_L);
 
   // Src2 is signed
-  auto Src2_16b_L = _VSXTL(Size, 1, Src2);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+  auto Src1_16b_H = _VUXTL2(Size, 1, Src1);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
   auto Src2_16b_H = _VSXTL2(Size, 1, Src2);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+  auto ResMul_L_H = _VSMul(Size, 2, Src1_16b_H, Src2_16b_H);
 
-  auto ResMul_L   = _VSMull(Size, 2, Src1_16b_L, Src2_16b_L);
-  auto ResMul_L_H = _VSMull2(Size, 2, Src1_16b_L, Src2_16b_L);
+  auto TmpZip1 = _VUnZip(Size, 2, ResMul_L, ResMul_L_H);
+  auto TmpZip2 = _VUnZip2(Size, 2, ResMul_L, ResMul_L_H);
 
-  auto ResMul_H   = _VSMull(Size, 2, Src1_16b_H, Src2_16b_H);
-  auto ResMul_H_H = _VSMull2(Size, 2, Src1_16b_H, Src2_16b_H);
-
-  // Now add pairwise across the vector
-  auto ResAdd_L = _VAddP(Size, 4, ResMul_L, ResMul_L_H);
-  auto ResAdd_H = _VAddP(Size, 4, ResMul_H, ResMul_H_H);
-
-  // Add saturate back down to 16bit
-  OrderedNode *Res = _VSQXTN(Size, 4, ResAdd_L);
-  return _VSQXTN2(Size, 4, Res, ResAdd_H);
+  return _VSQAdd(Size, 2, TmpZip1, TmpZip2);
 }
 
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
