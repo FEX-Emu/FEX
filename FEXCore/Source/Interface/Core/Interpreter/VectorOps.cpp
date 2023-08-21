@@ -30,7 +30,7 @@ DEF_OP(VectorImm) {
   auto Op = IROp->C<IR::IROp_VectorImm>();
   uint8_t OpSize = IROp->Size;
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;;
 
   uint8_t Elements = OpSize / Op->Header.ElementSize;
   uint8_t Imm = Op->Immediate;
@@ -43,7 +43,7 @@ DEF_OP(VectorImm) {
     DO_VECTOR_0SRC_OP(8, int64_t, Func)
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VMov) {
@@ -160,7 +160,7 @@ DEF_OP(VAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -175,7 +175,7 @@ DEF_OP(VAdd) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSub) {
@@ -184,7 +184,7 @@ DEF_OP(VSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -199,7 +199,7 @@ DEF_OP(VSub) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUQAdd) {
@@ -208,7 +208,7 @@ DEF_OP(VUQAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -226,7 +226,7 @@ DEF_OP(VUQAdd) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUQSub) {
@@ -235,7 +235,7 @@ DEF_OP(VUQSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -253,7 +253,7 @@ DEF_OP(VUQSub) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQAdd) {
@@ -262,7 +262,7 @@ DEF_OP(VSQAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -294,7 +294,7 @@ DEF_OP(VSQAdd) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQSub) {
@@ -303,7 +303,7 @@ DEF_OP(VSQSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -333,7 +333,7 @@ DEF_OP(VSQSub) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VAddP) {
@@ -342,7 +342,7 @@ DEF_OP(VAddP) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = (OpSize / ElementSize) / 2;
@@ -357,7 +357,7 @@ DEF_OP(VAddP) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VAddV) {
@@ -365,7 +365,7 @@ DEF_OP(VAddV) {
   const auto OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -380,7 +380,7 @@ DEF_OP(VAddV) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       return;
   }
-  memcpy(GDP, Tmp, ElementSize);
+  memcpy(GDP, Tmp.data(), ElementSize);
 }
 
 DEF_OP(VUMinV) {
@@ -388,7 +388,7 @@ DEF_OP(VUMinV) {
   const int8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -403,7 +403,7 @@ DEF_OP(VUMinV) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, ElementSize);
+  memcpy(GDP, Tmp.data(), ElementSize);
 }
 
 DEF_OP(VURAvg) {
@@ -412,7 +412,7 @@ DEF_OP(VURAvg) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -425,7 +425,7 @@ DEF_OP(VURAvg) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VAbs) {
@@ -433,7 +433,7 @@ DEF_OP(VAbs) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -448,7 +448,7 @@ DEF_OP(VAbs) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VPopcount) {
@@ -456,7 +456,7 @@ DEF_OP(VPopcount) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -471,7 +471,7 @@ DEF_OP(VPopcount) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFAdd) {
@@ -480,7 +480,7 @@ DEF_OP(VFAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -493,7 +493,7 @@ DEF_OP(VFAdd) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFAddP) {
@@ -502,7 +502,7 @@ DEF_OP(VFAddP) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = (OpSize / ElementSize) / 2;
@@ -515,7 +515,7 @@ DEF_OP(VFAddP) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFSub) {
@@ -524,7 +524,7 @@ DEF_OP(VFSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -537,7 +537,7 @@ DEF_OP(VFSub) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFMul) {
@@ -546,7 +546,7 @@ DEF_OP(VFMul) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -559,7 +559,7 @@ DEF_OP(VFMul) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFDiv) {
@@ -568,7 +568,7 @@ DEF_OP(VFDiv) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -581,7 +581,7 @@ DEF_OP(VFDiv) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFMin) {
@@ -590,7 +590,7 @@ DEF_OP(VFMin) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -603,7 +603,7 @@ DEF_OP(VFMin) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFMax) {
@@ -612,7 +612,7 @@ DEF_OP(VFMax) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -625,7 +625,7 @@ DEF_OP(VFMax) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFRecp) {
@@ -633,7 +633,7 @@ DEF_OP(VFRecp) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -646,7 +646,7 @@ DEF_OP(VFRecp) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFSqrt) {
@@ -654,7 +654,7 @@ DEF_OP(VFSqrt) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -667,7 +667,7 @@ DEF_OP(VFSqrt) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFRSqrt) {
@@ -675,7 +675,7 @@ DEF_OP(VFRSqrt) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -688,7 +688,7 @@ DEF_OP(VFRSqrt) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VNeg) {
@@ -696,7 +696,7 @@ DEF_OP(VNeg) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -711,7 +711,7 @@ DEF_OP(VNeg) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFNeg) {
@@ -719,7 +719,7 @@ DEF_OP(VFNeg) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -732,7 +732,7 @@ DEF_OP(VFNeg) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VNot) {
@@ -753,7 +753,7 @@ DEF_OP(VUMin) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -768,7 +768,7 @@ DEF_OP(VUMin) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSMin) {
@@ -777,7 +777,7 @@ DEF_OP(VSMin) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -792,7 +792,7 @@ DEF_OP(VSMin) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUMax) {
@@ -801,7 +801,7 @@ DEF_OP(VUMax) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -816,7 +816,7 @@ DEF_OP(VUMax) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSMax) {
@@ -825,7 +825,7 @@ DEF_OP(VSMax) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -840,7 +840,7 @@ DEF_OP(VSMax) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VZip) {
@@ -849,7 +849,7 @@ DEF_OP(VZip) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
   const uint8_t ElementSize = Op->Header.ElementSize;
   uint8_t Elements = OpSize / ElementSize;
   const uint8_t BaseOffset = IROp->Op == IR::OP_VZIP2 ? (Elements / 2) : 0;
@@ -857,7 +857,7 @@ DEF_OP(VZip) {
 
   switch (ElementSize) {
     case 1: {
-      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -867,7 +867,7 @@ DEF_OP(VZip) {
       break;
     }
     case 2: {
-      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint16_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -877,7 +877,7 @@ DEF_OP(VZip) {
       break;
     }
     case 4: {
-      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint32_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -887,7 +887,7 @@ DEF_OP(VZip) {
       break;
     }
     case 8: {
-      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint64_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -901,7 +901,7 @@ DEF_OP(VZip) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VTrn) {
@@ -910,7 +910,7 @@ DEF_OP(VTrn) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
   const uint8_t ElementSize = Op->Header.ElementSize;
   uint8_t Elements = OpSize / ElementSize;
   const uint8_t BaseOffset = IROp->Op == IR::OP_VTRN2 ? 1 : 0;
@@ -918,7 +918,7 @@ DEF_OP(VTrn) {
 
   switch (ElementSize) {
     case 1: {
-      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -928,7 +928,7 @@ DEF_OP(VTrn) {
       break;
     }
     case 2: {
-      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint16_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -938,7 +938,7 @@ DEF_OP(VTrn) {
       break;
     }
     case 4: {
-      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint32_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -948,7 +948,7 @@ DEF_OP(VTrn) {
       break;
     }
     case 8: {
-      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint64_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -962,7 +962,7 @@ DEF_OP(VTrn) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUnZip) {
@@ -971,7 +971,7 @@ DEF_OP(VUnZip) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
   const uint8_t ElementSize = Op->Header.ElementSize;
   uint8_t Elements = OpSize / ElementSize;
   const unsigned Start = IROp->Op == IR::OP_VUNZIP ? 0 : 1;
@@ -979,7 +979,7 @@ DEF_OP(VUnZip) {
 
   switch (ElementSize) {
     case 1: {
-      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -989,7 +989,7 @@ DEF_OP(VUnZip) {
       break;
     }
     case 2: {
-      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint16_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -999,7 +999,7 @@ DEF_OP(VUnZip) {
       break;
     }
     case 4: {
-      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint32_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -1009,7 +1009,7 @@ DEF_OP(VUnZip) {
       break;
     }
     case 8: {
-      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp.data());
       auto *Src1_d = reinterpret_cast<uint64_t*>(Src1);
       auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
       for (unsigned i = 0; i < Elements; ++i) {
@@ -1023,7 +1023,7 @@ DEF_OP(VUnZip) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VBSL) {
@@ -1049,7 +1049,7 @@ DEF_OP(VCMPEQ) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1065,7 +1065,7 @@ DEF_OP(VCMPEQ) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VCMPEQZ) {
@@ -1074,7 +1074,7 @@ DEF_OP(VCMPEQZ) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[Core::CPUState::XMM_AVX_REG_SIZE]{};
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1090,7 +1090,7 @@ DEF_OP(VCMPEQZ) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VCMPGT) {
@@ -1099,7 +1099,7 @@ DEF_OP(VCMPGT) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1115,7 +1115,7 @@ DEF_OP(VCMPGT) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VCMPGTZ) {
@@ -1124,7 +1124,7 @@ DEF_OP(VCMPGTZ) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[Core::CPUState::XMM_AVX_REG_SIZE]{};
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1140,7 +1140,7 @@ DEF_OP(VCMPGTZ) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VCMPLTZ) {
@@ -1149,7 +1149,7 @@ DEF_OP(VCMPLTZ) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[Core::CPUState::XMM_AVX_REG_SIZE]{};
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1165,7 +1165,7 @@ DEF_OP(VCMPLTZ) {
       break;
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPEQ) {
@@ -1177,7 +1177,7 @@ DEF_OP(VFCMPEQ) {
 
   const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1202,7 +1202,7 @@ DEF_OP(VFCMPEQ) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPNEQ) {
@@ -1214,7 +1214,7 @@ DEF_OP(VFCMPNEQ) {
 
   const auto Func = [](auto a, auto b) { return a != b ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1239,7 +1239,7 @@ DEF_OP(VFCMPNEQ) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPLT) {
@@ -1251,7 +1251,7 @@ DEF_OP(VFCMPLT) {
 
   const auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1276,7 +1276,7 @@ DEF_OP(VFCMPLT) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPGT) {
@@ -1288,7 +1288,7 @@ DEF_OP(VFCMPGT) {
 
   const auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1313,7 +1313,7 @@ DEF_OP(VFCMPGT) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPLE) {
@@ -1325,7 +1325,7 @@ DEF_OP(VFCMPLE) {
 
   const auto Func = [](auto a, auto b) { return a <= b ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1350,7 +1350,7 @@ DEF_OP(VFCMPLE) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPORD) {
@@ -1362,7 +1362,7 @@ DEF_OP(VFCMPORD) {
 
   const auto Func = [](auto a, auto b) { return (!std::isnan(a) && !std::isnan(b)) ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1387,7 +1387,7 @@ DEF_OP(VFCMPORD) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VFCMPUNO) {
@@ -1399,7 +1399,7 @@ DEF_OP(VFCMPUNO) {
 
   const auto Func = [](auto a, auto b) { return (std::isnan(a) || std::isnan(b)) ? ~0ULL : 0; };
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1424,7 +1424,7 @@ DEF_OP(VFCMPUNO) {
     }
   }
 
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShl) {
@@ -1433,7 +1433,7 @@ DEF_OP(VUShl) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1448,7 +1448,7 @@ DEF_OP(VUShl) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShr) {
@@ -1457,7 +1457,7 @@ DEF_OP(VUShr) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1472,7 +1472,7 @@ DEF_OP(VUShr) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSShr) {
@@ -1481,7 +1481,7 @@ DEF_OP(VSShr) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1498,7 +1498,7 @@ DEF_OP(VSShr) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShlS) {
@@ -1507,7 +1507,7 @@ DEF_OP(VUShlS) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1523,7 +1523,7 @@ DEF_OP(VUShlS) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShrS) {
@@ -1532,7 +1532,7 @@ DEF_OP(VUShrS) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1548,7 +1548,7 @@ DEF_OP(VUShrS) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSShrS) {
@@ -1557,7 +1557,7 @@ DEF_OP(VSShrS) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1575,7 +1575,7 @@ DEF_OP(VSShrS) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShlSWide) {
@@ -1584,7 +1584,7 @@ DEF_OP(VUShlSWide) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1600,7 +1600,7 @@ DEF_OP(VUShlSWide) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShrSWide) {
@@ -1609,7 +1609,7 @@ DEF_OP(VUShrSWide) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1625,7 +1625,7 @@ DEF_OP(VUShrSWide) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSShrSWide) {
@@ -1634,7 +1634,7 @@ DEF_OP(VSShrSWide) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->ShiftScalar);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1652,7 +1652,7 @@ DEF_OP(VSShrSWide) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VInsElement) {
@@ -1663,37 +1663,37 @@ DEF_OP(VInsElement) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->DestVector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->SrcVector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   // Copy src1 in to dest
-  memcpy(Tmp, Src1, OpSize);
+  memcpy(Tmp.data(), Src1, OpSize);
   switch (ElementSize) {
     case 1: {
-      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp.data());
       auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
     case 2: {
-      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp.data());
       auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
     case 4: {
-      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp.data());
       auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
     case 8: {
-      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp.data());
       auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
     case 16: {
-      auto *Dst_d  = reinterpret_cast<__uint128_t*>(Tmp);
+      auto *Dst_d  = reinterpret_cast<__uint128_t*>(Tmp.data());
       auto *Src2_d = reinterpret_cast<__uint128_t*>(Src2);
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
@@ -1702,7 +1702,7 @@ DEF_OP(VInsElement) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   };
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VDupElement) {
@@ -1827,7 +1827,7 @@ DEF_OP(VUShrI) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   const uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1844,7 +1844,7 @@ DEF_OP(VUShrI) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSShrI) {
@@ -1853,7 +1853,7 @@ DEF_OP(VSShrI) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   const uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1870,7 +1870,7 @@ DEF_OP(VSShrI) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VShlI) {
@@ -1879,7 +1879,7 @@ DEF_OP(VShlI) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   const uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1896,7 +1896,7 @@ DEF_OP(VShlI) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShrNI) {
@@ -1905,7 +1905,7 @@ DEF_OP(VUShrNI) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   const uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -1921,7 +1921,7 @@ DEF_OP(VUShrNI) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUShrNI2) {
@@ -1931,7 +1931,7 @@ DEF_OP(VUShrNI2) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   const uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -1947,7 +1947,7 @@ DEF_OP(VUShrNI2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSXTL) {
@@ -1955,7 +1955,7 @@ DEF_OP(VSXTL) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1969,7 +1969,7 @@ DEF_OP(VSXTL) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSXTL2) {
@@ -1977,7 +1977,7 @@ DEF_OP(VSXTL2) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -1991,7 +1991,7 @@ DEF_OP(VSXTL2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUXTL) {
@@ -1999,7 +1999,7 @@ DEF_OP(VUXTL) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2013,7 +2013,7 @@ DEF_OP(VUXTL) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUXTL2) {
@@ -2022,7 +2022,7 @@ DEF_OP(VUXTL2) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2036,7 +2036,7 @@ DEF_OP(VUXTL2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQXTN) {
@@ -2044,7 +2044,7 @@ DEF_OP(VSQXTN) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -2059,7 +2059,7 @@ DEF_OP(VSQXTN) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQXTN2) {
@@ -2068,7 +2068,7 @@ DEF_OP(VSQXTN2) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -2083,7 +2083,7 @@ DEF_OP(VSQXTN2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQXTUN) {
@@ -2091,7 +2091,7 @@ DEF_OP(VSQXTUN) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -2106,7 +2106,7 @@ DEF_OP(VSQXTUN) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSQXTUN2) {
@@ -2115,7 +2115,7 @@ DEF_OP(VSQXTUN2) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / (ElementSize << 1);
@@ -2130,7 +2130,7 @@ DEF_OP(VSQXTUN2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUMul) {
@@ -2139,7 +2139,7 @@ DEF_OP(VUMul) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2154,7 +2154,7 @@ DEF_OP(VUMul) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUMull) {
@@ -2164,7 +2164,7 @@ DEF_OP(VUMull) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2178,7 +2178,7 @@ DEF_OP(VUMull) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSMul) {
@@ -2187,7 +2187,7 @@ DEF_OP(VSMul) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2202,7 +2202,7 @@ DEF_OP(VSMul) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSMull) {
@@ -2212,7 +2212,7 @@ DEF_OP(VSMull) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2226,7 +2226,7 @@ DEF_OP(VSMull) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUMull2) {
@@ -2236,7 +2236,7 @@ DEF_OP(VUMull2) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2250,7 +2250,7 @@ DEF_OP(VUMull2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VSMull2) {
@@ -2260,7 +2260,7 @@ DEF_OP(VSMull2) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2274,7 +2274,7 @@ DEF_OP(VSMull2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, Op->Header.Size);
+  memcpy(GDP, Tmp.data(), Op->Header.Size);
 }
 
 DEF_OP(VUABDL) {
@@ -2284,7 +2284,7 @@ DEF_OP(VUABDL) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2301,7 +2301,7 @@ DEF_OP(VUABDL) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VUABDL2) {
@@ -2311,7 +2311,7 @@ DEF_OP(VUABDL2) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -2328,7 +2328,7 @@ DEF_OP(VUABDL2) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VTBL1) {
@@ -2338,13 +2338,13 @@ DEF_OP(VTBL1) {
   const auto *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorTable);
   const auto *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorIndices);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   for (size_t i = 0; i < OpSize; ++i) {
     const uint8_t Index = Src2[i];
     Tmp[i] = Index >= OpSize ? 0 : Src1[Index];
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VRev64) {
@@ -2353,7 +2353,7 @@ DEF_OP(VRev64) {
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  TempVectorDataArray Tmp;
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / 8;
@@ -2379,7 +2379,7 @@ DEF_OP(VRev64) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(VPCMPESTRX) {

@@ -69,14 +69,14 @@ DEF_OP(VDupFromGPR) {
   const auto ElementSize = IROp->ElementSize;
   const auto NumElements = OpSize / IROp->ElementSize;
 
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const auto *Src = GetSrc<void*>(Data->SSAData, Op->Src);
   for (size_t i = 0; i < NumElements; i++) {
-    memcpy(Tmp + (i * ElementSize), Src, ElementSize);
+    memcpy(&Tmp[i * ElementSize], Src, ElementSize);
   }
 
-  memcpy(GDP, Tmp, sizeof(Tmp));
+  memcpy(GDP, Tmp.data(), sizeof(Tmp));
 }
 
 DEF_OP(Float_FromGPR_S) {
@@ -130,7 +130,7 @@ DEF_OP(Vector_SToF) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -143,7 +143,7 @@ DEF_OP(Vector_SToF) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(Vector_FToZS) {
@@ -151,7 +151,7 @@ DEF_OP(Vector_FToZS) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -164,7 +164,7 @@ DEF_OP(Vector_FToZS) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(Vector_FToS) {
@@ -172,7 +172,7 @@ DEF_OP(Vector_FToS) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -185,7 +185,7 @@ DEF_OP(Vector_FToS) {
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(Vector_FToF) {
@@ -193,7 +193,7 @@ DEF_OP(Vector_FToF) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint16_t ElementSize = Op->Header.ElementSize;
   const uint16_t Conv = (ElementSize << 8) | Op->SrcElementSize;
@@ -220,7 +220,7 @@ DEF_OP(Vector_FToF) {
       LOGMAN_MSG_A_FMT("Unknown Conversion Type : 0x{:04x}", Conv);
       break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 DEF_OP(Vector_FToI) {
@@ -228,7 +228,7 @@ DEF_OP(Vector_FToI) {
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -270,7 +270,7 @@ DEF_OP(Vector_FToI) {
       }
     break;
   }
-  memcpy(GDP, Tmp, OpSize);
+  memcpy(GDP, Tmp.data(), OpSize);
 }
 
 #undef DEF_OP
