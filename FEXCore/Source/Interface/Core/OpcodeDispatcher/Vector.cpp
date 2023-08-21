@@ -4284,46 +4284,37 @@ OrderedNode* OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::Decod
     // Needs each to be 16bit to store the next step
     // Next stage is to sum pairwise
     // Dest1:
-    //  ADDP Dest2, Dest1: TmpCombine1
-    //  ADDP Dest4, Dest3: TmpCombine2
+    //  ADDP Dest3, Dest1: TmpCombine1
+    //  ADDP Dest4, Dest2: TmpCombine2
     //    TmpCombine1.8H[0] = Dest1.8H[0] + Dest1.8H[1];
     //    TmpCombine1.8H[1] = Dest1.8H[2] + Dest1.8H[3];
     //    TmpCombine1.8H[2] = Dest1.8H[4] + Dest1.8H[5];
     //    TmpCombine1.8H[3] = Dest1.8H[6] + Dest1.8H[7];
-    //    TmpCombine1.8H[4] = Dest2.8H[0] + Dest2.8H[1];
-    //    TmpCombine1.8H[5] = Dest2.8H[2] + Dest2.8H[3];
-    //    TmpCombine1.8H[6] = Dest2.8H[4] + Dest2.8H[5];
-    //    TmpCombine1.8H[7] = Dest2.8H[6] + Dest2.8H[7];
+    //    TmpCombine1.8H[4] = Dest3.8H[0] + Dest3.8H[1];
+    //    TmpCombine1.8H[5] = Dest3.8H[2] + Dest3.8H[3];
+    //    TmpCombine1.8H[6] = Dest3.8H[4] + Dest3.8H[5];
+    //    TmpCombine1.8H[7] = Dest3.8H[6] + Dest3.8H[7];
     //    <Repeat for Dest4 and Dest3>
-    // ADDP TmpCombine2, TmpCombine1: FinalCombine
-    //    FinalCombine.8H[0] = TmpCombine1.8H[0] + TmpCombine1.8H[1]
-    //    FinalCombine.8H[1] = TmpCombine1.8H[2] + TmpCombine1.8H[3]
-    //    FinalCombine.8H[2] = TmpCombine1.8H[4] + TmpCombine1.8H[5]
-    //    FinalCombine.8H[3] = TmpCombine1.8H[6] + TmpCombine1.8H[7]
-    //    FinalCombine.8H[4] = TmpCombine2.8H[0] + TmpCombine2.8H[1]
-    //    FinalCombine.8H[5] = TmpCombine2.8H[2] + TmpCombine2.8H[3]
-    //    FinalCombine.8H[6] = TmpCombine2.8H[4] + TmpCombine2.8H[5]
-    //    FinalCombine.8H[7] = TmpCombine2.8H[6] + TmpCombine2.8H[7]
+    auto TmpCombine1 = _VAddP(16, 2, Dest1, Dest3);
+    auto TmpCombine2 = _VAddP(16, 2, Dest2, Dest4);
 
-    auto TmpCombine1 = _VAddP(16, 2, Dest1, Dest2);
-    auto TmpCombine2 = _VAddP(16, 2, Dest3, Dest4);
+    // TmpTranspose1:
+    // VTrn TmpCombine1, TmpCombine2: TmpTranspose1
+    // Transposes Even and odd elements so we can use vaddp for final results.
+    auto TmpTranspose1 = _VTrn(16, 4, TmpCombine1, TmpCombine2);
+    auto TmpTranspose2 = _VTrn2(16, 4, TmpCombine1, TmpCombine2);
 
-    auto FinalCombine = _VAddP(16, 2, TmpCombine1, TmpCombine2);
+    // ADDP TmpTranspose1, TmpTranspose2: FinalCombine
+    //    FinalCombine.8H[0] = TmpTranspose1.8H[0] + TmpTranspose1.8H[1]
+    //    FinalCombine.8H[1] = TmpTranspose1.8H[2] + TmpTranspose1.8H[3]
+    //    FinalCombine.8H[2] = TmpTranspose1.8H[4] + TmpTranspose1.8H[5]
+    //    FinalCombine.8H[3] = TmpTranspose1.8H[6] + TmpTranspose1.8H[7]
+    //    FinalCombine.8H[4] = TmpTranspose2.8H[0] + TmpTranspose2.8H[1]
+    //    FinalCombine.8H[5] = TmpTranspose2.8H[2] + TmpTranspose2.8H[3]
+    //    FinalCombine.8H[6] = TmpTranspose2.8H[4] + TmpTranspose2.8H[5]
+    //    FinalCombine.8H[7] = TmpTranspose2.8H[6] + TmpTranspose2.8H[7]
 
-    // This now contains our results but they are in the wrong order.
-    // We need to swizzle the results in to the correct ordering
-    // Result.8H[0] = FinalCombine.8H[0]
-    // Result.8H[1] = FinalCombine.8H[2]
-    // Result.8H[2] = FinalCombine.8H[4]
-    // Result.8H[3] = FinalCombine.8H[6]
-    // Result.8H[4] = FinalCombine.8H[1]
-    // Result.8H[5] = FinalCombine.8H[3]
-    // Result.8H[6] = FinalCombine.8H[5]
-    // Result.8H[7] = FinalCombine.8H[7]
-
-    auto Even = _VUnZip(16, 2, FinalCombine, FinalCombine);
-    auto Odd = _VUnZip2(16, 2, FinalCombine, FinalCombine);
-    return _VInsElement(16, 8, 1, 0, Even, Odd);
+    return _VAddP(16, 2, TmpTranspose1, TmpTranspose2);
   };
 
   LOGMAN_THROW_A_FMT(ImmOp.IsLiteral(), "ImmOp needs to be literal here");
