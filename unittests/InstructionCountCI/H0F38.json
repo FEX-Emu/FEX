@@ -127,26 +127,25 @@
       ]
     },
     "pmaddubsw xmm0, xmm1": {
-      "ExpectedInstructionCount": 14,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
       "Comment": [
+        "{u,s}xtl{,2} and uzp{1,2} can be more optimal",
+        "Up-front zero extend and sign extend the elements in place",
+        "This allows extracting even and odd elements up-front so we don't need the unzips at the end",
+        "Requires implementing IR ops for BIC (vector, immediate)",
         "0x66 0x0f 0x38 0x04"
       ],
       "ExpectedArm64ASM": [
         "uxtl v4.8h, v16.8b",
+        "sxtl v5.8h, v17.8b",
+        "mul v4.8h, v4.8h, v5.8h",
         "uxtl2 v5.8h, v16.16b",
-        "sxtl v6.8h, v17.8b",
-        "sxtl2 v7.8h, v17.16b",
-        "smull v8.4s, v4.4h, v6.4h",
-        "smull2 v4.4s, v4.8h, v6.8h",
-        "smull v6.4s, v5.4h, v7.4h",
-        "smull2 v5.4s, v5.8h, v7.8h",
-        "addp v4.4s, v8.4s, v4.4s",
-        "addp v5.4s, v6.4s, v5.4s",
-        "sqxtn v4.4h, v4.4s",
-        "mov v0.16b, v4.16b",
-        "sqxtn2 v0.8h, v5.4s",
-        "mov v16.16b, v0.16b"
+        "sxtl2 v6.8h, v17.16b",
+        "mul v5.8h, v5.8h, v6.8h",
+        "uzp1 v6.8h, v4.8h, v5.8h",
+        "uzp2 v4.8h, v4.8h, v5.8h",
+        "sqadd v16.8h, v6.8h, v4.8h"
       ]
     },
     "phsubw mm0, mm1": {
