@@ -984,8 +984,8 @@
       ]
     },
     "mpsadbw xmm0, xmm1, 000b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -999,19 +999,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 001b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1025,19 +1022,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 010b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1051,19 +1045,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 011b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1077,19 +1068,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 100b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1103,19 +1091,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 101b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1129,19 +1114,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 110b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1155,19 +1137,16 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "mpsadbw xmm0, xmm1, 111b": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1181,14 +1160,11 @@
         "uabdl v6.8h, v6.8b, v4.8b",
         "uabdl v7.8h, v7.8b, v4.8b",
         "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v6.8h",
-        "addp v4.8h, v7.8h, v4.8h",
-        "addp v4.8h, v5.8h, v4.8h",
-        "uzp1 v5.8h, v4.8h, v4.8h",
-        "uzp2 v4.8h, v4.8h, v4.8h",
-        "mov v0.16b, v5.16b",
-        "mov v0.d[1], v4.d[0]",
-        "mov v16.16b, v0.16b"
+        "addp v5.8h, v5.8h, v7.8h",
+        "addp v4.8h, v6.8h, v4.8h",
+        "trn1 v6.4s, v5.4s, v4.4s",
+        "trn2 v4.4s, v5.4s, v4.4s",
+        "addp v16.8h, v6.8h, v4.8h"
       ]
     },
     "pclmulqdq xmm0, xmm1, 00000b": {
