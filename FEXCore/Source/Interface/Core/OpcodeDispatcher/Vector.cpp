@@ -4049,33 +4049,39 @@ OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Min = _VUMinV(Size, 2, Src);
 
-  std::array<OrderedNode *, 8> Indexes {
-    _Constant(0),
-    _Constant(1),
-    _Constant(2),
-    _Constant(3),
-    _Constant(4),
-    _Constant(5),
-    _Constant(6),
-    _Constant(7),
-  };
+  // Setup a vector swizzle
+  // Initially load a 64-bit mask of immediates
+  // Then zero-extend that to 128-bit mask with the immediates in the lower 16-bits of each element
+  auto ConstantSwizzle = _LoadNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX);
 
-  auto Pos = Indexes[7];
-  auto MinGPR = _VExtractToGPR(16, 2, Min, 0);
+  // We now need to zip the vector sources together to become two uint32x4_t vectors
+  // Upper:
+  // [127:96]: ([127:112] << 16) | (7)
+  // [95:64] : ([111:96]  << 16) | (6)
+  // [63:32] : ([95:80]   << 16) | (5)
+  // [31:0]  : ([79:64]   << 16) | (4)
 
-  // Calculate position
-  // This doesn't match with ARM behaviour at all
-  // Instruction returns the minimum matching index
-  for (size_t i = 8; i > 0; --i) {
-    auto Element = _VExtractToGPR(16, 2, Src, i - 1);
-    Pos = _Select(FEXCore::IR::COND_EQ,
-                  Element, MinGPR, Indexes[i - 1], Pos);
-  }
+  // Lower:
+  // [127:96]: ([63:48] << 16) | (3)
+  // [95:64] : ([47:32] << 16) | (2)
+  // [63:32] : ([31:16] << 16) | (1)
+  // [31:0]  : ([15:0]  << 16) | (0)
 
-  // Insert position in to bits [18:16]
-  return _VInsGPR(16, 2, 1, Min, Pos);
+  auto ZipLower = _VZip(Size, 2, ConstantSwizzle, Src);
+  auto ZipUpper = _VZip2(Size, 2, ConstantSwizzle, Src);
+  // The elements are now 32-bit between two vectors.
+  auto MinBetween = _VUMin(Size, 4, ZipLower, ZipUpper);
+
+  // Now do a horizontal vector minimum
+  auto Min = _VUMinV(Size, 4, MinBetween);
+
+  // We now have a value in the bottom 32-bits in the order of:
+  // [31:0]: (Src[<Min>] << 16) | <Index>
+  // This instruction wants it in the form of:
+  // [31:0]: (<Index> << 16) | Src[<Min>]
+  // Rev32 does this for us
+  return _VRev32(Size, 2, Min);
 }
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {

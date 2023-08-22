@@ -377,6 +377,7 @@ private:
   ///< Vector ops
   DEF_OP(VectorZero);
   DEF_OP(VectorImm);
+  DEF_OP(LoadNamedVectorConstant);
   DEF_OP(VMov);
   DEF_OP(VAnd);
   DEF_OP(VBic);
@@ -460,6 +461,7 @@ private:
   DEF_OP(VUABDL);
   DEF_OP(VUABDL2);
   DEF_OP(VTBL1);
+  DEF_OP(VRev32);
   DEF_OP(VRev64);
 
   ///< Encryption ops

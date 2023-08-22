@@ -513,6 +513,15 @@ enum class SyscallFlags : uint8_t {
 
 FEX_DEF_NUM_OPS(SyscallFlags)
 
+// This enum of named vector constants are linked to an array in CPUBackend.cpp.
+// This is used with the IROp `LoadNamedVectorConstant` to load a vector constant
+// that would otherwise be costly to materialize.
+enum NamedVectorConstant : uint8_t {
+  NAMED_VECTOR_INCREMENTAL_U16_INDEX = 0,
+  NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER,
+  NAMED_VECTOR_MAX,
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES

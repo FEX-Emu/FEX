@@ -183,6 +183,21 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
   }
 }
 
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::NamedVectorConstant Arg) {
+  switch (Arg) {
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX: {
+      *out << "u16_incremental_index";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER: {
+      *out << "u16_incremental_index_upper";
+      break;
+    }
+    default: *out << "<Unknown Named Vector Constant>"; break;
+  }
+}
+
+
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
   *out << "{" << Arg.ErrorRegister << ".";
   *out << static_cast<uint32_t>(Arg.Signal) << ".";

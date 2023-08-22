@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FEXCore/IR/IR.h"
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Telemetry.h>
@@ -236,6 +237,7 @@ namespace FEXCore::Core {
       uint64_t ExitFunctionLink{};
 
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
+      uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX];
 #ifndef FEX_DISABLE_TELEMETRY
       uint64_t TelemetryValueAddresses[FEXCore::Telemetry::TYPE_LAST];
 #endif

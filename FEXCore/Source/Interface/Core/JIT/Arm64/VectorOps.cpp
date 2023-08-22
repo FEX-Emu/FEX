@@ -6,6 +6,7 @@ $end_info$
 
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
+#include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 #include <FEXCore/Utils/MathUtils.h>
@@ -74,6 +75,40 @@ DEF_OP(VectorImm) {
   }
 }
 
+DEF_OP(LoadNamedVectorConstant) {
+  const auto Op = IROp->C<IR::IROp_LoadNamedVectorConstant>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+
+  // Load the pointer.
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
+
+  switch (OpSize) {
+    case 1:
+      ldrb(Dst, TMP1, 0);
+      break;
+    case 2:
+      ldrh(Dst, TMP1, 0);
+      break;
+    case 4:
+      ldr(Dst.S(), TMP1, 0);
+      break;
+    case 8:
+      ldr(Dst.D(), TMP1, 0);
+      break;
+    case 16:
+      ldr(Dst.Q(), TMP1, 0);
+      break;
+    case 32: {
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+      break;
+  }
+}
 DEF_OP(VMov) {
   const auto Op = IROp->C<IR::IROp_VMov>();
   const auto OpSize = IROp->Size;
@@ -3405,6 +3440,47 @@ DEF_OP(VTBL1) {
       break;
   }
 }
+
+DEF_OP(VRev32) {
+  const auto Op = IROp->C<IR::IROp_VRev32>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i16Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
+      case 1: {
+        revb(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+        break;
+      }
+      case 2: {
+        revh(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    if (OpSize == 8) {
+      rev32(SubRegSize, Dst.D(), Vector.D());
+    }
+    else {
+      rev32(SubRegSize, Dst.Q(), Vector.Q());
+    }
+  }
+}
+
 
 DEF_OP(VRev64) {
   const auto Op = IROp->C<IR::IROp_VRev64>();

@@ -21,9 +21,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define STATE_PTR(STATE_TYPE, FIELD) \
-  [STATE + offsetof(FEXCore::Core::STATE_TYPE, FIELD)]
-
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE r14
