@@ -553,14 +553,11 @@
       ]
     },
     "psrlw mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrlw mm0, 15": {
       "ExpectedInstructionCount": 3,
@@ -585,14 +582,11 @@
       ]
     },
     "psrlw xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrlw xmm0, 15": {
       "ExpectedInstructionCount": 1,
@@ -613,14 +607,11 @@
       ]
     },
     "psraw mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /3",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psraw mm0, 15": {
       "ExpectedInstructionCount": 3,
@@ -645,14 +636,11 @@
       ]
     },
     "psraw xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /3",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psraw xmm0, 15": {
       "ExpectedInstructionCount": 1,
@@ -673,14 +661,11 @@
       ]
     },
     "psllw mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psllw mm0, 15": {
       "ExpectedInstructionCount": 3,
@@ -705,14 +690,11 @@
       ]
     },
     "psllw xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psllw xmm0, 15": {
       "ExpectedInstructionCount": 1,
@@ -733,14 +715,11 @@
       ]
     },
     "psrld mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrld mm0, 31": {
       "ExpectedInstructionCount": 3,
@@ -765,14 +744,11 @@
       ]
     },
     "psrld xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrld xmm0, 31": {
       "ExpectedInstructionCount": 1,
@@ -793,14 +769,11 @@
       ]
     },
     "psrad mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /3",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrad mm0, 31": {
       "ExpectedInstructionCount": 3,
@@ -825,14 +798,11 @@
       ]
     },
     "psrad xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /3",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrad xmm0, 31": {
       "ExpectedInstructionCount": 1,
@@ -853,14 +823,11 @@
       ]
     },
     "pslld mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "pslld mm0, 31": {
       "ExpectedInstructionCount": 3,
@@ -885,14 +852,11 @@
       ]
     },
     "pslld xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "pslld xmm0, 31": {
       "ExpectedInstructionCount": 1,
@@ -913,14 +877,11 @@
       ]
     },
     "psrlq mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrlq mm0, 63": {
       "ExpectedInstructionCount": 3,
@@ -945,14 +906,11 @@
       ]
     },
     "psrlq xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /2",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrlq xmm0, 63": {
       "ExpectedInstructionCount": 1,
@@ -973,14 +931,11 @@
       ]
     },
     "psrldq xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /3",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psrldq xmm0, 15": {
       "ExpectedInstructionCount": 2,
@@ -1002,14 +957,11 @@
       ]
     },
     "psllq mm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "MMX",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "str d4, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psllq mm0, 63": {
       "ExpectedInstructionCount": 3,
@@ -1034,14 +986,11 @@
       ]
     },
     "psllq xmm0, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /6",
-      "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "mov v16.16b, v4.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "psllq xmm0, 63": {
       "ExpectedInstructionCount": 1,
