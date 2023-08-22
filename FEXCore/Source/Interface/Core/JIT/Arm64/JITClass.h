@@ -451,6 +451,8 @@ private:
   DEF_OP(VSQXTN2);
   DEF_OP(VSQXTUN);
   DEF_OP(VSQXTUN2);
+  DEF_OP(VSRSHR);
+  DEF_OP(VSQSHL);
   DEF_OP(VMul);
   DEF_OP(VUMull);
   DEF_OP(VSMull);

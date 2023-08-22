@@ -254,126 +254,84 @@
       ]
     },
     "psignb mm0, mm1": {
-      "ExpectedInstructionCount": 13,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x38 0x08"
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
         "ldr d5, [x28, #752]",
-        "movi d6, #0x0",
-        "neg v7.16b, v5.16b",
-        "cmlt v8.16b, v4.16b, #0",
-        "cmeq v9.16b, v4.16b, #0",
-        "cmgt v4.16b, v4.16b, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v4.16b, v5.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v4.8b, v4.8b, #7",
+        "srshr v4.8b, v4.8b, #7",
+        "mul v4.16b, v5.16b, v4.16b",
         "str d4, [x28, #752]"
       ]
     },
     "psignb xmm0, xmm1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x08"
       ],
       "ExpectedArm64ASM": [
-        "movi v4.2d, #0x0",
-        "neg v5.16b, v16.16b",
-        "cmlt v6.16b, v17.16b, #0",
-        "cmeq v7.16b, v17.16b, #0",
-        "cmgt v8.16b, v17.16b, #0",
-        "and v5.16b, v6.16b, v5.16b",
-        "and v4.16b, v7.16b, v4.16b",
-        "and v6.16b, v8.16b, v16.16b",
-        "orr v4.16b, v5.16b, v4.16b",
-        "orr v16.16b, v6.16b, v4.16b"
+        "sqshl v4.16b, v17.16b, #7",
+        "srshr v4.16b, v4.16b, #7",
+        "mul v16.16b, v16.16b, v4.16b"
       ]
     },
     "psignw mm0, mm1": {
-      "ExpectedInstructionCount": 13,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x38 0x09"
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
         "ldr d5, [x28, #752]",
-        "movi d6, #0x0",
-        "neg v7.8h, v5.8h",
-        "cmlt v8.8h, v4.8h, #0",
-        "cmeq v9.8h, v4.8h, #0",
-        "cmgt v4.8h, v4.8h, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v4.16b, v5.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v4.4h, v4.4h, #15",
+        "srshr v4.4h, v4.4h, #15",
+        "mul v4.8h, v5.8h, v4.8h",
         "str d4, [x28, #752]"
       ]
     },
     "psignw xmm0, xmm1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x09"
       ],
       "ExpectedArm64ASM": [
-        "movi v4.2d, #0x0",
-        "neg v5.8h, v16.8h",
-        "cmlt v6.8h, v17.8h, #0",
-        "cmeq v7.8h, v17.8h, #0",
-        "cmgt v8.8h, v17.8h, #0",
-        "and v5.16b, v6.16b, v5.16b",
-        "and v4.16b, v7.16b, v4.16b",
-        "and v6.16b, v8.16b, v16.16b",
-        "orr v4.16b, v5.16b, v4.16b",
-        "orr v16.16b, v6.16b, v4.16b"
+        "sqshl v4.8h, v17.8h, #15",
+        "srshr v4.8h, v4.8h, #15",
+        "mul v16.8h, v16.8h, v4.8h"
       ]
     },
     "psignd mm0, mm1": {
-      "ExpectedInstructionCount": 13,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x38 0x0a"
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
         "ldr d5, [x28, #752]",
-        "movi d6, #0x0",
-        "neg v7.4s, v5.4s",
-        "cmlt v8.4s, v4.4s, #0",
-        "cmeq v9.4s, v4.4s, #0",
-        "cmgt v4.4s, v4.4s, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v4.16b, v5.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v4.2s, v4.2s, #31",
+        "srshr v4.2s, v4.2s, #31",
+        "mul v4.4s, v5.4s, v4.4s",
         "str d4, [x28, #752]"
       ]
     },
     "psignd xmm0, xmm1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "Unknown",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "movi v4.2d, #0x0",
-        "neg v5.4s, v16.4s",
-        "cmlt v6.4s, v17.4s, #0",
-        "cmeq v7.4s, v17.4s, #0",
-        "cmgt v8.4s, v17.4s, #0",
-        "and v5.16b, v6.16b, v5.16b",
-        "and v4.16b, v7.16b, v4.16b",
-        "and v6.16b, v8.16b, v16.16b",
-        "orr v4.16b, v5.16b, v4.16b",
-        "orr v16.16b, v6.16b, v4.16b"
+        "sqshl v4.4s, v17.4s, #31",
+        "srshr v4.4s, v4.4s, #31",
+        "mul v16.4s, v16.4s, v4.4s"
       ]
     },
     "pmulhrsw mm0, mm1": {
@@ -416,7 +374,7 @@
       ]
     },
     "pblendvb xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0x10"
@@ -424,13 +382,12 @@
       "ExpectedArm64ASM": [
         "mov v4.16b, v16.16b",
         "sshr v5.16b, v16.16b, #7",
-        "mov v0.16b, v5.16b",
-        "bsl v0.16b, v17.16b, v4.16b",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v5.16b",
+        "bsl v16.16b, v17.16b, v4.16b"
       ]
     },
     "blendvps xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0x14"
@@ -438,13 +395,12 @@
       "ExpectedArm64ASM": [
         "mov v4.16b, v16.16b",
         "sshr v5.4s, v16.4s, #31",
-        "mov v0.16b, v5.16b",
-        "bsl v0.16b, v17.16b, v4.16b",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v5.16b",
+        "bsl v16.16b, v17.16b, v4.16b"
       ]
     },
     "blendvpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0x15"
@@ -452,9 +408,8 @@
       "ExpectedArm64ASM": [
         "mov v4.16b, v16.16b",
         "sshr v5.2d, v16.2d, #63",
-        "mov v0.16b, v5.16b",
-        "bsl v0.16b, v17.16b, v4.16b",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v5.16b",
+        "bsl v16.16b, v17.16b, v4.16b"
       ]
     },
     "ptest xmm0, xmm1": {

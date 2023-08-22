@@ -1493,18 +1493,48 @@ DEF_OP(VBSL) {
     // NOTE: Slight parameter difference from ASIMD
     //       ASIMD -> BSL Mask, True, False
     //       SVE   -> BSL True, True, False, Mask
+    //       ASIMD -> BIT True, False, Mask
+    //       ASIMD -> BIF False, True, Mask
     movprfx(VTMP1.Z(), VectorTrue.Z());
     bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
     mov(Dst.Z(), VTMP1.Z());
   } else {
-    if (OpSize == 8) {
-      mov(VTMP1.D(), VectorMask.D());
-      bsl(VTMP1.D(), VectorTrue.D(), VectorFalse.D());
-      mov(Dst.D(), VTMP1.D());
-    } else {
-      mov(VTMP1.Q(), VectorMask.Q());
-      bsl(VTMP1.Q(), VectorTrue.Q(), VectorFalse.Q());
-      mov(Dst.Q(), VTMP1.Q());
+    if (VectorMask == Dst) {
+      // Can use BSL without any moves.
+      if (OpSize == 8) {
+        bsl(Dst.D(), VectorTrue.D(), VectorFalse.D());
+      }
+      else {
+        bsl(Dst.Q(), VectorTrue.Q(), VectorFalse.Q());
+      }
+    }
+    else if (VectorTrue == Dst) {
+      // Can use BIF without any moves.
+      if (OpSize == 8) {
+        bif(Dst.D(), VectorFalse.D(), VectorMask.D());
+      }
+      else {
+        bif(Dst.Q(), VectorFalse.Q(), VectorMask.Q());
+      }
+    }
+    else if (VectorFalse == Dst) {
+      // Can use BIT without any moves.
+      if (OpSize == 8) {
+        bit(Dst.D(), VectorTrue.D(), VectorMask.D());
+      }
+      else {
+        bit(Dst.Q(), VectorTrue.Q(), VectorMask.Q());
+      }
+    }
+    else {
+      // Needs moves.
+      if (OpSize == 8) {
+        mov(Dst.D(), VectorMask.D());
+        bsl(Dst.D(), VectorTrue.D(), VectorFalse.D());
+      } else {
+        mov(Dst.Q(), VectorMask.Q());
+        bsl(Dst.Q(), VectorTrue.Q(), VectorFalse.Q());
+      }
     }
   }
 }
@@ -3085,6 +3115,72 @@ DEF_OP(VSQXTUN2) {
       mov(VTMP1.Q(), VectorLower.Q());
       sqxtun2(SubRegSize, VTMP1, VectorUpper);
       mov(Dst.Q(), VTMP1.Q());
+    }
+  }
+}
+
+DEF_OP(VSRSHR) {
+  const auto Op = IROp->C<IR::IROp_VSRSHR>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    // SVE SRSHR is destructive, so lets set up the destination.
+    movprfx(Dst.Z(), Vector.Z());
+    srshr(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+  } else {
+    if (OpSize == 8) {
+      srshr(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    }
+    else {
+      srshr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+    }
+  }
+}
+
+DEF_OP(VSQSHL) {
+  const auto Op = IROp->C<IR::IROp_VSQSHL>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    // SVE SQSHL is destructive, so lets set up the destination.
+    movprfx(Dst.Z(), Vector.Z());
+    sqshl(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+  } else {
+    if (OpSize == 8) {
+      sqshl(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    }
+    else {
+      sqshl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
     }
   }
 }

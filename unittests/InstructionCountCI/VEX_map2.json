@@ -403,7 +403,7 @@
       ]
     },
     "vpsignb xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x08 128-bit"
@@ -411,23 +411,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v6.2d, #0x0",
-        "neg v7.16b, v4.16b",
-        "cmlt v8.16b, v5.16b, #0",
-        "cmeq v9.16b, v5.16b, #0",
-        "cmgt v5.16b, v5.16b, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v5.16b, v4.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v5.16b, v5.16b, #7",
+        "srshr v5.16b, v5.16b, #7",
+        "mul v4.16b, v4.16b, v5.16b",
         "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsignb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x08 256-bit"
@@ -435,32 +428,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
-        "neg z7.b, p7/m, z4.b",
-        "mov z0.d, #0",
-        "cmplt p0.b, p7/z, z5.b, #0",
-        "not z0.b, p0/m, z5.b",
-        "orr z0.b, p0/m, z0.b, z5.b",
-        "mov z8.d, z0.d",
-        "mov z0.d, #0",
-        "cmpeq p0.b, p7/z, z5.b, #0",
-        "not z0.b, p0/m, z5.b",
-        "mov z9.d, z0.d",
-        "mov z0.d, #0",
-        "cmpgt p0.b, p7/z, z5.b, #0",
-        "not z0.b, p0/m, z5.b",
-        "orr z0.b, p0/m, z0.b, z5.b",
-        "mov z5.d, z0.d",
-        "and z7.d, z8.d, z7.d",
-        "and z6.d, z9.d, z6.d",
-        "and z4.d, z5.d, z4.d",
-        "orr z5.d, z7.d, z6.d",
-        "orr z4.d, z4.d, z5.d",
+        "movprfx z5, z5",
+        "sqshl z5.b, p7/m, z5.b, #7",
+        "movprfx z5, z5",
+        "srshr z5.b, p7/m, z5.b, #7",
+        "mul z4.b, z4.b, z5.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsignw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x09 128-bit"
@@ -468,23 +445,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v6.2d, #0x0",
-        "neg v7.8h, v4.8h",
-        "cmlt v8.8h, v5.8h, #0",
-        "cmeq v9.8h, v5.8h, #0",
-        "cmgt v5.8h, v5.8h, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v5.16b, v4.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v5.8h, v5.8h, #15",
+        "srshr v5.8h, v5.8h, #15",
+        "mul v4.8h, v4.8h, v5.8h",
         "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsignw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x09 256-bit"
@@ -492,32 +462,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
-        "neg z7.h, p7/m, z4.h",
-        "mov z0.d, #0",
-        "cmplt p0.h, p7/z, z5.h, #0",
-        "not z0.h, p0/m, z5.h",
-        "orr z0.h, p0/m, z0.h, z5.h",
-        "mov z8.d, z0.d",
-        "mov z0.d, #0",
-        "cmpeq p0.h, p7/z, z5.h, #0",
-        "not z0.h, p0/m, z5.h",
-        "mov z9.d, z0.d",
-        "mov z0.d, #0",
-        "cmpgt p0.h, p7/z, z5.h, #0",
-        "not z0.h, p0/m, z5.h",
-        "orr z0.h, p0/m, z0.h, z5.h",
-        "mov z5.d, z0.d",
-        "and z7.d, z8.d, z7.d",
-        "and z6.d, z9.d, z6.d",
-        "and z4.d, z5.d, z4.d",
-        "orr z5.d, z7.d, z6.d",
-        "orr z4.d, z4.d, z5.d",
+        "movprfx z5, z5",
+        "sqshl z5.h, p7/m, z5.h, #15",
+        "movprfx z5, z5",
+        "srshr z5.h, p7/m, z5.h, #15",
+        "mul z4.h, z4.h, z5.h",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsignd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0a 128-bit"
@@ -525,23 +479,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v6.2d, #0x0",
-        "neg v7.4s, v4.4s",
-        "cmlt v8.4s, v5.4s, #0",
-        "cmeq v9.4s, v5.4s, #0",
-        "cmgt v5.4s, v5.4s, #0",
-        "and v7.16b, v8.16b, v7.16b",
-        "and v6.16b, v9.16b, v6.16b",
-        "and v4.16b, v5.16b, v4.16b",
-        "orr v5.16b, v7.16b, v6.16b",
-        "orr v4.16b, v4.16b, v5.16b",
+        "sqshl v5.4s, v5.4s, #31",
+        "srshr v5.4s, v5.4s, #31",
+        "mul v4.4s, v4.4s, v5.4s",
         "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpsignd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0a 256-bit"
@@ -549,27 +496,11 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
-        "neg z7.s, p7/m, z4.s",
-        "mov z0.d, #0",
-        "cmplt p0.s, p7/z, z5.s, #0",
-        "not z0.s, p0/m, z5.s",
-        "orr z0.s, p0/m, z0.s, z5.s",
-        "mov z8.d, z0.d",
-        "mov z0.d, #0",
-        "cmpeq p0.s, p7/z, z5.s, #0",
-        "not z0.s, p0/m, z5.s",
-        "mov z9.d, z0.d",
-        "mov z0.d, #0",
-        "cmpgt p0.s, p7/z, z5.s, #0",
-        "not z0.s, p0/m, z5.s",
-        "orr z0.s, p0/m, z0.s, z5.s",
-        "mov z5.d, z0.d",
-        "and z7.d, z8.d, z7.d",
-        "and z6.d, z9.d, z6.d",
-        "and z4.d, z5.d, z4.d",
-        "orr z5.d, z7.d, z6.d",
-        "orr z4.d, z4.d, z5.d",
+        "movprfx z5, z5",
+        "sqshl z5.s, p7/m, z5.s, #31",
+        "movprfx z5, z5",
+        "srshr z5.s, p7/m, z5.s, #31",
+        "mul z4.s, z4.s, z5.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },

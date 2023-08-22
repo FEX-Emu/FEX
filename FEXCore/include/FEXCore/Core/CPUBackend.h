@@ -37,6 +37,7 @@ namespace CPU {
     bool SupportsStaticRegisterAllocation = false;
     bool SupportsShiftedBitwise = false;
     bool SupportsFlags = false;
+    bool SupportsSaturatingRoundingShifts = false;
   };
 
   class CPUBackend {

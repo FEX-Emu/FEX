@@ -1084,6 +1084,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VSQXTN2,           VSQXTN2);
         REGISTER_OP(VSQXTUN,           VSQXTUN);
         REGISTER_OP(VSQXTUN2,          VSQXTUN2);
+        REGISTER_OP(VSRSHR,            VSRSHR);
+        REGISTER_OP(VSQSHL,            VSQSHL);
         REGISTER_OP(VUMUL,             VMul);
         REGISTER_OP(VSMUL,             VMul);
         REGISTER_OP(VUMULL,            VUMull);
@@ -1218,6 +1220,7 @@ CPUBackendFeatures GetArm64JITBackendFeatures() {
     .SupportsStaticRegisterAllocation = true,
     .SupportsShiftedBitwise = true,
     .SupportsFlags = true,
+    .SupportsSaturatingRoundingShifts = true,
   };
 }
 
