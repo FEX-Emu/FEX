@@ -152,7 +152,8 @@
     "SHA256Sum": "SHA256Sum",
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
-    "RoundType": "RoundType"
+    "RoundType": "RoundType",
+    "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant"
   },
   "Ops": {
     "Misc": {
@@ -1028,6 +1029,12 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
+      "FPR = LoadNamedVectorConstant u8:#RegisterSize, NamedVectorConstant:$Constant": {
+        "Desc": ["Load a named vector constant.",
+                 "The list of vector constants can be found in <FEXCore/IR/IR.h>"
+                ],
+        "DestSize": "RegisterSize"
+      },
       "FPR = VNeg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
@@ -1190,7 +1197,13 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-
+      "FPR = VRev32 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+        "Desc" : ["Reverses elements in 32-bit halfwords",
+                  "Available element size: 1byte, 2 byte"
+                 ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "FPR = VRev64 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 64-bit halfwords",
                   "Available element size: 1byte, 2 byte, 4 byte"

@@ -24,6 +24,9 @@ namespace FEXCore::Core {
   struct InternalThreadState;
 }
 
+#define STATE_PTR(STATE_TYPE, FIELD) \
+  [STATE + offsetof(FEXCore::Core::STATE_TYPE, FIELD)]
+
 namespace FEXCore::CPU {
 
 class X86Dispatcher final : public Dispatcher, public Xbyak::CodeGenerator {

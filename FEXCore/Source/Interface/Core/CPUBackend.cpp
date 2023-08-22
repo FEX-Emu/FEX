@@ -1,3 +1,4 @@
+#include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -6,12 +7,21 @@
 namespace FEXCore {
 namespace CPU {
 
+constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][2] = {
+  {0x0003'0002'0001'0000, 0x0007'0006'0005'0004},
+  {0x000B'000A'0009'0008, 0x000F'000E'000D'000C},
+};
+
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
     : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
 
-#ifndef FEX_DISABLE_TELEMETRY
   auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
+  // Initialize named vector constants.
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX] = reinterpret_cast<uint64_t>(NamedVectorConstants[0]);
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[1]);
+
+#ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values
   for (size_t i = 0; i < FEXCore::Telemetry::TYPE_LAST; ++i) {
     auto &Telem = FEXCore::Telemetry::GetTelemetryValue(static_cast<FEXCore::Telemetry::TelemetryType>(i));

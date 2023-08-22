@@ -1006,6 +1006,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         // Vector ops
         REGISTER_OP(VECTORZERO,        VectorZero);
         REGISTER_OP(VECTORIMM,         VectorImm);
+        REGISTER_OP(LOADNAMEDVECTORCONSTANT, LoadNamedVectorConstant);
         REGISTER_OP(VMOV,              VMov);
         REGISTER_OP(VAND,              VAnd);
         REGISTER_OP(VBIC,              VBic);
@@ -1095,6 +1096,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VUABDL,            VUABDL);
         REGISTER_OP(VUABDL2,           VUABDL2);
         REGISTER_OP(VTBL1,             VTBL1);
+        REGISTER_OP(VREV32,            VRev32);
         REGISTER_OP(VREV64,            VRev64);
 #undef REGISTER_OP
 

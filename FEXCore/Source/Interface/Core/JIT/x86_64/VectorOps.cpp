@@ -72,6 +72,38 @@ DEF_OP(VectorImm) {
   }
 }
 
+DEF_OP(LoadNamedVectorConstant) {
+  const auto Op = IROp->C<IR::IROp_LoadNamedVectorConstant>();
+  const auto OpSize = IROp->Size;
+
+  mov(TMP1, qword STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
+
+  const auto Dst = GetDst(Node);
+
+  switch (OpSize) {
+    case 1:
+      movzx(eax, byte [TMP1]);
+      vmovd(Dst, eax);
+      break;
+    case 2:
+      movzx(eax, word [TMP1]);
+      vmovd(Dst, eax);
+      break;
+    case 4:
+      vmovd(Dst, dword [TMP1]);
+      break;
+    case 8:
+      vmovq(Dst, dword [TMP1]);
+      break;
+    case 16:
+      vmovups(Dst, xword [TMP1]);
+      break;
+    case 32:
+      vmovups(ToYMM(Dst), yword [TMP1]);
+      break;
+  }
+}
+
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
@@ -643,6 +675,30 @@ DEF_OP(VUMinV) {
       // Extract the upper bits which are zero, overwriting position
       pextrw(eax, Dest, 2);
       pinsrw(Dest, eax, 1);
+      break;
+    }
+    case 4: {
+      mov(TMP1, ~0U);
+      const auto Elements = OpSize / ElementSize;
+      for (size_t i = 0; i < Elements; ++i) {
+        pextrd(TMP2.cvt32(), Src, i);
+        cmp(TMP1.cvt32(), TMP2.cvt32());
+        cmovnbe(TMP1.cvt32(), TMP2.cvt32());
+      }
+      vpxor(Dest, Dest, Dest);
+      pinsrd(Dest, TMP1.cvt32(), 0);
+      break;
+    }
+    case 8: {
+      mov(TMP1, ~0ULL);
+      const auto Elements = OpSize / ElementSize;
+      for (size_t i = 0; i < Elements; ++i) {
+        pextrq(TMP2, Src, i);
+        cmp(TMP1, TMP2);
+        cmovnbe(TMP1, TMP2);
+      }
+      vpxor(Dest, Dest, Dest);
+      pinsrq(Dest, TMP1, 0);
       break;
     }
     default:
@@ -4483,6 +4539,70 @@ DEF_OP(VTBL1) {
   }
 }
 
+DEF_OP(VRev32) {
+  const auto Op = IROp->C<IR::IROp_VRev32>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
+    case 1: {
+      mov(rax, 0x04'05'06'07'00'01'02'03); // Lower
+      vmovq(xmm15, rax);
+      if (OpSize >= Core::CPUState::XMM_SSE_REG_SIZE) {
+        // Full 8bit byteswap in each 32-bit element
+        mov(rcx, 0x0C'0D'0E'0F'08'09'0A'0B); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+      else {
+        // 8byte, upper bits get zero
+        // Full 8bit byteswap in each 32-bit element
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+
+      if (OpSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+        // Replicate to the upper lane
+        vinsertf128(ymm15, ymm15, xmm15, 1);
+        vpshufb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpshufb(Dst, Vector, xmm15);
+      }
+      break;
+    }
+    case 2: {
+      // Full 16-bit byteswap in each 32-bit element
+      mov(rax, 0x05'04'07'06'01'00'03'02); // Lower
+      vmovq(xmm15, rax);
+      if (OpSize >= Core::CPUState::XMM_SSE_REG_SIZE) {
+        mov(rcx, 0x0D'0C'0F'0E'09'08'0B'0A); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+      else {
+        // 8byte, upper bits get zero
+        // Full 8bit byteswap in each 32-bit element
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+
+      if (OpSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+        // Replicate to the upper lane
+        vinsertf128(ymm15, ymm15, xmm15, 1);
+        vpshufb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpshufb(Dst, Vector, xmm15);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+}
+
 DEF_OP(VRev64) {
   const auto Op = IROp->C<IR::IROp_VRev64>();
   const auto OpSize = IROp->Size;
@@ -4583,12 +4703,12 @@ DEF_OP(VRev64) {
   }
 }
 
-
 #undef DEF_OP
 void X86JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
+  REGISTER_OP(LOADNAMEDVECTORCONSTANT, LoadNamedVectorConstant);
   REGISTER_OP(VMOV,              VMov);
   REGISTER_OP(VAND,              VAnd);
   REGISTER_OP(VBIC,              VBic);
@@ -4676,6 +4796,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUABDL,            VUABDL);
   REGISTER_OP(VUABDL2,           VUABDL2);
   REGISTER_OP(VTBL1,             VTBL1);
+  REGISTER_OP(VREV32,            VRev32);
   REGISTER_OP(VREV64,            VRev64);
 #undef REGISTER_OP
 }

@@ -46,6 +46,13 @@ DEF_OP(VectorImm) {
   memcpy(GDP, Tmp.data(), OpSize);
 }
 
+DEF_OP(LoadNamedVectorConstant) {
+  auto Op = IROp->C<IR::IROp_LoadNamedVectorConstant>();
+  uint8_t OpSize = IROp->Size;
+
+  memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.NamedVectorConstantPointers[Op->Constant]), OpSize);
+}
+
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
@@ -2343,6 +2350,34 @@ DEF_OP(VTBL1) {
   for (size_t i = 0; i < OpSize; ++i) {
     const uint8_t Index = Src2[i];
     Tmp[i] = Index >= OpSize ? 0 : Src1[Index];
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
+DEF_OP(VRev32) {
+  const auto Op = IROp->C<IR::IROp_VRev32>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
+
+  TempVectorDataArray Tmp{};
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / 8;
+
+  // The element working size is always 32-bit
+  // The defined element size in the op is the operating size of the element swapping
+  const auto Func8 = [](auto a) { return BSwap32(a); };
+  const auto Func16 = [](auto a) {
+    return (a >> 16) | (a << 16);
+  };
+
+  switch (ElementSize) {
+    DO_VECTOR_1SRC_OP(1, uint32_t, Func8)
+    DO_VECTOR_1SRC_OP(2, uint32_t, Func16)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp.data(), OpSize);
 }
