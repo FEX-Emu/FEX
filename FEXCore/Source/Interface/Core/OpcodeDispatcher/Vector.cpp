@@ -602,9 +602,6 @@ void OpDispatchBuilder::AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t 
     Result = _VInsElement(DstSize, ElementSize, 0, 0, Src1, ALUOp);
   }
 
-  // AVX scalar ops always clear the upper lane
-  Result = _VMov(16, Result);
-
   StoreResult(FPRClass, Op, Result, -1);
 }
 
