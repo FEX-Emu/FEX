@@ -371,7 +371,7 @@
       ]
     },
     "vpsignb xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x08 128-bit"
@@ -382,7 +382,6 @@
         "sqshl v5.16b, v5.16b, #7",
         "srshr v5.16b, v5.16b, #7",
         "mul v4.16b, v4.16b, v5.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -405,7 +404,7 @@
       ]
     },
     "vpsignw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x09 128-bit"
@@ -416,7 +415,6 @@
         "sqshl v5.8h, v5.8h, #15",
         "srshr v5.8h, v5.8h, #15",
         "mul v4.8h, v4.8h, v5.8h",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -439,7 +437,7 @@
       ]
     },
     "vpsignd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0a 128-bit"
@@ -450,7 +448,6 @@
         "sqshl v5.4s, v5.4s, #31",
         "srshr v5.4s, v5.4s, #31",
         "mul v4.4s, v4.4s, v5.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
