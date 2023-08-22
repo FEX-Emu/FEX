@@ -383,25 +383,13 @@
       ]
     },
     "hsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 15,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x7d",
       "ExpectedArm64ASM": [
-        "fneg v4.4s, v16.4s",
-        "fneg v5.4s, v17.4s",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[1], v4.s[1]",
-        "mov v6.16b, v0.16b",
-        "mov v0.16b, v6.16b",
-        "mov v0.s[3], v4.s[3]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v17.16b",
-        "mov v0.s[1], v5.s[1]",
-        "mov v6.16b, v0.16b",
-        "mov v0.16b, v6.16b",
-        "mov v0.s[3], v5.s[3]",
-        "mov v5.16b, v0.16b",
-        "faddp v16.4s, v4.4s, v5.4s"
+        "uzp1 v4.4s, v16.4s, v17.4s",
+        "uzp2 v5.4s, v16.4s, v17.4s",
+        "fsub v16.4s, v4.4s, v5.4s"
       ]
     },
     "cmpsd xmm0, xmm1, 0": {

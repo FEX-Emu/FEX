@@ -705,19 +705,13 @@
       ]
     },
     "hsubpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x7c",
       "ExpectedArm64ASM": [
-        "fneg v4.2d, v16.2d",
-        "fneg v5.2d, v17.2d",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[1], v4.d[1]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v17.16b",
-        "mov v0.d[1], v5.d[1]",
-        "mov v5.16b, v0.16b",
-        "faddp v16.2d, v4.2d, v5.2d"
+        "uzp1 v4.2d, v16.2d, v17.2d",
+        "uzp2 v5.2d, v16.2d, v17.2d",
+        "fsub v16.2d, v4.2d, v5.2d"
       ]
     },
     "movd dword [rax], xmm0": {
