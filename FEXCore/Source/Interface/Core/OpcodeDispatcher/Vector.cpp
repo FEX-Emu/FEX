@@ -3486,42 +3486,13 @@ OrderedNode* OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize,
                                             const X86Tables::DecodedOperand& Src1Op,
                                             const X86Tables::DecodedOperand& Src2Op) {
   const auto SrcSize = GetSrcSize(Op);
-  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
-  // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  OrderedNode *Src1_Neg = _VFNeg(SrcSize, ElementSize, Src1);
-  OrderedNode *Src2_Neg = _VFNeg(SrcSize, ElementSize, Src2);
-
-  // Now we need to swizzle the values
-  OrderedNode *Swizzle_Src1 = Src1;
-  OrderedNode *Swizzle_Src2 = Src2;
-
-  if (Is256Bit) {
-    OrderedNode *UzpSrc1 = _VUnZip(SrcSize, ElementSize, Src1, Src1);
-    OrderedNode *UzpSrc2 = _VUnZip(SrcSize, ElementSize, Src2, Src2);
-
-    OrderedNode *UzpSrc1Neg = _VUnZip2(SrcSize, ElementSize, Src1_Neg, Src1_Neg);
-    OrderedNode *UzpSrc2Neg = _VUnZip2(SrcSize, ElementSize, Src2_Neg, Src2_Neg);
-
-    Swizzle_Src1 = _VZip(SrcSize, ElementSize, UzpSrc1, UzpSrc1Neg);
-    Swizzle_Src2 = _VZip(SrcSize, ElementSize, UzpSrc2, UzpSrc2Neg);
-  } else {
-    if (ElementSize == 4) {
-      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src1, Src1_Neg);
-      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 3, 3, Swizzle_Src1, Src1_Neg);
-
-      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src2, Src2_Neg);
-      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 3, 3, Swizzle_Src2, Src2_Neg);
-    } else {
-      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src1, Src1_Neg);
-      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src2, Src2_Neg);
-    }
-  }
-
-  return _VFAddP(SrcSize, ElementSize, Swizzle_Src1, Swizzle_Src2);
+  auto Even = _VUnZip(SrcSize, ElementSize, Src1, Src2);
+  auto Odd = _VUnZip2(SrcSize, ElementSize, Src1, Src2);
+  return _VFSub(SrcSize, ElementSize, Even, Odd);
 }
 
 template<size_t ElementSize>
