@@ -3292,20 +3292,17 @@ OrderedNode* OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::Decod
   OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
   if (Size == 8) {
+    // MMX implementation can be slightly more optimal
     Size <<= 1;
+    auto MullResult = _VSMull(Size, 2, Src1Node, Src2Node);
+    return _VAddP(Size, 4, MullResult, MullResult);
   }
 
-  auto Src1_L = _VSXTL(Size, 2, Src1Node);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
-  auto Src1_H = _VSXTL2(Size, 2, Src1Node); // [79:64], [95:80], [111:96], [127:112]
-
-  auto Src2_L = _VSXTL(Size, 2, Src2Node);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
-  auto Src2_H = _VSXTL2(Size, 2, Src2Node); // [79:64], [95:80], [111:96], [127:112]
-
-  auto Res_L = _VSMul(Size, 4, Src1_L, Src2_L); // [15:0 ], [31:16], [32:47 ], [63:48  ] : Original elements
-  auto Res_H = _VSMul(Size, 4, Src1_H, Src2_H); // [79:64], [95:80], [111:96], [127:112] : Original elements
+  auto Lower = _VSMull(Size, 2, Src1Node, Src2Node);
+  auto Upper = _VSMull2(Size, 2, Src1Node, Src2Node);
 
   // [15:0 ] + [31:16], [32:47 ] + [63:48  ], [79:64] + [95:80], [111:96] + [127:112]
-  return _VAddP(Size, 4, Res_L, Res_H);
+  return _VAddP(Size, 4, Lower, Upper);
 }
 
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
