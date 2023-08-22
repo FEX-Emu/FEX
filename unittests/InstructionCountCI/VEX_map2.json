@@ -24,7 +24,7 @@
       ]
     },
     "vpshufb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x00 256-bit"
@@ -35,21 +35,13 @@
         "mov z6.b, #-113",
         "and z5.d, z5.d, z6.d",
         "tbl v6.16b, {v4.16b}, v5.16b",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, z4.q[1]",
-        "mov z4.d, z4.d",
-        "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x101",
+        "mov z4.b, p6/m, z1.b",
         "tbl v4.16b, {v4.16b}, v5.16b",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
-        "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "not p0.b, p7/z, p6.b",
+        "mov z4.b, p0/m, z1.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -69,7 +61,7 @@
       ]
     },
     "vphaddw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x01 256-bit"
@@ -82,20 +74,16 @@
         "uzp1 z4.h, z0.h, z0.h",
         "uzp2 z1.h, z0.h, z0.h",
         "splice z4.d, p6, z4.d, z1.d",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -115,7 +103,7 @@
       ]
     },
     "vphaddd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x02 256-bit"
@@ -128,20 +116,16 @@
         "uzp1 z4.s, z0.s, z0.s",
         "uzp2 z1.s, z0.s, z0.s",
         "splice z4.d, p6, z4.d, z1.d",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -162,7 +146,7 @@
       ]
     },
     "vphaddsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 16,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x03 256-bit"
@@ -173,20 +157,16 @@
         "uzp1 z6.h, z4.h, z5.h",
         "uzp2 z4.h, z4.h, z5.h",
         "sqadd z4.h, z6.h, z4.h",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -251,7 +231,7 @@
       ]
     },
     "vphsubw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 16,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x05 256-bit"
@@ -262,20 +242,16 @@
         "uzp1 z6.h, z4.h, z5.h",
         "uzp2 z4.h, z4.h, z5.h",
         "sub z4.h, z6.h, z4.h",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -297,7 +273,7 @@
       ]
     },
     "vphsubd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 16,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x06 256-bit"
@@ -308,20 +284,16 @@
         "uzp1 z6.s, z4.s, z5.s",
         "uzp2 z4.s, z4.s, z5.s",
         "sub z4.s, z6.s, z4.s",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -342,7 +314,7 @@
       ]
     },
     "vphsubsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 16,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x07 256-bit"
@@ -353,20 +325,16 @@
         "uzp1 z6.h, z4.h, z5.h",
         "uzp2 z4.h, z4.h, z5.h",
         "sqsub z4.h, z6.h, z4.h",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -549,7 +517,7 @@
       ]
     },
     "vpermilps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0c 256-bit"
@@ -568,13 +536,9 @@
         "mov z6.s, w20",
         "mov z7.d, #0",
         "mov z8.b, #16",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, q8",
-        "mov z7.d, z7.d",
-        "mov z7.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "not p0.b, p7/z, p6.b",
+        "mov z7.b, p0/m, z1.b",
         "add z6.b, z6.b, z7.b",
         "add z5.b, z6.b, z5.b",
         "tbl z4.b, {z4.b}, z5.b",
@@ -610,7 +574,7 @@
       ]
     },
     "vpermilpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0d 256-bit"
@@ -634,13 +598,9 @@
         "mov z6.d, x20",
         "mov z7.d, #0",
         "mov z8.b, #16",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, q8",
-        "mov z7.d, z7.d",
-        "mov z7.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "not p0.b, p7/z, p6.b",
+        "mov z7.b, p0/m, z1.b",
         "add z6.b, z6.b, z7.b",
         "add z5.b, z6.b, z5.b",
         "tbl z4.b, {z4.b}, z5.b",
@@ -1319,7 +1279,7 @@
       ]
     },
     "vpackusdw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2b 256-bit"
@@ -1333,20 +1293,16 @@
         "uzp1 z1.h, z1.h, z1.h",
         "movprfx z4, z4",
         "splice z4.h, p6, z4.h, z1.h",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[1]",
         "mov z5.d, z4.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z5.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
         "mov z4.d, z5.d",
+        "index z0.d, #-2, #1",
+        "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "udf #0x100",
         "mov z16.d, p7/m, z4.d"
       ]
     },

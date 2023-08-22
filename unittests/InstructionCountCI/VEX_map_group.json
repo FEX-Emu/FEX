@@ -598,7 +598,7 @@
       ]
     },
     "vpsrldq ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "Map group 14 0b011 256-bit"
@@ -610,13 +610,10 @@
         "movprfx z1, z4",
         "ext z1.b, z1.b, z5.b, #31",
         "mov z4.d, z1.d",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
-        "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "not p0.b, p7/z, p6.b",
+        "mov z4.b, p0/m, z1.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -758,7 +755,7 @@
       ]
     },
     "vpslldq ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "Map group 14 0b111 256-bit"
@@ -770,13 +767,10 @@
         "movprfx z1, z5",
         "ext z1.b, z1.b, z4.b, #17",
         "mov z4.d, z1.d",
-        "adr x0, #+0x18",
-        "ldr p0, [x0]",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
-        "mov z4.d, p0/m, z1.d",
-        "b #+0x8",
-        "unallocated (Unallocated)",
+        "not p0.b, p7/z, p6.b",
+        "mov z4.b, p0/m, z1.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
