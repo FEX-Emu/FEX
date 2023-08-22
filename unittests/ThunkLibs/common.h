@@ -64,7 +64,7 @@ inline std::ostream& operator<<(std::ostream& os, GuestABI abi) {
 inline void run_tool(clang::tooling::ToolAction& action, std::string_view code, bool silent = false, std::optional<GuestABI> guest_abi = std::nullopt) {
     const char* memory_filename = "gen_input.cpp";
     auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
-    std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
+    std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++20", "-Werror", "-I.", memory_filename };
     if (guest_abi == GuestABI::X86_64) {
         args.push_back("-target");
         args.push_back("x86_64-linux-gnu");
