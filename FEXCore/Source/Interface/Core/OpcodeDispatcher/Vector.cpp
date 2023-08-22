@@ -2998,17 +2998,8 @@ OrderedNode* OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool
       return _VUMull(16, ElementSize, Src1, Src2);
     }
   } else {
-    const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
-
-    OrderedNode *InsSrc1 = _VInsElement(Size, ElementSize, 1, 2, Src1, Src1);
-    OrderedNode *InsSrc2 = _VInsElement(Size, ElementSize, 1, 2, Src2, Src2);
-    if (Is256Bit) {
-      InsSrc1 = _VInsElement(Size, ElementSize, 2, 4, InsSrc1, Src1);
-      InsSrc1 = _VInsElement(Size, ElementSize, 3, 6, InsSrc1, Src1);
-
-      InsSrc2 = _VInsElement(Size, ElementSize, 2, 4, InsSrc2, Src2);
-      InsSrc2 = _VInsElement(Size, ElementSize, 3, 6, InsSrc2, Src2);
-    }
+    auto InsSrc1 = _VUnZip(Size, ElementSize, Src1, Src1);
+    auto InsSrc2 = _VUnZip(Size, ElementSize, Src2, Src2);
 
     if (Signed) {
       return _VSMull(Size, ElementSize, InsSrc1, InsSrc2);
