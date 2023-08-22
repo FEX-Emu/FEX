@@ -3127,15 +3127,9 @@ void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *ResSubSrc{};
-  OrderedNode *ResSubDest{};
-  auto UpperSubDest = _VDupElement(Size, 4, Dest, 1);
-  auto UpperSubSrc = _VDupElement(Size, 4, Src, 1);
-
-  ResSubDest = _VFSub(4, 4, Dest, UpperSubDest);
-  ResSubSrc = _VFSub(4, 4, Src, UpperSubSrc);
-
-  auto Result = _VInsElement(8, 4, 1, 0, ResSubDest, ResSubSrc);
+  auto DestUnzip = _VUnZip(Size, 4, Dest, Src);
+  auto SrcUnzip = _VUnZip2(Size, 4, Dest, Src);
+  auto Result = _VFSub(Size, 4, DestUnzip, SrcUnzip);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
