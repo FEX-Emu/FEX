@@ -1550,17 +1550,17 @@ void OpDispatchBuilder::VPSRLDOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
-
-  auto Size = GetSrcSize(Op);
-
-  auto Shift = Dest;
-  if (ShiftConstant != 0) {
-    Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
+  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  if (ShiftConstant == 0) [[unlikely]] {
+    // Nothing to do, value is already in Dest.
+    return;
   }
+
+  const auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
   StoreResult(FPRClass, Op, Shift, -1);
 }
 
@@ -1611,11 +1611,14 @@ OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  if (ShiftConstant == 0) [[unlikely]] {
+    // Nothing to do, value is already in Dest.
+    return;
+  }
 
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -1744,17 +1747,19 @@ void OpDispatchBuilder::VPSRAOp<4>(OpcodeArgs);
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  if (Shift == 0) [[unlikely]] {
+    // Nothing to do, value is already in Dest.
+    return;
+  }
+
   const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Result = _VectorZero(Size);
 
-  if (Shift == 0) [[unlikely]] {
-    Result = Dest;
-  } else if (Shift < Size) {
+  if (Shift < Size) {
     Result = _VExtr(Size, 1, Result, Dest, Shift);
   }
-
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1791,20 +1796,21 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
+  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  if (Shift == 0) [[unlikely]] {
+    // Nothing to do, value is already in Dest.
+    return;
+  }
+
+  const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Size = GetDstSize(Op);
-
-  OrderedNode *Result = Dest;
-  if (Shift != 0) {
-    Result = _VectorZero(Size);
-    if (Shift < Size) {
-      Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
-    }
+  OrderedNode *Result = _VectorZero(Size);
+  if (Shift < Size) {
+    Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
   }
+
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1838,17 +1844,17 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
+  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  if (Shift == 0) [[unlikely]] {
+    // Nothing to do, value is already in Dest.
+    return;
+  }
+
+  const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Size = GetDstSize(Op);
-
-  auto Result = Dest;
-  if (Shift != 0) {
-    Result = _VSShrI(Size, ElementSize, Dest, Shift);
-  }
+  OrderedNode *Result = _VSShrI(Size, ElementSize, Dest, Shift);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
