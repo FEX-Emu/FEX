@@ -138,6 +138,16 @@ public: // TODO: Remove, make only RepackedType public
     struct RepackedType {
         bool is_opaque = false; // opaque or assumed_compatible (TODO: Rename to the latter)
         bool pointers_only = is_opaque; // if true, only pointers to this type may be used
+
+        // Set of members (identified by their field name) with custom repacking
+        std::unordered_set<std::string> custom_repacked_members;
+
+        bool UsesCustomRepackFor(const clang::FieldDecl* member) const {
+            return custom_repacked_members.contains(member->getNameAsString());
+        }
+        bool UsesCustomRepackFor(const std::string& member_name) const {
+            return custom_repacked_members.contains(member_name);
+        }
     };
 
     std::unordered_map<const clang::Type*, RepackedType> types;

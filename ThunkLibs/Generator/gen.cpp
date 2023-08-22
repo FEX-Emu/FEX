@@ -337,6 +337,12 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
 
     // TODO: Move to dedicated function
     {
+        fmt::print(file, "template<auto PMD>\n");
+        fmt::print(file, "static inline void fex_custom_repack(host_layout<typename pmd_traits<decltype(PMD)>::parent_t>& into, const guest_layout<typename pmd_traits<decltype(PMD)>::parent_t>& from);\n");
+
+        fmt::print(file, "template<auto PMD>\n");
+        fmt::print(file, "static inline void fex_custom_repack_postcall(const typename pmd_traits<decltype(PMD)>::member_t& from);\n\n");
+
         // Sort struct types by dependency so that repacking code is emitted in an order that compiles file
         auto& types2 = types;
         std::vector<std::pair<const clang::Type*, RepackedType>> types { types2.begin(), types2.end() };
@@ -423,11 +429,19 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 };
                 // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
                 for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
-                    map_field(member, true);
+                    if (!type_repack_info.UsesCustomRepackFor(member)) {
+                        map_field(member, true);
+                    } else {
+                      // Leave field uninitialized
+                    }
                 }
                 fmt::print(file, "    }} {{\n");
                 for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
-                    map_field(member, false);
+                    if (!type_repack_info.UsesCustomRepackFor(member)) {
+                        map_field(member, false);
+                    } else {
+                      // Leave field uninitialized
+                    }
                 }
             }
             fmt::print(file, "  }}\n");
@@ -457,15 +471,48 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
 
                 // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
                 for (auto& member : abi.at(struct_name).get_if_struct()->members) {
-                    map_field2(member, true);
+                    if (!type_repack_info.UsesCustomRepackFor(member.member_name)) {
+                        map_field2(member, true);
+                    } else {
+                      // Leave field uninitialized
+                    }
                 }
                 fmt::print(file, "  }} }};\n");
                 for (auto& member : abi.at(struct_name).get_if_struct()->members) {
-                    map_field2(member, false);
+                    if (!type_repack_info.UsesCustomRepackFor(member.member_name)) {
+                        map_field2(member, false);
+                    } else {
+                      // Leave field uninitialized
+                    }
                 }
             }
             fmt::print(file, "  return ret;\n");
             fmt::print(file, "}}\n\n");
+
+            // Forward-declare user-provided repacking functions
+            for (const auto& member_name : type_repack_info.custom_repacked_members) {
+                fmt::print(file, "template<>\n");
+                fmt::print(file, "void fex_custom_repack<&{}::{}>(host_layout<{}>& into, const guest_layout<{}>& from);\n",
+                           struct_name, member_name, struct_name, struct_name);
+                fmt::print(file, "template<>\n");
+                // TODO: Consider adapting the fex_custom_repack interface changes to this function, too
+                fmt::print(file, "void fex_custom_repack_postcall<&{}::{}>(const typename pmd_traits<decltype(&{}::{})>::member_t& from);\n\n",
+                           struct_name, member_name, struct_name, member_name);
+            }
+
+            // TODO: Generate wrappers to call all custom repack functions for children
+            fmt::print(file, "void fex_apply_custom_repacking(host_layout<{}>& source, const guest_layout<{}>& from) {{\n", struct_name, struct_name);
+            for (const auto& member_name : type_repack_info.custom_repacked_members) {
+                fmt::print(file, "  fex_custom_repack<&{}::{}>(source, from);\n",
+                           /*member_name, */struct_name, member_name);
+            }
+            fmt::print(file, "}}\n");
+            fmt::print(file, "void fex_apply_custom_repacking_postcall(host_layout<{}>& source) {{\n", struct_name);
+            for (const auto& member_name : type_repack_info.custom_repacked_members) {
+                fmt::print(file, "  fex_custom_repack_postcall<&{}::{}>(source.data.{});\n",
+                           struct_name, member_name, member_name);
+            }
+            fmt::print(file, "}}\n");
 
             if (type_compat.at(type) == TypeCompatibility::Full) {
                 fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}> = true;\n", struct_name);
@@ -588,6 +635,7 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                     continue;
                 }
 
+                // Layout repacking happens here
                 if (!param_type->isPointerType() || (is_opaque || pointee_compat == TypeCompatibility::Full) ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible
@@ -598,6 +646,14 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                     fmt::print(file, "  unpacked_arg_with_storage<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else {
                     throw report_error(thunk.decl->getLocation(), "Cannot generate unpacking function for function %0 with unannotated pointer parameter %1").AddString(function_name).AddTaggedVal(param_type);
+                }
+
+                // Custom repacking happens here
+                if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType() &&
+                    !is_opaque && pointee_compat != TypeCompatibility::Full) {
+                    fmt::print(file, "  if (args->a_{}.get_pointer()) {{\n", param_idx);
+                    fmt::print(file, "    fex_apply_custom_repacking(*a_{}.data, *args->a_{}.get_pointer());\n", param_idx, param_idx);
+                    fmt::print(file, "  }}\n");
                 }
             }
 
@@ -645,6 +701,31 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 fmt::print(file, "))");
             }
             fmt::print(file, ");\n");
+
+            for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
+                if (thunk.callbacks.contains(param_idx) && thunk.callbacks.at(param_idx).is_stub) {
+                    continue;
+                }
+
+                auto& param_type = thunk.param_types[param_idx];
+
+                const bool is_compatible = param_type->isPointerType() && type_compat.at(context.getCanonicalType(param_type->getPointeeType().getTypePtr())) == TypeCompatibility::Full;
+
+                if (thunk.param_annotations[param_idx].is_passthrough) {
+                    // args are passed directly to function, no need to use `unpacked` wrappers
+                    continue;
+                }
+
+                if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType() &&
+                      !is_compatible &&
+                      !LookupType(context, param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType().getTypePtr()).is_opaque &&
+                      !param_type->getPointeeType().isConstQualified()) {
+                    fmt::print(file, "  if (a_{}.data) {{\n", param_idx);
+                    fmt::print(file, "    *args->a_{}.get_pointer() = to_guest(*a_{}.data);\n", param_idx, param_idx); // TODO: Only if annotated as out-parameter
+                    fmt::print(file, "    fex_apply_custom_repacking_postcall(*a_{}.data);\n", param_idx);
+                    fmt::print(file, "  }}\n");
+                }
+            }
 
             file << "}\n";
         }

@@ -457,6 +457,15 @@ inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
 template<typename>
 struct CallbackUnpack;
 
+// Helper to extract information from a pointer-to-member (e.g. &MyClass::data_member)
+template<typename>
+struct pmd_traits;
+template<typename Parent, typename Data>
+struct pmd_traits<Data Parent::*> {
+    using parent_t = Parent;
+    using member_t = Data;
+};
+
 // Wrapper around unpacked_arg (for on-stack repacked argument structs) that implicitly converts to the represented type
 template<typename T, typename GuestT>
 struct unpacked_arg_wrapper {
@@ -469,6 +478,12 @@ struct unpacked_arg_wrapper {
   guest_layout<T>& orig_arg;
 
   unpacked_arg_wrapper(guest_layout<GuestT>& orig_arg_) : data(orig_arg_), orig_arg(orig_arg_) {
+    if (data.data && !std::is_enum_v<T>) {
+      constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+      if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+        fex_apply_custom_repacking(*data.data, *orig_arg_.get_pointer());
+      }
+    }
   }
 
   ~unpacked_arg_wrapper() {
@@ -479,6 +494,7 @@ struct unpacked_arg_wrapper {
           constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
           if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
             *orig_arg.get_pointer() = to_guest(*data.data); // TODO: Only if annotated as out-parameter
+            fex_apply_custom_repacking_postcall(*data.data);
           }
         }
       }

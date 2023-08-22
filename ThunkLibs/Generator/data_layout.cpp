@@ -269,7 +269,9 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
                 // * Pointer member is annotated
                 // TODO: Don't restrict this to structure types. it applies to pointers to builtin types too!
                 auto host_member_pointee_type = context.getCanonicalType(host_member_type->getPointeeType().getTypePtr());
-                if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).is_opaque) {
+                if (type_repack_info.UsesCustomRepackFor(host_member_field)) {
+                    member_compat.push_back(TypeCompatibility::Repackable);
+                } else if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).is_opaque) {
                     // Pointee doesn't need repacking, but pointer needs extending on 32-bit
                     member_compat.push_back(is_32bit ? TypeCompatibility::Repackable : TypeCompatibility::Full);
                 } else if (host_member_pointee_type->isPointerType()) {

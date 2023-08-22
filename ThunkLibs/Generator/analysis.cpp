@@ -302,6 +302,24 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                 if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
                     // Process later
+                } else if (auto annotated_member = llvm::dyn_cast<clang::FieldDecl>(template_args[0].getAsDecl())) {
+                    {
+                        if (decl->getNumBases() != 1 || decl->bases_begin()->getType().getAsString() != "fexgen::custom_repack") {
+                            throw report_error(template_arg_loc, "Unsupported member annotation(s)");
+                        }
+                        // TODO: Check for fexgen::custom_repack annotation
+                        if (!annotated_member->getType()->isPointerType() && !annotated_member->getType()->isArrayType()) {
+                            throw report_error(template_arg_loc, "custom_repack annotation requires pointer member");
+                        }
+                    }
+
+                    // Get or add parent type to list of structure types
+                    auto repack_info_it = types.emplace(context.getCanonicalType(annotated_member->getParent()->getTypeForDecl()), RepackedType {}).first;
+                    if (repack_info_it->second.is_opaque) {
+                        throw report_error(template_arg_loc, "May not annotate members of opaque types");
+                    }
+                    // Add member to its list of members
+                    repack_info_it->second.custom_repacked_members.insert(annotated_member->getNameAsString());
                 } else {
                     throw report_error(template_arg_loc, "Cannot annotate this kind of symbol");
                 }
@@ -358,14 +376,17 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             }
 
                             for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
-                                  /*if (!member->getType()->isPointerType())*/ {
-                                      // TODO: Perform more elaborate validation for non-pointers to ensure ABI compatibility
-                                      continue;
-                                  }
+                                auto annotated_type = types.find(type->getCanonicalTypeUnqualified().getTypePtr());
+                                if (annotated_type == types.end() || !annotated_type->second.UsesCustomRepackFor(member)) {
+                                    /*if (!member->getType()->isPointerType())*/ {
+                                        // TODO: Perform more elaborate validation for non-pointers to ensure ABI compatibility
+                                        continue;
+                                    }
 
-                                  throw report_error(member->getBeginLoc(), "Unannotated pointer member")
-                                        .addNote(report_error(param_loc, "in struct type", clang::DiagnosticsEngine::Note))
-                                        .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));
+                                    throw report_error(member->getBeginLoc(), "Unannotated pointer member")
+                                          .addNote(report_error(param_loc, "in struct type", clang::DiagnosticsEngine::Note))
+                                          .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));
+                                }
                             }
                         };
 
@@ -526,7 +547,7 @@ void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
                     }
                     continue;
                 }
-                if (member_type->isUnionType() && !types.contains(member_type)) {
+                if (member_type->isUnionType() && !types.contains(member_type) && !type_repack_info.UsesCustomRepackFor(member)) {
                     throw std::runtime_error(fmt::format("\"{}\" has unannotated member \"{}\" of union type \"{}\"",
                                                          clang::QualType { type, 0 }.getAsString(),
                                                          member->getNameAsString(),
