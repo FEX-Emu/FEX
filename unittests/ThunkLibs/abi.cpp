@@ -321,6 +321,10 @@ TEST_CASE_METHOD(Fixture, "DataLayout") {
         CHECK(action->guest_layout->at("A").get_if_struct()->members.at(0).member_name == "b");
         CHECK(action->guest_layout->at("A").get_if_struct()->members.at(1).member_name == "a");
 
+        REQUIRE(!action->host_layout.empty());
+        CHECK(action->host_layout.begin()->second.get_if_struct()->members.at(0).member_name == "a");
+        CHECK(action->host_layout.begin()->second.get_if_struct()->members.at(1).member_name == "b");
+
         CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
     }
 
