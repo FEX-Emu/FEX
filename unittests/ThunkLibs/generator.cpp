@@ -311,7 +311,8 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "};\n"
         "\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
-        "template<typename F> void FinalizeHostTrampolineForGuestFunction(const guest_layout<F*>&);\n";
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(const guest_layout<F*>&);\n"
+        "template<typename T> T& unwrap_host(host_layout<T>&);\n";
 
     auto& filename = output_filenames.host;
     {

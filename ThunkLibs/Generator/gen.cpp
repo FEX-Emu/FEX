@@ -666,8 +666,6 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             fmt::print(file, "{}(", function_to_call);
             {
                 auto format_param = [&](std::size_t idx) {
-                    std::string raw_arg = fmt::format("a_{}.data", idx);
-
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
@@ -691,7 +689,8 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                         // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
                     } else {
-                        return raw_arg;
+                        // Unwrap host_layout/unpacked_arg_with_storage layer
+                        return fmt::format("unwrap_host(a_{})", idx);
                     }
                 };
 

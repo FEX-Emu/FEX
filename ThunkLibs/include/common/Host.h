@@ -435,6 +435,16 @@ struct unpacked_arg_with_storage<char*> {
 };
 
 template<typename T>
+T& unwrap_host(host_layout<T>& val) {
+  return val.data;
+}
+
+template<typename T>
+T* unwrap_host(unpacked_arg_base<T*>& val) {
+  return val.get();
+}
+
+template<typename T>
 inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
   if constexpr (std::is_enum_v<T>) {
     // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
