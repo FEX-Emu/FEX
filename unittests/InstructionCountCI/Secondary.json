@@ -4410,19 +4410,14 @@
       ]
     },
     "pmaddwd mm0, mm1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xf5",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #752]",
         "ldr d5, [x28, #768]",
-        "sxtl v6.4s, v4.4h",
-        "sxtl2 v4.4s, v4.8h",
-        "sxtl v7.4s, v5.4h",
-        "sxtl2 v5.4s, v5.8h",
-        "mul v6.4s, v6.4s, v7.4s",
-        "mul v4.4s, v4.4s, v5.4s",
-        "addp v4.4s, v6.4s, v4.4s",
+        "smull v4.4s, v4.4h, v5.4h",
+        "addp v4.4s, v4.4s, v4.4s",
         "str d4, [x28, #752]"
       ]
     },
