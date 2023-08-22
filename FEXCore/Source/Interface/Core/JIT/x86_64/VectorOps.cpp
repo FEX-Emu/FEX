@@ -1771,8 +1771,8 @@ DEF_OP(VUnZip) {
         break;
       }
       case 4: {
-        vshufps(Dst, VectorLower, VectorUpper, 0b10'00'10'00);
-        vmovq(Dst, Dst);
+        insertps(xmm15, VectorLower, 0b00'00'1110);
+        vinsertps(Dst, xmm15, VectorUpper, 0b00'01'1100);
         break;
       }
       default:
@@ -1881,8 +1881,8 @@ DEF_OP(VUnZip2) {
         break;
       }
       case 4: {
-        vshufps(Dst, VectorLower, VectorUpper, 0b11'01'11'01);
-        vmovq(Dst, Dst);
+        insertps(xmm15, VectorLower, 0b01'00'1110);
+        vinsertps(Dst, xmm15, VectorUpper, 0b01'01'1100);
         break;
       }
       default:
