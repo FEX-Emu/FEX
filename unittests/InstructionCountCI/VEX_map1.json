@@ -5397,7 +5397,7 @@
       ]
     },
     "vhsubpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7d 128-bit"
@@ -5405,17 +5405,15 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fneg v6.2d, v4.2d",
-        "fneg v7.2d, v5.2d",
-        "mov v4.d[1], v6.d[1]",
-        "mov v5.d[1], v7.d[1]",
-        "faddp v4.2d, v4.2d, v5.2d",
+        "uzp1 v6.2d, v4.2d, v5.2d",
+        "uzp2 v4.2d, v4.2d, v5.2d",
+        "fsub v4.2d, v6.2d, v4.2d",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7d 256-bit"
@@ -5423,19 +5421,9 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fneg z6.d, p7/m, z4.d",
-        "fneg z7.d, p7/m, z5.d",
-        "uzp1 z4.d, z4.d, z4.d",
-        "uzp1 z5.d, z5.d, z5.d",
-        "uzp2 z6.d, z6.d, z6.d",
-        "uzp2 z7.d, z7.d, z7.d",
-        "zip1 z4.d, z4.d, z6.d",
-        "zip1 z5.d, z5.d, z7.d",
-        "movprfx z0, z4",
-        "faddp z0.d, p7/m, z0.d, z5.d",
-        "uzp1 z4.d, z0.d, z0.d",
-        "uzp2 z1.d, z0.d, z0.d",
-        "splice z4.d, p6, z4.d, z1.d",
+        "uzp1 z6.d, z4.d, z5.d",
+        "uzp2 z4.d, z4.d, z5.d",
+        "fsub z4.d, z6.d, z4.d",
         "adr x0, #+0x18",
         "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
@@ -5454,7 +5442,7 @@
       ]
     },
     "vhsubps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7d 128-bit"
@@ -5462,19 +5450,15 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fneg v6.4s, v4.4s",
-        "fneg v7.4s, v5.4s",
-        "mov v4.s[1], v6.s[1]",
-        "mov v4.s[3], v6.s[3]",
-        "mov v5.s[1], v7.s[1]",
-        "mov v5.s[3], v7.s[3]",
-        "faddp v4.4s, v4.4s, v5.4s",
+        "uzp1 v6.4s, v4.4s, v5.4s",
+        "uzp2 v4.4s, v4.4s, v5.4s",
+        "fsub v4.4s, v6.4s, v4.4s",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vhsubps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x7d 256-bit"
@@ -5482,19 +5466,9 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fneg z6.s, p7/m, z4.s",
-        "fneg z7.s, p7/m, z5.s",
-        "uzp1 z4.s, z4.s, z4.s",
-        "uzp1 z5.s, z5.s, z5.s",
-        "uzp2 z6.s, z6.s, z6.s",
-        "uzp2 z7.s, z7.s, z7.s",
-        "zip1 z4.s, z4.s, z6.s",
-        "zip1 z5.s, z5.s, z7.s",
-        "movprfx z0, z4",
-        "faddp z0.s, p7/m, z0.s, z5.s",
-        "uzp1 z4.s, z0.s, z0.s",
-        "uzp2 z1.s, z0.s, z0.s",
-        "splice z4.d, p6, z4.d, z1.d",
+        "uzp1 z6.s, z4.s, z5.s",
+        "uzp2 z4.s, z4.s, z5.s",
+        "fsub z4.s, z6.s, z4.s",
         "adr x0, #+0x18",
         "ldr p0, [x0]",
         "mov z1.d, z4.d[2]",
