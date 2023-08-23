@@ -443,7 +443,7 @@
       ]
     },
     "vmovhps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x16 128-bit"
@@ -454,12 +454,11 @@
         "ldr d5, [x4]",
         "mov v4.d[1], v5.d[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovhpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x16 128-bit"
@@ -469,7 +468,6 @@
         "mov v4.8b, v4.8b",
         "ldr d5, [x4]",
         "mov v4.d[1], v5.d[0]",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
