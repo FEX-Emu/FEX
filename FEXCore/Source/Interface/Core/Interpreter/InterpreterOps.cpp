@@ -267,8 +267,10 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VUXTL2,                 VUXTL2);
   REGISTER_OP(VSQXTN,                 VSQXTN);
   REGISTER_OP(VSQXTN2,                VSQXTN2);
+  REGISTER_OP(VSQXTNPAIR,             VSQXTNPair);
   REGISTER_OP(VSQXTUN,                VSQXTUN);
   REGISTER_OP(VSQXTUN2,               VSQXTUN2);
+  REGISTER_OP(VSQXTUNPAIR,            VSQXTUNPair);
   REGISTER_OP(VUMUL,                  VUMul);
   REGISTER_OP(VSMUL,                  VSMul);
   REGISTER_OP(VUMULL,                 VUMull);

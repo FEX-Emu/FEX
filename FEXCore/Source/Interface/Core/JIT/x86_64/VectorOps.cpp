@@ -3876,6 +3876,78 @@ DEF_OP(VSQXTN2) {
   }
 }
 
+DEF_OP(VSQXTNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTNPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (Is256Bit) {
+    //ud2();
+    switch (ElementSize) {
+      case 1:
+        vpacksswb(ymm15, ToYMM(VectorLower), ToYMM(VectorUpper));
+        break;
+      case 2:
+        vpackssdw(ymm15, ToYMM(VectorLower), ToYMM(VectorUpper));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+    // 256-bit vpack interleaves 128-bit halves
+    // This needs to be uninterleaved.
+    // Src1[127:0]   > Dest[63:0]    - Src1_l
+    // Src2[127:0]   > Dest[127:64]  - Src2_l
+    // Src1[255:128] > Dest[191:128] - Src1_h
+    // Src2[255:128] > Dest[255:192] - Src2_h
+    vmovaps(ToYMM(Dst), ymm15);
+    // Lower bits still in ymm15
+    // Extract upper bits
+    vextracti128(xmm14, ymm15, 1);
+
+    pextrq(TMP1, xmm14, 0);
+    pinsrq(ToYMM(Dst), TMP1, 1);
+
+    pextrq(TMP1, xmm15, 1);
+    pinsrq(xmm14, TMP1, 0);
+    vinserti128(ToYMM(Dst), ToYMM(Dst), xmm14, 1);
+  }
+  else if (OpSize == 8) {
+    vpxor(xmm15, xmm15, xmm15);
+    vpunpcklqdq(xmm14, VectorLower, VectorUpper);
+    switch (ElementSize) {
+      case 1:
+        vpacksswb(Dst, xmm14, xmm15);
+        break;
+      case 2:
+        vpackssdw(Dst, xmm14, xmm15);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+  }
+  else {
+    switch (ElementSize) {
+      case 1:
+        vpacksswb(Dst, VectorLower, VectorUpper);
+        break;
+      case 2:
+        vpackssdw(Dst, VectorLower, VectorUpper);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+  }
+}
+
 DEF_OP(VSQXTUN) {
   const auto Op = IROp->C<IR::IROp_VSQXTUN>();
   const auto OpSize = IROp->Size;
@@ -3971,6 +4043,77 @@ DEF_OP(VSQXTUN2) {
     }
 
     vpor(Dst, VectorLower, xmm15);
+  }
+}
+
+DEF_OP(VSQXTUNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTUNPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (Is256Bit) {
+    switch (ElementSize) {
+      case 1:
+        vpackuswb(ymm15, ToYMM(VectorLower), ToYMM(VectorUpper));
+        break;
+      case 2:
+        vpackusdw(ymm15, ToYMM(VectorLower), ToYMM(VectorUpper));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+    // 256-bit vpack interleaves 128-bit halves
+    // This needs to be uninterleaved.
+    // Src1[127:0]   > Dest[63:0]    - Src1_l
+    // Src2[127:0]   > Dest[127:64]  - Src2_l
+    // Src1[255:128] > Dest[191:128] - Src1_h
+    // Src2[255:128] > Dest[255:192] - Src2_h
+    vmovaps(ToYMM(Dst), ymm15);
+    // Lower bits still in ymm15
+    // Extract upper bits
+    vextracti128(xmm14, ymm15, 1);
+
+    pextrq(TMP1, xmm14, 0);
+    pinsrq(ToYMM(Dst), TMP1, 1);
+
+    pextrq(TMP1, xmm15, 1);
+    pinsrq(xmm14, TMP1, 0);
+    vinserti128(ToYMM(Dst), ToYMM(Dst), xmm14, 1);
+  }
+  else if (OpSize == 8) {
+    vpxor(xmm15, xmm15, xmm15);
+    vpunpcklqdq(xmm14, VectorLower, VectorUpper);
+    switch (ElementSize) {
+      case 1:
+        vpackuswb(Dst, xmm14, xmm15);
+        break;
+      case 2:
+        vpackusdw(Dst, xmm14, xmm15);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+  }
+  else {
+    switch (ElementSize) {
+      case 1:
+        vpackuswb(Dst, VectorLower, VectorUpper);
+        break;
+      case 2:
+        vpackusdw(Dst, VectorLower, VectorUpper);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
   }
 }
 
@@ -4785,8 +4928,10 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUXTL2,            VUXTL2);
   REGISTER_OP(VSQXTN,            VSQXTN);
   REGISTER_OP(VSQXTN2,           VSQXTN2);
+  REGISTER_OP(VSQXTNPAIR,        VSQXTNPair);
   REGISTER_OP(VSQXTUN,           VSQXTUN);
   REGISTER_OP(VSQXTUN2,          VSQXTUN2);
+  REGISTER_OP(VSQXTUNPAIR,       VSQXTUNPair);
   REGISTER_OP(VUMUL,             VMul);
   REGISTER_OP(VSMUL,             VMul);
   REGISTER_OP(VUMULL,            VUMull);
