@@ -491,7 +491,6 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-
       "VStoreVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, FPR:$Data, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked store similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be stored to memory"],
@@ -499,7 +498,13 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-
+      "FPR = VLoadVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
+        "Desc": ["Does a memory load to a single element of a vector.",
+                 "Leaves the rest of the vector's data intact.",
+                 "Matches arm64 ld1 semantics"],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "FPR = VBroadcastFromMem u8:#RegisterSize, u8:#ElementSize, GPR:$Address": {
         "Desc": ["Broadcasts an ElementSize value from memory into each element of a vector."],
         "DestSize": "RegisterSize",
