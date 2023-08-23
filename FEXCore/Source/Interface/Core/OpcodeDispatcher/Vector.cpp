@@ -2799,8 +2799,7 @@ OrderedNode* OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
                                              OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode *Res = _VSQXTUN(Size, ElementSize, Src1);
-  return _VSQXTUN2(Size, ElementSize, Res, Src2);
+  return _VSQXTUNPair(Size, ElementSize, Src1, Src2);
 }
 
 template<size_t ElementSize>
@@ -2842,9 +2841,7 @@ void OpDispatchBuilder::VPACKUSOp<4>(OpcodeArgs);
 OrderedNode* OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                                              OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
-
-  OrderedNode *Res = _VSQXTN(Size, ElementSize, Src1);
-  return _VSQXTN2(Size, ElementSize, Res, Src2);
+  return _VSQXTNPair(Size, ElementSize, Src1, Src2);
 }
 
 template<size_t ElementSize>
