@@ -316,8 +316,8 @@ public:
   void SGDTOp(OpcodeArgs);
 
   // SSE
-  void MOVAPSOp(OpcodeArgs);
-  void MOVUPSOp(OpcodeArgs);
+  void MOVAPS_MOVAPDOp(OpcodeArgs);
+  void MOVUPS_MOVUPDOp(OpcodeArgs);
   void MOVLPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
@@ -473,9 +473,6 @@ public:
 
   template <size_t ElementSize, bool IsStore>
   void VMASKMOVOp(OpcodeArgs);
-
-  void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
-  void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
   void VMOVHPOp(OpcodeArgs);
   void VMOVLPOp(OpcodeArgs);
