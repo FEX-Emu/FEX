@@ -370,22 +370,61 @@ DEF_OP(Vector_FToI) {
         break;
     }
   } else {
-    switch (Op->Round) {
-      case FEXCore::IR::Round_Nearest.Val:
-        frinti(SubEmitSize, Dst.Q(), Vector.Q());
-        break;
-      case FEXCore::IR::Round_Negative_Infinity.Val:
-        frintm(SubEmitSize, Dst.Q(), Vector.Q());
-        break;
-      case FEXCore::IR::Round_Positive_Infinity.Val:
-        frintp(SubEmitSize, Dst.Q(), Vector.Q());
-        break;
-      case FEXCore::IR::Round_Towards_Zero.Val:
-        frintz(SubEmitSize, Dst.Q(), Vector.Q());
-        break;
-      case FEXCore::IR::Round_Host.Val:
-        frinti(SubEmitSize, Dst.Q(), Vector.Q());
-        break;
+    const auto IsScalar = ElementSize == OpSize;
+
+    if (IsScalar) {
+      // Since we have multiple overloads of the same name (e.g.
+      // frinti having AdvSIMD, AdvSIMD scalar, and an SVE version),
+      // we can't just use a lambda without some seriously ugly casting.
+      // This is fairly self-contained otherwise.
+      #define ROUNDING_FN(name)          \
+        if (ElementSize == 2) {          \
+            name(Dst.H(), Vector.H());   \
+          } else if (ElementSize == 4) { \
+            name(Dst.S(), Vector.S());   \
+          } else if (ElementSize == 8) { \
+            name(Dst.D(), Vector.D());   \
+          } else {                       \
+            FEX_UNREACHABLE;             \
+          }
+
+      switch (Op->Round) {
+        case IR::Round_Nearest.Val:
+          ROUNDING_FN(frintn);
+          break;
+        case IR::Round_Negative_Infinity.Val:
+          ROUNDING_FN(frintm);
+          break;
+        case IR::Round_Positive_Infinity.Val:
+          ROUNDING_FN(frintp);
+          break;
+        case IR::Round_Towards_Zero.Val:
+          ROUNDING_FN(frintz);
+          break;
+        case IR::Round_Host.Val:
+          ROUNDING_FN(frinti);
+          break;
+      }
+
+      #undef ROUNDING_FN
+    } else {
+      switch (Op->Round) {
+        case FEXCore::IR::Round_Nearest.Val:
+          frinti(SubEmitSize, Dst.Q(), Vector.Q());
+          break;
+        case FEXCore::IR::Round_Negative_Infinity.Val:
+          frintm(SubEmitSize, Dst.Q(), Vector.Q());
+          break;
+        case FEXCore::IR::Round_Positive_Infinity.Val:
+          frintp(SubEmitSize, Dst.Q(), Vector.Q());
+          break;
+        case FEXCore::IR::Round_Towards_Zero.Val:
+          frintz(SubEmitSize, Dst.Q(), Vector.Q());
+          break;
+        case FEXCore::IR::Round_Host.Val:
+          frinti(SubEmitSize, Dst.Q(), Vector.Q());
+          break;
+      }
     }
   }
 }
