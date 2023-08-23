@@ -4388,14 +4388,12 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
-    StoreResult(FPRClass, Op, Result, -1);
+    StoreResult(FPRClass, Op, Src1, -1);
     return;
   }
   // Only the first four bits of the 8-bit immediate are used, so only check them.
   if (((Selector & 0b11) == 0b11 && !Is256Bit) || (Selector & 0b1111) == 0b1111) {
-    OrderedNode *Result = Is256Bit ? Src2 : _VMov(16, Src2);
-    StoreResult(FPRClass, Op, Result, -1);
+    StoreResult(FPRClass, Op, Src2, -1);
     return;
   }
 
@@ -4423,8 +4421,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // silly is happening, we have your back.
 
   if (Selector == 0) {
-    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
-    StoreResult(FPRClass, Op, Result, -1);
+    StoreResult(FPRClass, Op, Src1, -1);
     return;
   }
   if (Selector == 0xFF && Is256Bit) {
@@ -4436,7 +4433,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // silliness is going on and the upper bits are being set even when they'll
   // be ignored
   if ((Selector & 0xF) == 0xF && !Is256Bit) {
-    StoreResult(FPRClass, Op, _VMov(16, Src2), -1);
+    StoreResult(FPRClass, Op, Src2, -1);
     return;
   }
 
@@ -4446,7 +4443,6 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
@@ -4455,13 +4451,11 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
-    StoreResult(FPRClass, Op, Result, -1);
+    StoreResult(FPRClass, Op, Src1, -1);
     return;
   }
   if (Selector == 0xFF) {
-    OrderedNode *Result = Is256Bit ? Src2 : _VMov(16, Src2);
-    StoreResult(FPRClass, Op, Result, -1);
+    StoreResult(FPRClass, Op, Src2, -1);
     return;
   }
 

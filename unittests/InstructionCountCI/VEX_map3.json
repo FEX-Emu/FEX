@@ -104,14 +104,13 @@
       ]
     },
     "vpblendd xmm0, xmm1, 0000b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -411,14 +410,13 @@
       ]
     },
     "vpblendd xmm0, xmm1, 1111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2097,14 +2095,13 @@
       ]
     },
     "vblendps xmm0, xmm1, xmm2, 0000b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2132,14 +2129,13 @@
       ]
     },
     "vblendps xmm0, xmm1, xmm2, 1111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2213,14 +2209,13 @@
       ]
     },
     "vblendpd xmm0, xmm1, xmm2, 00b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2264,14 +2259,13 @@
       ]
     },
     "vblendpd xmm0, xmm1, xmm2, 11b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0d 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2726,14 +2720,13 @@
       ]
     },
     "vpblendw xmm0, xmm1, xmm2, 00000000b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2765,14 +2758,13 @@
       ]
     },
     "vpblendw xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
