@@ -17,15 +17,27 @@ struct Fixture {
 
 #define GET_SYMBOL(name) decltype(&::name) name = (decltype(name))dlsym(lib, #name)
   GET_SYMBOL(GetDoubledValue);
+
+  GET_SYMBOL(MakeOpaqueType);
+  GET_SYMBOL(ReadOpaqueTypeData);
+  GET_SYMBOL(DestroyOpaqueType);
+
   GET_SYMBOL(MakeReorderingType);
   GET_SYMBOL(GetReorderingTypeMember);
   GET_SYMBOL(ModifyReorderingTypeMembers);
   GET_SYMBOL(QueryOffsetOf);
+
   GET_SYMBOL(RanCustomRepack);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
   CHECK(GetDoubledValue(10) == 20);
+}
+
+TEST_CASE_METHOD(Fixture, "Opaque data types") {
+  auto data = MakeOpaqueType(0x1234);
+  CHECK(ReadOpaqueTypeData(data) == 0x1234);
+  DestroyOpaqueType(data);
 }
 
 TEST_CASE_METHOD(Fixture, "Automatic struct repacking") {
