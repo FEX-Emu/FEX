@@ -568,7 +568,7 @@
       ]
     },
     "vpsrldq ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map group 14 0b011 256-bit"
@@ -577,9 +577,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, #0",
         "ext v6.16b, v4.16b, v5.16b, #15",
-        "movprfx z1, z4",
-        "ext z1.b, z1.b, z5.b, #31",
-        "mov z4.d, z1.d",
+        "ext z4.b, z4.b, z5.b, #31",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
         "not p0.b, p7/z, p6.b",

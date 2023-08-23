@@ -2752,9 +2752,14 @@ DEF_OP(VExtr) {
   const auto CopyFromByte = Index * ElementSize;
 
   if (HostSupportsSVE256 && Is256Bit) {
-    movprfx(VTMP2.Z(), LowerBits.Z());
-    ext<FEXCore::ARMEmitter::OpType::Destructive>(VTMP2.Z(), VTMP2.Z(), UpperBits.Z(), CopyFromByte);
-    mov(Dst.Z(), VTMP2.Z());
+    if (Dst == LowerBits) {
+      // Trivial case where we don't need to do any moves
+      ext<FEXCore::ARMEmitter::OpType::Destructive>(Dst.Z(), Dst.Z(), UpperBits.Z(), CopyFromByte);
+    } else {
+      movprfx(VTMP2.Z(), LowerBits.Z());
+      ext<FEXCore::ARMEmitter::OpType::Destructive>(VTMP2.Z(), VTMP2.Z(), UpperBits.Z(), CopyFromByte);
+      mov(Dst.Z(), VTMP2.Z());
+    }
   } else {
     if (OpSize == 8) {
       ext(Dst.D(), LowerBits.D(), UpperBits.D(), CopyFromByte);
