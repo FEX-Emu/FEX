@@ -57,7 +57,7 @@
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
-        "frinti v16.4s, v17.4s"
+        "frintn v16.4s, v17.4s"
       ]
     },
     "roundps xmm0, xmm1, 00000001b": {
@@ -112,7 +112,7 @@
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
-        "frinti v16.2d, v17.2d"
+        "frintn v16.2d, v17.2d"
       ]
     },
     "roundpd xmm0, xmm1, 00000001b": {
@@ -164,12 +164,10 @@
       "Optimal": "No",
       "Comment": [
         "Nearest rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frinti v4.4s, v17.4s",
+        "frintn s4, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
@@ -178,12 +176,10 @@
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintm v4.4s, v17.4s",
+        "frintm s4, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
@@ -192,12 +188,10 @@
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintp v4.4s, v17.4s",
+        "frintp s4, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
@@ -206,12 +200,10 @@
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintz v4.4s, v17.4s",
+        "frintz s4, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
@@ -220,12 +212,10 @@
       "Optimal": "No",
       "Comment": [
         "host rounding mode rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frinti v4.4s, v17.4s",
+        "frinti s4, s17",
         "mov v16.s[0], v4.s[0]"
       ]
     },
@@ -234,12 +224,10 @@
       "Optimal": "No",
       "Comment": [
         "Nearest rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frinti v4.2d, v17.2d",
+        "frintn d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -248,12 +236,10 @@
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintm v4.2d, v17.2d",
+        "frintm d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -262,12 +248,10 @@
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintp v4.2d, v17.2d",
+        "frintp d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -276,12 +260,10 @@
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintz v4.2d, v17.2d",
+        "frintz d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -290,12 +272,10 @@
       "Optimal": "No",
       "Comment": [
         "host rounding mode rounding",
-        "FPConvert instruction using vector conversion instead of scalar.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frinti v4.2d, v17.2d",
+        "frinti d4, d17",
         "mov v16.d[0], v4.d[0]"
       ]
     },

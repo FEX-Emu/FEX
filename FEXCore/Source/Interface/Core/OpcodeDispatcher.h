@@ -996,7 +996,7 @@ private:
   void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
   OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
-                               OrderedNode *Src, uint64_t Mode);
+                               OrderedNode *Src, uint64_t Mode, bool IsScalar);
 
   OrderedNode* Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
                                              const X86Tables::DecodedOperand& Src1Op,
