@@ -1552,7 +1552,6 @@ void OpDispatchBuilder::PSRLI<8>(OpcodeArgs);
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
@@ -1560,13 +1559,10 @@ void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = Src;
 
-  if (ShiftConstant != 0) {
+  if (ShiftConstant != 0) [[likely]] {
     Result = _VUShrI(Size, ElementSize, Src, ShiftConstant);
   }
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1579,7 +1575,7 @@ void OpDispatchBuilder::VPSRLIOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
                                           OrderedNode *Src, uint64_t Shift) {
-  if (Shift == 0) {
+  if (Shift == 0) [[unlikely]] {
     // If zero-shift then just return the source.
     return Src;
   }
@@ -1611,19 +1607,11 @@ void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
-
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
-
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1845,19 +1833,15 @@ template <size_t ElementSize>
 void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Shift = Op->Src[1].Data.Literal.Value;
-
   const auto Size = GetDstSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = Src;
-  if (Shift != 0) {
+
+  if (Shift != 0) [[likely]] {
     Result = _VSShrI(Size, ElementSize, Src, Shift);
   }
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
