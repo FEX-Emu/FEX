@@ -4313,7 +4313,7 @@
       ]
     },
     "vminps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 128-bit"
@@ -4322,9 +4322,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt v0.4s, v5.4s, v4.4s",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v5.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "bif v4.16b, v5.16b, v0.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4347,7 +4345,7 @@
       ]
     },
     "vminpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 128-bit"
@@ -4356,9 +4354,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt v0.2d, v5.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bif v1.16b, v5.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "bif v4.16b, v5.16b, v0.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4501,7 +4497,7 @@
       ]
     },
     "vmaxps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5f 128-bit"
@@ -4510,9 +4506,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt v0.4s, v5.4s, v4.4s",
-        "mov v1.16b, v4.16b",
-        "bit v1.16b, v5.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "bit v4.16b, v5.16b, v0.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4534,7 +4528,7 @@
       ]
     },
     "vmaxpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5f 128-bit"
@@ -4543,9 +4537,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt v0.2d, v5.2d, v4.2d",
-        "mov v1.16b, v4.16b",
-        "bit v1.16b, v5.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "bit v4.16b, v5.16b, v0.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
