@@ -1287,24 +1287,19 @@ void OpDispatchBuilder::PINSROp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
   OrderedNode *Result = PINSROpImpl(Op, 1, Op->Src[0], Op->Src[1], Op->Src[2]);
-  OrderedNode *Final = _VMov(16, Result);
-
-  StoreResult(FPRClass, Op, Final, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   OrderedNode *Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
-  OrderedNode *Final = _VMov(16, Result);
 
-  StoreResult(FPRClass, Op, Final, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
   OrderedNode *Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
-  OrderedNode *Final = _VMov(16, Result);
-
-  StoreResult(FPRClass, Op, Final, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
@@ -1361,9 +1356,7 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
-  OrderedNode *Insert = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
-  OrderedNode *Result = _VMov(16, Insert);
-
+  OrderedNode *Result = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
