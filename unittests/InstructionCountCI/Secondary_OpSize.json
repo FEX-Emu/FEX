@@ -986,7 +986,7 @@
     },
     "pminsw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xea",
       "ExpectedArm64ASM": [
         "smin v16.8h, v16.8h, v17.8h"
@@ -994,7 +994,7 @@
     },
     "por xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xeb",
       "ExpectedArm64ASM": [
         "orr v16.16b, v16.16b, v17.16b"
@@ -1002,7 +1002,7 @@
     },
     "paddsb xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xec",
       "ExpectedArm64ASM": [
         "sqadd v16.16b, v16.16b, v17.16b"
@@ -1010,7 +1010,7 @@
     },
     "paddsw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xed",
       "ExpectedArm64ASM": [
         "sqadd v16.8h, v16.8h, v17.8h"
@@ -1018,7 +1018,7 @@
     },
     "pmaxsw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xee",
       "ExpectedArm64ASM": [
         "smax v16.8h, v16.8h, v17.8h"
@@ -1026,7 +1026,7 @@
     },
     "pxor xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xef",
       "ExpectedArm64ASM": [
         "eor v16.16b, v16.16b, v17.16b"
@@ -1110,7 +1110,7 @@
     },
     "psubb xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf8",
       "ExpectedArm64ASM": [
         "sub v16.16b, v16.16b, v17.16b"
@@ -1118,7 +1118,7 @@
     },
     "psubw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf9",
       "ExpectedArm64ASM": [
         "sub v16.8h, v16.8h, v17.8h"
@@ -1126,7 +1126,7 @@
     },
     "psubd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xfa",
       "ExpectedArm64ASM": [
         "sub v16.4s, v16.4s, v17.4s"
@@ -1134,7 +1134,7 @@
     },
     "psubq xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xfb",
       "ExpectedArm64ASM": [
         "sub v16.2d, v16.2d, v17.2d"
@@ -1142,7 +1142,7 @@
     },
     "paddb xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xfc",
       "ExpectedArm64ASM": [
         "add v16.16b, v16.16b, v17.16b"
@@ -1150,7 +1150,7 @@
     },
     "paddw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xfd",
       "ExpectedArm64ASM": [
         "add v16.8h, v16.8h, v17.8h"
@@ -1158,7 +1158,7 @@
     },
     "paddd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xfe",
       "ExpectedArm64ASM": [
         "add v16.4s, v16.4s, v17.4s"
