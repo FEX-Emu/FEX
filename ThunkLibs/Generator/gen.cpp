@@ -643,7 +643,15 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
                     // TODO: Require opt-in for this to be emitted since it's single-element only; otherwise, pointers-to-arrays arguments will cause stack trampling
                     // TODO: Rename to repacked_arg
-                    fmt::print(file, "  unpacked_arg_with_storage<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
+                    auto get_type_name_with_nonconst_pointee = [&](clang::QualType type) {
+                        type = type.getLocalUnqualifiedType();
+                        if (type->isPointerType()) {
+                            // Strip away "const" from pointee type
+                            type = context.getPointerType(type->getPointeeType().getLocalUnqualifiedType());
+                        }
+                        return get_type_name(context, type.getTypePtr());
+                    };
+                    fmt::print(file, "  unpacked_arg_with_storage<{}> a_{} {{ args->a_{} }};\n", get_type_name_with_nonconst_pointee(param_type), param_idx, param_idx);
                 } else {
                     throw report_error(thunk.decl->getLocation(), "Cannot generate unpacking function for function %0 with unannotated pointer parameter %1").AddString(function_name).AddTaggedVal(param_type);
                 }
