@@ -3797,7 +3797,6 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
   const auto SrcIdx = Scalar ? 1 : 0;
   const auto SrcSize = Scalar && Op->Src[SrcIdx].IsGPR() ? 16U : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[SrcIdx], SrcSize, Op->Flags, -1);
   OrderedNode *Result = VectorRoundImpl(Op, ElementSize, Src, GetMode(), Scalar);
@@ -3806,9 +3805,6 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
     // Insert the lower bits
     OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
     Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
-  }
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
