@@ -80,20 +80,29 @@ void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
   if (Op->Dest.IsGPR()) {
-    // If the destination is a GPR then the source is memory
-    // xmm1[127:64] = src
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
-    auto Result = _VInsElement(16, 8, 1, 0, Dest, Src);
-    StoreResult(FPRClass, Op, Result, -1);
+    if (Op->Src[0].IsGPR()) {
+      // MOVLHPS between two vector registers.
+      OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
+      auto Result = _VInsElement(16, 8, 1, 0, Dest, Src);
+      StoreResult(FPRClass, Op, Result, -1);
+    }
+    else {
+      // If the destination is a GPR then the source is memory
+      // xmm1[127:64] = src
+      OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+      OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
+      auto Result = _VLoadVectorElement(16, 8, Dest, 1, Src);
+      StoreResult(FPRClass, Op, Result, -1);
+    }
   }
   else {
     // In this case memory is the destination and the high bits of the XMM are source
     // Mem64 = xmm1[127:64]
-    auto Result = _VExtractToGPR(16, 8, Src, 1);
-    StoreResult(GPRClass, Op, Result, -1);
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, 8, Op->Flags, -1, false);
+    _VStoreVectorElement(16, 8, Src, 1, Dest);
   }
 }
 
