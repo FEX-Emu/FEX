@@ -1146,7 +1146,7 @@
       ]
     },
     "vpacksswb xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x63 128-bit"
@@ -1155,15 +1155,13 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "sqxtn v4.8b, v4.8h",
-        "mov v0.16b, v4.16b",
-        "sqxtn2 v0.16b, v5.8h",
-        "mov v4.16b, v0.16b",
+        "sqxtn2 v4.16b, v5.8h",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpacksswb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x63 256-bit"
@@ -1171,11 +1169,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "sqxtnb z4.b, z4.h",
-        "uzp1 z4.b, z4.b, z4.b",
         "sqxtnb z1.b, z5.h",
         "uzp1 z1.b, z1.b, z1.b",
-        "movprfx z4, z4",
+        "sqxtnb z4.b, z4.h",
+        "uzp1 z4.b, z4.b, z4.b",
         "splice z4.b, p6, z4.b, z1.b",
         "mov z1.d, z4.d[1]",
         "mov z5.d, z4.d",
@@ -1281,7 +1278,7 @@
       ]
     },
     "vpackuswb xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x67 128-bit"
@@ -1290,15 +1287,13 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "sqxtun v4.8b, v4.8h",
-        "mov v0.16b, v4.16b",
-        "sqxtun2 v0.16b, v5.8h",
-        "mov v4.16b, v0.16b",
+        "sqxtun2 v4.16b, v5.8h",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackuswb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x67 256-bit"
@@ -1306,11 +1301,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "sqxtunb z4.b, z4.h",
-        "uzp1 z4.b, z4.b, z4.b",
         "sqxtunb z1.b, z5.h",
         "uzp1 z1.b, z1.b, z1.b",
-        "movprfx z4, z4",
+        "sqxtunb z4.b, z4.h",
+        "uzp1 z4.b, z4.b, z4.b",
         "splice z4.b, p6, z4.b, z1.b",
         "mov z1.d, z4.d[1]",
         "mov z5.d, z4.d",
@@ -4675,7 +4669,7 @@
       ]
     },
     "vpackssdw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6b 128-bit"
@@ -4684,15 +4678,13 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "sqxtn v4.4h, v4.4s",
-        "mov v0.16b, v4.16b",
-        "sqxtn2 v0.8h, v5.4s",
-        "mov v4.16b, v0.16b",
+        "sqxtn2 v4.8h, v5.4s",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpackssdw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6b 256-bit"
@@ -4700,11 +4692,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "sqxtnb z4.h, z4.s",
-        "uzp1 z4.h, z4.h, z4.h",
         "sqxtnb z1.h, z5.s",
         "uzp1 z1.h, z1.h, z1.h",
-        "movprfx z4, z4",
+        "sqxtnb z4.h, z4.s",
+        "uzp1 z4.h, z4.h, z4.h",
         "splice z4.h, p6, z4.h, z1.h",
         "mov z1.d, z4.d[1]",
         "mov z5.d, z4.d",
