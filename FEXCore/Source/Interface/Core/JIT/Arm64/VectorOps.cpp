@@ -2360,9 +2360,13 @@ DEF_OP(VUShlS) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE LSL is a destructive operation.
+    // NOTE: SVE LSL is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
@@ -2391,9 +2395,13 @@ DEF_OP(VUShrS) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE LSR is a destructive operation.
+    // NOTE: SVE LSR is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
@@ -2602,9 +2610,13 @@ DEF_OP(VSShrS) {
    if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE ASR is a destructive operation.
+    // NOTE: SVE ASR is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
