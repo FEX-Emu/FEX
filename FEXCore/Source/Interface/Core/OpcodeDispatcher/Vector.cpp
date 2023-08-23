@@ -2349,7 +2349,6 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   // all we need is an insert at the end of the operation.
   const auto SrcSize = Scalar && Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
   const uint8_t CompType = Op->Src[2].Data.Literal.Value;
@@ -2358,9 +2357,6 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, -1);
   OrderedNode *Result = VFCMPOpImpl(Op, ElementSize, Scalar, Src1, Src2, CompType);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
