@@ -2949,7 +2949,9 @@ DEF_OP(VUShrNI2) {
     shrnb(SubRegSize, VTMP2.Z(), VectorUpper.Z(), BitShift);
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
 
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     mov(VTMP1.Q(), VectorLower.Q());
