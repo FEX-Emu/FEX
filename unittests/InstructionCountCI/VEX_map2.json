@@ -46,7 +46,7 @@
       ]
     },
     "vphaddw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x01 128-bit"
@@ -55,7 +55,6 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "addp v4.8h, v4.8h, v5.8h",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -88,7 +87,7 @@
       ]
     },
     "vphaddd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x02 128-bit"
@@ -97,7 +96,6 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "addp v4.4s, v4.4s, v5.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -214,7 +212,7 @@
       ]
     },
     "vphsubw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x05 128-bit"
@@ -225,7 +223,6 @@
         "uzp1 v6.8h, v4.8h, v5.8h",
         "uzp2 v4.8h, v4.8h, v5.8h",
         "sub v4.8h, v6.8h, v4.8h",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -256,7 +253,7 @@
       ]
     },
     "vphsubd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x06 128-bit"
@@ -267,7 +264,6 @@
         "uzp1 v6.4s, v4.4s, v5.4s",
         "uzp2 v4.4s, v4.4s, v5.4s",
         "sub v4.4s, v6.4s, v4.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -438,7 +434,7 @@
       ]
     },
     "vpmulhrsw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0b 128-bit"
@@ -457,7 +453,6 @@
         "mov v0.16b, v5.16b",
         "shrn2 v0.8h, v4.4s, #1",
         "mov v4.16b, v0.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -1169,7 +1164,7 @@
       ]
     },
     "vpmuldq xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x28 128-bit"
@@ -1180,7 +1175,6 @@
         "uzp1 v4.4s, v4.4s, v4.4s",
         "uzp1 v5.4s, v5.4s, v5.4s",
         "smull v4.2d, v4.2s, v5.2s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

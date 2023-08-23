@@ -1136,16 +1136,11 @@ template
 void OpDispatchBuilder::VSHUFOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto SrcSize = GetSrcSize(Op);
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-
-  OrderedNode *Dest = _VBic(Size, Size, Src2, Src1);
-  if (Is128Bit) {
-    Dest = _VMov(16, Dest);
-  }
+  OrderedNode *Dest = _VBic(SrcSize, SrcSize, Src2, Src1);
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
@@ -1161,13 +1156,10 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   auto Res = _VFAddP(SrcSize, ElementSize, Src1, Src2);
   Res.first->Header.Op = IROp;
 
-  OrderedNode *Dest{};
-
+  OrderedNode *Dest = Res;
    if (Is256Bit) {
     Dest = _VInsElement(SrcSize, 8, 1, 2, Res, Res);
     Dest = _VInsElement(SrcSize, 8, 2, 1, Dest, Res);
-  } else {
-    Dest = _VMov(SrcSize, Res);
   }
 
   StoreResult(FPRClass, Op, Dest, -1);
@@ -2926,16 +2918,9 @@ void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t),
                 "Currently only handles 32-bit -> 64-bit");
 
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
-
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -2998,16 +2983,10 @@ void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3290,16 +3269,10 @@ void OpDispatchBuilder::PMULHW<true>(OpcodeArgs);
 
 template <bool Signed>
 void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = PMULHWOpImpl(Op, Signed, Dest, Src);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3349,16 +3322,10 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = PMULHRSWOpImpl(Op, Dest, Src);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3432,12 +3399,10 @@ void OpDispatchBuilder::PHSUB<4>(OpcodeArgs);
 template <size_t ElementSize>
 void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   OrderedNode *Result = PHSUBOpImpl(Op, Op->Src[0], Op->Src[1], ElementSize);
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  } else {
+  if (Is256Bit) {
     OrderedNode *Inserted = _VInsElement(DstSize, 8, 1, 2, Result, Result);
     Result = _VInsElement(DstSize, 8, 2, 1, Inserted, Result);
   }
