@@ -1601,9 +1601,14 @@ DEF_OP(VBSL) {
     //       SVE   -> BSL True, True, False, Mask
     //       ASIMD -> BIT True, False, Mask
     //       ASIMD -> BIF False, True, Mask
-    movprfx(VTMP1.Z(), VectorTrue.Z());
-    bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == VectorTrue) {
+      // Trivial case where we can perform the operation in place.
+      bsl(Dst.Z(), Dst.Z(), VectorFalse.Z(), VectorMask.Z());
+    } else {
+      movprfx(VTMP1.Z(), VectorTrue.Z());
+      bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     if (VectorMask == Dst) {
       // Can use BSL without any moves.
