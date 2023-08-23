@@ -4429,7 +4429,7 @@
       ]
     },
     "vdivps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5e 256-bit"
@@ -4437,9 +4437,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "fdiv z0.s, p7/m, z0.s, z5.s",
-        "mov z4.d, z0.d",
+        "fdiv z4.s, p7/m, z4.s, z5.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -4458,7 +4456,7 @@
       ]
     },
     "vdivpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5e 256-bit"
@@ -4466,9 +4464,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "fdiv z0.d, p7/m, z0.d, z5.d",
-        "mov z4.d, z0.d",
+        "fdiv z4.d, p7/m, z4.d, z5.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },

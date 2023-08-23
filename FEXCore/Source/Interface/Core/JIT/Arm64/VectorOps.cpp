@@ -779,10 +779,17 @@ DEF_OP(VFDiv) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // SVE VDIV is a destructive operation, so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    fdiv(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we already have source data to be divided in the
+      // destination register. We can just divide by Vector2 and be done with it.
+      fdiv(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE FDIV is a destructive operation, so we need a temporary
+      // in the event that Dst and Vector1 don't alias.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      fdiv(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     if (IsScalar) {
       switch (ElementSize) {
