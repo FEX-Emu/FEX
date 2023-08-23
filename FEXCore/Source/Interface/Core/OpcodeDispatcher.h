@@ -518,8 +518,6 @@ public:
 
   void VPHADDSWOp(OpcodeArgs);
 
-  void VPHMINPOSUWOp(OpcodeArgs);
-
   template <size_t ElementSize>
   void VPHSUBOp(OpcodeArgs);
   void VPHSUBSWOp(OpcodeArgs);

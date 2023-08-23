@@ -1889,7 +1889,7 @@
       ]
     },
     "vphminposuw xmm0, xmm1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x41 256-bit"
@@ -1903,7 +1903,6 @@
         "umin v4.4s, v6.4s, v4.4s",
         "uminv s4, v4.4s",
         "rev32 v4.8h, v4.8h",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
