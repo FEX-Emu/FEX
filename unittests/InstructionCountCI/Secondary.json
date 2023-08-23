@@ -80,12 +80,11 @@
       ]
     },
     "movhps xmm0, [rax]": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x16",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "mov v16.d[1], v4.d[0]"
+        "ld1 {v16.d}[1], [x4]"
       ]
     },
     "movlhps xmm0, xmm1": {
@@ -97,12 +96,11 @@
       ]
     },
     "movhps [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x17",
       "ExpectedArm64ASM": [
-        "mov x20, v16.d[1]",
-        "str x20, [x4]"
+        "st1 {v16.d}[1], [x4]"
       ]
     },
     "nop": {
