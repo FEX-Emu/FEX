@@ -418,6 +418,53 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
+DEF_OP(VLoadVectorElement) {
+  const auto Op = IROp->C<IR::IROp_VLoadVectorElement>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+
+  auto *Mem = *GetSrc<uint8_t**>(Data->SSAData, Op->Addr);
+  const auto *DstSrc = GetSrc<uint8_t const*>(Data->SSAData, Op->DstSrc);
+
+  const auto SetElements = []<typename T>(void* Dst, const T* MemPtr, const auto Index) {
+    std::memcpy(static_cast<uint8_t*>(Dst) + (Index * sizeof(T)), MemPtr, sizeof(T));
+  };
+
+  // Copy the source data first.
+  memcpy(GDP, DstSrc, OpSize);
+
+  switch (ElementSize) {
+    case 1: {
+      SetElements(GDP,
+                  Mem,
+                  Op->Index);
+      return;
+    }
+    case 2: {
+      SetElements(GDP,
+                  reinterpret_cast<const uint16_t*>(Mem),
+                  Op->Index);
+      return;
+    }
+    case 4: {
+      SetElements(GDP,
+                  reinterpret_cast<const uint32_t*>(Mem),
+                  Op->Index);
+      return;
+    }
+    case 8: {
+      SetElements(GDP,
+                  reinterpret_cast<const uint64_t*>(Mem),
+                  Op->Index);
+      return;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} element size: {}", __func__, ElementSize);
+      return;
+  }
+}
+
 DEF_OP(VBroadcastFromMem) {
   const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
   const auto OpSize = IROp->Size;

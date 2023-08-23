@@ -40,12 +40,11 @@
       ]
     },
     "movlps xmm0, [rax]": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x12",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "mov v16.d[0], v4.d[0]"
+        "ld1 {v16.d}[0], [x4]"
       ]
     },
     "movlps [rax], xmm0": {
@@ -54,6 +53,14 @@
       "Comment": "0x0f 0x13",
       "ExpectedArm64ASM": [
         "str d16, [x4]"
+      ]
+    },
+    "movhlps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x12",
+      "ExpectedArm64ASM": [
+        "mov v16.d[0], v17.d[1]"
       ]
     },
     "unpcklps xmm0, xmm1": {
