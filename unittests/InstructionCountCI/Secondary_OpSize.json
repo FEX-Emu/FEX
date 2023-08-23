@@ -42,12 +42,11 @@
       ]
     },
     "movlpd [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x13",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "str d4, [x4]"
+        "str d16, [x4]"
       ]
     },
     "unpcklpd xmm0, xmm1": {
