@@ -115,22 +115,24 @@ void OpDispatchBuilder::VMOVHPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   if (Op->Dest.IsGPR()) {
     // xmm, xmm is movhlps special case
     if (Op->Src[0].IsGPR()) {
+      OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
       OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
       auto Result = _VInsElement(16, 8, 0, 1, Dest, Src);
       StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 16, 16);
     }
     else {
       auto DstSize = GetDstSize(Op);
+      OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 8, false);
       OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-      auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+      auto Result = _VLoadVectorElement(16, 8, Dest, 0, Src);
       StoreResult(FPRClass, Op, Result, -1);
     }
   }
   else {
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
   }
 }
