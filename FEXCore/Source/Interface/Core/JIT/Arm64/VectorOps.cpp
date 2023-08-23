@@ -2217,7 +2217,10 @@ DEF_OP(VUShl) {
     dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
     umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (ElementSize < 8) {
@@ -2261,7 +2264,10 @@ DEF_OP(VUShr) {
     dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
     umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (ElementSize < 8) {
@@ -2308,7 +2314,10 @@ DEF_OP(VSShr) {
     dup_imm(SubRegSize, VTMP1.Z(), MaxShift);
     umin(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     if (ElementSize < 8) {
