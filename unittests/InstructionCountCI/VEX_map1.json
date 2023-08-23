@@ -4334,7 +4334,7 @@
       ]
     },
     "vminps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 256-bit"
@@ -4344,9 +4344,7 @@
         "mov z5.d, p7/m, z18.d",
         "fcmgt p0.s, p7/z, z5.s, z4.s",
         "not p0.b, p7/z, p0.b",
-        "mov z0.d, z4.d",
-        "mov z0.s, p0/m, z5.s",
-        "mov z4.d, z0.d",
+        "mov z4.s, p0/m, z5.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -4366,7 +4364,7 @@
       ]
     },
     "vminpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 256-bit"
@@ -4376,9 +4374,7 @@
         "mov z5.d, p7/m, z18.d",
         "fcmgt p0.d, p7/z, z5.d, z4.d",
         "not p0.b, p7/z, p0.b",
-        "mov z0.d, z4.d",
-        "mov z0.d, p0/m, z5.d",
-        "mov z4.d, z0.d",
+        "mov z4.d, p0/m, z5.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -4514,7 +4510,7 @@
       ]
     },
     "vmaxps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5f 256-bit"
@@ -4523,9 +4519,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt p0.s, p7/z, z5.s, z4.s",
-        "mov z0.d, z4.d",
-        "mov z0.s, p0/m, z5.s",
-        "mov z4.d, z0.d",
+        "mov z4.s, p0/m, z5.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -4545,7 +4539,7 @@
       ]
     },
     "vmaxpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5f 256-bit"
@@ -4554,9 +4548,7 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "fcmgt p0.d, p7/z, z5.d, z4.d",
-        "mov z0.d, z4.d",
-        "mov z0.d, p0/m, z5.d",
-        "mov z4.d, z0.d",
+        "mov z4.d, p0/m, z5.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },
