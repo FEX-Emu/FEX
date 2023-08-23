@@ -1909,7 +1909,7 @@
       ]
     },
     "vpsrlvd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x45 128-bit"
@@ -1921,7 +1921,6 @@
         "umin v0.4s, v0.4s, v5.4s",
         "neg v0.4s, v0.4s",
         "ushl v4.4s, v4.4s, v0.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -1943,7 +1942,7 @@
       ]
     },
     "vpsrlvq xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x45 128-bit"
@@ -1957,7 +1956,6 @@
         "bif v0.16b, v5.16b, v1.16b",
         "neg v0.2d, v0.2d",
         "ushl v4.2d, v4.2d, v0.2d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -1979,7 +1977,7 @@
       ]
     },
     "vpsravd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x46 128-bit"
@@ -1991,7 +1989,6 @@
         "umin v0.4s, v0.4s, v5.4s",
         "neg v0.4s, v0.4s",
         "sshl v4.4s, v4.4s, v0.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2013,7 +2010,7 @@
       ]
     },
     "vpsllvd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x47 128-bit"
@@ -2024,7 +2021,6 @@
         "movi v0.4s, #0x20, lsl #0",
         "umin v0.4s, v0.4s, v5.4s",
         "ushl v4.4s, v4.4s, v0.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -2046,7 +2042,7 @@
       ]
     },
     "vpsllvq xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x47 128-bit"
@@ -2059,7 +2055,6 @@
         "cmhi v1.2d, v5.2d, v0.2d",
         "bif v0.16b, v5.16b, v1.16b",
         "ushl v4.2d, v4.2d, v0.2d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
