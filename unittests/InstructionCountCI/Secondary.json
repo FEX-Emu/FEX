@@ -1388,22 +1388,20 @@
       ]
     },
     "movd mm0, eax": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x6e",
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "fmov s4, w20",
+        "fmov s4, w4",
         "str d4, [x28, #752]"
       ]
     },
     "movd mm0, [rax]": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x6e",
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
-        "fmov s4, w20",
+        "ldr s4, [x4]",
         "str d4, [x28, #752]"
       ]
     },
@@ -1588,13 +1586,12 @@
       ]
     },
     "movd [rax], mm0": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x7e",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #752]",
-        "mov w20, v4.s[0]",
-        "str w20, [x4]"
+        "str s4, [x4]"
       ]
     },
     "db 0x0f, 0x7f, 0xc1": {

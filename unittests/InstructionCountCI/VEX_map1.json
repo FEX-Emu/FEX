@@ -4794,15 +4794,13 @@
       ]
     },
     "vmovd xmm0, dword [rax]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x6e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
-        "fmov s4, w20",
-        "mov v4.16b, v4.16b",
+        "ldr s4, [x4]",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -5026,7 +5024,7 @@
       ]
     },
     "vmovd dword [rax], xmm0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7e 128-bit"
@@ -5036,8 +5034,7 @@
         "movi v0.2d, #0x0",
         "mov v0.s[0], v4.s[0]",
         "mov v4.16b, v0.16b",
-        "mov w20, v4.s[0]",
-        "str w20, [x4]"
+        "str s4, [x4]"
       ]
     },
     "vmovq qword [rax], xmm0": {

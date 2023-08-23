@@ -486,21 +486,19 @@
       ]
     },
     "movd xmm0, dword [rax]": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x6e",
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
-        "fmov s16, w20"
+        "ldr s16, [x4]"
       ]
     },
     "movd xmm0, eax": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x6e",
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "fmov s16, w20"
+        "fmov s16, w4"
       ]
     },
     "movq xmm0, qword [rax]": {
@@ -707,21 +705,19 @@
       ]
     },
     "movd dword [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x7e",
       "ExpectedArm64ASM": [
-        "mov w20, v16.s[0]",
-        "str w20, [x4]"
+        "str s16, [x4]"
       ]
     },
     "movq qword [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x7e",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "str d4, [x4]"
+        "str d16, [x4]"
       ]
     },
     "movdqa [rax], xmm0": {

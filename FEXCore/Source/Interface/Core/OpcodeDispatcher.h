@@ -344,7 +344,6 @@ public:
   void PSHUFBOp(OpcodeArgs);
   template<size_t ElementSize, bool HalfSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
-  void MOVDOp(OpcodeArgs);
   template<size_t ElementSize>
   void PSRLDOp(OpcodeArgs);
   template<size_t ElementSize>
