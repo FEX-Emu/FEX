@@ -2555,59 +2555,33 @@ DEF_OP(VInsElement) {
       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
 
-    // We're going to use this to create our predicate register literal.
-    // On an SVE 256-bit capable system, the predicate register will be
-    // 32-bit in size. We want to set up only the element corresponding
-    // to the destination index, since we're going to copy over the equivalent
-    // indexed element from the source vector.
-    const auto Data = [ElementSize, DestIdx]() -> uint32_t {
-      const auto Log2ElementSize = FEXCore::ilog2(ElementSize);
-
-      [[maybe_unused]] const auto MaxIndex = (32U >> Log2ElementSize) - 1;
-      LOGMAN_THROW_AA_FMT(DestIdx <= MaxIndex, "DestIdx ({}) out of range. Must be within [0, {}]",
-                          DestIdx, MaxIndex);
-
-      const auto ShiftAmount = DestIdx << Log2ElementSize;
-
-      switch (ElementSize) {
-        case 1:
-        case 2:
-        case 4:
-        case 8:
-          return 1U << ShiftAmount;
-        case 16:
-          // Predicates can't be subdivided into the Q format, so we can just set up
-          // the predicate to select the two adjacent doublewords.
-          return 0x101U << ShiftAmount;
-        default:
-          FEX_UNREACHABLE;
-          return UINT32_MAX;
-      }
-    }();
-
-    // Load our predicate register.
-    const auto Predicate = ARMEmitter::PReg::p0;
-    ARMEmitter::ForwardLabel DataLocation;
-    adr(TMP1, &DataLocation);
-    ldr(Predicate, TMP1);
-
     // Broadcast our source value across a temporary,
     // then combine with the destination.
     dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
-    mov(Dst.Z(), Reg.Z());
-    if (ElementSize == 16) {
-      mov(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Predicate.Merging(), VTMP2.Z());
-    }
-    else {
-      mov(SubRegSize, Dst.Z(), Predicate.Merging(), VTMP2.Z());
+
+    // We don't need to move the data unnecessarily if
+    // DestVector just so happens to also be the IR op
+    // destination.
+    if (Dst != Reg) {
+      mov(Dst.Z(), Reg.Z());
     }
 
-    // Set up a label to jump over the data we inserted, so we don't try and execute it.
-    ARMEmitter::ForwardLabel PastConstant;
-    b(&PastConstant);
-    Bind(&DataLocation);
-    dc32(Data);
-    Bind(&PastConstant);
+    constexpr auto Predicate = ARMEmitter::PReg::p0;
+
+    if (ElementSize == 16) {
+      if (DestIdx == 0) {
+        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), PRED_TMP_16B.Merging(), VTMP2.Z());
+      } else {
+        not_(Predicate, PRED_TMP_32B.Zeroing(), PRED_TMP_16B);
+        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), Predicate.Merging(), VTMP2.Z());
+      }
+    } else {
+      const auto UpperBound = 16 >> FEXCore::ilog2(ElementSize);
+      const auto TargetElement = static_cast<int>(DestIdx) - UpperBound;
+      index(SubRegSize, VTMP1.Z(), -UpperBound, 1);
+      cmpeq(SubRegSize, Predicate, PRED_TMP_32B.Zeroing(), VTMP1.Z(), TargetElement);
+      mov(SubRegSize, Dst.Z(), Predicate.Merging(), VTMP2.Z());
+    }
   }
   else {
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
