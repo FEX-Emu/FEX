@@ -869,10 +869,22 @@ DEF_OP(VFMin) {
           break;
       }
     } else {
-      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-      mov(VTMP2.Q(), Vector1.Q());
-      bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-      mov(Dst.Q(), VTMP2.Q());
+      if (Dst == Vector1) {
+        // Destination is already Vector1, need to insert Vector2 on false.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+        bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      }
+      else if (Dst == Vector2) {
+        // Destination is already Vector2, Invert arguments and insert Vector1 on false.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+        bif(Dst.Q(), Vector1.Q(), VTMP1.Q());
+      }
+      else {
+        // Dst is not either source, need a move.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+        mov(Dst.Q(), Vector1.Q());
+        bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      }
     }
   }
 }
@@ -930,10 +942,22 @@ DEF_OP(VFMax) {
           break;
       }
     } else {
-      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-      mov(VTMP2.Q(), Vector1.Q());
-      bit(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-      mov(Dst.Q(), VTMP2.Q());
+      if (Dst == Vector1) {
+        // Destination is already Vector1, need to insert Vector2 on true.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+        bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      }
+      else if (Dst == Vector2) {
+        // Destination is already Vector2, Invert arguments and insert Vector1 on true.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+        bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
+      }
+      else {
+        // Dst is not either source, need a move.
+        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+        mov(Dst.Q(), Vector1.Q());
+        bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      }
     }
   }
 }
