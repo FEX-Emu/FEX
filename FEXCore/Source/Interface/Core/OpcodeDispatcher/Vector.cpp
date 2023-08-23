@@ -4089,12 +4089,6 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-void OpDispatchBuilder::VPHMINPOSUWOp(OpcodeArgs) {
-  OrderedNode *MinPos = PHMINPOSUWOpImpl(Op);
-  OrderedNode *Result = _VMov(16, MinPos);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
 OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                                           const X86Tables::DecodedOperand& Src2,
                                           const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
