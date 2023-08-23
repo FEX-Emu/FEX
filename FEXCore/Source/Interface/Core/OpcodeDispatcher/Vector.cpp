@@ -33,48 +33,12 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
-void OpDispatchBuilder::VMOVVectorNTOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1, true, false, MemoryAccessType::ACCESS_STREAM);
-  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Clear the upper lane
-    Src = _VMov(16, Src);
-  }
-
-  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
-}
-
-void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVAPS_MOVAPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   StoreResult(FPRClass, Op, Src, -1);
 }
 
-void OpDispatchBuilder::VMOVAPS_VMOVAPD_Op(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Clear the upper lane
-    Src = _VMov(16, Src);
-  }
-
-  StoreResult(FPRClass, Op, Src, -1);
-}
-
-void OpDispatchBuilder::VMOVUPS_VMOVUPD_Op(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1);
-  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Clear the upper lane
-    Src = _VMov(16, Src);
-  }
-
-  StoreResult(FPRClass, Op, Src, 1);
-}
-
-void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVUPS_MOVUPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1);
   StoreResult(FPRClass, Op, Src, 1);
 }
@@ -112,9 +76,6 @@ void OpDispatchBuilder::VMOVHPOp(OpcodeArgs) {
     OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
     OrderedNode *Result = _VInsElement(16, 8, 1, 0, Src1, Src2);
 
-    // Clear the upper lane.
-    Result = _VMov(16, Result);
-
     StoreResult(FPRClass, Op, Result, -1);
   } else {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
@@ -151,9 +112,6 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
     OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
     OrderedNode *Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
-
-    // Clear the upper lane.
-    Result = _VMov(16, Result);
 
     StoreResult(FPRClass, Op, Result, -1);
   } else {

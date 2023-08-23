@@ -215,7 +215,7 @@
       ]
     },
     "vmovlps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -226,12 +226,11 @@
         "ldr q5, [x4]",
         "mov v4.d[0], v5.d[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovlpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
@@ -241,7 +240,6 @@
         "mov z4.d, p7/m, z17.d",
         "ldr q5, [x4]",
         "mov v4.d[0], v5.d[0]",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -443,7 +441,7 @@
       ]
     },
     "vmovhps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x16 128-bit"
@@ -454,12 +452,11 @@
         "ldr d5, [x4]",
         "mov v4.d[1], v5.d[0]",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vmovhpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x16 128-bit"
@@ -469,7 +466,6 @@
         "mov v4.8b, v4.8b",
         "ldr d5, [x4]",
         "mov v4.d[1], v5.d[0]",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -3506,6 +3502,29 @@
         "mov z16.d, p7/m, z4.d"
       ]
     },
+    "vmovaps xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b00 0x29 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vmovaps ymm0, ymm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b00 0x29 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
     "vmovapd xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
@@ -3525,6 +3544,29 @@
       ],
       "ExpectedArm64ASM": [
         "ld1b {z4.b}, p7/z, [x4]",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vmovapd xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0x29 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vmovapd ymm0, ymm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0x29 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },
