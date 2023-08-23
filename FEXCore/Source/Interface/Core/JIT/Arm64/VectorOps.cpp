@@ -2784,22 +2784,23 @@ DEF_OP(VUShrI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
-      }
-      else {
-        // SVE LSR is destructive, so lets set up the destination.
-        movprfx(Dst.Z(), Vector.Z());
+      } else {
+        // SVE LSR is destructive, so lets set up the destination if
+        // Vector doesn't already alias it.
+        if (Dst != Vector) {
+          movprfx(Dst.Z(), Vector.Z());
+        }
         lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Q(), Vector.Q());
         }
-      }
-      else {
+      } else {
         ushr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
       }
     }
@@ -2828,22 +2829,23 @@ DEF_OP(VSShrI) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     if (Shift == 0) {
-      if (Dst.Idx() != Vector.Idx()) {
+      if (Dst != Vector) {
         mov(Dst.Z(), Vector.Z());
       }
-    }
-    else {
-      // SVE ASR is destructive, so lets set up the destination.
-      movprfx(Dst.Z(), Vector.Z());
+    } else {
+      // SVE ASR is destructive, so lets set up the destination if
+      // Vector doesn't already alias it.
+      if (Dst != Vector) {
+        movprfx(Dst.Z(), Vector.Z());
+      }
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
     }
   } else {
     if (Shift == 0) {
-      if (Dst.Idx() != Vector.Idx()) {
+      if (Dst != Vector) {
         mov(Dst.Q(), Vector.Q());
       }
-    }
-    else {
+    } else {
       sshr(SubRegSize, Dst.Q(), Vector.Q(), Shift);
     }
   }
@@ -2875,22 +2877,23 @@ DEF_OP(VShlI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
-      }
-      else {
-        // SVE LSL is destructive, so lets set up the destination.
-        movprfx(Dst.Z(), Vector.Z());
+      } else {
+        // SVE LSL is destructive, so lets set up the destination if
+        // Vector doesn't already alias it.
+        if (Dst != Vector) {
+          movprfx(Dst.Z(), Vector.Z());
+        }
         lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Q(), Vector.Q());
         }
-      }
-      else {
+      } else {
         shl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
       }
     }
