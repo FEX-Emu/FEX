@@ -2256,20 +2256,33 @@ void OpDispatchBuilder::VPMASKMOVOp<true>(OpcodeArgs);
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.IsGPR() &&
       Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-    // zext to 128bit
-    auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
-    StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
+    if (Op->Src[0].IsGPR()) {
+      // Loading from GPR and moving to Vector.
+      OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags, -1);
+      // zext to 128bit
+      auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
+      StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
+    }
+    else {
+      // Loading from Memory as a scalar. Zero extend
+      OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      StoreResult(FPRClass, Op, Op->Dest, Src, -1);
+    }
   }
   else {
-    // Destination is GPR or mem
-    // Extract from XMM first
-    auto ElementSize = GetDstSize(Op);
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0],Op->Flags, -1);
 
-    Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
-
-    StoreResult(GPRClass, Op, Op->Dest, Src, -1);
+    if (Op->Dest.IsGPR()) {
+      auto ElementSize = GetDstSize(Op);
+      // Extract element from GPR. Zero extending in the process.
+      Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
+      StoreResult(GPRClass, Op, Op->Dest, Src, -1);
+    }
+    else {
+      // Storing first element to memory.
+      OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+      _StoreMem(FPRClass, GetDstSize(Op), Dest, Src, 1);
+    }
   }
 }
 

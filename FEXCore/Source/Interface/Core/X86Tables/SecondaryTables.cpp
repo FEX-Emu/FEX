@@ -534,7 +534,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xD3, 1, X86InstInfo{"PSRLQ",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
     {0xD4, 1, X86InstInfo{"PADDQ",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
     {0xD5, 1, X86InstInfo{"PMULLW",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
-    {0xD6, 1, X86InstInfo{"MOVQ",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,       0, nullptr}},
+    {0xD6, 1, X86InstInfo{"MOVQ",       TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,       0, nullptr}},
     {0xD7, 1, X86InstInfo{"PMOVMSKB",   TYPE_INST, GenFlagsSizes(SIZE_32BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,      0, nullptr}},
     {0xD8, 1, X86InstInfo{"PSUBUSB",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
     {0xD9, 1, X86InstInfo{"PSUBUSW",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
