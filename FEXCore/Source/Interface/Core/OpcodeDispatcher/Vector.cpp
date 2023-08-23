@@ -113,9 +113,6 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
     OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
     OrderedNode *Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
 
-    // Clear the upper lane.
-    Result = _VMov(16, Result);
-
     StoreResult(FPRClass, Op, Result, -1);
   } else {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
