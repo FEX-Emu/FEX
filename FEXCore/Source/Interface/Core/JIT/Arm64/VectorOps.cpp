@@ -1224,10 +1224,15 @@ DEF_OP(VUMin) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE UMIN is a destructive operation so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    umin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we can perform the operation in place.
+      umin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE UMIN is a destructive operation so we need a temporary.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      umin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     switch (ElementSize) {
       case 1:
@@ -1271,10 +1276,15 @@ DEF_OP(VSMin) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE SMIN is a destructive operation, so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    smin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we can perform the operation in place.
+      smin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE SMIN is a destructive operation, so we need a temporary.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      smin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     switch (ElementSize) {
       case 1:
@@ -1318,10 +1328,15 @@ DEF_OP(VUMax) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE UMAX is a destructive operation, so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    umax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we can perform the operation in place.
+      umax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE UMAX is a destructive operation, so we need a temporary.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      umax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     switch (ElementSize) {
       case 1:
@@ -1365,10 +1380,15 @@ DEF_OP(VSMax) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE SMAX is a destructive operation, so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    smax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we can perform the operation in place.
+      smax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE SMAX is a destructive operation, so we need a temporary.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      smax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     switch (ElementSize) {
       case 1:

@@ -5423,7 +5423,7 @@
       ]
     },
     "vpminub ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xda 256-bit"
@@ -5431,9 +5431,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "umin z0.b, p7/m, z0.b, z5.b",
-        "mov z4.d, z0.d",
+        "umin z4.b, p7/m, z4.b, z5.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -5533,7 +5531,7 @@
       ]
     },
     "vpmaxub ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xde 256-bit"
@@ -5541,9 +5539,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "umax z0.b, p7/m, z0.b, z5.b",
-        "mov z4.d, z0.d",
+        "umax z4.b, p7/m, z4.b, z5.b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -5953,7 +5949,7 @@
       ]
     },
     "vpminsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xea 256-bit"
@@ -5961,9 +5957,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "smin z0.h, p7/m, z0.h, z5.h",
-        "mov z4.d, z0.d",
+        "smin z4.h, p7/m, z4.h, z5.h",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -6063,7 +6057,7 @@
       ]
     },
     "vpmaxsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xee 256-bit"
@@ -6071,9 +6065,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movprfx z0, z4",
-        "smax z0.h, p7/m, z0.h, z5.h",
-        "mov z4.d, z0.d",
+        "smax z4.h, p7/m, z4.h, z5.h",
         "mov z16.d, p7/m, z4.d"
       ]
     },
