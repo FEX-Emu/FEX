@@ -1478,6 +1478,51 @@ DEF_OP(VLoadVectorElement) {
   }
 }
 
+DEF_OP(VStoreVectorElement) {
+  const auto Op = IROp->C<IR::IROp_VStoreVectorElement>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto Value = GetVReg(Op->Value.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 ||
+                      ElementSize == 4 || ElementSize == 8 ||
+                      ElementSize == 16, "Invalid element size");
+
+  // Emit a half-barrier if TSO is enabled.
+  if (CTX->IsAtomicTSOEnabled()) {
+    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+  }
+
+  if (Is256Bit) {
+    LOGMAN_MSG_A_FMT("Unsupported 256-bit {}", __func__);
+  } else {
+    switch (ElementSize) {
+    case 1:
+      st1<ARMEmitter::SubRegSize::i8Bit>(Value.Q(), Op->Index, MemReg);
+      break;
+    case 2:
+      st1<ARMEmitter::SubRegSize::i16Bit>(Value.Q(), Op->Index, MemReg);
+      break;
+    case 4:
+      st1<ARMEmitter::SubRegSize::i32Bit>(Value.Q(), Op->Index, MemReg);
+      break;
+    case 8:
+      st1<ARMEmitter::SubRegSize::i64Bit>(Value.Q(), Op->Index, MemReg);
+      break;
+    case 16:
+      str(Value.Q(), MemReg);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize);
+      return;
+    }
+  }
+}
+
 DEF_OP(VBroadcastFromMem) {
   const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
   const auto OpSize = IROp->Size;

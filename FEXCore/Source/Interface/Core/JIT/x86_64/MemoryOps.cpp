@@ -880,6 +880,42 @@ DEF_OP(VLoadVectorElement) {
     }
   }
 }
+DEF_OP(VStoreVectorElement) {
+  const auto Op = IROp->C<IR::IROp_VStoreVectorElement>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto Value = GetSrc(Op->Value.ID());
+  const Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+
+  if (Is256Bit) {
+    LOGMAN_MSG_A_FMT("Unsupported 256-bit VStoreVectorElement");
+  } else {
+    switch (ElementSize) {
+    case 1:
+      pextrb(byte [MemReg], Value, Op->Index);
+      break;
+    case 2:
+      pextrw(word [MemReg], Value, Op->Index);
+      break;
+    case 4:
+      pextrd(dword [MemReg], Value, Op->Index);
+      break;
+    case 8:
+      pextrq(qword [MemReg], Value, Op->Index);
+      break;
+    case 16:
+      // Normal store
+      vmovups(xword [MemReg], Value);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
+      return;
+    }
+  }
+}
 
 DEF_OP(VBroadcastFromMem) {
   const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
@@ -1250,6 +1286,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
   REGISTER_OP(VSTOREVECTORMASKED,  VStoreVectorMasked);
   REGISTER_OP(VLOADVECTORELEMENT,  VLoadVectorElement);
+  REGISTER_OP(VSTOREVECTORELEMENT, VStoreVectorElement);
   REGISTER_OP(VBROADCASTFROMMEM,   VBroadcastFromMem);
   REGISTER_OP(PUSH,                Push);
   REGISTER_OP(MEMSET,              MemSet);
