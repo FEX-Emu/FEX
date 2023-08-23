@@ -22,6 +22,14 @@ void DestroyOpaqueType(OpaqueType* value) {
   delete value;
 }
 
+UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+  return UnionType { .c = { a, b, c, d } };
+}
+
+uint32_t GetUnionTypeA(UnionType* value) {
+  return value->a;
+}
+
 ReorderingType MakeReorderingType(uint32_t a, uint32_t b) {
   return ReorderingType { .a = a, .b = b };
 }

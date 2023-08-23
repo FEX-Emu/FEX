@@ -19,6 +19,14 @@ OpaqueType* MakeOpaqueType(uint32_t data);
 uint32_t ReadOpaqueTypeData(OpaqueType*);
 void DestroyOpaqueType(OpaqueType*);
 
+union UnionType {
+    uint32_t a;
+    int32_t b;
+    uint8_t c[4];
+};
+
+UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
+uint32_t GetUnionTypeA(UnionType*);
 
 /// Interfaces used to test automatic struct repacking
 
