@@ -1210,10 +1210,15 @@ DEF_OP(VUMin) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE UMIN is a destructive operation so we need a temporary.
-    movprfx(VTMP1.Z(), Vector1.Z());
-    umin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst == Vector1) {
+      // Trivial case where we can perform the operation in place.
+      umin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else {
+      // SVE UMIN is a destructive operation so we need a temporary.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      umin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     switch (ElementSize) {
       case 1:
