@@ -33,18 +33,6 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
-void OpDispatchBuilder::VMOVVectorNTOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1, true, false, MemoryAccessType::ACCESS_STREAM);
-  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Clear the upper lane
-    Src = _VMov(16, Src);
-  }
-
-  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
-}
-
 void OpDispatchBuilder::MOVAPS_MOVAPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   StoreResult(FPRClass, Op, Src, -1);
