@@ -350,6 +350,7 @@ private:
   DEF_OP(VLoadVectorMasked);
   DEF_OP(VStoreVectorMasked);
   DEF_OP(VLoadVectorElement);
+  DEF_OP(VStoreVectorElement);
   DEF_OP(VBroadcastFromMem);
   DEF_OP(Push);
   DEF_OP(MemSet);
