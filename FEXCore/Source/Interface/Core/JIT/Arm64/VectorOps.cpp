@@ -923,9 +923,16 @@ DEF_OP(VFMax) {
 
     fcmgt(SubRegSize, ComparePred, Mask.Zeroing(),
           Vector2.Z(), Vector1.Z());
-    mov(VTMP1.Z(), Vector1.Z());
-    mov(SubRegSize, VTMP1.Z(), ComparePred.Merging(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+
+    if (Dst == Vector1) {
+      // Trivial case where Vector1 is also the destination.
+      // We don't need to move any data around in this case (aside from the merge).
+      mov(SubRegSize, Dst.Z(), ComparePred.Merging(), Vector2.Z());
+    } else {
+      mov(VTMP1.Z(), Vector1.Z());
+      mov(SubRegSize, VTMP1.Z(), ComparePred.Merging(), Vector2.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     if (IsScalar) {
       switch (ElementSize) {
