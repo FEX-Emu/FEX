@@ -4098,7 +4098,7 @@
       ]
     },
     "vcvtps2pd xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5a 128-bit"
@@ -4108,12 +4108,11 @@
         "mov v4.8b, v4.8b",
         "fcvtl v4.2d, v4.2s",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vcvtpd2ps xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5a 128-bit"
@@ -4121,7 +4120,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "fcvtn v4.2s, v4.2d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4157,7 +4155,7 @@
       ]
     },
     "vcvtdq2ps xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5b 128-bit"
@@ -4165,7 +4163,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "scvtf v4.4s, v4.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4183,7 +4180,7 @@
       ]
     },
     "vcvtps2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5b 128-bit"
@@ -4192,7 +4189,6 @@
         "mov z4.d, p7/m, z17.d",
         "frinti v4.4s, v4.4s",
         "fcvtzs v4.4s, v4.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -4211,7 +4207,7 @@
       ]
     },
     "vcvttps2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x5b 128-bit"
@@ -4219,7 +4215,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "fcvtzs v4.4s, v4.4s",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -5845,7 +5840,7 @@
       ]
     },
     "vcvtdq2pd xmm0, xmm1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xe6 128-bit"
@@ -5855,7 +5850,6 @@
         "mov v4.8b, v4.8b",
         "sxtl v4.2d, v4.2s",
         "scvtf v4.2d, v4.2d",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
