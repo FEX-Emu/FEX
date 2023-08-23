@@ -3680,45 +3680,6 @@ void OpDispatchBuilder::ExtendVectorElements<2, 8, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
-template <size_t ElementSize, size_t DstElementSize, bool Signed>
-void OpDispatchBuilder::AVXExtendVectorElements(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  OrderedNode *Result = ExtendVectorElementsImpl(Op, ElementSize, DstElementSize, Signed);
-
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 2, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 4, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 8, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<2, 4, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<2, 8, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<4, 8, false>(OpcodeArgs);
-
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 2, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<1, 8, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<2, 4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<2, 8, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXExtendVectorElements<4, 8, true>(OpcodeArgs);
-
 OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                                 OrderedNode *Src, uint64_t Mode) {
   const auto Size = GetDstSize(Op);

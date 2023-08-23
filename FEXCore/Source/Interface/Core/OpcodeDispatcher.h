@@ -421,9 +421,6 @@ public:
   template <IROps IROp, size_t ElementSize, bool Scalar>
   void AVXVectorUnaryOp(OpcodeArgs);
 
-  template <size_t ElementSize, size_t DstElementSize, bool Signed>
-  void AVXExtendVectorElements(OpcodeArgs);
-
   template <size_t ElementSize, bool Scalar>
   void AVXVectorRound(OpcodeArgs);
 
