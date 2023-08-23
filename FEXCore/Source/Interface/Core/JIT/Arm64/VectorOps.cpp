@@ -2222,7 +2222,10 @@ DEF_OP(VUShl) {
     dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
     umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (ElementSize < 8) {
@@ -2266,7 +2269,10 @@ DEF_OP(VUShr) {
     dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
     umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (ElementSize < 8) {
@@ -2313,7 +2319,10 @@ DEF_OP(VSShr) {
     dup_imm(SubRegSize, VTMP1.Z(), MaxShift);
     umin(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), ShiftVector.Z());
 
-    movprfx(Dst.Z(), Vector.Z());
+    // If Dst aliases Vector, then we can skip the move.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     if (ElementSize < 8) {
@@ -2356,9 +2365,13 @@ DEF_OP(VUShlS) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE LSL is a destructive operation.
+    // NOTE: SVE LSL is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
@@ -2387,9 +2400,13 @@ DEF_OP(VUShrS) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE LSR is a destructive operation.
+    // NOTE: SVE LSR is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
@@ -2598,9 +2615,13 @@ DEF_OP(VSShrS) {
    if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // NOTE: SVE ASR is a destructive operation.
+    // NOTE: SVE ASR is a destructive operation, so we need to
+    //       move the vector into the destination if they don't
+    //       already alias.
     dup(SubRegSize, VTMP1.Z(), ShiftScalar.Z(), 0);
-    movprfx(Dst.Z(), Vector.Z());
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     dup(SubRegSize, VTMP1.Q(), ShiftScalar.Q(), 0);
@@ -2768,22 +2789,23 @@ DEF_OP(VUShrI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
-      }
-      else {
-        // SVE LSR is destructive, so lets set up the destination.
-        movprfx(Dst.Z(), Vector.Z());
+      } else {
+        // SVE LSR is destructive, so lets set up the destination if
+        // Vector doesn't already alias it.
+        if (Dst != Vector) {
+          movprfx(Dst.Z(), Vector.Z());
+        }
         lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Q(), Vector.Q());
         }
-      }
-      else {
+      } else {
         ushr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
       }
     }
@@ -2812,22 +2834,23 @@ DEF_OP(VSShrI) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     if (Shift == 0) {
-      if (Dst.Idx() != Vector.Idx()) {
+      if (Dst != Vector) {
         mov(Dst.Z(), Vector.Z());
       }
-    }
-    else {
-      // SVE ASR is destructive, so lets set up the destination.
-      movprfx(Dst.Z(), Vector.Z());
+    } else {
+      // SVE ASR is destructive, so lets set up the destination if
+      // Vector doesn't already alias it.
+      if (Dst != Vector) {
+        movprfx(Dst.Z(), Vector.Z());
+      }
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
     }
   } else {
     if (Shift == 0) {
-      if (Dst.Idx() != Vector.Idx()) {
+      if (Dst != Vector) {
         mov(Dst.Q(), Vector.Q());
       }
-    }
-    else {
+    } else {
       sshr(SubRegSize, Dst.Q(), Vector.Q(), Shift);
     }
   }
@@ -2859,22 +2882,23 @@ DEF_OP(VShlI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
-      }
-      else {
-        // SVE LSL is destructive, so lets set up the destination.
-        movprfx(Dst.Z(), Vector.Z());
+      } else {
+        // SVE LSL is destructive, so lets set up the destination if
+        // Vector doesn't already alias it.
+        if (Dst != Vector) {
+          movprfx(Dst.Z(), Vector.Z());
+        }
         lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
-        if (Dst.Idx() != Vector.Idx()) {
+        if (Dst != Vector) {
           mov(Dst.Q(), Vector.Q());
         }
-      }
-      else {
+      } else {
         shl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
       }
     }
@@ -2930,7 +2954,9 @@ DEF_OP(VUShrNI2) {
     shrnb(SubRegSize, VTMP2.Z(), VectorUpper.Z(), BitShift);
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
 
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     mov(VTMP1.Q(), VectorLower.Q());

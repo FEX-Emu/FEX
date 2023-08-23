@@ -4737,7 +4737,7 @@
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4a 256-bit"
@@ -4746,7 +4746,6 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
-        "movprfx z6, z6",
         "asr z6.s, p7/m, z6.s, #31",
         "movprfx z0, z5",
         "bsl z0.d, z0.d, z4.d, z6.d",
@@ -4771,7 +4770,7 @@
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4b 256-bit"
@@ -4780,7 +4779,6 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
-        "movprfx z6, z6",
         "asr z6.d, p7/m, z6.d, #63",
         "movprfx z0, z5",
         "bsl z0.d, z0.d, z4.d, z6.d",
@@ -4805,7 +4803,7 @@
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x4c 256-bit"
@@ -4814,7 +4812,6 @@
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
         "mov z6.d, p7/m, z19.d",
-        "movprfx z6, z6",
         "asr z6.b, p7/m, z6.b, #7",
         "movprfx z0, z5",
         "bsl z0.d, z0.d, z4.d, z6.d",
