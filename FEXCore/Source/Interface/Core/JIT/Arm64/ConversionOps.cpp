@@ -410,7 +410,7 @@ DEF_OP(Vector_FToI) {
     } else {
       switch (Op->Round) {
         case FEXCore::IR::Round_Nearest.Val:
-          frinti(SubEmitSize, Dst.Q(), Vector.Q());
+          frintn(SubEmitSize, Dst.Q(), Vector.Q());
           break;
         case FEXCore::IR::Round_Negative_Infinity.Val:
           frintm(SubEmitSize, Dst.Q(), Vector.Q());
