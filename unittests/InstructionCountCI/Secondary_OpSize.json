@@ -284,14 +284,12 @@
       ]
     },
     "minpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x5d",
       "ExpectedArm64ASM": [
         "fcmgt v0.2d, v17.2d, v16.2d",
-        "mov v1.16b, v16.16b",
-        "bif v1.16b, v17.16b, v0.16b",
-        "mov v16.16b, v1.16b"
+        "bif v16.16b, v17.16b, v0.16b"
       ]
     },
     "divpd xmm0, xmm1": {
@@ -303,14 +301,12 @@
       ]
     },
     "maxpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x5f",
       "ExpectedArm64ASM": [
         "fcmgt v0.2d, v17.2d, v16.2d",
-        "mov v1.16b, v16.16b",
-        "bit v1.16b, v17.16b, v0.16b",
-        "mov v16.16b, v1.16b"
+        "bit v16.16b, v17.16b, v0.16b"
       ]
     },
     "punpcklbw xmm0, xmm1": {

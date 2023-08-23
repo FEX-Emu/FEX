@@ -143,16 +143,14 @@
       ]
     },
     "pfmin mm0, mm1": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x94",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
         "ldr d5, [x28, #752]",
-        "fcmgt v0.4s, v4.4s, v5.4s",
-        "mov v1.16b, v5.16b",
-        "bif v1.16b, v4.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "fcmgt v0.4s, v5.4s, v4.4s",
+        "bif v4.16b, v5.16b, v0.16b",
         "str d4, [x28, #752]"
       ]
     },
@@ -221,16 +219,14 @@
       ]
     },
     "pfmax mm0, mm1": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa4",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
         "ldr d5, [x28, #752]",
-        "fcmgt v0.4s, v4.4s, v5.4s",
-        "mov v1.16b, v5.16b",
-        "bit v1.16b, v4.16b, v0.16b",
-        "mov v4.16b, v1.16b",
+        "fcmgt v0.4s, v5.4s, v4.4s",
+        "bit v4.16b, v5.16b, v0.16b",
         "str d4, [x28, #752]"
       ]
     },
