@@ -21,6 +21,10 @@ struct ThunkedCallback : FunctionParams {
     bool is_variadic = false;
 };
 
+struct ParameterAnnotations {
+    bool operator==(const ParameterAnnotations&) const = default;
+};
+
 /**
  * Guest<->Host transition point.
  *
@@ -51,6 +55,10 @@ struct ThunkedFunction : FunctionParams {
 
     // Maps parameter index to ThunkedCallback
     std::unordered_map<unsigned, ThunkedCallback> callbacks;
+
+    // Maps parameter index to ParameterAnnotations
+    // TODO: Use index -1 for the return value?
+    std::unordered_map<unsigned, ParameterAnnotations> param_annotations;
 
     clang::FunctionDecl* decl;
 };
@@ -109,6 +117,9 @@ protected:
     // Build the internal API representation by processing fex_gen_config and other annotated entities
     void ParseInterface(clang::ASTContext&);
 
+    // Recursively extend the type set to include types of struct members
+    void CoverReferencedTypes(clang::ASTContext&);
+
     // Called from ExecuteAction() after parsing is complete
     virtual void EmitOutput(clang::ASTContext&) {};
 
@@ -116,8 +127,18 @@ protected:
 
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
+
     std::unordered_set<const clang::Type*> funcptr_types;
 
+public: // TODO: Remove, make only RepackedType public
+    struct RepackedType {
+    };
+
+    std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;
     std::vector<NamespaceInfo> namespaces;
+
+    RepackedType& LookupType(clang::ASTContext& context, const clang::Type* type) {
+      return types.at(context.getCanonicalType(type));
+    }
 };
