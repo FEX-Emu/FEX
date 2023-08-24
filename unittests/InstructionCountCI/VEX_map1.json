@@ -3032,7 +3032,7 @@
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 000b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
@@ -3040,14 +3040,13 @@
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.h[0], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 001b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
@@ -3055,14 +3054,13 @@
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.h[1], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 111b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
@@ -3070,7 +3068,6 @@
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.h[7], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"

@@ -79,7 +79,10 @@ DEF_OP(VInsGPR) {
       splice<ARMEmitter::OpType::Destructive>(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), PRED_TMP_16B, Dst.Z(), DestVector.Z());
     }
   } else {
-    mov(Dst.Q(), DestVector.Q());
+    // No need to move if Dst and DestVector alias one another.
+    if (Dst != DestVector) {
+      mov(Dst.Q(), DestVector.Q());
+    }
     ins(SubEmitSize, Dst, DestIdx, Src);
   }
 }
