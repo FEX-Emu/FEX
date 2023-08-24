@@ -363,7 +363,7 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             }
 
             // These must be handled later since they are not canonicalized and hence must be de-duplicated first
-            if (type->isBuiltinType()) {
+            if (type->isBuiltinType() && !type->isEnumeralType()) {
                 continue;
             }
 

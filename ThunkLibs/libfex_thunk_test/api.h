@@ -63,4 +63,17 @@ struct CustomRepackedType {
 // Should return true if the custom repacker set "custom_repack_invoked" to true
 int RanCustomRepack(CustomRepackedType*);
 
+/// Interface used to check that function arguments with different integer size
+/// get forwarded correctly
+/// TODO: Also test signatures that differ through the underlying type of a
+///       type alias. Currently, the thunk generator still requires a dedicated
+///       type to detect differences.
+
+#if defined(__aarch64__) || defined(_M_ARM64) // TODO: Use proper host check
+enum DivType : uint8_t {};
+#else
+enum DivType : uint32_t {};
+#endif
+int FunctionWithDivergentSignature(DivType, DivType, DivType, DivType);
+
 }

@@ -32,6 +32,8 @@ struct Fixture {
   GET_SYMBOL(QueryOffsetOf);
 
   GET_SYMBOL(RanCustomRepack);
+
+  GET_SYMBOL(FunctionWithDivergentSignature);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
@@ -80,4 +82,8 @@ TEST_CASE_METHOD(Fixture, "Automatic struct repacking") {
 TEST_CASE_METHOD(Fixture, "Assisted struct repacking") {
   CustomRepackedType data {};
   CHECK(RanCustomRepack(&data) == 1);
+}
+
+TEST_CASE_METHOD(Fixture, "Function signature with differing parameter sizes") {
+  CHECK(FunctionWithDivergentSignature(DivType{1}, DivType{2}, DivType{3}, DivType{4}) == 0x01020304);
 }
