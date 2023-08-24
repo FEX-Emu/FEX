@@ -6118,7 +6118,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
 
-    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::VAESIMCOp},
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
     {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::VAESDecOp},
@@ -6168,7 +6168,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
     {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
 
-    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESKeyGenAssistOp},
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
 #undef OPD
 

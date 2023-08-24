@@ -3612,7 +3612,7 @@
       ]
     },
     "vaesimc xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdb 128-bit"
@@ -3621,12 +3621,11 @@
         "mov z4.d, p7/m, z17.d",
         "unimplemented (Unimplemented)",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaesenc xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdc 128-bit"
@@ -3640,7 +3639,6 @@
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -3653,7 +3651,7 @@
       ]
     },
     "vaesenclast xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdd 128-bit"
@@ -3665,7 +3663,6 @@
         "mov v0.16b, v4.16b",
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -3679,7 +3676,7 @@
       ]
     },
     "vaesdec xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xde 128-bit"
@@ -3693,7 +3690,6 @@
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -3706,7 +3702,7 @@
       ]
     },
     "vaesdeclast xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdf 128-bit"
@@ -3718,7 +3714,6 @@
         "mov v0.16b, v4.16b",
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

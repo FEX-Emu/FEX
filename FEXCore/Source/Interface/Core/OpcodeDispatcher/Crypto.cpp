@@ -258,19 +258,9 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res0, -1);
 }
 
-OrderedNode* OpDispatchBuilder::AESIMCImpl(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  return _VAESImc(Src);
-}
-
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
-  OrderedNode *Result = AESIMCImpl(Op);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-void OpDispatchBuilder::VAESIMCOp(OpcodeArgs) {
-  OrderedNode *Mixed = AESIMCImpl(Op);
-  OrderedNode *Result = _VMov(16, Mixed);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = _VAESImc(Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -283,7 +273,7 @@ void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESENC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENC unimplemented");
@@ -292,9 +282,6 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = _VAESEnc(DstSize, State, Key);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -307,7 +294,7 @@ void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESENCLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
@@ -316,9 +303,6 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = _VAESEncLast(DstSize, State, Key);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -331,7 +315,7 @@ void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESDEC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDEC unimplemented");
@@ -340,9 +324,6 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = _VAESDec(DstSize, State, Key);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -355,7 +336,7 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESDECLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDECLAST unimplemented");
@@ -364,9 +345,6 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Result = _VAESDecLast(DstSize, State, Key);
 
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -380,12 +358,6 @@ OrderedNode* OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   OrderedNode *Result = AESKeyGenAssistImpl(Op);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-void OpDispatchBuilder::VAESKeyGenAssistOp(OpcodeArgs) {
-  OrderedNode *Assist = AESKeyGenAssistImpl(Op);
-  OrderedNode *Result = _VMov(16, Assist);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -404,17 +376,12 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Selector needs to be literal here");
 
   const auto DstSize = GetDstSize(Op);
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
 
   OrderedNode *Res = _PCLMUL(DstSize, Src1, Src2, Selector);
-  if (Is128Bit) {
-    Res = _VMov(16, Res);
-  }
-
   StoreResult(FPRClass, Op, Res, -1);
 }
 
