@@ -232,7 +232,12 @@ DEF_OP(Vector_SToF) {
     const auto Mask = PRED_TMP_32B;
     scvtf(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
-    scvtf(SubEmitSize, Dst.Q(), Vector.Q());
+    if (OpSize == 8) {
+      scvtf(SubEmitSize, Dst.D(), Vector.D());
+    }
+    else {
+      scvtf(SubEmitSize, Dst.Q(), Vector.Q());
+    }
   }
 }
 
@@ -254,7 +259,12 @@ DEF_OP(Vector_FToZS) {
     const auto Mask = PRED_TMP_32B;
     fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
-    fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
+    if (OpSize == 8) {
+      fcvtzs(SubEmitSize, Dst.D(), Vector.D());
+    }
+    else {
+      fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
+    }
   }
 }
 
@@ -280,8 +290,14 @@ DEF_OP(Vector_FToS) {
   } else {
     const auto Dst = GetVReg(Node);
     const auto Vector = GetVReg(Op->Vector.ID());
-    frinti(SubEmitSize, Dst.Q(), Vector.Q());
-    fcvtzs(SubEmitSize, Dst.Q(), Dst.Q());
+    if (OpSize == 8) {
+      frinti(SubEmitSize, Dst.D(), Vector.D());
+      fcvtzs(SubEmitSize, Dst.D(), Dst.D());
+    }
+    else {
+      frinti(SubEmitSize, Dst.Q(), Vector.Q());
+      fcvtzs(SubEmitSize, Dst.Q(), Dst.Q());
+    }
   }
 }
 
