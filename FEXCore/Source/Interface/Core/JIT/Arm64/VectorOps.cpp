@@ -3150,7 +3150,9 @@ DEF_OP(VSQXTN2) {
     // the constructive variant requires a register list, and
     // we can't guarantee VectorLower and VectorUpper will always
     // have consecutive indexes with one another.
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (OpSize == 8) {
@@ -3265,7 +3267,9 @@ DEF_OP(VSQXTUN2) {
     sqxtunb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
 
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (OpSize == 8) {
@@ -3350,8 +3354,11 @@ DEF_OP(VSRSHR) {
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
-    // SVE SRSHR is destructive, so lets set up the destination.
-    movprfx(Dst.Z(), Vector.Z());
+    // SVE SRSHR is destructive, so lets set up the destination
+    // in the event we Dst and Vector don't alias.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     srshr(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
   } else {
     if (OpSize == 8) {
@@ -3383,8 +3390,11 @@ DEF_OP(VSQSHL) {
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
-    // SVE SQSHL is destructive, so lets set up the destination.
-    movprfx(Dst.Z(), Vector.Z());
+    // SVE SQSHL is destructive, so lets set up the destination
+    // in the event Dst and Vector don't alias
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     sqshl(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
   } else {
     if (OpSize == 8) {
