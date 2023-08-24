@@ -3165,6 +3165,56 @@ DEF_OP(VSQXTN2) {
   }
 }
 
+DEF_OP(VSQXTNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTNPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  auto VectorUpper = GetVReg(Op->VectorUpper.ID());
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
+
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    // This combines the SVE versions of VSQXTN/VSQXTN2.
+    // Upper VSQXTN2 handling.
+    // Doing upper first to ensure it doesn't get overwritten by lower calculation.
+    const auto Mask = PRED_TMP_16B;
+
+    sqxtnb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
+    uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
+
+    // Look at those implementations for details about this.
+    // Lower VSQXTN handling.
+    sqxtnb(SubRegSize, Dst.Z(), VectorLower.Z());
+    uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
+
+    // Merge.
+    splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
+  } else {
+    if (OpSize == 8) {
+      zip1(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
+      sqxtn(SubRegSize, Dst, Dst);
+    }
+    else {
+      if (Dst == VectorUpper) {
+        // If the destination overlaps the upper then we need to move it temporarily.
+        mov(VTMP1.Q(), VectorUpper.Q());
+        VectorUpper = VTMP1;
+      }
+      sqxtn(SubRegSize, Dst, VectorLower);
+      sqxtn2(SubRegSize, Dst, VectorUpper);
+    }
+  }
+}
+
 DEF_OP(VSQXTUN) {
   const auto Op = IROp->C<IR::IROp_VSQXTUN>();
   const auto OpSize = IROp->Size;
@@ -3226,6 +3276,56 @@ DEF_OP(VSQXTUN2) {
       mov(VTMP1.Q(), VectorLower.Q());
       sqxtun2(SubRegSize, VTMP1, VectorUpper);
       mov(Dst.Q(), VTMP1.Q());
+    }
+  }
+}
+
+DEF_OP(VSQXTUNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTUNPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  auto VectorUpper = GetVReg(Op->VectorUpper.ID());
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
+
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    // This combines the SVE versions of VSQXTUN/VSQXTUN2.
+    // Upper VSQXTUN2 handling.
+    // Doing upper first to ensure it doesn't get overwritten by lower calculation.
+    const auto Mask = PRED_TMP_16B;
+
+    sqxtunb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
+    uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
+
+    // Look at those implementations for details about this.
+    // Lower VSQXTUN handling.
+    sqxtunb(SubRegSize, Dst.Z(), VectorLower.Z());
+    uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
+
+    // Merge.
+    splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
+  } else {
+    if (OpSize == 8) {
+      zip1(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
+      sqxtun(SubRegSize, Dst, Dst);
+    }
+    else {
+      if (Dst == VectorUpper) {
+        // If the destination overlaps the upper then we need to move it temporarily.
+        mov(VTMP1.Q(), VectorUpper.Q());
+        VectorUpper = VTMP1;
+      }
+      sqxtun(SubRegSize, Dst, VectorLower);
+      sqxtun2(SubRegSize, Dst, VectorUpper);
     }
   }
 }

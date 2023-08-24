@@ -149,6 +149,15 @@
   }                                                                        \
   break;                                                                   \
   }
+#define DO_VECTOR_1SRC_2TYPE_OP_TOP_DST(size, type, type2, func, min, max) \
+  case size: {                                                             \
+  auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));                  \
+  auto *Src_d = reinterpret_cast<type2*>(Src);                             \
+  for (uint8_t i = 0; i < Elements; ++i) {                                 \
+    Dst_d[i+Elements] = (type)func(Src_d[i], min, max);                    \
+  }                                                                        \
+  break;                                                                   \
+  }
 #define DO_VECTOR_2SRC_2TYPE_OP(size, type, type2, func)     \
   case size: {                                               \
   auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));    \

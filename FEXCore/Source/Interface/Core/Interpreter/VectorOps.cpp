@@ -2093,6 +2093,40 @@ DEF_OP(VSQXTN2) {
   memcpy(GDP, Tmp.data(), OpSize);
 }
 
+DEF_OP(VSQXTNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTNPair>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  auto Src = Src1;
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
+  TempVectorDataArray Tmp{};
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / (ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
+
+  switch (ElementSize) {
+    DO_VECTOR_1SRC_2TYPE_OP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
+    DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+
+  Src = Src2;
+  switch (ElementSize) {
+    DO_VECTOR_1SRC_2TYPE_OP_TOP_DST(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
+    DO_VECTOR_1SRC_2TYPE_OP_TOP_DST(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
 DEF_OP(VSQXTUN) {
   const auto Op = IROp->C<IR::IROp_VSQXTUN>();
   const uint8_t OpSize = IROp->Size;
@@ -2133,6 +2167,40 @@ DEF_OP(VSQXTUN2) {
   switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
     DO_VECTOR_1SRC_2TYPE_OP_TOP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
+DEF_OP(VSQXTUNPair) {
+  const auto Op = IROp->C<IR::IROp_VSQXTUNPair>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  auto Src = Src1;
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
+  TempVectorDataArray Tmp{};
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / (ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
+
+  switch (ElementSize) {
+    DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
+    DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+
+  Src = Src2;
+  switch (ElementSize) {
+    DO_VECTOR_1SRC_2TYPE_OP_TOP_DST(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
+    DO_VECTOR_1SRC_2TYPE_OP_TOP_DST(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
     default:
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;

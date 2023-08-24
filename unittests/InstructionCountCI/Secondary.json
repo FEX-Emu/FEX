@@ -1247,30 +1247,26 @@
       ]
     },
     "packsswb mm0, mm1": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x63",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #752]",
         "ldr d5, [x28, #768]",
+        "zip1 v4.2d, v4.2d, v5.2d",
         "sqxtn v4.8b, v4.8h",
-        "sqxtn v1.8b, v5.8h",
-        "mov v4.16b, v4.16b",
-        "mov v4.s[1], v1.s[0]",
         "str d4, [x28, #752]"
       ]
     },
     "packsswb mm0, [rax]": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x63",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #752]",
         "ldr d5, [x4]",
+        "zip1 v4.2d, v4.2d, v5.2d",
         "sqxtn v4.8b, v4.8h",
-        "sqxtn v1.8b, v5.8h",
-        "mov v4.16b, v4.16b",
-        "mov v4.s[1], v1.s[0]",
         "str d4, [x28, #752]"
       ]
     },
@@ -1374,16 +1370,14 @@
       ]
     },
     "packssdw mm0, mm1": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x6b",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #752]",
         "ldr d5, [x28, #768]",
+        "zip1 v4.2d, v4.2d, v5.2d",
         "sqxtn v4.4h, v4.4s",
-        "sqxtn v1.4h, v5.4s",
-        "mov v4.16b, v4.16b",
-        "mov v4.s[1], v1.s[0]",
         "str d4, [x28, #752]"
       ]
     },

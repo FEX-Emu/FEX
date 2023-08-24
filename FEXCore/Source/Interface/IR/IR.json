@@ -1187,11 +1187,23 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
+      "FPR = VSQXTNPair u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "Desc": ["Does both VSQXTN and VSQXTN2 in a combined operation."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
+      },
       "FPR = VSQXTUN u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTUN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
+      },
+      "FPR = VSQXTUNPair u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "Desc": ["Does both VSQXTUN and VSQXTUN2 in a combined operation."
+                ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
