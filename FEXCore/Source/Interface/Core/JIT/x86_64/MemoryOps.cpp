@@ -875,7 +875,7 @@ DEF_OP(VLoadVectorElement) {
       vmovups(Dst, xword [MemReg]);
       break;
     default:
-      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
+      LOGMAN_MSG_A_FMT("Unhandled VLoadVectorElement size: {}", ElementSize);
       return;
     }
   }
@@ -911,7 +911,7 @@ DEF_OP(VStoreVectorElement) {
       vmovups(xword [MemReg], Value);
       break;
     default:
-      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
+      LOGMAN_MSG_A_FMT("Unhandled VStoreVectorElement size: {}", ElementSize);
       return;
     }
   }
