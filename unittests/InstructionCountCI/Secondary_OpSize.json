@@ -909,29 +909,23 @@
       ]
     },
     "pmulhuw xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe4",
       "ExpectedArm64ASM": [
-        "umull v4.4s, v16.4h, v17.4h",
-        "umull2 v5.4s, v16.8h, v17.8h",
-        "shrn v4.4h, v4.4s, #16",
-        "mov v0.16b, v4.16b",
-        "shrn2 v0.8h, v5.4s, #16",
-        "mov v16.16b, v0.16b"
+        "umull2 v0.4s, v16.8h, v17.8h",
+        "umull v16.4s, v16.4h, v17.4h",
+        "uzp2 v16.8h, v16.8h, v0.8h"
       ]
     },
     "pmulhw xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe5",
       "ExpectedArm64ASM": [
-        "smull v4.4s, v16.4h, v17.4h",
-        "smull2 v5.4s, v16.8h, v17.8h",
-        "shrn v4.4h, v4.4s, #16",
-        "mov v0.16b, v4.16b",
-        "shrn2 v0.8h, v5.4s, #16",
-        "mov v16.16b, v0.16b"
+        "smull2 v0.4s, v16.8h, v17.8h",
+        "smull v16.4s, v16.4h, v17.4h",
+        "uzp2 v16.8h, v16.8h, v0.8h"
       ]
     },
     "cvttpd2dq xmm0, xmm1": {
