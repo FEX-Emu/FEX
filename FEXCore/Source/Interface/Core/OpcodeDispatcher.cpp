@@ -6168,7 +6168,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
     {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
 
-    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESKeyGenAssistOp},
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
 #undef OPD
 

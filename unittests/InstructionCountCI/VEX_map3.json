@@ -5050,7 +5050,7 @@
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0xdf 128-bit"
@@ -5068,12 +5068,11 @@
         "unallocated (Unallocated)",
         "unallocated (Unallocated)",
         "mov v4.16b, v4.16b",
-        "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 16,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0xdf 128-bit"
@@ -5093,7 +5092,6 @@
         "umin z1.b, p3/m, z1.b, z16.b",
         "unallocated (Unallocated)",
         "unallocated (Unallocated)",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

@@ -446,7 +446,6 @@ public:
   void VAESEncOp(OpcodeArgs);
   void VAESEncLastOp(OpcodeArgs);
   void VAESIMCOp(OpcodeArgs);
-  void VAESKeyGenAssistOp(OpcodeArgs);
 
   void VANDNOp(OpcodeArgs);
 
