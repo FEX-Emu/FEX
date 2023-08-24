@@ -144,6 +144,14 @@ DEF_OP(Float_FromGPR_S) {
   auto Src = GetReg(Op->Src.ID());
 
   switch (Conv) {
+    case 0x0204: { // Half <- int32_t
+      scvtf(ARMEmitter::Size::i32Bit, Dst.H(), Src);
+      break;
+    }
+    case 0x0208: { // Half <- int64_t
+      scvtf(ARMEmitter::Size::i64Bit, Dst.H(), Src);
+      break;
+    }
     case 0x0404: { // Float <- int32_t
       scvtf(ARMEmitter::Size::i32Bit, Dst.S(), Src);
       break;
