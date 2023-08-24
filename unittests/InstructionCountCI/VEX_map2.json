@@ -3626,7 +3626,7 @@
       ]
     },
     "vaesenc xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdc 128-bit"
@@ -3639,7 +3639,6 @@
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
