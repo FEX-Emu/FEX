@@ -2053,8 +2053,9 @@ void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElem
   const auto SrcSize = GetSrcSize(Op);
   const auto StoreSize = IsFloatSrc ? SrcSize
                                     : 16;
-  const auto LoadSize = IsFloatSrc ? SrcSize / 2
-                                   : SrcSize;
+  const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ?
+    SrcSize / 2 :
+    SrcSize;
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
 
