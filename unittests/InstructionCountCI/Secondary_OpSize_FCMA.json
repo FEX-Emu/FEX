@@ -1,0 +1,23 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FCMA"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "addsubpd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0xd0",
+      "ExpectedArm64ASM": [
+        "ext v4.16b, v17.16b, v17.16b, #8",
+        "fcadd v16.2d, v16.2d, v4.2d, #90"
+      ]
+    }
+  }
+}
