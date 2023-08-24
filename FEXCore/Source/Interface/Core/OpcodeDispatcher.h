@@ -12,6 +12,7 @@
 #include <FEXCore/IR/IREmitter.h>
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -90,6 +91,9 @@ public:
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
+
+    // Need to clear any named constants that were cached.
+    ClearCachedNamedConstants();
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -1194,6 +1198,28 @@ private:
     } else {
       return _LoadFlag(BitOffset);
     }
+  }
+
+  // Named constant cache for the current block.
+  // Different arrays for sizes 1,2,4,8,16,32.
+  OrderedNode *CachedNamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][6]{};
+
+  // Load and cache a named vector constant.
+  OrderedNode *LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
+    auto log2_size_bytes = FEXCore::ilog2(Size);
+    if (CachedNamedVectorConstants[NamedConstant][log2_size_bytes]) {
+      return CachedNamedVectorConstants[NamedConstant][log2_size_bytes];
+    }
+
+    auto Constant = _LoadNamedVectorConstant(Size, NamedConstant);
+    CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
+    return Constant;
+  }
+
+  // Reset the named vector constants cache array.
+  // These are only cached per block.
+  void ClearCachedNamedConstants() {
+    memset(CachedNamedVectorConstants, 0, sizeof(CachedNamedVectorConstants));
   }
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);

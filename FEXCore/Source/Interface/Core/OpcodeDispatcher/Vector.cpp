@@ -2962,7 +2962,7 @@ OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
                                               OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
 
-  auto ConstantEOR = _LoadNamedVectorConstant(Size, ElementSize == 4 ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+  auto ConstantEOR = LoadAndCacheNamedVectorConstant(Size, ElementSize == 4 ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
   auto InvertedSource = _VXor(Size, ElementSize, Src2, ConstantEOR);
   return _VFAdd(Size, ElementSize, Src1, InvertedSource);
 }
@@ -3858,7 +3858,7 @@ OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   // Setup a vector swizzle
   // Initially load a 64-bit mask of immediates
   // Then zero-extend that to 128-bit mask with the immediates in the lower 16-bits of each element
-  auto ConstantSwizzle = _LoadNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX);
+  auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX);
 
   // We now need to zip the vector sources together to become two uint32x4_t vectors
   // Upper:
