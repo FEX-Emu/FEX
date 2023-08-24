@@ -3150,7 +3150,9 @@ DEF_OP(VSQXTN2) {
     // the constructive variant requires a register list, and
     // we can't guarantee VectorLower and VectorUpper will always
     // have consecutive indexes with one another.
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (OpSize == 8) {
