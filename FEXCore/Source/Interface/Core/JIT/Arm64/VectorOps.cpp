@@ -3267,7 +3267,9 @@ DEF_OP(VSQXTUN2) {
     sqxtunb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
 
-    movprfx(Dst.Z(), VectorLower.Z());
+    if (Dst != VectorLower) {
+      movprfx(Dst.Z(), VectorLower.Z());
+    }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     if (OpSize == 8) {
