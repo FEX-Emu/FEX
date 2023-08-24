@@ -351,7 +351,7 @@
       ]
     },
     "vpsignb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x08 256-bit"
@@ -361,7 +361,6 @@
         "mov z5.d, p7/m, z18.d",
         "movprfx z5, z5",
         "sqshl z5.b, p7/m, z5.b, #7",
-        "movprfx z5, z5",
         "srshr z5.b, p7/m, z5.b, #7",
         "mul z4.b, z4.b, z5.b",
         "mov z16.d, p7/m, z4.d"
@@ -384,7 +383,7 @@
       ]
     },
     "vpsignw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x09 256-bit"
@@ -394,7 +393,6 @@
         "mov z5.d, p7/m, z18.d",
         "movprfx z5, z5",
         "sqshl z5.h, p7/m, z5.h, #15",
-        "movprfx z5, z5",
         "srshr z5.h, p7/m, z5.h, #15",
         "mul z4.h, z4.h, z5.h",
         "mov z16.d, p7/m, z4.d"
@@ -417,7 +415,7 @@
       ]
     },
     "vpsignd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0a 256-bit"
@@ -427,7 +425,6 @@
         "mov z5.d, p7/m, z18.d",
         "movprfx z5, z5",
         "sqshl z5.s, p7/m, z5.s, #31",
-        "movprfx z5, z5",
         "srshr z5.s, p7/m, z5.s, #31",
         "mul z4.s, z4.s, z5.s",
         "mov z16.d, p7/m, z4.d"

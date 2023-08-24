@@ -3354,8 +3354,11 @@ DEF_OP(VSRSHR) {
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
-    // SVE SRSHR is destructive, so lets set up the destination.
-    movprfx(Dst.Z(), Vector.Z());
+    // SVE SRSHR is destructive, so lets set up the destination
+    // in the event we Dst and Vector don't alias.
+    if (Dst != Vector) {
+      movprfx(Dst.Z(), Vector.Z());
+    }
     srshr(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
   } else {
     if (OpSize == 8) {
