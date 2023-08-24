@@ -201,19 +201,14 @@
       ]
     },
     "movmskpd eax, xmm0": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x50",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "mov x21, v16.d[0]",
-        "lsr x21, x21, #63",
-        "orr x20, x20, x21",
-        "mov x21, v16.d[1]",
-        "lsr x21, x21, #63",
-        "lsl x21, x21, #1",
-        "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "uzp2 v4.4s, v16.4s, v16.4s",
+        "mov x20, v4.d[0]",
+        "bfi x20, x20, #31, #32",
+        "lsr x4, x20, #62"
       ]
     },
     "sqrtpd xmm0, xmm1": {
