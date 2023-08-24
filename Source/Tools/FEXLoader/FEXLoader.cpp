@@ -249,7 +249,6 @@ namespace FEX::TSO {
 }
 
 int main(int argc, char **argv, char **const envp) {
-  auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
@@ -566,7 +565,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
 
-  FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;

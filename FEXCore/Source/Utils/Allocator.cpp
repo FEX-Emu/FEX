@@ -121,10 +121,15 @@ namespace FEXCore::Allocator {
     }
   }
 
+extern "C" void BigYolo() {
+    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void SetupHooks() {
-    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+//    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+
 #ifdef ENABLE_JEMALLOC
     je___mmap_hook   = FEX_mmap;
     je___munmap_hook = FEX_munmap;

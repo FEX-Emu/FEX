@@ -247,9 +247,22 @@ void GdbServer::SendACK(std::ostream &stream, bool NACK) {
   }
 }
 
+constexpr std::array<std::string_view const, 8> RegNames32 = {
+  "eax",
+  "ecx",
+  "edx",
+  "ebx",
+  "esp",
+  "ebp",
+  "esi",
+  "edi",
+};
+
 struct FEX_PACKED GDBContextDefinition {
-  uint64_t gregs[Core::CPUState::NUM_GPRS];
-  uint64_t rip;
+//  uint64_t gregs[Core::CPUState::NUM_GPRS];
+//  uint64_t rip;
+  uint32_t gregs[8];
+  uint32_t rip;
   uint32_t eflags;
   uint32_t cs, ss, ds, es, fs, gs;
   X80SoftFloat mm[Core::CPUState::NUM_MMS];
@@ -284,8 +297,12 @@ fextl::string GdbServer::readRegs() {
   }
 
   // Encode the GDB context definition
-  memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
-  memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+//  memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
+for (int i = 0; i < std::size(RegNames32); ++i) {
+  memcpy(&GDB.gregs[i], &state.gregs[i], 4);
+}
+//  memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+  memcpy(&GDB.rip, &state.rip, 4);
 
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread);
 
@@ -334,7 +351,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
     memcpy(&state, CTX->ParentThread->CurrentFrame, sizeof(state));
   }
 
-
+// TODO: 32 bit?
   if (addr >= offsetof(GDBContextDefinition, gregs[0]) &&
       addr < offsetof(GDBContextDefinition, gregs[16])) {
     return {encodeHex((unsigned char *)(&state.gregs[addr / sizeof(uint64_t)]), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
@@ -396,7 +413,8 @@ fextl::string buildTargetXML() {
   xml << "<?xml version='1.0'?>\n";
   xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";
   xml << "<target>\n";
-  xml << "<architecture>i386:x86-64</architecture>\n";
+//  xml << "<architecture>i386:x86-64</architecture>\n";
+  xml << "<architecture>i386</architecture>\n";
   xml << "<osabi>GNU/Linux</osabi>\n";
     xml << "<feature name='org.gnu.gdb.i386.core'>\n";
 
@@ -421,11 +439,16 @@ fextl::string buildTargetXML() {
       // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
 
       // GPRs
-      for (uint32_t i = 0; i < Core::CPUState::NUM_GPRS; i++) {
-        reg(FEXCore::Core::GetGRegName(i), "int64", 64);
+//      for (uint32_t i = 0; i < Core::CPUState::NUM_GPRS; i++) {
+//        reg(FEXCore::Core::GetGRegName(i), "int64", 64);
+//      }
+
+      for (uint32_t i = 0; i < std::size(RegNames32); i++) {
+        reg(RegNames32[i], "int32", 32);
       }
 
-      reg("rip", "code_ptr", 64);
+//      reg("rip", "code_ptr", 64);
+      reg("eip", "code_ptr", 32);
 
       reg("eflags", "fex_eflags", 32);
 
@@ -478,6 +501,7 @@ fextl::string buildTargetXML() {
         )";
 
       // SSE regs
+      // TODO: Only up to incl xmm7 on 32-bit?
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
           reg(fextl::fmt::format("xmm{}", i), "vec128", 128);
       }
