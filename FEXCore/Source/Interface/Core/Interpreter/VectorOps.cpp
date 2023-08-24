@@ -2561,6 +2561,44 @@ DEF_OP(VPCMPISTRX) {
   memcpy(GDP, &Result, sizeof(Result));
 }
 
+DEF_OP(VFCADD) {
+  const auto Op = IROp->C<IR::IROp_VFCADD>();
+  const uint8_t OpSize = IROp->Size;
+
+  const auto *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->Vector1);
+  const auto *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->Vector2);
+  const auto Rotate = Op->Rotate;
+  LOGMAN_THROW_A_FMT(Rotate == 90 || Rotate == 270, "Invalid rotate!");
+
+  TempVectorDataArray Tmp;
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+
+  const auto Func = [Rotate](auto dst, auto src1, auto src2) {
+    auto Element1 = src2[1];
+    auto Element3 = src2[0];
+    if (Rotate == 90) {
+      Element1 = -Element1;
+    }
+    else {
+      Element3 = -Element3;
+    }
+    dst[0] = src1[0] + Element1;
+    dst[1] = src1[1] + Element3;
+  };
+
+  switch (ElementSize) {
+    //DO_VECTOR_FCADD_PAIR_OP(2, float16_t, Func)
+    DO_VECTOR_FCADD_PAIR_OP(4, float, Func)
+    DO_VECTOR_FCADD_PAIR_OP(8, double, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

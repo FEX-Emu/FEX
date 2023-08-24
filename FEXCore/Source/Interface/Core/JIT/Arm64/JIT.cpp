@@ -1104,6 +1104,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VTBL1,             VTBL1);
         REGISTER_OP(VREV32,            VRev32);
         REGISTER_OP(VREV64,            VRev64);
+        REGISTER_OP(VFCADD,            VFCADD);
 #undef REGISTER_OP
 
         default:

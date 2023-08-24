@@ -3825,6 +3825,50 @@ DEF_OP(VRev64) {
   }
 }
 
+DEF_OP(VFCADD) {
+  const auto Op = IROp->C<IR::IROp_VFCADD>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  LOGMAN_THROW_A_FMT(Op->Rotate == 90 || Op->Rotate == 270, "Invalidate Rotate");
+  const auto SubRegSize =
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+  const auto Rotate =
+    Op->Rotate == 90 ? ARMEmitter::Rotation::ROTATE_90 : ARMEmitter::Rotation::ROTATE_270;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    if (Dst == Vector1) {
+      // Trivial case where we already have first vector in the destination
+      // register. We can just do the operation in place.
+      fcadd(SubRegSize, Dst.Z(), Mask, Vector1.Z(), Vector2.Z(), Rotate);
+    }
+    else {
+      // SVE FCADD is a destructive operation, so we need
+      // a temporary for performing operations.
+      movprfx(VTMP1.Z(), Vector1.Z());
+      fcadd(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z(), Rotate);
+      mov(Dst.Z(), VTMP1.Z());
+    }
+  } else {
+    if (OpSize == 8) {
+      fcadd(SubRegSize, Dst.D(), Vector1.D(), Vector2.D(), Rotate);
+    }
+    else {
+      fcadd(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q(), Rotate);
+    }
+  }
+}
+
 #undef DEF_OP
 }
 

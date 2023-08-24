@@ -470,6 +470,7 @@ private:
   DEF_OP(VTBL1);
   DEF_OP(VRev32);
   DEF_OP(VRev64);
+  DEF_OP(VFCADD);
 
   ///< Encryption ops
   DEF_OP(AESImc);

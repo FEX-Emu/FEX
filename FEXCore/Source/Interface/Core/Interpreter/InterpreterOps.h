@@ -314,6 +314,7 @@ namespace FEXCore::CPU {
   DEF_OP(VRev64);
   DEF_OP(VPCMPESTRX);
   DEF_OP(VPCMPISTRX);
+  DEF_OP(VFCADD);
 
   ///< Encryption ops
   DEF_OP(AESImc);
