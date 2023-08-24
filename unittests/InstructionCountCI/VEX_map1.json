@@ -5070,7 +5070,7 @@
       ]
     },
     "vaddsubpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
@@ -5078,17 +5078,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fadd v6.2d, v4.2d, v5.2d",
-        "fsub v4.2d, v4.2d, v5.2d",
-        "uzp1 v4.2d, v4.2d, v4.2d",
-        "uzp2 v5.2d, v6.2d, v6.2d",
-        "zip1 v4.2d, v4.2d, v5.2d",
+        "ldr x0, [x28, #1584]",
+        "ldr q6, [x0]",
+        "eor v5.16b, v5.16b, v6.16b",
+        "fadd v4.2d, v4.2d, v5.2d",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 256-bit"
@@ -5096,16 +5095,15 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fadd z6.d, z4.d, z5.d",
-        "fsub z4.d, z4.d, z5.d",
-        "uzp1 z4.d, z4.d, z4.d",
-        "uzp2 z5.d, z6.d, z6.d",
-        "zip1 z4.d, z4.d, z5.d",
+        "ldr x0, [x28, #1584]",
+        "ld1b {z6.b}, p7/z, [x0]",
+        "eor z5.d, z5.d, z6.d",
+        "fadd z4.d, z4.d, z5.d",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
@@ -5113,17 +5111,16 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fadd v6.4s, v4.4s, v5.4s",
-        "fsub v4.4s, v4.4s, v5.4s",
-        "uzp1 v4.4s, v4.4s, v4.4s",
-        "uzp2 v5.4s, v6.4s, v6.4s",
-        "zip1 v4.4s, v4.4s, v5.4s",
+        "ldr x0, [x28, #1568]",
+        "ldr q6, [x0]",
+        "eor v5.16b, v5.16b, v6.16b",
+        "fadd v4.4s, v4.4s, v5.4s",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 256-bit"
@@ -5131,11 +5128,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "fadd z6.s, z4.s, z5.s",
-        "fsub z4.s, z4.s, z5.s",
-        "uzp1 z4.s, z4.s, z4.s",
-        "uzp2 z5.s, z6.s, z6.s",
-        "zip1 z4.s, z4.s, z5.s",
+        "ldr x0, [x28, #1568]",
+        "ld1b {z6.b}, p7/z, [x0]",
+        "eor z5.d, z5.d, z6.d",
+        "fadd z4.s, z4.s, z5.s",
         "mov z16.d, p7/m, z4.d"
       ]
     },
