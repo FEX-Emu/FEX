@@ -2110,16 +2110,21 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, false>(OpcodeArgs)
 template
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool HostRoundingMode>
+template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  // If loading a vector, use the full size, so we don't
+  // unnecessarily zero extend the vector. Otherwise, if
+  // memory, then we want to load the element size exactly.
+  const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
   size_t Size = GetDstSize(Op);
 
-  // Always narrows
-  Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
-  ElementSize >>= 1;
+  if (Narrow) {
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
+    ElementSize >>= 1;
+  }
 
   if constexpr (HostRoundingMode) {
     Src = _Vector_FToS(Size, ElementSize, Src);
@@ -2132,9 +2137,13 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
 }
 
 template
-void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, false>(OpcodeArgs);
+void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, false>(OpcodeArgs);
 template
-void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true>(OpcodeArgs);
+void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
