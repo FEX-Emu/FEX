@@ -96,6 +96,10 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableAtomics = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEATOMICS;
   LogMan::Throw::AFmt(!(DisableAtomics && EnableAtomics), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableFCMA = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFCMA;
+  const bool EnableFCMA = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFCMA;
+  LogMan::Throw::AFmt(!(DisableFCMA && EnableFCMA), "Disabling and Enabling CPU features are mutually exclusive");
+
   if (EnableAVX) {
     Features->SupportsAVX = true;
   }
@@ -156,6 +160,12 @@ static void OverrideFeatures(HostFeatures *Features) {
   else if (DisableAtomics) {
     Features->SupportsAtomics = false;
   }
+  if (EnableFCMA) {
+    Features->SupportsFCMA = true;
+  }
+  else if (DisableFCMA) {
+    Features->SupportsFCMA = false;
+  }
 }
 
 HostFeatures::HostFeatures() {
@@ -181,6 +191,7 @@ HostFeatures::HostFeatures() {
   SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
   SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
   SupportsCSSC = Features.Has(vixl::CPUFeatures::Feature::kCSSC);
+  SupportsFCMA = Features.Has(vixl::CPUFeatures::Feature::kFcma);
 
   Supports3DNow = true;
   SupportsSSE4A = true;

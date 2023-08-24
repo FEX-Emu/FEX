@@ -2962,9 +2962,21 @@ OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
                                               OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
 
-  auto ConstantEOR = LoadAndCacheNamedVectorConstant(Size, ElementSize == 4 ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
-  auto InvertedSource = _VXor(Size, ElementSize, Src2, ConstantEOR);
-  return _VFAdd(Size, ElementSize, Src1, InvertedSource);
+  if (CTX->HostFeatures.SupportsFCMA) {
+    if (ElementSize == 4) {
+      auto Swizzle = _VRev64(Size, 4, Src2);
+      return _VFCADD(Size, ElementSize, Src1, Swizzle, 90);
+    }
+    else {
+      auto Swizzle = _VExtr(Size, 1, Src2, Src2, 8);
+      return _VFCADD(Size, ElementSize, Src1, Swizzle, 90);
+    }
+  }
+  else {
+    auto ConstantEOR = LoadAndCacheNamedVectorConstant(Size, ElementSize == 4 ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+    auto InvertedSource = _VXor(Size, ElementSize, Src2, ConstantEOR);
+    return _VFAdd(Size, ElementSize, Src1, InvertedSource);
+  }
 }
 
 template<size_t ElementSize>

@@ -65,6 +65,17 @@
   }                                                         \
   break;                                                    \
   }
+#define DO_VECTOR_FCADD_PAIR_OP(size, type, func)           \
+  case size: {                                              \
+  auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));   \
+  auto *Src1_d = reinterpret_cast<const type*>(Src1);             \
+  auto *Src2_d = reinterpret_cast<const type*>(Src2);             \
+  for (uint8_t i = 0; i < Elements; i += 2) {               \
+    func(&Dst_d[i], &Src1_d[i], &Src2_d[i]);                \
+  }                                                         \
+  break;                                                    \
+  }
+
 #define DO_VECTOR_SCALAR_OP(size, type, func)              \
   case size: {                                             \
   auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));  \

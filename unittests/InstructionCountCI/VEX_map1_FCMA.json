@@ -1,0 +1,71 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "FCMA"
+    ],
+    "DisabledHostFeatures": []
+  },
+  "Instructions": {
+    "vaddsubpd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "ext v5.16b, v5.16b, v5.16b, #8",
+        "fcadd v4.2d, v4.2d, v5.2d, #90",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vaddsubpd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "ext z5.b, z5.b, z5.b, #8",
+        "fcadd z4.d, p7/m, z4.d, z5.d, #90",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vaddsubps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b11 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "rev64 v5.4s, v5.4s",
+        "fcadd v4.4s, v4.4s, v5.4s, #90",
+        "mov v4.16b, v4.16b",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    },
+    "vaddsubps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b11 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z4.d, p7/m, z17.d",
+        "mov z5.d, p7/m, z18.d",
+        "revw z5.d, p7/m, z5.d",
+        "fcadd z4.s, p7/m, z4.s, z5.s, #90",
+        "mov z16.d, p7/m, z4.d"
+      ]
+    }
+  }
+}

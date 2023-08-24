@@ -1558,6 +1558,10 @@
                  "course of creating the intermediate result"
                 ],
         "DestSize": "4"
+      },
+      "FPR = VFCADD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
       }
     },
     "Conv": {

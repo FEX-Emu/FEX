@@ -74,7 +74,9 @@
           "ENABLECLZERO": "enableclzero",
           "DISABLECLZERO": "disableclzero",
           "ENABLEATOMICS": "enableatomics",
-          "DISABLEATOMICS": "disableatomics"
+          "DISABLEATOMICS": "disableatomics",
+          "ENABLEFCMA": "enablefcma",
+          "DISABLEFCMA": "disablefcma"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -88,7 +90,8 @@
           "\t{enable,disable}pmull128: Will force enable or disable pmull128 even if the host doesn't support it",
           "\t{enable,disable}rng: Will force enable or disable rng even if the host doesn't support it",
           "\t{enable,disable}clzero: Will force enable or disable clzero even if the host doesn't support it",
-          "\t{enable,disable}atomics: Will force enable or disable ARMv8.1 LSE atomics even if the host doesn't support it"
+          "\t{enable,disable}atomics: Will force enable or disable ARMv8.1 LSE atomics even if the host doesn't support it",
+          "\t{enable,disable}fcma: Will force enable or disable fcma even if the host doesn't support it"
         ]
       }
     },
