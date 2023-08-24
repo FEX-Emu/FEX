@@ -3706,7 +3706,7 @@
       ]
     },
     "vaesdeclast xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdf 128-bit"
@@ -3718,7 +3718,6 @@
         "mov v0.16b, v4.16b",
         "unimplemented (Unimplemented)",
         "eor v4.16b, v0.16b, v5.16b",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
