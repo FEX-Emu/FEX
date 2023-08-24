@@ -1,4 +1,5 @@
 #include "analysis.h"
+#include "data_layout.h"
 #include "interface.h"
 
 #include <clang/Frontend/CompilerInstance.h>
@@ -48,6 +49,10 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
 };
 
 void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
+    {
+        const auto host_abi = ComputeDataLayout(context, types);
+    }
+
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         clang::QualType innermostPointee = type;
         while (innermostPointee->isPointerType()) {

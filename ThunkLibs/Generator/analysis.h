@@ -142,3 +142,40 @@ public: // TODO: Remove, make only RepackedType public
       return types.at(context.getCanonicalType(type));
     }
 };
+
+inline std::string get_type_name(const clang::ASTContext& context, const clang::Type* type) {
+    if (type->isBuiltinType()) {
+        // Skip canonicalization
+        return clang::QualType { type, 0 }.getAsString();
+    }
+
+    if (auto decl = type->getAsTagDecl()) {
+        // Replace unnamed types with a placeholder. This will fail to compile if referenced
+        // anywhere in generated code, but at least it will point to a useful location.
+        //
+        // A notable exception are C-style struct declarations like "typedef struct (unnamed) { ... } MyStruct;".
+        // A typedef name is associated with these for linking purposes, so
+        // getAsString() will produce a usable identifier.
+        // TODO: Consider turning this into a hard error instead of replacing the name
+        if (!decl->getDeclName() && !decl->getTypedefNameForAnonDecl()) {
+            auto loc = context.getSourceManager().getPresumedLoc(decl->getLocation());
+            std::string filename = loc.getFilename();
+            filename = std::move(filename).substr(filename.rfind("/"));
+            filename = std::move(filename).substr(1);
+            std::replace(filename.begin(), filename.end(), '.', '_');
+            return "unnamed_type_" + filename + "_" + std::to_string(loc.getLine());
+        }
+    }
+
+    auto type_name = clang::QualType { context.getCanonicalType(type), 0 }.getAsString();
+    if (type_name.starts_with("struct ")) {
+        type_name = type_name.substr(7);
+    }
+    if (type_name.starts_with("class ") || type_name.starts_with("union ")) {
+        type_name = type_name.substr(6);
+    }
+    if (type_name.starts_with("enum ")) {
+        type_name = type_name.substr(5);
+    }
+    return type_name;
+}
