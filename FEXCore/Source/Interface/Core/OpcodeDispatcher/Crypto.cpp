@@ -258,19 +258,9 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res0, -1);
 }
 
-OrderedNode* OpDispatchBuilder::AESIMCImpl(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  return _VAESImc(Src);
-}
-
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
-  OrderedNode *Result = AESIMCImpl(Op);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-void OpDispatchBuilder::VAESIMCOp(OpcodeArgs) {
-  OrderedNode *Mixed = AESIMCImpl(Op);
-  OrderedNode *Result = _VMov(16, Mixed);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = _VAESImc(Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

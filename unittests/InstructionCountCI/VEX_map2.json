@@ -3612,7 +3612,7 @@
       ]
     },
     "vaesimc xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdb 128-bit"
@@ -3620,7 +3620,6 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "unimplemented (Unimplemented)",
-        "mov v4.16b, v4.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

@@ -445,7 +445,6 @@ public:
   void VAESDecLastOp(OpcodeArgs);
   void VAESEncOp(OpcodeArgs);
   void VAESEncLastOp(OpcodeArgs);
-  void VAESIMCOp(OpcodeArgs);
 
   void VANDNOp(OpcodeArgs);
 
@@ -877,7 +876,6 @@ private:
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
-  OrderedNode* AESIMCImpl(OpcodeArgs);
 
   OrderedNode* CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
                                  const X86Tables::DecodedOperand& Src1Op,
