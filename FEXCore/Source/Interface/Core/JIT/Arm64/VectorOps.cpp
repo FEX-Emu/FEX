@@ -3540,6 +3540,112 @@ DEF_OP(VSMull2) {
   }
 }
 
+DEF_OP(VUMulH) {
+  const auto Op = IROp->C<IR::IROp_VUMulH>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+
+  const auto SubRegSizeLarger =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    umulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
+  }
+  else if (HostSupportsSVE128 && Is128Bit) {
+    if (HostSupportsSVE256) {
+      // Do predicated to ensure upper-bits get zero as expected
+      const auto Mask = PRED_TMP_16B.Merging();
+
+      if (Dst != Vector1) {
+        // NOTE: SVE umulh (predicated) is a destructive operation.
+        movprfx(Dst.Z(), Vector1.Z());
+      }
+      umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+    }
+    else {
+      umulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
+    }
+  }
+  else if (OpSize == 8) {
+    umull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
+    shrn(SubRegSize, Dst.D(), Dst.D(), ElementSize * 8);
+  }
+  else {
+    // ASIMD doesn't have a umulh. Need to emulate.
+    umull2(SubRegSizeLarger, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+    umull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
+    uzp2(SubRegSize, Dst.Q(), Dst.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VSMulH) {
+  const auto Op = IROp->C<IR::IROp_VSMulH>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+
+  const auto SubRegSizeLarger =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    smulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
+  }
+  else if (HostSupportsSVE128 && Is128Bit) {
+    if (HostSupportsSVE256) {
+      // Do predicated to ensure upper-bits get zero as expected
+      const auto Mask = PRED_TMP_16B.Merging();
+
+      if (Dst != Vector1) {
+        // NOTE: SVE smulh (predicated) is a destructive operation.
+        movprfx(Dst.Z(), Vector1.Z());
+      }
+      smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+    }
+    else {
+      smulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
+    }
+  }
+  else if (OpSize == 8) {
+    smull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
+    shrn(SubRegSize, Dst.D(), Dst.D(), ElementSize * 8);
+  }
+  else {
+    // ASIMD doesn't have a umulh. Need to emulate.
+    smull2(SubRegSizeLarger, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+    smull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
+    uzp2(SubRegSize, Dst.Q(), Dst.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(VUABDL) {
   const auto Op = IROp->C<IR::IROp_VUABDL>();
   const auto OpSize = IROp->Size;

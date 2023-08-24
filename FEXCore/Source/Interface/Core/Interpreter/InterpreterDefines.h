@@ -43,6 +43,17 @@
   }                                                        \
   break;                                                   \
   }
+#define DO_VECTOR_OP_WIDE(size, type, type2, func)         \
+  case size: {                                             \
+  auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));  \
+  auto *Src1_d = reinterpret_cast<type*>(Src1);            \
+  auto *Src2_d = reinterpret_cast<type*>(Src2);            \
+  for (uint8_t i = 0; i < Elements; ++i) {                 \
+    Dst_d[i] = func((type2)Src1_d[i], (type2)Src2_d[i]);   \
+  }                                                        \
+  break;                                                   \
+  }
+
 #define DO_VECTOR_PAIR_OP(size, type, func)                 \
   case size: {                                              \
   auto *Dst_d  = reinterpret_cast<type*>(std::data(Tmp));   \

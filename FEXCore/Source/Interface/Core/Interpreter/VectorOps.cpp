@@ -2352,6 +2352,54 @@ DEF_OP(VSMull2) {
   memcpy(GDP, Tmp.data(), Op->Header.Size);
 }
 
+DEF_OP(VUMulH) {
+  const auto Op = IROp->C<IR::IROp_VUMul>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
+  TempVectorDataArray Tmp;
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto Func = [](auto a, auto b) { return (a * b) >> (sizeof(a) * 8  / 2); };
+
+  switch (ElementSize) {
+    DO_VECTOR_OP_WIDE(1, uint8_t,  uint16_t, Func)
+    DO_VECTOR_OP_WIDE(2, uint16_t, uint32_t, Func)
+    DO_VECTOR_OP_WIDE(4, uint32_t, uint64_t, Func)
+    DO_VECTOR_OP_WIDE(8, uint64_t, __uint128_t, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
+DEF_OP(VSMulH) {
+  const auto Op = IROp->C<IR::IROp_VSMul>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
+  TempVectorDataArray Tmp;
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto Func = [](auto a, auto b) { return (a * b) >> (sizeof(a) * 8  / 2); };
+
+  switch (ElementSize) {
+    DO_VECTOR_OP_WIDE(1, int8_t,  int16_t, Func)
+    DO_VECTOR_OP_WIDE(2, int16_t, int32_t, Func)
+    DO_VECTOR_OP_WIDE(4, int32_t, int64_t, Func)
+    DO_VECTOR_OP_WIDE(8, int64_t, __int128_t, Func)
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
 DEF_OP(VUABDL) {
   const auto Op = IROp->C<IR::IROp_VUABDL>();
   const uint8_t OpSize = IROp->Size;

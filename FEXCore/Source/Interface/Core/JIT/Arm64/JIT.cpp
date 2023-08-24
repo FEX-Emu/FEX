@@ -1097,6 +1097,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VSMULL,            VSMull);
         REGISTER_OP(VUMULL2,           VUMull2);
         REGISTER_OP(VSMULL2,           VSMull2);
+        REGISTER_OP(VUMULH,            VUMulH);
+        REGISTER_OP(VSMULH,            VSMulH);
         REGISTER_OP(VUABDL,            VUABDL);
         REGISTER_OP(VUABDL2,           VUABDL2);
         REGISTER_OP(VTBL1,             VTBL1);
