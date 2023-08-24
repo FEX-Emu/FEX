@@ -1130,11 +1130,19 @@
       ]
     },
     "cvtps2pd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
+        "fcvtl v16.2d, v17.2s"
+      ]
+    },
+    "cvtps2pd xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x5a",
+      "ExpectedArm64ASM": [
+        "ldr d4, [x4]",
         "fcvtl v16.2d, v4.2s"
       ]
     },
