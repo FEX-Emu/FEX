@@ -8,8 +8,12 @@ namespace FEXCore {
 namespace CPU {
 
 constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][2] = {
-  {0x0003'0002'0001'0000, 0x0007'0006'0005'0004},
-  {0x000B'000A'0009'0008, 0x000F'000E'000D'000C},
+  {0x0003'0002'0001'0000, 0x0007'0006'0005'0004}, // NAMED_VECTOR_INCREMENTAL_U16_INDEX
+  {0x000B'000A'0009'0008, 0x000F'000E'000D'000C}, // NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER
+  {0x0000'0000'8000'0000, 0x0000'0000'8000'0000}, // NAMED_VECTOR_PADDSUBPS_INVERT
+  {0x0000'0000'8000'0000, 0x0000'0000'8000'0000}, // NAMED_VECTOR_PADDSUBPS_INVERT_UPPER
+  {0x8000'0000'0000'0000, 0x0000'0000'0000'0000}, // NAMED_VECTOR_PADDSUBPD_INVERT
+  {0x8000'0000'0000'0000, 0x0000'0000'0000'0000}, // NAMED_VECTOR_PADDSUBPD_INVERT_UPPER
 };
 
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
@@ -20,6 +24,10 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   // Initialize named vector constants.
   Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX] = reinterpret_cast<uint64_t>(NamedVectorConstants[0]);
   Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[1]);
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT] = reinterpret_cast<uint64_t>(NamedVectorConstants[2]);
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[3]);
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT] = reinterpret_cast<uint64_t>(NamedVectorConstants[4]);
+  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[5]);
 
 #ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values

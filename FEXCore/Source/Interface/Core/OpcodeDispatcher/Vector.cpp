@@ -2962,15 +2962,9 @@ OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
                                               OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode *ResAdd = _VFAdd(Size, ElementSize, Src1, Src2);
-  OrderedNode *ResSub = _VFSub(Size, ElementSize, Src1, Src2);
-
-  // Even elements are the sub result
-  // Odd elements are the add results
-  OrderedNode *UnzipSub = _VUnZip(Size, ElementSize, ResSub, ResSub);
-  OrderedNode *UnzipAdd = _VUnZip2(Size, ElementSize, ResAdd, ResAdd);
-
-  return _VZip(Size, ElementSize, UnzipSub, UnzipAdd);
+  auto ConstantEOR = _LoadNamedVectorConstant(Size, ElementSize == 4 ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+  auto InvertedSource = _VXor(Size, ElementSize, Src2, ConstantEOR);
+  return _VFAdd(Size, ElementSize, Src1, InvertedSource);
 }
 
 template<size_t ElementSize>

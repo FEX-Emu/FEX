@@ -193,6 +193,22 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
       *out << "u16_incremental_index_upper";
       break;
     }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT: {
+      *out << "addsubps_invert";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER: {
+      *out << "addsubps_invert_upper";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT: {
+      *out << "addsubpd_invert";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER: {
+      *out << "addsubpd_invert_upper";
+      break;
+    }
     default: *out << "<Unknown Named Vector Constant>"; break;
   }
 }
