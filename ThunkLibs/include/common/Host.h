@@ -105,6 +105,7 @@ struct GuestcallInfo {
 
 struct ParameterAnnotations {
     bool is_passthrough = false;
+    bool is_opaque = false;
 };
 
 // Placeholder type to indicate the given data is in guest-layout

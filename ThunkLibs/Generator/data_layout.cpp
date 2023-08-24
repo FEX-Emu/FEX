@@ -25,6 +25,14 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
 
     // First, add all types directly used in function signatures of the library API to the meta set
     for (const auto& [type, type_repack_info] : types) {
+        if (type_repack_info.is_opaque) {
+            auto [_, inserted] = layout.insert(std::pair { context.getCanonicalType(type), TypeInfo {} });
+            if (!inserted) {
+                throw std::runtime_error("Failed to gather type metadata: Opaque type \"" + clang::QualType { type, 0 }.getAsString() + "\" already registered");
+            }
+            continue;
+        }
+
         if (type->isIncompleteType()) {
             throw std::runtime_error("Cannot compute data layout of incomplete type \"" + clang::QualType { type, 0 }.getAsString() + "\". Did you forget any annotations?");
         }
@@ -53,7 +61,7 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
 
     // Then, add information about members
     for (const auto& [type, type_repack_info] : types) {
-        if (!type->isStructureType()) {
+        if (!type->isStructureType() || type_repack_info.is_opaque) {
             continue;
         }
 
@@ -199,6 +207,15 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
         }
     }
 
+    // TODO: This is also used by the assume_compatible_data_layout path now
+    if (types.contains(type) && types.at(type).is_opaque) {
+        if (types.at(type).pointers_only && !type->isPointerType()) {
+            throw std::runtime_error("Tried to dereference opaque type \"" + clang::QualType { type, 0 }.getAsString() + "\" when querying data layout compatibility");
+        }
+        type_compat.at(type) = TypeCompatibility::Full;
+        return TypeCompatibility::Full;
+    }
+
     const auto& guest_abi = abi;
     auto type_name = get_type_name(context, type);
     auto& guest_info = guest_abi.at(type_name);
@@ -252,12 +269,18 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
                 // * Pointer member is annotated
                 // TODO: Don't restrict this to structure types. it applies to pointers to builtin types too!
                 auto host_member_pointee_type = context.getCanonicalType(host_member_type->getPointeeType().getTypePtr());
-                if (host_member_pointee_type->isPointerType()) {
+                if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).is_opaque) {
+                    // Pointee doesn't need repacking, but pointer needs extending on 32-bit
+                    member_compat.push_back(is_32bit ? TypeCompatibility::Repackable : TypeCompatibility::Full);
+                } else if (host_member_pointee_type->isPointerType()) {
                     // This is a nested pointer, e.g. void**
 
                     if (is_32bit) {
                         // Nested pointers can't be repacked on 32-bit
                         member_compat.push_back(TypeCompatibility::None);
+                    } else if (types.contains(host_member_pointee_type->getPointeeType().getTypePtr()) && types.at(host_member_pointee_type->getPointeeType().getTypePtr()).is_opaque) {
+                        // Pointers to opaque types are fine
+                        member_compat.push_back(TypeCompatibility::Full);
                     } else {
                         // Check the innermost type's compatibility on 64-bit
                         auto pointee_pointee_type = host_member_pointee_type->getPointeeType().getTypePtr();

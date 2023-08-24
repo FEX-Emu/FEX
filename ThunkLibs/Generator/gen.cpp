@@ -57,7 +57,9 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
         std::unordered_map<const clang::Type*, TypeCompatibility> ret;
         const auto host_abi = ComputeDataLayout(context, types);
         for (const auto& [type, type_repack_info] : types) {
-            GetTypeCompatibility(context, type, host_abi, ret);
+            if (!type_repack_info.pointers_only) {
+                GetTypeCompatibility(context, type, host_abi, ret);
+            }
         }
         return ret;
     }();
@@ -374,6 +376,10 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).is_passthrough) {
                     // TODO: Rename annotation in Host.h?
                     annotations += ".is_passthrough=true,";
+                }
+                if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).is_opaque) {
+                    // TODO: Rename annotation in Host.h?
+                    annotations += ".is_opaque=true,";
                 }
                 annotations += "}";
             }

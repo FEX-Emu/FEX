@@ -91,6 +91,11 @@ struct callback_guest : callback_annotation_base {};
 // If used, fex_custom_repack must be specialized for the annotated struct member
 struct custom_repack {};
 
+// Pointers to types annotated with this will be passed through without change
+struct opaque_type {};
+
+struct assume_compatible_data_layout {};
+
 struct ptr_passthrough {};
 
 // struct member annotations: fex_gen_config<&MyStruct::member>

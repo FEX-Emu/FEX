@@ -23,6 +23,7 @@ struct ThunkedCallback : FunctionParams {
 
 struct ParameterAnnotations {
     bool is_passthrough = false;
+    bool is_opaque = false;
 
     bool operator==(const ParameterAnnotations&) const = default;
 };
@@ -135,6 +136,8 @@ protected:
 
 public: // TODO: Remove, make only RepackedType public
     struct RepackedType {
+        bool is_opaque = false; // opaque or assumed_compatible (TODO: Rename to the latter)
+        bool pointers_only = is_opaque; // if true, only pointers to this type may be used
     };
 
     std::unordered_map<const clang::Type*, RepackedType> types;
