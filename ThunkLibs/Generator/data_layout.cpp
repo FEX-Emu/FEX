@@ -6,6 +6,20 @@
 
 #include <openssl/sha.h>
 
+// Visitor for gathering data layout information that can be passed across libclang invocations
+class AnalyzeDataLayoutAction : public AnalysisAction {
+    ABI& type_abi;
+
+    // TODO: Needs a different name now
+    void EmitOutput(clang::ASTContext&) override;
+
+public:
+    AnalyzeDataLayoutAction(ABI&);
+};
+
+AnalyzeDataLayoutAction::AnalyzeDataLayoutAction(ABI& abi_) : type_abi(abi_) {
+}
+
 std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, AnalysisAction::RepackedType>& types) {
     std::unordered_map<const clang::Type*, TypeInfo> layout;
 
@@ -116,4 +130,182 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
     }
 
     return layout;
+}
+
+ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, TypeInfo>& data_layout) {
+    ABI stable_layout;
+
+    for (auto [type, type_info] : data_layout) {
+        auto type_name = get_type_name(context, type);
+        auto [it, inserted] = stable_layout.insert(std::pair { type_name, type_info });
+        if (!inserted && it->second != type_info) {
+            throw std::runtime_error("Duplicate type information: Tried to re-register type \"" + type_name + "\"");
+        }
+    }
+
+    stable_layout.pointer_size = context.getTypeSize(context.getUIntPtrType()) / 8;
+
+    return stable_layout;
+}
+
+void AnalyzeDataLayoutAction::EmitOutput(clang::ASTContext& context) {
+    type_abi = GetStableLayout(context, ComputeDataLayout(context, types));
+}
+
+TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
+        const clang::ASTContext& context,
+        const clang::Type* type,
+        const std::unordered_map<const clang::Type*, TypeInfo> host_abi,
+        std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat) {
+    assert(type->isCanonicalUnqualified() || type->isBuiltinType() || type->isEnumeralType());
+
+    {
+        // Reserve a slot to be filled later. The placeholder value is used
+        // to detect infinite recursions.
+        constexpr auto placeholder_compat = TypeCompatibility { 100 };
+        auto [existing_compat_it, is_new_type] = type_compat.emplace(type, placeholder_compat);
+        if (!is_new_type) {
+            if (existing_compat_it->second == placeholder_compat) {
+                throw std::runtime_error("Found recursive reference to type \"" + clang::QualType { type, 0 }.getAsString() + "\"");
+            }
+
+            return existing_compat_it->second;
+        }
+    }
+
+    const auto& guest_abi = abi;
+    auto type_name = get_type_name(context, type);
+    auto& guest_info = guest_abi.at(type_name);
+    auto& host_info = host_abi.at(type->isBuiltinType() ? type : context.getCanonicalType(type));
+
+    const bool is_32bit = (guest_abi.pointer_size == 4);
+
+    // Assume full compatibility, then downgrade as needed
+    auto compat = TypeCompatibility::Full;
+
+    if (guest_info != host_info) {
+        // Non-matching data layout... downgrade to Repackable
+        // TODO: Even for non-structs, this only works if the types are reasonably similar (e.g. uint32_t -> uint64_t)
+        compat = TypeCompatibility::Repackable;
+    }
+
+    if (auto guest_struct_info = guest_info.get_if_struct()) {
+        const AnalysisAction::RepackedType& type_repack_info = types.at(type);
+
+        std::vector<TypeCompatibility> member_compat;
+        for (std::size_t member_idx = 0; member_idx < guest_struct_info->members.size(); ++member_idx) {
+            // Look up the corresponding member in the host struct definition.
+            // The members may be listed in a different order, so we can't
+            // directly use member_idx for this
+            auto* host_member_field = [&]() -> clang::FieldDecl* {
+                auto struct_decl = type->getAsStructureType()->getDecl();
+                auto it = std::find_if(struct_decl->field_begin(), struct_decl->field_end(), [&](auto* field) {
+                    return field->getName() == guest_struct_info->members.at(member_idx).member_name;
+                });
+                if (it == struct_decl->field_end()) {
+                    return nullptr;
+                }
+                return *it;
+            }();
+            if (!host_member_field) {
+                // No corresponding host struct member
+                // TODO: Also detect host members that are missing from the guest struct
+                member_compat.push_back(TypeCompatibility::None);
+                break;
+            }
+
+            auto host_member_type = context.getCanonicalType(host_member_field->getType().getTypePtr());
+            if (auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(host_member_type)) {
+                // Compare array element type only. The array size is already considered by the layout information of the containing struct.
+                host_member_type = context.getCanonicalType(array_type->getElementType().getTypePtr());
+            }
+
+            if (host_member_type->isPointerType()) {
+                // Automatic repacking of pointers to non-compatible types is only possible if:
+                // * Pointee is fully compatible, or
+                // * Pointer member is annotated
+                // TODO: Don't restrict this to structure types. it applies to pointers to builtin types too!
+                auto host_member_pointee_type = context.getCanonicalType(host_member_type->getPointeeType().getTypePtr());
+                if (host_member_pointee_type->isPointerType()) {
+                    // This is a nested pointer, e.g. void**
+
+                    if (is_32bit) {
+                        // Nested pointers can't be repacked on 32-bit
+                        member_compat.push_back(TypeCompatibility::None);
+                    } else {
+                        // Check the innermost type's compatibility on 64-bit
+                        auto pointee_pointee_type = host_member_pointee_type->getPointeeType().getTypePtr();
+                        // TODO: Not sure how to handle void here. Probably should require an annotation instead of "just working"
+                        auto pointee_pointee_compat = pointee_pointee_type->isVoidType() ? TypeCompatibility::Full : GetTypeCompatibility(context, pointee_pointee_type, host_abi, type_compat);
+                        if (pointee_pointee_compat == TypeCompatibility::Full) {
+                            member_compat.push_back(TypeCompatibility::Full);
+                        } else {
+                            member_compat.push_back(TypeCompatibility::None);
+                        }
+                    }
+                } else if (!host_member_pointee_type->isVoidType() && (host_member_pointee_type->isBuiltinType() || host_member_pointee_type->isEnumeralType())) {
+                    // TODO: What are good heuristics for this?
+                    // size_t should yield TypeCompatibility::Repackable
+                    // inconsistent types should probably default to TypeCompatibility::None
+                    // For now, just always assume compatible... (will degrade to Repackable below)
+                    member_compat.push_back(TypeCompatibility::Full);
+                } else if (!host_member_pointee_type->isVoidType() && (host_member_pointee_type->isStructureType() || types.contains(host_member_pointee_type))) {
+                    auto pointee_compat = GetTypeCompatibility(context, host_member_pointee_type, host_abi, type_compat);
+                    if (pointee_compat == TypeCompatibility::Full) {
+                        // Pointee is fully compatible, so automatic repacking only requires converting the pointers themselves
+                        member_compat.push_back(is_32bit ? TypeCompatibility::Repackable : TypeCompatibility::Full);
+                    } else {
+                        // If the pointee is incompatible (even if repackable), automatic repacking isn't possible
+                        member_compat.push_back(TypeCompatibility::None);
+                    }
+                } else if (!is_32bit && host_member_pointee_type->isVoidType()) {
+                    // TODO: Not sure how to handle void here. Probably should require an annotation instead of "just working"
+                    member_compat.push_back(TypeCompatibility::Full);
+                } else {
+                    member_compat.push_back(TypeCompatibility::None);
+                }
+                continue;
+            }
+
+            if (guest_abi.at(guest_struct_info->members[member_idx].type_name).get_if_struct()) {
+                auto host_type_info = host_abi.at(host_member_type);
+                member_compat.push_back(GetTypeCompatibility(context, host_member_type, host_abi, type_compat));
+            } else {
+                // Member was checked for size/alignment above already
+            }
+        }
+
+        if (std::all_of(member_compat.begin(), member_compat.end(), [](auto compat) { return compat == TypeCompatibility::Full; })) {
+            // TypeCompatibility::Full or ::Repackable
+        } else if (std::none_of(member_compat.begin(), member_compat.end(), [](auto compat) { return compat == TypeCompatibility::None; })) {
+            // Downgrade to Repackable
+            compat = TypeCompatibility::Repackable;
+        } else {
+            // Downgrade to None
+            compat = TypeCompatibility::None;
+        }
+    }
+
+    type_compat.at(type) = compat;
+    return compat;
+}
+
+DataLayoutCompareActionFactory::DataLayoutCompareActionFactory(const ABI& abi) : abi(abi) {
+
+}
+
+DataLayoutCompareActionFactory::~DataLayoutCompareActionFactory() = default;
+
+std::unique_ptr<clang::FrontendAction> DataLayoutCompareActionFactory::create() {
+    return std::make_unique<DataLayoutCompareAction>(abi);
+}
+
+AnalyzeDataLayoutActionFactory::AnalyzeDataLayoutActionFactory() : abi(std::make_unique<ABI>()) {
+
+}
+
+AnalyzeDataLayoutActionFactory::~AnalyzeDataLayoutActionFactory() = default;
+
+std::unique_ptr<clang::FrontendAction> AnalyzeDataLayoutActionFactory::create() {
+    return std::make_unique<AnalyzeDataLayoutAction>(*abi);
 }

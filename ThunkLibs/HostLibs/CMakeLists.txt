@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
 include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
@@ -21,6 +21,9 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   add_library(${NAME}-${GUEST_BITNESS}-deps INTERFACE)
   target_include_directories(${NAME}-${GUEST_BITNESS}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   target_link_libraries(${NAME}-${GUEST_BITNESS}-deps INTERFACE FEXLoader)
+  if (GUEST_BITNESS EQUAL 32)
+    target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE IS_32BIT_THUNK)
+  endif ()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
@@ -41,11 +44,16 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
 
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
+  set (BITNESS_FLAGS "")
+  if (GUEST_BITNESS EQUAL 32)
+    set (BITNESS_FLAGS "-for-32bit-guest")
+  endif()
+
   add_custom_command(
     OUTPUT "${OUTFILE}"
     DEPENDS "${SOURCE_FILE}"
     DEPENDS thunkgen
-    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" -- -std=c++17
+    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" ${BITNESS_FLAGS} -- -std=c++20
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters

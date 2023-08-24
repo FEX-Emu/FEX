@@ -1,6 +1,6 @@
 #pragma once
 
-#include "analysis.h" // TODO: Drop include
+#include "analysis.h" // TODO: Drop include. Currently needed for ParameterAnnotations though
 
 #include <clang/Frontend/FrontendAction.h>
 
@@ -77,6 +77,44 @@ struct TypeInfo : std::variant<std::monostate, SimpleTypeInfo, StructInfo> {
     }
 };
 
+struct FuncPtrInfo {
+    std::array<uint8_t, 32> sha256;
+    std::string result;
+    std::vector<std::string> args;
+
+    // TODO: Do we actually need these here? Instead, we can fixup the parameters in-place!
+    std::unordered_map<unsigned, ParameterAnnotations> param_annotations;
+};
+
+struct ABI : std::unordered_map<std::string, TypeInfo> {
+    int pointer_size; // in bytes
+};
+
 std::unordered_map<const clang::Type*, TypeInfo>
 ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, AnalysisAction::RepackedType>& types);
 
+// Convert the output of ComputeDataLayout to a format that isn't tied to a libclang session.
+// As a consequence, type information is indexed by type name instead of clang::Type.
+ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, TypeInfo>& data_layout);
+
+enum class TypeCompatibility {
+    Full,       // Type has matching data layout across architectures
+    Repackable, // Type has different data layout but can be repacked automatically
+    None,       // Type has different data layout and cannot be repacked automatically
+};
+
+class DataLayoutCompareAction : public AnalysisAction {
+public:
+    DataLayoutCompareAction(const ABI& abi) : abi(abi) {
+    }
+
+    TypeCompatibility GetTypeCompatibility(
+            const clang::ASTContext&,
+            const clang::Type*,
+            const std::unordered_map<const clang::Type*, TypeInfo> host_abi,
+            std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat);
+
+protected: // TODO: Should probably be private
+    // TODO: Make it clearer that this is the guest ABI
+    const ABI& abi;
+};

@@ -1,7 +1,7 @@
 #include "analysis.h"
 #include "data_layout.h"
+#include "diagnostics.h"
 #include "interface.h"
-
 #include <clang/Frontend/CompilerInstance.h>
 
 #include <fstream>
@@ -9,15 +9,16 @@
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <openssl/sha.h>
 
-class GenerateThunkLibsAction : public AnalysisAction {
+class GenerateThunkLibsAction : public DataLayoutCompareAction {
 public:
-    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&);
+    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&, const ABI& abi);
 
 private:
     // Generate helper code for thunk libraries and write them to the output file
@@ -28,8 +29,8 @@ private:
     const OutputFilenames& output_filenames;
 };
 
-GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_)
-    : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
+GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_, const ABI& abi)
+    : DataLayoutCompareAction(abi), libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
     for (auto& c : libname) {
         if (c == '-') {
             c = '_';
@@ -49,9 +50,17 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
 };
 
 void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
-    {
+    ErrorReporter report_error { context };
+
+    // Compute data layout differences between host and guest
+    auto type_compat = [&]() {
+        std::unordered_map<const clang::Type*, TypeCompatibility> ret;
         const auto host_abi = ComputeDataLayout(context, types);
-    }
+        for (const auto& [type, type_repack_info] : types) {
+            GetTypeCompatibility(context, type, host_abi, ret);
+        }
+        return ret;
+    }();
 
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         clang::QualType innermostPointee = type;
@@ -376,7 +385,7 @@ bool GenerateThunkLibsActionFactory::runInvocation(
   Compiler.setInvocation(std::move(Invocation));
   Compiler.setFileManager(Files);
 
-  GenerateThunkLibsAction Action(libname, output_filenames);
+  GenerateThunkLibsAction Action(libname, output_filenames, abi);
 
   Compiler.createDiagnostics(DiagConsumer, false);
   if (!Compiler.hasDiagnostics())

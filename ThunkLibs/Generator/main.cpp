@@ -14,10 +14,10 @@ void print_usage(const char* program_name) {
     std::cerr << "Usage: " << program_name << " <filename> <libname> <gen_target> <output_filename> -- <clang_flags>\n";
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* const argv[]) {
     llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
 
-    if (argc < 6) {
+    if (argc < 5) {
         print_usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -32,12 +32,12 @@ int main(int argc, char* argv[]) {
     }
 
     // Process arguments before the "--" separator
-    if (argc != 5) {
+    if (argc != 5 && argc != 6) {
         print_usage(argv[0]);
         return EXIT_FAILURE;
     }
 
-    char** arg = argv + 1;
+    char* const* arg = argv + 1;
     const auto filename = *arg++;
     const std::string libname = *arg++;
     const std::string target_abi = *arg++;
@@ -62,5 +62,29 @@ int main(int argc, char* argv[]) {
         };
         Tool.appendArgumentsAdjuster(set_resource_directory);
     }
-    return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames)).get());
+
+    ClangTool GuestTool = Tool;
+
+    {
+        const bool is_32bit_guest = (argv[5] == std::string_view { "-for-32bit-guest" });
+        auto append_guest_args = [is_32bit_guest](const clang::tooling::CommandLineArguments &Args, clang::StringRef) {
+            clang::tooling::CommandLineArguments AdjustedArgs = Args;
+            const char* platform = is_32bit_guest ? "i686" : "x86_64";
+            if (is_32bit_guest) {
+                AdjustedArgs.push_back("-m32");
+                AdjustedArgs.push_back("-DIS_32BIT_THUNK");
+            }
+            AdjustedArgs.push_back(std::string { "--target=" } + platform + "-linux-unknown");
+            AdjustedArgs.push_back("-isystem");
+            AdjustedArgs.push_back(std::string { "/usr/" } + platform + "-linux-gnu/include/");
+            return AdjustedArgs;
+        };
+        GuestTool.appendArgumentsAdjuster(append_guest_args);
+    }
+
+    auto data_layout_analysis_factory = std::make_unique<AnalyzeDataLayoutActionFactory>();
+    GuestTool.run(data_layout_analysis_factory.get());
+    auto& data_layout = data_layout_analysis_factory->GetDataLayout();
+
+    return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames), data_layout).get());
 }
