@@ -497,15 +497,14 @@
       ]
     },
     "addsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "fadd v4.4s, v16.4s, v17.4s",
-        "fsub v5.4s, v16.4s, v17.4s",
-        "uzp1 v5.4s, v5.4s, v5.4s",
-        "uzp2 v4.4s, v4.4s, v4.4s",
-        "zip1 v16.4s, v5.4s, v4.4s"
+        "ldr x0, [x28, #1568]",
+        "ldr q4, [x0]",
+        "eor v4.16b, v17.16b, v4.16b",
+        "fadd v16.4s, v16.4s, v4.4s"
       ]
     },
     "movdq2q mm0, xmm0": {
