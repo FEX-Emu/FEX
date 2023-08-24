@@ -129,7 +129,7 @@
       "Comment": "0x66 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "fcvtn v4.2s, v16.2d",
-        "fcvtzs v4.4s, v4.4s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
@@ -139,8 +139,8 @@
       "Comment": "0x66 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "fcvtn v4.2s, v16.2d",
-        "frinti v4.4s, v4.4s",
-        "fcvtzs v4.4s, v4.4s",
+        "frinti v4.2s, v4.2s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
