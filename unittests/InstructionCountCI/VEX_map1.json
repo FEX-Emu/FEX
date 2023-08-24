@@ -5,7 +5,9 @@
       "SVE128",
       "SVE256"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "FCMA"
+    ]
   },
   "Instructions": {
     "vmovups xmm0, [rax]": {
