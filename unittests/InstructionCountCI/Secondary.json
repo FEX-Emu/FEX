@@ -3722,121 +3722,111 @@
       ]
     },
     "pinsrw mm0, eax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[0], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, eax, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[1], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, eax, 2": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[2], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, eax, 3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[3], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, eax, 4": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "uxth x20, w4",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[0], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, [rax], 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[0], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, [rax], 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[1], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, [rax], 2": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[2], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, [rax], 3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[3], w20",
         "str d4, [x28, #752]"
       ]
     },
     "pinsrw mm0, [rax], 4": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc4",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
         "ldr d4, [x28, #752]",
-        "mov v4.16b, v4.16b",
         "mov v4.h[0], w20",
         "str d4, [x28, #752]"
       ]

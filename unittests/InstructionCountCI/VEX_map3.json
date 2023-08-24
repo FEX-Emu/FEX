@@ -3234,7 +3234,7 @@
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3243,14 +3243,13 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.b[0], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 15": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3259,7 +3258,6 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.b[15], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
@@ -3309,7 +3307,7 @@
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3318,14 +3316,13 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.s[0], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 3": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3334,14 +3331,13 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.s[3], w20",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrq xmm0, xmm1, rax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3349,14 +3345,13 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.d[0], x4",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
     },
     "vpinsrq xmm0, xmm1, rax, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
@@ -3364,7 +3359,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.16b, v4.16b",
         "mov v4.d[1], x4",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"

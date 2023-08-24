@@ -693,7 +693,7 @@
       ]
     },
     "sha1msg2 xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0xca"
@@ -716,16 +716,14 @@
         "ror w23, w23, #31",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w20",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w21",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w22",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w23"
       ]
     },
     "sha256rnds2 xmm0, xmm1": {
-      "ExpectedInstructionCount": 109,
+      "ExpectedInstructionCount": 106,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0xcb"
@@ -831,11 +829,8 @@
         "add w21, w21, w23",
         "ldr w23, [sp, #128]",
         "add w21, w21, w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[3], w20",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w24",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w22",
@@ -843,7 +838,7 @@
       ]
     },
     "sha256msg1 xmm0, xmm1": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 35,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0xcc"
@@ -880,16 +875,14 @@
         "add w23, w24, w23",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w20",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w21",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w22",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w23"
       ]
     },
     "sha256msg2 xmm0, xmm1": {
-      "ExpectedInstructionCount": 38,
+      "ExpectedInstructionCount": 36,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0xcd"
@@ -927,9 +920,7 @@
         "add w23, w23, w24",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w22",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w20"

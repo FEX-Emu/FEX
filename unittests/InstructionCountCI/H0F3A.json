@@ -724,38 +724,35 @@
       ]
     },
     "pinsrb xmm0, eax, 0000b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
         "uxth x20, w4",
-        "mov v16.16b, v16.16b",
         "mov v16.b[0], w20"
       ]
     },
     "pinsrb xmm0, eax, 0001b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
         "uxth x20, w4",
-        "mov v16.16b, v16.16b",
         "mov v16.b[1], w20"
       ]
     },
     "pinsrb xmm0, eax, 1111b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
         "uxth x20, w4",
-        "mov v16.16b, v16.16b",
         "mov v16.b[15], w20"
       ]
     },
@@ -790,60 +787,55 @@
       ]
     },
     "pinsrd xmm0, eax, 00b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
-        "mov v16.16b, v16.16b",
         "mov v16.s[0], w20"
       ]
     },
     "pinsrd xmm0, eax, 01b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
-        "mov v16.16b, v16.16b",
         "mov v16.s[1], w20"
       ]
     },
     "pinsrd xmm0, eax, 11b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #32",
-        "mov v16.16b, v16.16b",
         "mov v16.s[3], w20"
       ]
     },
     "pinsrq xmm0, rax, 0b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "mov v16.16b, v16.16b",
         "mov v16.d[0], x4"
       ]
     },
     "pinsrq xmm0, rax, 1b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "mov v16.16b, v16.16b",
         "mov v16.d[1], x4"
       ]
     },
@@ -1190,7 +1182,7 @@
       ]
     },
     "sha1rnds4 xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 61,
+      "ExpectedInstructionCount": 59,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
@@ -1250,9 +1242,7 @@
         "ror w21, w21, #2",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w22",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w20",
@@ -1260,7 +1250,7 @@
       ]
     },
     "sha1rnds4 xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 55,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
@@ -1316,9 +1306,7 @@
         "ror w21, w21, #2",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w22",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w20",
@@ -1326,7 +1314,7 @@
       ]
     },
     "sha1rnds4 xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 67,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
@@ -1394,9 +1382,7 @@
         "ror w21, w21, #2",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w22",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w20",
@@ -1404,7 +1390,7 @@
       ]
     },
     "sha1rnds4 xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 55,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
@@ -1460,9 +1446,7 @@
         "ror w21, w21, #2",
         "mov v4.16b, v16.16b",
         "mov v4.s[3], w23",
-        "mov v4.16b, v4.16b",
         "mov v4.s[2], w22",
-        "mov v4.16b, v4.16b",
         "mov v4.s[1], w21",
         "mov v16.16b, v4.16b",
         "mov v16.s[0], w20",
