@@ -377,7 +377,7 @@ public:
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   template<size_t SrcElementSize, bool Widen>
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t SrcElementSize, bool HostRoundingMode>
+  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs);

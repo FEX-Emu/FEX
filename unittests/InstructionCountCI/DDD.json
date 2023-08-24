@@ -26,7 +26,7 @@
         "ldr d4, [x28, #768]",
         "mov v4.h[1], v4.h[2]",
         "sxtl v4.4s, v4.4h",
-        "scvtf v4.4s, v4.4s",
+        "scvtf v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
@@ -40,7 +40,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "scvtf v4.4s, v4.4s",
+        "scvtf v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
@@ -55,7 +55,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "fcvtzs v4.4s, v4.4s",
+        "fcvtzs v4.2s, v4.2s",
         "mov v4.h[1], v4.h[2]",
         "sxtl v4.4s, v4.4h",
         "str d4, [x28, #752]"
@@ -71,7 +71,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "fcvtzs v4.4s, v4.4s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },

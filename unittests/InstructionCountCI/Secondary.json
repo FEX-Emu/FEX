@@ -165,17 +165,16 @@
       "Comment": "0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "fcvtzs v4.4s, v4.4s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
     "cvttps2pi mm0, xmm0": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "fcvtzs v4.4s, v4.4s",
+        "fcvtzs v4.2s, v16.2s",
         "str d4, [x28, #752]"
       ]
     },
@@ -185,19 +184,18 @@
       "Comment": "0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "frinti v4.4s, v4.4s",
-        "fcvtzs v4.4s, v4.4s",
+        "frinti v4.2s, v4.2s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
     "cvtps2pi mm0, xmm0": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v16.8b",
-        "frinti v4.4s, v4.4s",
-        "fcvtzs v4.4s, v4.4s",
+        "frinti v4.2s, v16.2s",
+        "fcvtzs v4.2s, v4.2s",
         "str d4, [x28, #752]"
       ]
     },
