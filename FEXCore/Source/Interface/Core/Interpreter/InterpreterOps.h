@@ -305,6 +305,8 @@ namespace FEXCore::CPU {
   DEF_OP(VSMull);
   DEF_OP(VUMull2);
   DEF_OP(VSMull2);
+  DEF_OP(VUMulH);
+  DEF_OP(VSMulH);
   DEF_OP(VUABDL);
   DEF_OP(VUABDL2);
   DEF_OP(VTBL1);

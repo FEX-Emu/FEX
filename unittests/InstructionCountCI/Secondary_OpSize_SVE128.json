@@ -52,6 +52,22 @@
         "asr z16.s, p6/m, z16.s, z0.d"
       ]
     },
+    "pmulhuw xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0xe4",
+      "ExpectedArm64ASM": [
+        "umulh z16.h, z16.h, z17.h"
+      ]
+    },
+    "pmulhw xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0xe5",
+      "ExpectedArm64ASM": [
+        "smulh z16.h, z16.h, z17.h"
+      ]
+    },
     "psllw xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",

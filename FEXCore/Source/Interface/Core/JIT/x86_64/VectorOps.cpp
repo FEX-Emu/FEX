@@ -4627,6 +4627,58 @@ DEF_OP(VUABDL2) {
   }
 }
 
+DEF_OP(VUMulH) {
+  const auto Op = IROp->C<IR::IROp_VUMulH>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
+    case 2: {
+      if (Is256Bit) {
+        vpmulhuw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      }
+      else {
+        vpmulhuw(Dst, Vector1, Vector2);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+}
+DEF_OP(VSMulH) {
+  const auto Op = IROp->C<IR::IROp_VSMulH>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
+    case 2: {
+      if (Is256Bit) {
+        vpmulhw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      }
+      else {
+        vpmulhw(Dst, Vector1, Vector2);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+}
 
 DEF_OP(VTBL1) {
   const auto Op = IROp->C<IR::IROp_VTBL1>();
@@ -4938,6 +4990,8 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMULL,            VSMull);
   REGISTER_OP(VUMULL2,           VUMull2);
   REGISTER_OP(VSMULL2,           VSMull2);
+  REGISTER_OP(VUMULH,            VUMulH);
+  REGISTER_OP(VSMULH,            VSMulH);
   REGISTER_OP(VUABDL,            VUABDL);
   REGISTER_OP(VUABDL2,           VUABDL2);
   REGISTER_OP(VTBL1,             VTBL1);
