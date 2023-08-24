@@ -175,6 +175,22 @@ DEF_OP(Float_FToF) {
   auto Src = GetVReg(Op->Scalar.ID());
 
   switch (Conv) {
+    case 0x0204: { // Half <- Float
+      fcvt(Dst.H(), Src.S());
+      break;
+    }
+    case 0x0208: { // Half <- Double
+      fcvt(Dst.H(), Src.D());
+      break;
+    }
+    case 0x0402: { // Float <- Half
+      fcvt(Dst.S(), Src.H());
+      break;
+    }
+    case 0x0802: { // Double <- Half
+      fcvt(Dst.D(), Src.H());
+      break;
+    }
     case 0x0804: { // Double <- Float
       fcvt(Dst.D(), Src.S());
       break;
