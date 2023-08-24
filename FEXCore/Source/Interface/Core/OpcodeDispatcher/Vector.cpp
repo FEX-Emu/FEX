@@ -3230,32 +3230,11 @@ void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
 OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed,
                                              OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
-  OrderedNode *Res{};
-
-  if (Size == 8) {
-    // Implementation is more efficient for 8byte registers
-    if (Signed) {
-      Res = _VSMull(Size * 2, 2, Src1, Src2);
-    } else {
-      Res = _VUMull(Size * 2, 2, Src1, Src2);
-    }
-
-    return _VUShrNI(Size * 2, 4, Res, 16);
-  } else {
-    // 128-bit and 256-bit is less efficient
-    OrderedNode *ResultLow;
-    OrderedNode *ResultHigh;
-    if (Signed) {
-      ResultLow = _VSMull(Size, 2, Src1, Src2);
-      ResultHigh = _VSMull2(Size, 2, Src1, Src2);
-    } else {
-      ResultLow = _VUMull(Size, 2, Src1, Src2);
-      ResultHigh = _VUMull2(Size, 2, Src1, Src2);
-    }
-
-    // Combine the results
-    Res = _VUShrNI(Size, 4, ResultLow, 16);
-    return _VUShrNI2(Size, 4, Res, ResultHigh, 16);
+  if (Signed) {
+    return _VSMulH(Size, 2, Src1, Src2);
+  }
+  else {
+    return _VUMulH(Size, 2, Src1, Src2);
   }
 }
 
