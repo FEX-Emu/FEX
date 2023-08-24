@@ -357,6 +357,26 @@ struct host_layout<T* const> {
   }
 };
 
+template<typename T>
+inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
+  if constexpr (std::is_enum_v<T>) {
+    // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
+    return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+  } else if constexpr (!std::is_same_v<T, uint32_t>) {
+    guest_layout<T> ret { .data = from.data };
+    return ret;
+  } else {
+    return guest_layout<uint32_t> { from.data };
+  }
+}
+
+template<typename T>
+inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
+  guest_layout<T*> ret;
+  ret = from.data;
+  return ret;
+}
+
 template<typename>
 struct CallbackUnpack;
 
