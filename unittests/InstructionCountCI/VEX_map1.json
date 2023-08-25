@@ -5748,14 +5748,13 @@
       ]
     },
     "vcvtdq2pd xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0xe6 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov v4.8b, v4.8b",
         "sxtl v4.2d, v4.2s",
         "scvtf v4.2d, v4.2d",
         "mov v4.16b, v4.16b",

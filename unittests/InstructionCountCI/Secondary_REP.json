@@ -681,12 +681,11 @@
       ]
     },
     "cvtdq2pd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "sxtl v4.2d, v4.2s",
+        "sxtl v4.2d, v17.2s",
         "scvtf v16.2d, v4.2d"
       ]
     },
