@@ -528,8 +528,8 @@
         "Map 1 0b00 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
         "mov z4.d, p7/m, z16.d",
+        "mov w20, #0x0",
         "mov w21, v4.s[0]",
         "ubfx x21, x21, #31, #1",
         "orr x20, x20, x21",
@@ -555,8 +555,8 @@
         "Map 1 0b00 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
         "mov z4.d, p7/m, z16.d",
+        "mov w20, #0x0",
         "mov w21, v4.s[0]",
         "ubfx x21, x21, #31, #1",
         "orr x20, x20, x21",
@@ -600,22 +600,17 @@
       ]
     },
     "vmovmskpd rax, xmm0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
         "mov z4.d, p7/m, z16.d",
-        "mov x21, v4.d[0]",
-        "lsr x21, x21, #63",
-        "orr x20, x20, x21",
-        "mov x21, v4.d[1]",
-        "lsr x21, x21, #63",
-        "lsl x21, x21, #1",
-        "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "uzp2 v4.4s, v4.4s, v4.4s",
+        "mov x20, v4.d[0]",
+        "bfi x20, x20, #31, #32",
+        "lsr x4, x20, #62"
       ]
     },
     "vmovmskpd rax, ymm0": {
@@ -625,8 +620,8 @@
         "Map 1 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
         "mov z4.d, p7/m, z16.d",
+        "mov w20, #0x0",
         "mov x21, v4.d[0]",
         "lsr x21, x21, #63",
         "orr x20, x20, x21",

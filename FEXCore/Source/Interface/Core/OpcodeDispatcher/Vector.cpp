@@ -771,21 +771,38 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   uint8_t NumElements = Size / ElementSize;
 
-  OrderedNode *CurrentVal = _Constant(0);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  for (unsigned i = 0; i < NumElements; ++i) {
-    // Extract the top bit of the element
-    OrderedNode *Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
-    Tmp = _Bfe(1, ElementSize * 8 - 1, Tmp);
+  if (Size == 16 && ElementSize == 8) {
+    // UnZip2 the 64-bit elements as 32-bit to get the sign bits closer.
+    // Sign bits are now in bit positions 31 and 63 after this.
+    Src =_VUnZip2(Size, 4, Src, Src);
 
-    // Shift it to the correct location
-    Tmp = _Lshl(Tmp, _Constant(i));
-
-    // Or it with the current value
-    CurrentVal = _Or(CurrentVal, Tmp);
+    // Extract the low 64-bits to GPR in one move.
+    OrderedNode *GPR = _VExtractToGPR(Size, 8, Src, 0);
+    // BFI the sign bit in 31 in to 62.
+    // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
+    GPR = _Bfi(8, 32, 31, GPR, GPR);
+    // Shift right to only get the two sign bits we care about.
+    GPR = _Lshr(GPR, _Constant(62));
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   }
-  StoreResult(GPRClass, Op, CurrentVal, -1);
+  else {
+    OrderedNode *CurrentVal = _Constant(0);
+
+    for (unsigned i = 0; i < NumElements; ++i) {
+      // Extract the top bit of the element
+      OrderedNode *Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
+      Tmp = _Bfe(1, ElementSize * 8 - 1, Tmp);
+
+      // Shift it to the correct location
+      Tmp = _Lshl(Tmp, _Constant(i));
+
+      // Or it with the current value
+      CurrentVal = _Or(CurrentVal, Tmp);
+    }
+    StoreResult(GPRClass, Op, CurrentVal, -1);
+  }
 }
 
 template
