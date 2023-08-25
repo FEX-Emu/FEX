@@ -6609,7 +6609,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<4>},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorOp},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
     {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>},
