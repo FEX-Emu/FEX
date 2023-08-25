@@ -232,11 +232,24 @@ DEF_OP(Vector_SToF) {
     const auto Mask = PRED_TMP_32B;
     scvtf(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
-    if (OpSize == 8) {
-      scvtf(SubEmitSize, Dst.D(), Vector.D());
+    if (OpSize == ElementSize) {
+      if (ElementSize == 8) {
+        scvtf(ARMEmitter::ScalarRegSize::i64Bit, Dst.D(), Vector.D());
+      }
+      else if (ElementSize == 4) {
+        scvtf(ARMEmitter::ScalarRegSize::i32Bit, Dst.S(), Vector.S());
+      }
+      else {
+        scvtf(ARMEmitter::ScalarRegSize::i16Bit, Dst.H(), Vector.H());
+      }
     }
     else {
-      scvtf(SubEmitSize, Dst.Q(), Vector.Q());
+      if (OpSize == 8) {
+        scvtf(SubEmitSize, Dst.D(), Vector.D());
+      }
+      else {
+        scvtf(SubEmitSize, Dst.Q(), Vector.Q());
+      }
     }
   }
 }
@@ -259,11 +272,24 @@ DEF_OP(Vector_FToZS) {
     const auto Mask = PRED_TMP_32B;
     fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
-    if (OpSize == 8) {
-      fcvtzs(SubEmitSize, Dst.D(), Vector.D());
+    if (OpSize == ElementSize) {
+      if (ElementSize == 8) {
+        fcvtzs(ARMEmitter::ScalarRegSize::i64Bit, Dst.D(), Vector.D());
+      }
+      else if (ElementSize == 4) {
+        fcvtzs(ARMEmitter::ScalarRegSize::i32Bit, Dst.S(), Vector.S());
+      }
+      else {
+        fcvtzs(ARMEmitter::ScalarRegSize::i16Bit, Dst.H(), Vector.H());
+      }
     }
     else {
-      fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
+      if (OpSize == 8) {
+        fcvtzs(SubEmitSize, Dst.D(), Vector.D());
+      }
+      else {
+        fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
+      }
     }
   }
 }
