@@ -396,12 +396,11 @@
       ]
     },
     "movq xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x7e",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "mov v16.16b, v4.16b"
+        "mov v16.8b, v17.8b"
       ]
     },
     "movq xmm0, [rax]": {
