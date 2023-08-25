@@ -133,7 +133,7 @@ DEF_OP(Vector_SToF) {
   TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
-  const uint8_t Elements = OpSize / ElementSize;
+  const uint8_t Elements = OpSize == ElementSize ? 1 : OpSize / ElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return a; };
   switch (ElementSize) {
@@ -154,7 +154,7 @@ DEF_OP(Vector_FToZS) {
   TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
-  const uint8_t Elements = OpSize / ElementSize;
+  const uint8_t Elements = OpSize == ElementSize ? 1 : OpSize / ElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return std::trunc(a); };
   switch (ElementSize) {
@@ -175,7 +175,7 @@ DEF_OP(Vector_FToS) {
   TempVectorDataArray Tmp{};
 
   const uint8_t ElementSize = Op->Header.ElementSize;
-  const uint8_t Elements = OpSize / ElementSize;
+  const uint8_t Elements = OpSize == ElementSize ? 1 : OpSize / ElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return std::nearbyint(a); };
   switch (ElementSize) {
