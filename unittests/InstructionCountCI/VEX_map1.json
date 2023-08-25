@@ -5013,14 +5013,13 @@
       ]
     },
     "vmovq qword [rax], xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x7e 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "str d4, [x4]"
       ]
     },
@@ -5276,14 +5275,13 @@
       ]
     },
     "vmovq [rax], xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd6 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov v4.8b, v4.8b",
         "str d4, [x4]"
       ]
     },
