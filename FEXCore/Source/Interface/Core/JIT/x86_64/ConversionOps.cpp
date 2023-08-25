@@ -214,42 +214,57 @@ DEF_OP(Vector_SToF) {
   const auto Dst = GetDst(Node);
   const auto Vector = GetSrc(Op->Vector.ID());
 
-  switch (ElementSize) {
-    case 4:
-      if (Is256Bit) {
-        vcvtdq2ps(ToYMM(Dst), ToYMM(Vector));
-      } else {
-        vcvtdq2ps(Dst, Vector);
-      }
-      break;
-    case 8:
-      // This operation is a bit disgusting in x86
-      // There is no vector form of this instruction until AVX512VL + AVX512DQ (vcvtqq2pd)
-      // 1) First extract the top 64bits
-      // 2) Do a scalar conversion on each
-      // 3) Make sure to merge them together at the end
-      pextrq(rax, Vector, 1);
-      pextrq(rcx, Vector, 0);
-      cvtsi2sd(Dst, rcx);
-      cvtsi2sd(xmm15, rax);
-      if (Is256Bit) {
-        movlhps(Dst, xmm15);
-        vextracti128(xmm15, ToYMM(Vector), 1);
-
-        pextrq(rax, xmm15, 1);
-        pextrq(rcx, xmm15, 0);
-        cvtsi2sd(xmm15, rcx);
-        cvtsi2sd(xmm14, rax);
-        movlhps(xmm15, xmm14);
-
-        vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 1);
-      } else {
-        vmovlhps(Dst, Dst, xmm15);
-      }
-      break;
-    default:
+  if (OpSize == ElementSize) {
+    if (ElementSize == 8) {
+      vmovq(TMP1, Vector);
+      cvtsi2sd(Dst, TMP1);
+    }
+    else if (ElementSize == 4) {
+      vmovd(TMP1.cvt32(), Vector);
+      cvtsi2ss(Dst, TMP1.cvt32());
+    }
+    else {
       LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", ElementSize);
-      break;
+    }
+  }
+  else {
+    switch (ElementSize) {
+      case 4:
+        if (Is256Bit) {
+          vcvtdq2ps(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vcvtdq2ps(Dst, Vector);
+        }
+        break;
+      case 8:
+        // This operation is a bit disgusting in x86
+        // There is no vector form of this instruction until AVX512VL + AVX512DQ (vcvtqq2pd)
+        // 1) First extract the top 64bits
+        // 2) Do a scalar conversion on each
+        // 3) Make sure to merge them together at the end
+        pextrq(rax, Vector, 1);
+        pextrq(rcx, Vector, 0);
+        cvtsi2sd(Dst, rcx);
+        cvtsi2sd(xmm15, rax);
+        if (Is256Bit) {
+          movlhps(Dst, xmm15);
+          vextracti128(xmm15, ToYMM(Vector), 1);
+
+          pextrq(rax, xmm15, 1);
+          pextrq(rcx, xmm15, 0);
+          cvtsi2sd(xmm15, rcx);
+          cvtsi2sd(xmm14, rax);
+          movlhps(xmm15, xmm14);
+
+          vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 1);
+        } else {
+          vmovlhps(Dst, Dst, xmm15);
+        }
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
@@ -263,24 +278,37 @@ DEF_OP(Vector_FToZS) {
   const auto Dst = GetDst(Node);
   const auto Vector = GetSrc(Op->Vector.ID());
 
-  switch (ElementSize) {
-    case 4:
-      if (Is256Bit) {
-        vcvttps2dq(ToYMM(Dst), ToYMM(Vector));
-      } else {
-        vcvttps2dq(Dst, Vector);
-      }
-      break;
-    case 8:
-      if (Is256Bit) {
-        vcvttpd2dq(ToYMM(Dst), ToYMM(Vector));
-      } else {
-        vcvttpd2dq(Dst, Vector);
-      }
-      break;
-    default:
+  if (OpSize == ElementSize) {
+    if (ElementSize == 8) {
+      cvttss2si(Dst, Vector);
+    }
+    else if (ElementSize == 4) {
+      cvttss2si(Dst.cvt32(), Vector);
+    }
+    else {
       LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", ElementSize);
-      break;
+    }
+  }
+  else {
+    switch (ElementSize) {
+      case 4:
+        if (Is256Bit) {
+          vcvttps2dq(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vcvttps2dq(Dst, Vector);
+        }
+        break;
+      case 8:
+        if (Is256Bit) {
+          vcvttpd2dq(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vcvttpd2dq(Dst, Vector);
+        }
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
@@ -294,24 +322,37 @@ DEF_OP(Vector_FToS) {
   const auto Dst = GetDst(Node);
   const auto Vector = GetSrc(Op->Vector.ID());
 
-  switch (ElementSize) {
-    case 4:
-      if (Is256Bit) {
-        vcvtps2dq(ToYMM(Dst), ToYMM(Vector));
-      } else {
-        vcvtps2dq(Dst, Vector);
-      }
-      break;
-    case 8:
-      if (Is256Bit) {
-        vcvtpd2dq(ToYMM(Dst), ToYMM(Vector));
-      } else {
-        vcvtpd2dq(Dst, Vector);
-      }
-      break;
-    default:
+  if (OpSize == ElementSize) {
+    if (ElementSize == 8) {
+      cvtss2si(Dst, Vector);
+    }
+    else if (ElementSize == 4) {
+      cvtss2si(Dst.cvt32(), Vector);
+    }
+    else {
       LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", ElementSize);
-      break;
+    }
+  }
+  else {
+    switch (ElementSize) {
+      case 4:
+        if (Is256Bit) {
+          vcvtps2dq(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vcvtps2dq(Dst, Vector);
+        }
+        break;
+      case 8:
+        if (Is256Bit) {
+          vcvtpd2dq(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vcvtpd2dq(Dst, Vector);
+        }
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", ElementSize);
+        break;
+    }
   }
 }
 

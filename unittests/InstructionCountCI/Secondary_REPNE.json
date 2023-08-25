@@ -52,15 +52,14 @@
       ]
     },
     "cvtsi2sd xmm0, eax": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "With AFP mode FEX can remove an insert after the operation.",
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "scvtf d4, w20",
+        "scvtf d4, w4",
         "mov v16.d[0], v4.d[0]"
       ]
     },
@@ -97,8 +96,8 @@
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x4]",
-        "scvtf d4, x20",
+        "ldr d4, [x4]",
+        "scvtf d4, d4",
         "mov v16.d[0], v4.d[0]"
       ]
     },

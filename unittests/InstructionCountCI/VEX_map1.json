@@ -3604,15 +3604,14 @@
       ]
     },
     "vcvtsi2ss xmm0, xmm1, eax": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x2A 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "ubfx x20, x4, #0, #32",
-        "scvtf s5, w20",
+        "scvtf s5, w4",
         "mov v4.s[0], v5.s[0]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
@@ -3633,15 +3632,14 @@
       ]
     },
     "vcvtsi2sd xmm0, xmm1, eax": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x2A 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "ubfx x20, x4, #0, #32",
-        "scvtf d5, w20",
+        "scvtf d5, w4",
         "mov v4.d[0], v5.d[0]",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"

@@ -1840,11 +1840,28 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
 OrderedNode* OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
                                                   const X86Tables::DecodedOperand& Src1Op,
                                                   const X86Tables::DecodedOperand& Src2Op) {
-  const auto GPRSize = GetSrcSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
 
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
-  OrderedNode *Converted = _Float_FromGPR_S(DstElementSize, GPRSize, Src2);
+  OrderedNode *Converted{};
+  if (Src2Op.IsGPR()) {
+    // If the source is a GPR then convert directly from the GPR.
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags, -1);
+    Converted = _Float_FromGPR_S(DstElementSize, SrcSize, Src2);
+  }
+  else if (SrcSize != DstElementSize) {
+    // If the source is from memory but the Source size and destination size aren't the same,
+    // then it is more optimal to load in to a GPR and convert between GPR->FPR.
+    // ARM GPR->FPR conversion supports different size source and destinations while FPR->FPR doesn't.
+    auto Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
+    Converted = _Float_FromGPR_S(DstElementSize, SrcSize, Src2);
+  }
+  else {
+    // In the case of cvtsi2s{s,d} where the source and destination are the same size,
+    // then it is more optimal to load in to the FPR register directly and convert there.
+    auto Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
+    Converted = _Vector_SToF(SrcSize, SrcSize, Src2);
+  }
 
   return _VInsElement(16, DstElementSize, 0, 0, Src1, Converted);
 }
