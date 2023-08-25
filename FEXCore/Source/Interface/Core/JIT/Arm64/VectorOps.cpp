@@ -109,6 +109,42 @@ DEF_OP(LoadNamedVectorConstant) {
       break;
   }
 }
+DEF_OP(LoadNamedVectorIndexedConstant) {
+  const auto Op = IROp->C<IR::IROp_LoadNamedVectorIndexedConstant>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+
+  // Load the pointer.
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant]));
+
+  switch (OpSize) {
+    case 1:
+      ldrb(Dst, TMP1, Op->Index);
+      break;
+    case 2:
+      ldrh(Dst, TMP1, Op->Index);
+      break;
+    case 4:
+      ldr(Dst.S(), TMP1, Op->Index);
+      break;
+    case 8:
+      ldr(Dst.D(), TMP1, Op->Index);
+      break;
+    case 16:
+      ldr(Dst.Q(), TMP1, Op->Index);
+      break;
+    case 32: {
+      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, Op->Index);
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+      break;
+  }
+}
+
 DEF_OP(VMov) {
   const auto Op = IROp->C<IR::IROp_VMov>();
   const auto OpSize = IROp->Size;

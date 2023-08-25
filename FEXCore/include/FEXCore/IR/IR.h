@@ -526,6 +526,16 @@ enum NamedVectorConstant : uint8_t {
   NAMED_VECTOR_MAX,
 };
 
+// This enum of named vector constants are linked to an array in CPUBackend.cpp.
+// This is used with the IROp `LoadNamedVectorIndexedConstant` to load a vector constant
+// that would otherwise be costly to materialize.
+enum IndexNamedVectorConstant : uint8_t {
+  INDEXED_NAMED_VECTOR_PSHUFLW = 0,
+  INDEXED_NAMED_VECTOR_PSHUFHW,
+  INDEXED_NAMED_VECTOR_PSHUFD,
+  INDEXED_NAMED_VECTOR_MAX,
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES

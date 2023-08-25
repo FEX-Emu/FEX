@@ -191,6 +191,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VECTORZERO,             VectorZero);
   REGISTER_OP(VECTORIMM,              VectorImm);
   REGISTER_OP(LOADNAMEDVECTORCONSTANT, LoadNamedVectorConstant);
+  REGISTER_OP(LOADNAMEDVECTORINDEXEDCONSTANT, LoadNamedVectorIndexedConstant);
   REGISTER_OP(VMOV,                   VMov);
   REGISTER_OP(VAND,                   VAnd);
   REGISTER_OP(VBIC,                   VBic);
