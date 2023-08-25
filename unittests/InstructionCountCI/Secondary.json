@@ -1433,104 +1433,66 @@
       ]
     },
     "pshufw mm0, mm1, 0": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[0]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[0]",
-        "mov v5.h[2], v4.h[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[0]",
-        "mov v4.16b, v0.16b",
+        "dup v4.8h, v4.h[0]",
         "str d4, [x28, #752]"
       ]
     },
     "pshufw mm0, [rax], 0": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[0]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[0]",
-        "mov v5.h[2], v4.h[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[0]",
-        "mov v4.16b, v0.16b",
+        "dup v4.8h, v4.h[0]",
         "str d4, [x28, #752]"
       ]
     },
     "pshufw mm0, mm1, 1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[1]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[0]",
-        "mov v5.h[2], v4.h[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[0]",
-        "mov v4.16b, v0.16b",
+        "ldr x0, [x28, #1600]",
+        "ldr d5, [x0, #16]",
+        "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"
       ]
     },
     "pshufw mm0, [rax], 1": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[1]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[0]",
-        "mov v5.h[2], v4.h[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[0]",
-        "mov v4.16b, v0.16b",
+        "ldr x0, [x28, #1600]",
+        "ldr d5, [x0, #16]",
+        "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"
       ]
     },
     "pshufw mm0, mm1, 0xff": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[3]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[3]",
-        "mov v5.h[2], v4.h[3]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[3]",
-        "mov v4.16b, v0.16b",
+        "dup v4.8h, v4.h[3]",
         "str d4, [x28, #752]"
       ]
     },
     "pshufw mm0, [rax], 0xff": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[0], v4.h[3]",
-        "mov v5.16b, v0.16b",
-        "mov v5.h[1], v4.h[3]",
-        "mov v5.h[2], v4.h[3]",
-        "mov v0.16b, v5.16b",
-        "mov v0.h[3], v4.h[3]",
-        "mov v4.16b, v0.16b",
+        "dup v4.8h, v4.h[3]",
         "str d4, [x28, #752]"
       ]
     },

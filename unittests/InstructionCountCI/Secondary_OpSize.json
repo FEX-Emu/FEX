@@ -524,96 +524,100 @@
       ]
     },
     "pshufd xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 0",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.s[0], v17.s[0]",
-        "mov v4.16b, v0.16b",
-        "mov v4.s[1], v17.s[0]",
-        "mov v4.s[2], v17.s[0]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[3], v17.s[0]",
-        "mov v16.16b, v0.16b"
+        "dup v16.4s, v17.s[0]"
+      ]
+    },
+    "pshufd xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Identity copy",
+        "0x66 0x0f 0x70"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "pshufd xmm0, xmm1, 01010000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Zip with self",
+        "0x66 0x0f 0x70"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 v16.4s, v17.4s, v17.4s"
       ]
     },
     "pshufd xmm0, [rax], 0": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 0 from memory",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
         "ldr q4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[0], v4.s[0]",
-        "mov v5.16b, v0.16b",
-        "mov v5.s[1], v4.s[0]",
-        "mov v5.s[2], v4.s[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.s[3], v4.s[0]",
-        "mov v16.16b, v0.16b"
+        "dup v16.4s, v4.s[0]"
       ]
     },
     "pshufd xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 0",
+        "Element 0 becomes element 1",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.s[0], v17.s[1]",
-        "mov v4.16b, v0.16b",
-        "mov v4.s[1], v17.s[0]",
-        "mov v4.s[2], v17.s[0]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[3], v17.s[0]",
-        "mov v16.16b, v0.16b"
+        "ldr x0, [x28, #1616]",
+        "ldr q4, [x0, #16]",
+        "tbl v16.16b, {v17.16b}, v4.16b"
       ]
     },
     "pshufd xmm0, [rax], 1": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 0 from Memory",
+        "Element 0 becomes element 1",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
         "ldr q4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[0], v4.s[1]",
-        "mov v5.16b, v0.16b",
-        "mov v5.s[1], v4.s[0]",
-        "mov v5.s[2], v4.s[0]",
-        "mov v0.16b, v5.16b",
-        "mov v0.s[3], v4.s[0]",
-        "mov v16.16b, v0.16b"
+        "ldr x0, [x28, #1616]",
+        "ldr q5, [x0, #16]",
+        "tbl v16.16b, {v4.16b}, v5.16b"
       ]
     },
     "pshufd xmm0, xmm1, 0xff": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 3",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.s[0], v17.s[3]",
-        "mov v4.16b, v0.16b",
-        "mov v4.s[1], v17.s[3]",
-        "mov v4.s[2], v17.s[3]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[3], v17.s[3]",
-        "mov v16.16b, v0.16b"
+        "dup v16.4s, v17.s[3]"
       ]
     },
     "pshufd xmm0, [rax], 0xff": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": "0x66 0x0f 0x70",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 3 from memory",
+        "0x66 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
         "ldr q4, [x4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[0], v4.s[3]",
-        "mov v5.16b, v0.16b",
-        "mov v5.s[1], v4.s[3]",
-        "mov v5.s[2], v4.s[3]",
-        "mov v0.16b, v5.16b",
-        "mov v0.s[3], v4.s[3]",
-        "mov v16.16b, v0.16b"
+        "dup v16.4s, v4.s[3]"
       ]
     },
     "pcmpeqb xmm0, xmm1": {
