@@ -20,6 +20,7 @@
 #include <fmt/format.h>
 #include <stddef.h>
 #include <utility>
+#include <xxhash.h>
 
 namespace FEXCore::IR {
 class Pass;
@@ -346,7 +347,9 @@ public:
   template<size_t ElementSize>
   void PUNPCKHOp(OpcodeArgs);
   void PSHUFBOp(OpcodeArgs);
-  template<size_t ElementSize, bool HalfSize, bool Low>
+  template<bool Low>
+  void PSHUFWOp(OpcodeArgs);
+  void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
   template<size_t ElementSize>
   void PSRLDOp(OpcodeArgs);
@@ -1203,6 +1206,20 @@ private:
   // Named constant cache for the current block.
   // Different arrays for sizes 1,2,4,8,16,32.
   OrderedNode *CachedNamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][6]{};
+  struct IndexNamedVectorMapKey {
+    uint32_t Index{};
+    FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant;
+    uint8_t log2_size_in_bytes{};
+    uint16_t _pad{};
+
+    bool operator==(const IndexNamedVectorMapKey&) const = default;
+  };
+  struct IndexNamedVectorMapKeyHasher {
+    std::size_t operator()(const IndexNamedVectorMapKey& k) const noexcept {
+      return XXH3_64bits(&k, sizeof(k));
+    }
+  };
+  fextl::unordered_map<IndexNamedVectorMapKey, OrderedNode *, IndexNamedVectorMapKeyHasher> CachedIndexedNamedVectorConstants;
 
   // Load and cache a named vector constant.
   OrderedNode *LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
@@ -1215,11 +1232,28 @@ private:
     CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
     return Constant;
   }
+  OrderedNode *LoadAndCacheIndexedNamedVectorConstant(uint8_t Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
+    IndexNamedVectorMapKey Key {
+      .Index = Index,
+      .NamedIndexedConstant = NamedIndexedConstant,
+      .log2_size_in_bytes = FEXCore::ilog2(Size),
+    };
+    auto it = CachedIndexedNamedVectorConstants.find(Key);
+
+    if (it != CachedIndexedNamedVectorConstants.end()) {
+      return it->second;
+    }
+
+    auto Constant = _LoadNamedVectorIndexedConstant(Size, NamedIndexedConstant, Index);
+    CachedIndexedNamedVectorConstants.insert_or_assign(Key, Constant);
+    return Constant;
+  }
 
   // Reset the named vector constants cache array.
   // These are only cached per block.
   void ClearCachedNamedConstants() {
     memset(CachedNamedVectorConstants, 0, sizeof(CachedNamedVectorConstants));
+    CachedIndexedNamedVectorConstants.clear();
   }
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);

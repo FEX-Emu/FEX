@@ -980,43 +980,164 @@ void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize, bool HalfSize, bool Low>
-void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
-  static_assert(ElementSize != 0);
+void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
+  constexpr auto IdentityCopy = 0b11'10'01'00;
 
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
   const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
+  OrderedNode *Dest{};
 
-  uint8_t NumElements = Size / ElementSize;
-
-  // 16bit is a bit special of a shuffle
-  // It only ever operates on half the register
-  // Then there is a high and low variant of the instruction to determine where the destination goes
-  // and where the source comes from
-  if constexpr (HalfSize) {
-    NumElements /= 2;
+  // TODO: There can be more optimized copies here.
+  switch (Shuffle) {
+    case IdentityCopy: {
+      // Special case identity copy.
+      Dest = Src;
+      break;
+    }
+    case 0b01'01'00'00: {
+      // Zip with self.
+      // Dest[0] = Src[0]
+      // Dest[1] = Src[0]
+      // Dest[2] = Src[1]
+      // Dest[3] = Src[1]
+      Dest = _VZip(Size, 2, Src, Src);
+      break;
+    }
+    case 0b00'00'00'00:
+    case 0b01'01'01'01:
+    case 0b10'10'10'10:
+    case 0b11'11'11'11: {
+      // Special case element duplicate and broadcasts.
+      Dest = _VDupElement(Size, 2, Src, (Shuffle & 0b11));
+      break;
+    }
+    default: {
+      // PSHUFW (mmx) also needs to scale by 16 to get correct low element.
+      auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW, Shuffle * 16);
+      Dest = _VTBL1(Size, Src, LookupIndexes);
+      break;
+    }
   }
 
-  uint8_t BaseElement = Low ? 0 : NumElements;
+  StoreResult(FPRClass, Op, Dest, -1);
+}
 
-  auto Dest = Src;
-  for (uint8_t Element = 0; Element < NumElements; ++Element) {
-    Dest = _VInsElement(Size, ElementSize, BaseElement + Element, BaseElement + (Shuffle & 0b11), Dest, Src);
-    Shuffle >>= 2;
+template<bool Low>
+void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
+  constexpr auto IdentityCopy = 0b11'10'01'00;
+
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  const auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest{};
+
+  const uint8_t NumElements = Size / 2;
+  const uint8_t HalfNumElements = NumElements >> 1;
+
+  // TODO: There can be more optimized copies here.
+  switch (Shuffle) {
+    case IdentityCopy: {
+      // Special case identity copy.
+      Dest = Src;
+      break;
+    }
+    case 0b01'01'00'00: {
+      // Zip with self.
+      // Dest[0] = Src[0]
+      // Dest[1] = Src[0]
+      // Dest[2] = Src[1]
+      // Dest[3] = Src[1]
+      auto Zip = _VZip(Size, 2, Src, Src);
+      if (Low) {
+        Dest = _VZip(Size, 8, Zip, Src);
+      }
+      else {
+        Dest = _VZip(Size, 8, Src, Zip);
+      }
+      break;
+    }
+    case 0b00'00'00'00:
+    case 0b01'01'01'01:
+    case 0b10'10'10'10:
+    case 0b11'11'11'11: {
+      // Special case element duplicate and broadcast to low or high 64-bits.
+      auto DUP = _VDupElement(Size, 2, Src, (Low ? 0 : HalfNumElements) + (Shuffle & 0b11));
+      if (Low) {
+        // DUP goes low.
+        // Source goes high.
+        Dest = _VTrn2(Size, 8, DUP, Src);
+      }
+      else {
+        // DUP goes high.
+        // Source goes low.
+        Dest = _VTrn(Size, 8, Src, DUP);
+      }
+      break;
+    }
+    default: {
+      // PSHUFLW needs to scale index by 16.
+      // PSHUFHW needs to scale index by 16.
+      // PSHUFW (mmx) also needs to scale by 16 to get correct low element.
+      const auto IndexedVectorConstant = Low ?
+        FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
+        FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
+      auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, IndexedVectorConstant, Shuffle * 16);
+      Dest = _VTBL1(Size, Src, LookupIndexes);
+      break;
+    }
   }
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
 template
-void OpDispatchBuilder::PSHUFDOp<2, false, true>(OpcodeArgs);
+void OpDispatchBuilder::PSHUFWOp<false>(OpcodeArgs);
 template
-void OpDispatchBuilder::PSHUFDOp<2, true, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSHUFDOp<2, true, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSHUFDOp<4, false, true>(OpcodeArgs);
+void OpDispatchBuilder::PSHUFWOp<true>(OpcodeArgs);
+
+void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
+  constexpr auto IdentityCopy = 0b11'10'01'00;
+
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  const auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest{};
+
+  // TODO: There can be more optimized copies here.
+  switch (Shuffle) {
+    case IdentityCopy: {
+      // Special case identity copy.
+      Dest = Src;
+      break;
+    }
+    case 0b01'01'00'00: {
+      // Zip with self.
+      // Dest[0] = Src[0]
+      // Dest[1] = Src[0]
+      // Dest[2] = Src[1]
+      // Dest[3] = Src[1]
+      Dest = _VZip(Size, 4, Src, Src);
+      break;
+    }
+    case 0b00'00'00'00:
+    case 0b01'01'01'01:
+    case 0b10'10'10'10:
+    case 0b11'11'11'11: {
+      // Special case element duplicate and broadcast to low or high 64-bits.
+      Dest = _VDupElement(Size, 4, Src, Shuffle & 0b11);
+      break;
+    }
+    default: {
+      // PSHUFD needs to scale index by 16.
+      auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
+      Dest = _VTBL1(Size, Src, LookupIndexes);
+      break;
+    }
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
 
 template <size_t ElementSize, bool Low>
 void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {

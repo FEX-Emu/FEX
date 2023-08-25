@@ -153,7 +153,8 @@
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
     "RoundType": "RoundType",
-    "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant"
+    "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
+    "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant"
   },
   "Ops": {
     "Misc": {
@@ -1044,6 +1045,13 @@
       "FPR = LoadNamedVectorConstant u8:#RegisterSize, NamedVectorConstant:$Constant": {
         "Desc": ["Load a named vector constant.",
                  "The list of vector constants can be found in <FEXCore/IR/IR.h>"
+                ],
+        "DestSize": "RegisterSize"
+      },
+      "FPR = LoadNamedVectorIndexedConstant u8:#RegisterSize, IndexNamedVectorConstant:$Constant, u32:$Index": {
+        "Desc": ["Load a named vector constant from Indexable table.",
+                 "Index needs to be aligned register size.",
+                 "The list of indexable vector constants can be found in <FEXCore/IR/IR.h>"
                 ],
         "DestSize": "RegisterSize"
       },
