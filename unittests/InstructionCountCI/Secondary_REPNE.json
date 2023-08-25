@@ -34,12 +34,11 @@
       ]
     },
     "movddup xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x12",
       "ExpectedArm64ASM": [
-        "mov v4.8b, v17.8b",
-        "dup v16.2d, v4.d[0]"
+        "dup v16.2d, v17.d[0]"
       ]
     },
     "movddup xmm0, [rax]": {
