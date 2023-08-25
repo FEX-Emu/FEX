@@ -649,7 +649,7 @@ void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _Vector_FToI(8, 8, a, FEXCore::IR::Round_Nearest);
+  auto result = _Vector_FToI(8, 8, a, FEXCore::IR::Round_Host);
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
