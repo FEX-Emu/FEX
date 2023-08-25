@@ -347,48 +347,64 @@
       ]
     },
     "pshufhw xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0xf3 0x0f 0x70",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast upper-half element 0",
+        "0xf3 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.h[4], v17.h[4]",
-        "mov v4.16b, v0.16b",
-        "mov v4.h[5], v17.h[4]",
-        "mov v4.h[6], v17.h[4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[7], v17.h[4]",
-        "mov v16.16b, v0.16b"
+        "dup v4.8h, v17.h[4]",
+        "trn1 v16.2d, v17.2d, v4.2d"
+      ]
+    },
+    "pshufhw xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Identity copy",
+        "0xf3 0x0f 0x70"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "pshufhw xmm0, xmm1, 01010000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Upper elements Self-zip",
+        "0xf3 0x0f 0x70"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 v4.8h, v17.8h, v17.8h",
+        "zip1 v16.2d, v17.2d, v4.2d"
       ]
     },
     "pshufhw xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0xf3 0x0f 0x70",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast element 0 in the upper-half",
+        "Upper-half Element 0 gets turned in to element 1",
+        "0xf3 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.h[4], v17.h[5]",
-        "mov v4.16b, v0.16b",
-        "mov v4.h[5], v17.h[4]",
-        "mov v4.h[6], v17.h[4]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[7], v17.h[4]",
-        "mov v16.16b, v0.16b"
+        "ldr x0, [x28, #1608]",
+        "ldr q4, [x0, #16]",
+        "tbl v16.16b, {v17.16b}, v4.16b"
       ]
     },
     "pshufhw xmm0, xmm1, 0xff": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0xf3 0x0f 0x70",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Broadcast upper-half Element 3",
+        "0xf3 0x0f 0x70"
+      ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v17.16b",
-        "mov v0.h[4], v17.h[7]",
-        "mov v4.16b, v0.16b",
-        "mov v4.h[5], v17.h[7]",
-        "mov v4.h[6], v17.h[7]",
-        "mov v0.16b, v4.16b",
-        "mov v0.h[7], v17.h[7]",
-        "mov v16.16b, v0.16b"
+        "dup v4.8h, v17.h[7]",
+        "trn1 v16.2d, v17.2d, v4.2d"
       ]
     },
     "movq xmm0, xmm1": {

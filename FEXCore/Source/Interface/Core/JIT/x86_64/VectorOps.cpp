@@ -104,6 +104,38 @@ DEF_OP(LoadNamedVectorConstant) {
   }
 }
 
+DEF_OP(LoadNamedVectorIndexedConstant) {
+  const auto Op = IROp->C<IR::IROp_LoadNamedVectorIndexedConstant>();
+  const auto OpSize = IROp->Size;
+
+  mov(TMP1, qword STATE_PTR(CpuStateFrame, Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant]));
+
+  const auto Dst = GetDst(Node);
+
+  switch (OpSize) {
+    case 1:
+      movzx(eax, byte [TMP1 + Op->Index]);
+      vmovd(Dst, eax);
+      break;
+    case 2:
+      movzx(eax, word [TMP1 + Op->Index]);
+      vmovd(Dst, eax);
+      break;
+    case 4:
+      vmovd(Dst, dword [TMP1 + Op->Index]);
+      break;
+    case 8:
+      vmovq(Dst, dword [TMP1 + Op->Index]);
+      break;
+    case 16:
+      vmovups(Dst, xword [TMP1 + Op->Index]);
+      break;
+    case 32:
+      vmovups(ToYMM(Dst), yword [TMP1 + Op->Index]);
+      break;
+  }
+}
+
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
@@ -4904,6 +4936,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
   REGISTER_OP(LOADNAMEDVECTORCONSTANT, LoadNamedVectorConstant);
+  REGISTER_OP(LOADNAMEDVECTORINDEXEDCONSTANT, LoadNamedVectorIndexedConstant);
   REGISTER_OP(VMOV,              VMov);
   REGISTER_OP(VAND,              VAnd);
   REGISTER_OP(VBIC,              VBic);

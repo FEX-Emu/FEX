@@ -16,6 +16,114 @@ constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant:
   {0x8000'0000'0000'0000, 0x0000'0000'0000'0000}, // NAMED_VECTOR_PADDSUBPD_INVERT_UPPER
 };
 
+constexpr static auto PSHUFLW_LUT {
+[]() consteval {
+  struct LUTType {
+    uint64_t Val[2];
+  };
+  // Expectation for this LUT is to simulate PSHUFLW with ARM's TBL (single register) instruction
+  // PSHUFLW behaviour:
+  // 16-bit words in [63:48], [47:32], [31:16], [15:0] are selected using the 8-bit Index.
+  // For 128-bit PSHUFLW, bits [127:64] are identity copied.
+  constexpr uint64_t IdentityCopyUpper = 0x0f'0e'0d'0c'0b'0a'09'08;
+  std::array<LUTType, 256> TotalLUT{};
+  uint64_t WordSelection[4] = {
+    0x01'00,
+    0x03'02,
+    0x05'04,
+    0x07'06,
+  };
+  for (size_t i = 0; i < 256; ++i) {
+    auto &LUT = TotalLUT[i];
+    const auto Word0 = (i >> 0) & 0b11;
+    const auto Word1 = (i >> 2) & 0b11;
+    const auto Word2 = (i >> 4) & 0b11;
+    const auto Word3 = (i >> 6) & 0b11;
+
+    LUT.Val[0] =
+      (WordSelection[Word0] << 0) |
+      (WordSelection[Word1] << 16) |
+      (WordSelection[Word2] << 32) |
+      (WordSelection[Word3] << 48);
+
+    LUT.Val[1] = IdentityCopyUpper;
+  }
+  return TotalLUT;
+}()
+};
+
+constexpr static auto PSHUFHW_LUT {
+[]() consteval {
+  struct LUTType {
+    uint64_t Val[2];
+  };
+  // Expectation for this LUT is to simulate PSHUFHW with ARM's TBL (single register) instruction
+  // PSHUFHW behaviour:
+  // 16-bit words in [127:112], [111:96], [95:80], [79:64] are selected using the 8-bit Index.
+  // Incoming words come from bits [127:64] of the source.
+  // Bits [63:0] are identity copied.
+  constexpr uint64_t IdentityCopyLower = 0x07'06'05'04'03'02'01'00;
+  std::array<LUTType, 256> TotalLUT{};
+  uint64_t WordSelection[4] = {
+    0x09'08,
+    0x0b'0a,
+    0x0d'0c,
+    0x0f'0e,
+  };
+  for (size_t i = 0; i < 256; ++i) {
+    auto &LUT = TotalLUT[i];
+    const auto Word0 = (i >> 0) & 0b11;
+    const auto Word1 = (i >> 2) & 0b11;
+    const auto Word2 = (i >> 4) & 0b11;
+    const auto Word3 = (i >> 6) & 0b11;
+
+    LUT.Val[0] = IdentityCopyLower;
+
+    LUT.Val[1] =
+      (WordSelection[Word0] << 0) |
+      (WordSelection[Word1] << 16) |
+      (WordSelection[Word2] << 32) |
+      (WordSelection[Word3] << 48);
+
+  }
+  return TotalLUT;
+}()
+};
+
+constexpr static auto PSHUFD_LUT {
+[]() consteval {
+  struct LUTType {
+    uint64_t Val[2];
+  };
+  // Expectation for this LUT is to simulate PSHUFD with ARM's TBL (single register) instruction
+  // PSHUFD behaviour:
+  // 32-bit words in [127:96], [95:64], [63:32], [31:0] are selected using the 8-bit Index.
+  std::array<LUTType, 256> TotalLUT{};
+  uint64_t WordSelection[4] = {
+    0x03'02'01'00,
+    0x07'06'05'04,
+    0x0b'0a'09'08,
+    0x0f'0e'0d'0c,
+  };
+  for (size_t i = 0; i < 256; ++i) {
+    auto &LUT = TotalLUT[i];
+    const auto Word0 = (i >> 0) & 0b11;
+    const auto Word1 = (i >> 2) & 0b11;
+    const auto Word2 = (i >> 4) & 0b11;
+    const auto Word3 = (i >> 6) & 0b11;
+
+    LUT.Val[0] =
+      (WordSelection[Word0] << 0) |
+      (WordSelection[Word1] << 32);
+
+    LUT.Val[1] =
+      (WordSelection[Word2] << 0) |
+      (WordSelection[Word3] << 32);
+  }
+  return TotalLUT;
+}()
+};
+
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
     : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
 
@@ -28,6 +136,11 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[3]);
   Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT] = reinterpret_cast<uint64_t>(NamedVectorConstants[4]);
   Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[5]);
+
+  // Initialize Indexed named vector constants.
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] = reinterpret_cast<uint64_t>(PSHUFLW_LUT.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] = reinterpret_cast<uint64_t>(PSHUFHW_LUT.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD] = reinterpret_cast<uint64_t>(PSHUFD_LUT.data());
 
 #ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values

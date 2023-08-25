@@ -222,6 +222,7 @@ namespace FEXCore::CPU {
   DEF_OP(VectorZero);
   DEF_OP(VectorImm);
   DEF_OP(LoadNamedVectorConstant);
+  DEF_OP(LoadNamedVectorIndexedConstant);
   DEF_OP(VMov);
   DEF_OP(VAnd);
   DEF_OP(VBic);
