@@ -115,14 +115,11 @@
       ]
     },
     "movntss [rax], xmm0": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2b",
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v16.s[0]",
-        "mov v4.16b, v0.16b",
-        "str s4, [x4]"
+        "str s16, [x4]"
       ]
     },
     "cvttss2si eax, xmm0": {
