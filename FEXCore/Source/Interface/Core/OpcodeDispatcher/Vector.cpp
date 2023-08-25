@@ -750,13 +750,14 @@ template
 void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
   if (Op->Dest.IsGPR()) {
     const auto gpr = Op->Dest.Data.GPR.GPR;
     const auto gprIndex = gpr - X86State::REG_XMM_0;
 
-    auto Reg = _VMov(16, Src);
+    auto Reg = _VMov(8, Src);
     StoreXMMRegister(gprIndex, Reg);
   }
   else {
