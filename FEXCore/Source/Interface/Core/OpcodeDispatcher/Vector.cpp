@@ -1907,7 +1907,10 @@ OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t S
 
   OrderedNode *Src = [&] {
     if (Widen) {
-      const auto LoadSize = 8 * (Size / 16);
+      // If loading a vector, use the full size, so we don't
+      // unnecessarily zero extend the vector. Otherwise, if
+      // memory, then we want to load the element size exactly.
+      const auto LoadSize = Op->Src[0].IsGPR() ? 16U : 8 * (Size / 16);
       return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
     } else {
       return LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
