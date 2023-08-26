@@ -548,7 +548,7 @@ namespace {
     auto IsPreWritable = [](uint8_t Size, RegisterClassType StaticClass) {
       LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
-        return Size == 8;
+        return Size == 8 || Size == 4;
       } else if (StaticClass == FPRFixedClass) {
         return Size == 16;
       }
@@ -560,7 +560,7 @@ namespace {
       LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
         // We need more meta info to support not-size-of-reg
-        return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0);
+        return (Size == 8 || Size == 4) && ((Offset & 7) == 0);
       } else if (StaticClass == FPRFixedClass) {
         // We need more meta info to support not-size-of-reg
         return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
