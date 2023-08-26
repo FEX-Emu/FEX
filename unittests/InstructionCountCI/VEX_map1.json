@@ -522,30 +522,18 @@
       ]
     },
     "vmovmskps rax, xmm0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov w20, #0x0",
-        "mov w21, v4.s[0]",
-        "ubfx x21, x21, #31, #1",
-        "orr x20, x20, x21",
-        "mov w21, v4.s[1]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #1",
-        "orr x20, x20, x21",
-        "mov w21, v4.s[2]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #2",
-        "orr x20, x20, x21",
-        "mov w21, v4.s[3]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #3",
-        "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "ushr v4.4s, v4.4s, #31",
+        "index z5.s, #0, #1",
+        "ushl v4.4s, v4.4s, v5.4s",
+        "addv s4, v4.4s",
+        "mov w4, v4.s[0]"
       ]
     },
     "vmovmskps rax, ymm0": {

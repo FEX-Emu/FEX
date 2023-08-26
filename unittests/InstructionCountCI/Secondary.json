@@ -1000,50 +1000,29 @@
       ]
     },
     "movmskps eax, xmm0": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "mov w21, v16.s[0]",
-        "ubfx x21, x21, #31, #1",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[1]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #1",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[2]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #2",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[3]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #3",
-        "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "ushr v4.4s, v16.4s, #31",
+        "ldr x0, [x28, #1600]",
+        "ldr q5, [x0]",
+        "ushl v4.4s, v4.4s, v5.4s",
+        "addv s4, v4.4s",
+        "mov w4, v4.s[0]"
       ]
     },
     "movmskps rax, xmm0": {
-      "ExpectedInstructionCount": 16,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "mov w21, v16.s[0]",
-        "ubfx x21, x21, #31, #1",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[1]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #1",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[2]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #2",
-        "orr x20, x20, x21",
-        "mov w21, v16.s[3]",
-        "ubfx x21, x21, #31, #1",
-        "lsl w21, w21, #3",
-        "orr x4, x20, x21"
+        "ushr v4.4s, v16.4s, #31",
+        "ldr x0, [x28, #1600]",
+        "ldr q5, [x0]",
+        "ushl v4.4s, v4.4s, v5.4s",
+        "addv s4, v4.4s",
+        "mov w4, v4.s[0]"
       ]
     },
     "sqrtps xmm0, xmm1": {
@@ -1458,7 +1437,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "ldr x0, [x28, #1600]",
+        "ldr x0, [x28, #1608]",
         "ldr d5, [x0, #16]",
         "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"
@@ -1470,7 +1449,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "ldr x0, [x28, #1600]",
+        "ldr x0, [x28, #1608]",
         "ldr d5, [x0, #16]",
         "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"
