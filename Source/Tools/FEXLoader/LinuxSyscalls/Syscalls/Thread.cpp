@@ -572,11 +572,9 @@ namespace FEX::HLE {
       return Thread->ThreadManager.GetTID();
     });
 
-    REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
       [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
-      auto Thread = Frame->Thread;
-      Thread->StatusCode = status;
-      Thread->CTX->Stop();
+      syscall(SYSCALL_DEF(exit_group), status);
       // This will never be reached
       std::terminate();
     });
