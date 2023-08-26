@@ -1932,7 +1932,7 @@ void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   OrderedNode *Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
   OrderedNode *ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags, -1);
 
-  auto Shift = _VUShr(DstSize, SrcSize, Vector, ShiftVector);
+  auto Shift = _VUShr(DstSize, SrcSize, Vector, ShiftVector, true);
   Shift.first->Header.Op = IROp;
 
   StoreResult(FPRClass, Op, Shift, -1);
