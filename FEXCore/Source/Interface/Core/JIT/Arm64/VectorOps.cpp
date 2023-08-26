@@ -81,6 +81,16 @@ DEF_OP(LoadNamedVectorConstant) {
 
   const auto Dst = GetVReg(Node);
 
+  if (HostSupportsSVE128) {
+    switch (Op->Constant) {
+      case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT:
+        index(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), 0, 1);
+        return;
+      default:
+        // Intentionally doing nothing.
+        break;
+    }
+  }
   // Load the pointer.
   ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
 

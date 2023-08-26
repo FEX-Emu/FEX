@@ -787,6 +787,19 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     GPR = _Lshr(GPR, _Constant(62));
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   }
+  else if (Size == 16 && ElementSize == 4) {
+    // Shift all the sign bits to the bottom of their respective elements.
+    Src = _VUShrI(Size, 4, Src, 31);
+    // Load the specific 128-bit movmskps shift elements operator.
+    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(Size, NAMED_VECTOR_MOVMSKPS_SHIFT);
+    // Shift the sign bits in to specific locations.
+    Src = _VUShl(Size, 4, Src, ConstantUSHL, false);
+    // Add across the vector so the sign bits will end up in bits [3:0]
+    Src = _VAddV(Size, 4, Src);
+    // Extract to a GPR.
+    OrderedNode *GPR = _VExtractToGPR(Size, 4, Src, 0);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
+  }
   else {
     OrderedNode *CurrentVal = _Constant(0);
 
