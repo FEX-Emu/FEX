@@ -3281,7 +3281,6 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
@@ -3308,8 +3307,8 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
-    OrderedNode *ResultLow = _Bfe(GPRSize, 32, 0, Result);
-    ResultHigh = _Bfe(GPRSize, 32, 32, Result);
+    OrderedNode *ResultLow = _Bfe(8, 32, 0, Result);
+    ResultHigh = _Bfe(8, 32, 32, Result);
     StoreGPRRegister(X86State::REG_RAX, ResultLow);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
