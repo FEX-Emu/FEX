@@ -1195,7 +1195,7 @@ private:
   OrderedNode *GetRFLAG(unsigned BitOffset) {
     if (IsNZCV(BitOffset)) {
       if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
-        return _Bfe(1, 1, IndexNZCV(BitOffset), GetNZCV());
+        return _Bfe(8, 1, IndexNZCV(BitOffset), GetNZCV());
       else
         return _Constant(0);
     } else {
