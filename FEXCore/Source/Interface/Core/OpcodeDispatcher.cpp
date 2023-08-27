@@ -5582,7 +5582,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  Src = _FindTrailingZeros(Src);
+  Src = _FindTrailingZeroes(Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_TZCNT(Op, Src);

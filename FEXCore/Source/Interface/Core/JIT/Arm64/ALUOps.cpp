@@ -1040,8 +1040,8 @@ DEF_OP(FindMSB) {
   sub(ARMEmitter::Size::i64Bit, Dst, TMP1, Dst);
 }
 
-DEF_OP(FindTrailingZeros) {
-  auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+DEF_OP(FindTrailingZeroes) {
+  auto Op = IROp->C<IR::IROp_FindTrailingZeroes>();
   const uint8_t OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == 2 || OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);

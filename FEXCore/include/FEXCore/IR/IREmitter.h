@@ -60,9 +60,6 @@ friend class FEXCore::IR::PassManager;
     Op.first->Header.ElementSize = Size / 8;
     return Op;
   }
-  IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
-    return _Bfe(0, Width, lsb, ssa0);
-  }
   IRPair<IROp_Sbfe> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
     return _Sbfe(SrcSize, 0, ssa0);
   }
@@ -105,6 +102,186 @@ friend class FEXCore::IR::PassManager;
   OrderedNode *Invalid() {
     return InvalidNode;
   }
+
+  // Temporary naughty implicit IR operation handlers
+  ///< Moves
+  IRPair<IROp_ExtractElementPair> _ExtractElementPair(OrderedNode *_Pair, uint8_t _Element) {
+    return _ExtractElementPair(static_cast<OpSize>(GetOpSize(_Pair) >> 1), _Pair, _Element);
+  }
+  IRPair<IROp_CreateElementPair> _CreateElementPair(OrderedNode *_Lower, OrderedNode *_Upper) {
+    return _CreateElementPair(static_cast<OpSize>(GetOpSize(_Lower) * 2), _Lower, _Upper);
+  }
+  ///< Atomics
+  IRPair<IROp_CAS> _CAS(OrderedNode *_Expected, OrderedNode *_Desired, OrderedNode *_Addr) {
+    return _CAS(static_cast<OpSize>(GetOpSize(_Expected)), _Expected, _Desired, _Addr);
+  }
+  IRPair<IROp_CASPair> _CASPair(OrderedNode *_Expected, OrderedNode *_Desired, OrderedNode *_Addr) {
+    return _CASPair(static_cast<OpSize>(GetOpSize(_Expected)), _Expected, _Desired, _Addr);
+  }
+  IRPair<IROp_AtomicAdd> _AtomicAdd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicAdd(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicSub> _AtomicSub(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicSub(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicAnd> _AtomicAnd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicAnd(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicOr> _AtomicOr(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicOr(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicXor> _AtomicXor(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicXor(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicSwap> _AtomicSwap(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicSwap(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchAdd> _AtomicFetchAdd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicFetchAdd(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchSub> _AtomicFetchSub(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicFetchSub(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchAnd> _AtomicFetchAnd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicFetchAnd(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchOr> _AtomicFetchOr(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicFetchOr(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchXor> _AtomicFetchXor(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
+    return _AtomicFetchXor(static_cast<OpSize>(Size), _Value, _Addr);
+  }
+  IRPair<IROp_AtomicFetchNeg> _AtomicFetchNeg(uint8_t Size, OrderedNode *_Addr) {
+    return _AtomicFetchNeg(static_cast<OpSize>(Size), _Addr);
+  }
+  ///< ALU
+  IRPair<IROp_EntrypointOffset> _EntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
+    return _EntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
+  }
+  IRPair<IROp_InlineEntrypointOffset> _InlineEntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
+    return _InlineEntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
+  }
+  IRPair<IROp_Neg> _Neg(OrderedNode *_Src) {
+    return _Neg(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
+  }
+  IRPair<IROp_Abs> _Abs(OrderedNode *_Src) {
+    return _Abs(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
+  }
+  IRPair<IROp_Not> _Not(OrderedNode *_Src) {
+    return _Not(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
+  }
+  IRPair<IROp_Popcount> _Popcount(OrderedNode *_Src) {
+    return _Popcount(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_FindLSB> _FindLSB(OrderedNode *_Src) {
+    return _FindLSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_FindMSB> _FindMSB(OrderedNode *_Src) {
+    return _FindMSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_FindTrailingZeroes> _FindTrailingZeroes(OrderedNode *_Src) {
+    return _FindTrailingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_CountLeadingZeroes> _CountLeadingZeroes(OrderedNode *_Src) {
+    return _CountLeadingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_Rev> _Rev(OrderedNode *_Src) {
+    return _Rev(static_cast<OpSize>(GetOpSize(_Src)), _Src);
+  }
+  IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Sub> _Sub(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Sub(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Or> _Or(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Or(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
+  }
+  IRPair<IROp_Orlshl> _Orlshl(OrderedNode *_Src1, OrderedNode *_Src2, uint8_t _BitShift) {
+    return _Orlshl(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2, _BitShift);
+  }
+  IRPair<IROp_Orlshr> _Orlshr(OrderedNode *_Src1, OrderedNode *_Src2, uint8_t _BitShift) {
+    return _Orlshr(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2, _BitShift);
+  }
+  IRPair<IROp_Xor> _Xor(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Xor(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_And> _And(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _And(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Andn> _Andn(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Andn(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Lshl> _Lshl(uint8_t Size, OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Lshl(static_cast<OpSize>(Size), _Src1, _Src2);
+  }
+  IRPair<IROp_Lshr> _Lshr(uint8_t Size, OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Lshr(static_cast<OpSize>(Size), _Src1, _Src2);
+  }
+  IRPair<IROp_Ashr> _Ashr(uint8_t Size, OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Ashr(static_cast<OpSize>(Size), _Src1, _Src2);
+  }
+  IRPair<IROp_Ror> _Ror(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Ror(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src1))), _Src1, _Src2);
+  }
+  IRPair<IROp_Mul> _Mul(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Mul(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_UMul> _UMul(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _UMul(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Div> _Div(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Div(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
+  }
+  IRPair<IROp_UDiv> _UDiv(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _UDiv(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
+  }
+  IRPair<IROp_Rem> _Rem(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _Rem(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
+  }
+  IRPair<IROp_URem> _URem(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _URem(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
+  }
+  IRPair<IROp_MulH> _MulH(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _MulH(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_UMulH> _UMulH(OrderedNode *_Src1, OrderedNode *_Src2) {
+    return _UMulH(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
+  }
+  IRPair<IROp_Bfi> _Bfi(uint8_t DestSize, uint8_t _Width, uint8_t _lsb, OrderedNode *_Dest, OrderedNode *_Src) {
+    return _Bfi(static_cast<OpSize>(DestSize), _Width, _lsb, _Dest, _Src);
+  }
+  IRPair<IROp_Bfe> _Bfe(uint8_t DestSize, uint8_t _Width, uint8_t _lsb, OrderedNode *_Src) {
+    return _Bfe(static_cast<OpSize>(DestSize != 0 ? DestSize : GetOpSize(_Src)), _Width, _lsb, _Src);
+  }
+  IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
+    return _Bfe(0, Width, lsb, ssa0);
+  }
+  IRPair<IROp_Sbfe> _Sbfe(uint8_t _Width, uint8_t _lsb, OrderedNode *_Src) {
+    return _Sbfe(OpSize::i64Bit, _Width, _lsb, _Src);
+  }
+  IRPair<IROp_Extr> _Extr(OrderedNode *_Upper, OrderedNode *_Lower, uint8_t _LSB) {
+    return _Extr(static_cast<OpSize>(std::max(GetOpSize(_Upper), GetOpSize(_Lower))), _Upper, _Lower, _LSB);
+  }
+  IRPair<IROp_PDep> _PDep(OrderedNode *_Input, OrderedNode *_Mask) {
+    return _PDep(static_cast<OpSize>(std::max(GetOpSize(_Input), GetOpSize(_Mask))), _Input, _Mask);
+  }
+  IRPair<IROp_PExt> _PExt(OrderedNode *_Input, OrderedNode *_Mask) {
+    return _PExt(static_cast<OpSize>(std::max(GetOpSize(_Input), GetOpSize(_Mask))), _Input, _Mask);
+  }
+  IRPair<IROp_LDiv> _LDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
+    return _LDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
+  }
+  IRPair<IROp_LUDiv> _LUDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
+    return _LUDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
+  }
+  IRPair<IROp_LRem> _LRem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
+    return _LRem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
+  }
+  IRPair<IROp_LURem> _LURem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
+    return _LURem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
+  }
+  // End of Temporary naughty implicit IR operation handlers
 
   void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
     // Got to do some bookkeeping first

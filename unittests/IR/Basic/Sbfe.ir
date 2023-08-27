@@ -23,20 +23,20 @@
     %Addr1 i64 = Constant #0x1000000
     %Val i64 = LoadMem GPR, #8, %Addr1 i64, %Invalid, #8, SXTX, #1
 ; Test aligned special cases
-    %Res1 i64 = Sbfe #0x8, #0x0, %Val
+    %Res1 i64 = Sbfe i64, #0x8, #0x0, %Val
     (%Store1 i64) StoreRegister %Res1 i64, #0, #8, GPR, GPRFixed, #8
-    %Res2 i64 = Sbfe #0x10, #0x0, %Val
+    %Res2 i64 = Sbfe i64, #0x10, #0x0, %Val
     (%Store2 i64) StoreRegister %Res2 i64, #0, #0x20, GPR, GPRFixed, #8
-    %Res3 i64 = Sbfe #0x20, #0x0, %Val
+    %Res3 i64 = Sbfe i64, #0x20, #0x0, %Val
     (%Store3 i64) StoreRegister %Res3 i64, #0, #0x10, GPR, GPRFixed, #8
     %Addr2 i64 = Constant #0x1000008
 ; Test non special width
     %Val2 i64 = LoadMem GPR, #8, %Addr2 i64, %Invalid, #8, SXTX, #1
 
-    %Res4 i64 = Sbfe #0x6, #0x0, %Val2
+    %Res4 i64 = Sbfe i64, #0x6, #0x0, %Val2
     (%Store4 i64) StoreRegister %Res4 i64, #0, #0x18, GPR, GPRFixed, #8
 ; Test with + shift
-    %Res5 i64 = Sbfe #0x4, #0x2, %Val2
+    %Res5 i64 = Sbfe i64, #0x4, #0x2, %Val2
     (%Store5 i64) StoreRegister %Res5 i64, #0, #0x38, GPR, GPRFixed, #8
     (%brk i0) Break {0.11.0.128}
     (%end i0) EndBlock %2

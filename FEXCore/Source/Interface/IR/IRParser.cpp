@@ -43,7 +43,7 @@ enum class DecodeFailure {
   DECODE_INVALID_MEMOFFSETTYPE,
   DECODE_INVALID_FENCETYPE,
   DECODE_INVALID_BREAKTYPE,
-
+  DECODE_INVALID_OPSIZE,
 };
 
 fextl::string DecodeErrorToString(DecodeFailure Failure) {
@@ -59,6 +59,7 @@ fextl::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
     case DecodeFailure::DECODE_INVALID_FENCETYPE: return "Invalid Fence Type";
     case DecodeFailure::DECODE_INVALID_BREAKTYPE: return "Invalid Break Reason Type";
+    case DecodeFailure::DECODE_INVALID_OPSIZE: return "Invalid Operation size name";
   }
   return "Unknown Error";
 }
@@ -289,6 +290,25 @@ class IRParser: public FEXCore::IR::IREmitter {
     else {
       return {DecodeFailure::DECODE_OKAY, Reason};
     }
+  }
+
+  template<>
+  std::pair<DecodeFailure, FEXCore::IR::OpSize> DecodeValue(const fextl::string &Arg) {
+    static constexpr std::array<std::pair<std::string_view, FEXCore::IR::OpSize>, 6> Names = {{
+      { "i8", OpSize::i8Bit },
+      { "i16", OpSize::i16Bit },
+      { "i32", OpSize::i32Bit },
+      { "i64", OpSize::i64Bit },
+      { "i128", OpSize::i128Bit },
+      { "i256", OpSize::i256Bit },
+    }};
+
+    for (size_t i = 0; i < Names.size(); ++i) {
+      if (Names[i].first == Arg) {
+        return {DecodeFailure::DECODE_OKAY, Names[i].second};
+      }
+    }
+    return {DecodeFailure::DECODE_INVALID_OPSIZE, {}};
   }
 
   template<>

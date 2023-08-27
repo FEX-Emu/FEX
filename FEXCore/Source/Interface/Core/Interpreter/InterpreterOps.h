@@ -117,7 +117,7 @@ namespace FEXCore::CPU {
   DEF_OP(Popcount);
   DEF_OP(FindLSB);
   DEF_OP(FindMSB);
-  DEF_OP(FindTrailingZeros);
+  DEF_OP(FindTrailingZeroes);
   DEF_OP(CountLeadingZeroes);
   DEF_OP(Rev);
   DEF_OP(Bfi);

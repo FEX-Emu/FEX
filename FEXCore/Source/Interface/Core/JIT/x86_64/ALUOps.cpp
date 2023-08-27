@@ -920,8 +920,8 @@ DEF_OP(FindMSB) {
   }
 }
 
-DEF_OP(FindTrailingZeros) {
-  auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+DEF_OP(FindTrailingZeroes) {
+  auto Op = IROp->C<IR::IROp_FindTrailingZeroes>();
   const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
@@ -940,7 +940,7 @@ DEF_OP(FindTrailingZeros) {
       mov(rax, 0x40);
       cmovz(GetDst<RA_64>(Node), rax);
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown FindTrailingZeros size: {}", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown FindTrailingZeroes size: {}", OpSize); break;
   }
 }
 
@@ -963,7 +963,7 @@ DEF_OP(CountLeadingZeroes) {
         lzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeros size: {}", OpSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeroes size: {}", OpSize); break;
     }
   }
   else {
@@ -1002,7 +1002,7 @@ DEF_OP(CountLeadingZeroes) {
         mov(GetDst<RA_64>(Node), rax);
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeros size: {}", OpSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeroes size: {}", OpSize); break;
     }
   }
 }
@@ -1371,7 +1371,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(POPCOUNT,          Popcount);
   REGISTER_OP(FINDLSB,           FindLSB);
   REGISTER_OP(FINDMSB,           FindMSB);
-  REGISTER_OP(FINDTRAILINGZEROS, FindTrailingZeros);
+  REGISTER_OP(FINDTRAILINGZEROES, FindTrailingZeroes);
   REGISTER_OP(COUNTLEADINGZEROES, CountLeadingZeroes);
   REGISTER_OP(REV,               Rev);
   REGISTER_OP(BFI,               Bfi);
