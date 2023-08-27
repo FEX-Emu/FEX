@@ -1192,10 +1192,10 @@ private:
 
   void ZeroMultipleFlags(uint32_t BitMask);
 
-  OrderedNode *GetRFLAG(unsigned BitOffset) {
+  OrderedNode *GetRFLAG(unsigned BitOffset, int32_t Size = 8) {
     if (IsNZCV(BitOffset)) {
       if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
-        return _Bfe(8, 1, IndexNZCV(BitOffset), GetNZCV());
+        return _Bfe(Size, 1, IndexNZCV(BitOffset), GetNZCV());
       else
         return _Constant(0);
     } else {

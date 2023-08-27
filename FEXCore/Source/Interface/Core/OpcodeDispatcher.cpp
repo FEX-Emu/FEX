@@ -2474,6 +2474,8 @@ void OpDispatchBuilder::PEXT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
+  const auto OperandSize = GetSrcSize(Op);
+
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -2483,9 +2485,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
   auto* Flag = [&]() -> OrderedNode* {
     if (IsADCX) {
-      return GetRFLAG(X86State::RFLAG_CF_LOC);
+      return GetRFLAG(X86State::RFLAG_CF_LOC, OperandSize);
     } else {
-      return GetRFLAG(X86State::RFLAG_OF_LOC);
+      return GetRFLAG(X86State::RFLAG_OF_LOC, OperandSize);
     }
   }();
 
@@ -2516,7 +2518,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, GetSrcSize(Op));
 
   uint32_t Shift = 1;
 
