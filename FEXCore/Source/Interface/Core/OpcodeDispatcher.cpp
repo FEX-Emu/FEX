@@ -447,7 +447,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   uint8_t Size = GetDstSize(Op);
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, Size);
   auto ALUOp = _Add(Src, CF);
 
   OrderedNode *Result{};
@@ -478,7 +478,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   auto Size = GetDstSize(Op);
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, Size);
   auto ALUOp = _Add(Src, CF);
 
   OrderedNode *Result{};
