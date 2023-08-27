@@ -1138,7 +1138,7 @@ DEF_OP(Bfe) {
 }
 
 DEF_OP(Sbfe) {
-  auto Op = IROp->C<IR::IROp_Bfe>();
+  auto Op = IROp->C<IR::IROp_Sbfe>();
   const uint8_t OpSize = IROp->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
