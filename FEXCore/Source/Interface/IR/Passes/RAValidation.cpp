@@ -44,23 +44,20 @@ struct RegState {
       return true;
     case GPRFixedClass:
       // On arm64, there are 16 Fixed and 9 normal
-      GPRs[Reg.Reg + 16] = ssa;
+      GPRsFixed[Reg.Reg] = ssa;
       return true;
     case FPRClass:
       FPRs[Reg.Reg] = ssa;
       return true;
     case FPRFixedClass:
       // On arm64, there are 16 Fixed and 12 normal
-      FPRs[Reg.Reg + 16] = ssa;
+      FPRsFixed[Reg.Reg] = ssa;
       return true;
     case GPRPairClass:
-      if (Reg.Reg <= 16) {
-        // Alias paired registers onto both
-        GPRs[Reg.Reg*2] = ssa;
-        GPRs[Reg.Reg*2 + 1] = ssa;
-        return true;
-      }
-      break;
+      // Alias paired registers onto both
+      GPRs[Reg.Reg*2] = ssa;
+      GPRs[Reg.Reg*2 + 1] = ssa;
+      return true;
     }
     return false;
   }
@@ -72,21 +69,12 @@ struct RegState {
     case GPRClass:
       return GPRs[Reg.Reg];
     case GPRFixedClass:
-      if (GPRs[Reg.Reg + 16] == UninitializedValue) {
-        return StaticAssigned;
-      }
-      return GPRs[Reg.Reg + 16];
+      return GPRsFixed[Reg.Reg];
     case FPRClass:
       return FPRs[Reg.Reg];
     case FPRFixedClass:
-      if (FPRs[Reg.Reg + 16] == UninitializedValue) {
-        return StaticAssigned;
-      }
-      return FPRs[Reg.Reg + 16];
+      return FPRsFixed[Reg.Reg];
     case GPRPairClass:
-      if (Reg.Reg > 16)
-        break;
-
       // Make sure both halves of the Pair contain the same SSA
       if (GPRs[Reg.Reg*2] == GPRs[Reg.Reg*2 + 1]) {
         return GPRs[Reg.Reg*2];
@@ -95,7 +83,6 @@ struct RegState {
     }
     return InvalidReg;
   }
-
 
   // Mark a spill slot as containing a SSA id
   void Spill(uint32_t SpillSlot, IR::NodeID ssa) {
@@ -126,9 +113,21 @@ struct RegState {
       }
     }
 
+    for (size_t i = 0; i < GPRsFixed.size(); i++) {
+      if (GPRsFixed[i] != other.GPRsFixed[i]) {
+        GPRsFixed[i] = ClobberedValue;
+      }
+    }
+
     for (size_t i = 0; i < FPRs.size(); i++) {
       if (FPRs[i] != other.FPRs[i]) {
         FPRs[i] = ClobberedValue;
+      }
+    }
+
+    for (size_t i = 0; i < FPRsFixed.size(); i++) {
+      if (FPRsFixed[i] != other.FPRsFixed[i]) {
+        FPRsFixed[i] = ClobberedValue;
       }
     }
 
@@ -152,7 +151,19 @@ struct RegState {
       }
     }
 
+    for (auto &gpr : GPRsFixed) {
+      if (gpr > MaxSSA) {
+        gpr = ClobberedValue;
+      }
+    }
+
     for (auto &fpr : FPRs) {
+      if (fpr > MaxSSA) {
+        fpr = ClobberedValue;
+      }
+    }
+
+    for (auto &fpr : FPRsFixed) {
       if (fpr > MaxSSA) {
         fpr = ClobberedValue;
       }
@@ -167,6 +178,8 @@ struct RegState {
   }
 
 private:
+  std::array<IR::NodeID, 32> GPRsFixed = {};
+  std::array<IR::NodeID, 32> FPRsFixed = {};
   std::array<IR::NodeID, 32> GPRs = {};
   std::array<IR::NodeID, 32> FPRs = {};
 
