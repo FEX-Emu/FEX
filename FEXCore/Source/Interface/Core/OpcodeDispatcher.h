@@ -1171,7 +1171,7 @@ private:
     if (SetBits == 0)
       return _Lshl(Value, _Constant(Bit));
     else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
-      return _Orlshl(NZCV, Value, Bit);
+      return _Orlshl(IR::SizeToOpSize(std::max(GetOpSize(NZCV), GetOpSize(Value))), NZCV, Value, Bit);
     else
       return _Bfi(4, 1, Bit, NZCV, Value);
   }

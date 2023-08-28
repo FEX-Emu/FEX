@@ -148,7 +148,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
                         GetRFLAG(FlagOffset);
 
     if (CTX->BackendFeatures.SupportsShiftedBitwise)
-      Original = _Orlshl(Original, Flag, FlagOffset);
+      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
     else
       Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
@@ -158,7 +158,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     static_assert(FEXCore::X86State::RFLAG_SF_LOC == (FEXCore::X86State::RFLAG_ZF_LOC + 1));
     auto NZCV = GetNZCV();
     auto NZ = _And(NZCV, _Constant(0b11u << 30));
-    Original = _Orlshr(Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
+    Original = _Orlshr(OpSize::i64Bit, Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
   }
 
   // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
