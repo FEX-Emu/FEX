@@ -384,7 +384,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         break;
       }
       case FEXCore::IR::IROps::OP_OR: {
-        Dest = _AtomicFetchOr(Size, Src, DestMem);
+        Dest = _AtomicFetchOr(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Or(Dest, Src);
         break;
       }
@@ -3095,7 +3095,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      Result = _AtomicFetchOr(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
