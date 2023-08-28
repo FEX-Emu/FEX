@@ -108,10 +108,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_CreateElementPair> _CreateElementPair(OrderedNode *_Lower, OrderedNode *_Upper) {
     return _CreateElementPair(static_cast<OpSize>(GetOpSize(_Lower) * 2), _Lower, _Upper);
   }
-  ///< Atomics
-  IRPair<IROp_CAS> _CAS(OrderedNode *_Expected, OrderedNode *_Desired, OrderedNode *_Addr) {
-    return _CAS(static_cast<OpSize>(GetOpSize(_Expected)), _Expected, _Desired, _Addr);
-  }
   ///< ALU
   IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);

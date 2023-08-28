@@ -4614,7 +4614,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
-    OrderedNode *CASResult = _CAS(Src3Lower, Src2, Src1);
+    OrderedNode *CASResult = _CAS(IR::SizeToOpSize(Size), Src3Lower, Src2, Src1);
     OrderedNode *RAXResult = CASResult;
 
     if (GPRSize == 8 && Size == 4) {
