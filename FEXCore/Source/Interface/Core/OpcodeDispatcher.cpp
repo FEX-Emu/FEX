@@ -3344,7 +3344,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    _AtomicXor(Size, MaskConst, DestMem);
+    _AtomicXor(IR::SizeToOpSize(Size), MaskConst, DestMem);
   }
   else {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
