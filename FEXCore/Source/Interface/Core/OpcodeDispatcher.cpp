@@ -394,7 +394,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         break;
       }
       case FEXCore::IR::IROps::OP_XOR: {
-        Dest = _AtomicFetchXor(Size, Src, DestMem);
+        Dest = _AtomicFetchXor(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Xor(Dest, Src);
         break;
       }
@@ -3169,7 +3169,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      Result = _AtomicFetchXor(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
@@ -4336,7 +4336,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    Dest = _AtomicFetchNeg(OpSizeFromSrc(Op), DestMem);
+    Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
