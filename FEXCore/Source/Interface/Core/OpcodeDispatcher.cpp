@@ -374,7 +374,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
-        Dest = _AtomicFetchAdd(Size, Src, DestMem);
+        Dest = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Add(Dest, Src);
         break;
       }
@@ -456,7 +456,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    Before = _AtomicFetchAdd(Size, ALUOp, DestMem);
+    Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Add(Before, ALUOp);
   }
   else {
@@ -3379,7 +3379,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   else {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     Dest = AppendSegmentOffset(Dest, Op->Flags);
-    auto Before = _AtomicFetchAdd(GetSrcSize(Op), Src, Dest);
+    auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
     Result = _Add(Before, Src); // Seperate result just for flags
 
@@ -3768,7 +3768,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchAdd(GetSrcSize(Op), OneConst, DestAddress);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -5413,7 +5413,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    auto FetchOp = _AtomicFetchAdd(Size, Src, DestMem);
+    auto FetchOp = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
     // Overwrite our atomic op type
     FetchOp.first->Header.Op = AtomicFetchOp;
     Dest = FetchOp;
