@@ -4274,13 +4274,14 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
   OrderedNode *Dest;
-  if (GetSrcSize(Op) == 2) {
+  const auto Size = GetSrcSize(Op);
+  if (Size == 2) {
     // BSWAP of 16bit is undef. ZEN+ causes the lower 16bits to get zero'd
     Dest = _Constant(0);
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Dest = _Rev(Dest);
+    Dest = _Rev(IR::SizeToOpSize(Size), Dest);
   }
   StoreResult(GPRClass, Op, Dest, -1);
 }
@@ -5599,7 +5600,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
-  Src = _Rev(Src);
+  Src = _Rev(IR::SizeToOpSize(GetSrcSize(Op)), Src);
   StoreResult(GPRClass, Op, Src, 1);
 }
 
