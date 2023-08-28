@@ -3393,7 +3393,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  Src = _Popcount(Src);
+  Src = _Popcount(IR::SizeToOpSize(GetSrcSize(Op)), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_POPCOUNT(Op, Src);
