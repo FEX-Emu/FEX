@@ -3241,7 +3241,7 @@
         "Map 3 0b01 0x20 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov z4.d, p7/m, z17.d",
         "mov v4.b[0], w20",
         "mov v4.16b, v4.16b",
@@ -3256,7 +3256,7 @@
         "Map 3 0b01 0x20 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov z4.d, p7/m, z17.d",
         "mov v4.b[15], w20",
         "mov v4.16b, v4.16b",
@@ -3314,7 +3314,7 @@
         "Map 3 0b01 0x22 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov z4.d, p7/m, z17.d",
         "mov v4.s[0], w20",
         "mov v4.16b, v4.16b",
@@ -3329,7 +3329,7 @@
         "Map 3 0b01 0x22 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov z4.d, p7/m, z17.d",
         "mov v4.s[3], w20",
         "mov v4.16b, v4.16b",
@@ -5103,7 +5103,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "ror w4, w20, #0"
       ]
     },
@@ -5114,7 +5114,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "ror w4, w20, #31"
       ]
     },
@@ -5125,7 +5125,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "ror w4, w20, #0"
       ]
     },

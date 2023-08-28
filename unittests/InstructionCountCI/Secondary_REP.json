@@ -436,7 +436,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "uxth x20, w7",
+        "uxth w20, w7",
         "fmov s0, w20",
         "cnt v0.8b, v0.8b",
         "addp v0.8b, v0.8b, v0.8b",
@@ -456,7 +456,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "fmov s0, w20",
         "cnt v0.8b, v0.8b",
         "addv b0, v0.8b",
@@ -493,7 +493,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "uxth x20, w7",
+        "uxth w20, w7",
         "rbit w20, w20",
         "orr w20, w20, #0x8000",
         "clz w20, w20",
@@ -501,7 +501,7 @@
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "ubfx x20, x20, #0, #1",
+        "ubfx w20, w20, #0, #1",
         "orr x20, x21, x20, lsl #30",
         "str w20, [x28, #728]"
       ]
@@ -511,13 +511,13 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "rbit w4, w20",
         "clz w4, w4",
         "cmp x4, #0x0 (0)",
         "cset x20, eq",
         "lsl x20, x20, #29",
-        "ubfx x21, x4, #0, #1",
+        "ubfx w21, w4, #0, #1",
         "orr x20, x20, x21, lsl #30",
         "str w20, [x28, #728]"
       ]
@@ -542,7 +542,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "uxth x20, w7",
+        "uxth w20, w7",
         "lsl w21, w20, #16",
         "orr w21, w21, #0x8000",
         "clz w21, w21",
@@ -550,7 +550,7 @@
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "ubfx x20, x20, #15, #1",
+        "ubfx w20, w20, #15, #1",
         "orr x20, x21, x20, lsl #30",
         "str w20, [x28, #728]"
       ]
@@ -560,12 +560,12 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "ubfx x20, x7, #0, #32",
+        "lsr w20, w7, #0",
         "clz w4, w20",
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "ubfx x20, x20, #31, #1",
+        "lsr w20, w20, #31",
         "orr x20, x21, x20, lsl #30",
         "str w20, [x28, #728]"
       ]
