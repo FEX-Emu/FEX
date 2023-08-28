@@ -548,6 +548,19 @@ enum OpSize : uint8_t {
   i256Bit = 32,
 };
 
+// Converts a size stored as an integer in to an OpSize enum.
+// This is a nop operation and will be eliminated by the compiler.
+static inline OpSize SizeToOpSize(uint8_t Size) {
+  switch (Size) {
+    case 1: return OpSize::i8Bit;
+    case 2: return OpSize::i16Bit;
+    case 4: return OpSize::i32Bit;
+    case 8: return OpSize::i64Bit;
+    case 16: return OpSize::i128Bit;
+    case 32: return OpSize::i256Bit;
+    default: FEX_UNREACHABLE;
+  }
+}
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
