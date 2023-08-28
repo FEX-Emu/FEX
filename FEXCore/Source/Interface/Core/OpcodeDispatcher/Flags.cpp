@@ -569,7 +569,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // If the value can fit then the top bits will be zero
 
-    auto SignBit = _Sbfe(1, SrcSize * 8 - 1, Res);
+    auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
 
     auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
                         (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC)));

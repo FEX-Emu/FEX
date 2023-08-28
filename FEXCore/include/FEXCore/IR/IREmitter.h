@@ -61,7 +61,7 @@ friend class FEXCore::IR::PassManager;
     return Op;
   }
   IRPair<IROp_Sbfe> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
-    return _Sbfe(SrcSize, 0, ssa0);
+    return _Sbfe(OpSize::i64Bit, SrcSize, 0, ssa0);
   }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
@@ -223,9 +223,6 @@ friend class FEXCore::IR::PassManager;
   }
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Bfe(0, Width, lsb, ssa0);
-  }
-  IRPair<IROp_Sbfe> _Sbfe(uint8_t _Width, uint8_t _lsb, OrderedNode *_Src) {
-    return _Sbfe(OpSize::i64Bit, _Width, _lsb, _Src);
   }
   // End of Temporary naughty implicit IR operation handlers
 

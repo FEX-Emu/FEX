@@ -1372,7 +1372,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
     }
   }
 
-  SrcCond = _Sbfe(1, 0, SrcCond);
+  SrcCond = _Sbfe(OpSize::i64Bit, 1, 0, SrcCond);
 
   OrderedNode *VecCond = _VDupFromGPR(16, 8, SrcCond);
 

@@ -1432,7 +1432,7 @@ void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
   // We want to Sext it
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  Src = _Sbfe(Size * 8, 0, Src);
+  Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
@@ -1475,7 +1475,7 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Size = GetSrcSize(Op);
-  OrderedNode *Upper = _Sbfe(1, Size * 8 - 1, Src);
+  OrderedNode *Upper = _Sbfe(OpSize::i64Bit, 1, Size * 8 - 1, Src);
 
   StoreResult(GPRClass, Op, Upper, -1);
 }
@@ -1528,7 +1528,7 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   uint8_t DstSize = GetDstSize(Op);
   uint8_t SrcSize = DstSize >> 1;
 
-  Src = _Sbfe(SrcSize * 8, 0, Src);
+  Src = _Sbfe(OpSize::i64Bit, SrcSize * 8, 0, Src);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
@@ -2101,7 +2101,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   }
 
   if (Size < 32) {
-    Dest = _Sbfe(Size, 0, Dest);
+    Dest = _Sbfe(OpSize::i64Bit, Size, 0, Dest);
   }
 
   OrderedNode *Result = _Ashr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
@@ -2130,7 +2130,7 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   }
 
   if (Size < 32) {
-    Dest = _Sbfe(Size, 0, Dest);
+    Dest = _Sbfe(OpSize::i64Bit, Size, 0, Dest);
   }
 
   OrderedNode *Src = _Constant(Size, Shift);
@@ -2943,7 +2943,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3007,7 +3007,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3084,7 +3084,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3158,7 +3158,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3197,7 +3197,7 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   auto Dest = _Mul(Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
-    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
     ResultHigh = _MulH(Src1, Src2);
@@ -3219,7 +3219,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   auto Dest = _Mul(Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
-    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
     ResultHigh = _MulH(Src1, Src2);
@@ -3245,13 +3245,13 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   if (Size == 1) {
     // Result is stored in AX
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
-    ResultHigh = _Sbfe(8, 8, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 8, 8, Result);
   }
   else if (Size == 2) {
     // 16bits stored in AX
     // 16bits stored in DX
     StoreGPRRegister(X86State::REG_RAX, Result, Size);
-    ResultHigh = _Sbfe(16, 16, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 16, 16, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
   }
   else if (Size == 4) {
@@ -3260,8 +3260,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // Make sure they get Zext correctly
     auto LocalResult = _Bfe(32, 0, Result);
     auto LocalResultHigh = _Bfe(32, 32, Result);
-    ResultHigh = _Sbfe(32, 32, Result);
-    Result = _Sbfe(32, 0, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 32, 32, Result);
+    Result = _Sbfe(OpSize::i64Bit, 32, 0, Result);
     StoreGPRRegister(X86State::REG_RAX, LocalResult);
     StoreGPRRegister(X86State::REG_RDX, LocalResultHigh);
   }
@@ -4413,8 +4413,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
   if (Size == 1) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
-    Src1 = _Sbfe(16, 0, Src1);
-    Divisor = _Sbfe(8, 0, Divisor);
+    Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
+    Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
 
     auto UDivOp = _Div(OpSize::i64Bit, Src1, Divisor);
     auto URemOp = _Rem(OpSize::i64Bit, Src1, Divisor);
