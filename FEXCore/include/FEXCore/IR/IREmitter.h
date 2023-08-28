@@ -115,18 +115,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_CASPair> _CASPair(OrderedNode *_Expected, OrderedNode *_Desired, OrderedNode *_Addr) {
     return _CASPair(static_cast<OpSize>(GetOpSize(_Expected)), _Expected, _Desired, _Addr);
   }
-  IRPair<IROp_AtomicAdd> _AtomicAdd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
-    return _AtomicAdd(static_cast<OpSize>(Size), _Value, _Addr);
-  }
-  IRPair<IROp_AtomicSub> _AtomicSub(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
-    return _AtomicSub(static_cast<OpSize>(Size), _Value, _Addr);
-  }
-  IRPair<IROp_AtomicAnd> _AtomicAnd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
-    return _AtomicAnd(static_cast<OpSize>(Size), _Value, _Addr);
-  }
-  IRPair<IROp_AtomicOr> _AtomicOr(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
-    return _AtomicOr(static_cast<OpSize>(Size), _Value, _Addr);
-  }
   ///< ALU
   IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
