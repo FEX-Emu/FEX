@@ -25,7 +25,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto Tmp = _Ror(_VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
+  auto Tmp = _Ror(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
   auto Top = _Add(_VExtractToGPR(16, 4, Src, 3), Tmp);
   auto Result = _VInsGPR(16, 4, 3, Src, Top);
 
@@ -54,10 +54,10 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   auto W13 = _VExtractToGPR(16, 4, Src, 2);
   auto W14 = _VExtractToGPR(16, 4, Src, 1);
   auto W15 = _VExtractToGPR(16, 4, Src, 0);
-  auto W16 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 3), W13), ThirtyOne);
-  auto W17 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 2), W14), ThirtyOne);
-  auto W18 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 1), W15), ThirtyOne);
-  auto W19 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 0), W16), ThirtyOne);
+  auto W16 = _Ror(OpSize::i32Bit, _Xor(_VExtractToGPR(16, 4, Dest, 3), W13), ThirtyOne);
+  auto W17 = _Ror(OpSize::i32Bit, _Xor(_VExtractToGPR(16, 4, Dest, 2), W14), ThirtyOne);
+  auto W18 = _Ror(OpSize::i32Bit, _Xor(_VExtractToGPR(16, 4, Dest, 1), W15), ThirtyOne);
+  auto W19 = _Ror(OpSize::i32Bit, _Xor(_VExtractToGPR(16, 4, Dest, 0), W16), ThirtyOne);
 
   auto D3 = _VInsGPR(16, 4, 3, Dest, W16);
   auto D2 = _VInsGPR(16, 4, 2, D3, W17);
@@ -117,9 +117,9 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     auto C = _VExtractToGPR(16, 4, Dest, 1);
     auto D = _VExtractToGPR(16, 4, Dest, 0);
 
-    auto A1 = _Add(_Add(_Add(Fn(*this, B, C, D), _Ror(A, _Constant(32, 27))), W0E), K);
+    auto A1 = _Add(_Add(_Add(Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W0E), K);
     auto B1 = A;
-    auto C1 = _Ror(B, _Constant(32, 2));
+    auto C1 = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto D1 = C;
     auto E1 = D;
 
@@ -127,9 +127,9 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
   const auto Round1To3 = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C,
                              OrderedNode *D, OrderedNode *E, OrderedNode *W) -> RoundResult {
-    auto ANext = _Add(_Add(_Add(_Add(Fn(*this, B, C, D), _Ror(A, _Constant(32, 27))), W), E), K);
+    auto ANext = _Add(_Add(_Add(_Add(Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W), E), K);
     auto BNext = A;
-    auto CNext = _Ror(B, _Constant(32, 2));
+    auto CNext = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto DNext = C;
     auto ENext = D;
 
@@ -151,7 +151,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
   const auto Sigma0 = [this](OrderedNode* W) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(W, _Constant(32, 7)), _Ror(W, _Constant(32, 18))), _Lshr(W, _Constant(32, 3)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(W, _Constant(32, 3)));
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -178,7 +178,7 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   const auto Sigma1 = [this](OrderedNode* W) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(W, _Constant(32, 17)), _Ror(W, _Constant(32, 19))), _Lshr(W, _Constant(32, 10)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 17)), _Ror(OpSize::i32Bit, W, _Constant(32, 19))), _Lshr(W, _Constant(32, 10)));
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -207,10 +207,10 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _Xor(_Xor(_And(A, B), _And(A, C)), _And(B, C));
   };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(A, _Constant(32, 2)), _Ror(A, _Constant(32, 13))), _Ror(A, _Constant(32, 22)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, A, _Constant(32, 2)), _Ror(OpSize::i32Bit, A, _Constant(32, 13))), _Ror(OpSize::i32Bit, A, _Constant(32, 22)));
   };
   const auto Sigma1 = [this](OrderedNode *E) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(E, _Constant(32, 6)), _Ror(E, _Constant(32, 11))), _Ror(E, _Constant(32, 25)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, E, _Constant(32, 6)), _Ror(OpSize::i32Bit, E, _Constant(32, 11))), _Ror(OpSize::i32Bit, E, _Constant(32, 25)));
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);

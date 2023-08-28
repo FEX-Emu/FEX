@@ -178,10 +178,10 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Extract sign and make interger absolute
   auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
 
-  auto absolute = _Abs(data);
+  auto absolute = _Abs(OpSize::i64Bit, data);
 
   // left justify the absolute interger
-  auto shift = _Sub(_Constant(63), _FindMSB(absolute));
+  auto shift = _Sub(_Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(absolute, shift);
 
   auto adjusted_exponent = _Sub(_Constant(0x3fff + 63), shift);
@@ -1372,7 +1372,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
     }
   }
 
-  SrcCond = _Sbfe(1, 0, SrcCond);
+  SrcCond = _Sbfe(OpSize::i64Bit, 1, 0, SrcCond);
 
   OrderedNode *VecCond = _VDupFromGPR(16, 8, SrcCond);
 

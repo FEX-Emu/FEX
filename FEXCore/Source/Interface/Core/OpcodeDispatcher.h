@@ -118,7 +118,7 @@ public:
         const uint8_t GPRSize = CTX->GetGPRSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        auto RelocatedNextRIP = _EntrypointOffset(NextRIP - Entry, GPRSize);
+        auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
         _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {
@@ -1065,6 +1065,12 @@ private:
   [[nodiscard]] uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
   [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
   [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] IR::OpSize OpSizeFromDst(X86Tables::DecodedOp Op) const {
+    return IR::SizeToOpSize(GetDstSize(Op));
+  }
+  [[nodiscard]] IR::OpSize OpSizeFromSrc(X86Tables::DecodedOp Op) const {
+    return IR::SizeToOpSize(GetSrcSize(Op));
+  }
 
   static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
     switch (BitOffset) {
@@ -1133,7 +1139,7 @@ private:
 
     // Shift the sign bit into the N bit
     if (SignBit > NBit)
-      Shifted = _Ashr(Res, _Constant(SignBit - NBit));
+      Shifted = _Ashr(OpSize::i64Bit, Res, _Constant(SignBit - NBit));
     else if (SignBit < NBit)
       Shifted = _Lshl(Res, _Constant(NBit - SignBit));
     else
@@ -1171,7 +1177,7 @@ private:
     if (SetBits == 0)
       return _Lshl(Value, _Constant(Bit));
     else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
-      return _Orlshl(NZCV, Value, Bit);
+      return _Orlshl(IR::SizeToOpSize(std::max(GetOpSize(NZCV), GetOpSize(Value))), NZCV, Value, Bit);
     else
       return _Bfi(4, 1, Bit, NZCV, Value);
   }

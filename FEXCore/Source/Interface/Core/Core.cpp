@@ -837,7 +837,7 @@ namespace FEXCore::Context {
 
             Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
             Thread->OpDispatcher->_ThreadRemoveCodeEntry();
-            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
 
             auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
@@ -869,7 +869,7 @@ namespace FEXCore::Context {
             }
             // Invalid instruction
             Thread->OpDispatcher->InvalidOp(DecodedInfo);
-            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
           }
 
           const bool NeedsBlockEnd = (HadDispatchError && TotalInstructions > 0) ||
@@ -886,7 +886,7 @@ namespace FEXCore::Context {
             const uint8_t GPRSize = GetGPRSize();
 
             // We had some instructions. Early exit
-            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
             break;
           }
 

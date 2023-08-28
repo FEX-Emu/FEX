@@ -61,7 +61,7 @@ friend class FEXCore::IR::PassManager;
     return Op;
   }
   IRPair<IROp_Sbfe> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
-    return _Sbfe(SrcSize, 0, ssa0);
+    return _Sbfe(OpSize::i64Bit, SrcSize, 0, ssa0);
   }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
@@ -95,9 +95,6 @@ friend class FEXCore::IR::PassManager;
   }
   IRPair<IROp_Lshr> _Lshr(OrderedNode *Src1, OrderedNode *Src2) {
     return _Lshr(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
-  }
-  IRPair<IROp_Ashr> _Ashr(OrderedNode *Src1, OrderedNode *Src2) {
-    return _Ashr(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
   }
   OrderedNode *Invalid() {
     return InvalidNode;
@@ -155,39 +152,6 @@ friend class FEXCore::IR::PassManager;
     return _AtomicFetchNeg(static_cast<OpSize>(Size), _Addr);
   }
   ///< ALU
-  IRPair<IROp_EntrypointOffset> _EntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
-    return _EntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
-  }
-  IRPair<IROp_InlineEntrypointOffset> _InlineEntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
-    return _InlineEntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
-  }
-  IRPair<IROp_Neg> _Neg(OrderedNode *_Src) {
-    return _Neg(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
-  }
-  IRPair<IROp_Abs> _Abs(OrderedNode *_Src) {
-    return _Abs(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
-  }
-  IRPair<IROp_Not> _Not(OrderedNode *_Src) {
-    return _Not(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
-  }
-  IRPair<IROp_Popcount> _Popcount(OrderedNode *_Src) {
-    return _Popcount(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
-  IRPair<IROp_FindLSB> _FindLSB(OrderedNode *_Src) {
-    return _FindLSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
-  IRPair<IROp_FindMSB> _FindMSB(OrderedNode *_Src) {
-    return _FindMSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
-  IRPair<IROp_FindTrailingZeroes> _FindTrailingZeroes(OrderedNode *_Src) {
-    return _FindTrailingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
-  IRPair<IROp_CountLeadingZeroes> _CountLeadingZeroes(OrderedNode *_Src) {
-    return _CountLeadingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
-  IRPair<IROp_Rev> _Rev(OrderedNode *_Src) {
-    return _Rev(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
   IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
   }
@@ -196,12 +160,6 @@ friend class FEXCore::IR::PassManager;
   }
   IRPair<IROp_Or> _Or(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Or(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
-  }
-  IRPair<IROp_Orlshl> _Orlshl(OrderedNode *_Src1, OrderedNode *_Src2, uint8_t _BitShift) {
-    return _Orlshl(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2, _BitShift);
-  }
-  IRPair<IROp_Orlshr> _Orlshr(OrderedNode *_Src1, OrderedNode *_Src2, uint8_t _BitShift) {
-    return _Orlshr(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2, _BitShift);
   }
   IRPair<IROp_Xor> _Xor(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Xor(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
@@ -218,29 +176,11 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Lshr> _Lshr(uint8_t Size, OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Lshr(static_cast<OpSize>(Size), _Src1, _Src2);
   }
-  IRPair<IROp_Ashr> _Ashr(uint8_t Size, OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _Ashr(static_cast<OpSize>(Size), _Src1, _Src2);
-  }
-  IRPair<IROp_Ror> _Ror(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _Ror(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src1))), _Src1, _Src2);
-  }
   IRPair<IROp_Mul> _Mul(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Mul(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
   }
   IRPair<IROp_UMul> _UMul(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _UMul(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
-  }
-  IRPair<IROp_Div> _Div(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _Div(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
-  }
-  IRPair<IROp_UDiv> _UDiv(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _UDiv(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
-  }
-  IRPair<IROp_Rem> _Rem(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _Rem(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
-  }
-  IRPair<IROp_URem> _URem(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _URem(static_cast<OpSize>(std::max(GetOpSize(_Src1), GetOpSize(_Src2))), _Src1, _Src2);
   }
   IRPair<IROp_MulH> _MulH(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _MulH(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
@@ -256,30 +196,6 @@ friend class FEXCore::IR::PassManager;
   }
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Bfe(0, Width, lsb, ssa0);
-  }
-  IRPair<IROp_Sbfe> _Sbfe(uint8_t _Width, uint8_t _lsb, OrderedNode *_Src) {
-    return _Sbfe(OpSize::i64Bit, _Width, _lsb, _Src);
-  }
-  IRPair<IROp_Extr> _Extr(OrderedNode *_Upper, OrderedNode *_Lower, uint8_t _LSB) {
-    return _Extr(static_cast<OpSize>(std::max(GetOpSize(_Upper), GetOpSize(_Lower))), _Upper, _Lower, _LSB);
-  }
-  IRPair<IROp_PDep> _PDep(OrderedNode *_Input, OrderedNode *_Mask) {
-    return _PDep(static_cast<OpSize>(std::max(GetOpSize(_Input), GetOpSize(_Mask))), _Input, _Mask);
-  }
-  IRPair<IROp_PExt> _PExt(OrderedNode *_Input, OrderedNode *_Mask) {
-    return _PExt(static_cast<OpSize>(std::max(GetOpSize(_Input), GetOpSize(_Mask))), _Input, _Mask);
-  }
-  IRPair<IROp_LDiv> _LDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
-  IRPair<IROp_LUDiv> _LUDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LUDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
-  IRPair<IROp_LRem> _LRem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LRem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
-  IRPair<IROp_LURem> _LURem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LURem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
   }
   // End of Temporary naughty implicit IR operation handlers
 

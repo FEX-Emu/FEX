@@ -1432,7 +1432,7 @@ void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
   // We want to Sext it
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  Src = _Sbfe(Size * 8, 0, Src);
+  Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
@@ -1475,7 +1475,7 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Size = GetSrcSize(Op);
-  OrderedNode *Upper = _Sbfe(1, Size * 8 - 1, Src);
+  OrderedNode *Upper = _Sbfe(OpSize::i64Bit, 1, Size * 8 - 1, Src);
 
   StoreResult(GPRClass, Op, Upper, -1);
 }
@@ -1528,7 +1528,7 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   uint8_t DstSize = GetDstSize(Op);
   uint8_t SrcSize = DstSize >> 1;
 
-  Src = _Sbfe(SrcSize * 8, 0, Src);
+  Src = _Sbfe(OpSize::i64Bit, SrcSize * 8, 0, Src);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
@@ -1974,7 +1974,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHLD behaves like an EXTR where the lower bits are filled from the source.
-      Res = _Extr(Dest, Src, Size - Shift);
+      Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2075,7 +2075,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHRD behaves like an EXTR where the upper bits are filled from the source.
-      Res = _Extr(Src, Dest, Shift);
+      Res = _Extr(OpSizeFromSrc(Op), Src, Dest, Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2101,10 +2101,10 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   }
 
   if (Size < 32) {
-    Dest = _Sbfe(Size, 0, Dest);
+    Dest = _Sbfe(OpSize::i64Bit, Size, 0, Dest);
   }
 
-  OrderedNode *Result = _Ashr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
+  OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if constexpr (SHR1Bit) {
@@ -2130,11 +2130,11 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   }
 
   if (Size < 32) {
-    Dest = _Sbfe(Size, 0, Dest);
+    Dest = _Sbfe(OpSize::i64Bit, Size, 0, Dest);
   }
 
   OrderedNode *Src = _Constant(Size, Shift);
-  OrderedNode *Result = _Ashr(Dest, Src);
+  OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Dest))), Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
@@ -2171,7 +2171,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2210,7 +2210,7 @@ void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2249,7 +2249,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32U, Size)), Src));
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, _Sub(_Constant(Size, std::max(32U, Size)), Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2290,7 +2290,7 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2351,7 +2351,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto NegatedSrc = _Neg(Src);
+  auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
   auto Result = _And(Src, NegatedSrc);
 
   // ...and we're done. Painless!
@@ -2393,7 +2393,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   auto* Result = [&]() -> OrderedNode* {
     // SARX
     if (Op->OP == 0x6F7) {
-      return _Ashr(Size, Src, Shift);
+      return _Ashr(IR::SizeToOpSize(Size), Src, Shift);
     }
     // SHLX
     if (Op->OP == 0x5F7) {
@@ -2438,7 +2438,7 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Amount = Op->Src[1].Data.Literal.Value;
 
-  auto Result = _Ror(Src, _Constant(Amount));
+  auto Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -2460,7 +2460,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PDep(Input, Mask);
+  auto Result = _PDep(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
@@ -2468,7 +2468,7 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PExt(Input, Mask);
+  auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
@@ -2524,7 +2524,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   if (Size == 32 || Size == 64) {
     // Rotate and insert CF in the upper bit
-    auto Res = _Extr(CF, Dest, Shift);
+    auto Res = _Extr(OpSizeFromSrc(Op), CF, Dest, Shift);
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Bfe(1, Shift - 1, Dest);
@@ -2870,7 +2870,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   // Shift 1 more bit that expected to get our result
   // Shifting to the right will now behave like a rotate to the left
   // Which we emulate with a _Ror
-  OrderedNode *Res = _Ror(Tmp, _Sub(_Constant(Size, 64), Src));
+  OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(_Constant(Size, 64), Src));
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2878,7 +2878,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Bfe(1, 0, _Ror(Tmp, _Sub(_Constant(63), Src)));
+    auto NewCF = _Bfe(1, 0, _Ror(OpSize::i64Bit, Tmp, _Sub(_Constant(63), Src)));
     auto CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, _Constant(1),
       NewCF, CF);
@@ -2943,7 +2943,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3007,7 +3007,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3018,7 +3018,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      BitMask = _Not(BitMask);
+      BitMask = _Not(OpSize::i64Bit, BitMask);
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
       Result = _AtomicFetchAnd(1, BitMask, MemoryLocation);
@@ -3084,7 +3084,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3158,7 +3158,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(Size-3,3, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -3197,7 +3197,7 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   auto Dest = _Mul(Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
-    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
     ResultHigh = _MulH(Src1, Src2);
@@ -3219,7 +3219,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   auto Dest = _Mul(Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
-    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
     ResultHigh = _MulH(Src1, Src2);
@@ -3245,13 +3245,13 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   if (Size == 1) {
     // Result is stored in AX
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
-    ResultHigh = _Sbfe(8, 8, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 8, 8, Result);
   }
   else if (Size == 2) {
     // 16bits stored in AX
     // 16bits stored in DX
     StoreGPRRegister(X86State::REG_RAX, Result, Size);
-    ResultHigh = _Sbfe(16, 16, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 16, 16, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
   }
   else if (Size == 4) {
@@ -3260,8 +3260,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // Make sure they get Zext correctly
     auto LocalResult = _Bfe(32, 0, Result);
     auto LocalResultHigh = _Bfe(32, 32, Result);
-    ResultHigh = _Sbfe(32, 32, Result);
-    Result = _Sbfe(32, 0, Result);
+    ResultHigh = _Sbfe(OpSize::i64Bit, 32, 32, Result);
+    Result = _Sbfe(OpSize::i64Bit, 32, 0, Result);
     StoreGPRRegister(X86State::REG_RAX, LocalResult);
     StoreGPRRegister(X86State::REG_RDX, LocalResultHigh);
   }
@@ -3393,7 +3393,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  Src = _Popcount(Src);
+  Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_POPCOUNT(Op, Src);
@@ -3609,8 +3609,8 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
-  auto UDivOp = _UDiv(AL, Imm8);
-  auto URemOp = _URem(AL, Imm8);
+  auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
+  auto URemOp = _URem(OpSize::i64Bit, AL, Imm8);
   auto AH = _Lshl(UDivOp, _Constant(8));
   auto AX = _Add(AH, URemOp);
   StoreGPRRegister(X86State::REG_RAX, AX, 2);
@@ -4274,13 +4274,14 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
   OrderedNode *Dest;
-  if (GetSrcSize(Op) == 2) {
+  const auto Size = GetSrcSize(Op);
+  if (Size == 2) {
     // BSWAP of 16bit is undef. ZEN+ causes the lower 16bits to get zero'd
     Dest = _Constant(0);
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Dest = _Rev(Dest);
+    Dest = _Rev(IR::SizeToOpSize(Size), Dest);
   }
   StoreResult(GPRClass, Op, Dest, -1);
 }
@@ -4336,11 +4337,11 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
     Dest = _AtomicFetchNeg(Size, DestMem);
-    Result = _Neg(Dest);
+    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Neg(Dest);
+    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
   }
@@ -4361,8 +4362,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   if (Size == 1) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
 
-    auto UDivOp = _UDiv(Src1, Divisor);
-    auto URemOp = _URem(Src1, Divisor);
+    auto UDivOp = _UDiv(OpSize::i16Bit, Src1, Divisor);
+    auto URemOp = _URem(OpSize::i16Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
@@ -4371,8 +4372,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   else if (Size == 2) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
-    auto UDivOp = _LUDiv(Src1, Src2, Divisor);
-    auto URemOp = _LURem(Src1, Src2, Divisor);
+    auto UDivOp = _LUDiv(OpSize::i16Bit, Src1, Src2, Divisor);
+    auto URemOp = _LURem(OpSize::i16Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
@@ -4381,8 +4382,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
-    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LUDiv(Src1, Src2, Divisor));
-    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LURem(Src1, Src2, Divisor));
+    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LUDiv(OpSize::i32Bit, Src1, Src2, Divisor));
+    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LURem(OpSize::i32Bit, Src1, Src2, Divisor));
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
@@ -4396,8 +4397,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    auto UDivOp = _LUDiv(Src1, Src2, Divisor);
-    auto URemOp = _LURem(Src1, Src2, Divisor);
+    auto UDivOp = _LUDiv(OpSize::i64Bit, Src1, Src2, Divisor);
+    auto URemOp = _LURem(OpSize::i64Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
@@ -4413,11 +4414,11 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
   if (Size == 1) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
-    Src1 = _Sbfe(16, 0, Src1);
-    Divisor = _Sbfe(8, 0, Divisor);
+    Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
+    Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
 
-    auto UDivOp = _Div(Src1, Divisor);
-    auto URemOp = _Rem(Src1, Divisor);
+    auto UDivOp = _Div(OpSize::i64Bit, Src1, Divisor);
+    auto URemOp = _Rem(OpSize::i64Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
@@ -4426,8 +4427,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   else if (Size == 2) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
-    auto UDivOp = _LDiv(Src1, Src2, Divisor);
-    auto URemOp = _LRem(Src1, Src2, Divisor);
+    auto UDivOp = _LDiv(OpSize::i16Bit, Src1, Src2, Divisor);
+    auto URemOp = _LRem(OpSize::i16Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
@@ -4436,8 +4437,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
-    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LDiv(Src1, Src2, Divisor));
-    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LRem(Src1, Src2, Divisor));
+    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LDiv(OpSize::i32Bit, Src1, Src2, Divisor));
+    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LRem(OpSize::i32Bit, Src1, Src2, Divisor));
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
@@ -4451,8 +4452,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    auto UDivOp = _LDiv(Src1, Src2, Divisor);
-    auto URemOp = _LRem(Src1, Src2, Divisor);
+    auto UDivOp = _LDiv(OpSize::i64Bit, Src1, Src2, Divisor);
+    auto URemOp = _LRem(OpSize::i64Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
@@ -4466,7 +4467,7 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the LSB of this source
-  auto Result = _FindLSB(Src);
+  auto Result = _FindLSB(OpSizeFromSrc(Op), Src);
 
   auto ZeroConst = _Constant(0);
 
@@ -4487,7 +4488,7 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the MSB of this source
-  auto Result = _FindMSB(Src);
+  auto Result = _FindMSB(OpSizeFromSrc(Op), Src);
 
   auto ZeroConst = _Constant(0);
 
@@ -4751,7 +4752,7 @@ void OpDispatchBuilder::Finalize() {
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
     CalculateDeferredFlags();
-    _ExitFunction(_EntrypointOffset(Handler.first - Entry, GPRSize));
+    _ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
   }
 }
 
@@ -5127,7 +5128,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 
 OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
+  return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
 }
 
 OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {
@@ -5583,7 +5584,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  Src = _FindTrailingZeroes(Src);
+  Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_TZCNT(Op, Src);
@@ -5592,14 +5593,14 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto Res = _CountLeadingZeroes(Src);
+  auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
   GenerateFlags_LZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
-  Src = _Rev(Src);
+  Src = _Rev(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, 1);
 }
 

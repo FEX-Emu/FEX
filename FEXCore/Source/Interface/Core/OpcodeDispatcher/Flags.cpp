@@ -148,7 +148,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
                         GetRFLAG(FlagOffset);
 
     if (CTX->BackendFeatures.SupportsShiftedBitwise)
-      Original = _Orlshl(Original, Flag, FlagOffset);
+      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
     else
       Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
@@ -158,7 +158,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     static_assert(FEXCore::X86State::RFLAG_SF_LOC == (FEXCore::X86State::RFLAG_ZF_LOC + 1));
     auto NZCV = GetNZCV();
     auto NZ = _And(NZCV, _Constant(0b11u << 30));
-    Original = _Orlshr(Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
+    Original = _Orlshr(OpSize::i64Bit, Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
   }
 
   // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
@@ -569,7 +569,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // If the value can fit then the top bits will be zero
 
-    auto SignBit = _Sbfe(1, SrcSize * 8 - 1, Res);
+    auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
 
     auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
                         (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC)));

@@ -70,10 +70,10 @@ bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
             OrderedNode *Divisor = CurrentIR.GetNode(Op->Divisor);
             OrderedNode *SDivOp{};
             if (IROp->Op == OP_LDIV) {
-              SDivOp = IREmit->_Div(Lower, Divisor);
+              SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
             }
             else {
-              SDivOp = IREmit->_Rem(Lower, Divisor);
+              SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
             }
             IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
             Changed = true;
@@ -90,10 +90,10 @@ bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
             OrderedNode *Divisor = CurrentIR.GetNode(Op->Divisor);
             OrderedNode *UDivOp{};
             if (IROp->Op == OP_LUDIV) {
-              UDivOp = IREmit->_UDiv(Lower, Divisor);
+              UDivOp = IREmit->_UDiv(OpSize::i64Bit, Lower, Divisor);
             }
             else {
-              UDivOp = IREmit->_URem(Lower, Divisor);
+              UDivOp = IREmit->_URem(OpSize::i64Bit, Lower, Divisor);
             }
             IREmit->ReplaceAllUsesWith(CodeNode, UDivOp);
             Changed = true;

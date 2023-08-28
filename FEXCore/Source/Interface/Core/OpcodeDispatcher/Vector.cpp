@@ -4705,7 +4705,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
       OrderedNode *Result = _VectorZero(Core::CPUState::XMM_SSE_REG_SIZE);
       for (uint32_t i = 0; i < NumElements; i++) {
-        OrderedNode *SignBit = _Sbfe(1, i, IntermediateResult);
+        OrderedNode *SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
         Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
       }
       StoreXMMRegister(0, Result);
@@ -4722,8 +4722,8 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     OrderedNode *ResultNoFlags = _Bfe(16, 0, IntermediateResult);
 
     OrderedNode *IfZero = _Constant(16 >> (Control & 1));
-    OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(ResultNoFlags)
-                                         : _FindLSB(ResultNoFlags);
+    OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags)
+                                         : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
 
     OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
                                   IfZero, IfNotZero);
