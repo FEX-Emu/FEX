@@ -3018,7 +3018,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      BitMask = _Not(BitMask);
+      BitMask = _Not(OpSize::i64Bit, BitMask);
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
       Result = _AtomicFetchAnd(1, BitMask, MemoryLocation);

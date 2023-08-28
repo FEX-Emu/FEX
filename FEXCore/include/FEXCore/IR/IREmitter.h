@@ -152,9 +152,6 @@ friend class FEXCore::IR::PassManager;
     return _AtomicFetchNeg(static_cast<OpSize>(Size), _Addr);
   }
   ///< ALU
-  IRPair<IROp_Not> _Not(OrderedNode *_Src) {
-    return _Not(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
-  }
   IRPair<IROp_Rev> _Rev(OrderedNode *_Src) {
     return _Rev(static_cast<OpSize>(GetOpSize(_Src)), _Src);
   }
