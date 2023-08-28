@@ -4336,7 +4336,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    Dest = _AtomicFetchNeg(Size, DestMem);
+    Dest = _AtomicFetchNeg(OpSizeFromSrc(Op), DestMem);
     Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
