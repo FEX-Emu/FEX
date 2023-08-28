@@ -5592,7 +5592,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto Res = _CountLeadingZeroes(Src);
+  auto Res = _CountLeadingZeroes(IR::SizeToOpSize(GetSrcSize(Op)), Src);
   StoreResult(GPRClass, Op, Res, -1);
   GenerateFlags_LZCNT(Op, Src);
 }
