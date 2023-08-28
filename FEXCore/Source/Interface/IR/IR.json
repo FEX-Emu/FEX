@@ -1626,15 +1626,15 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUShl u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector": {
+      "FPR = VUShl u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector": {
+      "FPR = VUShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector": {
+      "FPR = VSShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

@@ -9,6 +9,30 @@
     ]
   },
   "Instructions": {
+    "movmskps eax, xmm0": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x50",
+      "ExpectedArm64ASM": [
+        "ushr v4.4s, v16.4s, #31",
+        "index z5.s, #0, #1",
+        "ushl v4.4s, v4.4s, v5.4s",
+        "addv s4, v4.4s",
+        "mov w4, v4.s[0]"
+      ]
+    },
+    "movmskps rax, xmm0": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x50",
+      "ExpectedArm64ASM": [
+        "ushr v4.4s, v16.4s, #31",
+        "index z5.s, #0, #1",
+        "ushl v4.4s, v4.4s, v5.4s",
+        "addv s4, v4.4s",
+        "mov w4, v4.s[0]"
+      ]
+    },
     "psrlw mm0, mm1": {
       "ExpectedInstructionCount": 6,
       "Optimal": "No",

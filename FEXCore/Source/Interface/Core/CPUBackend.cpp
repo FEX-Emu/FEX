@@ -14,6 +14,7 @@ constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant:
   {0x0000'0000'8000'0000, 0x0000'0000'8000'0000}, // NAMED_VECTOR_PADDSUBPS_INVERT_UPPER
   {0x8000'0000'0000'0000, 0x0000'0000'0000'0000}, // NAMED_VECTOR_PADDSUBPD_INVERT
   {0x8000'0000'0000'0000, 0x0000'0000'0000'0000}, // NAMED_VECTOR_PADDSUBPD_INVERT_UPPER
+  {0x0000'0001'0000'0000, 0x0000'0003'0000'0002}, // NAMED_VECTOR_MOVMSKPS_SHIFT
 };
 
 constexpr static auto PSHUFLW_LUT {
@@ -130,12 +131,9 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
   // Initialize named vector constants.
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX] = reinterpret_cast<uint64_t>(NamedVectorConstants[0]);
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[1]);
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT] = reinterpret_cast<uint64_t>(NamedVectorConstants[2]);
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[3]);
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT] = reinterpret_cast<uint64_t>(NamedVectorConstants[4]);
-  Common.NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER] = reinterpret_cast<uint64_t>(NamedVectorConstants[5]);
+  for (size_t i = 0; i < FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX; ++i) {
+    Common.NamedVectorConstantPointers[i] = reinterpret_cast<uint64_t>(NamedVectorConstants[i]);
+  }
 
   // Initialize Indexed named vector constants.
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] = reinterpret_cast<uint64_t>(PSHUFLW_LUT.data());
