@@ -2351,7 +2351,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto NegatedSrc = _Neg(Src);
+  auto NegatedSrc = _Neg(IR::SizeToOpSize(GetSrcSize(Op)), Src);
   auto Result = _And(Src, NegatedSrc);
 
   // ...and we're done. Painless!
@@ -4336,11 +4336,11 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
     Dest = _AtomicFetchNeg(Size, DestMem);
-    Result = _Neg(Dest);
+    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Neg(Dest);
+    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
   }
