@@ -536,6 +536,17 @@ enum IndexNamedVectorConstant : uint8_t {
   INDEXED_NAMED_VECTOR_MAX,
 };
 
+// This must directly match bytes to the named opsize.
+// Implicit sized IR operations does math to get between sizes.
+enum OpSize : uint8_t {
+  i8Bit = 1,
+  i16Bit = 2,
+  i32Bit = 4,
+  i64Bit = 8,
+  i128Bit = 16,
+  i256Bit = 32,
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES

@@ -773,8 +773,8 @@ DEF_OP(FindMSB) {
   }
 }
 
-DEF_OP(FindTrailingZeros) {
-  auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+DEF_OP(FindTrailingZeroes) {
+  auto Op = IROp->C<IR::IROp_FindTrailingZeroes>();
   const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {

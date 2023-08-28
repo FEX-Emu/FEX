@@ -141,6 +141,7 @@
     "u16": "uint16_t",
     "u32": "uint32_t",
     "u64": "uint64_t",
+    "OpSize": "FEXCore::IR::OpSize",
     "SSA": "OrderedNode*",
     "GPR": "OrderedNode*",
     "GPRPair": "OrderedNode*",
@@ -309,18 +310,24 @@
       }
     },
     "Moves": {
-      "GPR = ExtractElementPair GPRPair:$Pair, u8:$Element": {
+      "GPR = ExtractElementPair OpSize:#Size, GPRPair:$Pair, u8:$Element": {
         "Desc": ["Extracts a register for the register pair"],
-        "DestSize": "GetOpSize(_Pair) >> 1"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
-      "GPRPair = CreateElementPair GPR:$Lower, GPR:$Upper": {
+      "GPRPair = CreateElementPair OpSize:#Size, GPR:$Lower, GPR:$Upper": {
         "Desc": ["Inserts a register for the register pair",
                  "ssa0 is the lower incoming register",
                  "ssa1 is the upper incoming register"
                 ],
-        "DestSize": "GetOpSize(_Lower) * 2",
-        "NumElements": "2"
+        "DestSize": "Size",
+        "NumElements": "2",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
+        ]
       },
       "SSA = Phi SSA:$PhiBegin, SSA:$PhiEnd, RegisterClass:$Class": {
         "DestSize": "~0",
@@ -575,7 +582,7 @@
       }
     },
     "Atomic": {
-      "GPR = CAS GPR:$Expected, GPR:$Desired, GPR:$Addr": {
+      "GPR = CAS OpSize:#Size, GPR:$Expected, GPR:$Desired, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Does a compare and swap of values to a memory location",
                  "This mostly matches the C++ atomic_compare_exchange_strong function",
@@ -586,9 +593,12 @@
                  "if (deref(%Addr) != %Expected) Dest = deref(%Addr)"
                 ],
 
-        "DestSize": "GetOpSize(_Expected)"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPRPair = CASPair GPRPair:$Expected, GPRPair:$Desired, GPR:$Addr": {
+      "GPRPair = CASPair OpSize:#Size, GPRPair:$Expected, GPRPair:$Desired, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Does a compare and exchange with two GPRPair values",
                  "ssa0 is the comparison value",
@@ -597,96 +607,130 @@
                  "Returns a pair containing the value in memory"
                 ],
         "HasDest": true,
-        "DestSize": "GetOpSize(_Expected)",
+        "DestSize": "Size",
         "NumElements": "2",
         "EmitValidation": [
-          "(GetOpElementSize(_Expected) == 4 && GetOpSize(_Expected) == 8) || GetOpElementSize(_Expected) == 8",
-          "(GetOpElementSize(_Expected) == 8 && GetOpSize(_Expected) == 16) || GetOpElementSize(_Expected) == 4"
+          "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
         ]
       },
-      "GPR = AtomicAdd u8:#Size, GPR:$Value, GPR:$Addr": {
+      "AtomicAdd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer add"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-
-      "AtomicSub u8:#Size, GPR:$Value, GPR:$Addr": {
+      "AtomicSub OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer sub"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "AtomicAnd u8:#Size, GPR:$Value, GPR:$Addr": {
+      "AtomicAnd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer and"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "AtomicOr u8:#Size, GPR:$Value, GPR:$Addr": {
+      "AtomicOr OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer or"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "AtomicXor u8:#Size, GPR:$Value, GPR:$Addr": {
+      "AtomicXor OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer xor"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicSwap u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicSwap OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer swap"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchAdd u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicFetchAdd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and add",
                  "Atomically fetches %Addr and adds %value to the memory location",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchSub u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicFetchSub OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and sub",
                  "Atomically fetches %Addr and subtracts %value to the memory location",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchAnd u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicFetchAnd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary and",
                  "Atomically fetches %Addr and binary ands %value to the memory location",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchOr u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicFetchOr OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary or",
                  "Atomically fetches %Addr and binary ors %value to the memory location",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchXor u8:#Size, GPR:$Value, GPR:$Addr": {
+      "GPR = AtomicFetchXor OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary exclusive or",
                  "Atomically fetches %Addr and binary exclusive ors %value to the memory location",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = AtomicFetchNeg u8:#Size, GPR:$Addr": {
+      "GPR = AtomicFetchNeg OpSize:#Size, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and two's complement negate",
                  "Dest is the value prior to operating on the value in memory"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
       "TelemetrySetValue GPR:$Value, u8:$TelemetryValueIndex": {
         "HasSideEffects": true,
@@ -697,20 +741,26 @@
       }
     },
     "ALU": {
-      "GPR = EntrypointOffset i64:$Offset, u8:#RegisterSize": {
+      "GPR = EntrypointOffset OpSize:#Size, i64:$Offset": {
         "Desc": ["Returns the <entrypoint> + Offset address",
                  "When the size is 4 bytes then 32-bit overflow and underflow needs to work"
                 ],
-        "DestSize": "RegisterSize"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
-      "InlineEntrypointOffset i64:$Offset, u8:#RegisterSize": {
+      "InlineEntrypointOffset OpSize:#Size, i64:$Offset": {
         "Desc": ["Returns the <entrypoint> + Offset address",
                  "When the size is 4 bytes then 32-bit overflow and underflow needs to work"
                 ],
         "HasSideEffects": true,
         "RAOverride": "0",
-        "DestSize": "RegisterSize"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
       "GPR = Constant i64:$Constant": {
@@ -728,7 +778,10 @@
       },
 
       "GPRPair = TruncElementPair GPRPair:$Pair, u8:#ByteSize": {
-        "Desc": "Truncates each element of a pair to the destination size",
+        "Desc": [
+          "Truncates each element of a pair to the destination size",
+          "TODO: This IR op should get removed"
+        ],
         "DestSize": "ByteSize * 2",
         "NumElements": "2"
       },
@@ -745,248 +798,391 @@
         "DestSize": "8"
       },
 
-      "GPR = Neg GPR:$Src": {
+      "GPR = Neg OpSize:#Size, GPR:$Src": {
         "Desc": ["Integer negation",
                  "Dest = -Src",
                  "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Abs GPR:$Src": {
+      "GPR = Abs OpSize:#Size, GPR:$Src": {
         "Desc": ["Integer 2's complement absolute value",
                  "Dest = std::abs(Src)",
                  "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Not GPR:$Src": {
+      "GPR = Not OpSize:#Size, GPR:$Src": {
         "Desc": ["Integer binary not",
                  "op:",
                  "Dest = ~Src"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Popcount GPR:$Src": {
+      "GPR = Popcount OpSize:#Size, GPR:$Src": {
         "Desc": ["Population count of source register",
                  "Returns the number of bits set"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = FindLSB GPR:$Src": {
+      "GPR = FindLSB OpSize:#Size, GPR:$Src": {
         "Desc": ["Find least-significant-bit set",
                  "Returns the index of the least significant bit set",
                  "In the case of zero returns ~0U"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = FindMSB GPR:$Src": {
+      "GPR = FindMSB OpSize:#Size, GPR:$Src": {
         "Desc": ["Find most-significant-bit set",
                  "Returns the index of the most significant bit set",
                  "In the case of zero returns ~0U"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = FindTrailingZeros GPR:$Src": {
+      "GPR = FindTrailingZeroes OpSize:#Size, GPR:$Src": {
         "Desc": ["Counts the number of trailing zero bits in a GPR",
                  "Returns the number of bits that are zero trailing",
                  "In the case of zero returns the size in bits of the input"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = CountLeadingZeroes GPR:$Src": {
+      "GPR = CountLeadingZeroes OpSize:#Size, GPR:$Src": {
         "Desc": ["Counts the number of leading zero bits in a GPR",
                  "Returns the number of bits that are zero leading",
                  "In the case of zero returns the size in bits of the input"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Rev GPR:$Src": {
+      "GPR = Rev OpSize:#Size, GPR:$Src": {
         "Desc": ["Reverses the byte order of the register",
                  "Specifically 8bit byte swap size. (Not 16bit or 32bit word swapping)"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-
-      "GPR = Add GPR:$Src1, GPR:$Src2": {
+      "GPR = Add OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Add",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Sub GPR:$Src1, GPR:$Src2": {
+      "GPR = Sub OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Sub",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Or GPR:$Src1, GPR:$Src2": {
+      "GPR = Or OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary or"
-                ]
+                ],
+        "Comment": [
+          "TODO: There is an assumption that Or of operating size < 32-bit makes sense"
+        ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Orlshl GPR:$Src1, GPR:$Src2, u8:$BitShift": {
+      "GPR = Orlshl OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
         "Desc": ["Integer binary or with logical shift left"
-                ]
+                ],
+        "Comment": [
+          "TODO: There is an assumption that Orlshl of operating size < 32-bit makes sense"
+        ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Orlshr GPR:$Src1, GPR:$Src2, u8:$BitShift": {
+      "GPR = Orlshr OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
         "Desc": ["Integer binary or with logical shift right"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Xor GPR:$Src1, GPR:$Src2": {
+      "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary exclusive or"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = And GPR:$Src1, GPR:$Src2": {
+      "GPR = And OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Andn GPR:$Src1, GPR:$Src2": {
+      "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
       "GPR = TestNZ u8:$Size, GPR:$Src1": {
         "Desc": ["Return NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
         "DestSize": "4"
       },
-      "GPR = Lshl u8:#Size, GPR:$Src1, GPR:$Src2": {
+      "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
                 ],
+        "DestSize": "Size",
         "EmitValidation": [
-          "Size >= 4"
-        ],
-        "DestSize": "Size"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Lshr u8:#Size, GPR:$Src1, GPR:$Src2": {
+      "GPR = Lshr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift right"
                 ],
+        "DestSize": "Size",
         "EmitValidation": [
-          "Size >= 4"
-        ],
-        "DestSize": "Size"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Ashr u8:#Size, GPR:$Src1, GPR:$Src2": {
+      "GPR = Ashr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer arithmetic shift right"
                 ],
+        "DestSize": "Size",
         "EmitValidation": [
-          "Size >= 4"
-        ],
-        "DestSize": "Size"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Ror GPR:$Src1, GPR:$Src2": {
+      "GPR = Ror OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer rotate right"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Mul GPR:$Src1, GPR:$Src2": {
+      "GPR = Mul OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer signed multiplication"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = UMul GPR:$Src1, GPR:$Src2": {
+      "GPR = UMul OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer unsigned multiplication"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-
-      "GPR = Div GPR:$Src1, GPR:$Src2": {
+      "GPR = Div OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer signed division"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = UDiv GPR:$Src1, GPR:$Src2": {
+      "GPR = UDiv OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer unsigned division"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Rem GPR:$Src1, GPR:$Src2": {
+      "GPR = Rem OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer signed remainder"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = URem GPR:$Src1, GPR:$Src2": {
+      "GPR = URem OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer unsigned remainder"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = MulH GPR:$Src1, GPR:$Src2": {
+      "GPR = MulH OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer signed multiply returning high results",
                  "op:",
                  "Tmp <size * 2> = Src1 * Src2;",
                  "Dest = Tmp >> (size * 8);"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = UMulH GPR:$Src1, GPR:$Src2": {
+      "GPR = UMulH OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer unsigned multiply returning high results",
                  "op:",
                  "Tmp <size * 2> = Src1 * Src2;",
                  "Dest = Tmp >> (size * 8);"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Bfi u8:#DestSize, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
+      "GPR = Bfi OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
         "Desc": ["Copies a bitfield from one GPR to another",
                  "The source bitfield is from Src[Width:0]",
                  "The bitfield is copied in to Dest[(Width + lsb):lsb]"
                 ],
-        "DestSize": "DestSize"
+        "Comment": [
+          "TODO: There is an assumption that BFI of operating size < 32-bit makes sense"
+        ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Bfe u8:#DestSize, u8:$Width, u8:$lsb, GPR:$Src": {
+      "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
         "Desc": ["Extracts a bitfield from one GPR with zext",
                  "The source bitfield is from Src[Width:0]",
                  "The bitfield is then zero extended"
                 ],
-        "DestSize": "DestSize != 0 ? DestSize : GetOpSize(_Src)"
+        "Comment": [
+          "TODO: There is an assumption that BFE of operating size < 32-bit makes sense"
+        ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = Sbfe u8:$Width, u8:$lsb, GPR:$Src": {
+      "GPR = Sbfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
         "Desc": ["Extracts a bitfield from one GPR with sext",
                  "The source bitfield is from Src[Width:0]",
                  "The bitfield is then sign extended"
                 ],
-        "DestSize": "8"
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
       "GPR = Select CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal, u8:$CompareSize": {
         "Desc": ["Ternary selection of GPRs",
                  "op:",
-                 "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal"
+                 "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal",
+                 "TODO: Make this less opaque about how it operates"
                 ],
         "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(_TrueVal), GetOpSize(_FalseVal)))",
         "EmitValidation": [
           "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
         ]
       },
-      "GPR = Extr GPR:$Upper, GPR:$Lower, u8:$LSB": {
+      "GPR = Extr OpSize:#Size, GPR:$Upper, GPR:$Lower, u8:$LSB": {
         "Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",
                  "It then extracts a bitfield width that size of a GPR from the LSB",
                  "Valid LSB range is 0-31 for 32bit and 0-63 for 64bit",
                  "<Size * 2> ConcatValue = $Upper:$Lower",
                  "Result = ConcatValue<LSB+Size - 1: LSB>"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = PDep GPR:$Input, GPR:$Mask": {
+      "GPR = PDep OpSize:#Size, GPR:$Input, GPR:$Mask": {
         "Desc": ["Performs a parallel bit deposit.",
                  "Takes the contiguous low-order bits and deposits them into",
                  "the destination at the locations specified by the Mask."
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
-      "GPR = PExt GPR:$Input, GPR:$Mask": {
+      "GPR = PExt OpSize:#Size, GPR:$Input, GPR:$Mask": {
         "Desc": ["Performs a parallel bit extract.",
                  "Each bit set in the mask will select the corresponding bit in the Input",
                  "and transfers them to the lower contiguous bits in the destination."
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
-      "GPR = LDiv GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = LUDiv GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = LRem GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long signed remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
-      "GPR = LURem GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
-                ]
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
       },
 
       "Float to GPR": {"Ignore": 1},

@@ -80,7 +80,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(POPCOUNT,               Popcount);
   REGISTER_OP(FINDLSB,                FindLSB);
   REGISTER_OP(FINDMSB,                FindMSB);
-  REGISTER_OP(FINDTRAILINGZEROS,      FindTrailingZeros);
+  REGISTER_OP(FINDTRAILINGZEROES,     FindTrailingZeroes);
   REGISTER_OP(COUNTLEADINGZEROES,     CountLeadingZeroes);
   REGISTER_OP(REV,                    Rev);
   REGISTER_OP(BFI,                    Bfi);

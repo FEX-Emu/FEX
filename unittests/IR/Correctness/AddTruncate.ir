@@ -23,16 +23,16 @@
     %MemValueA i64 = LoadMem GPR, #8, %AddrA i64, %Invalid, #8, SXTX, #1
     %AddrB i64 = Constant #0x1000010
     %MemValueB i64 = LoadMem GPR, #8, %AddrB i64, %Invalid, #8, SXTX, #1
-    %ResultA i32 = Add %MemValueA, %MemValueB
-    %ResultB i64 = Add %MemValueA, %MemValueB
+    %ResultA i32 = Add i32, %MemValueA, %MemValueB
+    %ResultB i64 = Add i64, %MemValueA, %MemValueB
 
     (%Store i64) StoreRegister %ResultA i64, #0, #0x8, GPR, GPRFixed, #8
     (%Store i64) StoreRegister %ResultB i64, #0, #0x20, GPR, GPRFixed, #8
 ;  Constant optimisable version
     %ValueC i64 = Constant #0xaaaaaaaaaaaaaaa8
     %ValueD i64 = Constant #0x5555555555555551
-    %ResultC i32 = Add %ValueC, %ValueD
-    %ResultD i64 = Add %ValueC, %ValueD
+    %ResultC i32 = Add i32, %ValueC, %ValueD
+    %ResultD i64 = Add i64, %ValueC, %ValueD
     (%Store i64) StoreRegister %ResultC i64, #0, #0x10, GPR, GPRFixed, #8
     (%Store i64) StoreRegister %ResultD i64, #0, #0x18, GPR, GPRFixed, #8
     (%7 i0) Break {0.11.0.128}
