@@ -181,7 +181,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto absolute = _Abs(data);
 
   // left justify the absolute interger
-  auto shift = _Sub(_Constant(63), _FindMSB(absolute));
+  auto shift = _Sub(_Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(absolute, shift);
 
   auto adjusted_exponent = _Sub(_Constant(0x3fff + 63), shift);

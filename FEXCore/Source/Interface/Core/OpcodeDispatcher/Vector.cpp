@@ -4722,7 +4722,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     OrderedNode *ResultNoFlags = _Bfe(16, 0, IntermediateResult);
 
     OrderedNode *IfZero = _Constant(16 >> (Control & 1));
-    OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(ResultNoFlags)
+    OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags)
                                          : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
 
     OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
