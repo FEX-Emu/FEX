@@ -2171,7 +2171,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2210,7 +2210,7 @@ void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2249,7 +2249,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32U, Size)), Src));
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, _Sub(_Constant(Size, std::max(32U, Size)), Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2290,7 +2290,7 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, Src);
+  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2438,7 +2438,7 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Amount = Op->Src[1].Data.Literal.Value;
 
-  auto Result = _Ror(Src, _Constant(Amount));
+  auto Result = _Ror(IR::SizeToOpSize(GetSrcSize(Op)), Src, _Constant(Amount));
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -2870,7 +2870,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   // Shift 1 more bit that expected to get our result
   // Shifting to the right will now behave like a rotate to the left
   // Which we emulate with a _Ror
-  OrderedNode *Res = _Ror(Tmp, _Sub(_Constant(Size, 64), Src));
+  OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(_Constant(Size, 64), Src));
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2878,7 +2878,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Bfe(1, 0, _Ror(Tmp, _Sub(_Constant(63), Src)));
+    auto NewCF = _Bfe(1, 0, _Ror(OpSize::i64Bit, Tmp, _Sub(_Constant(63), Src)));
     auto CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, _Constant(1),
       NewCF, CF);
