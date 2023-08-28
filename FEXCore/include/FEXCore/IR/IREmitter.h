@@ -179,9 +179,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_FindMSB> _FindMSB(OrderedNode *_Src) {
     return _FindMSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
   }
-  IRPair<IROp_FindTrailingZeroes> _FindTrailingZeroes(OrderedNode *_Src) {
-    return _FindTrailingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
   IRPair<IROp_CountLeadingZeroes> _CountLeadingZeroes(OrderedNode *_Src) {
     return _CountLeadingZeroes(static_cast<OpSize>(GetOpSize(_Src)), _Src);
   }
