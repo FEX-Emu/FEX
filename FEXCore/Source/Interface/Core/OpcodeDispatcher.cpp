@@ -389,7 +389,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         break;
       }
       case FEXCore::IR::IROps::OP_AND: {
-        Dest = _AtomicFetchAnd(Size, Src, DestMem);
+        Dest = _AtomicFetchAnd(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _And(Dest, Src);
         break;
       }
@@ -3021,7 +3021,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       BitMask = _Not(OpSize::i64Bit, BitMask);
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
-      Result = _AtomicFetchAnd(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchAnd(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
