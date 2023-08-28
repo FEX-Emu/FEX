@@ -70,10 +70,10 @@ bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
             OrderedNode *Divisor = CurrentIR.GetNode(Op->Divisor);
             OrderedNode *SDivOp{};
             if (IROp->Op == OP_LDIV) {
-              SDivOp = IREmit->_Div(Lower, Divisor);
+              SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
             }
             else {
-              SDivOp = IREmit->_Rem(Lower, Divisor);
+              SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
             }
             IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
             Changed = true;

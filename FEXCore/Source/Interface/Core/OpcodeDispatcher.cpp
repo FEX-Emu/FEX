@@ -4416,8 +4416,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     Src1 = _Sbfe(16, 0, Src1);
     Divisor = _Sbfe(8, 0, Divisor);
 
-    auto UDivOp = _Div(Src1, Divisor);
-    auto URemOp = _Rem(Src1, Divisor);
+    auto UDivOp = _Div(OpSize::i64Bit, Src1, Divisor);
+    auto URemOp = _Rem(OpSize::i64Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
