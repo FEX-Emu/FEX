@@ -1032,8 +1032,8 @@
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "uxtb x21, w7",
+        "lsr w20, w4, #0",
+        "uxtb w21, w7",
         "crc32cb w4, w20, w21"
       ]
     },
@@ -1044,8 +1044,8 @@
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "uxth x21, w7",
+        "lsr w20, w4, #0",
+        "uxth w21, w7",
         "crc32ch w4, w20, w21"
       ]
     },
@@ -1056,8 +1056,8 @@
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
-        "ubfx x21, x7, #0, #32",
+        "lsr w20, w4, #0",
+        "lsr w21, w7, #0",
         "crc32cw w4, w20, w21"
       ]
     },
@@ -1068,7 +1068,7 @@
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "uxtb x20, w7",
+        "uxtb w20, w7",
         "crc32cb w4, w4, w20"
       ]
     },
@@ -1090,9 +1090,9 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x7, #0, #32",
-        "ubfx x23, x4, #0, #32",
+        "ubfx w21, w20, #29, #1",
+        "lsr w22, w7, #0",
+        "lsr w23, w4, #0",
         "add w24, w22, w21",
         "add w4, w23, w24",
         "cmp w4, w22",
@@ -1134,9 +1134,9 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #28, #1",
-        "ubfx x22, x7, #0, #32",
-        "ubfx x23, x4, #0, #32",
+        "ubfx w21, w20, #28, #1",
+        "lsr w22, w7, #0",
+        "lsr w23, w4, #0",
         "add w24, w22, w21",
         "add w4, w23, w24",
         "cmp w4, w22",

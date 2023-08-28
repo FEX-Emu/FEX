@@ -730,7 +730,7 @@
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov v16.b[0], w20"
       ]
     },
@@ -741,7 +741,7 @@
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov v16.b[1], w20"
       ]
     },
@@ -752,7 +752,7 @@
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov v16.b[15], w20"
       ]
     },
@@ -793,7 +793,7 @@
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov v16.s[0], w20"
       ]
     },
@@ -804,7 +804,7 @@
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov v16.s[1], w20"
       ]
     },
@@ -815,7 +815,7 @@
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x20, x4, #0, #32",
+        "lsr w20, w4, #0",
         "mov v16.s[3], w20"
       ]
     },

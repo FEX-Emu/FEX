@@ -546,45 +546,45 @@
         "mov z4.d, p7/m, z16.d",
         "mov w20, #0x0",
         "mov w21, v4.s[0]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "orr x20, x20, x21",
         "mov w21, v4.s[1]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #1",
         "orr x20, x20, x21",
         "mov w21, v4.s[2]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #2",
         "orr x20, x20, x21",
         "mov w21, v4.s[3]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #3",
         "orr x20, x20, x21",
         "not p0.b, p7/z, p6.b",
         "compact z0.d, p0, z4.d",
         "mov w21, v4.s[0]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #4",
         "orr x20, x20, x21",
         "not p0.b, p7/z, p6.b",
         "compact z0.d, p0, z4.d",
         "mov w21, v4.s[1]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #5",
         "orr x20, x20, x21",
         "not p0.b, p7/z, p6.b",
         "compact z0.d, p0, z4.d",
         "mov w21, v4.s[2]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #6",
         "orr x20, x20, x21",
         "not p0.b, p7/z, p6.b",
         "compact z0.d, p0, z4.d",
         "mov w21, v4.s[3]",
-        "ubfx x21, x21, #31, #1",
+        "lsr w21, w21, #31",
         "lsl w21, w21, #7",
         "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "lsr w4, w20, #0"
       ]
     },
     "vmovmskpd rax, xmm0": {
@@ -629,7 +629,7 @@
         "lsr x21, x21, #63",
         "lsl x21, x21, #3",
         "orr x20, x20, x21",
-        "ubfx x4, x20, #0, #32"
+        "lsr w4, w20, #0"
       ]
     },
     "vsqrtps xmm0, xmm1": {
@@ -3023,7 +3023,7 @@
         "Map 1 0b01 0xC4 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov z4.d, p7/m, z17.d",
         "mov v4.h[0], w20",
         "mov v4.16b, v4.16b",
@@ -3037,7 +3037,7 @@
         "Map 1 0b01 0xC4 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov z4.d, p7/m, z17.d",
         "mov v4.h[1], w20",
         "mov v4.16b, v4.16b",
@@ -3051,7 +3051,7 @@
         "Map 1 0b01 0xC4 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uxth x20, w4",
+        "uxth w20, w4",
         "mov z4.d, p7/m, z17.d",
         "mov v4.h[7], w20",
         "mov v4.16b, v4.16b",
@@ -3805,7 +3805,7 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
-        "bic w21, w21, w22",
+        "bic x21, x21, x22",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]"
       ]
@@ -3837,7 +3837,7 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
-        "bic w21, w21, w22",
+        "bic x21, x21, x22",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]"
       ]
@@ -3869,7 +3869,7 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
-        "bic w21, w21, w22",
+        "bic x21, x21, x22",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]"
       ]
@@ -3901,7 +3901,7 @@
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
-        "bic w21, w21, w22",
+        "bic x21, x21, x22",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]"
       ]
