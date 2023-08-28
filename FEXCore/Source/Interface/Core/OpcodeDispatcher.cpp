@@ -374,27 +374,27 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
-        Dest = _AtomicFetchAdd(Size, Src, DestMem);
+        Dest = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Add(Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_SUB: {
-        Dest = _AtomicFetchSub(Size, Src, DestMem);
+        Dest = _AtomicFetchSub(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Sub(Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_OR: {
-        Dest = _AtomicFetchOr(Size, Src, DestMem);
+        Dest = _AtomicFetchOr(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Or(Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_AND: {
-        Dest = _AtomicFetchAnd(Size, Src, DestMem);
+        Dest = _AtomicFetchAnd(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _And(Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_XOR: {
-        Dest = _AtomicFetchXor(Size, Src, DestMem);
+        Dest = _AtomicFetchXor(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Xor(Dest, Src);
         break;
       }
@@ -456,7 +456,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    Before = _AtomicFetchAdd(Size, ALUOp, DestMem);
+    Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Add(Before, ALUOp);
   }
   else {
@@ -487,7 +487,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    Before = _AtomicFetchSub(Size, ALUOp, DestMem);
+    Before = _AtomicFetchSub(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Sub(Before, ALUOp);
   }
   else {
@@ -1510,7 +1510,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 
     Dest = AppendSegmentOffset(Dest, Op->Flags);
 
-    auto Result = _AtomicSwap(GetSrcSize(Op), Src, Dest);
+    auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
   else {
@@ -3021,7 +3021,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       BitMask = _Not(OpSize::i64Bit, BitMask);
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
-      Result = _AtomicFetchAnd(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchAnd(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
@@ -3095,7 +3095,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      Result = _AtomicFetchOr(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
@@ -3169,7 +3169,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
-      Result = _AtomicFetchXor(1, BitMask, MemoryLocation);
+      Result = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
     } else {
@@ -3344,7 +3344,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    _AtomicXor(Size, MaskConst, DestMem);
+    _AtomicXor(IR::SizeToOpSize(Size), MaskConst, DestMem);
   }
   else {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -3379,7 +3379,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   else {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     Dest = AppendSegmentOffset(Dest, Op->Flags);
-    auto Before = _AtomicFetchAdd(GetSrcSize(Op), Src, Dest);
+    auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
     Result = _Add(Before, Src); // Seperate result just for flags
 
@@ -3768,7 +3768,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchAdd(GetSrcSize(Op), OneConst, DestAddress);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -3803,7 +3803,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchSub(GetSrcSize(Op), OneConst, DestAddress);
+    Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   }
@@ -4336,7 +4336,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    Dest = _AtomicFetchNeg(Size, DestMem);
+    Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
@@ -4614,7 +4614,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
-    OrderedNode *CASResult = _CAS(Src3Lower, Src2, Src1);
+    OrderedNode *CASResult = _CAS(IR::SizeToOpSize(Size), Src3Lower, Src2, Src1);
     OrderedNode *RAXResult = CASResult;
 
     if (GPRSize == 8 && Size == 4) {
@@ -4671,7 +4671,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  OrderedNode *CASResult = _CASPair(Expected, Desired, Src1);
+  OrderedNode *CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected, Desired, Src1);
 
   OrderedNode *Result_Lower = _ExtractElementPair(CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
@@ -5389,7 +5389,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    auto FetchOp = _AtomicFetchAdd(Size, Src, DestMem);
+    auto FetchOp = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
     // Overwrite our atomic op type
     FetchOp.first->Header.Op = AtomicFetchOp;
     Dest = FetchOp;
