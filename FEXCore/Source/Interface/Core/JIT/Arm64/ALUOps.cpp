@@ -678,6 +678,7 @@ DEF_OP(LDiv) {
     break;
     }
     case 4: {
+      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
       sxtw(TMP2, Divisor.W());
@@ -750,6 +751,7 @@ DEF_OP(LUDiv) {
     break;
     }
     case 4: {
+      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
       udiv(EmitSize, Dst, TMP1, Divisor);
@@ -819,6 +821,7 @@ DEF_OP(LRem) {
     break;
     }
     case 4: {
+      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
       sxtw(TMP3, Divisor.W());
@@ -893,6 +896,7 @@ DEF_OP(LURem) {
     break;
     }
     case 4: {
+      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
       udiv(EmitSize, TMP2, TMP1, Divisor);
