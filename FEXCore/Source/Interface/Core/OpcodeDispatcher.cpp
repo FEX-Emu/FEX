@@ -4671,7 +4671,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  OrderedNode *CASResult = _CASPair(Expected, Desired, Src1);
+  OrderedNode *CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected, Desired, Src1);
 
   OrderedNode *Result_Lower = _ExtractElementPair(CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
