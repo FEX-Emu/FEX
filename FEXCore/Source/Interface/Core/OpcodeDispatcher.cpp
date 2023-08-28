@@ -447,7 +447,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   uint8_t Size = GetDstSize(Op);
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, Size);
   auto ALUOp = _Add(Src, CF);
 
   OrderedNode *Result{};
@@ -478,7 +478,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   auto Size = GetDstSize(Op);
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, Size);
   auto ALUOp = _Add(Src, CF);
 
   OrderedNode *Result{};
@@ -2474,6 +2474,8 @@ void OpDispatchBuilder::PEXT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
+  const auto OperandSize = GetSrcSize(Op);
+
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -2483,9 +2485,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
   auto* Flag = [&]() -> OrderedNode* {
     if (IsADCX) {
-      return GetRFLAG(X86State::RFLAG_CF_LOC);
+      return GetRFLAG(X86State::RFLAG_CF_LOC, OperandSize);
     } else {
-      return GetRFLAG(X86State::RFLAG_OF_LOC);
+      return GetRFLAG(X86State::RFLAG_OF_LOC, OperandSize);
     }
   }();
 
@@ -2516,7 +2518,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, GetSrcSize(Op));
 
   uint32_t Shift = 1;
 
@@ -3281,7 +3283,6 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
@@ -3308,8 +3309,8 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
-    OrderedNode *ResultLow = _Bfe(GPRSize, 32, 0, Result);
-    ResultHigh = _Bfe(GPRSize, 32, 32, Result);
+    OrderedNode *ResultLow = _Bfe(8, 32, 0, Result);
+    ResultHigh = _Bfe(8, 32, 32, Result);
     StoreGPRRegister(X86State::REG_RAX, ResultLow);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }

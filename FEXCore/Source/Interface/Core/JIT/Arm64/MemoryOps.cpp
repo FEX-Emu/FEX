@@ -133,7 +133,7 @@ DEF_OP(LoadRegister) {
     [[maybe_unused]] const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
 
     switch (OpSize) {
       case 1:
@@ -297,7 +297,7 @@ DEF_OP(LoadRegisterSRA) {
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
 
     const auto reg = StaticRegisters[regId];
 

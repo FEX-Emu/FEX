@@ -1128,19 +1128,24 @@ DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
   LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
   LOGMAN_THROW_AA_FMT(Op->Width != 0, "Invalid BFE width of 0");
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  ubfx(ARMEmitter::Size::i64Bit, Dst, Src, Op->lsb, Op->Width);
+  ubfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
 }
 
 DEF_OP(Sbfe) {
-  auto Op = IROp->C<IR::IROp_Bfe>();
+  auto Op = IROp->C<IR::IROp_Sbfe>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  sbfx(ARMEmitter::Size::i64Bit, Dst, Src, Op->lsb, Op->Width);
+  sbfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
 }
 
 ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
