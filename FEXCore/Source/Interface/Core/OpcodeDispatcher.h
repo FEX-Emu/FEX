@@ -1133,7 +1133,7 @@ private:
 
     // Shift the sign bit into the N bit
     if (SignBit > NBit)
-      Shifted = _Ashr(Res, _Constant(SignBit - NBit));
+      Shifted = _Ashr(OpSize::i64Bit, Res, _Constant(SignBit - NBit));
     else if (SignBit < NBit)
       Shifted = _Lshl(Res, _Constant(NBit - SignBit));
     else

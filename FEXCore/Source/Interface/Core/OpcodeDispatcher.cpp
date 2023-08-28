@@ -2104,7 +2104,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
     Dest = _Sbfe(OpSize::i64Bit, Size, 0, Dest);
   }
 
-  OrderedNode *Result = _Ashr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
+  OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if constexpr (SHR1Bit) {
@@ -2134,7 +2134,7 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   }
 
   OrderedNode *Src = _Constant(Size, Shift);
-  OrderedNode *Result = _Ashr(Dest, Src);
+  OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Dest))), Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
@@ -2393,7 +2393,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   auto* Result = [&]() -> OrderedNode* {
     // SARX
     if (Op->OP == 0x6F7) {
-      return _Ashr(Size, Src, Shift);
+      return _Ashr(IR::SizeToOpSize(Size), Src, Shift);
     }
     // SHLX
     if (Op->OP == 0x5F7) {
