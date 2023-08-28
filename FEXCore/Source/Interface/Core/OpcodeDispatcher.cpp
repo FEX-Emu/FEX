@@ -1974,7 +1974,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHLD behaves like an EXTR where the lower bits are filled from the source.
-      Res = _Extr(Dest, Src, Size - Shift);
+      Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), Dest, Src, Size - Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2075,7 +2075,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHRD behaves like an EXTR where the upper bits are filled from the source.
-      Res = _Extr(Src, Dest, Shift);
+      Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), Src, Dest, Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2524,7 +2524,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   if (Size == 32 || Size == 64) {
     // Rotate and insert CF in the upper bit
-    auto Res = _Extr(CF, Dest, Shift);
+    auto Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), CF, Dest, Shift);
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Bfe(1, Shift - 1, Dest);
