@@ -4757,39 +4757,15 @@ void OpDispatchBuilder::Finalize() {
 }
 
 uint8_t OpDispatchBuilder::GetDstSize(X86Tables::DecodedOp Op) const {
-  static constexpr std::array<uint8_t, 8> Sizes = {
-    0, // Invalid DEF
-    1,
-    2,
-    4,
-    8,
-    16,
-    32,
-    0, // Invalid DEF
-  };
-
   const uint32_t DstSizeFlag = X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
-  const uint8_t Size = Sizes[DstSizeFlag];
-  LOGMAN_THROW_AA_FMT(Size != 0, "Invalid destination size for op");
-  return Size;
+  LOGMAN_THROW_AA_FMT(DstSizeFlag != 0 && DstSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
+  return 1u << (DstSizeFlag - 1);
 }
 
 uint8_t OpDispatchBuilder::GetSrcSize(X86Tables::DecodedOp Op) const {
-  static constexpr std::array<uint8_t, 8> Sizes = {
-    0, // Invalid DEF
-    1,
-    2,
-    4,
-    8,
-    16,
-    32,
-    0, // Invalid DEF
-  };
-
   const uint32_t SrcSizeFlag = X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
-  const uint8_t Size = Sizes[SrcSizeFlag];
-  LOGMAN_THROW_AA_FMT(Size != 0, "Invalid destination size for op");
-  return Size;
+  LOGMAN_THROW_AA_FMT(SrcSizeFlag != 0 && SrcSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
+  return 1u << (SrcSizeFlag - 1);
 }
 
 uint32_t OpDispatchBuilder::GetSrcBitSize(X86Tables::DecodedOp Op) const {
