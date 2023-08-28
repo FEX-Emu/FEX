@@ -379,7 +379,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         break;
       }
       case FEXCore::IR::IROps::OP_SUB: {
-        Dest = _AtomicFetchSub(Size, Src, DestMem);
+        Dest = _AtomicFetchSub(IR::SizeToOpSize(Size), Src, DestMem);
         Result = _Sub(Dest, Src);
         break;
       }
@@ -487,7 +487,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    Before = _AtomicFetchSub(Size, ALUOp, DestMem);
+    Before = _AtomicFetchSub(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Sub(Before, ALUOp);
   }
   else {
@@ -3803,7 +3803,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchSub(GetSrcSize(Op), OneConst, DestAddress);
+    Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   }

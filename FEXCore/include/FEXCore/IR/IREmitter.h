@@ -136,9 +136,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_AtomicFetchAdd> _AtomicFetchAdd(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
     return _AtomicFetchAdd(static_cast<OpSize>(Size), _Value, _Addr);
   }
-  IRPair<IROp_AtomicFetchSub> _AtomicFetchSub(uint8_t Size, OrderedNode *_Value, OrderedNode *_Addr) {
-    return _AtomicFetchSub(static_cast<OpSize>(Size), _Value, _Addr);
-  }
   ///< ALU
   IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
