@@ -3609,8 +3609,8 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
-  auto UDivOp = _UDiv(AL, Imm8);
-  auto URemOp = _URem(AL, Imm8);
+  auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
+  auto URemOp = _URem(OpSize::i64Bit, AL, Imm8);
   auto AH = _Lshl(UDivOp, _Constant(8));
   auto AX = _Add(AH, URemOp);
   StoreGPRRegister(X86State::REG_RAX, AX, 2);
@@ -4361,8 +4361,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   if (Size == 1) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
 
-    auto UDivOp = _UDiv(Src1, Divisor);
-    auto URemOp = _URem(Src1, Divisor);
+    auto UDivOp = _UDiv(OpSize::i16Bit, Src1, Divisor);
+    auto URemOp = _URem(OpSize::i16Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
