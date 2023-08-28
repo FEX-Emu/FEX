@@ -1510,7 +1510,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 
     Dest = AppendSegmentOffset(Dest, Op->Flags);
 
-    auto Result = _AtomicSwap(GetSrcSize(Op), Src, Dest);
+    auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
   else {
