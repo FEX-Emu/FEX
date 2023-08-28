@@ -4466,7 +4466,7 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the LSB of this source
-  auto Result = _FindLSB(Src);
+  auto Result = _FindLSB(IR::SizeToOpSize(GetSrcSize(Op)), Src);
 
   auto ZeroConst = _Constant(0);
 

@@ -167,9 +167,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Popcount> _Popcount(OrderedNode *_Src) {
     return _Popcount(static_cast<OpSize>(GetOpSize(_Src)), _Src);
   }
-  IRPair<IROp_FindLSB> _FindLSB(OrderedNode *_Src) {
-    return _FindLSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
-  }
   IRPair<IROp_FindMSB> _FindMSB(OrderedNode *_Src) {
     return _FindMSB(static_cast<OpSize>(GetOpSize(_Src)), _Src);
   }
