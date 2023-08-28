@@ -272,14 +272,8 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_LDiv> _LDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
     return _LDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
   }
-  IRPair<IROp_LUDiv> _LUDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LUDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
   IRPair<IROp_LRem> _LRem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
     return _LRem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
-  IRPair<IROp_LURem> _LURem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LURem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
   }
   // End of Temporary naughty implicit IR operation handlers
 
