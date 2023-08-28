@@ -4426,8 +4426,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   else if (Size == 2) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
-    auto UDivOp = _LDiv(Src1, Src2, Divisor);
-    auto URemOp = _LRem(Src1, Src2, Divisor);
+    auto UDivOp = _LDiv(OpSize::i16Bit, Src1, Src2, Divisor);
+    auto URemOp = _LRem(OpSize::i16Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
@@ -4436,8 +4436,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
-    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LDiv(Src1, Src2, Divisor));
-    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LRem(Src1, Src2, Divisor));
+    OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LDiv(OpSize::i32Bit, Src1, Src2, Divisor));
+    OrderedNode *URemOp = _Bfe(Size * 8, 0, _LRem(OpSize::i32Bit, Src1, Src2, Divisor));
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
@@ -4451,8 +4451,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    auto UDivOp = _LDiv(Src1, Src2, Divisor);
-    auto URemOp = _LRem(Src1, Src2, Divisor);
+    auto UDivOp = _LDiv(OpSize::i64Bit, Src1, Src2, Divisor);
+    auto URemOp = _LRem(OpSize::i64Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);

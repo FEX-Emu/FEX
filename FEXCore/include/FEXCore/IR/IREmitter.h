@@ -269,12 +269,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_PExt> _PExt(OrderedNode *_Input, OrderedNode *_Mask) {
     return _PExt(static_cast<OpSize>(std::max(GetOpSize(_Input), GetOpSize(_Mask))), _Input, _Mask);
   }
-  IRPair<IROp_LDiv> _LDiv(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LDiv(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
-  IRPair<IROp_LRem> _LRem(OrderedNode *_Lower, OrderedNode *_Upper, OrderedNode *_Divisor) {
-    return _LRem(static_cast<OpSize>(std::max(GetOpSize(_Divisor), std::max(GetOpSize(_Upper), GetOpSize(_Lower)))), _Lower, _Upper, _Divisor);
-  }
   // End of Temporary naughty implicit IR operation handlers
 
   void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
