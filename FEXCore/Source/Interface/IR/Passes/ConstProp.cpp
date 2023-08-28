@@ -1108,7 +1108,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
             auto EO = NewRIP->C<IR::IROp_EntrypointOffset>();
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(EO->Offset, EO->Header.Size));
+            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(IR::SizeToOpSize(EO->Header.Size), EO->Offset));
             Changed = true;
           }
         }

@@ -4751,7 +4751,7 @@ void OpDispatchBuilder::Finalize() {
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
     CalculateDeferredFlags();
-    _ExitFunction(_EntrypointOffset(Handler.first - Entry, GPRSize));
+    _ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
   }
 }
 
@@ -5127,7 +5127,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 
 OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
+  return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
 }
 
 OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {

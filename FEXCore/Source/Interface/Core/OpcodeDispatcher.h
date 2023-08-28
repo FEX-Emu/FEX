@@ -118,7 +118,7 @@ public:
         const uint8_t GPRSize = CTX->GetGPRSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        auto RelocatedNextRIP = _EntrypointOffset(NextRIP - Entry, GPRSize);
+        auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
         _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {

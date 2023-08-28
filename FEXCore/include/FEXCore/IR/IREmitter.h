@@ -155,12 +155,6 @@ friend class FEXCore::IR::PassManager;
     return _AtomicFetchNeg(static_cast<OpSize>(Size), _Addr);
   }
   ///< ALU
-  IRPair<IROp_EntrypointOffset> _EntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
-    return _EntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
-  }
-  IRPair<IROp_InlineEntrypointOffset> _InlineEntrypointOffset(int64_t _Offset, uint8_t RegisterSize) {
-    return _InlineEntrypointOffset(static_cast<OpSize>(RegisterSize), _Offset);
-  }
   IRPair<IROp_Neg> _Neg(OrderedNode *_Src) {
     return _Neg(static_cast<OpSize>(std::max<uint8_t>(4, GetOpSize(_Src))), _Src);
   }
