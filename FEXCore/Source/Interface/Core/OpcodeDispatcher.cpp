@@ -2460,7 +2460,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PDep(Input, Mask);
+  auto Result = _PDep(IR::SizeToOpSize(GetSrcSize(Op)), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
@@ -2468,7 +2468,7 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PExt(Input, Mask);
+  auto Result = _PExt(IR::SizeToOpSize(GetSrcSize(Op)), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
