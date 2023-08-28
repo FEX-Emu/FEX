@@ -1974,7 +1974,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHLD behaves like an EXTR where the lower bits are filled from the source.
-      Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), Dest, Src, Size - Shift);
+      Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2075,7 +2075,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
     else {
       // 32-bit and 64-bit SHRD behaves like an EXTR where the upper bits are filled from the source.
-      Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), Src, Dest, Shift);
+      Res = _Extr(OpSizeFromSrc(Op), Src, Dest, Shift);
     }
 
     StoreResult(GPRClass, Op, Res, -1);
@@ -2351,7 +2351,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto NegatedSrc = _Neg(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
   auto Result = _And(Src, NegatedSrc);
 
   // ...and we're done. Painless!
@@ -2438,7 +2438,7 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Amount = Op->Src[1].Data.Literal.Value;
 
-  auto Result = _Ror(IR::SizeToOpSize(GetSrcSize(Op)), Src, _Constant(Amount));
+  auto Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -2460,7 +2460,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PDep(IR::SizeToOpSize(GetSrcSize(Op)), Input, Mask);
+  auto Result = _PDep(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
@@ -2468,7 +2468,7 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  auto Result = _PExt(IR::SizeToOpSize(GetSrcSize(Op)), Input, Mask);
+  auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
@@ -2524,7 +2524,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   if (Size == 32 || Size == 64) {
     // Rotate and insert CF in the upper bit
-    auto Res = _Extr(IR::SizeToOpSize(GetSrcSize(Op)), CF, Dest, Shift);
+    auto Res = _Extr(OpSizeFromSrc(Op), CF, Dest, Shift);
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Bfe(1, Shift - 1, Dest);
@@ -3393,7 +3393,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  Src = _Popcount(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_POPCOUNT(Op, Src);
@@ -4467,7 +4467,7 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the LSB of this source
-  auto Result = _FindLSB(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  auto Result = _FindLSB(OpSizeFromSrc(Op), Src);
 
   auto ZeroConst = _Constant(0);
 
@@ -4488,7 +4488,7 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the MSB of this source
-  auto Result = _FindMSB(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  auto Result = _FindMSB(OpSizeFromSrc(Op), Src);
 
   auto ZeroConst = _Constant(0);
 
@@ -5584,7 +5584,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  Src = _FindTrailingZeroes(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
   GenerateFlags_TZCNT(Op, Src);
@@ -5593,14 +5593,14 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto Res = _CountLeadingZeroes(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
   GenerateFlags_LZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
-  Src = _Rev(IR::SizeToOpSize(GetSrcSize(Op)), Src);
+  Src = _Rev(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, 1);
 }
 

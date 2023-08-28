@@ -1065,6 +1065,12 @@ private:
   [[nodiscard]] uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
   [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
   [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] IR::OpSize OpSizeFromDst(X86Tables::DecodedOp Op) const {
+    return IR::SizeToOpSize(GetDstSize(Op));
+  }
+  [[nodiscard]] IR::OpSize OpSizeFromSrc(X86Tables::DecodedOp Op) const {
+    return IR::SizeToOpSize(GetSrcSize(Op));
+  }
 
   static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
     switch (BitOffset) {
