@@ -1180,7 +1180,7 @@ private:
     else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
       return _Orlshl(IR::SizeToOpSize(std::max(GetOpSize(NZCV), GetOpSize(Value))), NZCV, Value, Bit);
     else
-      return _Bfi(4, 1, Bit, NZCV, Value);
+      return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
   }
 
   template<unsigned BitOffset>

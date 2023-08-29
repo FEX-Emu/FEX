@@ -150,7 +150,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     if (CTX->BackendFeatures.SupportsShiftedBitwise)
       Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
     else
-      Original = _Bfi(4, 1, FlagOffset, Original, Flag);
+      Original = _Bfi(OpSize::i32Bit, 1, FlagOffset, Original, Flag);
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
