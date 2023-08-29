@@ -812,7 +812,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
       Tmp = _Lshl(IR::SizeToOpSize(ElementSize), Tmp, _Constant(i));
 
       // Or it with the current value
-      CurrentVal = _Or(CurrentVal, Tmp);
+      CurrentVal = _Or(OpSize::i64Bit, CurrentVal, Tmp);
     }
     StoreResult(GPRClass, Op, CurrentVal, -1);
   }
@@ -2613,23 +2613,8 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
   }
 
   {
-    // We must construct the FSW from our various bits
-    // TODO: This should use BFI
     OrderedNode *MemLocation = _Add(MemBase, _Constant(2));
-    OrderedNode *FSW = _Constant(0);
-    auto Top = GetX87Top();
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
-
-    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
-    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
-    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
-    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
-
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
-    _StoreMem(GPRClass, 2, MemLocation, FSW, 2);
+    _StoreMem(GPRClass, 2, MemLocation, ReconstructFSW(), 2);
   }
 
   {

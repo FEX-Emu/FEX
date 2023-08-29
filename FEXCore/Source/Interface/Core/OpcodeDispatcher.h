@@ -581,6 +581,7 @@ public:
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
+  OrderedNode *ReconstructFSW();
   template<size_t width>
   void FLD(OpcodeArgs);
   template<uint64_t Lower, uint32_t Upper>
