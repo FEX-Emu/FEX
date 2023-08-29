@@ -151,7 +151,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
   const auto Sigma0 = [this](OrderedNode* W) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(W, _Constant(32, 3)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -178,7 +178,7 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   const auto Sigma1 = [this](OrderedNode* W) -> OrderedNode* {
-    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 17)), _Ror(OpSize::i32Bit, W, _Constant(32, 19))), _Lshr(W, _Constant(32, 10)));
+    return _Xor(_Xor(_Ror(OpSize::i32Bit, W, _Constant(32, 17)), _Ror(OpSize::i32Bit, W, _Constant(32, 19))), _Lshr(OpSize::i32Bit, W, _Constant(32, 10)));
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
