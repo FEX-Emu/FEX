@@ -32,11 +32,12 @@ void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, X87Tag Tag) {
   // if we are popping then we must first mark this location as empty
   auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
   OrderedNode *Mask = _Constant(0b11);
-  auto TopOffset = _Lshl(Value, _Constant(1));
-  Mask = _Lshl(Mask, TopOffset);
+  // TODO: This can all be done with OpSize::i32Bit.
+  auto TopOffset = _Lshl(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Value))), Value, _Constant(1));
+  Mask = _Lshl(OpSize::i64Bit, Mask, TopOffset);
   OrderedNode *NewFTW = _Andn(FTW, Mask);
   if (Tag != X87Tag::Valid) {
-    auto TagVal = _Lshl(_Constant(ToUnderlying(Tag)), TopOffset);
+    auto TagVal = _Lshl(OpSize::i64Bit, _Constant(ToUnderlying(Tag)), TopOffset);
     NewFTW = _Or(NewFTW, TagVal);
   }
 
@@ -46,7 +47,7 @@ void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, X87Tag Tag) {
 OrderedNode *OpDispatchBuilder::GetX87FTW(OrderedNode *Value) {
   auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
   OrderedNode *Mask = _Constant(0b11);
-  auto TopOffset = _Lshl(Value, _Constant(1));
+  auto TopOffset = _Lshl(OpSize::i32Bit, Value, _Constant(1));
   auto NewFTW = _Lshr(FTW, TopOffset);
   return _And(NewFTW, Mask);
 }
@@ -182,7 +183,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 
   // left justify the absolute interger
   auto shift = _Sub(_Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
-  auto shifted = _Lshl(absolute, shift);
+  auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
   auto adjusted_exponent = _Sub(_Constant(0x3fff + 63), shift);
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
@@ -1003,19 +1004,20 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   {
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
     // We must construct the FSW from our various bits
+    // TODO: These should use BFI
     OrderedNode *FSW = _Constant(0);
     auto Top = GetX87Top();
-    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
 
     auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
     auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
     auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
     auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
-    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
-    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
-    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
     _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
   }
 
@@ -1084,19 +1086,20 @@ void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   // We must construct the FSW from our various bits
+  // TODO: These should use BFI
   OrderedNode *FSW = _Constant(0);
   auto Top = GetX87Top();
-  FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+  FSW = _Or(FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
 
   auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
   auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
   auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-  FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
-  FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
-  FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
-  FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+  FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
+  FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
+  FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
+  FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
 
   StoreResult(GPRClass, Op, FSW, -1);
 }
@@ -1134,18 +1137,19 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   {
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
     // We must construct the FSW from our various bits
+    // TODO: These should use BFI
     OrderedNode *FSW = _Constant(0);
-    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
 
     auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
     auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
     auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
     auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
-    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
-    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
-    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
     _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
   }
 

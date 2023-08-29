@@ -1798,7 +1798,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   }
   const auto Size = GetSrcBitSize(Op);
 
-  OrderedNode *Result = _Lshl(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
+  OrderedNode *Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if (Size < 32) {
@@ -1829,7 +1829,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   }
 
   OrderedNode *Src = _Constant(Size, Shift);
-  OrderedNode *Result = _Lshl(Dest, Src);
+  OrderedNode *Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
@@ -1905,7 +1905,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
-  auto Tmp1 = _Lshl(Dest, Shift);
+  auto Tmp1 = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
   Tmp1.first->Header.Size = 8;
   auto Tmp2 = _Lshr(Src, ShiftRight);
 
@@ -1966,7 +1966,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       OrderedNode *ShiftLeft = _Constant(Shift);
       auto ShiftRight = _Constant(Size - Shift);
 
-      auto Tmp1 = _Lshl(Dest, ShiftLeft);
+      auto Tmp1 = _Lshl(OpSize::i32Bit, Dest, ShiftLeft);
       Tmp1.first->Header.Size = 8;
       auto Tmp2 = _Lshr(Src, ShiftRight);
 
@@ -2008,7 +2008,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
   auto Tmp1 = _Lshr(Dest, Shift);
-  auto Tmp2 = _Lshl(Src, ShiftLeft);
+  auto Tmp2 = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftLeft);
   Tmp2.first->Header.Size = 8;
 
   OrderedNode *Res = _Or(Tmp1, Tmp2);
@@ -2068,8 +2068,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
       auto ShiftLeft = _Constant(Size - Shift);
 
       auto Tmp1 = _Lshr(Dest, ShiftRight);
-      auto Tmp2 = _Lshl(Src, ShiftLeft);
-      Tmp2.first->Header.Size = 8;
+      auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
       Res = _Or(Tmp1, Tmp2);
     }
@@ -2314,7 +2313,8 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  const auto SrcSize = GetSrcBitSize(Op);
+  const auto Size = GetSrcSize(Op);
+  const auto SrcSize = Size * 8;
   const auto MaxSrcBit = SrcSize - 1;
   auto MaxSrcBitOp = _Constant(SrcSize, MaxSrcBit);
 
@@ -2336,7 +2336,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Now build up the mask
   // (1 << SanitizedLength) - 1
   auto One = _Constant(SrcSize, 1);
-  auto Mask = _Sub(_Lshl(One, SanitizedLength), One);
+  auto Mask = _Sub(_Lshl(IR::SizeToOpSize(Size), One, SanitizedLength), One);
 
   // Now put it all together and make the result.
   auto Dest = _And(SanitizedShifted, Mask);
@@ -2397,7 +2397,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
     }
     // SHLX
     if (Op->OP == 0x5F7) {
-      return _Lshl(Size, Src, Shift);
+      return _Lshl(IR::SizeToOpSize(Size), Src, Shift);
     }
 
     // SHRX
@@ -2408,7 +2408,8 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BZHI(OpcodeArgs) {
-  const auto OperandSize = GetSrcBitSize(Op);
+  const auto Size = GetSrcSize(Op);
+  const auto OperandSize = Size * 8;
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
@@ -2418,7 +2419,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 
   // Now clear the high bits specified by the index.
   auto NegOne = _Constant(OperandSize, -1);
-  auto Mask = _Lshl(NegOne, MaskedIndex);
+  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, MaskedIndex);
   auto MaskResult = _Andn(Src, Mask);
 
   // If the index is above OperandSize, we don't clear anything.
@@ -2543,7 +2544,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     OrderedNode *Res = _Bfe(Size - Shift, Shift, Dest);
 
     // inject the CF
-    Res = _Or(Res, _Lshl(CF, _Constant(Size, Size - Shift)));
+    Res = _Or(Res, _Lshl(OpSize::i32Bit, CF, _Constant(Size, Size - Shift)));
 
     StoreResult(GPRClass, Op, Res, -1);
 
@@ -2605,7 +2606,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
-  auto TmpHigher = _Lshl(GetSrcSize(Op), Dest, SrcShl);
+  auto TmpHigher = _Lshl(OpSizeFromSrc(Op), Dest, SrcShl);
 
   auto One = _Constant(Size, 1);
   auto Zero = _Constant(Size, 0);
@@ -2618,8 +2619,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   // If Shift != 0 then we can inject the CF
   OrderedNode *CFShl = _Sub(_Constant(Size, Size), Src);
-  auto TmpCF = _Lshl(CF, CFShl);
-  TmpCF.first->Header.Size = 8;
+  auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
 
   CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
@@ -2755,7 +2755,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   uint32_t Shift = 1;
 
   // Rotate left and insert CF in to lowest bit
-  OrderedNode *Res = _Lshl(Dest, _Constant(Size, 1));
+  OrderedNode *Res = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, _Constant(Size, 1));
   Res = _Or(Res, CF);
 
   // Our new CF will be the top bit of the source
@@ -2788,7 +2788,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // Res = Src << Shift
-  OrderedNode *Res = _Lshl(GetSrcSize(Op), Dest, Src);
+  OrderedNode *Res = _Lshl(OpSizeFromSrc(Op), Dest, Src);
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
@@ -2805,8 +2805,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 
   // If Shift != 0 then we can inject the CF
   OrderedNode *CFShl = _Sub(Src, _Constant(Size, 1));
-  auto TmpCF = _Lshl(CF, CFShl);
-  TmpCF.first->Header.Size = 8;
+  auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
 
   CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
@@ -2994,7 +2993,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     Result = _Lshr(Dest, BitSelect);
 
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Andn(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
@@ -3014,7 +3013,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
@@ -3072,7 +3071,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     Result = _Lshr(Dest, BitSelect);
 
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Or(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
@@ -3091,7 +3090,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
@@ -3146,7 +3145,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     Result = _Lshr(Dest, BitSelect);
 
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Xor(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
@@ -3165,7 +3164,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
@@ -3611,7 +3610,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
   auto URemOp = _URem(OpSize::i64Bit, AL, Imm8);
-  auto AH = _Lshl(UDivOp, _Constant(8));
+  auto AH = _Lshl(OpSize::i64Bit, UDivOp, _Constant(8));
   auto AX = _Add(AH, URemOp);
   StoreGPRRegister(X86State::REG_RAX, AX, 2);
 

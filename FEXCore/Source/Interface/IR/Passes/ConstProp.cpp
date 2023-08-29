@@ -933,8 +933,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         if (IROp->Size == 4 || IROp->Size == 8) {
           uint64_t amt = std::countr_zero(Constant2);
           IREmit->SetWriteCursor(CodeNode);
-          auto shift = IREmit->_Lshl(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
-          shift.first->Header.Size = IROp->Size; // force Lshl to be the same size as the original Mul
+          auto shift = IREmit->_Lshl(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
           IREmit->ReplaceAllUsesWith(CodeNode, shift);
           Changed = true;
         }

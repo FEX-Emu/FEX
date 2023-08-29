@@ -1141,7 +1141,7 @@ private:
     if (SignBit > NBit)
       Shifted = _Ashr(OpSize::i64Bit, Res, _Constant(SignBit - NBit));
     else if (SignBit < NBit)
-      Shifted = _Lshl(Res, _Constant(NBit - SignBit));
+      Shifted = _Lshl(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Res))), Res, _Constant(NBit - SignBit));
     else
       Shifted = Res;
 
@@ -1175,7 +1175,7 @@ private:
     PossiblySetNZCVBits |= (1u << Bit);
 
     if (SetBits == 0)
-      return _Lshl(Value, _Constant(Bit));
+      return _Lshl(OpSize::i64Bit, Value, _Constant(Bit));
     else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
       return _Orlshl(IR::SizeToOpSize(std::max(GetOpSize(NZCV), GetOpSize(Value))), NZCV, Value, Bit);
     else
