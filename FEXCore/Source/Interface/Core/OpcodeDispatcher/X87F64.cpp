@@ -152,7 +152,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
     converted = data;
   }
 
-  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   // Write to ST[TOP]
@@ -170,7 +170,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
-  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -200,7 +200,7 @@ template<uint64_t num>
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   auto data = _VCastFromGPR(8, 8, _Constant(num));
@@ -226,7 +226,7 @@ void OpDispatchBuilder::FLDF64_Const<0>(OpcodeArgs); // 0.0
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -657,7 +657,7 @@ void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
 
 void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -665,7 +665,7 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   auto gpr = _VExtractToGPR(8, 8, a, 0);
   OrderedNode* exp = _And(gpr, _Constant(0x7ff0000000000000LL));
   exp = _Lshr(OpSize::i64Bit, exp, _Constant(52));
-  exp = _Sub(exp, _Constant(1023));
+  exp = _Sub(OpSize::i64Bit, exp, _Constant(1023));
   exp = _Float_FromGPR_S(8, 8, exp);
   OrderedNode* sig = _And(gpr, _Constant(0x800fffffffffffffLL));
   sig = _Or(OpSize::i64Bit, sig, _Constant(0x3ff0000000000000LL));
@@ -844,7 +844,7 @@ void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64SCALE>(OpcodeArgs);
 
 void OpDispatchBuilder::X87SinCosF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -886,7 +886,7 @@ void OpDispatchBuilder::X87FYL2XF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87TANF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 

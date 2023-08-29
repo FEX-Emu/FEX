@@ -102,7 +102,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
     converted = _F80CVTTo(data, width / 8);
   }
 
-  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   // Write to ST[TOP]
@@ -121,7 +121,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
-  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -149,7 +149,7 @@ template<uint64_t Lower, uint32_t Upper>
 void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -179,7 +179,7 @@ void OpDispatchBuilder::FLD_Const<0, 0>(OpcodeArgs); // 0.0
 void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -201,10 +201,10 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto absolute = _Abs(OpSize::i64Bit, data);
 
   // left justify the absolute interger
-  auto shift = _Sub(_Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
+  auto shift = _Sub(OpSize::i64Bit, _Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
-  auto adjusted_exponent = _Sub(_Constant(0x3fff + 63), shift);
+  auto adjusted_exponent = _Sub(OpSize::i64Bit, _Constant(0x3fff + 63), shift);
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
@@ -628,7 +628,7 @@ void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
 
 void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -863,7 +863,7 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
     SetX87Top(top);
   }
   else {
-    auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+    auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
 }
@@ -875,7 +875,7 @@ void OpDispatchBuilder::X87ModifySTP<true>(OpcodeArgs);
 
 void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -920,7 +920,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
 
 void OpDispatchBuilder::X87TAN(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 

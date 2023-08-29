@@ -639,7 +639,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
   {
     // Extract the last bit shifted in to CF
     auto Size = _Constant(SrcSize * 8);
-    auto ShiftAmt = _Sub(Size, Src2);
+    auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
     auto LastBit = _Bfe(1, 0, _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize)), Src1, ShiftAmt));
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
@@ -675,7 +675,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
   // CF
   {
     // Extract the last bit shifted in to CF
-    auto ShiftAmt = _Sub(Src2, One);
+    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, One);
     auto LastBit = _Bfe(1, 0, _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize)), Src1, ShiftAmt));
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
@@ -711,7 +711,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
   // CF
   {
     // Extract the last bit shifted in to CF
-    auto ShiftAmt = _Sub(Src2, One);
+    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, One);
     auto LastBit = _Bfe(1, 0, _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src1))), Src1, ShiftAmt));
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
@@ -896,7 +896,7 @@ void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *
 
   // Extract the last bit shifted in to CF
   //auto Size = _Constant(GetSrcSize(Res) * 8);
-  //auto ShiftAmt = _Sub(Size, Src2);
+  //auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
   auto NewCF = _Bfe(1, 0, Res);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
 
