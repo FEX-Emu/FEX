@@ -2451,7 +2451,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, OperandSize);
 
   OrderedNode* ResultLo = _UMul(IR::SizeToOpSize(OperandSize), Src1, Src2);
-  OrderedNode* ResultHi = _UMulH(Src1, Src2);
+  OrderedNode* ResultHi = _UMulH(IR::SizeToOpSize(OperandSize), Src1, Src2);
 
   StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
   StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
@@ -3322,7 +3322,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     }
     // 64bits stored in RAX
     // 64bits stored in RDX
-    ResultHigh = _UMulH(Src1, Src2);
+    ResultHigh = _UMulH(OpSize::i64Bit, Src1, Src2);
     StoreGPRRegister(X86State::REG_RAX, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
