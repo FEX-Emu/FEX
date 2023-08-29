@@ -395,7 +395,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
       }
       case FEXCore::IR::IROps::OP_XOR: {
         Dest = _AtomicFetchXor(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Xor(Dest, Src);
+        Result = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
         break;
       }
       default:
@@ -1259,7 +1259,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   if (CheckZF) {
     OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
     if (!ZFTrue) {
-      ZF = _Xor(ZF, _Constant(1));
+      ZF = _Xor(OpSize::i64Bit, ZF, _Constant(1));
     }
     SrcCond = _And(SrcCond, ZF);
   }
@@ -1600,7 +1600,7 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   }
   case OpType::Complement: {
     auto RFLAG = GetRFLAG(Flag);
-    Result = _Xor(RFLAG, _Constant(1));
+    Result = _Xor(OpSize::i64Bit, RFLAG, _Constant(1));
   break;
   }
   }
@@ -2362,7 +2362,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto One = _Constant(1);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Result = _Xor(_Sub(Src, One), Src);
+  auto Result = _Xor(OpSize::i64Bit, _Sub(Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
   GenerateFlags_BLSMSK(Op, Src);
@@ -2533,7 +2533,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
     if (Shift == 1) {
       // OF is the top two MSBs XOR'd together
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSizeFromSrc(Op), _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
     }
   }
   else {
@@ -2552,7 +2552,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
   }
 }
 
@@ -2579,7 +2579,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
   }
 }
 
@@ -2641,7 +2641,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   // Only when Shift == 1, it is undefined otherwise
   // Only changed if shift isn't zero
   auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-  auto NewOF = _Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
+  auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
   CompareResult = _Select(FEXCore::IR::COND_EQ,
     Src, _Constant(0),
     OF, NewOF);
@@ -2739,7 +2739,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // OF is the top two MSBs XOR'd together
   // Only when Shift == 1, it is undefined otherwise
   // Make it easier, just store it regardless
-  auto NewOF = _Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
+  auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
 }
 
@@ -2767,7 +2767,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
     // Top two MSBs is CF and top bit of result
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(1, Size - 1, Res), NewCF));
   }
 }
 
@@ -2830,7 +2830,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     // Only when Shift == 1, it is undefined otherwise
     // Only changed if shift isn't zero
     auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    auto NewOF = _Xor(_Bfe(1, Size - 1, Res), NewCF);
+    auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(1, Size - 1, Res), NewCF);
     CompareResult = _Select(FEXCore::IR::COND_EQ,
       Src, _Constant(0),
       OF, NewOF);
@@ -2890,7 +2890,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // OF is the XOR of the NewCF and the MSB of the result
     // Only changed if shift isn't zero
     auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    auto NewOF = _Xor(_Bfe(1, Size - 1, Res), NewCF);
+    auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(1, Size - 1, Res), NewCF);
     CompareResult = _Select(FEXCore::IR::COND_EQ,
       Src, _Constant(0),
       OF, NewOF);
@@ -3147,7 +3147,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Xor(Dest, BitMask);
+    Dest = _Xor(OpSize::i64Bit, Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
@@ -3177,7 +3177,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
       // Now shift in to the correct bit location
       Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Xor(Value, BitMask);
+      Value = _Xor(OpSize::i64Bit, Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
@@ -3348,7 +3348,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   }
   else {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Src = _Xor(Src, MaskConst);
+    Src = _Xor(OpSize::i64Bit, Src, MaskConst);
     StoreResult(GPRClass, Op, Src, -1);
   }
 }
