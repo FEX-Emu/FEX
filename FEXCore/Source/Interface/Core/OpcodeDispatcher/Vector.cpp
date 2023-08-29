@@ -784,7 +784,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
     GPR = _Bfi(8, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
-    GPR = _Lshr(GPR, _Constant(62));
+    GPR = _Lshr(OpSize::i64Bit, GPR, _Constant(62));
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   }
   else if (Size == 16 && ElementSize == 4) {

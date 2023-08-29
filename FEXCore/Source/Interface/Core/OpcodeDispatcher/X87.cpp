@@ -48,7 +48,7 @@ OrderedNode *OpDispatchBuilder::GetX87FTW(OrderedNode *Value) {
   auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
   OrderedNode *Mask = _Constant(0b11);
   auto TopOffset = _Lshl(OpSize::i32Bit, Value, _Constant(1));
-  auto NewFTW = _Lshr(FTW, TopOffset);
+  auto NewFTW = _Lshr(OpSize::i32Bit, FTW, TopOffset);
   return _And(NewFTW, Mask);
 }
 

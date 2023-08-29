@@ -72,7 +72,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   OrderedNode *roundingMode = NewFCW;
   auto roundShift = _Constant(10);
   auto roundMask = _Constant(3);
-  roundingMode = _Lshr(roundingMode, roundShift);
+  roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
   roundingMode = _And(roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);
@@ -113,7 +113,7 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
   OrderedNode *roundingMode = NewFCW;
   auto shift = _Constant(10);
   auto mask = _Constant(3);
-  roundingMode = _Lshr(roundingMode, shift);
+  roundingMode = _Lshr(OpSize::i32Bit, roundingMode, shift);
   roundingMode = _And(roundingMode, mask);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
@@ -664,7 +664,7 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   auto gpr = _VExtractToGPR(8, 8, a, 0);
   OrderedNode* exp = _And(gpr, _Constant(0x7ff0000000000000LL));
-  exp = _Lshr(exp, _Constant(52));
+  exp = _Lshr(OpSize::i64Bit, exp, _Constant(52));
   exp = _Sub(exp, _Constant(1023));
   exp = _Float_FromGPR_S(8, 8, exp);
   OrderedNode* sig = _And(gpr, _Constant(0x800fffffffffffffLL));
@@ -1045,7 +1045,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   OrderedNode *roundingMode = NewFCW;
   auto roundShift = _Constant(10);
   auto roundMask = _Constant(3);
-  roundingMode = _Lshr(roundingMode, roundShift);
+  roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
   roundingMode = _And(roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);

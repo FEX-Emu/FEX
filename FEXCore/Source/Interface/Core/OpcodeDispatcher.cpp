@@ -1852,7 +1852,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
-  auto ALUOp = _Lshr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
+  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
   StoreResult(GPRClass, Op, ALUOp, -1);
 
   if constexpr (SHR1Bit) {
@@ -1879,7 +1879,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   }
 
   OrderedNode *Src = _Constant(Size, Shift);
-  auto ALUOp = _Lshr(Dest, Src);
+  auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
   GenerateFlags_ShiftRightImmediate(Op, ALUOp, Dest, Shift);
@@ -1905,9 +1905,8 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
-  auto Tmp1 = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
-  Tmp1.first->Header.Size = 8;
-  auto Tmp2 = _Lshr(Src, ShiftRight);
+  auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
+  auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
 
   OrderedNode *Res = _Or(Tmp1, Tmp2);
 
@@ -1966,9 +1965,8 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       OrderedNode *ShiftLeft = _Constant(Shift);
       auto ShiftRight = _Constant(Size - Shift);
 
-      auto Tmp1 = _Lshl(OpSize::i32Bit, Dest, ShiftLeft);
-      Tmp1.first->Header.Size = 8;
-      auto Tmp2 = _Lshr(Src, ShiftRight);
+      auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, ShiftLeft);
+      auto Tmp2 = _Lshr(OpSize::i32Bit, Src, ShiftRight);
 
       Res = _Or(Tmp1, Tmp2);
     }
@@ -2007,9 +2005,8 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
-  auto Tmp1 = _Lshr(Dest, Shift);
-  auto Tmp2 = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftLeft);
-  Tmp2.first->Header.Size = 8;
+  auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
+  auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
   OrderedNode *Res = _Or(Tmp1, Tmp2);
 
@@ -2067,7 +2064,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
       OrderedNode *ShiftRight = _Constant(Shift);
       auto ShiftLeft = _Constant(Size - Shift);
 
-      auto Tmp1 = _Lshr(Dest, ShiftRight);
+      auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, ShiftRight);
       auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
       Res = _Or(Tmp1, Tmp2);
@@ -2320,7 +2317,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
   // Shift the operand down to the starting bit
   auto Start = _Bfe(8, 0, Src2);
-  auto Shifted = _Lshr(Src1, Start);
+  auto Shifted = _Lshr(IR::SizeToOpSize(Size), Src1, Start);
 
   // Shifts larger than operand size need to be set to zero.
   auto SanitizedShifted = _Select(IR::COND_ULE,
@@ -2401,7 +2398,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
     }
 
     // SHRX
-    return _Lshr(Size, Src, Shift);
+    return _Lshr(IR::SizeToOpSize(Size), Src, Shift);
   }();
 
   StoreResult(GPRClass, Op, Result, -1);
@@ -2602,7 +2599,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // Res = Src >> Shift
-  OrderedNode *Res = _Lshr(Dest, Src);
+  OrderedNode *Res = _Lshr(OpSizeFromSrc(Op), Dest, Src);
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
@@ -2631,7 +2628,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   // CF only changes if we actually shifted
   // Our new CF will be bit (Shift - 1) of the source
-  auto NewCF = _Bfe(1, 0, _Lshr(Dest, _Sub(Src, One)));
+  auto NewCF = _Bfe(1, 0, _Lshr(OpSizeFromSrc(Op), Dest, _Sub(Src, One)));
   CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
     NewCF, CF);
@@ -2723,14 +2720,14 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   // Entire bitfield has been setup
   // Just extract the 8 or 16bits we need
-  OrderedNode *Res = _Lshr(Tmp, Src);
+  OrderedNode *Res = _Lshr(OpSize::i64Bit, Tmp, Src);
 
   StoreResult(GPRClass, Op, Res, -1);
 
   // CF only changes if we actually shifted
   // Our new CF will be bit (Shift - 1) of the source
   auto One = _Constant(Size, 1);
-  auto NewCF = _Bfe(1, 0, _Lshr(Tmp, _Sub(Src, One)));
+  auto NewCF = _Bfe(1, 0, _Lshr(OpSize::i64Bit, Tmp, _Sub(Src, One)));
   auto CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
     NewCF, CF);
@@ -2792,7 +2789,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
-  auto TmpHigher = _Lshr(Dest, SrcShl);
+  auto TmpHigher = _Lshr(OpSizeFromSrc(Op), Dest, SrcShl);
 
   auto One = _Constant(Size, 1);
   auto Zero = _Constant(Size, 0);
@@ -2818,7 +2815,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   {
     // CF only changes if we actually shifted
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Bfe(1, 0, _Lshr(Dest, _Sub(_Constant(Size, Size), Src)));
+    auto NewCF = _Bfe(1, 0, _Lshr(OpSizeFromSrc(Op), Dest, _Sub(_Constant(Size, Size), Src)));
     CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, One,
       NewCF, CF);
@@ -2932,7 +2929,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
       BitSelect = _And(Src, SizeMask);
     }
 
-    Result = _Lshr(Dest, BitSelect);
+    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
   } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
@@ -2952,7 +2949,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     Result = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
-    Result = _Lshr(Result, BitSelect);
+    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Result));
 }
@@ -2991,7 +2988,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       BitSelect = _And(Src, SizeMask);
     }
 
-    Result = _Lshr(Dest, BitSelect);
+    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Andn(Dest, BitMask);
@@ -3022,12 +3019,12 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       // We don't current support this IR op though
       Result = _AtomicFetchAnd(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
-      Result = _Lshr(Result, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
     } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
-      Result = _Lshr(Value, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
       Value = _Andn(Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
@@ -3069,7 +3066,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       BitSelect = _And(Src, SizeMask);
     }
 
-    Result = _Lshr(Dest, BitSelect);
+    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Or(Dest, BitMask);
@@ -3096,12 +3093,12 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       HandledLock = true;
       Result = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
-      Result = _Lshr(Result, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
     } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
-      Result = _Lshr(Value, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
       Value = _Or(Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
@@ -3143,7 +3140,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       BitSelect = _And(Src, SizeMask);
     }
 
-    Result = _Lshr(Dest, BitSelect);
+    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
     Dest = _Xor(Dest, BitMask);
@@ -3170,12 +3167,12 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       HandledLock = true;
       Result = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
       // Now shift in to the correct bit location
-      Result = _Lshr(Result, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
     } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
-      Result = _Lshr(Value, BitSelect);
+      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
       Value = _Xor(Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
@@ -3625,7 +3622,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  auto AH = _Lshr(LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
+  auto AH = _Lshr(OpSize::i32Bit, LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto NewAL = _Add(AL, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(NewAL, _Constant(0xFF));
