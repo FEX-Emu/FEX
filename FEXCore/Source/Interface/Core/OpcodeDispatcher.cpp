@@ -1418,7 +1418,7 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   }
   else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
     // With REX.W then Sext
-    Src = _Sext(Size * 8, Src);
+    Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
     StoreResult(GPRClass, Op, Src, -1);
   }
   else {
@@ -1467,8 +1467,8 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
     flagsOpSrcSigned = flagsOpSrc = Src;
   } else {
     flagsOpSize = 4;
-    flagsOpDestSigned = _Sext(Size * 8, flagsOpDest = Dest);
-    flagsOpSrcSigned = _Sext(Size * 8, flagsOpSrc = Src);
+    flagsOpDestSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpDest = Dest);
+    flagsOpSrcSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpSrc = Src);
   }
 }
 
@@ -3190,8 +3190,8 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
-    Src1 = _Sext(Size * 8, Src1);
-    Src2 = _Sext(Size * 8, Src2);
+    Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
+    Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
   auto Dest = _Mul(Src1, Src2);
@@ -3212,8 +3212,8 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
-    Src1 = _Sext(Size * 8, Src1);
-    Src2 = _Sext(Size * 8, Src2);
+    Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
+    Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
   auto Dest = _Mul(Src1, Src2);
@@ -3236,8 +3236,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
-    Src1 = _Sext(Size * 8, Src1);
-    Src2 = _Sext(Size * 8, Src2);
+    Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
+    Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
   OrderedNode *Result = _Mul(Src1, Src2);

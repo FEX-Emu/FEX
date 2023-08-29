@@ -234,7 +234,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   // Read from memory
   auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
   if(read_width == 2) {
-    data = _Sext(read_width * 8, data);
+    data = _Sbfe(OpSize::i64Bit, read_width * 8, 0, data);
   }
   auto converted = _Float_FromGPR_S(8, read_width == 4 ? 4 : 8, data);
   // Write to ST[TOP]
@@ -316,7 +316,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       if(width == 16) {
-        arg = _Sext(16, arg);
+        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
@@ -377,7 +377,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       if(width == 16) {
-        arg = _Sext(16, arg);
+        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
@@ -441,7 +441,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       if(width == 16) {
-        arg = _Sext(16, arg);
+        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
@@ -527,7 +527,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       if(width == 16) {
-        arg = _Sext(16, arg);
+        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
@@ -689,7 +689,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       if(width == 16) {
-        arg = _Sext(16, arg);
+        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {

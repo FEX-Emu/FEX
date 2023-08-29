@@ -172,7 +172,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 
   // Sign extend to 64bits
   if (read_width != 8) {
-    data = _Sext(read_width * 8, data);
+    data = _Sbfe(OpSize::i64Bit, read_width * 8, 0, data);
   }
 
   // Extract sign and make interger absolute

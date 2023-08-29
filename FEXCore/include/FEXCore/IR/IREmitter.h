@@ -60,9 +60,6 @@ friend class FEXCore::IR::PassManager;
     Op.first->Header.ElementSize = Size / 8;
     return Op;
   }
-  IRPair<IROp_Sbfe> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
-    return _Sbfe(OpSize::i64Bit, SrcSize, 0, ssa0);
-  }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
