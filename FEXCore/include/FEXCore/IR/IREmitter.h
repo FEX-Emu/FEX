@@ -126,9 +126,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_UMul> _UMul(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _UMul(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
   }
-  IRPair<IROp_MulH> _MulH(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _MulH(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
-  }
   IRPair<IROp_UMulH> _UMulH(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _UMulH(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
   }
