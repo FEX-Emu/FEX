@@ -782,7 +782,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     OrderedNode *GPR = _VExtractToGPR(Size, 8, Src, 0);
     // BFI the sign bit in 31 in to 62.
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
-    GPR = _Bfi(8, 32, 31, GPR, GPR);
+    GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
     GPR = _Lshr(OpSize::i64Bit, GPR, _Constant(62));
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
@@ -2712,7 +2712,7 @@ OrderedNode *OpDispatchBuilder::GetMXCSR() {
   // Default MXCSR Value
   OrderedNode *MXCSR = _Constant(0x1F80);
   OrderedNode *RoundingMode = _GetRoundingMode();
-  return _Bfi(4, 3, 13, MXCSR, RoundingMode);
+  return _Bfi(OpSize::i32Bit, 3, 13, MXCSR, RoundingMode);
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {

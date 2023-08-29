@@ -2159,11 +2159,11 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
     if (Size == 8 && !Is1Bit) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
       // the full 32bits to get the correct result.
-      Dest = _Bfi(4, 16, 16, Dest, Dest);
+      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
     }
   }
 
@@ -2198,11 +2198,11 @@ void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
     if (Size == 8 && Shift > 8) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
       // the full 32bits to get the correct result.
-      Dest = _Bfi(4, 16, 16, Dest, Dest);
+      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
     }
   }
 
@@ -2237,11 +2237,11 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
     if (Size == 8) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
       // the full 32bits to get the correct result.
-      Dest = _Bfi(4, 16, 16, Dest, Dest);
+      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
     }
   }
 
@@ -2278,11 +2278,11 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
     if (Size == 8) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
       // the full 32bits to get the correct result.
-      Dest = _Bfi(4, 16, 16, Dest, Dest);
+      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
     }
   }
 
@@ -2561,14 +2561,15 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   CalculateDeferredFlags();
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  const auto Size = GetSrcBitSize(Op);
+  const auto Size = GetSrcSize(Op);
+  const auto SizeBit = Size * 8;
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
 
   // Rotate and insert CF in the upper bit
   OrderedNode *Res = _Bfe(7, 1, Dest);
-  Res = _Bfi(Size/8, 1, 7, Res, CF);
+  Res = _Bfi(IR::SizeToOpSize(Size), 1, 7, Res, CF);
 
   // Our new CF will be bit (Shift - 1) of the source
   auto NewCF = _Bfe(1, Shift - 1, Dest);
@@ -2579,7 +2580,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(1, SizeBit - 1, Res), _Bfe(1, SizeBit - 2, Res)));
   }
 }
 
@@ -2687,16 +2688,16 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     //   CF:   -> [44:44]
 
     // Insert CF, Destination already at [7:0]
-    Tmp = _Bfi(8, 1, 8, Dest, CF);
+    Tmp = _Bfi(OpSize::i64Bit, 1, 8, Dest, CF);
 
     // First Cascade, copies 9 bits from itself.
-    Tmp = _Bfi(8, 9, 9, Tmp, Tmp);
+    Tmp = _Bfi(OpSize::i64Bit, 9, 9, Tmp, Tmp);
 
     // Second cascade, copies 18 bits from itself.
-    Tmp = _Bfi(8, 18, 18, Tmp, Tmp);
+    Tmp = _Bfi(OpSize::i64Bit, 18, 18, Tmp, Tmp);
 
     // Final cascade, copies 9 bits again from itself.
-    Tmp = _Bfi(8, 9, 36, Tmp, Tmp);
+    Tmp = _Bfi(OpSize::i64Bit, 9, 36, Tmp, Tmp);
   }
   else {
     // 16-bit optimal cascade
@@ -2711,13 +2712,13 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     //   CF:   -> [50:50]
 
     // Insert CF, Destination already at [15:0]
-    Tmp = _Bfi(8, 1, 16, Dest, CF);
+    Tmp = _Bfi(OpSize::i64Bit, 1, 16, Dest, CF);
 
     // First Cascade, copies 17 bits from itself.
-    Tmp = _Bfi(8, 17, 17, Tmp, Tmp);
+    Tmp = _Bfi(OpSize::i64Bit, 17, 17, Tmp, Tmp);
 
     // Final Cascade, copies 17 bits from itself again.
-    Tmp = _Bfi(8, 17, 34, Tmp, Tmp);
+    Tmp = _Bfi(OpSize::i64Bit, 17, 34, Tmp, Tmp);
   }
 
   // Entire bitfield has been setup
@@ -2856,14 +2857,14 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
     // Insert incoming value
-    Tmp = _Bfi(8, Size, 63 - i - Size, Tmp, Dest);
+    Tmp = _Bfi(OpSize::i64Bit, Size, 63 - i - Size, Tmp, Dest);
 
     // Insert CF
-    Tmp = _Bfi(8, 1, 63 - i, Tmp, CF);
+    Tmp = _Bfi(OpSize::i64Bit, 1, 63 - i, Tmp, CF);
   }
 
   // Insert incoming value
-  Tmp = _Bfi(8, Size, 0, Tmp, Dest);
+  Tmp = _Bfi(OpSize::i64Bit, Size, 0, Tmp, Dest);
 
   // The data is now set up like this
   // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
@@ -4366,7 +4367,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     auto URemOp = _URem(OpSize::i16Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
-    auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
+    auto ResultAX = _Bfi(IR::SizeToOpSize(GPRSize), 8, 8, UDivOp, URemOp);
     StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
   }
   else if (Size == 2) {
@@ -4421,7 +4422,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     auto URemOp = _Rem(OpSize::i64Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
-    auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
+    auto ResultAX = _Bfi(IR::SizeToOpSize(GPRSize), 8, 8, UDivOp, URemOp);
     StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
   }
   else if (Size == 2) {
@@ -5141,7 +5142,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, i
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
     Reg = LoadGPRRegister(GPR);
-    Reg = _Bfi(GPRSize, Size * 8, Offset, Reg, Src);
+    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, Reg, Src);
   }
 
   _StoreRegister(Reg, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
