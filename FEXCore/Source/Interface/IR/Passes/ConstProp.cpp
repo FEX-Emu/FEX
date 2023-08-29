@@ -904,8 +904,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         uint64_t NewConstant = SourceMask << Op->lsb;
 
         if (ConstantSrc & 1) {
-          auto orr = IREmit->_Or(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
-          orr.first->Header.Size = IROp->Size;
+          auto orr = IREmit->_Or(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
           IREmit->ReplaceAllUsesWith(CodeNode, orr);
           Changed = true;
         }

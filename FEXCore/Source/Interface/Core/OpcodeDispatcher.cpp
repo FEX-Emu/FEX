@@ -385,7 +385,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
       }
       case FEXCore::IR::IROps::OP_OR: {
         Dest = _AtomicFetchOr(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Or(Dest, Src);
+        Result = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_AND: {
@@ -883,7 +883,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      auto Check = _Or(Flag1, Flag2);
+      auto Check = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Flag1), GetOpSize(Flag2)))), Flag1, Flag2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
           Check, OneConst, TrueValue, FalseValue);
       break;
@@ -891,7 +891,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      auto Check = _Or(Flag1, Flag2);
+      auto Check = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Flag1), GetOpSize(Flag2)))), Flag1, Flag2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
           Check, ZeroConst, TrueValue, FalseValue);
       break;
@@ -941,7 +941,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       auto Select2 = _Select(FEXCore::IR::COND_NEQ,
           Flag2, Flag3, OneConst, ZeroConst);
 
-      auto Check = _Or(Select1, Select2);
+      auto Check = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Select1), GetOpSize(Select2)))), Select1, Select2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
           Check, OneConst, TrueValue, FalseValue);
       break;
@@ -1541,7 +1541,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   Src = _Andn(Src, _Constant(0b101000));
 
   // Set the bit that is always set here
-  Src = _Or(Src, _Constant(0b10));
+  Src = _Or(OpSize::i64Bit, Src, _Constant(0b10));
 
   // Store the lower 8 bits in to RFLAGS
   SetPackedRFLAG(true, Src);
@@ -1908,7 +1908,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
   auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
 
-  OrderedNode *Res = _Or(Tmp1, Tmp2);
+  OrderedNode *Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
 
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
@@ -1968,7 +1968,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, ShiftLeft);
       auto Tmp2 = _Lshr(OpSize::i32Bit, Src, ShiftRight);
 
-      Res = _Or(Tmp1, Tmp2);
+      Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
     }
     else {
       // 32-bit and 64-bit SHLD behaves like an EXTR where the lower bits are filled from the source.
@@ -2008,7 +2008,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
   auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
-  OrderedNode *Res = _Or(Tmp1, Tmp2);
+  OrderedNode *Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
 
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
@@ -2067,7 +2067,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
       auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, ShiftRight);
       auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
-      Res = _Or(Tmp1, Tmp2);
+      Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
     }
     else {
       // 32-bit and 64-bit SHRD behaves like an EXTR where the upper bits are filled from the source.
@@ -2541,7 +2541,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     OrderedNode *Res = _Bfe(Size - Shift, Shift, Dest);
 
     // inject the CF
-    Res = _Or(Res, _Lshl(OpSize::i32Bit, CF, _Constant(Size, Size - Shift)));
+    Res = _Or(OpSize::i32Bit, Res, _Lshl(OpSize::i32Bit, CF, _Constant(Size, Size - Shift)));
 
     StoreResult(GPRClass, Op, Res, -1);
 
@@ -2612,7 +2612,8 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     Src, One,
     TmpHigher, Zero);
 
-  Res = _Or(Res, CompareResult);
+  // TODO: Can use OpSizeFromSrc(Op)
+  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
 
   // If Shift != 0 then we can inject the CF
   OrderedNode *CFShl = _Sub(_Constant(Size, Size), Src);
@@ -2622,7 +2623,8 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     Src, One,
     TmpCF, Zero);
 
-  Res = _Or(Res, CompareResult);
+  // TODO: Can use OpSizeFromSrc(Op)
+  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2753,7 +2755,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
 
   // Rotate left and insert CF in to lowest bit
   OrderedNode *Res = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, _Constant(Size, 1));
-  Res = _Or(Res, CF);
+  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CF)))), Res, CF);
 
   // Our new CF will be the top bit of the source
   auto NewCF = _Bfe(1, Size - 1, Dest);
@@ -2798,7 +2800,8 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     Src, One,
     TmpHigher, Zero);
 
-  Res = _Or(Res, CompareResult);
+  // TODO: Can use OpSizeFromSrc(Op)
+  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
 
   // If Shift != 0 then we can inject the CF
   OrderedNode *CFShl = _Sub(Src, _Constant(Size, 1));
@@ -2808,7 +2811,8 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     Src, One,
     TmpCF, Zero);
 
-  Res = _Or(Res, CompareResult);
+  // TODO: Can use OpSizeFromSrc(Op)
+  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -3069,7 +3073,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Or(Dest, BitMask);
+    Dest = _Or(OpSize::i64Bit, Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
@@ -3099,7 +3103,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
       // Now shift in to the correct bit location
       Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Or(Value, BitMask);
+      Value = _Or(OpSize::i64Bit, Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
@@ -3404,7 +3408,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3426,14 +3430,14 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     // The `CF` variable is the original CF from the start of the operation
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
 
-  Cond = _Or(CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  Cond = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
   FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3472,7 +3476,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3494,14 +3498,14 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     // The `CF` variable is the original CF from the start of the operation
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
 
-  Cond = _Or(CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  Cond = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
   FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3535,7 +3539,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -3570,7 +3574,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -4314,7 +4318,7 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   // Bit 1 is always 1
   // Bit 9 is always 1 because we always have interrupts enabled
 
-  Src = _Or(Src, _Constant(Size * 8, 0x202));
+  Src = _Or(OpSize::i64Bit, Src, _Constant(Size * 8, 0x202));
 
   SetPackedRFLAG(false, Src);
 }

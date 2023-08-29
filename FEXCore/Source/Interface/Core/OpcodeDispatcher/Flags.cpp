@@ -163,7 +163,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 
   // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
   if ((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask)
-    Original = _Or(Original, _Constant(2));
+    Original = _Or(OpSize::i64Bit, Original, _Constant(2));
 
   return Original;
 }

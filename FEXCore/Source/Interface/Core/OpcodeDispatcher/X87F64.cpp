@@ -635,8 +635,8 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
   OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
   OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-  HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
-  HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
+  HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
+  HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
@@ -668,7 +668,7 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   exp = _Sub(exp, _Constant(1023));
   exp = _Float_FromGPR_S(8, 8, exp);
   OrderedNode* sig = _And(gpr, _Constant(0x800fffffffffffffLL));
-  sig = _Or(sig, _Constant(0x3ff0000000000000LL));
+  sig = _Or(OpSize::i64Bit, sig, _Constant(0x3ff0000000000000LL));
   sig = _VCastFromGPR(8, 8, sig);
   // Write to ST[TOP]
   _StoreContextIndexed(exp, orig_top, 8, MMBaseOffset(), 16, FPRClass);
@@ -716,8 +716,8 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
   OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
 
-  HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
-  HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
+  HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
+  HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 
   if constexpr (whichflags == FCOMIFlags::FLAGS_X87) {
     SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
@@ -954,21 +954,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
 
   {
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
-    // We must construct the FSW from our various bits
-    // TODO: These should use BFI
-    OrderedNode *FSW = _Constant(0);
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
-
-    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
-    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
-    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
-    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
-
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
-    FSW = _Or(FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
-    _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
+    _StoreMem(GPRClass, Size, MemLocation, ReconstructFSW(), Size);
   }
 
   auto ZeroConst = _Constant(0);
