@@ -2450,7 +2450,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
   OrderedNode* Src1 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, OperandSize);
 
-  OrderedNode* ResultLo = _UMul(Src1, Src2);
+  OrderedNode* ResultLo = _UMul(IR::SizeToOpSize(OperandSize), Src1, Src2);
   OrderedNode* ResultHi = _UMulH(Src1, Src2);
 
   StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
@@ -3291,7 +3291,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     Src1 = _Bfe(8, Size * 8, 0, Src1);
     Src2 = _Bfe(8, Size * 8, 0, Src2);
   }
-  OrderedNode *Result = _UMul(Src1, Src2);
+  OrderedNode *Result = _UMul(OpSize::i64Bit, Src1, Src2);
   OrderedNode *ResultHigh{};
 
   if (Size == 1) {
