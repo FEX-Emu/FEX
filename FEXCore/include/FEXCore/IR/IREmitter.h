@@ -96,9 +96,6 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
     return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
   }
-  IRPair<IROp_And> _And(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _And(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
-  }
   IRPair<IROp_Bfe> _Bfe(uint8_t DestSize, uint8_t _Width, uint8_t _lsb, OrderedNode *_Src) {
     return _Bfe(static_cast<OpSize>(DestSize != 0 ? DestSize : GetOpSize(_Src)), _Width, _lsb, _Src);
   }

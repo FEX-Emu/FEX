@@ -157,7 +157,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   if (GetNZ) {
     static_assert(FEXCore::X86State::RFLAG_SF_LOC == (FEXCore::X86State::RFLAG_ZF_LOC + 1));
     auto NZCV = GetNZCV();
-    auto NZ = _And(NZCV, _Constant(0b11u << 30));
+    auto NZ = _And(OpSize::i64Bit, NZCV, _Constant(0b11u << 30));
     Original = _Orlshr(OpSize::i64Bit, Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
   }
 
@@ -190,7 +190,7 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   auto Parity = _VExtractToGPR(8, 1, Count, 0);
 
   // Mask off the bottom bit only.
-  return _And(_Constant(1), Parity);
+  return _And(OpSize::i64Bit, _Constant(1), Parity);
 }
 
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
@@ -479,7 +479,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   {
     auto XorOp1 = _Xor(OpSize, Src1, Src2);
     auto XorOp2 = _Xor(OpSize, Res, Src1);
-    OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
+    OrderedNode *AndOp1 = _And(OpSize, XorOp1, XorOp2);
     AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
@@ -521,7 +521,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   {
     auto XorOp1 = _Xor(OpSize, Src1, Src2);
     auto XorOp2 = _Xor(OpSize, Res, Src1);
-    OrderedNode *FinalAnd = _And(XorOp1, XorOp2);
+    OrderedNode *FinalAnd = _And(OpSize, XorOp1, XorOp2);
 
     FinalAnd = _Bfe(1, SrcSize * 8 - 1, FinalAnd);
 
