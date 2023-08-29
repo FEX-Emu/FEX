@@ -2450,8 +2450,8 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
   OrderedNode* Src1 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, OperandSize);
 
-  OrderedNode* ResultLo = _UMul(Src1, Src2);
-  OrderedNode* ResultHi = _UMulH(Src1, Src2);
+  OrderedNode* ResultLo = _UMul(IR::SizeToOpSize(OperandSize), Src1, Src2);
+  OrderedNode* ResultHi = _UMulH(IR::SizeToOpSize(OperandSize), Src1, Src2);
 
   StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
   StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
@@ -3194,13 +3194,13 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
-  auto Dest = _Mul(Src1, Src2);
+  auto Dest = _Mul(OpSize::i64Bit, Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
-    ResultHigh = _MulH(Src1, Src2);
+    ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
   }
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_MUL(Op, Dest, ResultHigh);
@@ -3216,13 +3216,13 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
-  auto Dest = _Mul(Src1, Src2);
+  auto Dest = _Mul(OpSize::i64Bit, Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size < 8) {
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
-    ResultHigh = _MulH(Src1, Src2);
+    ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
   }
 
   StoreResult(GPRClass, Op, Dest, -1);
@@ -3240,7 +3240,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
-  OrderedNode *Result = _Mul(Src1, Src2);
+  OrderedNode *Result = _Mul(OpSize::i64Bit, Src1, Src2);
   OrderedNode *ResultHigh{};
   if (Size == 1) {
     // Result is stored in AX
@@ -3273,7 +3273,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     }
     // 64bits stored in RAX
     // 64bits stored in RDX
-    ResultHigh = _MulH(Src1, Src2);
+    ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
     StoreGPRRegister(X86State::REG_RAX, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
@@ -3291,7 +3291,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     Src1 = _Bfe(8, Size * 8, 0, Src1);
     Src2 = _Bfe(8, Size * 8, 0, Src2);
   }
-  OrderedNode *Result = _UMul(Src1, Src2);
+  OrderedNode *Result = _UMul(OpSize::i64Bit, Src1, Src2);
   OrderedNode *ResultHigh{};
 
   if (Size == 1) {
@@ -3322,7 +3322,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     }
     // 64bits stored in RAX
     // 64bits stored in RDX
-    ResultHigh = _UMulH(Src1, Src2);
+    ResultHigh = _UMulH(OpSize::i64Bit, Src1, Src2);
     StoreGPRRegister(X86State::REG_RAX, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
@@ -3628,7 +3628,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AH = _Lshr(LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
-  auto NewAL = _Add(AL, _Mul(AH, Imm8));
+  auto NewAL = _Add(AL, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(NewAL, _Constant(0xFF));
   StoreGPRRegister(X86State::REG_RAX, Result, 2);
 
@@ -5036,7 +5036,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-        Tmp = _Mul(Tmp, Constant);
+        Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
       }
       if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
         AccessType = MemoryAccessType::ACCESS_NONTSO;
@@ -5271,7 +5271,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-        Tmp = _Mul(Tmp, Constant);
+        Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
       }
     }
 
