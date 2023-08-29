@@ -1538,7 +1538,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   OrderedNode *Src = LoadGPRRegister(X86State::REG_RAX, 1, 8);
 
   // Clear bits that aren't supposed to be set
-  Src = _Andn(Src, _Constant(0b101000));
+  Src = _Andn(OpSize::i64Bit, Src, _Constant(0b101000));
 
   // Set the bit that is always set here
   Src = _Or(Src, _Constant(0b10));
@@ -2297,7 +2297,7 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  auto Dest = _Andn(Src2, Src1);
+  auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_Logical(Op, Dest, Src1, Src2);
@@ -2417,7 +2417,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // Now clear the high bits specified by the index.
   auto NegOne = _Constant(OperandSize, -1);
   auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, MaskedIndex);
-  auto MaskResult = _Andn(Src, Mask);
+  auto MaskResult = _Andn(IR::SizeToOpSize(Size), Src, Mask);
 
   // If the index is above OperandSize, we don't clear anything.
   auto Bounds = _Constant(OperandSize - 1);
@@ -2991,7 +2991,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Andn(Dest, BitMask);
+    Dest = _Andn(OpSize::i64Bit, Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
@@ -3025,7 +3025,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
       // Now shift in to the correct bit location
       Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Andn(Value, BitMask);
+      Value = _Andn(OpSize::i64Bit, Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }

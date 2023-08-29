@@ -67,7 +67,7 @@ void OpDispatchBuilder::ZeroMultipleFlags(uint32_t FlagsMask) {
       }
       else {
         auto IndexMaskConstant = _Constant(IndexMask);
-        auto NewNZCV = _Andn(GetNZCV(), IndexMaskConstant);
+        auto NewNZCV = _Andn(OpSize::i64Bit, GetNZCV(), IndexMaskConstant);
         SetNZCV(NewNZCV);
       }
       // Unset the possibly set bits.
@@ -171,7 +171,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto XorOp1 = _Xor(Src1, Src2);
   auto XorOp2 = _Xor(Res, Src1);
-  OrderedNode *AndOp1 = _Andn(XorOp2, XorOp1);
+  OrderedNode *AndOp1 = _Andn(SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, XorOp2, XorOp1);
   AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }

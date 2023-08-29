@@ -911,8 +911,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         }
         else {
           // We are wanting to clear the bitfield.
-          auto andn = IREmit->_Andn(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
-          andn.first->Header.Size = IROp->Size;
+          auto andn = IREmit->_Andn(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
           IREmit->ReplaceAllUsesWith(CodeNode, andn);
           Changed = true;
         }

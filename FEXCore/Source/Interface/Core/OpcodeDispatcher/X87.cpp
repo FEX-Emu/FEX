@@ -35,7 +35,7 @@ void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, X87Tag Tag) {
   // TODO: This can all be done with OpSize::i32Bit.
   auto TopOffset = _Lshl(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Value))), Value, _Constant(1));
   Mask = _Lshl(OpSize::i64Bit, Mask, TopOffset);
-  OrderedNode *NewFTW = _Andn(FTW, Mask);
+  OrderedNode *NewFTW = _Andn(OpSize::i64Bit, FTW, Mask);
   if (Tag != X87Tag::Valid) {
     auto TagVal = _Lshl(OpSize::i64Bit, _Constant(ToUnderlying(Tag)), TopOffset);
     NewFTW = _Or(NewFTW, TagVal);
