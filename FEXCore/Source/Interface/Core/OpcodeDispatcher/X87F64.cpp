@@ -73,7 +73,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   auto roundShift = _Constant(10);
   auto roundMask = _Constant(3);
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
-  roundingMode = _And(roundingMode, roundMask);
+  roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);
 
@@ -114,7 +114,7 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
   auto shift = _Constant(10);
   auto mask = _Constant(3);
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, shift);
-  roundingMode = _And(roundingMode, mask);
+  roundingMode = _And(OpSize::i32Bit, roundingMode, mask);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
@@ -147,12 +147,12 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
   else {
     // Implicit arg (does this need to change with width?)
     auto offset = _Constant(Op->OP & 7);
-    data = _And(_Add(orig_top, offset), mask);
+    data = _And(OpSize::i64Bit, _Add(orig_top, offset), mask);
     data = _LoadContextIndexed(data, 8, MMBaseOffset(), 16, FPRClass);
     converted = data;
   }
 
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   // Write to ST[TOP]
@@ -170,7 +170,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), mask);
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -192,7 +192,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
 
   // if we are popping then we must first mark this location as empty
   SetX87TopTag(orig_top, X87Tag::Empty);
-  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 }
 
@@ -200,7 +200,7 @@ template<uint64_t num>
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   auto data = _VCastFromGPR(8, 8, _Constant(num));
@@ -226,7 +226,7 @@ void OpDispatchBuilder::FLDF64_Const<0>(OpcodeArgs); // 0.0
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -262,7 +262,7 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(orig_top, X87Tag::Empty);
     // Set the new top now
-    auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+    auto top = _And(OpSize::i64Bit, _Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
 }
@@ -291,7 +291,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(orig_top, X87Tag::Empty);
     // Set the new top now
-    auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+    auto top = _And(OpSize::i64Bit, _Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
 }
@@ -328,7 +328,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    arg = _And(_Add(top, offset), mask);
+    arg = _And(OpSize::i64Bit, _Add(top, offset), mask);
     if constexpr (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
@@ -341,7 +341,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 
@@ -389,7 +389,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    arg = _And(_Add(top, offset), mask);
+    arg = _And(OpSize::i64Bit, _Add(top, offset), mask);
     if constexpr (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
@@ -405,7 +405,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 
@@ -453,7 +453,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    arg = _And(_Add(top, offset), mask);
+    arg = _And(OpSize::i64Bit, _Add(top, offset), mask);
     if constexpr (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
@@ -475,7 +475,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 
@@ -539,7 +539,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    arg = _And(_Add(top, offset), mask);
+    arg = _And(OpSize::i64Bit, _Add(top, offset), mask);
     if constexpr (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
@@ -562,7 +562,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
 
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 
@@ -657,17 +657,17 @@ void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
 
 void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   auto gpr = _VExtractToGPR(8, 8, a, 0);
-  OrderedNode* exp = _And(gpr, _Constant(0x7ff0000000000000LL));
+  OrderedNode* exp = _And(OpSize::i64Bit, gpr, _Constant(0x7ff0000000000000LL));
   exp = _Lshr(OpSize::i64Bit, exp, _Constant(52));
   exp = _Sub(OpSize::i64Bit, exp, _Constant(1023));
   exp = _Float_FromGPR_S(8, 8, exp);
-  OrderedNode* sig = _And(gpr, _Constant(0x800fffffffffffffLL));
+  OrderedNode* sig = _And(OpSize::i64Bit, gpr, _Constant(0x800fffffffffffffLL));
   sig = _Or(OpSize::i64Bit, sig, _Constant(0x3ff0000000000000LL));
   sig = _VCastFromGPR(8, 8, sig);
   // Write to ST[TOP]
@@ -701,7 +701,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    arg = _And(_Add(top, offset), mask);
+    arg = _And(OpSize::i64Bit, _Add(top, offset), mask);
     b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
   }
 
@@ -738,17 +738,17 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   if constexpr (poptwice) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(top, X87Tag::Empty);
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
   else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
     SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
-    top = _And(_Add(top, _Constant(1)), mask);
+    top = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 }
@@ -816,7 +816,7 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
   auto top = GetX87Top();
 
   auto mask = _Constant(7);
-  OrderedNode *st1 = _And(_Add(top, _Constant(1)), mask);
+  OrderedNode *st1 = _And(OpSize::i64Bit, _Add(top, _Constant(1)), mask);
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
   st1 = _LoadContextIndexed(st1, 8, MMBaseOffset(), 16, FPRClass);
@@ -844,7 +844,7 @@ void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64SCALE>(OpcodeArgs);
 
 void OpDispatchBuilder::X87SinCosF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -867,7 +867,7 @@ void OpDispatchBuilder::X87FYL2XF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   // if we are popping then we must first mark this location as empty
   SetX87TopTag(orig_top, X87Tag::Empty);
-  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
   OrderedNode *st0 = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
@@ -886,7 +886,7 @@ void OpDispatchBuilder::X87FYL2XF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87TANF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
@@ -908,7 +908,7 @@ void OpDispatchBuilder::X87ATANF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   // if we are popping then we must first mark this location as empty
   SetX87TopTag(orig_top, X87Tag::Empty);
-  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  auto top = _And(OpSize::i64Bit, _Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
@@ -1000,7 +1000,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
     data = _F80CVTTo(data, 8);
     _StoreMem(FPRClass, 16, ST0Location, data, 1);
     ST0Location = _Add(ST0Location, TenConst);
-    Top = _And(_Add(Top, OneConst), SevenConst);
+    Top = _And(OpSize::i64Bit, _Add(Top, OneConst), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
@@ -1032,7 +1032,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   auto roundShift = _Constant(10);
   auto roundMask = _Constant(3);
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
-  roundingMode = _And(roundingMode, roundMask);
+  roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
@@ -1082,7 +1082,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
     _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
 
     ST0Location = _Add(ST0Location, TenConst);
-    Top = _And(_Add(Top, OneConst), SevenConst);
+    Top = _And(OpSize::i64Bit, _Add(Top, OneConst), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here

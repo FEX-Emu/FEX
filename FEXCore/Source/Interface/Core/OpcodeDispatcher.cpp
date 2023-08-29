@@ -390,7 +390,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
       }
       case FEXCore::IR::IROps::OP_AND: {
         Dest = _AtomicFetchAnd(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _And(Dest, Src);
+        Result = _And(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_XOR: {
@@ -957,7 +957,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       auto Select2 = _Select(FEXCore::IR::COND_EQ,
           Flag2, Flag3, OneConst, ZeroConst);
 
-      auto Check = _And(Select1, Select2);
+      auto Check = _And(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Select1), GetOpSize(Select2)))), Select1, Select2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
           Check, OneConst, TrueValue, FalseValue);
       break;
@@ -1261,7 +1261,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     if (!ZFTrue) {
       ZF = _Xor(OpSize::i64Bit, ZF, _Constant(1));
     }
-    SrcCond = _And(SrcCond, ZF);
+    SrcCond = _And(OpSize::i64Bit, SrcCond, ZF);
   }
 
   CalculateDeferredFlags();
@@ -1385,10 +1385,10 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto ALUOp = _And(Dest, Src);
-  GenerateFlags_Logical(Op, ALUOp, Dest, Src);
-
   auto Size = GetDstSize(Op);
+
+  auto ALUOp = _And(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+  GenerateFlags_Logical(Op, ALUOp, Dest, Src);
 
   flagsOp = SelectionFlag::AND;
   flagsOpDest = ALUOp;
@@ -1898,9 +1898,9 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
-    Shift = _And(Shift, _Constant(0x3F));
+    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
   } else {
-    Shift = _And(Shift, _Constant(0x1F));
+    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
   }
 
   auto ShiftRight = _Sub(OpSize::i64Bit, _Constant(Size), Shift);
@@ -1998,9 +1998,9 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
-    Shift = _And(Shift, _Constant(0x3F));
+    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
   } else {
-    Shift = _And(Shift, _Constant(0x1F));
+    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
   }
 
   auto ShiftLeft = _Sub(OpSize::i64Bit, _Constant(Size), Shift);
@@ -2151,9 +2151,9 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
-    Src = _And(Src, _Constant(Size, 0x3F));
+    Src = _And(OpSize::i64Bit, Src, _Constant(Size, 0x3F));
   } else {
-    Src = _And(Src, _Constant(Size, 0x1F));
+    Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
   }
 
   if (Size < 32) {
@@ -2229,9 +2229,9 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
-    Src = _And(Src, _Constant(Size, 0x3F));
+    Src = _And(OpSize::i64Bit, Src, _Constant(Size, 0x3F));
   } else {
-    Src = _And(Src, _Constant(Size, 0x1F));
+    Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
   }
 
   if (Size < 32) {
@@ -2338,7 +2338,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto Mask = _Sub(IR::SizeToOpSize(Size), _Lshl(IR::SizeToOpSize(Size), One, SanitizedLength), One);
 
   // Now put it all together and make the result.
-  auto Dest = _And(SanitizedShifted, Mask);
+  auto Dest = _And(IR::SizeToOpSize(Size), SanitizedShifted, Mask);
 
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
@@ -2351,7 +2351,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
-  auto Result = _And(Src, NegatedSrc);
+  auto Result = _And(OpSizeFromSrc(Op), Src, NegatedSrc);
 
   // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
@@ -2375,7 +2375,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   auto One = _Constant(1);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Result = _And(_Sub(OpSize::i64Bit, Src, One), Src);
+  auto Result = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
@@ -2414,7 +2414,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
 
   // Mask off the index so we only consider the lower byte.
-  auto MaskedIndex = _And(Index, _Constant(0xFF));
+  auto MaskedIndex = _And(OpSize::i64Bit, Index, _Constant(0xFF));
 
   // Now clear the high bits specified by the index.
   auto NegOne = _Constant(OperandSize, -1);
@@ -2663,7 +2663,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Src = _And(Src, _Constant(Size, 0x1F));
+  Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
   OrderedNode *Tmp{};
 
@@ -2853,7 +2853,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Src = _And(Src, _Constant(Size, 0x1F));
+  Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
   OrderedNode *Tmp = _Constant(64, 0);
 
@@ -2933,7 +2933,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
-      BitSelect = _And(Src, SizeMask);
+      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
     }
 
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
@@ -2992,7 +2992,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
-      BitSelect = _And(Src, SizeMask);
+      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
     }
 
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
@@ -3070,7 +3070,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
-      BitSelect = _And(Src, SizeMask);
+      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
     }
 
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
@@ -3144,7 +3144,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
-      BitSelect = _And(Src, SizeMask);
+      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
     }
 
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
@@ -3411,7 +3411,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3465,8 +3465,8 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
 }
 
@@ -3479,7 +3479,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3531,8 +3531,8 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCurrentCodeBlock(EndBlock);
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
 }
 
@@ -3542,7 +3542,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -3551,7 +3551,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 
   SetCurrentCodeBlock(FalseBlock);
   {
-    auto NewAX = _And(AX, _Constant(0xFF0F));
+    auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
@@ -3561,7 +3561,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(TrueBlock);
   {
     auto NewAX = _Add(AX, _Constant(0x106));
-    auto Result = _And(NewAX, _Constant(0xFF0F));
+    auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
@@ -3577,7 +3577,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -3586,7 +3586,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 
   SetCurrentCodeBlock(FalseBlock);
   {
-    auto NewAX = _And(AX, _Constant(0xFF0F));
+    auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
@@ -3597,7 +3597,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   {
     auto NewAX = _Sub(OpSize::i64Bit, AX, _Constant(6));
     NewAX = _Sub(OpSize::i64Bit, NewAX, _Constant(0x100));
-    auto Result = _And(NewAX, _Constant(0xFF0F));
+    auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
@@ -3620,8 +3620,8 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
 }
 
@@ -3632,13 +3632,13 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto AH = _Lshr(OpSize::i32Bit, LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto NewAL = _Add(AL, _Mul(OpSize::i64Bit, AH, Imm8));
-  auto Result = _And(NewAL, _Constant(0xFF));
+  auto Result = _And(OpSize::i64Bit, NewAL, _Constant(0xFF));
   StoreGPRRegister(X86State::REG_RAX, Result, 2);
 
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
 }
 

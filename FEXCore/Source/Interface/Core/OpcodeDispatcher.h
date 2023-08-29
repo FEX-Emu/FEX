@@ -1127,7 +1127,7 @@ private:
     // moves by allowing orlshl to be used instead of bfi.
     PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC)) |
                           (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC));
-    SetNZCV(_And(OldNZCV, _Constant(PossiblySetNZCVBits)));
+    SetNZCV(_And(OpSize::i64Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
   }
 
   void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
@@ -1147,7 +1147,7 @@ private:
       Shifted = Res;
 
     // Mask off just the N bit, which now equals the sign bit
-    CachedNZCV = _And(Shifted, _Constant(1u << NBit));
+    CachedNZCV = _And(OpSize::i64Bit, Shifted, _Constant(1u << NBit));
     PossiblySetNZCVBits = (1u << NBit);
   }
 

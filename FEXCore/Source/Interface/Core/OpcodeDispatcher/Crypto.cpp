@@ -74,13 +74,13 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   using FnType = OrderedNode* (*)(OpDispatchBuilder&, OrderedNode*, OrderedNode*, OrderedNode*);
 
   const auto f0 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
-    return Self._Xor(OpSize::i32Bit, Self._And(B, C), Self._Andn(OpSize::i32Bit, D, B));
+    return Self._Xor(OpSize::i32Bit, Self._And(OpSize::i32Bit, B, C), Self._Andn(OpSize::i32Bit, D, B));
   };
   const auto f1 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
   };
   const auto f2 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
-    return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, Self._And(B, C), Self._And(B, D)), Self._And(C, D));
+    return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, Self._And(OpSize::i32Bit, B, C), Self._And(OpSize::i32Bit, B, D)), Self._And(OpSize::i32Bit, C, D));
   };
   const auto f3 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
@@ -201,10 +201,10 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _And(E, F), _Andn(OpSize::i32Bit, G, E));
+    return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
   };
   const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _And(A, B), _And(A, C)), _And(B, C));
+    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, A, B), _And(OpSize::i32Bit, A, C)), _And(OpSize::i32Bit, B, C));
   };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
     return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), _Ror(OpSize::i32Bit, A, _Constant(32, 13))), _Ror(OpSize::i32Bit, A, _Constant(32, 22)));
