@@ -763,7 +763,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
   if (Shift == 1) {
     auto Xor = _Xor(OpSize, Res, Src1);
-    LogMan::Msg::DFmt("Source Size: {}", SrcSize);
     auto OF = _Bfe(OpSize, 1, SrcSize * 8 - 1, Xor);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
   } else {
