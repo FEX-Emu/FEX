@@ -26,7 +26,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   auto Tmp = _Ror(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
-  auto Top = _Add(_VExtractToGPR(16, 4, Src, 3), Tmp);
+  auto Top = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Src, 3), Tmp);
   auto Result = _VInsGPR(16, 4, 3, Src, Top);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -117,7 +117,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     auto C = _VExtractToGPR(16, 4, Dest, 1);
     auto D = _VExtractToGPR(16, 4, Dest, 0);
 
-    auto A1 = _Add(_Add(_Add(Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W0E), K);
+    auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W0E), K);
     auto B1 = A;
     auto C1 = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto D1 = C;
@@ -127,7 +127,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
   const auto Round1To3 = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C,
                              OrderedNode *D, OrderedNode *E, OrderedNode *W) -> RoundResult {
-    auto ANext = _Add(_Add(_Add(_Add(Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W), E), K);
+    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W), E), K);
     auto BNext = A;
     auto CNext = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto DNext = C;
@@ -163,10 +163,10 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
   auto W1 = _VExtractToGPR(16, 4, Dest, 1);
   auto W0 = _VExtractToGPR(16, 4, Dest, 0);
 
-  auto Sig3 = _Add(W3, Sigma0(W4));
-  auto Sig2 = _Add(W2, Sigma0(W3));
-  auto Sig1 = _Add(W1, Sigma0(W2));
-  auto Sig0 = _Add(W0, Sigma0(W1));
+  auto Sig3 = _Add(OpSize::i32Bit, W3, Sigma0(W4));
+  auto Sig2 = _Add(OpSize::i32Bit, W2, Sigma0(W3));
+  auto Sig1 = _Add(OpSize::i32Bit, W1, Sigma0(W2));
+  auto Sig0 = _Add(OpSize::i32Bit, W0, Sigma0(W1));
 
   auto D3 = _VInsGPR(16, 4, 3, Dest, Sig3);
   auto D2 = _VInsGPR(16, 4, 2, D3, Sig2);
@@ -186,10 +186,10 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
 
   auto W14 = _VExtractToGPR(16, 4, Src, 2);
   auto W15 = _VExtractToGPR(16, 4, Src, 3);
-  auto W16 = _Add(_VExtractToGPR(16, 4, Dest, 0), Sigma1(W14));
-  auto W17 = _Add(_VExtractToGPR(16, 4, Dest, 1), Sigma1(W15));
-  auto W18 = _Add(_VExtractToGPR(16, 4, Dest, 2), Sigma1(W16));
-  auto W19 = _Add(_VExtractToGPR(16, 4, Dest, 3), Sigma1(W17));
+  auto W16 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 0), Sigma1(W14));
+  auto W17 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 1), Sigma1(W15));
+  auto W18 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 2), Sigma1(W16));
+  auto W19 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), Sigma1(W17));
 
   auto D3 = _VInsGPR(16, 4, 3, Dest, W19);
   auto D2 = _VInsGPR(16, 4, 2, D3, W18);
@@ -234,11 +234,11 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   const auto Round = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C, OrderedNode *D,
                          OrderedNode *E, OrderedNode *F, OrderedNode *G, OrderedNode *H,
                          OrderedNode* WK) -> RoundResult {
-    auto ANext = _Add(_Add(_Add(_Add(_Add(Ch(E, F, G), Sigma1(E)), WK), H), Major(A, B, C)), Sigma0(A));
+    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), Major(A, B, C)), Sigma0(A));
     auto BNext = A;
     auto CNext = B;
     auto DNext = C;
-    auto ENext = _Add(_Add(_Add(_Add(Ch(E, F, G), Sigma1(E)), WK), H), D);
+    auto ENext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), D);
     auto FNext = E;
     auto GNext = F;
     auto HNext = G;

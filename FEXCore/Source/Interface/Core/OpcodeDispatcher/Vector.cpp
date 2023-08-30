@@ -2581,7 +2581,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   // Update XSTATE_BV region of the XSAVE header
   {
-    OrderedNode *HeaderOffset = _Add(Base, _Constant(512));
+    OrderedNode *HeaderOffset = _Add(OpSize, Base, _Constant(512));
 
     // NOTE: We currently only support the first 3 bits (x87, SSE, and AVX)
     OrderedNode *RequestedFeatures = _Bfe(OpSize, 3, 0, Mask);
@@ -2593,6 +2593,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
   if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
@@ -2614,13 +2615,13 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
   }
 
   {
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(2));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(2));
     _StoreMem(GPRClass, 2, MemLocation, ReconstructFSW(), 2);
   }
 
   {
     // FTW
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(4));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(4));
     auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
     _StoreMem(GPRClass, 2, MemLocation, FTW, 2);
   }
@@ -2671,39 +2672,43 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
   // This is implementation dependent
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     OrderedNode *MMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, mm[i]));
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 32));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 32));
 
     _StoreMem(FPRClass, 16, MemLocation, MMReg, 16);
   }
 }
 
 void OpDispatchBuilder::SaveSSEState(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *XMMReg = LoadXMMRegister(i);
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 160));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 160));
 
     _StoreMem(FPRClass, 16, MemLocation, XMMReg, 16);
   }
 }
 
 void OpDispatchBuilder::SaveMXCSRState(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+
   OrderedNode *MXCSR = GetMXCSR();
-  OrderedNode *MXCSRLocation = _Add(MemBase, _Constant(24));
+  OrderedNode *MXCSRLocation = _Add(OpSize, MemBase, _Constant(24));
   _StoreMem(GPRClass, 4, MXCSRLocation, MXCSR, 4);
 
   // Store the mask for all bits.
-  OrderedNode *MXCSRMaskLocation = _Add(MXCSRLocation, _Constant(4));
+  OrderedNode *MXCSRMaskLocation = _Add(OpSize, MXCSRLocation, _Constant(4));
   _StoreMem(GPRClass, 4, MXCSRMaskLocation, _Constant(0xFFFF), 4);
 }
 
 void OpDispatchBuilder::SaveAVXState(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 576));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 576));
 
     _StoreMem(FPRClass, 16, MemLocation, Upper, 16);
   }
@@ -2717,18 +2722,22 @@ OrderedNode *OpDispatchBuilder::GetMXCSR() {
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   RestoreX87State(Mem);
   RestoreSSEState(Mem);
 
-  OrderedNode *MXCSRLocation = _Add(Mem, _Constant(24));
+  OrderedNode *MXCSRLocation = _Add(OpSize, Mem, _Constant(24));
   OrderedNode *MXCSR = _LoadMem(GPRClass, 4, MXCSRLocation, 4);
   RestoreMXCSRState(MXCSR);
 }
 
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+
   const auto XSaveBase = [this, Op] {
     OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     return AppendSegmentOffset(Mem, Op->Flags);
@@ -2737,8 +2746,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // Set up base address for the XSAVE region to restore from, and also read the
   // XSTATE_BV bit flags out of the XSTATE header.
   OrderedNode *Base = XSaveBase();
-  OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(Base, _Constant(512)), 8);
-  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(OpSize, Base, _Constant(512)), 8);
 
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
   // otherwise, if not set, then we need to set the relevant data the bit corresponds to
@@ -2790,8 +2798,8 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   {
     // We need to restore the MXCSR if either SSE or AVX are requested to be saved
     RestoreIfFlagSetOrDefault(1,
-                              [this, Base] {
-                                OrderedNode *MXCSRLocation = _Add(Base, _Constant(24));
+                              [this, Base, OpSize] {
+                                OrderedNode *MXCSRLocation = _Add(OpSize, Base, _Constant(24));
                                 OrderedNode *MXCSR = _LoadMem(GPRClass, 4, MXCSRLocation, 4);
                                 RestoreMXCSRState(MXCSR);
                               },
@@ -2800,35 +2808,38 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+
   auto NewFCW = _LoadMem(GPRClass, 2, MemBase, 2);
   _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(2));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(2));
     auto NewFSW = _LoadMem(GPRClass, 2, MemLocation, 2);
     ReconstructX87StateFromFSW(NewFSW);
   }
 
   {
     // FTW
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(4));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(4));
     auto NewFTW = _LoadMem(GPRClass, 2, MemLocation, 2);
     _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
   }
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 32));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 32));
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     _StoreContext(16, FPRClass, MMReg, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
 }
 
 void OpDispatchBuilder::RestoreSSEState(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 160));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 160));
     OrderedNode *XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     StoreXMMRegister(i, XMMReg);
   }
@@ -2841,11 +2852,12 @@ void OpDispatchBuilder::RestoreMXCSRState(OrderedNode *MXCSR) {
 }
 
 void OpDispatchBuilder::RestoreAVXState(OrderedNode *MemBase) {
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *XMMReg = LoadXMMRegister(i);
-    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 576));
+    OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 576));
     OrderedNode *YMMHReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     OrderedNode *YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
     StoreXMMRegister(i, YMM);
