@@ -1201,7 +1201,11 @@ private:
   }
 
   void SetAF(unsigned Constant) {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(Constant));
+    // AF is stored in bit 4 of the AF flag byte, with garbage in the other
+    // bits. This allows us to defer the extract in the usual case. When it is
+    // read, bit 4 is extracted.  In order to write a constant value of AF, that
+    // means we need to left-shift here to compensate.
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(Constant << 4));
   }
 
   void ZeroMultipleFlags(uint32_t BitMask);

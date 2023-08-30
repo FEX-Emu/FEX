@@ -227,9 +227,9 @@ namespace FEXCore::Context {
 
     // Currently these flags just map 1:1 inside of the resulting value.
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      if (i == X86State::RFLAG_PF_LOC) {
+      if (i == X86State::RFLAG_PF_LOC || i == X86State::RFLAG_AF_LOC) {
         // Intentionally do nothing.
-        // PF can contain up to 4-bits which can corrupt other members when compacted.
+        // These contain multiple bits which can corrupt other members when compacted.
         continue;
       }
 
@@ -255,6 +255,11 @@ namespace FEXCore::Context {
     uint32_t PF = std::popcount(Frame->State.flags[X86State::RFLAG_PF_LOC]) & 1;
     EFLAGS |= PF << X86State::RFLAG_PF_LOC;
 
+    // AF calculation is deferred, calculate it now.
+    // extract bit 4.
+    uint32_t AF = (Frame->State.flags[X86State::RFLAG_AF_LOC] & (1 << 4)) ? 1 : 0;
+    EFLAGS |= AF << X86State::RFLAG_AF_LOC;
+
     return EFLAGS;
   }
 
@@ -268,6 +273,10 @@ namespace FEXCore::Context {
         case X86State::RFLAG_SF_LOC:
           // Intentionally do nothing.
         break;
+        case X86State::RFLAG_AF_LOC:
+          // AF stored in bit 4 in our internal representation
+          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? (1 << 4) : 0;
+          break;
         case X86State::RFLAG_PF_LOC:
           // PF is intentional fallthrough here.
           // PF calculation for storing back in to internal representation works.

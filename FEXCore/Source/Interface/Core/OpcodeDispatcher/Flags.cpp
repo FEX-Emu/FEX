@@ -106,8 +106,18 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
 
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
-    auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
-    SetRFLAG(Tmp, FlagOffset);
+
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC) {
+      // AF is in bit 4 architecturally, and we need to store it to bit 4 of our
+      // AF register, with garbage in the other bits. The extract is deferred.
+      //
+      // So we write out the whole flags byte to AF without an extract.
+      static_assert(FEXCore::X86State::RFLAG_AF_LOC == 4);
+      SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_LOC);
+    } else {
+      auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
+      SetRFLAG(Tmp, FlagOffset);
+    }
   }
 }
 
@@ -142,15 +152,22 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     }
 
     // Note that the Bfi only considers the bottom bit of the flag, the rest of
-    // the byte is allowed to be garbage.
+    // the byte is allowed to be garbage. AF is intentionally not using LoadAF.
     OrderedNode *Flag = FlagOffset == FEXCore::X86State::RFLAG_PF_LOC ?
                         LoadPF() :
                         GetRFLAG(FlagOffset);
 
-    if (CTX->BackendFeatures.SupportsShiftedBitwise)
+    // AF is special, since the flag value is at bit 4 of our AF register, and
+    // we need to put it at bit 4 too. So instead of the usual Bfe+Orlshl we
+    // instead do And+Or. This is the same instruction count, but fewer cycles.
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC) {
+      auto MaskedAF = _And(OpSize::i32Bit, Flag, _Constant(1u << 4));
+      Original = _Or(OpSize::i32Bit, Original, MaskedAF);
+    } else if (CTX->BackendFeatures.SupportsShiftedBitwise) {
       Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
-    else
+    } else {
       Original = _Bfi(OpSize::i32Bit, 1, FlagOffset, Original, Flag);
+    }
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
@@ -194,10 +211,11 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
-  // Read the stored byte.
+  // Read the stored byte. This is the XOR result.
   auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
 
-  return AFByte;
+  // What's left is to extract the flag from the XOR. This is the deferred part.
+  return _Bfe(OpSize::i32Bit, 1, 4, AFByte);
 }
 
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
@@ -231,9 +249,10 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
 }
 
 void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-  AFRes = _Bfe(OpSize, 1, 4, AFRes);
-  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
+  // We store the XOR of the arguments. The AF flag will be available as a bit
+  // to be extracted from this result. The extraction is deferred until read.
+  OrderedNode *XorRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(XorRes);
 }
 
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
