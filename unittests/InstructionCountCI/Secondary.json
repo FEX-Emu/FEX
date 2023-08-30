@@ -1437,7 +1437,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x28, #768]",
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1616]",
         "ldr d5, [x0, #16]",
         "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"
@@ -1449,7 +1449,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d4, [x4]",
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1616]",
         "ldr d5, [x0, #16]",
         "tbl v4.8b, {v4.16b}, v5.8b",
         "str d4, [x28, #752]"

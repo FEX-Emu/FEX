@@ -353,7 +353,8 @@ OrderedNode* OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
-  return _VAESKeyGenAssist(Src, RCON);
+  auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(16, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
+  return _VAESKeyGenAssist(Src, KeyGenSwizzle, RCON);
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
