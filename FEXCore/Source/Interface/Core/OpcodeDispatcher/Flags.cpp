@@ -587,7 +587,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // CF/OF
@@ -611,7 +611,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   // AF/SF/PF/ZF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
   }
 
@@ -628,12 +628,11 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto Zero = _Constant(0);
   // AF
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   CalculatePF(Res);
@@ -749,7 +748,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   // No flags changed if shift is zero
   if (Shift == 0) return;
 
-  auto Zero = _Constant(0);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   SetNZ_ZeroCV(SrcSize, Res);
@@ -770,7 +768,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // OF
@@ -788,8 +786,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   // No flags changed if shift is zero
   if (Shift == 0) return;
 
-  auto Zero = _Constant(0);
-
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
@@ -804,7 +800,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // OF
@@ -815,7 +811,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
   const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto Zero = _Constant(0);
 
   // Stash OF before overwriting it
   auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
@@ -833,7 +828,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // Preserve OF if it won't be written

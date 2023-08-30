@@ -3435,7 +3435,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   StartNewBlock();
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetAF(0);
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3450,7 +3450,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3509,7 +3509,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   StartNewBlock();
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetAF(0);
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3524,7 +3524,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3581,7 +3581,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetAF(0);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3593,7 +3593,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3620,7 +3620,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetAF(0);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3632,7 +3632,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
