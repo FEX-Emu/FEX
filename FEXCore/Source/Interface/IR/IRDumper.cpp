@@ -213,6 +213,17 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
   }
 }
 
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::OpSize Arg) {
+  switch (Arg) {
+    case OpSize::i8Bit: *out << "i8"; break;
+    case OpSize::i16Bit: *out << "i16"; break;
+    case OpSize::i32Bit: *out << "i32"; break;
+    case OpSize::i64Bit: *out << "i64"; break;
+    case OpSize::i128Bit: *out << "i128"; break;
+    case OpSize::i256Bit: *out << "i256"; break;
+    default: *out << "<Unknown OpSize Type>"; break;
+  }
+}
 
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
   *out << "{" << Arg.ErrorRegister << ".";
