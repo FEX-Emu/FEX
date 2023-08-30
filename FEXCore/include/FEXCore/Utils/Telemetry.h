@@ -9,25 +9,6 @@
 #include <filesystem>
 
 namespace FEXCore::Telemetry {
-#ifndef FEX_DISABLE_TELEMETRY
-  class Value;
-
-  class Value final {
-    public:
-      Value() = default;
-      Value(uint64_t Default) : Data {Default} {}
-
-      uint64_t operator*() const { return Data; }
-      void operator=(uint64_t Value) { Data = Value; }
-      void operator|=(uint64_t Value) { Data |= Value; }
-      void operator++(int) { Data++; }
-
-      std::atomic<uint64_t> *GetAddr() { return &Data; }
-
-    private:
-      std::atomic<uint64_t> Data;
-  };
-
   enum TelemetryType {
     TYPE_HAS_SPLIT_LOCKS,
     TYPE_16BYTE_SPLIT,
@@ -49,6 +30,25 @@ namespace FEXCore::Telemetry {
     TYPE_USES_32BIT_SEGMENT_CS,
     TYPE_USES_32BIT_SEGMENT_DS,
     TYPE_LAST,
+  };
+
+#ifndef FEX_DISABLE_TELEMETRY
+  class Value;
+
+  class Value final {
+    public:
+      Value() = default;
+      Value(uint64_t Default) : Data {Default} {}
+
+      uint64_t operator*() const { return Data; }
+      void operator=(uint64_t Value) { Data = Value; }
+      void operator|=(uint64_t Value) { Data |= Value; }
+      void operator++(int) { Data++; }
+
+      std::atomic<uint64_t> *GetAddr() { return &Data; }
+
+    private:
+      std::atomic<uint64_t> Data;
   };
 
   FEX_DEFAULT_VISIBILITY Value &GetTelemetryValue(TelemetryType Type);

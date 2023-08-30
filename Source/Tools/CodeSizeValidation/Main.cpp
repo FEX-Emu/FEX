@@ -377,6 +377,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISASSEMBLE, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::Disassemble::BLOCKS | FEXCore::Config::Disassemble::STATS)));
   // Choose bitness.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
+  // Disable telemetry, it can affect instruction counts.
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLETELEMETRY, "1");
 
   // Host feature override. Only supports overriding SVE width.
   enum HostFeatures {
