@@ -33,7 +33,15 @@ namespace FEXCore::Telemetry {
     "Uses 32-bit Segment CS",
     "Uses 32-bit Segment DS",
   };
+
+  static bool Enabled {true};
   void Initialize() {
+    FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
+    if (DisableTelemetry) {
+      Enabled = false;
+      return;
+    }
+
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/";
 
@@ -45,6 +53,10 @@ namespace FEXCore::Telemetry {
   }
 
   void Shutdown(fextl::string const &ApplicationName) {
+    if (!Enabled) {
+      return;
+    }
+
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 

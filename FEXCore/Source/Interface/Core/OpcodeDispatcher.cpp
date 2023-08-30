@@ -4858,6 +4858,11 @@ void OpDispatchBuilder::CheckLegacySegmentRead(OrderedNode *NewNode, uint32_t Se
     return;
   }
 
+  if (CTX->Config.DisableTelemetry()) {
+    // Telemetry disabled at runtime.
+    return;
+  }
+
   FEXCore::Telemetry::TelemetryType TelemIndex{};
   switch (SegmentReg) {
     case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
@@ -4889,6 +4894,11 @@ void OpDispatchBuilder::CheckLegacySegmentWrite(OrderedNode *NewNode, uint32_t S
   if (SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX ||
       SegmentReg == FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
     // FS and GS segments aren't considered legacy.
+    return;
+  }
+
+  if (CTX->Config.DisableTelemetry()) {
+    // Telemetry disabled at runtime.
     return;
   }
 

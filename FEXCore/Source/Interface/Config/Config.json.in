@@ -329,6 +329,14 @@
           "Allows overriding the SVE width in the vixl simulator.",
           "Useful as a debugging feature."
         ]
+      },
+      "DisableTelemetry": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Disables telemetry at runtime.",
+          "Useful for CI instcountCI mostly"
+        ]
       }
     },
     "Logging": {
