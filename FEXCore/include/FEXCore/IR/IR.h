@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
@@ -676,5 +677,15 @@ struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<FEXCore::IR::Fenc
   template <typename FormatContext>
   auto format(const FEXCore::IR::FenceType& Fence, FormatContext& ctx) const {
     return Base::format(Fence.Val, ctx);
+  }
+};
+
+template <>
+struct fmt::formatter<FEXCore::IR::OpSize> : fmt::formatter<std::underlying_type_t<FEXCore::IR::OpSize>> {
+  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::OpSize>>;
+
+  template <typename FormatContext>
+  auto format(const FEXCore::IR::OpSize& OpSize, FormatContext& ctx) const {
+    return Base::format(FEXCore::ToUnderlying(OpSize), ctx);
   }
 };
