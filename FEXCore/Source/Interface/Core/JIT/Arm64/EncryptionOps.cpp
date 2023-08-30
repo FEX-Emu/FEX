@@ -88,35 +88,29 @@ DEF_OP(AESDecLast) {
 
 DEF_OP(AESKeyGenAssist) {
   auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetVReg(Op->Src.ID());
+  const auto Swizzle = GetVReg(Op->KeyGenTBLSwizzle.ID());
 
-  ARMEmitter::ForwardLabel Constant;
-  ARMEmitter::ForwardLabel PastConstant;
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
+  if (Dst != Src) {
+    mov(Dst.Q(), Src.Q());
+  }
 
   // Do a "regular" AESE step
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
-  mov(VTMP1.Q(), GetVReg(Op->Src.ID()).Q());
-  aese(VTMP1, VTMP2);
-
-  // Do a table shuffle to undo ShiftRows
-  ldr(VTMP3.Q(), &Constant);
+  aese(Dst, VTMP2);
 
   // Now EOR in the RCON
   if (Op->RCON) {
-    tbl(VTMP1.Q(), VTMP1.Q(), VTMP3.Q());
+    tbl(Dst.Q(), Dst.Q(), Swizzle.Q());
 
     LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->RCON) << 32);
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), TMP1);
-    eor(GetVReg(Node).Q(), VTMP1.Q(), VTMP2.Q());
+    eor(Dst.Q(), Dst.Q(), VTMP2.Q());
   }
   else {
-    tbl(GetVReg(Node).Q(), VTMP1.Q(), VTMP3.Q());
+    tbl(Dst.Q(), Dst.Q(), Swizzle.Q());
   }
-
-  b(&PastConstant);
-  Bind(&Constant);
-  dc64(0x040B0E01'0B0E0104ULL);
-  dc64(0x0C030609'0306090CULL);
-  Bind(&PastConstant);
 }
 
 DEF_OP(CRC32) {

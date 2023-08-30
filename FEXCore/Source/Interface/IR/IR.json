@@ -1847,7 +1847,7 @@
         "Desc": "Does the last step of AES decryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESKeyGenAssist FPR:$Src, u8:$RCON": {
+      "FPR = VAESKeyGenAssist FPR:$Src, FPR:$KeyGenTBLSwizzle, u8:$RCON": {
         "Desc": "Assists in key generation",
         "DestSize": "16"
       },
