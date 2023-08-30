@@ -806,7 +806,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     for (unsigned i = 0; i < NumElements; ++i) {
       // Extract the top bit of the element
       OrderedNode *Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
-      Tmp = _Bfe(1, ElementSize * 8 - 1, Tmp);
+      Tmp = _Bfe(IR::SizeToOpSize(ElementSize), 1, ElementSize * 8 - 1, Tmp);
 
       // Shift it to the correct location
       Tmp = _Lshl(IR::SizeToOpSize(ElementSize), Tmp, _Constant(i));
@@ -1493,7 +1493,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
 
     // If we are storing to a GPR then we zero extend it
     if constexpr (ElementSize < 4) {
-      Result = _Bfe(GPRSize, ElementSize * 8, 0, Result);
+      Result = _Bfe(IR::SizeToOpSize(GPRSize), ElementSize * 8, 0, Result);
     }
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
   } else {
@@ -2541,9 +2541,10 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
   OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
   OrderedNode *Base = XSaveBase();
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
-    OrderedNode *BitFlag = _Bfe(FieldSize, BitIndex, Mask);
+    OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump = _CondJump(BitFlag, {COND_NEQ});
 
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -2583,7 +2584,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
     OrderedNode *HeaderOffset = _Add(Base, _Constant(512));
 
     // NOTE: We currently only support the first 3 bits (x87, SSE, and AVX)
-    OrderedNode *RequestedFeatures = _Bfe(3, 0, Mask);
+    OrderedNode *RequestedFeatures = _Bfe(OpSize, 3, 0, Mask);
 
     // XSTATE_BV section of the header is 8 bytes in size, but we only really
     // care about setting at most 3 bits in the first byte. We zero out the rest.
@@ -2737,12 +2738,13 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // XSTATE_BV bit flags out of the XSTATE header.
   OrderedNode *Base = XSaveBase();
   OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(Base, _Constant(512)), 8);
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
   // otherwise, if not set, then we need to set the relevant data the bit corresponds to
   // to it's defined initial configuration.
   const auto RestoreIfFlagSetOrDefault = [&](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
-    OrderedNode *BitFlag = _Bfe(FieldSize, BitIndex, Mask);
+    OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump = _CondJump(BitFlag, {COND_NEQ});
 
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -2805,20 +2807,7 @@ void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
   {
     OrderedNode *MemLocation = _Add(MemBase, _Constant(2));
     auto NewFSW = _LoadMem(GPRClass, 2, MemLocation, 2);
-
-    // Strip out the FSW information
-    auto Top = _Bfe(3, 11, NewFSW);
-    SetX87Top(Top);
-
-    auto C0 = _Bfe(1, 8,  NewFSW);
-    auto C1 = _Bfe(1, 9,  NewFSW);
-    auto C2 = _Bfe(1, 10, NewFSW);
-    auto C3 = _Bfe(1, 14, NewFSW);
-
-    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+    ReconstructX87StateFromFSW(NewFSW);
   }
 
   {
@@ -2847,7 +2836,7 @@ void OpDispatchBuilder::RestoreSSEState(OrderedNode *MemBase) {
 
 void OpDispatchBuilder::RestoreMXCSRState(OrderedNode *MXCSR) {
   // We only support the rounding mode and FTZ bit being set
-  OrderedNode *RoundingMode = _Bfe(4, 3, 13, MXCSR);
+  OrderedNode *RoundingMode = _Bfe(OpSize::i32Bit, 3, 13, MXCSR);
   _SetRoundingMode(RoundingMode);
 }
 
@@ -4705,7 +4694,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     // then we store the least significant bit.
     const auto UseMSBIndex = (Control & 0b0100'0000) != 0;
 
-    OrderedNode *ResultNoFlags = _Bfe(16, 0, IntermediateResult);
+    OrderedNode *ResultNoFlags = _Bfe(OpSize::i32Bit, 16, 0, IntermediateResult);
 
     OrderedNode *IfZero = _Constant(16 >> (Control & 1));
     OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags)
@@ -4717,7 +4706,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     const uint8_t GPRSize = CTX->GetGPRSize();
     if (GPRSize == 8) {
       // If being stored to an 8-byte register, zero extend the 4-byte result.
-      Result = _Bfe(8, 32, 0, Result);
+      Result = _Bfe(OpSize::i64Bit, 32, 0, Result);
     }
     StoreGPRRegister(X86State::REG_RCX, Result);
   }
@@ -4730,7 +4719,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   //      [OF | CF | SF | ZF]
   //
   const auto GetFlagBit = [this, IntermediateResult](int BitIndex) {
-    return _Bfe(1, BitIndex, IntermediateResult);
+    return _Bfe(OpSize::i32Bit, 1, BitIndex, IntermediateResult);
   };
 
   SetRFLAG<X86State::RFLAG_ZF_LOC>(GetFlagBit(16));

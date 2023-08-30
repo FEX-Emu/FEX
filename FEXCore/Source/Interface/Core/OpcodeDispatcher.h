@@ -582,6 +582,8 @@ public:
 
   // X87 Ops
   OrderedNode *ReconstructFSW();
+  // Returns new x87 stack top from FSW.
+  OrderedNode *ReconstructX87StateFromFSW(OrderedNode *FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
   template<uint64_t Lower, uint32_t Upper>
@@ -1199,7 +1201,7 @@ private:
 
   void ZeroMultipleFlags(uint32_t BitMask);
 
-  OrderedNode *GetRFLAG(unsigned BitOffset, int32_t Size = 8) {
+  OrderedNode *GetRFLAG(unsigned BitOffset, IR::OpSize Size = OpSize::i64Bit) {
     if (IsNZCV(BitOffset)) {
       if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
         return _Bfe(Size, 1, IndexNZCV(BitOffset), GetNZCV());
