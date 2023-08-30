@@ -651,7 +651,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 
             if (TruncateSize != IREmit->GetOpSize(LastValueNode)) {
               // We need to insert an explict truncation
-              LastValueNode = IREmit->_Bfe(Info->AccessSize, TruncateSize * 8, 0, LastValueNode);
+              LastValueNode = IREmit->_Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Info->AccessSize)), TruncateSize * 8, 0, LastValueNode);
             }
 
             IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);

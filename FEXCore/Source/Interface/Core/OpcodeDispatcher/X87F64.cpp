@@ -81,20 +81,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
 
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
-
-  // Strip out the FSW information
-  auto Top = _Bfe(3, 11, NewFSW);
-  SetX87Top(Top);
-
-  auto C0 = _Bfe(1, 8,  NewFSW);
-  auto C1 = _Bfe(1, 9,  NewFSW);
-  auto C2 = _Bfe(1, 10, NewFSW);
-  auto C3 = _Bfe(1, 14, NewFSW);
-
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  ReconstructX87StateFromFSW(NewFSW);
 
   {
     // FTW
@@ -1040,20 +1027,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
 
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
-
-  // Strip out the FSW information
-  OrderedNode *Top = _Bfe(3, 11, NewFSW);
-  SetX87Top(Top);
-
-  auto C0 = _Bfe(1, 8,  NewFSW);
-  auto C1 = _Bfe(1, 9,  NewFSW);
-  auto C2 = _Bfe(1, 10, NewFSW);
-  auto C3 = _Bfe(1, 14, NewFSW);
-
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  auto Top = ReconstructX87StateFromFSW(NewFSW);
 
   {
     // FTW
@@ -1106,7 +1080,7 @@ void OpDispatchBuilder::X87FXAMF64(OpcodeArgs) {
   OrderedNode *Result = _VExtractToGPR(8, 8, a, 0);
 
   // Extract the sign bit
-  Result = _Bfe(1, 63, Result);
+  Result = _Bfe(OpSize::i64Bit, 1, 63, Result);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
 
   // Claim this is a normal number
