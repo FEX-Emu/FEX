@@ -193,6 +193,13 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   return _And(OpSize::i64Bit, _Constant(1), Parity);
 }
 
+OrderedNode *OpDispatchBuilder::LoadAF() {
+  // Read the stored byte.
+  auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+
+  return AFByte;
+}
+
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
   // We will use the bottom bit of the popcount, set if an odd number of bits are set.
   // But the x86 parity flag is supposed to be set for an even number of bits.

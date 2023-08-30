@@ -1200,6 +1200,10 @@ private:
       _StoreFlag(Value, BitOffset);
   }
 
+  void SetAF(unsigned Constant) {
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(Constant));
+  }
+
   void ZeroMultipleFlags(uint32_t BitMask);
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {
@@ -1369,6 +1373,7 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPF();
+  OrderedNode *LoadAF();
   void CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition = nullptr);
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
 
