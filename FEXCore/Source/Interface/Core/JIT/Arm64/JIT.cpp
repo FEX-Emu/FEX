@@ -855,8 +855,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(INLINEENTRYPOINTOFFSET,  InlineEntrypointOffset);
         REGISTER_OP(CYCLECOUNTER,      CycleCounter);
         REGISTER_OP(ADD,               Add);
+        REGISTER_OP(ADDNZCV,           AddNZCV);
         REGISTER_OP(TESTNZ,            TestNZ);
         REGISTER_OP(SUB,               Sub);
+        REGISTER_OP(SUBNZCV,           SubNZCV);
         REGISTER_OP(NEG,               Neg);
         REGISTER_OP(ABS,               Abs);
         REGISTER_OP(MUL,               Mul);

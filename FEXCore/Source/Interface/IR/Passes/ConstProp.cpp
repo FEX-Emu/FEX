@@ -1026,6 +1026,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       }
       case OP_ADD:
       case OP_SUB:
+      case OP_ADDNZCV:
+      case OP_SUBNZCV:
       {
         auto Op = IROp->C<IR::IROp_Add>();
 
