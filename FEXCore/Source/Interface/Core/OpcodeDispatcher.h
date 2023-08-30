@@ -1376,6 +1376,7 @@ private:
   OrderedNode *LoadAF();
   void CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition = nullptr);
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
+  void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);

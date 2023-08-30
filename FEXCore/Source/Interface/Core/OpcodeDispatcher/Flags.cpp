@@ -230,6 +230,12 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   }
 }
 
+void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
+  AFRes = _Bfe(OpSize, 1, 4, AFRes);
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
+}
+
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
@@ -429,14 +435,9 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
 void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  // AF
-  {
-    auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // SF/ZF
@@ -460,13 +461,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // SF/ZF
@@ -497,13 +492,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
@@ -546,13 +535,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
