@@ -91,13 +91,6 @@ friend class FEXCore::IR::PassManager;
     return InvalidNode;
   }
 
-  // Temporary naughty implicit IR operation handlers
-  ///< ALU
-  IRPair<IROp_Add> _Add(OrderedNode *_Src1, OrderedNode *_Src2) {
-    return _Add(static_cast<OpSize>(std::max<uint8_t>(4, std::max(GetOpSize(_Src1), GetOpSize(_Src2)))), _Src1, _Src2);
-  }
-  // End of Temporary naughty implicit IR operation handlers
-
   void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
     // Got to do some bookkeeping first
     Value->AddUse();
