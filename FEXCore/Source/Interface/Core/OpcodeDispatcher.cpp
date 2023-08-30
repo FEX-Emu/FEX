@@ -1589,6 +1589,10 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   break;
   }
 
+  // AF would need special handling here. It doesn't matter.
+  LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_LOC,
+                      "No AF complement instruction in x86");
+
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -3415,7 +3419,7 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
@@ -3489,7 +3493,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
@@ -3561,7 +3565,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
   auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
@@ -3600,7 +3604,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
   auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
