@@ -1454,44 +1454,36 @@
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
+        "ldr x0, [x28, #1608]",
+        "ldr q4, [x0]",
         "movi v1.2d, #0x0",
-        "mov v0.16b, v17.16b",
+        "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
-        "ldr q2, pc+12",
-        "tbl v16.16b, {v0.16b}, v2.16b",
-        "b #+0x14",
-        "add w4, w8, w14",
-        "umin z1.b, p3/m, z1.b, z16.b",
-        "unallocated (Unallocated)",
-        "unallocated (Unallocated)"
+        "tbl v16.16b, {v16.16b}, v4.16b"
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
+        "ldr x0, [x28, #1608]",
+        "ldr q4, [x0]",
         "movi v1.2d, #0x0",
-        "mov v0.16b, v17.16b",
+        "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
-        "ldr q2, pc+24",
-        "tbl v0.16b, {v0.16b}, v2.16b",
+        "tbl v16.16b, {v16.16b}, v4.16b",
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
-        "eor v16.16b, v0.16b, v1.16b",
-        "b #+0x14",
-        "add w4, w8, w14",
-        "umin z1.b, p3/m, z1.b, z16.b",
-        "unallocated (Unallocated)",
-        "unallocated (Unallocated)"
+        "eor v16.16b, v16.16b, v1.16b"
       ]
     }
   }

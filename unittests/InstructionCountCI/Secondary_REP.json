@@ -390,7 +390,7 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1616]",
+        "ldr x0, [x28, #1624]",
         "ldr q4, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v4.16b"
       ]
