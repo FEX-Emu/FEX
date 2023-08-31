@@ -789,16 +789,13 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   OrderedNode *NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, JMPPCOffset);
-  auto ConstantPCReturn = GetRelocatedPC(Op);
 
-  auto ConstantSize = _Constant(GPRSize);
+  // Push the return address.
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OpSize::i64Bit, OldSP, ConstantSize);
+  auto NewSP = _Push(GPRSize, GPRSize, ConstantPC, OldSP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  _StoreMem(GPRClass, GPRSize, NewSP, ConstantPCReturn, GPRSize);
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Had wrong operand type");
@@ -825,14 +822,12 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 
   auto ConstantPCReturn = GetRelocatedPC(Op);
 
-  auto ConstantSize = _Constant(Size);
+  // Push the return address.
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Sub(OpSize::i64Bit, OldSP, ConstantSize);
+  auto NewSP = _Push(Size, Size, ConstantPCReturn, OldSP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
   // Store the RIP
   CalculateDeferredFlags();
