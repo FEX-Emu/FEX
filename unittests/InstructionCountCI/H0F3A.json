@@ -45,7 +45,7 @@
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
-        "movi d4, #0x0",
+        "movi v4.2d, #0x0",
         "str d4, [x28, #752]"
       ]
     },
@@ -1462,7 +1462,7 @@
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #1608]",
         "ldr q4, [x0]",
-        "movi v1.2d, #0x0",
+        "movi v5.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
         "tbl v16.16b, {v16.16b}, v4.16b"
@@ -1477,7 +1477,7 @@
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #1608]",
         "ldr q4, [x0]",
-        "movi v1.2d, #0x0",
+        "movi v5.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
         "tbl v16.16b, {v16.16b}, v4.16b",

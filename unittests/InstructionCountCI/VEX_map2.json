@@ -521,7 +521,7 @@
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
         "mov z6.s, w20",
-        "mov z7.d, #0",
+        "movi v7.2d, #0x0",
         "mov z8.b, #16",
         "mov z1.q, q8",
         "not p0.b, p7/z, p6.b",
@@ -581,7 +581,7 @@
         "movk x20, #0x504, lsl #32",
         "movk x20, #0x706, lsl #48",
         "mov z6.d, x20",
-        "mov z7.d, #0",
+        "movi v7.2d, #0x0",
         "mov z8.b, #16",
         "mov z1.q, q8",
         "not p0.b, p7/z, p6.b",
@@ -3625,7 +3625,7 @@
       ]
     },
     "vaesenc xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdc 128-bit"
@@ -3633,11 +3633,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v1.2d, #0x0",
-        "mov v0.16b, v4.16b",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
-        "eor v4.16b, v0.16b, v5.16b",
+        "eor v4.16b, v4.16b, v5.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -3651,7 +3650,7 @@
       ]
     },
     "vaesenclast xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdd 128-bit"
@@ -3659,10 +3658,9 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v1.2d, #0x0",
-        "mov v0.16b, v4.16b",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
-        "eor v4.16b, v0.16b, v5.16b",
+        "eor v4.16b, v4.16b, v5.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -3676,7 +3674,7 @@
       ]
     },
     "vaesdec xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xde 128-bit"
@@ -3684,11 +3682,10 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v1.2d, #0x0",
-        "mov v0.16b, v4.16b",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
-        "eor v4.16b, v0.16b, v5.16b",
+        "eor v4.16b, v4.16b, v5.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]
@@ -3702,7 +3699,7 @@
       ]
     },
     "vaesdeclast xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0xdf 128-bit"
@@ -3710,10 +3707,9 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "movi v1.2d, #0x0",
-        "mov v0.16b, v4.16b",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
-        "eor v4.16b, v0.16b, v5.16b",
+        "eor v4.16b, v4.16b, v5.16b",
         "mov v4.16b, v4.16b",
         "mov z16.d, p7/m, z4.d"
       ]

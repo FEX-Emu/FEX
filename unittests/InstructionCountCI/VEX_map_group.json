@@ -575,7 +575,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "ext v6.16b, v4.16b, v5.16b, #15",
         "ext z4.b, z4.b, z5.b, #31",
         "mov z1.q, q4",
@@ -592,7 +592,7 @@
         "Map group 14 0b011 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, #0",
+        "movi v4.2d, #0x0",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -726,7 +726,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "ext v6.16b, v5.16b, v4.16b, #1",
         "movprfx z1, z5",
         "ext z1.b, z1.b, z4.b, #17",
@@ -745,7 +745,7 @@
         "Map group 14 0b111 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, #0",
+        "movi v4.2d, #0x0",
         "mov z16.d, p7/m, z4.d"
       ]
     },
