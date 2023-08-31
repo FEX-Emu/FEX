@@ -190,7 +190,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 auto cb = data.callbacks.find(idx);
 
                 file << "  args.a_" << idx << " = ";
-                if (cb == data.callbacks.end() || cb->second.is_stub || cb->second.is_guest) {
+                if (cb == data.callbacks.end() || cb->second.is_stub) {
                     file << "a_" << idx << ";\n";
                 } else {
                     // Before passing guest function pointers to the host, wrap them in a host-callable trampoline
@@ -270,15 +270,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             if (thunk.custom_host_impl) {
                 file << "static auto fexfn_impl_" << libname << "_" << function_name << "(";
                 for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
-                    // TODO: fex_guest_function_ptr for guest callbacks?
                     auto& type = thunk.param_types[idx];
 
                     file << (idx == 0 ? "" : ", ");
 
-                    auto cb = thunk.callbacks.find(idx);
-                    if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        file << "fex_guest_function_ptr a_" << idx;
-                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                    if (thunk.param_annotations[idx].is_passthrough) {
                         fmt::print(file, "guest_layout<{}> a_{}", type.getAsString(), idx);
                     } else {
                         file << format_decl(type, fmt::format("a_{}", idx));
@@ -373,8 +369,6 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
-                    } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return fmt::format("fex_guest_function_ptr {{ {} }}", raw_arg);
                     } else if (cb != thunk.callbacks.end()) {
                         auto arg_name = fmt::format("args->a_{}.data", idx);
                         // Use comma operator to inject a function call before returning the argument

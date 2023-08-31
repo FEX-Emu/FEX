@@ -89,7 +89,6 @@ struct returns_guest_pointer {};
 struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
-struct callback_guest : callback_annotation_base {};
 
 struct opaque_type {};
 struct assume_compatible_data_layout {};

@@ -18,7 +18,6 @@ struct ThunkedCallback : FunctionParams {
     clang::QualType return_type;
 
     bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
-    bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
 };
 
