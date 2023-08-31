@@ -1446,11 +1446,11 @@ OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::Deco
 
   // ZMask happens after insert
   if (ZMask == 0xF) {
-    return _VectorZero(DstSize);
+    return LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
   if (ZMask) {
-    auto Zero = _VectorZero(DstSize);
+    auto Zero = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
     for (size_t i = 0; i < 4; ++i) {
       if ((ZMask & (1 << i)) != 0) {
         Dest = _VInsElement(DstSize, 4, i, 0, Dest, Zero);
@@ -1809,7 +1809,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Result = _VectorZero(Size);
+  OrderedNode *Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Result, Dest, Shift);
@@ -1830,7 +1830,7 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
   if (Shift == 0) [[unlikely]] {
     Result = Src;
   } else {
-    Result = _VectorZero(DstSize);
+    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
     if (Is128Bit) {
       if (Shift < DstSize) {
@@ -1860,7 +1860,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Result = _VectorZero(Size);
+  OrderedNode *Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
   }
@@ -1879,7 +1879,7 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
 
   OrderedNode *Result = Src;
   if (Shift != 0) {
-    Result = _VectorZero(DstSize);
+    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
     if (Is128Bit) {
       if (Shift < DstSize) {
         Result = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
@@ -2871,7 +2871,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 
   // On top of resetting the flags to a default state, we also need to clear
   // all of the ST0-7/MM0-7 registers to zero.
-  OrderedNode *ZeroVector = _VectorZero(Core::CPUState::MM_REG_SIZE);
+  OrderedNode *ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::MM_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     _StoreContext(16, FPRClass, ZeroVector, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
@@ -2880,7 +2880,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 void OpDispatchBuilder::DefaultSSEState() {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  OrderedNode *ZeroVector = _VectorZero(Core::CPUState::XMM_SSE_REG_SIZE);
+  OrderedNode *ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   for (uint32_t i = 0; i < NumRegs; ++i) {
     StoreXMMRegister(i, ZeroVector);
   }
@@ -2913,7 +2913,7 @@ OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::Decod
 
   if (Index >= (SanitizedDstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
-    return _VectorZero(DstSize);
+    return LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
   OrderedNode *Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
@@ -4103,7 +4103,7 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
   OrderedNode *Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
   OrderedNode *Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
-  OrderedNode *ZeroVec = _VectorZero(DstSize);
+  OrderedNode *ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   // First step is to do an FMUL
   OrderedNode *Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
@@ -4293,7 +4293,7 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
-  OrderedNode *Result = _VectorZero(DstSize);
+  OrderedNode *Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
     switch (SelectorIdx) {
@@ -4407,7 +4407,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
     const auto Index = Selector & 0b11;
     Result = _VDupElement(DstSize, 8, Src, Index);
   } else {
-    Result = _VectorZero(DstSize);
+    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
     for (size_t i = 0; i < DstSize / 8; i++) {
       const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
       Result = _VInsElement(DstSize, 8, i, SrcIndex, Result, Src);
@@ -4417,10 +4417,10 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
 }
 
 static OrderedNode* VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize,
-                                 OrderedNode *Src1, OrderedNode *Src2, uint64_t Selector) {
+                                 OrderedNode *Src1, OrderedNode *Src2, OrderedNode *ZeroRegister, uint64_t Selector) {
   const std::array Sources{Src1, Src2};
 
-  OrderedNode *Result = IR._VectorZero(VecSize);
+  OrderedNode *Result = ZeroRegister;
   const int NumElements = VecSize / ElementSize;
   for (int i = 0; i < NumElements; i++) {
     const auto SelectorIndex = (Selector >> i) & 1;
@@ -4451,7 +4451,8 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
     return;
   }
 
-  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, Selector);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, ZeroRegister, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4491,7 +4492,8 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
     return;
   }
 
-  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, Selector);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4518,7 +4520,8 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   // imm for the helper function to use.
   const auto NewSelector = Selector << 8 | Selector;
 
-  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, NewSelector);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4531,8 +4534,8 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
     // NOTE: Despite the name being VZEROALL, this will still only ever
     //       zero out up to the first 16 registers (even on AVX-512, where we have 32 registers)
 
-    OrderedNode* ZeroVector = _VectorZero(DstSize);
-    for (uint32_t i = 0; i < NumRegs; i++) {
+  OrderedNode* ZeroVector = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  for (uint32_t i = 0; i < NumRegs; i++) {
       StoreXMMRegister(i, ZeroVector);
     }
   } else {
@@ -4555,7 +4558,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
   const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VectorZero(DstSize);
+  OrderedNode *Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   if constexpr (ElementSize == 8) {
     Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
@@ -4628,7 +4631,8 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
   OrderedNode *FinalIndices{};
 
   if (Is256Bit) {
-    OrderedNode *Vector16 = _VInsElement(DstSize, 16, 1, 0, _VectorZero(DstSize), _VectorImm(DstSize, 1, 16));
+    const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    OrderedNode *Vector16 = _VInsElement(DstSize, 16, 1, 0, ZeroRegister, _VectorImm(DstSize, 1, 16));
     OrderedNode *IndexOffsets = _VAdd(DstSize, 1, VectorConst, Vector16);
 
     FinalIndices = _VAdd(DstSize, 1, IndexOffsets, ShiftedIndices);
@@ -4701,7 +4705,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       const auto ElementSize = 1U  << (Control & 1);
       const auto NumElements = 16U >> (Control & 1);
 
-      OrderedNode *Result = _VectorZero(Core::CPUState::XMM_SSE_REG_SIZE);
+      OrderedNode *Result = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
       for (uint32_t i = 0; i < NumElements; i++) {
         OrderedNode *SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
         Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
