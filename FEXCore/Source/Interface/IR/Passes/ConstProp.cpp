@@ -772,6 +772,21 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         IREmit->SetWriteCursor(CodeNode);
         IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
         Changed = true;
+      } else {
+        // XOR with zero results in the nonzero source
+        for (unsigned i = 0; i < 2; ++i) {
+          if (!IREmit->IsValueConstant(Op->Header.Args[i], &Constant1))
+            continue;
+
+          if (Constant1 != 0)
+            continue;
+
+          IREmit->SetWriteCursor(CodeNode);
+          OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[1 - i]);
+          IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+          Changed = true;
+          break;
+        }
       }
     break;
     }
@@ -1026,6 +1041,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       }
       case OP_ADD:
       case OP_SUB:
+      case OP_ADDNZCV:
+      case OP_SUBNZCV:
       {
         auto Op = IROp->C<IR::IROp_Add>();
 
@@ -1038,7 +1055,18 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
             Changed = true;
           }
+        } else if (IROp->Op == OP_SUBNZCV) {
+          // If the first source is zero, we can use a NEGS instruction.
+          uint64_t Constant1{};
+          if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+            if (Constant1 == 0) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+              IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+              Changed = true;
+            }
+          }
         }
+
         break;
       }
       case OP_SELECT:

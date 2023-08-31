@@ -488,9 +488,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  // TODO: Can use OpSize calculated up front.
-  //auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4, std::max(GetOpSize(Src1), GetOpSize(Src2))));
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   // AF
   {
@@ -501,32 +499,39 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
   CalculatePF(Res);
 
-  // Stash CF before zeroing it
-  auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  // Stash CF before stomping over it
+  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  // SF/ZF
-  SetNZ_ZeroCV(SrcSize, Res);
-
-  // CF
-  if (UpdateCF) {
-    auto SelectOp = _Select(FEXCore::IR::COND_ULT,
-        Src1, Src2, One, Zero);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+  // TODO: Could do this path for small sources if we have FEAT_FlagM
+  if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+    SetNZCV(_SubNZCV(OpSize, Src1, Src2));
   } else {
+    // SF/ZF
+    SetNZ_ZeroCV(SrcSize, Res);
+
+    // CF
+    if (UpdateCF) {
+      auto SelectOp = _Select(FEXCore::IR::COND_ULT,
+          Src1, Src2, One, Zero);
+
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+    }
+
+    // OF
+    {
+      auto XorOp1 = _Xor(OpSize, Src1, Src2);
+      auto XorOp2 = _Xor(OpSize, Res, Src1);
+      OrderedNode *FinalAnd = _And(OpSize, XorOp1, XorOp2);
+
+      FinalAnd = _Bfe(OpSize, 1, SrcSize * 8 - 1, FinalAnd);
+
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
+    }
+  }
+
+  // We stomped over CF while calculation flags, restore it.
+  if (!UpdateCF)
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(OldCF);
-  }
-
-  // OF
-  {
-    auto XorOp1 = _Xor(OpSize, Src1, Src2);
-    auto XorOp2 = _Xor(OpSize, Res, Src1);
-    OrderedNode *FinalAnd = _And(OpSize, XorOp1, XorOp2);
-
-    FinalAnd = _Bfe(OpSize, 1, SrcSize * 8 - 1, FinalAnd);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
-  }
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
@@ -543,22 +548,29 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
   CalculatePF(Res);
 
-  // Stash CF before zeroing it
-  auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  // Stash CF before stomping over it
+  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  // SF/ZF
-  SetNZ_ZeroCV(SrcSize, Res);
-
-  // CF
-  if (UpdateCF) {
-    auto SelectOp = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+  // TODO: Could do this path for small sources if we have FEAT_FlagM
+  if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+    SetNZCV(_AddNZCV(OpSize, Src1, Src2));
   } else {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(OldCF);
+    // SF/ZF
+    SetNZ_ZeroCV(SrcSize, Res);
+
+    // CF
+    if (UpdateCF) {
+      auto SelectOp = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
+
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+    }
+
+    CalculateOF_Add(SrcSize, Res, Src1, Src2);
   }
 
-  CalculateOF_Add(SrcSize, Res, Src1, Src2);
+  // We stomped over CF while calculation flags, restore it.
+  if (!UpdateCF)
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(OldCF);
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {

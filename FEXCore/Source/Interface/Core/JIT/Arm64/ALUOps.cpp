@@ -84,6 +84,24 @@ DEF_OP(Add) {
   }
 }
 
+DEF_OP(AddNZCV) {
+  auto Op = IROp->C<IR::IROp_AddNZCV>();
+  const IR::OpSize OpSize = Op->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    cmn(EmitSize, GetReg(Op->Src1.ID()), Const);
+  } else {
+    cmn(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+  }
+
+  // TODO: Optimize this out
+  mrs(GetReg(Node), ARMEmitter::SystemRegister::NZCV);
+}
+
 DEF_OP(TestNZ) {
   auto Op = IROp->C<IR::IROp_TestNZ>();
   const uint8_t OpSize = Op->Size;
@@ -112,6 +130,37 @@ DEF_OP(Sub) {
   } else {
     sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
   }
+}
+
+DEF_OP(SubNZCV) {
+  auto Op = IROp->C<IR::IROp_SubNZCV>();
+  const IR::OpSize OpSize = Op->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
+  } else if (IsInlineConstant(Op->Src1, &Const)) {
+    LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
+    cmp(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src2.ID()));
+  } else {
+    cmp(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+  }
+
+  const auto Dst = GetReg(Node);
+
+  // TODO: Optimize this out
+  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
+
+  // The carry flag produced by arm64 subs is inverted compared to the x86 carry
+  // flag. Invert it now.
+  //
+  // TODO: Once we optimize out the mrs, this will become a cfinv operation, but
+  // that's only available with Feat_FlagM. For now the portable way is to flip
+  // bit 29 (carry) manually.
+  eor(ARMEmitter::Size::i32Bit, Dst, Dst, 1u << 29);
 }
 
 DEF_OP(Neg) {
