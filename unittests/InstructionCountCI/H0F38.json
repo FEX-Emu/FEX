@@ -350,42 +350,69 @@
       ]
     },
     "pblendvb xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x10"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "sshr v5.16b, v16.16b, #7",
-        "mov v16.16b, v5.16b",
-        "bsl v16.16b, v17.16b, v4.16b"
+        "sshr v4.16b, v16.16b, #7",
+        "bit v16.16b, v17.16b, v4.16b"
       ]
     },
     "blendvps xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x14"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "sshr v5.4s, v16.4s, #31",
-        "mov v16.16b, v5.16b",
-        "bsl v16.16b, v17.16b, v4.16b"
+        "sshr v4.4s, v16.4s, #31",
+        "bit v16.16b, v17.16b, v4.16b"
       ]
     },
     "blendvpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x15"
       ],
       "ExpectedArm64ASM": [
-        "mov v4.16b, v16.16b",
-        "sshr v5.2d, v16.2d, #63",
-        "mov v16.16b, v5.16b",
-        "bsl v16.16b, v17.16b, v4.16b"
+        "sshr v4.2d, v16.2d, #63",
+        "bit v16.16b, v17.16b, v4.16b"
+      ]
+    },
+    "pblendvb xmm1, xmm2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x38 0x10"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v4.16b, v16.16b, #7",
+        "bit v17.16b, v18.16b, v4.16b"
+      ]
+    },
+    "blendvps xmm1, xmm2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x38 0x14"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v4.4s, v16.4s, #31",
+        "bit v17.16b, v18.16b, v4.16b"
+      ]
+    },
+    "blendvpd xmm1, xmm2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x38 0x15"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v4.2d, v16.2d, #63",
+        "bit v17.16b, v18.16b, v4.16b"
       ]
     },
     "ptest xmm0, xmm1": {
