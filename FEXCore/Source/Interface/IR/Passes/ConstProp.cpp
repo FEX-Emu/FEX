@@ -772,6 +772,21 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         IREmit->SetWriteCursor(CodeNode);
         IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
         Changed = true;
+      } else {
+        // XOR with zero results in the nonzero source
+        for (unsigned i = 0; i < 2; ++i) {
+          if (!IREmit->IsValueConstant(Op->Header.Args[i], &Constant1))
+            continue;
+
+          if (Constant1 != 0)
+            continue;
+
+          IREmit->SetWriteCursor(CodeNode);
+          OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[1 - i]);
+          IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+          Changed = true;
+          break;
+        }
       }
     break;
     }
