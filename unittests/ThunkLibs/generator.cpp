@@ -344,7 +344,8 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "struct host_layout {\n"
         "  T data;\n"
         "\n"
-        "  host_layout(const guest_layout<T>& from);\n"
+        "  template<typename U>\n"
+        "  host_layout(const guest_layout<U>& from) requires(!std::is_integral_v<T> || sizeof(T) == sizeof(U));\n"
         "};\n"
         "\n"
         "// Specialization for size_t, which is 64-bit on 64-bit but 32-bit on 32-bit\n"
@@ -536,7 +537,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
-                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
+                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (unsigned char, unsigned char)";
             }));
 }
 
@@ -615,9 +616,9 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             parameterCountIs(1),
             hasParameter(0, hasType(pointerType(pointee(
                 recordType(hasDeclaration(decl(
-                    has(fieldDecl(hasType(asString("guest_layout<int>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<char>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<int32_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint8_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint64_t>")))),
                     has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
                     )))))))
             )));

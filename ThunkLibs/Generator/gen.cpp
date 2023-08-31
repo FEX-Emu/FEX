@@ -390,7 +390,14 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 fmt::print(file, "  struct type {{\n");
                 // TODO: Insert any required padding bytes
                 for (auto& member : abi.at(struct_name).get_if_struct()->members) {
-                    fmt::print(file, "    guest_layout<{}> {};\n", member.type_name, member.member_name);
+                    // sizeof(size_t) is 4 on 32-bit but 8 on 64-bit. Turn it into a fixed-size type to resolve the difference.
+                    // TODO: Actually use 64 bits on 64 bit guests...
+                    // TODO: Auto-detect type size differences instead
+                    bool is_size_t = member.type_name == "size_t";
+                    fmt::print( file, "    guest_layout<{}{}> {};\n",
+                                is_size_t ? "uint32_t" : member.type_name,
+                                member.array_size ? fmt::format("[{}]", member.array_size.value()) : "",
+                                member.member_name);
                 }
                 fmt::print(file, "  }};\n");
             }
@@ -588,11 +595,20 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
                 file << "struct " << struct_name << " {\n";
 
+                auto get_type_name = [this](clang::QualType type) {
+                    if (type->isBuiltinType() && !type->isFloatingType()) {
+                        auto size = abi.at(type.getUnqualifiedType().getAsString()).get_if_simple_or_struct()->size_bits;
+                        return fmt::format("{}int{}_t", !type->isSignedIntegerType() ? "u" : "", size);
+                    } else {
+                        return type.getUnqualifiedType().getAsString();
+                    }
+                };
+
                 for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
-                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
+                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(thunk.param_types[idx]), idx);
                 }
                 if (!thunk.return_type->isVoidType()) {
-                    fmt::print(file, "  guest_layout<{}> rv;\n", get_type_name(context, thunk.return_type.getTypePtr()));
+                    fmt::print(file, "  guest_layout<{}> rv;\n", get_type_name(thunk.return_type));
                 } else if (thunk.param_types.size() == 0) {
                     // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                     file << "    char force_nonempty;\n";
@@ -750,9 +766,24 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             info.result = func_type->getReturnType().getAsString();
             info.param_annotations = param_annotations;
 
+            // Heuristic approach to preserve data layout for arguments.
+            // We can re-use the string representation of most types without problems.
+            // Built-in types with differing size must be replaced with fixed-size integers.
+            // TODO: Instead of using these heuristics here, record the type name and its size.
+            //       Then, when emitting code, replace types with fixed-size integers only if the
+            //       sizes don't match
+            // TODO: Also apply these heuristics to the return type
             // TODO: Respect param_annotations
             for (auto arg : func_type->getParamTypes()) {
-                info.args.push_back(arg.getAsString());
+                if (arg->isBuiltinType()) {
+                    auto size = context.getTypeSize(arg);
+                    info.args.push_back(fmt::format("uint{}_t", size));
+                } else if (arg->isPointerType() && arg->getPointeeType()->isBuiltinType() && context.getTypeSize(arg->getPointeeType()) >= 2 * 8) {
+                    auto size = context.getTypeSize(arg->getPointeeType());
+                    info.args.push_back(fmt::format("uint{}_t*", size));
+                } else {
+                    info.args.push_back(arg.getAsString());
+                }
             }
 
             std::string annotations;

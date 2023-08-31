@@ -179,8 +179,25 @@ void AnalyzeDataLayoutAction::EmitOutput(clang::ASTContext& context) {
 
         info.result = func_type->getReturnType().getAsString();
         info.param_annotations = param_annotations;
+
+        // Heuristic approach to preserve data layout for arguments.
+        // We can re-use the string representation of most types without problems.
+        // Built-in types with differing size must be replaced with fixed-size integers.
+        // TODO: Instead of using these heuristics here, record the type name and its size.
+        //       Then, when emitting code, replace types with fixed-size integers only if the
+        //       sizes don't match
+        // TODO: Also apply these heuristics to the return type
+        // TODO: Respect param_annotations
         for (auto arg : func_type->getParamTypes()) {
-            info.args.push_back(arg.getAsString());
+            if (arg->isBuiltinType()) {
+                auto size = context.getTypeSize(arg);
+                info.args.push_back(fmt::format("uint{}_t", size));
+            } else if (arg->isPointerType() && arg->getPointeeType()->isBuiltinType() && context.getTypeSize(arg->getPointeeType()) >= 2 * 8) {
+                auto size = context.getTypeSize(arg->getPointeeType());
+                info.args.push_back(fmt::format("uint{}_t*", size));
+            } else {
+                info.args.push_back(arg.getAsString());
+            }
         }
         type_abi.funcptr_types[funcptr_id] = std::move(info);
     }
