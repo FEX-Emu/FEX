@@ -526,6 +526,9 @@ enum NamedVectorConstant : uint8_t {
   NAMED_VECTOR_PADDSUBPD_INVERT_UPPER,
   NAMED_VECTOR_MOVMSKPS_SHIFT,
   NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE,
+  NAMED_VECTOR_CONST_POOL_MAX,
+  // Beginning of named constants that don't have a constant pool backing.
+  NAMED_VECTOR_ZERO = NAMED_VECTOR_CONST_POOL_MAX,
   NAMED_VECTOR_MAX,
 };
 

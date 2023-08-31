@@ -80,6 +80,14 @@ DEF_OP(LoadNamedVectorConstant) {
   const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
+  switch (Op->Constant) {
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO:
+      movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
+      return;
+    default:
+      // Intentionally doing nothing.
+      break;
+  }
 
   if (HostSupportsSVE128) {
     switch (Op->Constant) {

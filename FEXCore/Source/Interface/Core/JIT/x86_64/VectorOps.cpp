@@ -75,10 +75,18 @@ DEF_OP(VectorImm) {
 DEF_OP(LoadNamedVectorConstant) {
   const auto Op = IROp->C<IR::IROp_LoadNamedVectorConstant>();
   const auto OpSize = IROp->Size;
+  const auto Dst = GetDst(Node);
+
+  switch (Op->Constant) {
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO:
+      vpxor(Dst, Dst, Dst);
+      return;
+    default:
+      // Intentionally doing nothing.
+      break;
+  }
 
   mov(TMP1, qword STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
-
-  const auto Dst = GetDst(Node);
 
   switch (OpSize) {
     case 1:

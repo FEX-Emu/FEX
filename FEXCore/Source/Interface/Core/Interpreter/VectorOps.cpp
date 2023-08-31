@@ -50,6 +50,15 @@ DEF_OP(LoadNamedVectorConstant) {
   auto Op = IROp->C<IR::IROp_LoadNamedVectorConstant>();
   uint8_t OpSize = IROp->Size;
 
+  switch (Op->Constant) {
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO:
+      memset(GDP, 0, OpSize);
+      return;
+    default:
+      // Intentionally doing nothing.
+      break;
+  }
+
   memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.NamedVectorConstantPointers[Op->Constant]), OpSize);
 }
 
