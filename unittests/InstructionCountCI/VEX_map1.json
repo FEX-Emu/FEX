@@ -2239,7 +2239,7 @@
         "Map 1 0b01 0x77 L=1"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, #0",
+        "movi v4.2d, #0x0",
         "mov z16.d, p7/m, z4.d",
         "mov z17.d, p7/m, z4.d",
         "mov z18.d, p7/m, z4.d",

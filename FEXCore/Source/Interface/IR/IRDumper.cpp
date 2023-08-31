@@ -209,6 +209,18 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
       *out << "addsubpd_invert_upper";
       break;
     }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT: {
+      *out << "movmskps_shift";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE: {
+      *out << "aeskeygenassist_swizzle";
+      break;
+    }
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO: {
+      *out << "vectorzero";
+      break;
+    }
     default: *out << "<Unknown Named Vector Constant>"; break;
   }
 }

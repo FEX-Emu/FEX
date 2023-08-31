@@ -1139,6 +1139,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAtEnd();
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       auto NewRIP = GetRelocatedPC(Op, TargetOffset);
 
@@ -1156,6 +1157,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(CurrentBlock);
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       // Leave block
       auto RIPTargetConst = GetRelocatedPC(Op);
@@ -1202,6 +1204,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAtEnd();
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       auto NewRIP = GetRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
 
@@ -1219,6 +1222,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(CurrentBlock);
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       // Leave block
       auto RIPTargetConst = GetRelocatedPC(Op);
@@ -1282,6 +1286,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAtEnd();
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       auto NewRIP = GetRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
 
@@ -1299,6 +1304,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
 
       // Leave block
       auto RIPTargetConst = GetRelocatedPC(Op);
@@ -1350,6 +1356,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
+      StartNewBlock();
       _ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
     return;
@@ -1929,6 +1936,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   auto JumpTarget = CreateNewCodeBlockAfter(CurrentBlock);
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
+  StartNewBlock();
 
   if (Size != 64) {
     Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
@@ -1943,6 +1951,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   SetJumpTarget(Jump, NextJumpTarget);
   SetTrueJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
+  StartNewBlock();
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -2027,6 +2036,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
+  StartNewBlock();
 
   if (Size != 64) {
     Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
@@ -2041,6 +2051,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   SetJumpTarget(Jump, NextJumpTarget);
   SetTrueJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
+  StartNewBlock();
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
@@ -3424,11 +3435,13 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
   {
     auto NewAL = _Add(OpSize::i64Bit, AL, _Constant(0x6));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
@@ -3444,6 +3457,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
 
   Cond = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
   FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -3451,12 +3465,14 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   EndBlock = CreateNewCodeBlockAfter(TrueBlock);
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
   {
     AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
@@ -3467,6 +3483,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
@@ -3492,11 +3509,13 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
   {
     auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x6));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
@@ -3512,6 +3531,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
 
   Cond = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
   FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -3519,12 +3539,14 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   EndBlock = CreateNewCodeBlockAfter(TrueBlock);
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
   {
     AL = LoadGPRRegister(X86State::REG_RAX, 1);
     auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x60));
@@ -3534,6 +3556,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
@@ -3555,6 +3578,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   _CondJump(Cond, TrueBlock, FalseBlock);
 
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
@@ -3564,6 +3588,8 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
+
   {
     auto NewAX = _Add(OpSize::i64Bit, AX, _Constant(0x106));
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
@@ -3574,6 +3600,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
 }
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
@@ -3590,6 +3617,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   _CondJump(Cond, TrueBlock, FalseBlock);
 
   SetCurrentCodeBlock(FalseBlock);
+  StartNewBlock();
   {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
@@ -3599,6 +3627,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
+  StartNewBlock();
   {
     auto NewAX = _Sub(OpSize::i64Bit, AX, _Constant(6));
     NewAX = _Sub(OpSize::i64Bit, NewAX, _Constant(0x100));
@@ -3610,6 +3639,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
+  StartNewBlock();
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
@@ -3995,6 +4025,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
+    StartNewBlock();
 
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -4005,6 +4036,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
     SetFalseJumpTarget(CondJump, LoopTail);
     SetCurrentCodeBlock(LoopTail);
+    StartNewBlock();
 
     // Working loop
     {
@@ -4059,6 +4091,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     SetFalseJumpTarget(InternalCondJump, LoopEnd);
 
     SetCurrentCodeBlock(LoopEnd);
+    StartNewBlock();
   }
 }
 
@@ -4118,6 +4151,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
+    StartNewBlock();
 
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -4129,6 +4163,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
     SetFalseJumpTarget(CondJump, LoopTail);
     SetCurrentCodeBlock(LoopTail);
+    StartNewBlock();
 
     // Working loop
     {
@@ -4160,6 +4195,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
     SetTrueJumpTarget(CondJump, LoopEnd);
     SetCurrentCodeBlock(LoopEnd);
+    StartNewBlock();
   }
 }
 
@@ -4220,6 +4256,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
+    StartNewBlock();
 
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -4231,6 +4268,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
     SetFalseJumpTarget(CondJump, LoopTail);
     SetCurrentCodeBlock(LoopTail);
+    StartNewBlock();
 
     // Working loop
     {
@@ -4277,6 +4315,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     SetFalseJumpTarget(InternalCondJump, LoopEnd);
 
     SetCurrentCodeBlock(LoopEnd);
+    StartNewBlock();
   }
 }
 
@@ -4702,6 +4741,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
+  StartNewBlock();
 
   StoreGPRRegister(X86State::REG_RAX, Result_Lower);
   StoreGPRRegister(X86State::REG_RDX, Result_Upper);
@@ -4711,6 +4751,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   SetJumpTarget(Jump, NextJumpTarget);
   SetTrueJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
+  StartNewBlock();
 }
 
 void OpDispatchBuilder::CreateJumpBlocks(fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
@@ -5560,6 +5601,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
+    StartNewBlock();
 
     auto NewRIP = GetRelocatedPC(Op);
     _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
@@ -5569,6 +5611,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     auto JumpTarget = CreateNewCodeBlockAfter(FalseBlock);
     SetTrueJumpTarget(CondJump, JumpTarget);
     SetCurrentCodeBlock(JumpTarget);
+    StartNewBlock();
   }
   else {
     BlockSetRIP = true;
@@ -5712,6 +5755,7 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   if (Multiblock) {
     auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetCurrentCodeBlock(NextBlock);
+    StartNewBlock();
   }
 }
 

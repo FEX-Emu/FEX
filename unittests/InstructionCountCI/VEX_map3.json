@@ -441,7 +441,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.s, s5",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -488,7 +488,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.s, s4",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -620,7 +620,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.s, s4",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -665,7 +665,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.s, z4.s[1]",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -710,7 +710,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.s, z4.s[2]",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -755,7 +755,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.s, z4.s[3]",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -868,7 +868,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -897,7 +897,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -926,7 +926,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -955,7 +955,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -984,7 +984,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1013,7 +1013,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1042,7 +1042,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1071,7 +1071,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1100,7 +1100,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1129,7 +1129,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1158,7 +1158,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1187,7 +1187,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1216,7 +1216,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1245,7 +1245,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1274,7 +1274,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1303,7 +1303,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.d, z4.d[1]",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -1332,7 +1332,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -1350,7 +1350,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -1369,7 +1369,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q5",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -1389,7 +1389,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z5.q[1]",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -1408,7 +1408,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -1426,7 +1426,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -1445,7 +1445,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q5",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -1465,7 +1465,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z5.q[1]",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -1485,7 +1485,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -1504,7 +1504,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -1522,7 +1522,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -1540,7 +1540,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -1559,7 +1559,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -1578,7 +1578,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z16.d",
         "mov z5.d, p7/m, z17.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -1596,7 +1596,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -1614,7 +1614,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -2140,7 +2140,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.s, s5",
         "index z0.s, #-4, #1",
         "cmpeq p0.s, p7/z, z0.s, #-4",
@@ -2270,7 +2270,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "mov z5.d, z6.d",
         "index z0.d, #-2, #1",
@@ -2301,7 +2301,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2332,7 +2332,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2363,7 +2363,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2394,7 +2394,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2425,7 +2425,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2456,7 +2456,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2487,7 +2487,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2517,7 +2517,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2547,7 +2547,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2577,7 +2577,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2607,7 +2607,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2637,7 +2637,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d5",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-2",
@@ -2667,7 +2667,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.d, d4",
         "mov z4.d, z6.d",
         "index z0.d, #-2, #1",
@@ -2769,7 +2769,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.h, h5",
         "index z0.h, #-8, #1",
         "cmpeq p0.h, p7/z, z0.h, #-8",
@@ -3503,7 +3503,7 @@
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, #0",
+        "movi v4.2d, #0x0",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -3516,7 +3516,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "fmul z4.s, z4.s, z5.s",
         "mov z1.s, s6",
         "index z0.s, #-4, #1",
@@ -3604,7 +3604,7 @@
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, #0",
+        "movi v4.2d, #0x0",
         "mov z16.d, p7/m, z4.d"
       ]
     },
@@ -3617,7 +3617,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "fmul z4.s, z4.s, z5.s",
         "movprfx z0, z4",
         "faddp z0.s, p7/m, z0.s, z6.s",
@@ -4418,7 +4418,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -4436,7 +4436,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -4455,7 +4455,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q5",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -4475,7 +4475,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z5.q[1]",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -4494,7 +4494,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -4512,7 +4512,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -4531,7 +4531,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q5",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -4551,7 +4551,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z5.q[1]",
         "mov z5.d, z6.d",
         "mov z5.b, p6/m, z1.b",
@@ -4571,7 +4571,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -4590,7 +4590,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -4608,7 +4608,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -4626,7 +4626,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, q4",
@@ -4645,7 +4645,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, q4",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -4664,7 +4664,7 @@
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z17.d",
         "mov z5.d, p7/m, z18.d",
-        "mov z6.d, #0",
+        "movi v6.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z4.d, z6.d",
         "mov z4.b, p6/m, z1.b",
@@ -4682,7 +4682,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, q4",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -4700,7 +4700,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z4.d, p7/m, z18.d",
-        "mov z5.d, #0",
+        "movi v5.2d, #0x0",
         "mov z1.q, z4.q[1]",
         "mov z5.b, p6/m, z1.b",
         "mov z1.q, z4.q[1]",
@@ -5059,7 +5059,7 @@
         "mov z4.d, p7/m, z17.d",
         "ldr x0, [x28, #1608]",
         "ldr q5, [x0]",
-        "movi v1.2d, #0x0",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
         "tbl v4.16b, {v4.16b}, v5.16b",
         "mov v4.16b, v4.16b",
@@ -5076,7 +5076,7 @@
         "mov z4.d, p7/m, z17.d",
         "ldr x0, [x28, #1608]",
         "ldr q5, [x0]",
-        "movi v1.2d, #0x0",
+        "movi v6.2d, #0x0",
         "unimplemented (Unimplemented)",
         "tbl v4.16b, {v4.16b}, v5.16b",
         "mov x0, #0xff00000000",

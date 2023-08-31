@@ -237,7 +237,7 @@ namespace FEXCore::Core {
       uint64_t ExitFunctionLink{};
 
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
-      uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX];
+      uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
       uint64_t IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_MAX];
       uint64_t TelemetryValueAddresses[FEXCore::Telemetry::TYPE_LAST];
 
