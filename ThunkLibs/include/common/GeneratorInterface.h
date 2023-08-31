@@ -11,7 +11,6 @@ struct callback_annotation_base {
     bool prevent_multiple;
 };
 struct callback_stub : callback_annotation_base {};
-struct callback_guest : callback_annotation_base {};
 
 // If used, fex_custom_repack must be specialized for the annotated struct member
 struct custom_repack {};

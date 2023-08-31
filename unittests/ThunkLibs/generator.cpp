@@ -575,35 +575,6 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             )));
 }
 
-// TODO: Decide what to do with this
-#if 0
-// Parameter is a guest function pointer
-TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
-    const std::string prelude =
-        "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
-        "static void fexfn_impl_libtest_func(fex_guest_function_ptr) {}\n";
-    const auto output = run_thunkgen(prelude,
-        "#include <thunks_common.h>\n"
-        "void func(int (*funcptr)(char, char));\n"
-        "template<auto> struct fex_gen_config {};\n"
-        "template<> struct fex_gen_config<func> : fexgen::callback_guest, fexgen::custom_host_impl {};\n");
-
-    CHECK_THAT(output.guest,
-        matches(functionDecl(
-            hasName("fexfn_pack_func"),
-            returns(asString("void")),
-            parameterCountIs(1),
-            hasParameter(0, hasType(asString("int (*)(char, char)")))
-        )));
-
-    // Host-side implementation only sees an opaque type that it can't call
-    CHECK_THAT(output.host,
-        matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
-                         hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
-            )));
-}
-#endif
-
 TEST_CASE_METHOD(Fixture, "MultipleParameters") {
     const std::string prelude =
         "struct TestStruct { int member; };\n";

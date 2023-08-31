@@ -53,27 +53,6 @@ struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
 
-/**
- * Opaque wrapper around a guest function pointer.
- *
- * This prevents accidental calls to foreign function pointers while still
- * allowing us to label function pointers as such.
- */
-struct [[deprecated]] fex_guest_function_ptr {
-private:
-    void* value = nullptr;
-
-public:
-    fex_guest_function_ptr() = default;
-
-    template<typename Ret, typename... Args>
-    fex_guest_function_ptr(Ret (*ptr)(Args...)) : value(reinterpret_cast<void*>(ptr)) {}
-
-    inline operator bool() const {
-      return value != nullptr;
-    }
-};
-
 #define EXPORTS(name) \
   extern "C" { \
     ExportEntry* fexthunks_exports_##name() { \

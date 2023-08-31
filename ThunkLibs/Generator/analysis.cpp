@@ -62,7 +62,6 @@ static NamespaceAnnotations GetNamespaceAnnotations(clang::ASTContext& context, 
 enum class CallbackStrategy {
     Default,
     Stub,
-    Guest,
 };
 
 struct Annotations {
@@ -88,8 +87,6 @@ static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDe
             ret.custom_host_impl = true;
         } else if (annotation == "fexgen::callback_stub") {
             ret.callback_strategy = CallbackStrategy::Stub;
-        } else if (annotation == "fexgen::callback_guest") {
-            ret.callback_strategy = CallbackStrategy::Guest;
         } else if (annotation == "fexgen::custom_guest_entrypoint") {
             ret.custom_guest_entrypoint = true;
         } else {
@@ -403,15 +400,10 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                                 callback.param_types.push_back(cb_param);
                             }
                             callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
-                            callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
                             callback.is_variadic = funcptr->isVariadic();
 
-                            if (callback.is_guest && !data.custom_host_impl) {
-                                throw report_error(template_arg_loc, "callback_guest can only be used with custom_host_impl");
-                            }
-
                             data.callbacks.emplace(param_idx, callback);
-                            if (!callback.is_stub && !callback.is_guest && !data.custom_host_impl) {
+                            if (!callback.is_stub && !data.custom_host_impl) {
                                 funcptr_types[emitted_function->getNameAsString() + "_cb" + std::to_string(param_idx)] = std::pair { context.getCanonicalType(funcptr), no_param_annotations };
                             }
 

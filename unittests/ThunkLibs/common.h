@@ -82,7 +82,6 @@ struct returns_guest_pointer {}; // TODO: Deprecate in favor of pointer_passthro
 struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
-struct callback_guest : callback_annotation_base {};
 
 // type annotations: fex_gen_config<MyStruct>
 //struct opaque_to_guest {};
