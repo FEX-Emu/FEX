@@ -1040,7 +1040,18 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
             Changed = true;
           }
+        } else if (IROp->Op == OP_SUBNZCV) {
+          // If the first source is zero, we can use a NEGS instruction.
+          uint64_t Constant1{};
+          if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+            if (Constant1 == 0) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+              IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+              Changed = true;
+            }
+          }
         }
+
         break;
       }
       case OP_SELECT:

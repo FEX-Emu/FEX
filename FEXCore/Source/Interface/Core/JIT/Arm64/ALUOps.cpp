@@ -142,6 +142,9 @@ DEF_OP(SubNZCV) {
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
+  } else if (IsInlineConstant(Op->Src1, &Const)) {
+    LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
+    cmp(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src2.ID()));
   } else {
     cmp(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
   }
