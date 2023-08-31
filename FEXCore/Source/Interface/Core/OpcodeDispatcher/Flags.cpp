@@ -488,9 +488,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  // TODO: Can use OpSize calculated up front.
-  //auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4, std::max(GetOpSize(Src1), GetOpSize(Src2))));
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   // AF
   {
