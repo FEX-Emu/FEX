@@ -125,7 +125,7 @@ template<> inline constexpr bool has_compatible_data_layout<const void**> = true
 
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
-struct guest_layout {
+struct __attribute__((packed)) guest_layout {
   static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
   static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
   static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
@@ -155,7 +155,7 @@ struct guest_layout {
 #if IS_32BIT_THUNK
 // Specialized for uint32_t so that members annotated as "size_t" can automatically be converted from 64-bit to 32-bit
 template<>
-struct guest_layout<uint32_t> {
+struct __attribute__((packed)) guest_layout<uint32_t> {
   using type = uint32_t;
   type data;
 
@@ -189,7 +189,7 @@ struct guest_layout<uint32_t> {
 #endif
 
 template<typename T, std::size_t N>
-struct guest_layout<T[N]> {
+struct __attribute__((packed)) guest_layout<T[N]> {
   // TODO: Check that the underlying type is ABI compatible
 //  static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
 
