@@ -2550,6 +2550,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump, StoreBlock);
     SetCurrentCodeBlock(StoreBlock);
+    StartNewBlock();
     {
       fn();
     }
@@ -2558,6 +2559,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
     SetJumpTarget(Jump, NextJumpTarget);
     SetFalseJumpTarget(CondJump, NextJumpTarget);
     SetCurrentCodeBlock(NextJumpTarget);
+    StartNewBlock();
   };
 
   // x87
@@ -2758,6 +2760,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump, RestoreBlock);
     SetCurrentCodeBlock(RestoreBlock);
+    StartNewBlock();
     {
       restore_fn();
     }
@@ -2767,12 +2770,14 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     SetJumpTarget(RestoreExitJump, ExitBlock);
     SetFalseJumpTarget(CondJump, DefaultBlock);
     SetCurrentCodeBlock(DefaultBlock);
+    StartNewBlock();
     {
       default_fn();
     }
     auto DefaultExitJump = _Jump();
     SetJumpTarget(DefaultExitJump, ExitBlock);
     SetCurrentCodeBlock(ExitBlock);
+    StartNewBlock();
   };
 
   // x87
