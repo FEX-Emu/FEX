@@ -23,15 +23,24 @@ DEF_OP(AESEnc) {
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
+  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
-  mov(VTMP1.Q(), State.Q());
-  aese(VTMP1, VTMP2);
-  aesmc(VTMP1, VTMP1);
-  eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  if (Dst == State && Dst != Key) {
+    // Optimal case in which Dst already contains the starting state.
+    // This matches the common case of XMM AES.
+    aese(Dst.Q(), ZeroReg.Q());
+    aesmc(Dst.Q(), Dst.Q());
+    eor(Dst.Q(), Dst.Q(), Key.Q());
+  }
+  else {
+    mov(VTMP1.Q(), State.Q());
+    aese(VTMP1, ZeroReg.Q());
+    aesmc(VTMP1, VTMP1);
+    eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  }
 }
 
 DEF_OP(AESEncLast) {
@@ -41,14 +50,22 @@ DEF_OP(AESEncLast) {
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
+  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
-  mov(VTMP1.Q(), State.Q());
-  aese(VTMP1, VTMP2);
-  eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  if (Dst == State && Dst != Key) {
+    // Optimal case in which Dst already contains the starting state.
+    // This matches the common case of XMM AES.
+    aese(Dst.Q(), ZeroReg.Q());
+    eor(Dst.Q(), Dst.Q(), Key.Q());
+  }
+  else {
+    mov(VTMP1.Q(), State.Q());
+    aese(VTMP1, ZeroReg.Q());
+    eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  }
 }
 
 DEF_OP(AESDec) {
@@ -58,15 +75,24 @@ DEF_OP(AESDec) {
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
+  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
-  mov(VTMP1.Q(), State.Q());
-  aesd(VTMP1, VTMP2);
-  aesimc(VTMP1, VTMP1);
-  eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  if (Dst == State && Dst != Key) {
+    // Optimal case in which Dst already contains the starting state.
+    // This matches the common case of XMM AES.
+    aesd(Dst.Q(), ZeroReg.Q());
+    aesimc(Dst.Q(), Dst.Q());
+    eor(Dst.Q(), Dst.Q(), Key.Q());
+  }
+  else {
+    mov(VTMP1.Q(), State.Q());
+    aesd(VTMP1, ZeroReg.Q());
+    aesimc(VTMP1, VTMP1);
+    eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  }
 }
 
 DEF_OP(AESDecLast) {
@@ -76,14 +102,22 @@ DEF_OP(AESDecLast) {
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
+  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
                       "Currently only supports 128-bit operations.");
 
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
-  mov(VTMP1.Q(), State.Q());
-  aesd(VTMP1, VTMP2);
-  eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  if (Dst == State && Dst != Key) {
+    // Optimal case in which Dst already contains the starting state.
+    // This matches the common case of XMM AES.
+    aesd(Dst.Q(), ZeroReg.Q());
+    eor(Dst.Q(), Dst.Q(), Key.Q());
+  }
+  else {
+    mov(VTMP1.Q(), State.Q());
+    aesd(VTMP1, ZeroReg.Q());
+    eor(Dst.Q(), VTMP1.Q(), Key.Q());
+  }
 }
 
 DEF_OP(AESKeyGenAssist) {
@@ -91,14 +125,21 @@ DEF_OP(AESKeyGenAssist) {
   const auto Dst = GetVReg(Node);
   const auto Src = GetVReg(Op->Src.ID());
   const auto Swizzle = GetVReg(Op->KeyGenTBLSwizzle.ID());
+  auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  movi(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), 0);
+  if (Dst == ZeroReg) {
+    // Seriously? ZeroReg ended up being the destination register?
+    // Just copy it over in this case...
+    mov(VTMP1.Q(), ZeroReg.Q());
+    ZeroReg = VTMP1;
+  }
+
   if (Dst != Src) {
     mov(Dst.Q(), Src.Q());
   }
 
   // Do a "regular" AESE step
-  aese(Dst, VTMP2);
+  aese(Dst, ZeroReg.Q());
 
   // Now EOR in the RCON
   if (Op->RCON) {

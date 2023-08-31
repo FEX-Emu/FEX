@@ -267,7 +267,8 @@ void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESEnc(16, Dest, Src);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESEnc(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -280,7 +281,8 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESEnc(DstSize, State, Key);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESEnc(DstSize, State, Key, ZeroRegister);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -288,7 +290,8 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESEncLast(16, Dest, Src);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESEncLast(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -301,7 +304,8 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESEncLast(DstSize, State, Key);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESEncLast(DstSize, State, Key, ZeroRegister);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -309,7 +313,8 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESDec(16, Dest, Src);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESDec(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -322,7 +327,8 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESDec(DstSize, State, Key);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESDec(DstSize, State, Key, ZeroRegister);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -330,7 +336,8 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESDecLast(16, Dest, Src);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESDecLast(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -343,7 +350,8 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESDecLast(DstSize, State, Key);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  OrderedNode *Result = _VAESDecLast(DstSize, State, Key, ZeroRegister);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -354,7 +362,8 @@ OrderedNode* OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   const uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
   auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(16, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
-  return _VAESKeyGenAssist(Src, KeyGenSwizzle, RCON);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  return _VAESKeyGenAssist(Src, KeyGenSwizzle, ZeroRegister, RCON);
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {

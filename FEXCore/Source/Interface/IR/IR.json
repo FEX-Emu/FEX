@@ -1831,23 +1831,23 @@
         "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
-      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key": {
+      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does a step of AES encryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
+      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does the last step of AES encryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESDec u8:#RegisterSize, FPR:$State, FPR:$Key": {
+      "FPR = VAESDec u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does a step of AES decryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESDecLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
+      "FPR = VAESDecLast u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does the last step of AES decryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESKeyGenAssist FPR:$Src, FPR:$KeyGenTBLSwizzle, u8:$RCON": {
+      "FPR = VAESKeyGenAssist FPR:$Src, FPR:$KeyGenTBLSwizzle, FPR:$ZeroReg, u8:$RCON": {
         "Desc": "Assists in key generation",
         "DestSize": "16"
       },
