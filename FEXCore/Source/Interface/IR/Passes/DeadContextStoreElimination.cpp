@@ -306,11 +306,11 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    // FTW
+    // AbridgedFTW
     ContextClassification->emplace_back(ContextMemberInfo {
       ContextMemberClassification {
-        offsetof(FEXCore::Core::CPUState, FTW),
-        sizeof(FEXCore::Core::CPUState::FTW),
+        offsetof(FEXCore::Core::CPUState, AbridgedFTW),
+        sizeof(FEXCore::Core::CPUState::AbridgedFTW),
       },
       ACCESS_NONE,
       FEXCore::IR::InvalidClass,

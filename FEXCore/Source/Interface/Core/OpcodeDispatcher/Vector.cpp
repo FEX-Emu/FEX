@@ -2622,10 +2622,10 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
   }
 
   {
-    // FTW
+    // Abridged FTW
     OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(4));
-    auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
-    _StoreMem(GPRClass, 2, MemLocation, FTW, 2);
+    auto AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    _StoreMem(GPRClass, 1, MemLocation, AbridgedFTW, 2);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -2826,10 +2826,10 @@ void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
   }
 
   {
-    // FTW
+    // Abridged FTW
     OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(4));
-    auto NewFTW = _LoadMem(GPRClass, 2, MemLocation, 2);
-    _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
+    auto NewAbridgedFTW = _LoadMem(GPRClass, 1, MemLocation, 2);
+    _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {

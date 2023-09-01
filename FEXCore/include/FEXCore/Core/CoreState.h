@@ -108,9 +108,9 @@ namespace FEXCore::Core {
       uint32_t base;
     } gdt[32]{};
     uint16_t FCW { 0x37F };
-    uint16_t FTW { 0xFFFF };
+    uint8_t AbridgedFTW{};
 
-    uint32_t _pad2[1];
+    uint8_t _pad2[5];
     // Reference counter for FEX's per-thread deferred signals.
     // Counts the nesting depth of program sections that cause signals to be deferred.
     NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;

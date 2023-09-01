@@ -1811,14 +1811,12 @@ private:
   /**  @} */
 
   OrderedNode * GetX87Top();
-  enum class X87Tag {
-    Valid   = 0b00,
-    Zero    = 0b01,
-    Special = 0b10,
-    Empty   = 0b11
-  };
-  void SetX87TopTag(OrderedNode *Value, X87Tag Tag);
-  OrderedNode *GetX87FTW(OrderedNode *Value);
+  void SetX87ValidTag(OrderedNode *Value, bool Valid);
+  OrderedNode *GetX87ValidTag(OrderedNode *Value);
+  OrderedNode *GetX87Tag(OrderedNode *Value, OrderedNode *AbridgedFTW);
+  OrderedNode *GetX87Tag(OrderedNode *Value);
+  void SetX87FTW(OrderedNode *FTW);
+  OrderedNode *GetX87FTW();
   void SetX87Top(OrderedNode *Value);
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
