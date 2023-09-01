@@ -104,6 +104,8 @@ namespace FEX::HLE {
     void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) override;
 
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+
+    void SaveTelemetry();
   protected:
     // Called from the thunk handler to handle the signal
     void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override;

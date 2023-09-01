@@ -574,6 +574,10 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
       [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
+
+      // Save telemetry if we're exiting.
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
+
       syscall(SYSCALL_DEF(exit_group), status);
       // This will never be reached
       std::terminate();
