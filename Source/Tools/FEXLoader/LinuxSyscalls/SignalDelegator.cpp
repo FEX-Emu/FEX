@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/FPState.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -439,7 +440,7 @@ namespace FEX::HLE {
 
       // FCW store default
       Frame->State.FCW = fpstate->fcw;
-      Frame->State.FTW = fpstate->ftw;
+      Frame->State.AbridgedFTW = fpstate->ftw;
 
       // Deconstruct FSW
       Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
@@ -518,7 +519,7 @@ namespace FEX::HLE {
 
       // FCW store default
       Frame->State.FCW = fpstate->fcw;
-      Frame->State.FTW = fpstate->ftw;
+      Frame->State.AbridgedFTW = FEXCore::FPState::ConvertToAbridgedFTW(fpstate->ftw);
 
       // Deconstruct FSW
       Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
@@ -598,7 +599,7 @@ namespace FEX::HLE {
 
       // FCW store default
       Frame->State.FCW = fpstate->fcw;
-      Frame->State.FTW = fpstate->ftw;
+      Frame->State.AbridgedFTW = FEXCore::FPState::ConvertToAbridgedFTW(fpstate->ftw);
 
       // Deconstruct FSW
       Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
@@ -734,7 +735,7 @@ namespace FEX::HLE {
 
     // FCW store default
     fpstate->fcw = Frame->State.FCW;
-    fpstate->ftw = Frame->State.FTW;
+    fpstate->ftw = Frame->State.AbridgedFTW;
 
     // Reconstruct FSW
     fpstate->fsw =
@@ -868,7 +869,6 @@ namespace FEX::HLE {
 
     // FCW store default
     fpstate->fcw = Frame->State.FCW;
-    fpstate->ftw = Frame->State.FTW;
     // Reconstruct FSW
     fpstate->fsw =
       (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
@@ -876,6 +876,7 @@ namespace FEX::HLE {
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+    fpstate->ftw = FEXCore::FPState::ConvertFromAbridgedFTW(fpstate->fsw, Frame->State.mm, Frame->State.AbridgedFTW);
 
     // Curiously non-rt signals don't support altstack. So that state doesn't exist here.
 
@@ -1015,7 +1016,6 @@ namespace FEX::HLE {
 
     // FCW store default
     fpstate->fcw = Frame->State.FCW;
-    fpstate->ftw = Frame->State.FTW;
     // Reconstruct FSW
     fpstate->fsw =
       (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
@@ -1023,6 +1023,7 @@ namespace FEX::HLE {
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
       (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+    fpstate->ftw = FEXCore::FPState::ConvertFromAbridgedFTW(fpstate->fsw, Frame->State.mm, Frame->State.AbridgedFTW);
 
     // Copy over signal stack information
     guest_uctx->uc.uc_stack.ss_flags = GuestStack->ss_flags;
@@ -1229,7 +1230,7 @@ namespace FEX::HLE {
     memset(Frame->State.xmm.avx.data, 0, sizeof(Frame->State.xmm));
     memset(Frame->State.mm, 0, sizeof(Frame->State.mm));
     Frame->State.FCW = 0x37F;
-    Frame->State.FTW = 0xFFFF;
+    Frame->State.AbridgedFTW = 0;
 
     // Set the new PC
     ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
