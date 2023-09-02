@@ -264,6 +264,7 @@ fextl::string GdbServer::readRegs() {
   FEXCore::Core::CPUState state{};
 
   auto Threads = CTX->GetThreads();
+  FEXCore::Core::InternalThreadState *CurrentThread { CTX->ParentThread };
   bool Found = false;
 
   for (auto &Thread : *Threads) {
@@ -271,6 +272,7 @@ fextl::string GdbServer::readRegs() {
       continue;
     }
     memcpy(&state, Thread->CurrentFrame, sizeof(state));
+    CurrentThread = Thread;
     Found = true;
     break;
   }
@@ -284,10 +286,7 @@ fextl::string GdbServer::readRegs() {
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
   memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
 
-  for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
-    uint64_t Flag = state.flags[i];
-    GDB.eflags |= (Flag << i);
-  }
+  GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread);
 
   for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
@@ -316,6 +315,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   FEXCore::Core::CPUState state{};
 
   auto Threads = CTX->GetThreads();
+  FEXCore::Core::InternalThreadState *CurrentThread { CTX->ParentThread };
   bool Found = false;
 
   for (auto &Thread : *Threads) {
@@ -323,6 +323,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
       continue;
     }
     memcpy(&state, Thread->CurrentFrame, sizeof(state));
+    CurrentThread = Thread;
     Found = true;
     break;
   }
@@ -341,11 +342,8 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
     return {encodeHex((unsigned char *)(&state.rip), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, eflags)) {
-    uint32_t eflags{};
-    for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      uint64_t Flag = state.flags[i];
-      eflags |= (Flag << i);
-    }
+    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread);
+
     return {encodeHex((unsigned char *)(&eflags), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
   }
   else if (addr >= offsetof(GDBContextDefinition, cs) &&

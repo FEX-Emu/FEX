@@ -221,6 +221,27 @@ namespace FEXCore::Context {
     return Frame->State.rip;
   }
 
+  uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) {
+    const auto Frame = Thread->CurrentFrame;
+    uint32_t EFLAGS{};
+
+    // Currently these flags just map 1:1 inside of the resulting value.
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
+      EFLAGS |= Frame->State.flags[i] << i;
+    }
+
+    return EFLAGS;
+  }
+
+  void ContextImpl::SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) {
+    const auto Frame = Thread->CurrentFrame;
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
+      Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;
+    }
+    Frame->State.flags[1] = 1;
+    Frame->State.flags[9] = 1;
+  }
+
   FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {

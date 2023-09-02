@@ -105,6 +105,8 @@ namespace FEXCore::Context {
       void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) override;
 
       uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) override;
+      uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) override;
+      void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) override;
 
       /**
        * @brief Used to create FEX thread objects in preparation for creating a true OS thread. Does set a TID or PID.

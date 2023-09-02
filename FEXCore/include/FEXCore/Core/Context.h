@@ -243,7 +243,13 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) = 0;
 
+      ///< State reconstruction helpers
+      ///< Reconstructs the guest RIP from the passed in thread context and related Host PC.
       FEX_DEFAULT_VISIBILITY virtual uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) = 0;
+      ///< Reconstructs a compacted EFLAGS from FEX's internal EFLAG representation.
+      FEX_DEFAULT_VISIBILITY virtual uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) = 0;
+      ///< Sets FEX's internal EFLAGS representation to the passed in compacted form.
+      FEX_DEFAULT_VISIBILITY virtual void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) = 0;
       FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) = 0;

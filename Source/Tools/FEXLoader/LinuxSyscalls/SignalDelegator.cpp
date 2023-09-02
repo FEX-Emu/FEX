@@ -365,20 +365,20 @@ namespace FEX::HLE {
       }
 
       if (Is64BitMode) {
-        RestoreFrame_x64(Context, Frame, ucontext);
+        RestoreFrame_x64(Thread, Context, Frame, ucontext);
       }
       else {
         if (Type == RestoreType::TYPE_NONREALTIME) {
-          RestoreFrame_ia32(Context, Frame, ucontext);
+          RestoreFrame_ia32(Thread, Context, Frame, ucontext);
         }
         else {
-          RestoreRTFrame_ia32(Context, Frame, ucontext);
+          RestoreRTFrame_ia32(Thread, Context, Frame, ucontext);
         }
       }
     }
   }
 
-  void SignalDelegator::RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
+  void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
     const bool IsAVXEnabled = Config.SupportsAVX;
 
     auto *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
@@ -399,13 +399,7 @@ namespace FEX::HLE {
 
       Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP];
       // XXX: Full context setting
-      uint32_t eflags = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL];
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-        Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
-      }
-
-      Frame->State.flags[1] = 1;
-      Frame->State.flags[9] = 1;
+      CTX->SetFlagsFromCompactedEFLAGS(Thread, guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL]);
 
 #define COPY_REG(x) \
           Frame->State.gregs[FEXCore::X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x];
@@ -456,7 +450,7 @@ namespace FEX::HLE {
     }
   }
 
-  void SignalDelegator::RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
+  void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
     const bool IsAVXEnabled = Config.SupportsAVX;
 
     SigFrame_i32 *guest_uctx = reinterpret_cast<SigFrame_i32*>(Context->UContextLocation);
@@ -473,14 +467,7 @@ namespace FEX::HLE {
       ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
       // XXX: Full context setting
-      // First 32-bytes of flags is EFLAGS broken out
-      uint32_t eflags = guest_uctx->sc.flags;
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-        Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
-      }
-
-      Frame->State.flags[1] = 1;
-      Frame->State.flags[9] = 1;
+      CTX->SetFlagsFromCompactedEFLAGS(Thread, guest_uctx->sc.flags);
 
       Frame->State.rip = guest_uctx->sc.ip;
       Frame->State.cs_idx = guest_uctx->sc.cs;
@@ -542,7 +529,7 @@ namespace FEX::HLE {
     }
   }
 
-  void SignalDelegator::RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
+  void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
     const bool IsAVXEnabled = Config.SupportsAVX;
 
     RTSigFrame_i32 *guest_uctx = reinterpret_cast<RTSigFrame_i32*>(Context->UContextLocation);
@@ -560,14 +547,7 @@ namespace FEX::HLE {
       ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
       // XXX: Full context setting
-      // First 32-bytes of flags is EFLAGS broken out
-      uint32_t eflags = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL];
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-        Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
-      }
-
-      Frame->State.flags[1] = 1;
-      Frame->State.flags[9] = 1;
+      CTX->SetFlagsFromCompactedEFLAGS(Thread, guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL]);
 
       Frame->State.rip = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP];
       Frame->State.cs_idx = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS];
@@ -1225,10 +1205,7 @@ namespace FEX::HLE {
     // Backup where we think the RIP currently is
     ContextBackup->OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
     // Calculate eflags upfront.
-    uint32_t eflags = 0;
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      eflags |= Frame->State.flags[i] << i;
-    }
+    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread);
 
     if (Is64BitMode) {
       NewGuestSP = SetupFrame_x64(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
