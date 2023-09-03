@@ -2571,18 +2571,17 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   CalculateDeferredFlags();
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  const auto Size = GetSrcSize(Op);
-  const auto SizeBit = Size * 8;
+  const auto SizeBit = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
 
-  // Rotate and insert CF in the upper bit
-  OrderedNode *Res = _Bfe(OpSize::i32Bit, 7, 1, Dest);
-  Res = _Bfi(IR::SizeToOpSize(Size), 1, 7, Res, CF);
-
   // Our new CF will be bit (Shift - 1) of the source
   auto NewCF = _Bfe(OpSize::i32Bit, 1, Shift - 1, Dest);
+
+  // Rotate and insert CF in the upper bit
+  OrderedNode *Res = _Bfe(OpSize::i32Bit, 7, 1, Dest);
+  Res = _Bfi(OpSize::i32Bit, 1, 7, Res, CF);
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2761,16 +2760,17 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
+  const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
 
-  // Rotate left and insert CF in to lowest bit
-  OrderedNode *Res = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, _Constant(Size, 1));
-  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CF)))), Res, CF);
-
   // Our new CF will be the top bit of the source
-  auto NewCF = _Bfe(OpSizeFromDst(Op), 1, Size - 1, Dest);
+  auto NewCF = _Bfe(OpSize, 1, Size - 1, Dest);
+
+  // Rotate left and insert CF in to lowest bit
+  OrderedNode *Res = _Lshl(OpSize, Dest, _Constant(Size, 1));
+  Res = _Or(OpSize, Res, CF);
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2779,7 +2779,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
     // Top two MSBs is CF and top bit of result
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), 1, Size - 1, Res), NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize, 1, Size - 1, Res), NewCF));
   }
 }
 

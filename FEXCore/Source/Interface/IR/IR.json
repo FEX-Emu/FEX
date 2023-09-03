@@ -923,23 +923,17 @@
       "GPR = Or OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary or"
                 ],
-        "Comment": [
-          "TODO: There is an assumption that Or of operating size < 32-bit makes sense"
-        ],
         "DestSize": "Size",
         "EmitValidation": [
-          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Orlshl OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
         "Desc": ["Integer binary or with logical shift left"
                 ],
-        "Comment": [
-          "TODO: There is an assumption that Orlshl of operating size < 32-bit makes sense"
-        ],
         "DestSize": "Size",
         "EmitValidation": [
-          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Orlshr OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
@@ -1084,12 +1078,9 @@
                  "The source bitfield is from Src[Width:0]",
                  "The bitfield is copied in to Dest[(Width + lsb):lsb]"
                 ],
-        "Comment": [
-          "TODO: There is an assumption that BFI of operating size < 32-bit makes sense"
-        ],
         "DestSize": "Size",
         "EmitValidation": [
-          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1097,12 +1088,9 @@
                  "The source bitfield is from Src[Width:0]",
                  "The bitfield is then zero extended"
                 ],
-        "Comment": [
-          "TODO: There is an assumption that BFE of operating size < 32-bit makes sense"
-        ],
         "DestSize": "Size",
         "EmitValidation": [
-          "true || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Sbfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
