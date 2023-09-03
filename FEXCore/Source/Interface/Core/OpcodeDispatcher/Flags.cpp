@@ -636,9 +636,7 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  // TODO: Can use OpSize calculated up front.
-  //auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4, std::max(GetOpSize(Res), GetOpSize(Src1))));
+  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   auto Zero = _Constant(0);
 
@@ -651,9 +649,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
   {
     // Extract the last bit shifted in to CF
     auto Size = _Constant(SrcSize * 8);
-    const auto CFSize = IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize));
-    auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
-    auto LastBit = _Bfe(CFSize, 1, 0, _Lshr(CFSize, Src1, ShiftAmt));
+    auto ShiftAmt = _Sub(OpSize, Size, Src2);
+    auto LastBit = _Bfe(OpSize, 1, 0, _Lshr(OpSize, Src1, ShiftAmt));
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
 
