@@ -746,9 +746,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   if (Shift == 0) return;
 
   auto Zero = _Constant(0);
-  // TODO: Can use OpSize calculated up front.
-  //auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(Src1))));
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   SetNZ_ZeroCV(SrcSize, Res);
 
@@ -759,7 +757,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     if (SrcSizeBits < Shift) {
       Shift &= (SrcSizeBits - 1);
     }
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src1))), 1, SrcSizeBits - Shift, Src1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(OpSize, 1, SrcSizeBits - Shift, Src1));
   }
 
   CalculatePF(Res);
