@@ -497,7 +497,7 @@ void Arm64Dispatcher::EmitDispatcher() {
   if (Disassemble() & FEXCore::Config::Disassemble::DISPATCHER) {
     const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
     for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
-      DisasmDecoder.Decode(PCToDecode);
+      DisasmDecoder->Decode(PCToDecode);
       auto Output = Disasm.GetOutput();
       LogMan::Msg::IFmt("{}", Output);
     }

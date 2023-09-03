@@ -161,7 +161,12 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
   Simulator.SetVectorLengthInBits(ForceSVEWidth() ? ForceSVEWidth() : 256);
 #endif
 #ifdef VIXL_DISASSEMBLER
-  DisasmDecoder.AppendVisitor(&Disasm);
+  // Only setup the disassembler if enabled.
+  // vixl's decoder is expensive to setup.
+  if (Disassemble()) {
+    DisasmDecoder = fextl::make_unique<vixl::aarch64::Decoder>();
+    DisasmDecoder->AppendVisitor(&Disasm);
+  }
 #endif
 
   CPU.SetUp();

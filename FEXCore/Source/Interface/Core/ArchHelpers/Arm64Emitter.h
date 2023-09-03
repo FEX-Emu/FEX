@@ -181,7 +181,7 @@ protected:
 
 #ifdef VIXL_DISASSEMBLER
   vixl::aarch64::Disassembler Disasm;
-  vixl::aarch64::Decoder DisasmDecoder;
+  fextl::unique_ptr<vixl::aarch64::Decoder> DisasmDecoder;
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
