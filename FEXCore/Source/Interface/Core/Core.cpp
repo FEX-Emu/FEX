@@ -227,8 +227,33 @@ namespace FEXCore::Context {
 
     // Currently these flags just map 1:1 inside of the resulting value.
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      EFLAGS |= Frame->State.flags[i] << i;
+      if (i == X86State::RFLAG_PF_LOC) {
+        // Intentionally do nothing.
+        // PF can contain up to 4-bits which can corrupt other members when compacted.
+        continue;
+      }
+
+      EFLAGS |= uint32_t{Frame->State.flags[i]} << i;
     }
+
+    // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
+    uint32_t Packed_NZCV{};
+    memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
+    uint32_t OF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_LOC)) & 1;
+    uint32_t CF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_LOC)) & 1;
+    uint32_t ZF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_LOC)) & 1;
+    uint32_t SF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_LOC)) & 1;
+
+    // Pack in to EFLAGS
+    EFLAGS |= OF << X86State::RFLAG_OF_LOC;
+    EFLAGS |= CF << X86State::RFLAG_CF_LOC;
+    EFLAGS |= ZF << X86State::RFLAG_ZF_LOC;
+    EFLAGS |= SF << X86State::RFLAG_SF_LOC;
+
+    // PF calculation is deferred, calculate it now.
+    // Popcount the 8-bit flag and then extract the lower bit.
+    uint32_t PF = std::popcount(Frame->State.flags[X86State::RFLAG_PF_LOC]) & 1;
+    EFLAGS |= PF << X86State::RFLAG_PF_LOC;
 
     return EFLAGS;
   }
@@ -236,10 +261,34 @@ namespace FEXCore::Context {
   void ContextImpl::SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) {
     const auto Frame = Thread->CurrentFrame;
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;
+      switch (i) {
+        case X86State::RFLAG_OF_LOC:
+        case X86State::RFLAG_CF_LOC:
+        case X86State::RFLAG_ZF_LOC:
+        case X86State::RFLAG_SF_LOC:
+          // Intentionally do nothing.
+        break;
+        case X86State::RFLAG_PF_LOC:
+          // PF is intentional fallthrough here.
+          // PF calculation for storing back in to internal representation works.
+        default:
+          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;
+        break;
+      }
     }
-    Frame->State.flags[1] = 1;
-    Frame->State.flags[9] = 1;
+
+    // Calculate packed NZCV
+    uint32_t Packed_NZCV{};
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_OF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_CF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_ZF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_SF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_LOC) : 0;
+    memcpy(&Frame->State.flags[X86State::RFLAG_NZCV_LOC], &Packed_NZCV, sizeof(Packed_NZCV));
+
+    // Reserved, Read-As-1, Write-as-1
+    Frame->State.flags[X86State::RFLAG_RESERVED_LOC] = 1;
+    // Interrupt Flag. Can't be written by CPL-3 userland.
+    Frame->State.flags[X86State::RFLAG_IF_LOC] = 1;
   }
 
   FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {

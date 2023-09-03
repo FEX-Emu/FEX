@@ -814,6 +814,16 @@ public:
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
+  static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
+    switch (BitOffset) {
+      case FEXCore::X86State::RFLAG_OF_LOC: return 28;
+      case FEXCore::X86State::RFLAG_CF_LOC: return 29;
+      case FEXCore::X86State::RFLAG_ZF_LOC: return 30;
+      case FEXCore::X86State::RFLAG_SF_LOC: return 31;
+      default: FEX_UNREACHABLE;
+    }
+  }
+
 private:
   enum class SelectionFlag {
     Nothing,  // must rely on x86 flags
@@ -1075,15 +1085,6 @@ private:
     return IR::SizeToOpSize(GetSrcSize(Op));
   }
 
-  static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
-    switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_OF_LOC: return 28;
-      case FEXCore::X86State::RFLAG_CF_LOC: return 29;
-      case FEXCore::X86State::RFLAG_ZF_LOC: return 30;
-      case FEXCore::X86State::RFLAG_SF_LOC: return 31;
-      default: FEX_UNREACHABLE;
-    }
-  }
   static inline constexpr unsigned NZCVIndexMask(unsigned BitMask) {
     unsigned NZCVMask{};
     if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_LOC)) {
