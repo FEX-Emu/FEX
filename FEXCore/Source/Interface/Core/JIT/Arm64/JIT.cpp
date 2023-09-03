@@ -1189,7 +1189,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
     const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(JITBlockTailLocation);
     LogMan::Msg::IFmt("Disassemble Begin");
     for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
-      DisasmDecoder.Decode(PCToDecode);
+      DisasmDecoder->Decode(PCToDecode);
       auto Output = Disasm.GetOutput();
       LogMan::Msg::IFmt("{}", Output);
     }
