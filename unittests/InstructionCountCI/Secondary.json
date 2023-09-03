@@ -19,8 +19,8 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0x0b",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffff",
-        "strh w20, [x28, #1010]"
+        "mov w20, #0x0",
+        "strb w20, [x28, #1010]"
       ]
     },
     "movups xmm0, [rax]": {
@@ -1513,8 +1513,8 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0x77",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffff",
-        "strh w20, [x28, #1010]"
+        "mov w20, #0x0",
+        "strb w20, [x28, #1010]"
       ]
     },
     "movd eax, mm0": {
