@@ -8042,7 +8042,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8069,7 +8069,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8096,7 +8096,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8123,7 +8123,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8150,7 +8150,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8177,7 +8177,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8204,7 +8204,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8231,7 +8231,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
         "cmp x21, #0x0 (0)",
@@ -8259,7 +8259,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8288,7 +8288,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8317,7 +8317,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8346,7 +8346,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8375,7 +8375,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8404,7 +8404,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8433,7 +8433,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8462,7 +8462,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8490,8 +8490,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8519,8 +8519,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8548,8 +8548,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8577,8 +8577,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8606,8 +8606,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8635,8 +8635,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8664,8 +8664,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -8693,8 +8693,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov w22, #0x0",
         "mov x23, #0xffffffffffffffff",
@@ -9324,7 +9324,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9351,7 +9351,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9378,7 +9378,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9405,7 +9405,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9432,7 +9432,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9459,7 +9459,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9486,7 +9486,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9513,7 +9513,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
+        "ubfx w21, w20, #29, #1",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
         "cmp x21, #0x0 (0)",
@@ -9541,7 +9541,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9570,7 +9570,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9599,7 +9599,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9628,7 +9628,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9657,7 +9657,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9686,7 +9686,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9715,7 +9715,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9744,7 +9744,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldr w21, [x28, #728]",
-        "ubfx x22, x21, #30, #1",
+        "ubfx w22, w21, #30, #1",
         "orr x20, x20, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9772,8 +9772,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9801,8 +9801,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9830,8 +9830,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9859,8 +9859,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9888,8 +9888,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9917,8 +9917,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9946,8 +9946,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
@@ -9975,8 +9975,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx x21, x20, #29, #1",
-        "ubfx x22, x20, #30, #1",
+        "ubfx w21, w20, #29, #1",
+        "ubfx w22, w20, #30, #1",
         "orr x21, x21, x22, lsl #6",
         "mov x22, #0xffffffffffffffff",
         "mov w23, #0x0",
