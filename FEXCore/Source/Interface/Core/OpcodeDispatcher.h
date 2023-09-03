@@ -1129,7 +1129,7 @@ private:
     // moves by allowing orlshl to be used instead of bfi.
     PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC)) |
                           (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC));
-    SetNZCV(_And(OpSize::i64Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
+    SetNZCV(_And(OpSize::i32Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
   }
 
   void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
@@ -1144,12 +1144,12 @@ private:
     if (SignBit > NBit)
       Shifted = _Ashr(OpSize::i64Bit, Res, _Constant(SignBit - NBit));
     else if (SignBit < NBit)
-      Shifted = _Lshl(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Res))), Res, _Constant(NBit - SignBit));
+      Shifted = _Lshl(OpSize::i32Bit, Res, _Constant(NBit - SignBit));
     else
       Shifted = Res;
 
     // Mask off just the N bit, which now equals the sign bit
-    CachedNZCV = _And(OpSize::i64Bit, Shifted, _Constant(1u << NBit));
+    CachedNZCV = _And(OpSize::i32Bit, Shifted, _Constant(1u << NBit));
     PossiblySetNZCVBits = (1u << NBit);
   }
 
@@ -1180,7 +1180,7 @@ private:
     if (SetBits == 0)
       return _Lshl(OpSize::i64Bit, Value, _Constant(Bit));
     else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
-      return _Orlshl(IR::SizeToOpSize(std::max(GetOpSize(NZCV), GetOpSize(Value))), NZCV, Value, Bit);
+      return _Orlshl(OpSize::i32Bit, NZCV, Value, Bit);
     else
       return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
   }
@@ -1201,10 +1201,10 @@ private:
 
   void ZeroMultipleFlags(uint32_t BitMask);
 
-  OrderedNode *GetRFLAG(unsigned BitOffset, IR::OpSize Size = OpSize::i64Bit) {
+  OrderedNode *GetRFLAG(unsigned BitOffset) {
     if (IsNZCV(BitOffset)) {
       if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
-        return _Bfe(Size, 1, IndexNZCV(BitOffset), GetNZCV());
+        return _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
       else
         return _Constant(0);
     } else {

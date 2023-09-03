@@ -448,7 +448,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, IR::SizeToOpSize(Size));
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
   auto ALUOp = _Add(OpSize, Src, CF);
 
   OrderedNode *Result{};
@@ -480,7 +480,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   auto Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, IR::SizeToOpSize(Size));
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
   auto ALUOp = _Add(OpSize, Src, CF);
 
   OrderedNode *Result{};
@@ -2482,7 +2482,6 @@ void OpDispatchBuilder::PEXT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
-  const auto OperandSize = GetSrcSize(Op);
   const auto OpSize = OpSizeFromSrc(Op);
 
   // Calculate flags early.
@@ -2494,9 +2493,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
   auto* Flag = [&]() -> OrderedNode* {
     if (IsADCX) {
-      return GetRFLAG(X86State::RFLAG_CF_LOC, IR::SizeToOpSize(OperandSize));
+      return GetRFLAG(X86State::RFLAG_CF_LOC);
     } else {
-      return GetRFLAG(X86State::RFLAG_OF_LOC, IR::SizeToOpSize(OperandSize));
+      return GetRFLAG(X86State::RFLAG_OF_LOC);
     }
   }();
 
@@ -2527,7 +2526,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC, OpSizeFromSrc(Op));
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
 
