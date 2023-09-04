@@ -428,6 +428,9 @@ inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_po
   if constexpr (std::is_enum_v<T>) {
     // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
     return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+  } else if constexpr (std::is_same_v<T, uint32_t>) {
+    // Handle guest_layout<uint32_t> separately, since it's specialized and uses custom constructors
+    return guest_layout<uint32_t> { from.data };
   } else {
     guest_layout<T> ret { .data = from.data };
     return ret;
@@ -528,8 +531,8 @@ struct CallbackUnpack<Result(Args...)> {
     GuestcallInfo *guestcall;
     LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
 
-    PackedArguments<Result, Args...> packed_args = {
-      args...
+    PackedArguments<Result, guest_layout<Args>...> packed_args = {
+      { to_guest(to_host_layout(args)) }...
     };
     guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
     if constexpr (!std::is_void_v<Result>) {

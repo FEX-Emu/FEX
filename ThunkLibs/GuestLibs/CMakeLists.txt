@@ -233,9 +233,6 @@ if (BITNESS EQUAL 64)
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
 
-  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
-  add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
-
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
   add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
@@ -299,3 +296,6 @@ endif()
 
 generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp)
 add_guest_lib(fex_thunk_test "libfex_thunk_test.so")
+
+generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
+add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
