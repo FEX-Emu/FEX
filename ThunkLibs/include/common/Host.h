@@ -247,6 +247,24 @@ struct guest_layout<T* const> {
   }
 };
 
+// Make guest_layout of "long long" and "long" interoperable, since they are
+// the same type as far as data layout is concerned.
+template<>
+struct guest_layout<unsigned long long> : guest_layout<unsigned long> {
+  using guest_layout<unsigned long>::guest_layout;
+
+  static_assert(sizeof(long long) == sizeof(long));
+};
+template<>
+struct guest_layout<unsigned long long*> : guest_layout<unsigned long*> {
+  using guest_layout<unsigned long*>::guest_layout;
+};
+template<>
+struct guest_layout<const unsigned long long*> : guest_layout<const unsigned long*> {
+  using guest_layout<const unsigned long*>::guest_layout;
+  guest_layout(guest_layout<const unsigned long*> oth) : guest_layout<const unsigned long*>(oth) { }
+};
+
 template<typename T>
 struct host_layout;
 
