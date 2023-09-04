@@ -62,7 +62,7 @@ namespace FEXCore::Allocator {
 
   // Disable allocations through glibc's sbrk allocation method.
   // Returns a pointer at the end of the sbrk region.
-  FEX_DEFAULT_VISIBILITY void *DisableSBRKAllocations();
+  extern "C" FEX_DEFAULT_VISIBILITY void *DisableSBRKAllocations();
 
   // Allow sbrk again. Pass in the pointer returned by `DisableSBRKAllocations`
   FEX_DEFAULT_VISIBILITY void ReenableSBRKAllocations(void* Ptr);
