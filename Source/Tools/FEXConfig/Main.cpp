@@ -614,13 +614,6 @@ namespace {
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABINOPF);
-      bool NoPFCalculation = Value.has_value() && **Value == "1";
-      if (ImGui::Checkbox("Disable PF calculation", &NoPFCalculation)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ABINOPF, NoPFCalculation ? "1" : "0");
-        ConfigChanged = true;
-      }
-
       ImGui::EndTabItem();
     }
   }

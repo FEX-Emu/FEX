@@ -31,9 +31,6 @@ namespace FEXCore::CodeSerialize {
     // ABI local flag unsafe optimization
     unsigned ABILocalFlags : 1;
 
-    // ABI no PF unsafe optimization
-    unsigned ABINoPF : 1;
-
     // Static register allocation enabled
     unsigned SRA : 1;
 
@@ -51,7 +48,7 @@ namespace FEXCore::CodeSerialize {
 
     // Padding to remove uninitialized data warning from asan
     // Shows remaining amount of bits available for config
-    unsigned _Pad : 17;
+    unsigned _Pad : 18;
 
     bool operator==(CodeObjectSerializationConfig const &other) const {
       return Cookie == other.Cookie &&
@@ -61,7 +58,6 @@ namespace FEXCore::CodeSerialize {
         HardwareTSOEnabled == other.HardwareTSOEnabled &&
         TSOEnabled == other.TSOEnabled &&
         ABILocalFlags == other.ABILocalFlags &&
-        ABINoPF == other.ABINoPF &&
         SRA == other.SRA &&
         ParanoidTSO == other.ParanoidTSO &&
         Is64BitMode == other.Is64BitMode &&
@@ -78,7 +74,6 @@ namespace FEXCore::CodeSerialize {
       Hash <<= 1;  Hash |= other.HardwareTSOEnabled;
       Hash <<= 1;  Hash |= other.TSOEnabled;
       Hash <<= 1;  Hash |= other.ABILocalFlags;
-      Hash <<= 1;  Hash |= other.ABINoPF;
       Hash <<= 1;  Hash |= other.SRA;
       Hash <<= 1;  Hash |= other.ParanoidTSO;
       Hash <<= 1;  Hash |= other.Is64BitMode;

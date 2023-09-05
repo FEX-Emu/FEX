@@ -237,7 +237,7 @@ void OpDispatchBuilder::FixupAF() {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
+void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   // We will use the bottom bit of the popcount, set if an odd number of bits are set.
   // But the x86 parity flag is supposed to be set for an even number of bits.
   // Simply invert any bit of the input GPR and that will invert the bottom bit of the
@@ -257,17 +257,6 @@ void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *c
   // will happen on load, on the assumption that PF is written much more often
   // than it's read. Store the value now without the popcount.
   SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Flipped);
-}
-
-void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
-  if (!CTX->Config.ABINoPF) {
-    CalculatePFUncheckedABI(Res, condition);
-  } else {
-    // Even if we are skipping PF calculation as a speed hack, we still need to
-    // zero PF[4] for correct AF. I suspect ABINoPF can be removed now that
-    // we defer the expensive parts of PF calculation anyway.
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(_Constant(0));
-  }
 }
 
 void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {

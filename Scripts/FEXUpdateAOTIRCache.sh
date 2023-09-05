@@ -4,25 +4,19 @@ echo Using $FEX
 for fileid in ~/.fex-emu/aotir/*.path; do
 	filename=`cat "$fileid"`
 	args=""
-	if [ "${fileid: -6 : 1}" == "P" ]; then
-		args="$args --no-abinopf"
-	else
-		args="$args --abinopf"
-	fi
-
-	if [ "${fileid: -7 : 1}" == "L" ]; then
+	if [ "${fileid: -6 : 1}" == "L" ]; then
 		args="$args --abilocalflags"
 	else
 		args="$args --no-abilocalflags"
 	fi
 	
-	if [ "${fileid: -8 : 1}" == "T" ]; then
+	if [ "${fileid: -7 : 1}" == "T" ]; then
 		args="$args --tsoenabled"
 	else
 		args="$args --no-tsoenabled"
 	fi
 	
-	if [ "${fileid: -9 : 1}" == "S" ]; then
+	if [ "${fileid: -8 : 1}" == "S" ]; then
 		args="$args --smc=full"
 	else
 		args="$args --smc=mman"

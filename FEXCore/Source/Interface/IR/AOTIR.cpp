@@ -386,13 +386,12 @@ namespace FEXCore::IR {
     if (!base_filename.empty()) {
       auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
 
-      auto fileid = fextl::fmt::format("{}-{}-{}{}{}{}",
+      auto fileid = fextl::fmt::format("{}-{}-{}{}{}",
         base_filename,
         filename_hash,
         (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? 'S' : 's',
         CTX->Config.TSOEnabled ? 'T' : 't',
-        CTX->Config.ABILocalFlags ? 'L' : 'l',
-        CTX->Config.ABINoPF ? 'p' : 'P');
+        CTX->Config.ABILocalFlags ? 'L' : 'l');
 
       std::unique_lock lk(AOTIRCacheLock);
 
