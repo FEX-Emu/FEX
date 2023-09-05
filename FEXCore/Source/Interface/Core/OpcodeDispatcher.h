@@ -1200,6 +1200,14 @@ private:
       _StoreFlag(Value, BitOffset);
   }
 
+  void SetAF(unsigned Constant) {
+    // AF is stored in bit 4 of the AF flag byte, with garbage in the other
+    // bits. This allows us to defer the extract in the usual case. When it is
+    // read, bit 4 is extracted.  In order to write a constant value of AF, that
+    // means we need to left-shift here to compensate.
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(Constant << 4));
+  }
+
   void ZeroMultipleFlags(uint32_t BitMask);
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {
@@ -1369,8 +1377,10 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPF();
+  OrderedNode *LoadAF();
   void CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition = nullptr);
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
+  void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);

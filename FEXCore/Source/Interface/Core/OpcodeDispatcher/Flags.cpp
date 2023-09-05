@@ -106,8 +106,18 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
 
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
-    auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
-    SetRFLAG(Tmp, FlagOffset);
+
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC) {
+      // AF is in bit 4 architecturally, and we need to store it to bit 4 of our
+      // AF register, with garbage in the other bits. The extract is deferred.
+      //
+      // So we write out the whole flags byte to AF without an extract.
+      static_assert(FEXCore::X86State::RFLAG_AF_LOC == 4);
+      SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_LOC);
+    } else {
+      auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
+      SetRFLAG(Tmp, FlagOffset);
+    }
   }
 }
 
@@ -142,15 +152,22 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     }
 
     // Note that the Bfi only considers the bottom bit of the flag, the rest of
-    // the byte is allowed to be garbage.
+    // the byte is allowed to be garbage. AF is intentionally not using LoadAF.
     OrderedNode *Flag = FlagOffset == FEXCore::X86State::RFLAG_PF_LOC ?
                         LoadPF() :
                         GetRFLAG(FlagOffset);
 
-    if (CTX->BackendFeatures.SupportsShiftedBitwise)
+    // AF is special, since the flag value is at bit 4 of our AF register, and
+    // we need to put it at bit 4 too. So instead of the usual Bfe+Orlshl we
+    // instead do And+Or. This is the same instruction count, but fewer cycles.
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC) {
+      auto MaskedAF = _And(OpSize::i32Bit, Flag, _Constant(1u << 4));
+      Original = _Or(OpSize::i32Bit, Original, MaskedAF);
+    } else if (CTX->BackendFeatures.SupportsShiftedBitwise) {
       Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
-    else
+    } else {
       Original = _Bfi(OpSize::i32Bit, 1, FlagOffset, Original, Flag);
+    }
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
@@ -193,6 +210,14 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   return _And(OpSize::i64Bit, _Constant(1), Parity);
 }
 
+OrderedNode *OpDispatchBuilder::LoadAF() {
+  // Read the stored byte. This is the XOR result.
+  auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+
+  // What's left is to extract the flag from the XOR. This is the deferred part.
+  return _Bfe(OpSize::i32Bit, 1, 4, AFByte);
+}
+
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
   // We will use the bottom bit of the popcount, set if an odd number of bits are set.
   // But the x86 parity flag is supposed to be set for an even number of bits.
@@ -221,6 +246,13 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   } else {
     _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
+}
+
+void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  // We store the XOR of the arguments. The AF flag will be available as a bit
+  // to be extracted from this result. The extraction is deferred until read.
+  OrderedNode *XorRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(XorRes);
 }
 
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
@@ -422,14 +454,9 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
 void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  // AF
-  {
-    auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // SF/ZF
@@ -453,13 +480,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // SF/ZF
@@ -490,13 +511,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
@@ -539,13 +554,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  // AF
-  {
-    OrderedNode *AFRes = _Xor(OpSize, _Xor(OpSize, Src1, Src2), Res);
-    AFRes = _Bfe(OpSize, 1, 4, AFRes);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
-  }
-
+  CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
@@ -580,7 +589,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // CF/OF
@@ -604,7 +613,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   // AF/SF/PF/ZF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
   }
 
@@ -621,12 +630,11 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto Zero = _Constant(0);
   // AF
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   CalculatePF(Res);
@@ -742,7 +750,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   // No flags changed if shift is zero
   if (Shift == 0) return;
 
-  auto Zero = _Constant(0);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   SetNZ_ZeroCV(SrcSize, Res);
@@ -763,7 +770,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // OF
@@ -781,8 +788,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   // No flags changed if shift is zero
   if (Shift == 0) return;
 
-  auto Zero = _Constant(0);
-
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
@@ -797,7 +802,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // OF
@@ -808,7 +813,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
   const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto Zero = _Constant(0);
 
   // Stash OF before overwriting it
   auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
@@ -826,7 +830,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+    SetAF(0);
   }
 
   // Preserve OF if it won't be written
