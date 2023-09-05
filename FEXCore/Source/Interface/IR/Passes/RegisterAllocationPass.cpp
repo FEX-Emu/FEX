@@ -57,7 +57,7 @@ namespace {
     struct VolatileHeader {
       IR::NodeID BlockID{UINT32_MAX};
       uint32_t SpillSlot{UINT32_MAX};
-      RegisterNode *PhiPartner{nullptr};
+      uint64_t Padding;
     };
 
     VolatileHeader Head;
@@ -163,43 +163,6 @@ namespace {
     Graph->AllocData->Map[Node.Value].Class = Class.Val;
   }
 
-  void SetNodePartner(RegisterGraph *Graph, IR::NodeID Node, IR::NodeID Partner) {
-    Graph->Nodes[Node.Value].Head.PhiPartner = &Graph->Nodes[Partner.Value];
-  }
-
-
-  #if 0
-  bool IsConflict(RegisterGraph *Graph, PhysicalRegister RegAndClass, PhysicalRegister ConflictRegAndClass) {
-    uint32_t Index = (ConflictRegAndClass.Class << 8) | RegAndClass.Raw;
-    return (Graph->Set.Conflicts[Index] >> ConflictRegAndClass.Reg) & 1;
-  }
-
-  // PHI nodes currently unsupported
-  /**
-   * @brief Individual node interference check
-   */
-  bool DoesNodeInterfereWithRegister(RegisterGraph *Graph, RegisterNode const *Node, PhysicalRegister RegAndClass) {
-    // Walk the node's interference list and see if it interferes with this register
-    return Node->Interferences.Find([Graph, RegAndClass](IR::NodeID InterferenceNodeId) {
-      auto InterferenceRegAndClass = Graph->AllocData->Map[InterferenceNodeId];
-      return IsConflict(Graph, InterferenceRegAndClass, RegAndClass);
-    });
-  }
-
-  /**
-   * @brief Node set walking for PHI node interference checking
-   */
-    bool DoesNodeSetInterfereWithRegister(RegisterGraph *Graph, fextl::vector<RegisterNode*> const &Nodes, PhysicalRegister RegAndClass) {
-    for (auto it : Nodes) {
-      if (DoesNodeInterfereWithRegister(Graph, it, RegAndClass)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-  #endif
-
   FEXCore::IR::RegisterClassType GetRegClassFromNode(FEXCore::IR::IRListView *IR, FEXCore::IR::IROp_Header *IROp) {
     using namespace FEXCore;
 
@@ -234,17 +197,6 @@ namespace {
         auto Op = IROp->C<IR::IROp_FillRegister>();
         return Op->Class;
         break;
-      }
-      case IR::OP_PHIVALUE: {
-        // Unwrap the PHIValue to get the class
-        auto Op = IROp->C<IR::IROp_PhiValue>();
-        return GetRegClassFromNode(IR, IR->GetOp<IR::IROp_Header>(Op->Value));
-      }
-      case IR::OP_PHI: {
-        // Class is defined from the values passed in
-        // All Phi nodes should have its class be the same (Validation should confirm this
-        auto Op = IROp->C<IR::IROp_Phi>();
-        return GetRegClassFromNode(IR, IR->GetOp<IR::IROp_Header>(Op->PhiBegin));
       }
       default: break;
     }
@@ -432,10 +384,6 @@ namespace {
       case IR::OP_FILLREGISTER:
         return DEFAULT_REMAT_COST + 1;
 
-      // We want PHI to be very expensive to spill
-      case IR::OP_PHI:
-        return DEFAULT_REMAT_COST * 10;
-
       default:
         return DEFAULT_REMAT_COST;
     }
@@ -514,26 +462,6 @@ namespace {
             RecursiveLiveRangeExpansion(IR, ArgNode, ArgNodeBlockID, &ArgNodeLiveRange,
                                         Graph->BlockPredecessors[BlockNodeID],
                                         Graph->VisitedNodePredecessors[ArgNode]);
-          }
-        }
-
-        if (IROp->Op == IR::OP_PHI) {
-          // Special case the PHI op, all of the nodes in the argument need to have the same virtual register affinity
-          // Walk through all of them and set affinities for each other
-          auto Op = IROp->C<IR::IROp_Phi>();
-          auto NodeBegin = IR->at(Op->PhiBegin);
-
-          auto CurrentSourcePartner = Node;
-          while (NodeBegin != NodeBegin.Invalid()) {
-            const auto [ValueNode, ValueHeader] = NodeBegin();
-            const auto ValueOp = ValueHeader->CW<IROp_PhiValue>();
-            const auto ValueID = ValueOp->Value.ID();
-
-            // Set the node partner to the current one
-            // This creates a singly linked list of node partners to follow
-            SetNodePartner(Graph, CurrentSourcePartner, ValueID);
-            CurrentSourcePartner = ValueID;
-            NodeBegin = IR->at(ValueOp->Next);
           }
         }
       }
@@ -961,71 +889,34 @@ namespace {
       auto RegAndClass = PhysicalRegister::Invalid();
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
 
-      if (CurrentNode->Head.PhiPartner) {
-        LOGMAN_MSG_A_FMT("Phi nodes not supported");
-        #if 0
-        // In the case that we have a list of nodes that need the same register allocated we need to do something special
-        // We need to gather the data from the forward linked list and make sure they all match the virtual register
-        fextl::vector<RegisterNode *> Nodes;
-        auto CurrentPartner = CurrentNode;
-        while (CurrentPartner) {
-          Nodes.emplace_back(CurrentPartner);
-          CurrentPartner = CurrentPartner->Head.PhiPartner;
-        }
+      if (!LiveRange->PrefferedRegister.IsInvalid()) {
+        RegAndClass = LiveRange->PrefferedRegister;
+      } else {
+        uint32_t RegisterConflicts = 0;
+        CurrentNode->Interferences.Iterate([&](const IR::NodeID InterferenceNode) {
+          RegisterConflicts |= GetConflicts(Graph, Graph->AllocData->Map[InterferenceNode.Value], {RegClass});
+        });
 
-        for (uint32_t ri = 0; ri < RAClass->Count; ++ri) {
-          uint64_t RegisterToCheck = (static_cast<uint64_t>(RegClass) << 32) + ri;
-          if (!DoesNodeSetInterfereWithRegister(Graph, Nodes, RegisterToCheck)) {
-            RegAndClass = RegisterToCheck;
-            break;
-          }
-        }
+        RegisterConflicts = (~RegisterConflicts) & RAClass->CountMask;
 
-        // If we failed to find a virtual register then allocate more space for them
-        if (RegAndClass == ~0ULL) {
-          RegAndClass = (static_cast<uint64_t>(RegClass.Val) << 32);
-          RegAndClass |= INVALID_REG;
+        int Reg = FindFirstSetBit(RegisterConflicts);
+        if (Reg != 0) {
+          RegAndClass = PhysicalRegister({RegClass}, Reg-1);
         }
-
-        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass + 1, TopRAPressure[RegClass]);
-
-        // Walk the partners and ensure they are all set to the same register now
-        for (auto Partner : Nodes) {
-          Partner->Head.RegAndClass = RegAndClass;
-        }
-        #endif
       }
-      else {
 
-        if (!LiveRange->PrefferedRegister.IsInvalid()) {
-          RegAndClass = LiveRange->PrefferedRegister;
-        } else {
-          uint32_t RegisterConflicts = 0;
-          CurrentNode->Interferences.Iterate([&](const IR::NodeID InterferenceNode) {
-            RegisterConflicts |= GetConflicts(Graph, Graph->AllocData->Map[InterferenceNode.Value], {RegClass});
-          });
-
-          RegisterConflicts = (~RegisterConflicts) & RAClass->CountMask;
-
-          int Reg = FindFirstSetBit(RegisterConflicts);
-          if (Reg != 0) {
-            RegAndClass = PhysicalRegister({RegClass}, Reg-1);
-          }
-        }
-
-        // If we failed to find a virtual register then use INVALID_REG and mark allocation as failed
-        if (RegAndClass.IsInvalid()) {
-          RegAndClass = IR::PhysicalRegister(RegClass, INVALID_REG);
-          HadFullRA = false;
-          SpillPointId = IR::NodeID{i};
-
-          CurrentRegAndClass = RegAndClass;
-          // Must spill and restart
-          return;
-        }
+      // If we failed to find a virtual register then use INVALID_REG and mark allocation as failed
+      if (RegAndClass.IsInvalid()) {
+        RegAndClass = IR::PhysicalRegister(RegClass, INVALID_REG);
+        HadFullRA = false;
+        SpillPointId = IR::NodeID{i};
 
         CurrentRegAndClass = RegAndClass;
+        // Must spill and restart
+        return;
       }
+
+      CurrentRegAndClass = RegAndClass;
     }
   }
 
@@ -1415,11 +1306,8 @@ namespace {
           const uint32_t SpillSlot = FindSpillSlot(*InterferenceNode, InterferenceRegClass);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-          RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode->Value];
           LOGMAN_THROW_A_FMT(SpillSlot != UINT32_MAX, "Interference Node doesn't have a spill slot!");
-          //LOGMAN_THROW_A_FMT(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
           LOGMAN_THROW_A_FMT(InterferenceRegClass != UINT32_MAX, "Interference node never assigned a register class?");
-          LOGMAN_THROW_A_FMT(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
 #endif
 
           // This is the op that we need to dump

@@ -278,15 +278,7 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
       const auto ID = IR->GetID(CodeNode);
       const auto Name = FEXCore::IR::GetName(IROp->Op);
 
-      bool Skip{};
-      switch (IROp->Op) {
-        case IR::OP_PHIVALUE:
-          Skip = true;
-          break;
-        default: break;
-      }
-
-      if (!Skip) {
+      {
         AddIndent();
         if (GetHasDest(IROp->Op)) {
 
@@ -351,28 +343,6 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
 
         #define IROP_ARGPRINTER_HELPER
         #include <FEXCore/IR/IRDefines.inc>
-        case IR::OP_PHI: {
-          auto Op = IROp->C<IR::IROp_Phi>();
-          auto NodeBegin = IR->at(Op->PhiBegin);
-          *out << " ";
-
-          while (NodeBegin != NodeBegin.Invalid()) {
-            auto [NodeNode, IROp] = NodeBegin();
-            auto PhiOp  = IROp->C<IR::IROp_PhiValue>();
-            *out << "[ ";
-            PrintArg(out, IR, PhiOp->Value, RAData);
-            *out << ", ";
-            PrintArg(out, IR, PhiOp->Block, RAData);
-            *out << " ]";
-
-            if (PhiOp->Next.ID().IsValid()) {
-              *out << ", ";
-            }
-
-            NodeBegin = IR->at(PhiOp->Next);
-          }
-          break;
-        }
         default: *out << "<Unknown Args>"; break;
         }
 
