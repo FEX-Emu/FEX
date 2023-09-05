@@ -1378,6 +1378,7 @@ private:
    * @{ */
   OrderedNode *LoadPF();
   OrderedNode *LoadAF();
+  void FixupAF();
   void CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition = nullptr);
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
   void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);

@@ -3485,6 +3485,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
+  FixupAF();
 }
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
@@ -3557,6 +3558,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
+  FixupAF();
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
@@ -3653,6 +3655,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
+  _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -3670,6 +3673,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePFUncheckedABI(AL);
+  _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
