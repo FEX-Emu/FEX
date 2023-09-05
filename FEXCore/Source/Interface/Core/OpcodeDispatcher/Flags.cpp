@@ -588,8 +588,8 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   // PF/AF/ZF/SF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetAF(0);
+    _InvalidateFlags(1 << X86State::RFLAG_PF_LOC);
+    _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
   }
 
   // CF/OF
@@ -613,8 +613,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   // AF/SF/PF/ZF
   // Undefined
   {
-    SetAF(0);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
+    _InvalidateFlags(1 << X86State::RFLAG_PF_LOC);
+    _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
   }
 
   // CF/OF
@@ -631,11 +631,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   CalculatePF(Res);
 
@@ -666,6 +663,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   {
@@ -703,6 +701,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   {
@@ -740,6 +739,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // Now select between the two
   SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
@@ -767,11 +767,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
@@ -799,11 +796,8 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   // Only defined when Shift is 1 else undefined. Only is set if the top bit was set to 1 when
@@ -827,11 +821,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // Preserve OF if it won't be written
   if (Shift != 1) {
