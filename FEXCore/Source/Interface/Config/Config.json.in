@@ -404,15 +404,6 @@
           "Hand-written assembly can violate this assumption."
         ]
       },
-      "ABINoPF": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "When enabled enables an optimization around parity flag calculation.",
-          "Removes the calculation of the parity flag from GPR instructions.",
-          "Assuming no uses rely on it"
-        ]
-      },
       "ParanoidTSO": {
         "Type": "bool",
         "Default": "false",

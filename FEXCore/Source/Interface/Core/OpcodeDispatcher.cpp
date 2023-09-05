@@ -3484,7 +3484,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  CalculatePFUncheckedABI(AL);
+  CalculatePF(AL);
   FixupAF();
 }
 
@@ -3557,7 +3557,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  CalculatePFUncheckedABI(AL);
+  CalculatePF(AL);
   FixupAF();
 }
 
@@ -3654,7 +3654,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  CalculatePFUncheckedABI(AL);
+  CalculatePF(AL);
   _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }
 
@@ -3672,7 +3672,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  CalculatePFUncheckedABI(AL);
+  CalculatePF(AL);
   _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }
 
