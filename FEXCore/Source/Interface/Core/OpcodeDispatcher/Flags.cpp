@@ -588,8 +588,8 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   // PF/AF/ZF/SF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetAF(0);
+    _InvalidateFlags(1 << X86State::RFLAG_PF_LOC);
+    _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
   }
 
   // CF/OF
@@ -613,8 +613,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   // AF/SF/PF/ZF
   // Undefined
   {
-    SetAF(0);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
+    _InvalidateFlags(1 << X86State::RFLAG_PF_LOC);
+    _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
   }
 
   // CF/OF
@@ -631,11 +631,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   CalculatePF(Res);
 
@@ -666,6 +663,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   {
@@ -703,6 +701,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   {
@@ -740,6 +739,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
 
   // AF
   // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // Now select between the two
   SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
@@ -767,11 +767,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
@@ -799,11 +796,8 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // OF
   // Only defined when Shift is 1 else undefined. Only is set if the top bit was set to 1 when
@@ -827,11 +821,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   CalculatePF(Res);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    SetAF(0);
-  }
+  // Undefined
+  _InvalidateFlags(1 << X86State::RFLAG_AF_LOC);
 
   // Preserve OF if it won't be written
   if (Shift != 1) {
@@ -1017,16 +1008,11 @@ void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
   // Every other flag is considered undefined after a
   // BEXTR instruction, but we opt to reliably clear them.
   //
-  uint32_t FlagsMaskToZero = FullNZCVMask;
+  ZeroMultipleFlags(FullNZCVMask);
 
-  // PF
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    FlagsMaskToZero |= 1U << X86State::RFLAG_PF_LOC;
-  }
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  // PF/AF undefined
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
+                   (1UL << X86State::RFLAG_AF_LOC));
 
   // ZF
   auto ZeroOp = _Select(IR::COND_EQ,
@@ -1043,23 +1029,16 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
   // SF is set to the value of the most significant operand bit of Result.
   // OF is always cleared
   // ZF is set, as usual, if Result is zero or not.
-  //
-  // AF and PF are documented as being in an undefined state after
-  // a BLSI operation, however, we choose to reliably clear them.
 
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
   SetNZ_ZeroCV(SrcSize, Src);
 
-  uint32_t FlagsMaskToZero = 1U << X86State::RFLAG_AF_LOC;
+  // PF/AF undefined
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
+                   (1UL << X86State::RFLAG_AF_LOC));
 
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    FlagsMaskToZero |= 1U << X86State::RFLAG_PF_LOC;
-  }
-  ZeroMultipleFlags(FlagsMaskToZero);
 
   // CF
   {
@@ -1078,15 +1057,13 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
 
   uint32_t FlagsMaskToZero =
     (1U << X86State::RFLAG_ZF_LOC) |
-    (1U << X86State::RFLAG_OF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC);
+    (1U << X86State::RFLAG_OF_LOC);
 
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    FlagsMaskToZero |= 1U << X86State::RFLAG_PF_LOC;
-  }
   ZeroMultipleFlags(FlagsMaskToZero);
+
+  // PF/AF undefined
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
+                   (1UL << X86State::RFLAG_AF_LOC));
 
   auto CFOp = _Select(IR::COND_EQ,
                       Src, Zero,
@@ -1101,15 +1078,9 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result
 
   SetNZ_ZeroCV(SrcSize, Result);
 
-  uint32_t FlagsMaskToZero = 1U << X86State::RFLAG_AF_LOC;
-
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    FlagsMaskToZero |= 1U << X86State::RFLAG_PF_LOC;
-  }
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  // PF/AF undefined
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
+                   (1UL << X86State::RFLAG_AF_LOC));
 
   // CF
   {
@@ -1145,17 +1116,12 @@ void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_OF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC);
+  // OF cleared
+  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
 
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    FlagsMaskToZero |= 1U << X86State::RFLAG_PF_LOC;
-  }
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  // PF/AF undefined
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
+                   (1UL << X86State::RFLAG_AF_LOC));
 
   // ZF
   {
