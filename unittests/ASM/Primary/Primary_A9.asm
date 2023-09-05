@@ -29,6 +29,7 @@ test rax, 0x71727374
 mov rax, 0
 lahf
 mov rcx, rax
+and rcx, 0xffffffffffffefff
 
 mov rax, 0x5152535455565758
 test eax, 0x71727374
@@ -48,6 +49,7 @@ test eax, 0x71727374
 mov rax, 0
 lahf
 mov rbx, rax
+and rbx, 0xffffffffffffefff
 
 mov rax, 0x4142434445464748
 test ax, 0x7172
@@ -66,5 +68,6 @@ test ax, 0x7172
 
 mov rax, 0
 lahf
+and rax, 0xffffffffffffefff
 
 hlt

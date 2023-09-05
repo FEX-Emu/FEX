@@ -37,6 +37,7 @@ test qword [rdx + 8 * 2], 0x71727374
 mov rax, 0
 lahf
 mov rcx, rax
+and rcx, 0xffffffffffffefff
 
 test dword [rdx + 8 * 1], 0x71727374
 ; test = 0x55565758 & 0x71727374 = 0x51525350
@@ -55,6 +56,7 @@ test dword [rdx + 8 * 1], 0x71727374
 mov rax, 0
 lahf
 mov rbx, rax
+and rbx, 0xffffffffffffefff
 
 test word [rdx + 8 * 0], 0x7172
 ; test = 0x4748 & 0x7172 = 0x4140
@@ -72,6 +74,7 @@ test word [rdx + 8 * 0], 0x7172
 
 mov rax, 0
 lahf
+and rax, 0xffffffffffffefff
 
 hlt
 
