@@ -802,7 +802,7 @@
       ]
     },
     "blsr eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 32-bit"
@@ -816,8 +816,6 @@
         "mov w23, #0x0",
         "tst w22, w22",
         "mrs x22, nzcv",
-        "strb w23, [x28, #706]",
-        "strb w23, [x28, #708]",
         "cmp x21, #0x0 (0)",
         "csel x20, x23, x20, eq",
         "orr w20, w22, w20, lsl #29",
@@ -825,7 +823,7 @@
       ]
     },
     "blsr rax, rbx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 64-bit"
@@ -837,8 +835,6 @@
         "mov w21, #0x0",
         "tst x4, x4",
         "mrs x22, nzcv",
-        "strb w21, [x28, #706]",
-        "strb w21, [x28, #708]",
         "cmp x7, #0x0 (0)",
         "csel x20, x21, x20, eq",
         "orr w20, w22, w20, lsl #29",
@@ -846,7 +842,7 @@
       ]
     },
     "blsmsk eax, ebx": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 32-bit"
@@ -861,8 +857,6 @@
         "mov w23, #0x50000000",
         "ldr w24, [x28, #728]",
         "bic x23, x24, x23",
-        "strb w22, [x28, #706]",
-        "strb w22, [x28, #708]",
         "cmp x21, #0x0 (0)",
         "csel x20, x22, x20, eq",
         "mov w0, w23",
@@ -872,7 +866,7 @@
       ]
     },
     "blsmsk rax, rbx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 64-bit"
@@ -885,8 +879,6 @@
         "mov w22, #0x50000000",
         "ldr w23, [x28, #728]",
         "bic x22, x23, x22",
-        "strb w21, [x28, #706]",
-        "strb w21, [x28, #708]",
         "cmp x7, #0x0 (0)",
         "csel x20, x21, x20, eq",
         "mov w0, w22",
@@ -896,7 +888,7 @@
       ]
     },
     "blsi eax, ebx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 32-bit"
@@ -909,8 +901,6 @@
         "mov w21, #0x1",
         "tst w4, w4",
         "mrs x22, nzcv",
-        "strb w20, [x28, #706]",
-        "strb w20, [x28, #708]",
         "cmp x4, #0x0 (0)",
         "csel x20, x20, x21, eq",
         "orr w20, w22, w20, lsl #29",
@@ -918,7 +908,7 @@
       ]
     },
     "blsi rax, rbx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 64-bit"
@@ -930,8 +920,6 @@
         "mov w21, #0x1",
         "tst x4, x4",
         "mrs x22, nzcv",
-        "strb w20, [x28, #706]",
-        "strb w20, [x28, #708]",
         "cmp x4, #0x0 (0)",
         "csel x20, x20, x21, eq",
         "orr w20, w22, w20, lsl #29",
