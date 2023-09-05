@@ -8715,7 +8715,7 @@
       ]
     },
     "fcmovu st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd8 /1"
@@ -8724,6 +8724,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8747,7 +8748,7 @@
       ]
     },
     "fcmovu st0, st1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd9 /1"
@@ -8756,6 +8757,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8779,7 +8781,7 @@
       ]
     },
     "fcmovu st0, st2": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xda /1"
@@ -8788,6 +8790,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8811,7 +8814,7 @@
       ]
     },
     "fcmovu st0, st3": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdb /1"
@@ -8820,6 +8823,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8843,7 +8847,7 @@
       ]
     },
     "fcmovu st0, st4": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdc /1"
@@ -8852,6 +8856,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8875,7 +8880,7 @@
       ]
     },
     "fcmovu st0, st5": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdd /1"
@@ -8884,6 +8889,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8907,7 +8913,7 @@
       ]
     },
     "fcmovu st0, st6": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xde /1"
@@ -8916,6 +8922,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -8939,7 +8946,7 @@
       ]
     },
     "fcmovu st0, st7": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdf /1"
@@ -8948,6 +8955,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -9997,7 +10005,7 @@
       ]
     },
     "fcmovnu st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd8 /3"
@@ -10006,6 +10014,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10029,7 +10038,7 @@
       ]
     },
     "fcmovnu st0, st1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd9 /3"
@@ -10038,6 +10047,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10061,7 +10071,7 @@
       ]
     },
     "fcmovnu st0, st2": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xda /3"
@@ -10070,6 +10080,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10093,7 +10104,7 @@
       ]
     },
     "fcmovnu st0, st3": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdb /3"
@@ -10102,6 +10113,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10125,7 +10137,7 @@
       ]
     },
     "fcmovnu st0, st4": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdc /3"
@@ -10134,6 +10146,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10157,7 +10170,7 @@
       ]
     },
     "fcmovnu st0, st5": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdd /3"
@@ -10166,6 +10179,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10189,7 +10203,7 @@
       ]
     },
     "fcmovnu st0, st6": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xde /3"
@@ -10198,6 +10212,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10221,7 +10236,7 @@
       ]
     },
     "fcmovnu st0, st7": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdf /3"
@@ -10230,6 +10245,7 @@
         "mov w20, #0x0",
         "mov w21, #0x1",
         "ldrb w22, [x28, #706]",
+        "eor w22, w22, #0x1",
         "fmov s4, w22",
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
@@ -10318,7 +10334,7 @@
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xe8 /5"
@@ -10384,12 +10400,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xe9 /5"
@@ -10455,12 +10472,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xea /5"
@@ -10526,12 +10544,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xeb /5"
@@ -10597,12 +10616,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xec /5"
@@ -10668,12 +10688,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xed /5"
@@ -10739,12 +10760,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xee /5"
@@ -10810,12 +10832,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xef /5"
@@ -10881,12 +10904,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf0 /6"
@@ -10952,12 +10976,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf1 /6"
@@ -11023,12 +11048,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf2 /6"
@@ -11094,12 +11120,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf3 /6"
@@ -11165,12 +11192,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf4 /6"
@@ -11236,12 +11264,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf5 /6"
@@ -11307,12 +11336,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf6 /6"
@@ -11378,12 +11408,13 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xf7 /6"
@@ -11449,6 +11480,7 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
@@ -22377,7 +22409,7 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xe8 /5"
@@ -22443,9 +22475,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22456,7 +22489,7 @@
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xe9 /5"
@@ -22523,6 +22556,7 @@
         "bfi w0, w23, #29, #1",
         "mov w23, w0",
         "bfi w23, w24, #30, #1",
+        "eor w22, w22, #0x1",
         "strb w22, [x28, #706]",
         "ldrb w22, [x28, #1010]",
         "lsl w21, w21, w20",
@@ -22535,7 +22569,7 @@
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xea /5"
@@ -22601,9 +22635,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22614,7 +22649,7 @@
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xeb /5"
@@ -22680,9 +22715,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22693,7 +22729,7 @@
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xec /5"
@@ -22759,9 +22795,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22772,7 +22809,7 @@
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xed /5"
@@ -22838,9 +22875,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22851,7 +22889,7 @@
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xee /5"
@@ -22917,9 +22955,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -22930,7 +22969,7 @@
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xef /5"
@@ -22996,9 +23035,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23009,7 +23049,7 @@
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf0 /6"
@@ -23075,9 +23115,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23088,7 +23129,7 @@
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf1 /6"
@@ -23155,6 +23196,7 @@
         "bfi w0, w23, #29, #1",
         "mov w23, w0",
         "bfi w23, w24, #30, #1",
+        "eor w22, w22, #0x1",
         "strb w22, [x28, #706]",
         "ldrb w22, [x28, #1010]",
         "lsl w21, w21, w20",
@@ -23167,7 +23209,7 @@
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf2 /6"
@@ -23233,9 +23275,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23246,7 +23289,7 @@
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf3 /6"
@@ -23312,9 +23355,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23325,7 +23369,7 @@
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf4 /6"
@@ -23391,9 +23435,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23404,7 +23449,7 @@
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf5 /6"
@@ -23470,9 +23515,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23483,7 +23529,7 @@
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf6 /6"
@@ -23549,9 +23595,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
@@ -23562,7 +23609,7 @@
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 70,
+      "ExpectedInstructionCount": 71,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xf7 /6"
@@ -23628,9 +23675,10 @@
         "bfi w0, w22, #29, #1",
         "mov w22, w0",
         "bfi w22, w23, #30, #1",
+        "mov w23, #0x1",
+        "eor w21, w21, #0x1",
         "strb w21, [x28, #706]",
         "ldrb w21, [x28, #1010]",
-        "mov w23, #0x1",
         "lsl w23, w23, w20",
         "bic w21, w21, w23",
         "strb w21, [x28, #1010]",

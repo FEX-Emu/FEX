@@ -3992,10 +3992,13 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Test2);
 
-  SetAF(0);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
+  uint32_t FlagsMaskToZero =
+    (1U << X86State::RFLAG_PF_LOC) |
+    (1U << X86State::RFLAG_AF_LOC) |
+    (1U << X86State::RFLAG_SF_LOC) |
+    (1U << X86State::RFLAG_OF_LOC);
+
+  ZeroMultipleFlags(FlagsMaskToZero);
 }
 
 void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
@@ -4036,10 +4039,13 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFResult);
   SetRFLAG<X86State::RFLAG_CF_LOC>(CFResult);
 
-  SetAF(0);
-  SetRFLAG<X86State::RFLAG_SF_LOC>(ZeroConst);
-  SetRFLAG<X86State::RFLAG_OF_LOC>(ZeroConst);
-  SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
+  uint32_t FlagsMaskToZero =
+    (1U << X86State::RFLAG_PF_LOC) |
+    (1U << X86State::RFLAG_AF_LOC) |
+    (1U << X86State::RFLAG_SF_LOC) |
+    (1U << X86State::RFLAG_OF_LOC);
+
+  ZeroMultipleFlags(FlagsMaskToZero);
 }
 
 template <size_t ElementSize>
@@ -4759,8 +4765,11 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   SetRFLAG<X86State::RFLAG_CF_LOC>(GetFlagBit(18));
   SetRFLAG<X86State::RFLAG_OF_LOC>(GetFlagBit(19));
 
-  SetAF(0);
-  SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
+  uint32_t FlagsMaskToZero =
+    (1U << X86State::RFLAG_PF_LOC) |
+    (1U << X86State::RFLAG_AF_LOC);
+
+  ZeroMultipleFlags(FlagsMaskToZero);
 }
 
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {

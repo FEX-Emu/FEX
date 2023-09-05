@@ -432,7 +432,7 @@
       ]
     },
     "popcnt ax, bx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
@@ -443,16 +443,17 @@
         "umov w20, v0.b[0]",
         "bfxil x4, x20, #0, #16",
         "mov w21, #0x0",
+        "mov w22, #0x1",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
-        "strb w21, [x28, #706]",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
     },
     "popcnt eax, ebx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
@@ -462,16 +463,17 @@
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
         "mov w20, #0x0",
+        "mov w21, #0x1",
         "cmp x4, #0x0 (0)",
-        "cset x21, eq",
-        "strb w20, [x28, #706]",
+        "cset x22, eq",
+        "strb w21, [x28, #706]",
         "strb w20, [x28, #708]",
-        "lsl x20, x21, #30",
+        "lsl x20, x22, #30",
         "str w20, [x28, #728]"
       ]
     },
     "popcnt rax, rbx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
@@ -480,11 +482,12 @@
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
         "mov w20, #0x0",
+        "mov w21, #0x1",
         "cmp x4, #0x0 (0)",
-        "cset x21, eq",
-        "strb w20, [x28, #706]",
+        "cset x22, eq",
+        "strb w21, [x28, #706]",
         "strb w20, [x28, #708]",
-        "lsl x20, x21, #30",
+        "lsl x20, x22, #30",
         "str w20, [x28, #728]"
       ]
     },

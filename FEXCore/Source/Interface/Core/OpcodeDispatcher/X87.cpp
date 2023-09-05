@@ -762,7 +762,11 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(HostFlag_CF);
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(HostFlag_ZF);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(HostFlag_Unordered);
+
+    // PF is stored inverted, so invert from the host flag.
+    // TODO: This could perhaps be optimized?
+    auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(PF);
   }
 
   if constexpr (poptwice) {
