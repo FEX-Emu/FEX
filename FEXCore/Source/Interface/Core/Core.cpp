@@ -253,7 +253,7 @@ namespace FEXCore::Context {
     // PF calculation is deferred, calculate it now.
     // Popcount the 8-bit flag and then extract the lower bit.
     uint32_t PFByte = Frame->State.flags[X86State::RFLAG_PF_LOC];
-    uint32_t PF = std::popcount(PFByte) & 1;
+    uint32_t PF = std::popcount(PFByte ^ 1) & 1;
     EFLAGS |= PF << X86State::RFLAG_PF_LOC;
 
     // AF calculation is deferred, calculate it now.
@@ -281,8 +281,9 @@ namespace FEXCore::Context {
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? (1 << 4) : 0;
           break;
         case X86State::RFLAG_PF_LOC:
-          // PF is intentional fallthrough here.
-          // PF calculation for storing back in to internal representation works.
+          // PF is inverted in our internal representation.
+          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 0 : 1;
+          break;
         default:
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;
         break;

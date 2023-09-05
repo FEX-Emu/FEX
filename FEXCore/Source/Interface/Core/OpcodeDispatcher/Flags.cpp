@@ -78,6 +78,12 @@ void OpDispatchBuilder::ZeroMultipleFlags(uint32_t FlagsMask) {
     FlagsMask &= ~FullNZCVMask;
   }
 
+  // PF is stored inverted, so invert it when we zero.
+  if (FlagsMask & (1u << X86State::RFLAG_PF_LOC)) {
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(_Constant(1));
+    FlagsMask &= ~(1u << X86State::RFLAG_PF_LOC);
+  }
+
   // Handle remaining masks.
   for (size_t i = 0; FlagsMask && i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
@@ -117,6 +123,11 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
       // So we write out the whole flags byte to AF without an extract.
       static_assert(FEXCore::X86State::RFLAG_AF_LOC == 4);
       SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_LOC);
+    } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_LOC) {
+      // PF is stored parity flipped
+      OrderedNode *Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
+      Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
+      SetRFLAG(Tmp, FlagOffset);
     } else {
       auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
       SetRFLAG(Tmp, FlagOffset);
@@ -199,6 +210,11 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
 
+  // We will use the bottom bit of the popcount, set if an odd number of bits are set.
+  // But the x86 parity flag is supposed to be set for an even number of bits.
+  // Simply invert any bit of the input GPR and that will invert the bottom bit of the
+  PFByte = _Xor(OpSize::i32Bit, PFByte, _Constant(1));
+
   // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
   // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
   auto InputFPR = _VCastFromGPR(4, 4, PFByte);
@@ -215,8 +231,7 @@ OrderedNode *OpDispatchBuilder::LoadAF() {
   // Read the stored byte. This is the XOR of the arguments.
   auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
 
-  // Read the result ^ 1, stored as the PF byte for deferred PF calculation.
-  // This is the same as result as far as the extracted bit 4 is concerned.
+  // Read the result, stored as the PF byte for deferred PF calculation.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
 
   // What's left is to XOR and extract. This is the deferred part.
@@ -238,25 +253,17 @@ void OpDispatchBuilder::FixupAF() {
 }
 
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
-  // We will use the bottom bit of the popcount, set if an odd number of bits are set.
-  // But the x86 parity flag is supposed to be set for an even number of bits.
-  // Simply invert any bit of the input GPR and that will invert the bottom bit of the
-  // output FPR.
-  OrderedNode *Flipped = _Xor(OpSize::i64Bit, Res, _Constant(1));
-
   // For shifts, we can only update for nonzero shift. If zero, we nop out the flag write by
   // writing the existing value. Note we call GetRFLAG directly, rather than LoadPF, because
   // we need the existing /encoded/ value rather than the decoded PF value. In particular,
   // this does not calculate a popcount.
   if (condition) {
     auto OldFlag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-    Flipped = _Select(FEXCore::IR::COND_EQ, condition, _Constant(0), OldFlag, Flipped);
+    Res = _Select(FEXCore::IR::COND_EQ, condition, _Constant(0), OldFlag, Res);
   }
 
-  // To go from the 8-bit value to the 1-bit flag, we need a popcount. That
-  // will happen on load, on the assumption that PF is written much more often
-  // than it's read. Store the value now without the popcount.
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Flipped);
+  // Calculation is entirely deferred until load, just store the 8-bit result.
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Res);
 }
 
 void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
@@ -996,7 +1003,11 @@ void OpDispatchBuilder::CalculateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, O
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(HostFlag_CF);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(HostFlag_ZF);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(HostFlag_Unordered);
+
+  // PF is stored inverted, so invert from the host flag.
+  // TODO: This could perhaps be optimized?
+  auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, _Constant(1));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(PF);
 
   // Zero AF. Note that we set the PF byte to 0/1 above, so PF[4] is 0 so the
   // XOR with PF will have no effect, so setting the AF byte to zero will indeed
