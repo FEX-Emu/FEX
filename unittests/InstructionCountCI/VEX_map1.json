@@ -3779,7 +3779,7 @@
       ]
     },
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
@@ -3802,6 +3802,7 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
@@ -3811,7 +3812,7 @@
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
@@ -3834,6 +3835,7 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
@@ -3843,7 +3845,7 @@
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
@@ -3866,6 +3868,7 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",
@@ -3875,7 +3878,7 @@
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
@@ -3898,6 +3901,7 @@
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
         "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
         "mov w22, #0x90000000",

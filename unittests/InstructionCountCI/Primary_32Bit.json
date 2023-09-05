@@ -94,7 +94,7 @@
       ]
     },
     "daa": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 59,
       "Optimal": "No",
       "Comment": "0x27",
       "ExpectedArm64ASM": [
@@ -152,7 +152,6 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "ldrb w22, [x28, #708]",
         "eor w20, w22, w20",
@@ -161,7 +160,7 @@
       ]
     },
     "das": {
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 59,
       "Optimal": "No",
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
@@ -219,7 +218,6 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "ldrb w22, [x28, #708]",
         "eor w20, w22, w20",
@@ -305,7 +303,7 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
@@ -316,8 +314,7 @@
         "uxth w21, w21",
         "eor w22, w20, #0x1",
         "strb w22, [x28, #708]",
-        "eor x22, x21, #0x1",
-        "strb w22, [x28, #706]",
+        "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
@@ -335,7 +332,7 @@
       ]
     },
     "inc eax": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
@@ -344,8 +341,7 @@
         "bfxil x4, x4, #0, #32",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
-        "eor x21, x4, #0x1",
-        "strb w21, [x28, #706]",
+        "strb w4, [x28, #706]",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "cmn w20, #0x1 (1)",
@@ -355,7 +351,7 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
@@ -366,8 +362,7 @@
         "uxth w21, w21",
         "eor w22, w20, #0x1",
         "strb w22, [x28, #708]",
-        "eor x22, x21, #0x1",
-        "strb w22, [x28, #706]",
+        "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
@@ -385,7 +380,7 @@
       ]
     },
     "dec eax": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
@@ -394,8 +389,7 @@
         "bfxil x4, x4, #0, #32",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
-        "eor x21, x4, #0x1",
-        "strb w21, [x28, #706]",
+        "strb w4, [x28, #706]",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "cmp w20, #0x1 (1)",
@@ -500,7 +494,7 @@
       ]
     },
     "aam": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
@@ -525,13 +519,12 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "aad": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0xd5",
       "ExpectedArm64ASM": [
@@ -556,13 +549,12 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "db 0xd4, 0x40": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "aam with a different immediate byte base",
@@ -590,13 +582,12 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "db 0xd5, 0x40": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "aad with a different immediate byte base",
@@ -623,7 +614,6 @@
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
-        "eor x20, x20, #0x1",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]

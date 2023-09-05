@@ -455,7 +455,7 @@
       ]
     },
     "rdrand ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
@@ -465,14 +465,15 @@
         "mov x20, x21",
         "bfxil x4, x22, #0, #16",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "rdrand eax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
@@ -482,14 +483,15 @@
         "mov x20, x21",
         "lsr w4, w22, #0",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "rdrand rax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
@@ -498,14 +500,15 @@
         "mov x4, x20",
         "mov x20, x21",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "rdseed ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
@@ -515,14 +518,15 @@
         "mov x20, x21",
         "bfxil x4, x22, #0, #16",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "rdseed eax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
@@ -532,14 +536,15 @@
         "mov x20, x21",
         "lsr w4, w22, #0",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "rdseed rax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
@@ -548,7 +553,8 @@
         "mov x4, x20",
         "mov x20, x21",
         "mov w21, #0x0",
-        "strb w21, [x28, #706]",
+        "mov w22, #0x1",
+        "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
