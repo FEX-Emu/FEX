@@ -4979,14 +4979,12 @@
       ]
     },
     "cmc": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": "0xf5",
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
-        "ubfx w21, w20, #29, #1",
-        "eor x21, x21, #0x1",
-        "bfi w20, w21, #29, #1",
+        "eor w20, w20, #0x20000000",
         "str w20, [x28, #728]"
       ]
     },

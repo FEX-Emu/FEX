@@ -1559,18 +1559,23 @@ void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   enum class OpType {
     Clear,
     Set,
-    Complement,
   };
   OpType Type;
   uint64_t Flag;
   switch (Op->OP) {
-  case 0xF5: // CMC
-    Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OpType::Complement;
-  break;
+  case 0xF5: {// CMC
+    uint32_t Bit = 1u << IndexNZCV(X86State::RFLAG_CF_LOC);
+    SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(Bit)));
+    PossiblySetNZCVBits |= Bit;
+    return;
+  }
+
   case 0xF8: // CLC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
     Type = OpType::Clear;
@@ -1593,9 +1598,6 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_LOC,
                       "No AF complement instruction in x86");
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
-
   OrderedNode *Result{};
   switch (Type) {
   case OpType::Clear: {
@@ -1604,11 +1606,6 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   }
   case OpType::Set: {
     Result = _Constant(1);
-  break;
-  }
-  case OpType::Complement: {
-    auto RFLAG = GetRFLAG(Flag);
-    Result = _Xor(OpSize::i64Bit, RFLAG, _Constant(1));
   break;
   }
   }
