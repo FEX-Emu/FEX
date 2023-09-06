@@ -2,7 +2,7 @@
 echo \# `git describe --always`
 echo
 
-./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/External/FEXCore" "../"
+./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/FEXCore" "../"
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/ThunkLibs" "../"
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/Source/Tests" "../"
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/unittests" "../"
