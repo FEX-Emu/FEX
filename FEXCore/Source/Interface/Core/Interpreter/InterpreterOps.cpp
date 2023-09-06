@@ -173,8 +173,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(GUESTOPCODE,            NoOp);
   REGISTER_OP(FENCE,                  Fence);
   REGISTER_OP(BREAK,                  Break);
-  REGISTER_OP(PHI,                    NoOp);
-  REGISTER_OP(PHIVALUE,               NoOp);
   REGISTER_OP(PRINT,                  Print);
   REGISTER_OP(GETROUNDINGMODE,        GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE,        SetRoundingMode);

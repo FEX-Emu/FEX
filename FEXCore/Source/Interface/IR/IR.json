@@ -328,16 +328,6 @@
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
         ]
-      },
-      "SSA = Phi SSA:$PhiBegin, SSA:$PhiEnd, RegisterClass:$Class": {
-        "DestSize": "~0",
-        "ArgPrinter": false,
-        "RAOverride": 0
-      },
-
-      "PhiValue SSA:$Value, SSA:$Block, SSA:$Next": {
-        "RAOverride": 0,
-        "DestSize": "GetOpSize(_Value)"
       }
     },
     "StaticRA": {

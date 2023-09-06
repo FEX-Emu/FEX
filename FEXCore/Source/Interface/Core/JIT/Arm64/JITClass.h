@@ -361,8 +361,6 @@ private:
   DEF_OP(GuestOpcode);
   DEF_OP(Fence);
   DEF_OP(Break);
-  DEF_OP(Phi);
-  DEF_OP(PhiValue);
   DEF_OP(Print);
   DEF_OP(GetRoundingMode);
   DEF_OP(SetRoundingMode);

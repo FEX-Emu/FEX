@@ -91,22 +91,6 @@ friend class FEXCore::IR::PassManager;
     return InvalidNode;
   }
 
-  void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
-    // Got to do some bookkeeping first
-    Value->AddUse();
-    auto ValueIROp = Value->Op(DualListData.DataBegin())->C<IR::IROp_PhiValue>()->Value.GetNode(DualListData.ListBegin())->Op(DualListData.DataBegin());
-    Phi->Header.Size = ValueIROp->Size;
-    Phi->Header.ElementSize = ValueIROp->ElementSize;
-
-    if (Phi->PhiBegin.ID().IsInvalid()) {
-      Phi->PhiBegin = Phi->PhiEnd = Value->Wrapped(DualListData.ListBegin());
-      return;
-    }
-    auto PhiValueEndNode = Phi->PhiEnd.GetNode(DualListData.ListBegin());
-    auto PhiValueEndOp = PhiValueEndNode->Op(DualListData.DataBegin())->CW<IR::IROp_PhiValue>();
-    PhiValueEndOp->Next = Value->Wrapped(DualListData.ListBegin());
-  }
-
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
         "Tried setting Jump target to %{} {}",

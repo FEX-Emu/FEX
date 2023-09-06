@@ -4064,7 +4064,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       // Decrement counter
       TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
 
-      // Store the counter so we don't have to deal with PHI here
+      // Store the counter since we don't have phis
       StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
@@ -4180,7 +4180,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
       // Decrement counter
       TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
 
-      // Store the counter so we don't have to deal with PHI here
+      // Store the counter since we don't have phis
       StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
@@ -4293,7 +4293,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       // Decrement counter
       TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
 
-      // Store the counter so we don't have to deal with PHI here
+      // Store the counter since we don't have phis
       StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
