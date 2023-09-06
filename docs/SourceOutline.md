@@ -1,7 +1,7 @@
-# FEX-2308
+# FEX-2309
 
-## External/FEXCore
-See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
+## FEXCore
+See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
 
 ### Glossary
 
@@ -16,82 +16,82 @@ See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
 IR to host code generation
 
 #### arm64
-- [ALUOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/ALUOps.cpp)
-- [Arm64Relocations.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/Arm64Relocations.cpp): relocation logic of the arm64 splatter backend
-- [AtomicOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/AtomicOps.cpp)
-- [BranchOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/BranchOps.cpp)
-- [ConversionOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/ConversionOps.cpp)
-- [EncryptionOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/EncryptionOps.cpp)
-- [FlagOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/FlagOps.cpp)
-- [JIT.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/JIT.cpp): Main glue logic of the arm64 splatter backend
-- [JITClass.h](../External/FEXCore/Source/Interface/Core/JIT/Arm64/JITClass.h)
-- [MemoryOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/MemoryOps.cpp)
-- [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/MiscOps.cpp)
-- [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/MoveOps.cpp)
-- [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/VectorOps.cpp)
+- [ALUOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/ALUOps.cpp)
+- [Arm64Relocations.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/Arm64Relocations.cpp): relocation logic of the arm64 splatter backend
+- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/AtomicOps.cpp)
+- [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/BranchOps.cpp)
+- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/ConversionOps.cpp)
+- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/EncryptionOps.cpp)
+- [FlagOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/FlagOps.cpp)
+- [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/JIT.cpp): Main glue logic of the arm64 splatter backend
+- [JITClass.h](../FEXCore/Source/Interface/Core/JIT/Arm64/JITClass.h)
+- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MemoryOps.cpp)
+- [MiscOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MiscOps.cpp)
+- [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MoveOps.cpp)
+- [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/VectorOps.cpp)
 
 #### interpreter
-- [ALUOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/ALUOps.cpp)
-- [AtomicOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/AtomicOps.cpp)
-- [BranchOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/BranchOps.cpp)
-- [ConversionOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/ConversionOps.cpp)
-- [EncryptionOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/EncryptionOps.cpp)
-- [F80Ops.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/F80Ops.cpp)
-- [FlagOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/FlagOps.cpp)
-- [MemoryOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MemoryOps.cpp)
-- [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MiscOps.cpp)
-- [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MoveOps.cpp)
-- [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/VectorOps.cpp)
+- [ALUOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/ALUOps.cpp)
+- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/AtomicOps.cpp)
+- [BranchOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/BranchOps.cpp)
+- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/ConversionOps.cpp)
+- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/EncryptionOps.cpp)
+- [F80Ops.cpp](../FEXCore/Source/Interface/Core/Interpreter/F80Ops.cpp)
+- [FlagOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/FlagOps.cpp)
+- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MemoryOps.cpp)
+- [MiscOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MiscOps.cpp)
+- [MoveOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MoveOps.cpp)
+- [VectorOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/VectorOps.cpp)
 
 #### shared
-- [CPUBackend.h](../External/FEXCore/include/FEXCore/Core/CPUBackend.h)
+- [CPUBackend.h](../FEXCore/include/FEXCore/Core/CPUBackend.h)
 
 #### x86-64
-- [ALUOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/ALUOps.cpp)
-- [AtomicOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/AtomicOps.cpp)
-- [BranchOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/BranchOps.cpp)
-- [ConversionOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/ConversionOps.cpp)
-- [EncryptionOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/EncryptionOps.cpp)
-- [FlagOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/FlagOps.cpp)
-- [JIT.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/JIT.cpp): Main glue logic of the x86-64 splatter backend
-- [JITClass.h](../External/FEXCore/Source/Interface/Core/JIT/x86_64/JITClass.h)
-- [MemoryOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/MemoryOps.cpp)
-- [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/MiscOps.cpp)
-- [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/MoveOps.cpp)
-- [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/VectorOps.cpp)
-- [x64Relocations.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/x64Relocations.cpp): relocation logic of the x86-64 splatter backend
+- [ALUOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/ALUOps.cpp)
+- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/AtomicOps.cpp)
+- [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/BranchOps.cpp)
+- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/ConversionOps.cpp)
+- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/EncryptionOps.cpp)
+- [FlagOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/FlagOps.cpp)
+- [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/JIT.cpp): Main glue logic of the x86-64 splatter backend
+- [JITClass.h](../FEXCore/Source/Interface/Core/JIT/x86_64/JITClass.h)
+- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MemoryOps.cpp)
+- [MiscOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MiscOps.cpp)
+- [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MoveOps.cpp)
+- [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/VectorOps.cpp)
+- [x64Relocations.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/x64Relocations.cpp): relocation logic of the x86-64 splatter backend
 
 
 
 ### frontend
 
 #### x86-meta-blocks
-- [Frontend.cpp](../External/FEXCore/Source/Interface/Core/Frontend.cpp): Extracts instruction & block meta info, frontend multiblock logic
+- [Frontend.cpp](../FEXCore/Source/Interface/Core/Frontend.cpp): Extracts instruction & block meta info, frontend multiblock logic
 
 #### x86-tables
 Metadata that drives the frontend x86/64 decoding
-- [BaseTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/BaseTables.cpp)
-- [DDDTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/DDDTables.cpp)
-- [EVEXTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/EVEXTables.cpp)
-- [H0F38Tables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/H0F38Tables.cpp)
-- [H0F3ATables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/H0F3ATables.cpp)
-- [PrimaryGroupTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/PrimaryGroupTables.cpp)
-- [SecondaryGroupTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/SecondaryGroupTables.cpp)
-- [SecondaryModRMTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/SecondaryModRMTables.cpp)
-- [SecondaryTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/SecondaryTables.cpp)
-- [VEXTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/VEXTables.cpp)
-- [X86Tables.h](../External/FEXCore/Source/Interface/Core/X86Tables/X86Tables.h)
-- [X87Tables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/X87Tables.cpp)
-- [XOPTables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables/XOPTables.cpp)
-- [X86Tables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables.cpp)
+- [BaseTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/BaseTables.cpp)
+- [DDDTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/DDDTables.cpp)
+- [EVEXTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/EVEXTables.cpp)
+- [H0F38Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/H0F38Tables.cpp)
+- [H0F3ATables.cpp](../FEXCore/Source/Interface/Core/X86Tables/H0F3ATables.cpp)
+- [PrimaryGroupTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/PrimaryGroupTables.cpp)
+- [SecondaryGroupTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryGroupTables.cpp)
+- [SecondaryModRMTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryModRMTables.cpp)
+- [SecondaryTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryTables.cpp)
+- [VEXTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/VEXTables.cpp)
+- [X86Tables.h](../FEXCore/Source/Interface/Core/X86Tables/X86Tables.h)
+- [X87Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/X87Tables.cpp)
+- [XOPTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/XOPTables.cpp)
+- [X86Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables.cpp)
 
 #### x86-to-ir
-- [Crypto.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
-- [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
-- [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
-- [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
-- [X87F64.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
-- [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [Crypto.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
+- [Flags.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
+- [Vector.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
+- [X87.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
+- [X87F64.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
+- [OpcodeDispatcher.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 
 
@@ -99,76 +99,78 @@ Metadata that drives the frontend x86/64 decoding
 Logic that binds various parts together
 
 #### block-database
-- [LookupCache.cpp](../External/FEXCore/Source/Interface/Core/LookupCache.cpp): Stores information about blocks, and provides C++ implementations to lookup the blocks
+- [LookupCache.cpp](../FEXCore/Source/Interface/Core/LookupCache.cpp): Stores information about blocks, and provides C++ implementations to lookup the blocks
 
 #### driver
 Emulation mainloop related glue logic
-- [Core.cpp](../External/FEXCore/Source/Interface/Core/Core.cpp): Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
+- [Core.cpp](../FEXCore/Source/Interface/Core/Core.cpp): Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
 
 #### gdbserver
-- [GdbServer.cpp](../External/FEXCore/Source/Interface/Core/GdbServer.cpp): Provides a gdb interface to the guest state
-- [GdbServer.h](../External/FEXCore/Source/Interface/Core/GdbServer.h)
+- [GdbServer.cpp](../FEXCore/Source/Interface/Core/GdbServer.cpp): Provides a gdb interface to the guest state
+- [GdbServer.h](../FEXCore/Source/Interface/Core/GdbServer.h)
 
 #### log-manager
-- [LogManager.cpp](../External/FEXCore/Source/Utils/LogManager.cpp)
+- [LogManager.cpp](../FEXCore/Source/Utils/LogManager.cpp)
 
 #### thunks
 FEXCore side of thunks: Registration, Lookup
-- [Thunks.cpp](../External/FEXCore/Source/Interface/HLE/Thunks/Thunks.cpp)
-- [Thunks.h](../External/FEXCore/Source/Interface/HLE/Thunks/Thunks.h)
+- [Thunks.cpp](../FEXCore/Source/Interface/HLE/Thunks/Thunks.cpp)
+- [Thunks.h](../FEXCore/Source/Interface/HLE/Thunks/Thunks.h)
 
 #### x86-guest-code
-- [X86HelperGen.cpp](../External/FEXCore/Source/Interface/Core/X86HelperGen.cpp): Guest-side assembly helpers used by the backends
-- [X86HelperGen.h](../External/FEXCore/Source/Interface/Core/X86HelperGen.h)
+- [X86HelperGen.cpp](../FEXCore/Source/Interface/Core/X86HelperGen.cpp): Guest-side assembly helpers used by the backends
+- [X86HelperGen.h](../FEXCore/Source/Interface/Core/X86HelperGen.h)
 
 
 
 ### ir
 
+#### debug
+- [IRDumperPass.cpp](../FEXCore/Source/Interface/IR/Passes/IRDumperPass.cpp): Prints IR
+
 #### dumper
 IR -> Text
-- [IRDumper.cpp](../External/FEXCore/Source/Interface/IR/IRDumper.cpp)
+- [IRDumper.cpp](../FEXCore/Source/Interface/IR/IRDumper.cpp)
 
 #### emitter
 C++ Functions to generate IR. See IR.json for spec.
-- [IREmitter.cpp](../External/FEXCore/Source/Interface/IR/IREmitter.cpp)
+- [IREmitter.cpp](../FEXCore/Source/Interface/IR/IREmitter.cpp)
 
 #### opts
 IR to IR Optimization
-- [PassManager.cpp](../External/FEXCore/Source/Interface/IR/PassManager.cpp): Defines which passes are run, and runs them
-- [PassManager.h](../External/FEXCore/Source/Interface/IR/PassManager.h)
-- [ConstProp.cpp](../External/FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
-- [DeadCodeElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/DeadCodeElimination.cpp)
-- [DeadContextStoreElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/DeadContextStoreElimination.cpp): Transforms ContextLoad/Store to temporaries, similar to mem2reg
-- [DeadStoreElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
-- [IRCompaction.cpp](../External/FEXCore/Source/Interface/IR/Passes/IRCompaction.cpp): Sorts the ssa storage in memory, needed for RA and others
-- [IRValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
-- [LongDivideRemovalPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/LongDivideRemovalPass.cpp): Long divide elimination pass
-- [PhiValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/PhiValidation.cpp): Sanity checking pass
-- [RedundantFlagCalculationElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
-- [RegisterAllocationPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
-- [RegisterAllocationPass.h](../External/FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
-- [SyscallOptimization.cpp](../External/FEXCore/Source/Interface/IR/Passes/SyscallOptimization.cpp): Removes unused arguments if known syscall number
-- [ValueDominanceValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/ValueDominanceValidation.cpp): Sanity Checking
+- [PassManager.cpp](../FEXCore/Source/Interface/IR/PassManager.cpp): Defines which passes are run, and runs them
+- [PassManager.h](../FEXCore/Source/Interface/IR/PassManager.h)
+- [ConstProp.cpp](../FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
+- [DeadCodeElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadCodeElimination.cpp)
+- [DeadContextStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadContextStoreElimination.cpp): Transforms ContextLoad/Store to temporaries, similar to mem2reg
+- [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
+- [IRCompaction.cpp](../FEXCore/Source/Interface/IR/Passes/IRCompaction.cpp): Sorts the ssa storage in memory, needed for RA and others
+- [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
+- [LongDivideRemovalPass.cpp](../FEXCore/Source/Interface/IR/Passes/LongDivideRemovalPass.cpp): Long divide elimination pass
+- [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
+- [RegisterAllocationPass.cpp](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
+- [RegisterAllocationPass.h](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
+- [SyscallOptimization.cpp](../FEXCore/Source/Interface/IR/Passes/SyscallOptimization.cpp): Removes unused arguments if known syscall number
+- [ValueDominanceValidation.cpp](../FEXCore/Source/Interface/IR/Passes/ValueDominanceValidation.cpp): Sanity Checking
 
 #### parser
 Text -> IR
-- [IRParser.cpp](../External/FEXCore/Source/Interface/IR/IRParser.cpp)
+- [IRParser.cpp](../FEXCore/Source/Interface/IR/IRParser.cpp)
 
 
 
 ### opcodes
 
 #### cpuid
-- [CPUID.cpp](../External/FEXCore/Source/Interface/Core/CPUID.cpp): Handles presented capability bits for guest cpu
+- [CPUID.cpp](../FEXCore/Source/Interface/Core/CPUID.cpp): Handles presented capability bits for guest cpu
 
 #### dispatcher-implementations
-- [Crypto.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
-- [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
-- [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
-- [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
-- [X87F64.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
-- [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [Crypto.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
+- [Flags.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
+- [Vector.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
+- [X87.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
+- [X87F64.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
+- [OpcodeDispatcher.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 ## ThunkLibs
 See [ThunkLibs/README.md](../ThunkLibs/README.md) for more details
