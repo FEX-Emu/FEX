@@ -85,6 +85,8 @@ public:
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
+  bool SupportsProcFSInterpreterPath() const { return SupportsProcFSInterpreter; }
+
 private:
   bool RootFSPathExists(const char* Filepath);
 
@@ -108,5 +110,6 @@ private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID{};
   int RootFSFD{AT_FDCWD};
+  bool SupportsProcFSInterpreter{};
 };
 }
