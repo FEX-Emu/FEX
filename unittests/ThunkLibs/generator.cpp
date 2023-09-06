@@ -592,6 +592,10 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
 
         // Unannotated
         REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Contains("incomplete type"));
+
+        // Annotated as opaque_type
+        CHECK_NOTHROW(run_thunkgen_host(prelude,
+              code + "template<> struct fex_gen_type<B> : fexgen::opaque_type {};\n", guest_abi));
     }
 }
 
@@ -618,6 +622,15 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
             "void func(void*);\n"
             "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n"
             "template<> struct fex_gen_param<func, 0, void*> : fexgen::ptr_passthrough {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+    }
+
+    SECTION("Assumed compatible") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::assume_compatible_data_layout {};\n";
         CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
     }
 
