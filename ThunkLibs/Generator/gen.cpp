@@ -415,10 +415,13 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             fmt::print(file, "  using type = {};\n", struct_name);
             fmt::print(file, "  type data;\n");
             fmt::print(file, "\n");
-            fmt::print(file, "  host_layout(const guest_layout<{}>& from) :\n", struct_name);
+            fmt::print(file, "  host_layout(const guest_layout<{}>& from) ", struct_name);
             if (type_compat.at(type) == TypeCompatibility::Full) {
+                fmt::print(file, ":\n");
                 fmt::print(file, "    data {{ from.data }} {{\n");
-            } else {
+                fmt::print(file, "  }}\n");
+            } else if (type_compat.at(type) == TypeCompatibility::Repackable) {
+                fmt::print(file, ":\n");
                 fmt::print(file, "    data {{\n");
                 fmt::print(file, "      // Constructor performs layout repacking.\n");
                 fmt::print(file, "      // Each initializer itself is wrapped in host_layout<> to enable recursive layout repacking\n");
@@ -451,18 +454,24 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                       // Leave field uninitialized
                     }
                 }
+                fmt::print(file, "  }}\n");
+            } else {
+                fmt::print(file, "= delete;\n");
             }
-            fmt::print(file, "  }}\n");
             fmt::print(file, "}};\n\n");
 
             fmt::print(file, "// Constructor performs layout repacking.\n");
             fmt::print(file, "// Each initializer itself is wrapped in host_layout<> to enable recursive layout repacking\n");
-            fmt::print(file, "inline guest_layout<{}> to_guest(const host_layout<{}>& from) {{\n", struct_name, struct_name);
+            fmt::print(file, "inline guest_layout<{}> to_guest(const host_layout<{}>& from) ", struct_name, struct_name);
             if (type_compat.at(type) == TypeCompatibility::Full) {
+                fmt::print(file, "{{\n");
                 fmt::print(file, "  guest_layout<{}> ret;\n", struct_name);
                 fmt::print(file, "  static_assert(sizeof(from) == sizeof(ret));\n");
                 fmt::print(file, "  memcpy(&ret, &from, sizeof(from));\n");
-            } else {
+                fmt::print(file, "  return ret;\n");
+                fmt::print(file, "}}\n\n");
+            } else if (type_compat.at(type) == TypeCompatibility::Repackable) {
+                fmt::print(file, "{{\n");
                 fmt::print(file, "  guest_layout<{}> ret {{ .data {{\n", struct_name);
                 auto map_field2 = [&file](const StructInfo::MemberInfo& member, bool skip_arrays) {
                     auto& decl_name = member.member_name;
@@ -493,9 +502,11 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                       // Leave field uninitialized
                     }
                 }
+                fmt::print(file, "  return ret;\n");
+                fmt::print(file, "}}\n\n");
+            } else {
+                fmt::print(file, "= delete;\n\n");
             }
-            fmt::print(file, "  return ret;\n");
-            fmt::print(file, "}}\n\n");
 
             // Forward-declare user-provided repacking functions
             for (const auto& member_name : type_repack_info.custom_repacked_members) {
