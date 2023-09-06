@@ -91,6 +91,8 @@ struct callback_guest : callback_annotation_base {};
 // If used, fex_custom_repack must be specialized for the annotated struct member
 struct custom_repack {};
 
+struct ptr_passthrough {};
+
 // struct member annotations: fex_gen_config<&MyStruct::member>
 struct is_padding_member {};
 

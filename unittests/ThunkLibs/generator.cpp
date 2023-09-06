@@ -571,6 +571,10 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
             // TODO
             CHECK_THROWS(run_thunkgen_host(prelude, code, guest_abi, true));
         }
+
+        SECTION("Parameter annotated as ptr_passthrough") {
+            CHECK_NOTHROW(run_thunkgen_host(prelude, code + "template<> struct fex_gen_param<func, 0, A*> : fexgen::ptr_passthrough {};\n", guest_abi));
+        }
     }
 
     SECTION("Pointer to struct with pointer member of consistent data layout") {
@@ -603,6 +607,15 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
             // Pointee data is assumed to be compatible on 64-bit
             CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
         }
+    }
+
+    SECTION("Passthrough") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::ptr_passthrough {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
     }
 
     SECTION("Unannotated in struct") {
