@@ -730,7 +730,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
     }
   }
 
-  if (SupportsProcFSInterpreter) {
+  if (!SupportsProcFSInterpreter) {
     char PidSelfPath[50];
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
