@@ -8979,7 +8979,7 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 73,
+      "ExpectedInstructionCount": 74,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xe9 /5"
@@ -9049,9 +9049,10 @@
         "ldrb w22, [x28, #1010]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "uxtb w22, w22",
+        "ldrb w22, [x28, #1010]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
         "strb w21, [x28, #1010]",
@@ -19567,7 +19568,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 73,
+      "ExpectedInstructionCount": 74,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xd9 /3"
@@ -19637,9 +19638,10 @@
         "ldrb w22, [x28, #1010]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "uxtb w22, w22",
+        "ldrb w22, [x28, #1010]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
         "strb w21, [x28, #1010]",
