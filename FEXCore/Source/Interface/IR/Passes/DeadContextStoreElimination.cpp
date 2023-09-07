@@ -457,6 +457,10 @@ private:
   ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);
   ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);
 
+  // Classify context loads and stores.
+  bool ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::NodeIterator BlockEnd);
+  bool ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode);
+
   // Block local Passes
   bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit);
 };
@@ -490,6 +494,33 @@ ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::Reg
 ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *ValueNode, FEXCore::IR::OrderedNode *StoreNode) {
   ContextMemberInfo *Info = FindMemberInfo(ClassifiedInfo, Offset, Size);
   return RecordAccess(Info, RegClass, Offset, Size, AccessType, ValueNode, StoreNode);
+}
+
+bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::NodeIterator BlockEnd) {
+  auto Info = FindMemberInfo(LocalInfo, Offset, Size);
+  ContextMemberInfo PreviousMemberInfoCopy = *Info;
+  RecordAccess(Info, Class, Offset, Size, ACCESS_READ, CodeNode);
+
+  if (IsReadAccess(PreviousMemberInfoCopy.Accessed) &&
+      IsReadAccess(Info->Accessed) &&
+      PreviousMemberInfoCopy.AccessRegClass == Info->AccessRegClass &&
+      PreviousMemberInfoCopy.AccessOffset == Info->AccessOffset &&
+      PreviousMemberInfoCopy.AccessSize == Size) {
+    // Optimize the case of redundant reads of the same exact value.
+    IREmit->ReplaceAllUsesWithRange(CodeNode, PreviousMemberInfoCopy.ValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
+    RecordAccess(Info, Class, Offset, Size, ACCESS_READ, PreviousMemberInfoCopy.ValueNode);
+    return true;
+  }
+  // TODO: Optimize the case of Store->Load.
+  return false;
+}
+
+bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode) {
+  auto Info = FindMemberInfo(LocalInfo, Offset, Size);
+  Info = RecordAccess(Info, Class, Offset, Size, ACCESS_WRITE, ValueNode, CodeNode);
+  // TODO: Optimize redundant stores.
+  // ContextMemberInfo PreviousMemberInfoCopy = *Info;
+  return false;
 }
 
 /**
@@ -545,123 +576,19 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
-        uint8_t LastClass = Info->AccessRegClass;
-        uint32_t LastOffset = Info->AccessOffset;
-        uint8_t LastSize = Info->AccessSize;
-        LastAccessType LastAccess = Info->Accessed;
-        OrderedNode *LastStoreNode = Info->StoreNode;
-        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, CurrentIR.GetNode(Op->Value), CodeNode);
-
-        if (IsWriteAccess(LastAccess) &&
-            LastClass == Op->Class &&
-            LastOffset == Op->Offset &&
-            LastSize <= IROp->Size) {
-          // Remove the last store because this one overwrites it entirely
-          // Happens when we store in to a location then store again
-          IREmit->Remove(LastStoreNode);
-
-          if (LastSize < IROp->Size) {
-            //fmt::print("RCLSE: Eliminated partial write\n");
-          }
-          Changed = true;
-        }
+        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+      }
+      else if (IROp->Op == OP_STOREREGISTER) {
+        auto Op = IROp->CW<IR::IROp_StoreRegister>();
+        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+      }
+      else if (IROp->Op == OP_LOADREGISTER) {
+        auto Op = IROp->CW<IR::IROp_LoadRegister>();
+        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
       }
       else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->CW<IR::IROp_LoadContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
-        RegisterClassType LastClass = Info->AccessRegClass;
-        uint32_t LastOffset = Info->AccessOffset;
-        uint8_t LastSize = Info->AccessSize;
-        LastAccessType LastAccess = Info->Accessed;
-        OrderedNode *LastValueNode = Info->ValueNode;
-        OrderedNode *LastStoreNode = Info->StoreNode;
-        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, CodeNode);
-
-        if (IsWriteAccess(LastAccess) &&
-            LastClass == Op->Class &&
-            LastOffset == Op->Offset &&
-            IROp->Size <= LastSize) {
-          // If the last store matches this load value then we can replace the loaded value with the previous valid one
-
-          if (LastClass == GPRClass) {
-            IREmit->SetWriteCursor(CodeNode);
-
-            uint8_t TruncateSize = IREmit->GetOpSize(LastValueNode);
-
-            // Did store context do an implicit truncation?
-            if (IREmit->GetOpSize(LastStoreNode) < TruncateSize)
-              TruncateSize = IREmit->GetOpSize(LastStoreNode);
-
-            // Or are we doing a partial read
-            if (IROp->Size < TruncateSize)
-              TruncateSize = IROp->Size;
-
-            if (TruncateSize != IREmit->GetOpSize(LastValueNode)) {
-              // We need to insert an explict truncation
-              LastValueNode = IREmit->_Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Info->AccessSize)), TruncateSize * 8, 0, LastValueNode);
-            }
-
-            IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-            Changed = true;
-          } else if (LastClass == FPRClass) {
-            if (LastSize == IROp->Size && LastSize == IREmit->GetOpSize(LastValueNode)) {
-              if (IsFullAccess(Info->Accessed)) {
-                // LoadCtx matches StoreCtx and Node Size
-                IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-                RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-                Changed = true;
-              }
-              else {
-                // If this load size is a partial load then it may be expecting a zext of
-                // the vector element
-                IREmit->SetWriteCursor(CodeNode);
-                // zext to size
-                LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
-
-                IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-                RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-                Changed = true;
-              }
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size == IREmit->GetOpSize(LastValueNode)) {
-              // LoadCtx is <= StoreCtx and Node is LoadCtx
-              IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-              Changed = true;
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size < IREmit->GetOpSize(LastValueNode)) {
-              IREmit->SetWriteCursor(CodeNode);
-              // trucate to size
-              LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
-              IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-              Changed = true;
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size > IREmit->GetOpSize(LastValueNode)) {
-              IREmit->SetWriteCursor(CodeNode);
-              // zext to size
-              LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
-
-              IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-              Changed = true;
-            } else {
-              //fmt::print("RCLSE: Not GPR class, missed, {}, lastS: {}, S: {}, Node S: {}\n", LastClass, LastSize, IROp->Size, IREmit->GetOpSize(LastValueNode));
-            }
-          }
-        }
-        else if (IsReadAccess(LastAccess) &&
-                 IsReadAccess(Info->Accessed) &&
-                 LastClass == Op->Class &&
-                 LastOffset == Op->Offset &&
-                 LastSize == IROp->Size) {
-          // Did we read and then read again?
-          IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
-          Changed = true;
-        }
+        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
       }
       else if (IROp->Op == OP_STOREFLAG) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
