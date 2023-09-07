@@ -3664,11 +3664,18 @@ DEF_OP(VUMulH) {
       // Do predicated to ensure upper-bits get zero as expected
       const auto Mask = PRED_TMP_16B.Merging();
 
-      if (Dst != Vector1) {
+      if (Dst == Vector1) {
+        umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+      }
+      else if (Dst == Vector2) {
+        umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
+      }
+      else {
+        // Destination register doesn't overlap either source.
         // NOTE: SVE umulh (predicated) is a destructive operation.
         movprfx(Dst.Z(), Vector1.Z());
+        umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
       }
-      umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
     }
     else {
       umulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -3717,11 +3724,18 @@ DEF_OP(VSMulH) {
       // Do predicated to ensure upper-bits get zero as expected
       const auto Mask = PRED_TMP_16B.Merging();
 
-      if (Dst != Vector1) {
-        // NOTE: SVE smulh (predicated) is a destructive operation.
-        movprfx(Dst.Z(), Vector1.Z());
+      if (Dst == Vector1) {
+        smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
       }
-      smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+      else if (Dst == Vector2) {
+        smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
+      }
+      else {
+        // Destination register doesn't overlap either source.
+        // NOTE: SVE umulh (predicated) is a destructive operation.
+        movprfx(Dst.Z(), Vector1.Z());
+        smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+      }
     }
     else {
       smulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
