@@ -1,7 +1,7 @@
 find_package(Clang REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
-add_library(thunkgenlib gen.cpp)
+add_library(thunkgenlib analysis.cpp gen.cpp)
 target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
