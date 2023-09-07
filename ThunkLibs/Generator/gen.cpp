@@ -1,6 +1,8 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 
+#include "diagnostics.h"
+
 #include <fstream>
 #include <numeric>
 #include <iostream>
@@ -102,25 +104,6 @@ struct NamespaceInfo {
 };
 
 static std::vector<clang::DeclContext*> decl_contexts;
-
-struct ClangDiagnosticAsException {
-    std::pair<clang::SourceLocation, unsigned> diagnostic;
-
-    void Report(clang::DiagnosticsEngine& diagnostics) const {
-        diagnostics.Report(diagnostic.first, diagnostic.second);
-    }
-};
-
-// Helper class to build a custom DiagID from the given message and store it in a throwable object
-struct ErrorReporter {
-    clang::ASTContext& context;
-
-    template<std::size_t N>
-    [[nodiscard]] ClangDiagnosticAsException operator()(clang::SourceLocation loc, const char (&message)[N]) {
-        auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
-        return { std::pair(loc, id) };
-    }
-};
 
 struct NamespaceAnnotations {
     std::optional<unsigned> version;
