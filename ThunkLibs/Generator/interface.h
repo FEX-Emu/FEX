@@ -8,13 +8,16 @@ struct OutputFilenames {
     std::string guest;
 };
 
-class GenerateThunkLibsActionFactory : public clang::tooling::FrontendActionFactory {
+class GenerateThunkLibsActionFactory : public clang::tooling::ToolAction {
 public:
     GenerateThunkLibsActionFactory(std::string_view libname_, OutputFilenames output_filenames_)
         : libname(std::move(libname_)), output_filenames(std::move(output_filenames_)) {
     }
 
-    std::unique_ptr<clang::FrontendAction> create() override;
+    bool runInvocation(
+        std::shared_ptr<clang::CompilerInvocation> Invocation, clang::FileManager *Files,
+        std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
+        clang::DiagnosticConsumer *DiagConsumer) override;
 
 private:
     std::string libname;
