@@ -144,7 +144,7 @@ def parse_ops(ops):
                     Argument = Argument.strip()
                     OpArg = OpArgument()
 
-                    Split = Argument.split(":")
+                    Split = Argument.split(":", 1)
                     if len(Split) != 2:
                         ExitError("Error parsing argument. Missing Type and name colon split")
 
