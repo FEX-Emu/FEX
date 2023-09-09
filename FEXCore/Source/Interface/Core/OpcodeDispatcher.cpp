@@ -2791,6 +2791,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     RCLSmallerOp(Op);
     return;
   }
+  const auto OpSize = OpSizeFromSrc(Op);
 
   // Calculate flags early.
   CalculateDeferredFlags();
@@ -2800,11 +2801,11 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // Res = Src << Shift
-  OrderedNode *Res = _Lshl(OpSizeFromSrc(Op), Dest, Src);
+  OrderedNode *Res = _Lshl(OpSize, Dest, Src);
 
   // Res |= (Src << (Size - Shift + 1));
-  OrderedNode *SrcShl = _Sub(OpSizeFromSrc(Op), _Constant(Size, Size + 1), Src);
-  auto TmpHigher = _Lshr(OpSizeFromSrc(Op), Dest, SrcShl);
+  OrderedNode *SrcShl = _Sub(OpSize, _Constant(Size, Size + 1), Src);
+  auto TmpHigher = _Lshr(OpSize, Dest, SrcShl);
 
   auto One = _Constant(Size, 1);
   auto Zero = _Constant(Size, 0);
@@ -2813,26 +2814,24 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     Src, One,
     TmpHigher, Zero);
 
-  // TODO: Can use OpSizeFromSrc(Op)
-  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
+  Res = _Or(OpSize, Res, CompareResult);
 
   // If Shift != 0 then we can inject the CF
-  OrderedNode *CFShl = _Sub(OpSizeFromSrc(Op), Src, _Constant(Size, 1));
+  OrderedNode *CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
   auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
 
   CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
     TmpCF, Zero);
 
-  // TODO: Can use OpSizeFromSrc(Op)
-  Res = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Res), GetOpSize(CompareResult)))), Res, CompareResult);
+  Res = _Or(OpSize, Res, CompareResult);
 
   StoreResult(GPRClass, Op, Res, -1);
 
   {
     // CF only changes if we actually shifted
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Bfe(OpSizeFromSrc(Op), 1, 0, _Lshr(OpSizeFromSrc(Op), Dest, _Sub(OpSizeFromSrc(Op), _Constant(Size, Size), Src)));
+    auto NewCF = _Bfe(OpSize, 1, 0, _Lshr(OpSize, Dest, _Sub(OpSize, _Constant(Size, Size), Src)));
     CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, One,
       NewCF, CF);
@@ -2843,7 +2842,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     // Only when Shift == 1, it is undefined otherwise
     // Only changed if shift isn't zero
     auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(IR::SizeToOpSize(GetOpSize(Res)), 1, Size - 1, Res), NewCF);
+    auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, Size - 1, Res), NewCF);
     CompareResult = _Select(FEXCore::IR::COND_EQ,
       Src, _Constant(0),
       OF, NewOF);
