@@ -364,71 +364,71 @@ namespace FEXCore::CPU {
   DEF_OP(F64SCALE);
 #undef DEF_OP
   template<typename unsigned_type, typename signed_type, typename float_type>
-  [[nodiscard]] static bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
+  [[nodiscard]] static bool IsConditionTrue(IR::CondClassType Cond, uint64_t Src1, uint64_t Src2) {
     bool CompResult = false;
     if constexpr (sizeof(unsigned_type) == 16) {
-      LOGMAN_THROW_A_FMT(Cond != FEXCore::IR::COND_FLU &&
-        Cond != FEXCore::IR::COND_FGE &&
-        Cond != FEXCore::IR::COND_FLEU &&
-        Cond != FEXCore::IR::COND_FGT &&
-        Cond != FEXCore::IR::COND_FU &&
-        Cond != FEXCore::IR::COND_FNU, "Unsupported comparison for 128-bit floats");
+      LOGMAN_THROW_A_FMT(Cond != IR::CondClassType::FLU &&
+        Cond != IR::CondClassType::FGE &&
+        Cond != IR::CondClassType::FLEU &&
+        Cond != IR::CondClassType::FGT &&
+        Cond != IR::CondClassType::FU &&
+        Cond != IR::CondClassType::FNU, "Unsupported comparison for 128-bit floats");
     }
 
     switch (Cond) {
-      case FEXCore::IR::COND_EQ:
+      case IR::CondClassType::EQ:
         CompResult = static_cast<unsigned_type>(Src1) == static_cast<unsigned_type>(Src2);
         break;
-      case FEXCore::IR::COND_NEQ:
+      case IR::CondClassType::NEQ:
         CompResult = static_cast<unsigned_type>(Src1) != static_cast<unsigned_type>(Src2);
         break;
-      case FEXCore::IR::COND_SGE:
+      case IR::CondClassType::SGE:
         CompResult = static_cast<signed_type>(Src1) >= static_cast<signed_type>(Src2);
         break;
-      case FEXCore::IR::COND_SLT:
+      case IR::CondClassType::SLT:
         CompResult = static_cast<signed_type>(Src1) < static_cast<signed_type>(Src2);
         break;
-      case FEXCore::IR::COND_SGT:
+      case IR::CondClassType::SGT:
         CompResult = static_cast<signed_type>(Src1) > static_cast<signed_type>(Src2);
         break;
-      case FEXCore::IR::COND_SLE:
+      case IR::CondClassType::SLE:
         CompResult = static_cast<signed_type>(Src1) <= static_cast<signed_type>(Src2);
         break;
-      case FEXCore::IR::COND_UGE:
+      case IR::CondClassType::UGE:
         CompResult = static_cast<unsigned_type>(Src1) >= static_cast<unsigned_type>(Src2);
         break;
-      case FEXCore::IR::COND_ULT:
+      case IR::CondClassType::ULT:
         CompResult = static_cast<unsigned_type>(Src1) < static_cast<unsigned_type>(Src2);
         break;
-      case FEXCore::IR::COND_UGT:
+      case IR::CondClassType::UGT:
         CompResult = static_cast<unsigned_type>(Src1) > static_cast<unsigned_type>(Src2);
         break;
-      case FEXCore::IR::COND_ULE:
+      case IR::CondClassType::ULE:
         CompResult = static_cast<unsigned_type>(Src1) <= static_cast<unsigned_type>(Src2);
         break;
 
-      case FEXCore::IR::COND_FLU:
+      case IR::CondClassType::FLU:
         CompResult = reinterpret_cast<float_type&>(Src1) < reinterpret_cast<float_type&>(Src2) || (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_FGE:
+      case IR::CondClassType::FGE:
         CompResult = reinterpret_cast<float_type&>(Src1) >= reinterpret_cast<float_type&>(Src2) && !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_FLEU:
+      case IR::CondClassType::FLEU:
         CompResult = reinterpret_cast<float_type&>(Src1) <= reinterpret_cast<float_type&>(Src2) || (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_FGT:
+      case IR::CondClassType::FGT:
         CompResult = reinterpret_cast<float_type&>(Src1) > reinterpret_cast<float_type&>(Src2) && !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_FU:
+      case IR::CondClassType::FU:
         CompResult = (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_FNU:
+      case IR::CondClassType::FNU:
         CompResult = !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
         break;
-      case FEXCore::IR::COND_MI:
-      case FEXCore::IR::COND_PL:
-      case FEXCore::IR::COND_VS:
-      case FEXCore::IR::COND_VC:
+      case IR::CondClassType::MI:
+      case IR::CondClassType::PL:
+      case IR::CondClassType::VS:
+      case IR::CondClassType::VC:
       default:
         LOGMAN_MSG_A_FMT("Unsupported compare type");
         break;

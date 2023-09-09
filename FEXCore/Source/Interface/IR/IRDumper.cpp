@@ -5,6 +5,7 @@ tags: ir|dumper
 $end_info$
 */
 
+#include "FEXCore/Utils/EnumUtils.h"
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
@@ -68,7 +69,7 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
     "FNU"
   };
 
-  *out << CondNames[Arg];
+  *out << CondNames[FEXCore::ToUnderlying(Arg)];
 }
 
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, MemOffsetType Arg) {

@@ -612,29 +612,29 @@ bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, u
 }
 
 std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::GetCC(IR::CondClassType cond) {
-    switch (cond.Val) {
-    case FEXCore::IR::COND_EQ:  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
-    case FEXCore::IR::COND_NEQ: return { &CodeGenerator::setne, &CodeGenerator::cmovne, &CodeGenerator::jne };
-    case FEXCore::IR::COND_SGE: return { &CodeGenerator::setge, &CodeGenerator::cmovge, &CodeGenerator::jge };
-    case FEXCore::IR::COND_SLT: return { &CodeGenerator::setl , &CodeGenerator::cmovl , &CodeGenerator::jl  };
-    case FEXCore::IR::COND_SGT: return { &CodeGenerator::setg , &CodeGenerator::cmovg , &CodeGenerator::jg  };
-    case FEXCore::IR::COND_SLE: return { &CodeGenerator::setle, &CodeGenerator::cmovle, &CodeGenerator::jle };
-    case FEXCore::IR::COND_UGE: return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
-    case FEXCore::IR::COND_ULT: return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
-    case FEXCore::IR::COND_UGT: return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
-    case FEXCore::IR::COND_ULE: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
+    switch (cond) {
+    case IR::CondClassType::EQ:  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
+    case IR::CondClassType::NEQ: return { &CodeGenerator::setne, &CodeGenerator::cmovne, &CodeGenerator::jne };
+    case IR::CondClassType::SGE: return { &CodeGenerator::setge, &CodeGenerator::cmovge, &CodeGenerator::jge };
+    case IR::CondClassType::SLT: return { &CodeGenerator::setl , &CodeGenerator::cmovl , &CodeGenerator::jl  };
+    case IR::CondClassType::SGT: return { &CodeGenerator::setg , &CodeGenerator::cmovg , &CodeGenerator::jg  };
+    case IR::CondClassType::SLE: return { &CodeGenerator::setle, &CodeGenerator::cmovle, &CodeGenerator::jle };
+    case IR::CondClassType::UGE: return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
+    case IR::CondClassType::ULT: return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
+    case IR::CondClassType::UGT: return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
+    case IR::CondClassType::ULE: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
 
-	  case FEXCore::IR::COND_FLU:  return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
-	  case FEXCore::IR::COND_FGE:  return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
-	  case FEXCore::IR::COND_FLEU: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
-	  case FEXCore::IR::COND_FGT:  return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
-	  case FEXCore::IR::COND_FU:   return { &CodeGenerator::setp , &CodeGenerator::cmovp , &CodeGenerator::jp  };
-	  case FEXCore::IR::COND_FNU:  return { &CodeGenerator::setnp, &CodeGenerator::cmovnp, &CodeGenerator::jnp };
+    case IR::CondClassType::FLU:  return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
+    case IR::CondClassType::FGE:  return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
+    case IR::CondClassType::FLEU: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
+    case IR::CondClassType::FGT:  return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
+    case IR::CondClassType::FU:   return { &CodeGenerator::setp , &CodeGenerator::cmovp , &CodeGenerator::jp  };
+    case IR::CondClassType::FNU:  return { &CodeGenerator::setnp, &CodeGenerator::cmovnp, &CodeGenerator::jnp };
 
-    case FEXCore::IR::COND_MI:
-    case FEXCore::IR::COND_PL:
-    case FEXCore::IR::COND_VS:
-    case FEXCore::IR::COND_VC:
+    case IR::CondClassType::MI:
+    case IR::CondClassType::PL:
+    case IR::CondClassType::VS:
+    case IR::CondClassType::VC:
     default:
       LOGMAN_MSG_A_FMT("Unsupported compare type");
       break;

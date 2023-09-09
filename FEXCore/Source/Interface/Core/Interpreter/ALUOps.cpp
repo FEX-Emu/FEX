@@ -900,17 +900,17 @@ DEF_OP(Select) {
   if (Op->CompareSize == 4) {
     const auto Src1 = *GetSrc<uint32_t*>(Data->SSAData, Op->Cmp1);
     const auto Src2 = *GetSrc<uint32_t*>(Data->SSAData, Op->Cmp2);
-    CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond.Val, Src1, Src2);
+    CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond, Src1, Src2);
   }
   else if (Op->CompareSize == 8) {
     const auto Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp1);
     const auto Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp2);
-    CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond.Val, Src1, Src2);
+    CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond, Src1, Src2);
   }
   else if (Op->CompareSize == 16) {
     const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Cmp1);
     const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Cmp2);
-    CompResult = IsConditionTrue<__uint128_t, __int128_t, double>(Op->Cond.Val, Src1, Src2);
+    CompResult = IsConditionTrue<__uint128_t, __int128_t, double>(Op->Cond, Src1, Src2);
   }
   else {
     LOGMAN_MSG_A_FMT("Unknown select size: {}", Op->CompareSize);

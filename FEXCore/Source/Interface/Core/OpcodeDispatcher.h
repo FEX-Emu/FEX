@@ -1167,7 +1167,7 @@ private:
       // Z
       auto Zero = _Constant(0);
       auto One = _Constant(1);
-      auto SelectOp = _Select(FEXCore::IR::COND_EQ, Res, Zero, One, Zero);
+      auto SelectOp = _Select(CondClassType::EQ, IR::OpSize(std::max<uint8_t>(4u, SrcSize)), OpSize::i32Bit, Res, Zero, One, Zero);
       SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
     }
   }
@@ -1274,7 +1274,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
-  OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**
    * @name Deferred RFLAG calculation and generation.
@@ -1403,15 +1403,15 @@ private:
   void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_BEXTR(OrderedNode *Src);
+  void CalculateFlags_BEXTR(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BLSMSK(OrderedNode *Src);
+  void CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
-  void CalculateFlags_POPCOUNT(OrderedNode *Src);
+  void CalculateFlags_POPCOUNT(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
-  void CalculateFlags_TZCNT(OrderedNode *Src);
+  void CalculateFlags_TZCNT(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BITSELECT(OrderedNode *Src);
+  void CalculateFlags_BITSELECT(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_RDRAND(OrderedNode *Src);
   /**  @} */
 

@@ -342,12 +342,28 @@ struct RegisterClassType final {
   [[nodiscard]] friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
-struct CondClassType final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
-    return Val;
-  }
-  [[nodiscard]] friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
+enum class CondClassType : uint8_t {
+  EQ  = 0,
+  NEQ = 1,
+  UGE  = 2,
+  ULT  = 3,
+  MI  = 4,
+  PL  = 5,
+  VS  = 6,
+  VC  = 7,
+  UGT  = 8,
+  ULE  = 9,
+  SGE  = 10,
+  SLT  = 11,
+  SGT  = 12,
+  SLE  = 13,
+
+  FLU  = 16, /* float less or unordred */
+  FGE  = 17, /* float greater or equal */
+  FLEU = 18, /* float less or equal or unordred */
+  FGT  = 19, /* float greater */
+  FU   = 20, /* float unordred */
+  FNU  = 21, /* float not unordred */
 };
 
 struct MemOffsetType final {

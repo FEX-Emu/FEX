@@ -57,9 +57,9 @@ DEF_OP(CondJump) {
   const uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp2);
 
   if (Op->CompareSize == 4)
-    CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond.Val, Src1, Src2);
+    CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond, Src1, Src2);
   else
-    CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond.Val, Src1, Src2);
+    CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond, Src1, Src2);
 
   if (CompResult) {
     Data->BlockIterator = IR::NodeIterator(ListBegin, DataBegin, Op->TrueBlock);

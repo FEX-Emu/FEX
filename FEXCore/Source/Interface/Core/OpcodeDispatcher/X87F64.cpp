@@ -1094,7 +1094,8 @@ void OpDispatchBuilder::X87FXAMF64(OpcodeArgs) {
   auto OneConst = _Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_EQ,
+  auto C3 = _Select(CondClassType::EQ,
+    OpSize::i32Bit, OpSize::i32Bit,
     TopValid, OneConst,
     ZeroConst, OneConst);
 

@@ -2545,7 +2545,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump = _CondJump(BitFlag, {COND_NEQ});
+    auto CondJump = _CondJump(BitFlag, CondClassType::NEQ);
 
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump, StoreBlock);
@@ -2755,7 +2755,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // to it's defined initial configuration.
   const auto RestoreIfFlagSetOrDefault = [&](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump = _CondJump(BitFlag, {COND_NEQ});
+    auto CondJump = _CondJump(BitFlag, CondClassType::NEQ);
 
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump, RestoreBlock);
@@ -3982,10 +3982,12 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
-  Test1 = _Select(FEXCore::IR::COND_EQ,
+  Test1 = _Select(CondClassType::EQ,
+      OpSize::i32Bit, OpSize::i32Bit,
       Test1, ZeroConst, OneConst, ZeroConst);
 
-  Test2 = _Select(FEXCore::IR::COND_EQ,
+  Test2 = _Select(CondClassType::EQ,
+      OpSize::i32Bit, OpSize::i32Bit,
       Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
@@ -4031,9 +4033,11 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   OrderedNode *ZeroConst = _Constant(0);
   OrderedNode *OneConst = _Constant(1);
 
-  OrderedNode *ZFResult = _Select(IR::COND_EQ, AndGPR, ZeroConst,
+  OrderedNode *ZFResult = _Select(CondClassType::EQ, OpSize::i32Bit, OpSize::i32Bit,
+                                  AndGPR, ZeroConst,
                                   OneConst, ZeroConst);
-  OrderedNode *CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst,
+  OrderedNode *CFResult = _Select(CondClassType::EQ, OpSize::i32Bit, OpSize::i32Bit,
+                                  AndNotGPR, ZeroConst,
                                   OneConst, ZeroConst);
 
   SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFResult);
@@ -4738,7 +4742,9 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags)
                                          : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
 
-    OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
+    OrderedNode *Result = _Select(CondClassType::EQ,
+                                  OpSize::i32Bit, OpSize::i32Bit,
+                                  ResultNoFlags, ZeroConst,
                                   IfZero, IfNotZero);
 
     const uint8_t GPRSize = CTX->GetGPRSize();

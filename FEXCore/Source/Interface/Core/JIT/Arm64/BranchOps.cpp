@@ -94,27 +94,27 @@ DEF_OP(Jump) {
 }
 
 static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
-  switch (Cond.Val) {
-  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
-  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI:
-  case FEXCore::IR::COND_PL:
+  switch (Cond) {
+  case IR::CondClassType::EQ:  return ARMEmitter::Condition::CC_EQ;
+  case IR::CondClassType::NEQ: return ARMEmitter::Condition::CC_NE;
+  case IR::CondClassType::SGE: return ARMEmitter::Condition::CC_GE;
+  case IR::CondClassType::SLT: return ARMEmitter::Condition::CC_LT;
+  case IR::CondClassType::SGT: return ARMEmitter::Condition::CC_GT;
+  case IR::CondClassType::SLE: return ARMEmitter::Condition::CC_LE;
+  case IR::CondClassType::UGE: return ARMEmitter::Condition::CC_CS;
+  case IR::CondClassType::ULT: return ARMEmitter::Condition::CC_CC;
+  case IR::CondClassType::UGT: return ARMEmitter::Condition::CC_HI;
+  case IR::CondClassType::ULE: return ARMEmitter::Condition::CC_LS;
+  case IR::CondClassType::FLU: return ARMEmitter::Condition::CC_LT;
+  case IR::CondClassType::FGE: return ARMEmitter::Condition::CC_GE;
+  case IR::CondClassType::FLEU:return ARMEmitter::Condition::CC_LE;
+  case IR::CondClassType::FGT: return ARMEmitter::Condition::CC_GT;
+  case IR::CondClassType::FU:  return ARMEmitter::Condition::CC_VS;
+  case IR::CondClassType::FNU: return ARMEmitter::Condition::CC_VC;
+  case IR::CondClassType::VS:
+  case IR::CondClassType::VC:
+  case IR::CondClassType::MI:
+  case IR::CondClassType::PL:
   default:
   LOGMAN_MSG_A_FMT("Unsupported compare type");
   return ARMEmitter::Condition::CC_NV;
@@ -132,10 +132,10 @@ DEF_OP(CondJump) {
   const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
   const auto SubSize = ARMEmitter::ToVectorSizePair(Op->CompareSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
 
-  if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
+  if (isConst && Const == 0 && Op->Cond == IR::CondClassType::EQ) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
-  } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
+  } else if (isConst && Const == 0 && Op->Cond == IR::CondClassType::NEQ) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
   } else {

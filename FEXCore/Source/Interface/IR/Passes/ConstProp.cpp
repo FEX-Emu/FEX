@@ -986,7 +986,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
-          Op->Cond == COND_EQ) {
+          Op->Cond == CondClassType::EQ) {
 
         Constant1 &= getMask(Op);
         Constant2 &= getMask(Op);
@@ -1005,7 +1005,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
       uint64_t Constant;
       // Fold the select into the CondJump if possible. Could handle more complex cases, too.
-      if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
+      if (Op->Cond == CondClassType::NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
 
         const auto SelectCmpClass = IREmit->WalkFindRegClass(Select->Args[0]);
         if (SelectCmpClass == GPRPairClass) {

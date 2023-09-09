@@ -47,7 +47,8 @@ OrderedNode *OpDispatchBuilder::GetX87Tag(OrderedNode *Value, OrderedNode *Abrid
   OrderedNode *X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
   OrderedNode *X87Valid = _Constant(static_cast<uint8_t>(FPState::X87Tag::Valid));
 
-  return _Select(FEXCore::IR::COND_EQ,
+  return _Select(CondClassType::EQ,
+    OpSize::i32Bit, OpSize::i32Bit,
     RegValid, _Constant(0),
     X87Empty, X87Valid);
 }
@@ -63,7 +64,8 @@ void OpDispatchBuilder::SetX87FTW(OrderedNode *FTW) {
 
   for (int i = 0; i < 8; i++) {
     OrderedNode *RegTag = _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, FTW, _Constant(i * 2)), _Constant(0b11));
-    OrderedNode *RegValid = _Select(FEXCore::IR::COND_EQ,
+    OrderedNode *RegValid = _Select(CondClassType::EQ,
+      OpSize::i32Bit, OpSize::i32Bit,
       RegTag, X87Empty,
       _Constant(0), _Constant(1));
     NewAbridgedFTW = _Or(OpSize::i32Bit, NewAbridgedFTW, _Lshl(OpSize::i32Bit, RegValid, _Constant(i)));
@@ -244,7 +246,9 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   }
 
   // Extract sign and make interger absolute
-  auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
+  auto sign = _Select(CondClassType::SLT,
+    OpSize::i64Bit, OpSize::i32Bit,
+    data, zero, _Constant(0x8000), zero);
 
   auto absolute = _Abs(OpSize::i64Bit, data);
 
@@ -253,7 +257,9 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
   auto adjusted_exponent = _Sub(OpSize::i64Bit, _Constant(0x3fff + 63), shift);
-  auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
+  auto zeroed_exponent = _Select(CondClassType::EQ,
+    OpSize::i64Bit, OpSize::i32Bit,
+    absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
 
@@ -1278,7 +1284,8 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto OneConst = _Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_EQ,
+  auto C3 = _Select(CondClassType::EQ,
+    OpSize::i32Bit, OpSize::i32Bit,
     TopValid, OneConst,
     ZeroConst, OneConst);
 
@@ -1344,13 +1351,15 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   switch (Type) {
     case COMPARE_ZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-      RFLAG, ZeroConst, OneConst, ZeroConst);
+      SrcCond = _Select(CondClassType::EQ,
+        OpSize::i32Bit, OpSize::i64Bit,
+        RFLAG, ZeroConst, OneConst, ZeroConst);
       break;
     }
     case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-      RFLAG, ZeroConst, ZeroConst, OneConst);
+      SrcCond = _Select(CondClassType::EQ,
+        OpSize::i32Bit, OpSize::i64Bit,
+        RFLAG, ZeroConst, ZeroConst, OneConst);
       break;
     }
   }
