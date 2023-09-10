@@ -276,7 +276,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -291,7 +291,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, ne",
         "str w22, [x28, #728]"
       ]
@@ -303,7 +303,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, ne",
         "str w20, [x28, #728]"
       ]
@@ -317,7 +317,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -332,7 +332,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -344,7 +344,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -358,7 +358,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -373,7 +373,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, ne",
         "str w22, [x28, #728]"
       ]
@@ -385,7 +385,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #29, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, ne",
         "str w20, [x28, #728]"
       ]
@@ -399,7 +399,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -414,7 +414,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -426,7 +426,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #29, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -440,7 +440,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #30, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -455,7 +455,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #30, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, ne",
         "str w22, [x28, #728]"
       ]
@@ -467,7 +467,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #30, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, ne",
         "str w20, [x28, #728]"
       ]
@@ -481,7 +481,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #30, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -496,7 +496,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #30, #1",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -508,7 +508,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #30, #1",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -524,7 +524,7 @@
         "ubfx w23, w22, #30, #1",
         "ubfx w24, w22, #29, #1",
         "orr w23, w23, w24",
-        "cmp x23, #0x1 (1)",
+        "cmp w23, #0x1 (1)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -541,7 +541,7 @@
         "ubfx w23, w22, #30, #1",
         "ubfx w24, w22, #29, #1",
         "orr w23, w23, w24",
-        "cmp x23, #0x1 (1)",
+        "cmp w23, #0x1 (1)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -555,7 +555,7 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w22, w20, #29, #1",
         "orr w21, w21, w22",
-        "cmp x21, #0x1 (1)",
+        "cmp w21, #0x1 (1)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -571,7 +571,7 @@
         "ubfx w23, w22, #30, #1",
         "ubfx w24, w22, #29, #1",
         "orr w23, w23, w24",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -588,7 +588,7 @@
         "ubfx w23, w22, #30, #1",
         "ubfx w24, w22, #29, #1",
         "orr w23, w23, w24",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -602,7 +602,7 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w22, w20, #29, #1",
         "orr w21, w21, w22",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -616,7 +616,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "lsr w23, w22, #31",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -631,7 +631,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "lsr w23, w22, #31",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, ne",
         "str w22, [x28, #728]"
       ]
@@ -643,7 +643,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w21, w20, #31",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, ne",
         "str w20, [x28, #728]"
       ]
@@ -657,7 +657,7 @@
         "uxth w21, w4",
         "ldr w22, [x28, #728]",
         "lsr w23, w22, #31",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -672,7 +672,7 @@
         "lsr w21, w4, #0",
         "ldr w22, [x28, #728]",
         "lsr w23, w22, #31",
-        "cmp x23, #0x0 (0)",
+        "cmp w23, #0x0 (0)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -684,7 +684,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w21, w20, #31",
-        "cmp x21, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -703,7 +703,7 @@
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
         "and x22, x23, x22",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16"
       ]
@@ -722,7 +722,7 @@
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
         "and x22, x23, x22",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w4, w20, w21, ne"
       ]
     },
@@ -738,7 +738,7 @@
         "cnt v4.16b, v4.16b",
         "umov w20, v4.b[0]",
         "and x20, x21, x20",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "csel x4, x7, x4, ne"
       ]
     },
@@ -756,7 +756,7 @@
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
         "and x22, x23, x22",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16"
       ]
@@ -775,7 +775,7 @@
         "cnt v4.16b, v4.16b",
         "umov w22, v4.b[0]",
         "and x22, x23, x22",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w4, w20, w21, eq"
       ]
     },
@@ -791,7 +791,7 @@
         "cnt v4.16b, v4.16b",
         "umov w20, v4.b[0]",
         "and x20, x21, x20",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "csel x4, x7, x4, eq"
       ]
     },
@@ -894,12 +894,12 @@
         "ubfx w23, w22, #30, #1",
         "lsr w24, w22, #31",
         "ubfx w25, w22, #28, #1",
-        "cmp x23, #0x1 (1)",
-        "cset x23, eq",
+        "cmp w23, #0x1 (1)",
+        "cset w23, eq",
         "cmp w24, w25",
-        "cset x24, ne",
-        "orr x23, x23, x24",
-        "cmp x23, #0x1 (1)",
+        "cset w24, ne",
+        "orr w23, w23, w24",
+        "cmp w23, #0x1 (1)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -916,12 +916,12 @@
         "ubfx w23, w22, #30, #1",
         "lsr w24, w22, #31",
         "ubfx w25, w22, #28, #1",
-        "cmp x23, #0x1 (1)",
-        "cset x23, eq",
+        "cmp w23, #0x1 (1)",
+        "cset w23, eq",
         "cmp w24, w25",
-        "cset x24, ne",
-        "orr x23, x23, x24",
-        "cmp x23, #0x1 (1)",
+        "cset w24, ne",
+        "orr w23, w23, w24",
+        "cmp w23, #0x1 (1)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -935,12 +935,12 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w23, w20, #28, #1",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "cmp w22, w23",
-        "cset x22, ne",
-        "orr x21, x21, x22",
-        "cmp x21, #0x1 (1)",
+        "cset w22, ne",
+        "orr w21, w21, w22",
+        "cmp w21, #0x1 (1)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -956,12 +956,12 @@
         "ubfx w23, w22, #30, #1",
         "lsr w24, w22, #31",
         "ubfx w25, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w23, #0x0 (0)",
+        "cset w23, eq",
         "cmp w24, w25",
-        "cset x24, eq",
-        "and x23, x23, x24",
-        "cmp x23, #0x1 (1)",
+        "cset w24, eq",
+        "and w23, w23, w24",
+        "cmp w23, #0x1 (1)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16",
         "str w22, [x28, #728]"
@@ -978,12 +978,12 @@
         "ubfx w23, w22, #30, #1",
         "lsr w24, w22, #31",
         "ubfx w25, w22, #28, #1",
-        "cmp x23, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w23, #0x0 (0)",
+        "cset w23, eq",
         "cmp w24, w25",
-        "cset x24, eq",
-        "and x23, x23, x24",
-        "cmp x23, #0x1 (1)",
+        "cset w24, eq",
+        "and w23, w23, w24",
+        "cmp w23, #0x1 (1)",
         "csel w4, w20, w21, eq",
         "str w22, [x28, #728]"
       ]
@@ -997,12 +997,12 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w23, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "cmp w22, w23",
-        "cset x22, eq",
-        "and x21, x21, x22",
-        "cmp x21, #0x1 (1)",
+        "cset w22, eq",
+        "and w21, w21, w22",
+        "cmp w21, #0x1 (1)",
         "csel x4, x7, x4, eq",
         "str w20, [x28, #728]"
       ]
@@ -1572,8 +1572,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cmp w21, #0x0 (0)",
+        "cset w21, ne",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1585,8 +1585,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1598,8 +1598,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #29, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cmp w21, #0x0 (0)",
+        "cset w21, ne",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1611,8 +1611,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #29, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1624,8 +1624,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #30, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cmp w21, #0x0 (0)",
+        "cset w21, ne",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1637,8 +1637,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #30, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1652,8 +1652,8 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w22, w20, #29, #1",
         "orr w21, w21, w22",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1667,8 +1667,8 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w22, w20, #29, #1",
         "orr w21, w21, w22",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1680,8 +1680,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w21, w20, #31",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cmp w21, #0x0 (0)",
+        "cset w21, ne",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1693,8 +1693,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w21, w20, #31",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1711,8 +1711,8 @@
         "cnt v4.16b, v4.16b",
         "umov w21, v4.b[0]",
         "and x20, x20, x21",
-        "cmp x20, #0x0 (0)",
-        "cset x20, ne",
+        "cmp w20, #0x0 (0)",
+        "cset w20, ne",
         "bfxil x4, x20, #0, #8"
       ]
     },
@@ -1728,8 +1728,8 @@
         "cnt v4.16b, v4.16b",
         "umov w21, v4.b[0]",
         "and x20, x20, x21",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w20, eq",
         "bfxil x4, x20, #0, #8"
       ]
     },
@@ -1742,7 +1742,7 @@
         "lsr w21, w20, #31",
         "ubfx w22, w20, #28, #1",
         "cmp w21, w22",
-        "cset x21, ne",
+        "cset w21, ne",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1756,7 +1756,7 @@
         "lsr w21, w20, #31",
         "ubfx w22, w20, #28, #1",
         "cmp w21, w22",
-        "cset x21, eq",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1770,13 +1770,13 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w23, w20, #28, #1",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "cmp w22, w23",
-        "cset x22, ne",
-        "orr x21, x21, x22",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cset w22, ne",
+        "orr w21, w21, w22",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1790,13 +1790,13 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w23, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "cmp w22, w23",
-        "cset x22, eq",
-        "and x21, x21, x22",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cset w22, eq",
+        "and w21, w21, w22",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "bfxil x4, x21, #0, #8",
         "str w20, [x28, #728]"
       ]
@@ -1945,8 +1945,8 @@
         "bfxil x4, x20, #0, #16",
         "lsl w22, w20, #16",
         "and w22, w22, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w23, eq",
         "orr w22, w22, w23, lsl #30",
         "ubfx w23, w21, #15, #1",
         "orr w22, w22, w23, lsl #29",
@@ -1970,8 +1970,8 @@
         "bfxil x4, x20, #0, #16",
         "lsl w22, w20, #16",
         "and w22, w22, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w23, eq",
         "orr w22, w22, w23, lsl #30",
         "ubfx w21, w21, #1, #1",
         "orr w21, w22, w21, lsl #29",
@@ -1991,8 +1991,8 @@
         "bfxil x4, x20, #0, #16",
         "lsl w22, w20, #16",
         "and w22, w22, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w23, eq",
         "orr w22, w22, w23, lsl #30",
         "ubfx w21, w21, #0, #1",
         "orr w21, w22, w21, lsl #29",
@@ -2013,8 +2013,8 @@
         "bfxil x4, x20, #0, #16",
         "lsl w22, w20, #16",
         "and w22, w22, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x23, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w23, eq",
         "orr w22, w22, w23, lsl #30",
         "ubfx w21, w21, #1, #1",
         "orr w21, w22, w21, lsl #29",
@@ -2180,8 +2180,8 @@
         "lsl x24, x21, x22",
         "lsr w20, w20, w23",
         "orr x20, x24, x20",
-        "cmp x22, #0x0 (0)",
-        "csel x20, x21, x20, eq",
+        "cmp w22, #0x0 (0)",
+        "csel w20, w21, w20, eq",
         "bfxil x4, x20, #0, #16",
         "cbz x22, #+0x5c",
         "uxth x20, w20",
@@ -2189,21 +2189,21 @@
         "mov w24, #0x10",
         "lsl w25, w20, #16",
         "and w25, w25, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x26, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w26, eq",
         "orr w25, w25, w26, lsl #30",
         "sub w24, w24, w22",
         "lsr w24, w21, w24",
         "ubfx w24, w24, #0, #1",
         "orr w24, w25, w24, lsl #29",
         "ldrb w25, [x28, #706]",
-        "cmp x22, #0x0 (0)",
-        "csel x25, x25, x20, eq",
+        "cmp w22, #0x0 (0)",
+        "csel w25, w25, w20, eq",
         "strb w25, [x28, #706]",
         "eor w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w24, w20, lsl #28",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w20, w23, w20, eq",
         "str w20, [x28, #728]"
       ]
@@ -2222,9 +2222,9 @@
         "lsl x24, x21, x22",
         "lsr w20, w20, w23",
         "orr x20, x24, x20",
-        "cmp x22, #0x0 (0)",
-        "csel x20, x21, x20, eq",
-        "lsr w4, w20, #0",
+        "cmp w22, #0x0 (0)",
+        "csel w20, w21, w20, eq",
+        "mov x4, x20",
         "cbz x22, #+0x50",
         "ubfx x20, x20, #0, #32",
         "ldr w23, [x28, #728]",
@@ -2236,13 +2236,13 @@
         "ubfx w25, w25, #0, #1",
         "orr w24, w24, w25, lsl #29",
         "ldrb w25, [x28, #706]",
-        "cmp x22, #0x0 (0)",
-        "csel x25, x25, x20, eq",
+        "cmp w22, #0x0 (0)",
+        "csel w25, w25, w20, eq",
         "strb w25, [x28, #706]",
         "eor w20, w21, w20",
         "lsr w20, w20, #31",
         "orr w20, w24, w20, lsl #28",
-        "cmp x22, #0x0 (0)",
+        "cmp w22, #0x0 (0)",
         "csel w20, w23, w20, eq",
         "str w20, [x28, #728]"
       ]
@@ -2273,14 +2273,14 @@
         "ubfx x25, x25, #0, #1",
         "orr w24, w24, w25, lsl #29",
         "ldrb w25, [x28, #706]",
-        "cmp x21, #0x0 (0)",
-        "csel x25, x25, x22, eq",
+        "cmp w21, #0x0 (0)",
+        "csel w25, w25, w22, eq",
         "strb w25, [x28, #706]",
         "eor x20, x20, x22",
         "lsr x20, x20, #63",
         "orr w20, w24, w20, lsl #28",
         "cmp x21, #0x0 (0)",
-        "csel w20, w23, w20, eq",
+        "csel x20, x23, x20, eq",
         "str w20, [x28, #728]"
       ]
     },
@@ -2448,7 +2448,7 @@
         "sbfx x20, x20, #15, #1",
         "mov w23, #0x30000000",
         "cmp x21, x20",
-        "csel x20, x22, x23, eq",
+        "csel w20, w22, w23, eq",
         "str w20, [x28, #728]"
       ]
     },
@@ -2468,7 +2468,7 @@
         "sbfx x20, x20, #31, #1",
         "mov w23, #0x30000000",
         "cmp x21, x20",
-        "csel x20, x22, x23, eq",
+        "csel w20, w22, w23, eq",
         "str w20, [x28, #728]"
       ]
     },
@@ -2484,7 +2484,7 @@
         "asr x22, x4, #63",
         "mov w23, #0x30000000",
         "cmp x20, x22",
-        "csel x20, x21, x23, eq",
+        "csel w20, w21, w23, eq",
         "str w20, [x28, #728]"
       ]
     },
@@ -2499,7 +2499,7 @@
         "cmp x21, x22",
         "csel x23, x22, x21, eq",
         "cmp x21, x22",
-        "csel w20, w20, w21, eq",
+        "csel x20, x20, x21, eq",
         "bfxil x4, x23, #0, #8",
         "bfxil x4, x20, #0, #8",
         "sub x20, x22, x23",
@@ -2509,11 +2509,11 @@
         "strb w20, [x28, #706]",
         "lsl w21, w20, #24",
         "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w24, eq",
         "orr w21, w21, w24, lsl #30",
-        "cmp x22, x23",
-        "cset x24, lo",
+        "cmp w22, w23",
+        "cset w24, lo",
         "orr w21, w21, w24, lsl #29",
         "eor w23, w22, w23",
         "eor w20, w20, w22",
@@ -2541,11 +2541,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w21, w20",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
@@ -2566,7 +2566,7 @@
         "cmp x21, x22",
         "csel x23, x22, x21, eq",
         "cmp x21, x22",
-        "csel w20, w20, w21, eq",
+        "csel x20, x20, x21, eq",
         "bfxil x4, x23, #0, #16",
         "bfxil x4, x20, #0, #16",
         "sub x20, x22, x23",
@@ -2576,11 +2576,11 @@
         "strb w20, [x28, #706]",
         "lsl w21, w20, #16",
         "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w24, eq",
         "orr w21, w21, w24, lsl #30",
-        "cmp x22, x23",
-        "cset x24, lo",
+        "cmp w22, w23",
+        "cset w24, lo",
         "orr w21, w21, w24, lsl #29",
         "eor w23, w22, w23",
         "eor w20, w20, w22",
@@ -2608,11 +2608,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w21, w20",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
@@ -2660,7 +2660,7 @@
         "mov w1, w22",
         "casal w1, w20, [x4]",
         "mov w20, w1",
-        "cmp w20, w22",
+        "cmp x20, x22",
         "csel x4, x21, x20, eq",
         "sub w21, w22, w20",
         "eor w23, w22, w20",
@@ -3058,11 +3058,11 @@
         "rbit w0, w0",
         "clz w22, w0",
         "csinv w22, w22, wzr, ne",
-        "cmp x21, #0x0 (0)",
-        "csel w20, w20, w22, eq",
+        "cmp w21, #0x0 (0)",
+        "csel x20, x20, x22, eq",
         "bfxil x4, x20, #0, #16",
-        "cmp x21, #0x0 (0)",
-        "cset x20, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3078,10 +3078,10 @@
         "rbit w0, w0",
         "clz w21, w0",
         "csinv w21, w21, wzr, ne",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "csel x4, x4, x21, eq",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3098,7 +3098,7 @@
         "cmp x7, #0x0 (0)",
         "csel x4, x4, x20, eq",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3115,11 +3115,11 @@
         "orr w22, w22, #0x8000",
         "clz w22, w22",
         "sub x22, x0, x22",
-        "cmp x21, #0x0 (0)",
-        "csel w20, w20, w22, eq",
+        "cmp w21, #0x0 (0)",
+        "csel x20, x20, x22, eq",
         "bfxil x4, x20, #0, #16",
-        "cmp x21, #0x0 (0)",
-        "cset x20, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3133,10 +3133,10 @@
         "mov x0, #0x1f",
         "clz w21, w20",
         "sub x21, x0, x21",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "csel x4, x4, x21, eq",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
+        "cmp w20, #0x0 (0)",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3152,7 +3152,7 @@
         "cmp x7, #0x0 (0)",
         "csel x4, x4, x20, eq",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
+        "cset w20, eq",
         "lsl x20, x20, #30",
         "str w20, [x28, #728]"
       ]
@@ -3269,11 +3269,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w22, w21",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w21, w20, w21",
         "eor w20, w22, w20",
@@ -3298,11 +3298,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w22, w20",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
@@ -3328,11 +3328,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w22, w21",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w21, w20, w21",
         "eor w20, w22, w20",
@@ -3357,11 +3357,11 @@
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
         "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
+        "cmp w22, #0x0 (0)",
+        "cset w24, eq",
         "orr w23, w23, w24, lsl #30",
         "cmp w22, w20",
-        "cset x24, lo",
+        "cset w24, lo",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
