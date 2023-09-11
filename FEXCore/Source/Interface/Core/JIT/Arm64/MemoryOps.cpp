@@ -1601,7 +1601,7 @@ DEF_OP(VBroadcastFromMem) {
 DEF_OP(Push) {
   const auto Op = IROp->C<IR::IROp_Push>();
   const auto ValueSize = Op->ValueSize;
-  const auto Src = GetReg(Op->Value.ID());
+  auto Src = GetReg(Op->Value.ID());
   const auto AddrSrc = GetReg(Op->Addr.ID());
   const auto Dst = GetReg(Node);
 
@@ -1615,6 +1615,22 @@ DEF_OP(Push) {
       // RA constraints would let this always be true.
       mov(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc);
     }
+  }
+
+  if (Src == AddrSrc) {
+    // If the data source is the address source then we need to do some additional work.
+    // This is because it is undefined behaviour to do a writeback on store operation where dest == src.
+    // In the case of writeback where the source is the address there are multiple behaviours.
+    // - SIGILL - Apple Silicon Behaviour
+    // - Stores original value - Cortex behaviour
+    // - Stores value after pre-index adjust adjust - Vixl simulator behaviour.
+    // - Undefined value stored
+    // - Undefined behaviour(!)
+
+    // In this path Src can end up overlapping both AddrSrc and Dst.
+    // Move the data to a temporary and store from there instead.
+    mov(TMP1, Src.X());
+    Src = TMP1;
   }
 
   if (NeedsMoveAfterwards) {

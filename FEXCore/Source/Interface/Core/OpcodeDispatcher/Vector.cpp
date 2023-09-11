@@ -3899,19 +3899,7 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *Mask{};
-
-  // The mask is hardcoded to be xmm0 in this instruction.
-  // Reuse one of the incoming sources if it happens to be xmm0.
-  if (Op->Dest.Data.GPR.GPR == X86State::REG_XMM_0) {
-    Mask = Dest;
-  }
-  else if (Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == X86State::REG_XMM_0) {
-    Mask = Src;
-  }
-  else {
-    Mask = LoadXMMRegister(0);
-  }
+  auto Mask = LoadXMMRegister(0);
 
   // Each element is selected by the high bit of that element size
   // Dest[ElementIdx] = Xmm0[ElementIndex][HighBit] ? Src : Dest;
