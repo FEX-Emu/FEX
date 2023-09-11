@@ -66,11 +66,11 @@ namespace x64 {
   };
 
   //  v8..v15 = (lower 64bits) Callee saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 12> RAFPR = {
-    // v0 ~ v3 are used as temps.
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 14> RAFPR = {
+    // v0 ~ v1 are used as temps.
     // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
-    // FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
 
+    FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
     FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
     FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
     FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
@@ -127,11 +127,11 @@ namespace x32 {
   };
 
   //  v8..v15 = (lower 64bits) Callee saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 20> RAFPR = {
-    // v0 ~ v3 are used as temps.
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 22> RAFPR = {
+    // v0 ~ v1 are used as temps.
     // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
-    // FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
 
+    FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
     FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
     FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
     FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
@@ -545,8 +545,19 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   // rsp capable move
   add(ARMEmitter::Size::i64Bit, TmpReg, ARMEmitter::Reg::rsp, 0);
 
+  LOGMAN_THROW_A_FMT(GeneralFPRegisters.size() % 2 == 0, "Needs to have multiple of 2 FPRs for RA");
+
   if (CanUseSVE) {
-    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+    size_t i = 0;
+
+    for (; i < (GeneralFPRegisters.size() % 4); i += 2) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      st2b(Reg1.Z(), Reg2.Z(), PRED_TMP_32B, TmpReg, 0);
+      add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 2);
+    }
+
+    for (; i < GeneralFPRegisters.size(); i += 4) {
       const auto Reg1 = GeneralFPRegisters[i];
       const auto Reg2 = GeneralFPRegisters[i + 1];
       const auto Reg3 = GeneralFPRegisters[i + 2];
@@ -555,8 +566,14 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
       add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 4);
     }
   } else {
-    LOGMAN_THROW_A_FMT(GeneralFPRegisters.size() % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
-    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+    size_t i = 0;
+    for (; i < (GeneralFPRegisters.size() % 4); i += 2) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), TmpReg, 32);
+    }
+
+    for (; i < GeneralFPRegisters.size(); i += 4) {
       const auto Reg1 = GeneralFPRegisters[i];
       const auto Reg2 = GeneralFPRegisters[i + 1];
       const auto Reg3 = GeneralFPRegisters[i + 2];
@@ -578,7 +595,15 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
 
   if (CanUseSVE) {
-    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+    size_t i = 0;
+    for (; i < (GeneralFPRegisters.size() % 4); i += 2) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      ld2b(Reg1.Z(), Reg2.Z(), PRED_TMP_32B.Zeroing(), ARMEmitter::Reg::rsp);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 2);
+    }
+
+    for (; i < GeneralFPRegisters.size(); i += 4) {
       const auto Reg1 = GeneralFPRegisters[i];
       const auto Reg2 = GeneralFPRegisters[i + 1];
       const auto Reg3 = GeneralFPRegisters[i + 2];
@@ -587,7 +612,14 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 4);
     }
   } else {
-    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+    size_t i = 0;
+    for (; i < (GeneralFPRegisters.size() % 4); i += 2) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), ARMEmitter::Reg::rsp, 32);
+    }
+
+    for (; i < GeneralFPRegisters.size(); i += 4) {
       const auto Reg1 = GeneralFPRegisters[i];
       const auto Reg2 = GeneralFPRegisters[i + 1];
       const auto Reg3 = GeneralFPRegisters[i + 2];
