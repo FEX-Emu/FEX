@@ -2921,8 +2921,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
+  // Deferred flags are invalidated now
+  InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -2934,7 +2934,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   }
 
   if (Op->Dest.IsGPR()) {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    // When the destination is a GPR, we don't care about garbage in the upper bits.
+    // Load the full register.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -2968,6 +2970,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     // Now shift in to the correct bit location
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
   }
+
+  // OF/SF/ZF/AF/PF undefined.
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
@@ -2980,8 +2984,8 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
+  // Deferred flags are invalidated now
+  InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -2993,7 +2997,9 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   }
 
   if (Op->Dest.IsGPR()) {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    // When the destination is a GPR, we don't care about garbage in the upper bits.
+    // Load the full register.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -3046,6 +3052,8 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
+
+  // OF/SF/ZF/AF/PF undefined.
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
@@ -3058,8 +3066,8 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
+  // Deferred flags are invalidated now
+  InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -3071,7 +3079,9 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   }
 
   if (Op->Dest.IsGPR()) {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    // When the destination is a GPR, we don't care about garbage in the upper bits.
+    // Load the full register.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -3120,6 +3130,8 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
+
+  // OF/SF/ZF/AF/PF undefined.
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
@@ -3132,8 +3144,8 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
+  // Deferred flags are invalidated now
+  InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -3145,7 +3157,9 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   }
 
   if (Op->Dest.IsGPR()) {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    // When the destination is a GPR, we don't care about garbage in the upper bits.
+    // Load the full register.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
