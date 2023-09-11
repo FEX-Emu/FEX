@@ -1195,7 +1195,7 @@ private:
     flagsOp = SelectionFlag::Nothing;
 
     if (IsNZCV(BitOffset))
-      SetNZCV(InsertNZCV(GetNZCV(), BitOffset, Value));
+      SetNZCV(InsertNZCV(PossiblySetNZCVBits ? GetNZCV() : nullptr, BitOffset, Value));
     else
       _StoreFlag(Value, BitOffset);
   }
@@ -1362,6 +1362,9 @@ private:
    */
   void InvalidateDeferredFlags() {
     CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
+
+    // No NZCV bits will be set, they are all invalid.
+    PossiblySetNZCVBits = 0;
   }
 
   /**
