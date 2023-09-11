@@ -1848,7 +1848,7 @@
       "GPR = CRC32 GPR:$Src1, GPR:$Src2, u8:$SrcSize": {
         "Desc": ["CRC32 using polynomial 0x1EDC6F41"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "DestSize": "4"
       },
       "FPR = PCLMUL u8:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
         "Desc": [
