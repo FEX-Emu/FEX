@@ -110,9 +110,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x2a",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "sxtl v4.2d, v4.2s",
-        "scvtf v16.2d, v4.2d"
+        "ldr d2, [x28, #752]",
+        "sxtl v2.2d, v2.2s",
+        "scvtf v16.2d, v2.2d"
       ]
     },
     "movntpd [rax], xmm0": {
@@ -128,9 +128,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "fcvtn v4.2s, v16.2d",
-        "fcvtzs v4.2s, v4.2s",
-        "str d4, [x28, #752]"
+        "fcvtn v2.2s, v16.2d",
+        "fcvtzs v2.2s, v2.2s",
+        "str d2, [x28, #752]"
       ]
     },
     "cvtpd2pi mm0, xmm0": {
@@ -138,10 +138,10 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "fcvtn v4.2s, v16.2d",
-        "frinti v4.2s, v4.2s",
-        "fcvtzs v4.2s, v4.2s",
-        "str d4, [x28, #752]"
+        "fcvtn v2.2s, v16.2d",
+        "frinti v2.2s, v2.2s",
+        "fcvtzs v2.2s, v2.2s",
+        "str d2, [x28, #752]"
       ]
     },
     "ucomisd xmm0, xmm1": {
@@ -204,8 +204,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x50",
       "ExpectedArm64ASM": [
-        "uzp2 v4.4s, v16.4s, v16.4s",
-        "mov x20, v4.d[0]",
+        "uzp2 v2.4s, v16.4s, v16.4s",
+        "mov x20, v2.d[0]",
         "bfi x20, x20, #31, #32",
         "lsr x4, x20, #62"
       ]
@@ -247,8 +247,8 @@
       "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "fcvtn v16.2s, v4.2d"
+        "ldr q2, [x4]",
+        "fcvtn v16.2s, v2.2d"
       ]
     },
     "cvtps2dq xmm0, xmm1": {
@@ -265,8 +265,8 @@
       "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0x5b",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "frinti v16.4s, v4.4s",
+        "ldr q2, [x4]",
+        "frinti v16.4s, v2.4s",
         "fcvtzs v16.4s, v16.4s"
       ]
     },
@@ -317,8 +317,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x60",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip1 v16.16b, v16.16b, v4.16b"
+        "ldr q2, [x4]",
+        "zip1 v16.16b, v16.16b, v2.16b"
       ]
     },
     "punpcklwd xmm0, xmm1": {
@@ -334,8 +334,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x61",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip1 v16.8h, v16.8h, v4.8h"
+        "ldr q2, [x4]",
+        "zip1 v16.8h, v16.8h, v2.8h"
       ]
     },
     "punpckldq xmm0, xmm1": {
@@ -351,8 +351,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x62",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip1 v16.4s, v16.4s, v4.4s"
+        "ldr q2, [x4]",
+        "zip1 v16.4s, v16.4s, v2.4s"
       ]
     },
     "packsswb xmm0, xmm1": {
@@ -369,9 +369,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x63",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
+        "ldr q2, [x4]",
         "sqxtn v16.8b, v16.8h",
-        "sqxtn2 v16.16b, v4.8h"
+        "sqxtn2 v16.16b, v2.8h"
       ]
     },
     "packsswb xmm0, xmm0": {
@@ -421,8 +421,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x68",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip2 v16.16b, v16.16b, v4.16b"
+        "ldr q2, [x4]",
+        "zip2 v16.16b, v16.16b, v2.16b"
       ]
     },
     "punpckhwd xmm0, xmm1": {
@@ -438,8 +438,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x69",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip2 v16.8h, v16.8h, v4.8h"
+        "ldr q2, [x4]",
+        "zip2 v16.8h, v16.8h, v2.8h"
       ]
     },
     "punpckhdq xmm0, xmm1": {
@@ -455,8 +455,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x6a",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "zip2 v16.4s, v16.4s, v4.4s"
+        "ldr q2, [x4]",
+        "zip2 v16.4s, v16.4s, v2.4s"
       ]
     },
     "packssdw xmm0, xmm1": {
@@ -573,8 +573,8 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "dup v16.4s, v4.s[0]"
+        "ldr q2, [x4]",
+        "dup v16.4s, v2.s[0]"
       ]
     },
     "pshufd xmm0, xmm1, 1": {
@@ -587,8 +587,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #1632]",
-        "ldr q4, [x0, #16]",
-        "tbl v16.16b, {v17.16b}, v4.16b"
+        "ldr q2, [x0, #16]",
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "pshufd xmm0, [rax], 1": {
@@ -600,10 +600,10 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
+        "ldr q2, [x4]",
         "ldr x0, [x28, #1632]",
-        "ldr q5, [x0, #16]",
-        "tbl v16.16b, {v4.16b}, v5.16b"
+        "ldr q3, [x0, #16]",
+        "tbl v16.16b, {v2.16b}, v3.16b"
       ]
     },
     "pshufd xmm0, xmm1, 0xff": {
@@ -625,8 +625,8 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "dup v16.4s, v4.s[3]"
+        "ldr q2, [x4]",
+        "dup v16.4s, v2.s[3]"
       ]
     },
     "pcmpeqb xmm0, xmm1": {
@@ -702,9 +702,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0x7c",
       "ExpectedArm64ASM": [
-        "uzp1 v4.2d, v16.2d, v17.2d",
-        "uzp2 v5.2d, v16.2d, v17.2d",
-        "fsub v16.2d, v4.2d, v5.2d"
+        "uzp1 v2.2d, v16.2d, v17.2d",
+        "uzp2 v3.2d, v16.2d, v17.2d",
+        "fsub v16.2d, v2.2d, v3.2d"
       ]
     },
     "movd dword [rax], xmm0": {
@@ -737,9 +737,9 @@
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #1584]",
-        "ldr q4, [x0]",
-        "eor v4.16b, v17.16b, v4.16b",
-        "fadd v16.2d, v16.2d, v4.2d"
+        "ldr q2, [x0]",
+        "eor v2.16b, v17.16b, v2.16b",
+        "fadd v16.2d, v16.2d, v2.2d"
       ]
     },
     "psrlw xmm0, xmm1": {
@@ -803,13 +803,13 @@
         "movk x20, #0x804, lsl #16",
         "movk x20, #0x2010, lsl #32",
         "movk x20, #0x8040, lsl #48",
-        "dup v4.2d, x20",
-        "cmlt v5.16b, v16.16b, #0",
-        "and v4.16b, v5.16b, v4.16b",
-        "addp v4.16b, v4.16b, v4.16b",
-        "addp v4.8b, v4.8b, v4.8b",
-        "addp v4.8b, v4.8b, v4.8b",
-        "umov w4, v4.h[0]"
+        "dup v2.2d, x20",
+        "cmlt v3.16b, v16.16b, #0",
+        "and v2.16b, v3.16b, v2.16b",
+        "addp v2.16b, v2.16b, v2.16b",
+        "addp v2.8b, v2.8b, v2.8b",
+        "addp v2.8b, v2.8b, v2.8b",
+        "umov w4, v2.h[0]"
       ]
     },
     "psubusb xmm0, xmm1": {
@@ -941,8 +941,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "fcvtn v4.2s, v17.2d",
-        "fcvtzs v16.4s, v4.4s"
+        "fcvtn v2.2s, v17.2d",
+        "fcvtzs v16.4s, v2.4s"
       ]
     },
     "movntdq [rax], xmm0": {
@@ -1055,9 +1055,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf4",
       "ExpectedArm64ASM": [
-        "uzp1 v4.4s, v16.4s, v16.4s",
-        "uzp1 v5.4s, v17.4s, v17.4s",
-        "umull v16.2d, v4.2s, v5.2s"
+        "uzp1 v2.4s, v16.4s, v16.4s",
+        "uzp1 v3.4s, v17.4s, v17.4s",
+        "umull v16.2d, v2.2s, v3.2s"
       ]
     },
     "pmaddwd xmm0, xmm1": {
@@ -1065,9 +1065,9 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf5",
       "ExpectedArm64ASM": [
-        "smull v4.4s, v16.4h, v17.4h",
-        "smull2 v5.4s, v16.8h, v17.8h",
-        "addp v16.4s, v4.4s, v5.4s"
+        "smull v2.4s, v16.4h, v17.4h",
+        "smull2 v3.4s, v16.8h, v17.8h",
+        "addp v16.4s, v2.4s, v3.4s"
       ]
     },
     "psadbw xmm0, xmm1": {
@@ -1075,11 +1075,11 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf6",
       "ExpectedArm64ASM": [
-        "uabdl v4.8h, v16.8b, v17.8b",
-        "uabdl2 v5.8h, v16.16b, v17.16b",
-        "addv h4, v4.8h",
-        "addv h5, v5.8h",
-        "zip1 v16.2d, v4.2d, v5.2d"
+        "uabdl v2.8h, v16.8b, v17.8b",
+        "uabdl2 v3.8h, v16.16b, v17.16b",
+        "addv h2, v2.8h",
+        "addv h3, v3.8h",
+        "zip1 v16.2d, v2.2d, v3.2d"
       ]
     },
     "maskmovdqu xmm0, xmm1": {
@@ -1087,10 +1087,10 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf7",
       "ExpectedArm64ASM": [
-        "cmlt v4.16b, v17.16b, #0",
-        "ldr q5, [x11]",
-        "bsl v4.16b, v16.16b, v5.16b",
-        "str q4, [x11]"
+        "cmlt v2.16b, v17.16b, #0",
+        "ldr q3, [x11]",
+        "bsl v2.16b, v16.16b, v3.16b",
+        "str q2, [x11]"
       ]
     },
     "psubb xmm0, xmm1": {

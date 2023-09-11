@@ -16,11 +16,11 @@
         "0x66 0x0f 0xe4"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z16.d",
-        "mov z5.d, p7/m, z17.d",
-        "umulh z4.h, p6/m, z4.h, z5.h",
-        "mov v4.16b, v4.16b",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z16.d",
+        "mov z3.d, p7/m, z17.d",
+        "umulh z2.h, p6/m, z2.h, z3.h",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
       ]
     },
     "pmulhw xmm0, xmm1": {
@@ -31,11 +31,11 @@
         "0x66 0x0f 0xe5"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z16.d",
-        "mov z5.d, p7/m, z17.d",
-        "smulh z4.h, p6/m, z4.h, z5.h",
-        "mov v4.16b, v4.16b",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z16.d",
+        "mov z3.d, p7/m, z17.d",
+        "smulh z2.h, p6/m, z2.h, z3.h",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
       ]
     }
   }

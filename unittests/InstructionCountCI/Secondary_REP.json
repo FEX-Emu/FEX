@@ -45,8 +45,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x12",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "trn1 v16.4s, v4.4s, v4.4s"
+        "ldr q2, [x4]",
+        "trn1 v16.4s, v2.4s, v2.4s"
       ]
     },
     "movshdup xmm0, xmm1": {
@@ -62,8 +62,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x16",
       "ExpectedArm64ASM": [
-        "ldr q4, [x4]",
-        "trn2 v16.4s, v4.4s, v4.4s"
+        "ldr q2, [x4]",
+        "trn2 v16.4s, v2.4s, v2.4s"
       ]
     },
     "cvtsi2ss xmm0, eax": {
@@ -74,8 +74,8 @@
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "scvtf s4, w4",
-        "mov v16.s[0], v4.s[0]"
+        "scvtf s2, w4",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cvtsi2ss xmm0, dword [rax]": {
@@ -86,9 +86,9 @@
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "scvtf s4, s4",
-        "mov v16.s[0], v4.s[0]"
+        "ldr s2, [x4]",
+        "scvtf s2, s2",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cvtsi2ss xmm0, rax": {
@@ -96,8 +96,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2a",
       "ExpectedArm64ASM": [
-        "scvtf s4, x4",
-        "mov v16.s[0], v4.s[0]"
+        "scvtf s2, x4",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cvtsi2ss xmm0, qword [rax]": {
@@ -109,8 +109,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr x20, [x4]",
-        "scvtf s4, x20",
-        "mov v16.s[0], v4.s[0]"
+        "scvtf s2, x20",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "movntss [rax], xmm0": {
@@ -134,8 +134,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr s4, [x7]",
-        "fcvtzs w4, s4"
+        "ldr s2, [x7]",
+        "fcvtzs w4, s2"
       ]
     },
     "cvttss2si rax, xmm0": {
@@ -151,8 +151,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr d4, [x7]",
-        "fcvtzs x4, s4"
+        "ldr d2, [x7]",
+        "fcvtzs x4, s2"
       ]
     },
     "cvtss2si eax, xmm0": {
@@ -169,8 +169,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "ldr s4, [x7]",
-        "frinti s0, s4",
+        "ldr s2, [x7]",
+        "frinti s0, s2",
         "fcvtzs w4, s0"
       ]
     },
@@ -188,8 +188,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "ldr d4, [x7]",
-        "frinti s0, s4",
+        "ldr d2, [x7]",
+        "frinti s0, s2",
         "fcvtzs x4, s0"
       ]
     },
@@ -198,8 +198,8 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0x51",
       "ExpectedArm64ASM": [
-        "fsqrt s4, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fsqrt s2, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "rsqrtss xmm0, xmm1": {
@@ -212,8 +212,8 @@
       "ExpectedArm64ASM": [
         "fmov s0, #0x70 (1.0000)",
         "fsqrt s1, s17",
-        "fdiv s4, s0, s1",
-        "mov v16.s[0], v4.s[0]"
+        "fdiv s2, s0, s1",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "rcpss xmm0, xmm1": {
@@ -225,8 +225,8 @@
       ],
       "ExpectedArm64ASM": [
         "fmov s0, #0x70 (1.0000)",
-        "fdiv s4, s0, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fdiv s2, s0, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "addss xmm0, xmm1": {
@@ -237,8 +237,8 @@
         "0xf3 0x0f 0x58"
       ],
       "ExpectedArm64ASM": [
-        "fadd s4, s16, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fadd s2, s16, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "mulss xmm0, xmm1": {
@@ -249,8 +249,8 @@
         "0xf3 0x0f 0x59"
       ],
       "ExpectedArm64ASM": [
-        "fmul s4, s16, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fmul s2, s16, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cvtss2sd xmm0, xmm1": {
@@ -258,8 +258,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "fcvt d4, s17",
-        "mov v16.d[0], v4.d[0]"
+        "fcvt d2, s17",
+        "mov v16.d[0], v2.d[0]"
       ]
     },
     "cvtss2sd xmm0, [rax]": {
@@ -267,9 +267,9 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "ldr s4, [x4]",
-        "fcvt d4, s4",
-        "mov v16.d[0], v4.d[0]"
+        "ldr s2, [x4]",
+        "fcvt d2, s2",
+        "mov v16.d[0], v2.d[0]"
       ]
     },
     "cvttps2dq xmm0, xmm1": {
@@ -288,8 +288,8 @@
         "0xf3 0x0f 0x5c"
       ],
       "ExpectedArm64ASM": [
-        "fsub s4, s16, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fsub s2, s16, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "minss xmm0, xmm1": {
@@ -301,8 +301,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
-        "fcsel s4, s16, s17, mi",
-        "mov v16.s[0], v4.s[0]"
+        "fcsel s2, s16, s17, mi",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "divss xmm0, xmm1": {
@@ -313,8 +313,8 @@
         "0xf3 0x0f 0x5e"
       ],
       "ExpectedArm64ASM": [
-        "fdiv s4, s16, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fdiv s2, s16, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "maxss xmm0, xmm1": {
@@ -326,8 +326,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
-        "fcsel s4, s17, s16, mi",
-        "mov v16.s[0], v4.s[0]"
+        "fcsel s2, s17, s16, mi",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "movdqu xmm0, xmm1": {
@@ -354,8 +354,8 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "dup v4.8h, v17.h[4]",
-        "trn1 v16.2d, v17.2d, v4.2d"
+        "dup v2.8h, v17.h[4]",
+        "trn1 v16.2d, v17.2d, v2.2d"
       ]
     },
     "pshufhw xmm0, xmm1, 11100100b": {
@@ -377,8 +377,8 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "zip1 v4.8h, v17.8h, v17.8h",
-        "zip1 v16.2d, v17.2d, v4.2d"
+        "zip1 v2.8h, v17.8h, v17.8h",
+        "zip1 v16.2d, v17.2d, v2.2d"
       ]
     },
     "pshufhw xmm0, xmm1, 1": {
@@ -391,8 +391,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #1624]",
-        "ldr q4, [x0, #16]",
-        "tbl v16.16b, {v17.16b}, v4.16b"
+        "ldr q2, [x0, #16]",
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "pshufhw xmm0, xmm1, 0xff": {
@@ -403,8 +403,8 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "dup v4.8h, v17.h[7]",
-        "trn1 v16.2d, v17.2d, v4.2d"
+        "dup v2.8h, v17.h[7]",
+        "trn1 v16.2d, v17.2d, v2.2d"
       ]
     },
     "movq xmm0, xmm1": {
@@ -595,8 +595,8 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s4, s16, s17",
-        "mov v16.s[0], v4.s[0]"
+        "fcmeq s2, s16, s17",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 1": {
@@ -607,8 +607,8 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt s4, s17, s16",
-        "mov v16.s[0], v4.s[0]"
+        "fcmgt s2, s17, s16",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 2": {
@@ -619,8 +619,8 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmge s4, s17, s16",
-        "mov v16.s[0], v4.s[0]"
+        "fcmge s2, s17, s16",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 3": {
@@ -633,9 +633,9 @@
       "ExpectedArm64ASM": [
         "fcmge s0, s16, s17",
         "fcmgt s1, s17, s16",
-        "orr v4.8b, v0.8b, v1.8b",
-        "mvn v4.8b, v4.8b",
-        "mov v16.s[0], v4.s[0]"
+        "orr v2.8b, v0.8b, v1.8b",
+        "mvn v2.8b, v2.8b",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 4": {
@@ -646,9 +646,9 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s4, s16, s17",
-        "mvn v4.8b, v4.8b",
-        "mov v16.s[0], v4.s[0]"
+        "fcmeq s2, s16, s17",
+        "mvn v2.8b, v2.8b",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 5": {
@@ -659,9 +659,9 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt s4, s17, s16",
-        "mvn v4.16b, v4.16b",
-        "mov v16.s[0], v4.s[0]"
+        "fcmgt s2, s17, s16",
+        "mvn v2.16b, v2.16b",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 6": {
@@ -672,9 +672,9 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmge s4, s17, s16",
-        "mvn v4.16b, v4.16b",
-        "mov v16.s[0], v4.s[0]"
+        "fcmge s2, s17, s16",
+        "mvn v2.16b, v2.16b",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 7": {
@@ -687,8 +687,8 @@
       "ExpectedArm64ASM": [
         "fcmge s0, s16, s17",
         "fcmgt s1, s17, s16",
-        "orr v4.8b, v0.8b, v1.8b",
-        "mov v16.s[0], v4.s[0]"
+        "orr v2.8b, v0.8b, v1.8b",
+        "mov v16.s[0], v2.s[0]"
       ]
     },
     "movq2dq xmm0, mm0": {
@@ -704,8 +704,8 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "sxtl v4.2d, v17.2s",
-        "scvtf v16.2d, v4.2d"
+        "sxtl v2.2d, v17.2s",
+        "scvtf v16.2d, v2.2d"
       ]
     },
     "cvtdq2pd xmm0, [rax]": {
@@ -713,9 +713,9 @@
       "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x4]",
-        "sxtl v4.2d, v4.2s",
-        "scvtf v16.2d, v4.2d"
+        "ldr d2, [x4]",
+        "sxtl v2.2d, v2.2s",
+        "scvtf v16.2d, v2.2d"
       ]
     }
   }
