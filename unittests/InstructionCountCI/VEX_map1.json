@@ -3779,7 +3779,7 @@
       ]
     },
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
@@ -3797,11 +3797,8 @@
         "ubfx x21, x20, #1, #1",
         "ubfx x22, x20, #0, #1",
         "ubfx x20, x20, #2, #1",
-        "ldr w23, [x28, #728]",
-        "mov w0, w23",
-        "bfi w0, w21, #29, #1",
-        "mov w21, w0",
-        "bfi w21, w22, #30, #1",
+        "lsl x21, x21, #29",
+        "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",

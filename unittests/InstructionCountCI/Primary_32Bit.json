@@ -226,7 +226,7 @@
       ]
     },
     "aaa": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 30,
       "Optimal": "No",
       "Comment": "0x37",
       "ExpectedArm64ASM": [
@@ -240,14 +240,13 @@
         "cmp x21, #0x9 (9)",
         "cset x21, hi",
         "orr x20, x20, x21",
-        "cbnz x20, #+0x2c",
+        "cbnz x20, #+0x28",
         "mov w20, #0xff0f",
         "and x20, x22, x20",
         "bfxil w4, w20, #0, #16",
         "bfxil x4, x4, #0, #32",
         "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "and w21, w21, #0xdfffffff",
+        "mov w21, #0x0",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]",
         "b #+0x2c",
@@ -264,7 +263,7 @@
       ]
     },
     "aas": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 31,
       "Optimal": "No",
       "Comment": "0x3f",
       "ExpectedArm64ASM": [
@@ -278,14 +277,13 @@
         "cmp x21, #0x9 (9)",
         "cset x21, hi",
         "orr x20, x20, x21",
-        "cbnz x20, #+0x2c",
+        "cbnz x20, #+0x28",
         "mov w20, #0xff0f",
         "and x20, x22, x20",
         "bfxil w4, w20, #0, #16",
         "bfxil x4, x4, #0, #32",
         "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "and w21, w21, #0xdfffffff",
+        "mov w21, #0x0",
         "strb w20, [x28, #708]",
         "str w21, [x28, #728]",
         "b #+0x30",
@@ -494,7 +492,7 @@
       ]
     },
     "aam": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
@@ -511,20 +509,17 @@
         "and x21, x20, #0x80",
         "cmp x21, #0x0 (0)",
         "cset x21, hs",
-        "ldr w22, [x28, #728]",
-        "mov w0, w22",
-        "bfi w0, w21, #31, #1",
-        "mov w21, w0",
+        "lsl x21, x21, #31",
         "and x22, x20, #0xff",
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
+        "orr w21, w21, w22, lsl #30",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "aad": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xd5",
       "ExpectedArm64ASM": [
@@ -541,20 +536,17 @@
         "and x21, x20, #0x80",
         "cmp x21, #0x0 (0)",
         "cset x21, hs",
-        "ldr w22, [x28, #728]",
-        "mov w0, w22",
-        "bfi w0, w21, #31, #1",
-        "mov w21, w0",
+        "lsl x21, x21, #31",
         "and x22, x20, #0xff",
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
+        "orr w21, w21, w22, lsl #30",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "db 0xd4, 0x40": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "aam with a different immediate byte base",
@@ -574,20 +566,17 @@
         "and x21, x20, #0x80",
         "cmp x21, #0x0 (0)",
         "cset x21, hs",
-        "ldr w22, [x28, #728]",
-        "mov w0, w22",
-        "bfi w0, w21, #31, #1",
-        "mov w21, w0",
+        "lsl x21, x21, #31",
         "and x22, x20, #0xff",
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
+        "orr w21, w21, w22, lsl #30",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]
     },
     "db 0xd5, 0x40": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "aad with a different immediate byte base",
@@ -606,14 +595,11 @@
         "and x21, x20, #0x80",
         "cmp x21, #0x0 (0)",
         "cset x21, hs",
-        "ldr w22, [x28, #728]",
-        "mov w0, w22",
-        "bfi w0, w21, #31, #1",
-        "mov w21, w0",
+        "lsl x21, x21, #31",
         "and x22, x20, #0xff",
         "cmp x22, #0x0 (0)",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
+        "orr w21, w21, w22, lsl #30",
         "strb w20, [x28, #706]",
         "str w21, [x28, #728]"
       ]

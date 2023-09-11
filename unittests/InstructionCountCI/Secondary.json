@@ -200,7 +200,7 @@
       ]
     },
     "ucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x0f 0x2e",
       "ExpectedArm64ASM": [
@@ -214,11 +214,8 @@
         "ubfx x21, x20, #1, #1",
         "ubfx x22, x20, #0, #1",
         "ubfx x20, x20, #2, #1",
-        "ldr w23, [x28, #728]",
-        "mov w0, w23",
-        "bfi w0, w21, #29, #1",
-        "mov w21, w0",
-        "bfi w21, w22, #30, #1",
+        "lsl x21, x21, #29",
+        "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "mov w20, #0x0",
@@ -1825,24 +1822,20 @@
       ]
     },
     "bt ax, bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "uxth w21, w4",
         "and x20, x20, #0xf",
-        "lsr w20, w21, w20",
-        "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsr x20, x4, x20",
+        "ubfx x20, x20, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bt [rax], bx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
@@ -1852,32 +1845,25 @@
         "ldrb w20, [x4, x20, sxtx]",
         "lsr w20, w20, w21",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bt eax, ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
         "and x20, x20, #0x1f",
-        "lsr w20, w21, w20",
-        "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsr x20, x4, x20",
+        "ubfx x20, x20, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bt [rax], ebx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
@@ -1887,30 +1873,24 @@
         "ldrb w20, [x4, x20, sxtx]",
         "lsr w20, w20, w21",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bt rax, rbx": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "and x20, x7, #0x3f",
         "lsr x20, x4, x20",
         "ubfx x20, x20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bt [rax], rbx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
@@ -1919,10 +1899,7 @@
         "ldrb w21, [x4, x21, sxtx]",
         "lsr w20, w21, w20",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
@@ -2308,28 +2285,24 @@
       ]
     },
     "bts ax, bx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "uxth w21, w4",
         "and x20, x20, #0xf",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "orr x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "orr x20, x4, x20",
         "bfxil x4, x20, #0, #16",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bts [rax], bx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
@@ -2343,36 +2316,29 @@
         "orr x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bts eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
         "and x20, x20, #0x1f",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "orr x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "orr x20, x4, x20",
         "lsr w4, w20, #0",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bts [rax], ebx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
@@ -2386,15 +2352,12 @@
         "orr x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bts rax, rbx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
@@ -2404,15 +2367,12 @@
         "lsl x20, x22, x20",
         "orr x4, x4, x20",
         "ubfx x20, x21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "bts [rax], rbx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
@@ -2425,10 +2385,7 @@
         "orr x22, x23, x22",
         "strb w22, [x4, x21, sxtx]",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
@@ -2715,28 +2672,24 @@
       ]
     },
     "btr ax, bx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "uxth w21, w4",
         "and x20, x20, #0xf",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "bic x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "bic x20, x4, x20",
         "bfxil x4, x20, #0, #16",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btr [rax], bx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
@@ -2750,36 +2703,29 @@
         "bic x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btr eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
         "and x20, x20, #0x1f",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "bic x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "bic x20, x4, x20",
         "lsr w4, w20, #0",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btr [rax], ebx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
@@ -2793,15 +2739,12 @@
         "bic x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btr rax, rbx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
@@ -2811,15 +2754,12 @@
         "lsl x20, x22, x20",
         "bic x4, x4, x20",
         "ubfx x20, x21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btr [rax], rbx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
@@ -2832,10 +2772,7 @@
         "bic x22, x23, x22",
         "strb w22, [x4, x21, sxtx]",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
@@ -2922,28 +2859,24 @@
       ]
     },
     "btc ax, bx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "uxth w21, w4",
         "and x20, x20, #0xf",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "eor x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "eor x20, x4, x20",
         "bfxil x4, x20, #0, #16",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btc [rax], bx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
@@ -2957,36 +2890,29 @@
         "eor x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btc eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
         "and x20, x20, #0x1f",
-        "lsr w22, w21, w20",
-        "mov w23, #0x1",
-        "lsl x20, x23, x20",
-        "eor x20, x21, x20",
+        "lsr x21, x4, x20",
+        "mov w22, #0x1",
+        "lsl x20, x22, x20",
+        "eor x20, x4, x20",
         "lsr w4, w20, #0",
-        "ubfx w20, w22, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "ubfx x20, x21, #0, #1",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btc [rax], ebx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
@@ -3000,15 +2926,12 @@
         "eor x22, x23, x22",
         "strb w22, [x4, x20, sxtx]",
         "ubfx w20, w21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btc rax, rbx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
@@ -3018,15 +2941,12 @@
         "lsl x20, x22, x20",
         "eor x4, x4, x20",
         "ubfx x20, x21, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
     "btc [rax], rbx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
@@ -3039,10 +2959,7 @@
         "eor x22, x23, x22",
         "strb w22, [x4, x21, sxtx]",
         "ubfx w20, w20, #0, #1",
-        "ldr w21, [x28, #728]",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
     },
