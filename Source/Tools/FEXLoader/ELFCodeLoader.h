@@ -837,13 +837,15 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   void CalculateHWCaps(FEXCore::Context::Context *ctx) {
     // HWCAP is just CPUID function 0x1, the EDX result
     auto res_1 = ctx->RunCPUIDFunction(1, 0);
+    auto res_7 = ctx->RunCPUIDFunction(7, 0);
+
     HWCap = res_1.edx;
 
     // HWCAP2 is as follows:
     // Bits:
     // 0 - MONITOR/MWAIT available in CPL3
     // 1 - FSGSBASE instructions available in CPL3
-    HWCap2 = 0;
+    HWCap2 = (res_7.ebx & 1) ? (1U << 1) : 0; // FSGSBase is exposed if CPUID_7_ebx[0] is set.
 
     // We need to know if we support AVX for AT_MINSIGSTKSZ
     SupportsAVX = !!(res_1.ecx & (1U << 28));
