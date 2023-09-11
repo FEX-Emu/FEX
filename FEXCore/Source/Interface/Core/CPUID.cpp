@@ -630,7 +630,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (1 <<  6) | // FPU data pointer updated only on exception
       (1 <<  7) | // SMEP support
       (SupportsAVX() << 8) | // BMI2
-      (0 <<  9) | // Enhanced REP MOVSB/STOSB
+      (1 <<  9) | // Enhanced REP MOVSB/STOSB
       (1 << 10) | // INVPCID for system software control of process-context
       (0 << 11) | // Restricted transactional memory
       (0 << 12) | // Intel resource directory technology Monitoring
