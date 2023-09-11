@@ -82,6 +82,91 @@ DEF_OP(Add) {
   }
 }
 
+DEF_OP(AddNZCV) {
+  auto Op = IROp->C<IR::IROp_AddNZCV>();
+  const uint8_t OpSize = Op->Size;
+
+  const uint64_t Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Src1);
+  const uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Src2);
+
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // C = Carry occured (Unsigned result can't fit within resulting register)
+  // V = Overflow occured (Signed result can't fit in to resulting register)
+  uint32_t NZCV{};
+  switch (OpSize) {
+    case 4: {
+      uint32_t Result = Src1 + Src2;
+      int32_t ResultSigned{};
+      if ((Result >> (sizeof(uint32_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (Result == 0) {
+        NZCV |= 1U << 30;
+      }
+      if (__builtin_uadd_overflow(Src1, Src2, &Result)) {
+        NZCV |= 1U << 29;
+      }
+      if (__builtin_sadd_overflow(Src1, Src2, &ResultSigned)) {
+        NZCV |= 1U << 28;
+      }
+      break;
+    }
+    case 8: {
+      uint64_t Result = Src1 + Src2;
+      int64_t ResultSigned{};
+      if ((Result >> (sizeof(uint64_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (Result == 0) {
+        NZCV |= 1U << 30;
+      }
+      if (__builtin_uaddl_overflow(Src1, Src2, &Result)) {
+        NZCV |= 1U << 29;
+      }
+      if (__builtin_saddl_overflow(Src1, Src2, &ResultSigned)) {
+        NZCV |= 1U << 28;
+      }
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown {} Size: {}\n", __func__, OpSize); break;
+  }
+  GD = NZCV;
+}
+
+DEF_OP(TestNZ) {
+  auto Op = IROp->C<IR::IROp_TestNZ>();
+  const uint8_t OpSize = Op->Size;
+
+  const uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Src1);
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // CV = 00
+  uint32_t NZCV{};
+  switch (OpSize) {
+    case 4:
+      if ((Src >> (sizeof(uint32_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (static_cast<uint32_t>(Src) == 0) {
+        NZCV |= 1U << 30;
+      }
+      break;
+    case 8:
+      if ((Src >> (sizeof(uint64_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (Src == 0) {
+        NZCV |= 1U << 30;
+      }
+      break;
+    default: LOGMAN_MSG_A_FMT("Unknown {} Size: {}\n", __func__, OpSize); break;
+  }
+  GD = NZCV;
+}
+
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
   const uint8_t OpSize = IROp->Size;
@@ -95,6 +180,59 @@ DEF_OP(Sub) {
     DO_OP(8, uint64_t, Func)
     default: LOGMAN_MSG_A_FMT("Unknown size: {}", OpSize); break;
   }
+}
+
+DEF_OP(SubNZCV) {
+  auto Op = IROp->C<IR::IROp_SubNZCV>();
+  const uint8_t OpSize = Op->Size;
+
+  const uint64_t Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Src1);
+  const uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Src2);
+
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // C = Carry occured (Unsigned result can't fit within resulting register)
+  // V = Overflow occured (Signed result can't fit in to resulting register)
+  uint32_t NZCV{};
+  switch (OpSize) {
+    case 4: {
+      uint32_t Result = Src1 - Src2;
+      int32_t ResultSigned{};
+      if ((Result >> (sizeof(uint32_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (Result == 0) {
+        NZCV |= 1U << 30;
+      }
+      if (__builtin_usub_overflow(Src1, Src2, &Result)) {
+        NZCV |= 1U << 29;
+      }
+      if (__builtin_ssub_overflow(Src1, Src2, &ResultSigned)) {
+        NZCV |= 1U << 28;
+      }
+      break;
+    }
+    case 8: {
+      uint64_t Result = Src1 - Src2;
+      int64_t ResultSigned{};
+      if ((Result >> (sizeof(uint64_t) * 8 - 1)) & 1) {
+        NZCV |= 1U << 31;
+      }
+      if (Result == 0) {
+        NZCV |= 1U << 30;
+      }
+      if (__builtin_usubl_overflow(Src1, Src2, &Result)) {
+        NZCV |= 1U << 29;
+      }
+      if (__builtin_ssubl_overflow(Src1, Src2, &ResultSigned)) {
+        NZCV |= 1U << 28;
+      }
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown {} Size: {}\n", __func__, OpSize); break;
+  }
+  GD = NZCV;
 }
 
 DEF_OP(Neg) {
@@ -345,6 +483,44 @@ DEF_OP(Or) {
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Src1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Src2);
   const auto Func = [](auto a, auto b) { return a | b; };
+
+  switch (OpSize) {
+    DO_OP(1, uint8_t,  Func)
+    DO_OP(2, uint16_t, Func)
+    DO_OP(4, uint32_t, Func)
+    DO_OP(8, uint64_t, Func)
+    DO_OP(16, __uint128_t, Func)
+    default: LOGMAN_MSG_A_FMT("Unknown size: {}", OpSize); break;
+  }
+}
+
+DEF_OP(Orlshl) {
+  auto Op = IROp->C<IR::IROp_Orlshl>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Src1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Src2);
+  const auto BitShift = Op->BitShift;
+  const auto Func = [BitShift](auto a, auto b) { return a | (b << BitShift); };
+
+  switch (OpSize) {
+    DO_OP(1, uint8_t,  Func)
+    DO_OP(2, uint16_t, Func)
+    DO_OP(4, uint32_t, Func)
+    DO_OP(8, uint64_t, Func)
+    DO_OP(16, __uint128_t, Func)
+    default: LOGMAN_MSG_A_FMT("Unknown size: {}", OpSize); break;
+  }
+}
+
+DEF_OP(Orlshr) {
+  auto Op = IROp->C<IR::IROp_Orlshr>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Src1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Src2);
+  const auto BitShift = Op->BitShift;
+  const auto Func = [BitShift](auto a, auto b) { return a | (b >> BitShift); };
 
   switch (OpSize) {
     DO_OP(1, uint8_t,  Func)

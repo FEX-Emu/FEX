@@ -106,6 +106,91 @@ DEF_OP(Add) {
   mov(GetDst<RA_64>(Node), rax);
 }
 
+DEF_OP(AddNZCV) {
+  auto Op = IROp->C<IR::IROp_AddNZCV>();
+  const uint8_t OpSize = Op->Size;
+
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // C = Carry occured (Unsigned result can't fit within resulting register)
+  // V = Overflow occured (Signed result can't fit in to resulting register)
+
+  Xbyak::Reg Src2 = TMP2;
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    mov(Src2, Const);
+  }
+  else {
+    Src2 = GetSrc<RA_64>(Op->Src2.ID());
+  }
+
+  switch (OpSize) {
+  case 4:
+    mov(TMP1.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+    add(TMP1.cvt32(), Src2.cvt32());
+    break;
+  case 8:
+    mov(TMP1.cvt64(), GetSrc<RA_64>(Op->Src1.ID()));
+    add(TMP1.cvt64(), Src2.cvt64());
+    break;
+  default:  LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+    break;
+  }
+
+  mov(TMP1, 0);
+  mov(TMP2, 0);
+  mov(TMP3, 0);
+  mov(TMP4, 0);
+  sets(TMP1.cvt8());
+  setz(TMP2.cvt8());
+  setc(TMP3.cvt8());
+  seto(TMP4.cvt8());
+  // Flags NZCV in Tmps 1,2,3,4 respectively
+  shl(TMP1, 31);
+  shl(TMP2, 30);
+  shl(TMP3, 29);
+  shl(TMP4, 28);
+  or_(TMP1, TMP2);
+  or_(TMP1, TMP3);
+  or_(TMP1, TMP4);
+  mov(GetDst<RA_64>(Node), TMP1);
+}
+
+DEF_OP(TestNZ) {
+  auto Op = IROp->C<IR::IROp_TestNZ>();
+  const uint8_t OpSize = Op->Size;
+
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // CV = 00
+  switch (OpSize) {
+  case 4:
+    mov(TMP1.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+    shr(TMP1.cvt32(), OpSize * 8 - 1);
+    shl(TMP1.cvt32(), 31);
+    cmp(GetSrc<RA_32>(Op->Src1.ID()), 0);
+    mov(GetDst<RA_32>(Node), 0);
+    sete(GetDst<RA_32>(Node).cvt8());
+    shl(GetDst<RA_32>(Node), 30);
+    or_(GetDst<RA_32>(Node), TMP1.cvt32());
+    break;
+  case 8:
+    mov(TMP1, GetSrc<RA_64>(Op->Src1.ID()));
+    shr(TMP1, OpSize * 8 - 1);
+    shl(TMP1, 31);
+    cmp(GetSrc<RA_64>(Op->Src1.ID()), 0);
+    mov(GetDst<RA_64>(Node), 0);
+    sete(GetDst<RA_64>(Node).cvt8());
+    shl(GetDst<RA_64>(Node), 30);
+    or_(GetDst<RA_64>(Node), TMP1);
+    break;
+  default:  LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+    break;
+  }
+}
+
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
   const uint8_t OpSize = IROp->Size;
@@ -138,6 +223,64 @@ DEF_OP(Sub) {
   }
   mov(GetDst<RA_64>(Node), rax);
 }
+
+DEF_OP(SubNZCV) {
+  auto Op = IROp->C<IR::IROp_SubNZCV>();
+  const uint8_t OpSize = Op->Size;
+
+  // Results returned in Arm64 NZCV format
+  // N = Sign bit
+  // Z = Is Zero
+  // C = Carry occured (Unsigned result can't fit within resulting register)
+  // V = Overflow occured (Signed result can't fit in to resulting register)
+
+  Xbyak::Reg Src1 = TMP1;
+  Xbyak::Reg Src2 = TMP2;
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src1, &Const)) {
+    mov(Src1, Const);
+  }
+  else {
+    Src1 = GetSrc<RA_64>(Op->Src1.ID());
+  }
+
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    mov(Src2, Const);
+  }
+  else {
+    Src2 = GetSrc<RA_64>(Op->Src2.ID());
+  }
+
+  switch (OpSize) {
+  case 4:
+    cmp(Src1.cvt32(), Src2.cvt32());
+    break;
+  case 8:
+    cmp(Src1.cvt64(), Src2.cvt64());
+    break;
+  default:  LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+    break;
+  }
+
+  mov(TMP1, 0);
+  mov(TMP2, 0);
+  mov(TMP3, 0);
+  mov(TMP4, 0);
+  sets(TMP1.cvt8());
+  setz(TMP2.cvt8());
+  setc(TMP3.cvt8());
+  seto(TMP4.cvt8());
+  // Flags NZCV in Tmps 1,2,3,4 respectively
+  shl(TMP1, 31);
+  shl(TMP2, 30);
+  shl(TMP3, 29);
+  shl(TMP4, 28);
+  or_(TMP1, TMP2);
+  or_(TMP1, TMP3);
+  or_(TMP1, TMP4);
+  mov(GetDst<RA_64>(Node), TMP1);
+}
+
 
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
@@ -437,6 +580,68 @@ DEF_OP(Or) {
     or_(rax, GetSrc<RA_64>(Op->Src2.ID()));
   }
   mov(Dst, rax);
+}
+
+DEF_OP(Orlshl) {
+  auto Op = IROp->C<IR::IROp_Orlshl>();
+  auto Dst = GetDst<RA_64>(Node);
+  const auto BitShift = Op->BitShift;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    if (IROp->Size == 8) {
+      mov(Dst, GetSrc<RA_64>(Op->Src1.ID()));
+      or_(Dst, Const << BitShift);
+    }
+    else {
+      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+      or_(Dst.cvt32(), Const << BitShift);
+    }
+  } else {
+    if (IROp->Size == 8) {
+      mov(TMP2, GetSrc<RA_64>(Op->Src2.ID()));
+      mov(Dst, GetSrc<RA_64>(Op->Src1.ID()));
+      shl(TMP2, BitShift);
+      or_(Dst, TMP2);
+    }
+    else {
+      mov(TMP2.cvt32(), GetSrc<RA_32>(Op->Src2.ID()));
+      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+      shl(TMP2.cvt32(), BitShift);
+      or_(Dst.cvt32(), TMP2.cvt32());
+    }
+  }
+}
+
+DEF_OP(Orlshr) {
+  auto Op = IROp->C<IR::IROp_Orlshr>();
+  auto Dst = GetDst<RA_64>(Node);
+  const auto BitShift = Op->BitShift;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    if (IROp->Size == 8) {
+      mov(Dst, GetSrc<RA_64>(Op->Src1.ID()));
+      or_(Dst, Const >> BitShift);
+    }
+    else {
+      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+      or_(Dst.cvt32(), Const >> BitShift);
+    }
+  } else {
+    if (IROp->Size == 8) {
+      mov(TMP2, GetSrc<RA_64>(Op->Src2.ID()));
+      mov(Dst, GetSrc<RA_64>(Op->Src1.ID()));
+      shr(TMP2, BitShift);
+      or_(Dst, TMP2);
+    }
+    else {
+      mov(TMP2.cvt32(), GetSrc<RA_32>(Op->Src2.ID()));
+      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Src1.ID()));
+      shr(TMP2.cvt32(), BitShift);
+      or_(Dst.cvt32(), TMP2.cvt32());
+    }
+  }
 }
 
 DEF_OP(And) {
@@ -1341,7 +1546,10 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(INLINEENTRYPOINTOFFSET,  InlineEntrypointOffset);
   REGISTER_OP(CYCLECOUNTER,      CycleCounter);
   REGISTER_OP(ADD,               Add);
+  REGISTER_OP(ADDNZCV,           AddNZCV);
+  REGISTER_OP(TESTNZ,            TestNZ);
   REGISTER_OP(SUB,               Sub);
+  REGISTER_OP(SUBNZCV,           SubNZCV);
   REGISTER_OP(NEG,               Neg);
   REGISTER_OP(ABS,               Abs);
   REGISTER_OP(MUL,               Mul);
@@ -1353,6 +1561,8 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(MULH,              MulH);
   REGISTER_OP(UMULH,             UMulH);
   REGISTER_OP(OR,                Or);
+  REGISTER_OP(ORLSHL,            Orlshl);
+  REGISTER_OP(ORLSHR,            Orlshr);
   REGISTER_OP(AND,               And);
   REGISTER_OP(ANDN,              Andn);
   REGISTER_OP(XOR,               Xor);

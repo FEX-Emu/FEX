@@ -1157,7 +1157,7 @@ private:
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
     // The TestNZ opcode does this operation natively for 32-bit or 64-bit.
     // Otherwise we can implement the functionality ourselves with some bit math.
-    if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+    if (SrcSize >= 4) {
       CachedNZCV = _TestNZ(SrcSize, Res);
       PossiblySetNZCVBits = (1u << 31) | (1u << 30);
     } else {
@@ -1180,7 +1180,7 @@ private:
 
     if (SetBits == 0)
       return _Lshl(OpSize::i64Bit, Value, _Constant(Bit));
-    else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
+    else if ((SetBits & (1u << Bit)) == 0)
       return _Orlshl(OpSize::i32Bit, NZCV, Value, Bit);
     else
       return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
