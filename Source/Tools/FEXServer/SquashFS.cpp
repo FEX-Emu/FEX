@@ -157,7 +157,7 @@ namespace SquashFS {
       // Parent
       // Wait for the child to exit
       // This will happen with execvpe of squashmount or exit on failure
-      waitpid(pid, nullptr, 0);
+      while (waitpid(pid, nullptr, 0) == -1 && errno == EINTR);
 
       // Check the child pipe for messages
       pollfd PollFD;
@@ -217,7 +217,7 @@ namespace SquashFS {
     }
     else {
       // Wait for fusermount to leave
-      waitpid(pid, nullptr, 0);
+      while (waitpid(pid, nullptr, 0) == -1 && errno == EINTR);
 
       // Remove the mount path
       rmdir(MountFolder.c_str());

@@ -149,7 +149,7 @@ namespace Exec {
     }
     else {
       int32_t Status{};
-      waitpid(pid, &Status, 0);
+      while (waitpid(pid, &Status, 0) == -1 && errno == EINTR);
       if (WIFEXITED(Status)) {
         return (int8_t)WEXITSTATUS(Status);
       }
@@ -192,7 +192,7 @@ namespace Exec {
       }
 
       int32_t Status{};
-      waitpid(pid, &Status, 0);
+      while (waitpid(pid, &Status, 0) == -1 && errno == EINTR);
       if (WIFEXITED(Status)) {
         // Return what we've read
         close(fd[0]);
