@@ -240,13 +240,10 @@
       ]
     },
     "pfrcpit1 mm0, mm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa6",
-      "ExpectedArm64ASM": [
-        "ldr d2, [x28, #752]",
-        "str d2, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "pfrsqit1 mm0, mm1": {
       "ExpectedInstructionCount": 2,
@@ -258,13 +255,10 @@
       ]
     },
     "pfrsqit1 mm0, mm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa7",
-      "ExpectedArm64ASM": [
-        "ldr d2, [x28, #752]",
-        "str d2, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "pfsubr mm0, mm1": {
       "ExpectedInstructionCount": 4,
@@ -309,13 +303,10 @@
       ]
     },
     "pfrcpit2 mm0, mm0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xb6",
-      "ExpectedArm64ASM": [
-        "ldr d2, [x28, #752]",
-        "str d2, [x28, #752]"
-      ]
+      "ExpectedArm64ASM": []
     },
     "db 0x0f, 0x0f, 0xc1, 0xb7": {
       "ExpectedInstructionCount": 8,

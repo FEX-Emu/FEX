@@ -9,6 +9,12 @@
     ]
   },
   "Instructions": {
+    "movupd xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0x10",
+      "ExpectedArm64ASM": []
+    },
     "movupd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",

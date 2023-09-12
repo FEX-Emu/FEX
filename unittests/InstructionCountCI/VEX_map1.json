@@ -10,6 +10,19 @@
     ]
   },
   "Instructions": {
+    "vmovups xmm0, xmm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Spurious moves",
+        "Map 1 0b00 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
     "vmovups xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
@@ -20,6 +33,18 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vmovups ymm0, ymm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Spurious moves",
+        "Map 1 0b00 0x10 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
         "mov z16.d, p7/m, z2.d"
       ]
     },
@@ -35,6 +60,19 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
+    "vmovupd xmm0, xmm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Spurious moves",
+        "Map 1 0b01 0x10 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
     "vmovupd xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
@@ -45,6 +83,18 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vmovupd ymm0, ymm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Spurious moves",
+        "Map 1 0b01 0x10 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
         "mov z16.d, p7/m, z2.d"
       ]
     },
