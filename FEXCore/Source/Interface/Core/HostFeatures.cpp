@@ -100,6 +100,14 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableFCMA = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFCMA;
   LogMan::Throw::AFmt(!(DisableFCMA && EnableFCMA), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableFlagM = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFLAGM;
+  const bool EnableFlagM = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFLAGM;
+  LogMan::Throw::AFmt(!(DisableFlagM && EnableFlagM), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableFlagM2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFLAGM2;
+  const bool EnableFlagM2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFLAGM2;
+  LogMan::Throw::AFmt(!(DisableFlagM2 && EnableFlagM2), "Disabling and Enabling CPU features are mutually exclusive");
+
   if (EnableAVX) {
     Features->SupportsAVX = true;
   }
@@ -166,6 +174,18 @@ static void OverrideFeatures(HostFeatures *Features) {
   else if (DisableFCMA) {
     Features->SupportsFCMA = false;
   }
+  if (EnableFlagM) {
+    Features->SupportsFlagM = true;
+  }
+  else if (DisableFlagM) {
+    Features->SupportsFlagM = false;
+  }
+  if (EnableFlagM2) {
+    Features->SupportsFlagM2 = true;
+  }
+  else if (DisableFlagM2) {
+    Features->SupportsFlagM2 = false;
+  }
 }
 
 HostFeatures::HostFeatures() {
@@ -192,6 +212,8 @@ HostFeatures::HostFeatures() {
   SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
   SupportsCSSC = Features.Has(vixl::CPUFeatures::Feature::kCSSC);
   SupportsFCMA = Features.Has(vixl::CPUFeatures::Feature::kFcma);
+  SupportsFlagM = Features.Has(vixl::CPUFeatures::Feature::kFlagM);
+  SupportsFlagM2 = Features.Has(vixl::CPUFeatures::Feature::kAXFlag);
 
   Supports3DNow = true;
   SupportsSSE4A = true;

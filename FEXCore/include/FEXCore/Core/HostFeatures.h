@@ -32,6 +32,8 @@ class HostFeatures final {
     bool SupportsPMULL_128Bit{};
     bool SupportsCSSC{};
     bool SupportsFCMA{};
+    bool SupportsFlagM{};
+    bool SupportsFlagM2{};
 
     // Float exception behaviour
     bool SupportsFlushInputsToZero{};
