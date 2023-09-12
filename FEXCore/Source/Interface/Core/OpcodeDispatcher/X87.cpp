@@ -694,7 +694,6 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   auto Zero = _Constant(0);
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Init FSW to 0
@@ -1015,7 +1014,6 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   OrderedNode *MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
@@ -1098,7 +1096,6 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
   OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
 
@@ -1216,7 +1213,6 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   OrderedNode *MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));

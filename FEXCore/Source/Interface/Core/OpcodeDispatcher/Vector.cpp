@@ -2816,7 +2816,6 @@ void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   auto NewFCW = _LoadMem(GPRClass, 2, MemBase, 2);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {

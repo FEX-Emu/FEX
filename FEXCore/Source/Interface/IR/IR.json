@@ -1891,9 +1891,6 @@
         }
     },
     "F80": {
-      "F80LoadFCW GPR:$Src": {
-        "HasSideEffects": true
-      },
       "FPR = F80Add FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16"
       },

@@ -14,15 +14,11 @@ $end_info$
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
-DEF_OP(F80LOADFCW) {
-  FEXCore::CPU::OpHandlers<IR::OP_F80LOADFCW>::handle(*GetSrc<uint16_t*>(Data->SSAData, IROp->Args[0]));
-}
-
 DEF_OP(F80ADD) {
   auto Op = IROp->C<IR::IROp_F80Add>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FADD(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80ADD>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -31,7 +27,7 @@ DEF_OP(F80SUB) {
   auto Op = IROp->C<IR::IROp_F80Sub>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FSUB(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80SUB>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -40,7 +36,7 @@ DEF_OP(F80MUL) {
   auto Op = IROp->C<IR::IROp_F80Mul>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FMUL(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80MUL>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -49,7 +45,7 @@ DEF_OP(F80DIV) {
   auto Op = IROp->C<IR::IROp_F80Div>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FDIV(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80DIV>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -58,7 +54,7 @@ DEF_OP(F80FYL2X) {
   auto Op = IROp->C<IR::IROp_F80FYL2X>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FYL2X(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80FYL2X>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -67,7 +63,7 @@ DEF_OP(F80ATAN) {
   auto Op = IROp->C<IR::IROp_F80ATAN>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FATAN(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80ATAN>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -76,7 +72,7 @@ DEF_OP(F80FPREM1) {
   auto Op = IROp->C<IR::IROp_F80FPREM1>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FREM1(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80FPREM1>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -85,7 +81,7 @@ DEF_OP(F80FPREM) {
   auto Op = IROp->C<IR::IROp_F80FPREM>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FREM(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80FPREM>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -94,7 +90,7 @@ DEF_OP(F80SCALE) {
   auto Op = IROp->C<IR::IROp_F80SCALE>();
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  const auto Tmp = X80SoftFloat::FSCALE(Src1, Src2);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80SCALE>::handle(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -107,12 +103,12 @@ DEF_OP(F80CVT) {
 
   switch (OpSize) {
     case 4: {
-      float Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVT>::handle4(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, OpSize);
       break;
     }
     case 8: {
-      double Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVT>::handle8(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, OpSize);
       break;
     }
@@ -128,17 +124,17 @@ DEF_OP(F80CVTINT) {
 
   switch (OpSize) {
     case 2: {
-      int16_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2)(Src);
+      int16_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2)(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(Tmp));
       break;
     }
     case 4: {
-      int32_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4)(Src);
+      int32_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4)(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(Tmp));
       break;
     }
     case 8: {
-      int64_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8)(Src);
+      int64_t Tmp = (Op->Truncate? FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t : FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8)(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(Tmp));
       break;
     }
@@ -152,13 +148,13 @@ DEF_OP(F80CVTTO) {
   switch (Op->SrcSize) {
     case 4: {
       float Src = *GetSrc<float *>(Data->SSAData, Op->X80Src);
-      X80SoftFloat Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVTTO>::handle4(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
     case 8: {
       double Src = *GetSrc<double *>(Data->SSAData, Op->X80Src);
-      X80SoftFloat Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVTTO>::handle8(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
@@ -172,13 +168,13 @@ DEF_OP(F80CVTTOINT) {
   switch (Op->SrcSize) {
     case 2: {
       int16_t Src = *GetSrc<int16_t*>(Data->SSAData, Op->Src);
-      X80SoftFloat Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
     case 4: {
       int32_t Src = *GetSrc<int32_t*>(Data->SSAData, Op->Src);
-      X80SoftFloat Tmp = Src;
+      const auto Tmp = CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle4(Data->State->CurrentFrame->State.FCW, Src);
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
@@ -189,7 +185,7 @@ DEF_OP(F80CVTTOINT) {
 DEF_OP(F80ROUND) {
   auto Op = IROp->C<IR::IROp_F80Round>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FRNDINT(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80ROUND>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -197,7 +193,7 @@ DEF_OP(F80ROUND) {
 DEF_OP(F80F2XM1) {
   auto Op = IROp->C<IR::IROp_F80F2XM1>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::F2XM1(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80F2XM1>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -205,7 +201,7 @@ DEF_OP(F80F2XM1) {
 DEF_OP(F80TAN) {
   auto Op = IROp->C<IR::IROp_F80TAN>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FTAN(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80TAN>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -213,7 +209,7 @@ DEF_OP(F80TAN) {
 DEF_OP(F80SQRT) {
   auto Op = IROp->C<IR::IROp_F80SQRT>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FSQRT(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80SQRT>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -221,7 +217,7 @@ DEF_OP(F80SQRT) {
 DEF_OP(F80SIN) {
   auto Op = IROp->C<IR::IROp_F80SIN>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FSIN(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80SIN>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -229,7 +225,7 @@ DEF_OP(F80SIN) {
 DEF_OP(F80COS) {
   auto Op = IROp->C<IR::IROp_F80COS>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FCOS(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80COS>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -237,7 +233,7 @@ DEF_OP(F80COS) {
 DEF_OP(F80XTRACT_EXP) {
   auto Op = IROp->C<IR::IROp_F80XTRACT_EXP>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FXTRACT_EXP(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80XTRACT_EXP>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
@@ -245,102 +241,32 @@ DEF_OP(F80XTRACT_EXP) {
 DEF_OP(F80XTRACT_SIG) {
   auto Op = IROp->C<IR::IROp_F80XTRACT_SIG>();
   const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
-  const auto Tmp = X80SoftFloat::FXTRACT_SIG(Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80XTRACT_SIG>::handle(Data->State->CurrentFrame->State.FCW, Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80CMP) {
   auto Op = IROp->C<IR::IROp_F80Cmp>();
-  uint32_t ResultFlags{};
   const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
   const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
-  bool eq, lt, nan;
-  X80SoftFloat::FCMP(Src1, Src2, &eq, &lt, &nan);
-  if (Op->Flags & (1 << IR::FCMP_FLAG_LT) &&
-      lt) {
-    ResultFlags |= (1 << IR::FCMP_FLAG_LT);
-  }
-  if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED) &&
-      nan) {
-    ResultFlags |= (1 << IR::FCMP_FLAG_UNORDERED);
-  }
-  if (Op->Flags & (1 << IR::FCMP_FLAG_EQ) &&
-      eq) {
-    ResultFlags |= (1 << IR::FCMP_FLAG_EQ);
-  }
+  const auto ResultFlags = CPU::OpHandlers<IR::OP_F80CMP>::handle<IR::FCMP_FLAG_LT | IR::FCMP_FLAG_UNORDERED | IR::FCMP_FLAG_EQ>(Data->State->CurrentFrame->State.FCW, Src1, Src2);
 
   GD = ResultFlags;
 }
 
 DEF_OP(F80BCDLOAD) {
   auto Op = IROp->C<IR::IROp_F80BCDLoad>();
-  const uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->X80Src);
-  uint64_t BCD{};
-  // We walk through each uint8_t and pull out the BCD encoding
-  // Each 4bit split is a digit
-  // Only 0-9 is supported, A-F results in undefined data
-  // | 4 bit     | 4 bit    |
-  // | 10s place | 1s place |
-  // EG 0x48 = 48
-  // EG 0x4847 = 4847
-  // This gives us an 18digit value encoded in BCD
-  // The last byte lets us know if it negative or not
-  for (size_t i = 0; i < 9; ++i) {
-    uint8_t Digit = Src1[8 - i];
-    // First shift our last value over
-    BCD *= 100;
-
-    // Add the tens place digit
-    BCD += (Digit >> 4) * 10;
-
-    // Add the ones place digit
-    BCD += Digit & 0xF;
-  }
-
-  // Set negative flag once converted to x87
-  bool Negative = Src1[9] & 0x80;
-  X80SoftFloat Tmp;
-
-  Tmp = BCD;
-  Tmp.Sign = Negative;
-
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80BCDLOAD>::handle(Data->State->CurrentFrame->State.FCW, Src);
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80BCDSTORE) {
   auto Op = IROp->C<IR::IROp_F80BCDStore>();
-  X80SoftFloat Src1 = X80SoftFloat::FRNDINT(*GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src));
-  bool Negative = Src1.Sign;
-
-  // Clear the Sign bit
-  Src1.Sign = 0;
-
-  uint64_t Tmp = Src1;
-  uint8_t BCD[10]{};
-
-  for (size_t i = 0; i < 9; ++i) {
-    if (Tmp == 0) {
-      // Nothing left? Just leave
-      break;
-    }
-    // Extract the lower 100 values
-    uint8_t Digit = Tmp % 100;
-
-    // Now divide it for the next iteration
-    Tmp /= 100;
-
-    uint8_t UpperNibble = Digit / 10;
-    uint8_t LowerNibble = Digit % 10;
-
-    // Now store the BCD
-    BCD[i] = (UpperNibble << 4) | LowerNibble;
-  }
-
-  // Set negative flag once converted to x87
-  BCD[9] = Negative ? 0x80 : 0;
-
-  memcpy(GDP, BCD, 10);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = CPU::OpHandlers<IR::OP_F80BCDSTORE>::handle(Data->State->CurrentFrame->State.FCW, Src);
+  memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F64SIN) {

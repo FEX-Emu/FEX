@@ -298,7 +298,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(PCLMUL,                 PCLMUL);
 
   // F80 ops
-  REGISTER_OP(F80LOADFCW,             F80LOADFCW);
   REGISTER_OP(F80ADD,                 F80ADD);
   REGISTER_OP(F80SUB,                 F80SUB);
   REGISTER_OP(F80MUL,                 F80MUL);
