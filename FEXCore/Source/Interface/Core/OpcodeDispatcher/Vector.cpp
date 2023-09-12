@@ -24,6 +24,11 @@ namespace FEXCore::IR {
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::MOVVectorOp(OpcodeArgs) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
+      Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    // Nop
+    return;
+  }
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1);
   StoreResult(FPRClass, Op, Src, 1);
 }
