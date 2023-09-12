@@ -15,8 +15,8 @@
       "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ext v4.16b, v17.16b, v17.16b, #8",
-        "fcadd v16.2d, v16.2d, v4.2d, #90"
+        "ext v2.16b, v17.16b, v17.16b, #8",
+        "fcadd v16.2d, v16.2d, v2.2d, #90"
       ]
     }
   }

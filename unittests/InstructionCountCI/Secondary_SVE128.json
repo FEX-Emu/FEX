@@ -14,11 +14,11 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "ushr v4.4s, v16.4s, #31",
-        "index z5.s, #0, #1",
-        "ushl v4.4s, v4.4s, v5.4s",
-        "addv s4, v4.4s",
-        "mov w4, v4.s[0]"
+        "ushr v2.4s, v16.4s, #31",
+        "index z3.s, #0, #1",
+        "ushl v2.4s, v2.4s, v3.4s",
+        "addv s2, v2.4s",
+        "mov w4, v2.s[0]"
       ]
     },
     "movmskps rax, xmm0": {
@@ -26,11 +26,11 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "ushr v4.4s, v16.4s, #31",
-        "index z5.s, #0, #1",
-        "ushl v4.4s, v4.4s, v5.4s",
-        "addv s4, v4.4s",
-        "mov w4, v4.s[0]"
+        "ushr v2.4s, v16.4s, #31",
+        "index z3.s, #0, #1",
+        "ushl v2.4s, v2.4s, v3.4s",
+        "addv s2, v2.4s",
+        "mov w4, v2.s[0]"
       ]
     },
     "psrlw mm0, mm1": {
@@ -38,12 +38,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xd1",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsr z4.h, p6/m, z4.h, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsr z2.h, p6/m, z2.h, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psrld mm0, mm1": {
@@ -51,12 +51,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xd2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsr z4.s, p6/m, z4.s, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsr z2.s, p6/m, z2.s, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psrlq mm0, mm1": {
@@ -64,12 +64,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xd3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsr z4.d, p6/m, z4.d, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsr z2.d, p6/m, z2.d, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psraw mm0, mm1": {
@@ -77,12 +77,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xe1",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "asr z4.h, p6/m, z4.h, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "asr z2.h, p6/m, z2.h, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psrad mm0, mm1": {
@@ -90,12 +90,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xe2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "asr z4.s, p6/m, z4.s, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "asr z2.s, p6/m, z2.s, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psllw mm0, mm1": {
@@ -103,12 +103,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xf1",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsl z4.h, p6/m, z4.h, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsl z2.h, p6/m, z2.h, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "pslld mm0, mm1": {
@@ -116,12 +116,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xf2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsl z4.s, p6/m, z4.s, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsl z2.s, p6/m, z2.s, z0.d",
+        "str d2, [x28, #752]"
       ]
     },
     "psllq mm0, mm1": {
@@ -129,12 +129,12 @@
       "Optimal": "No",
       "Comment": "0x0f 0xf3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #768]",
-        "ldr d5, [x28, #752]",
-        "mov z0.d, d4",
-        "movprfx z4, z5",
-        "lsl z4.d, p6/m, z4.d, z0.d",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #768]",
+        "ldr d3, [x28, #752]",
+        "mov z0.d, d2",
+        "movprfx z2, z3",
+        "lsl z2.d, p6/m, z2.d, z0.d",
+        "str d2, [x28, #752]"
       ]
     }
   }

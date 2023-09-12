@@ -85,13 +85,15 @@
       ]
     },
     "bts ax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "orr x21, x20, #0x1",
-        "bfxil x4, x21, #0, #16",
+        "mov x0, x20",
+        "bfxil x0, x21, #0, #16",
+        "mov x4, x0",
         "ubfx x20, x20, #0, #1",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
@@ -161,13 +163,15 @@
       ]
     },
     "btr ax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "and x21, x20, #0xfffffffffffffffe",
-        "bfxil x4, x21, #0, #16",
+        "mov x0, x20",
+        "bfxil x0, x21, #0, #16",
+        "mov x4, x0",
         "ubfx x20, x20, #0, #1",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
@@ -237,13 +241,15 @@
       ]
     },
     "btc ax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "eor x21, x20, #0x1",
-        "bfxil x4, x21, #0, #16",
+        "mov x0, x20",
+        "bfxil x0, x21, #0, #16",
+        "mov x4, x0",
         "ubfx x20, x20, #0, #1",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
@@ -491,9 +497,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "ushr v4.8h, v4.8h, #15",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "ushr v2.8h, v2.8h, #15",
+        "str d2, [x28, #752]"
       ]
     },
     "psrlw mm0, 16": {
@@ -502,9 +508,9 @@
       "Optimal": "No",
       "Comment": "GROUP12 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "psrlw xmm0, 0": {
@@ -545,9 +551,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "sshr v4.8h, v4.8h, #15",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "sshr v2.8h, v2.8h, #15",
+        "str d2, [x28, #752]"
       ]
     },
     "psraw mm0, 16": {
@@ -556,9 +562,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "sshr v4.8h, v4.8h, #15",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "sshr v2.8h, v2.8h, #15",
+        "str d2, [x28, #752]"
       ]
     },
     "psraw xmm0, 0": {
@@ -599,9 +605,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "shl v4.8h, v4.8h, #15",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "shl v2.8h, v2.8h, #15",
+        "str d2, [x28, #752]"
       ]
     },
     "psllw mm0, 16": {
@@ -610,9 +616,9 @@
       "Optimal": "No",
       "Comment": "GROUP12 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "psllw xmm0, 0": {
@@ -653,9 +659,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "ushr v4.4s, v4.4s, #31",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "ushr v2.4s, v2.4s, #31",
+        "str d2, [x28, #752]"
       ]
     },
     "psrld mm0, 32": {
@@ -664,9 +670,9 @@
       "Optimal": "No",
       "Comment": "GROUP13 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "psrld xmm0, 0": {
@@ -707,9 +713,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "sshr v4.4s, v4.4s, #31",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "sshr v2.4s, v2.4s, #31",
+        "str d2, [x28, #752]"
       ]
     },
     "psrad mm0, 32": {
@@ -718,9 +724,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "sshr v4.4s, v4.4s, #31",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "sshr v2.4s, v2.4s, #31",
+        "str d2, [x28, #752]"
       ]
     },
     "psrad xmm0, 0": {
@@ -761,9 +767,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "shl v4.4s, v4.4s, #31",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "shl v2.4s, v2.4s, #31",
+        "str d2, [x28, #752]"
       ]
     },
     "pslld mm0, 32": {
@@ -772,9 +778,9 @@
       "Optimal": "No",
       "Comment": "GROUP13 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "pslld xmm0, 0": {
@@ -815,9 +821,9 @@
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "ushr v4.2d, v4.2d, #63",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "ushr v2.2d, v2.2d, #63",
+        "str d2, [x28, #752]"
       ]
     },
     "psrlq mm0, 64": {
@@ -826,9 +832,9 @@
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "psrlq xmm0, 0": {
@@ -869,8 +875,8 @@
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "movi v4.2d, #0x0",
-        "ext v16.16b, v16.16b, v4.16b, #15"
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v16.16b, v2.16b, #15"
       ]
     },
     "psrldq xmm0, 16": {
@@ -895,9 +901,9 @@
       "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "shl v4.2d, v4.2d, #63",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "shl v2.2d, v2.2d, #63",
+        "str d2, [x28, #752]"
       ]
     },
     "psllq mm0, 64": {
@@ -906,9 +912,9 @@
       "Optimal": "No",
       "Comment": "GROUP14 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "ldr d4, [x28, #752]",
-        "movi v4.2d, #0x0",
-        "str d4, [x28, #752]"
+        "ldr d2, [x28, #752]",
+        "movi v2.2d, #0x0",
+        "str d2, [x28, #752]"
       ]
     },
     "psllq xmm0, 0": {
@@ -962,22 +968,22 @@
         "strh w20, [x4, #2]",
         "ldrb w20, [x28, #1010]",
         "strb w20, [x4, #4]",
-        "ldr q4, [x28, #752]",
-        "str q4, [x4, #32]",
-        "ldr q4, [x28, #768]",
-        "str q4, [x4, #48]",
-        "ldr q4, [x28, #784]",
-        "str q4, [x4, #64]",
-        "ldr q4, [x28, #800]",
-        "str q4, [x4, #80]",
-        "ldr q4, [x28, #816]",
-        "str q4, [x4, #96]",
-        "ldr q4, [x28, #832]",
-        "str q4, [x4, #112]",
-        "ldr q4, [x28, #848]",
-        "str q4, [x4, #128]",
-        "ldr q4, [x28, #864]",
-        "str q4, [x4, #144]",
+        "ldr q2, [x28, #752]",
+        "str q2, [x4, #32]",
+        "ldr q2, [x28, #768]",
+        "str q2, [x4, #48]",
+        "ldr q2, [x28, #784]",
+        "str q2, [x4, #64]",
+        "ldr q2, [x28, #800]",
+        "str q2, [x4, #80]",
+        "ldr q2, [x28, #816]",
+        "str q2, [x4, #96]",
+        "ldr q2, [x28, #832]",
+        "str q2, [x4, #112]",
+        "ldr q2, [x28, #848]",
+        "str q2, [x4, #128]",
+        "ldr q2, [x28, #864]",
+        "str q2, [x4, #144]",
         "str q16, [x4, #160]",
         "str q17, [x4, #176]",
         "str q18, [x4, #192]",
@@ -1033,7 +1039,7 @@
       ]
     },
     "fxrstor [rax]": {
-      "ExpectedInstructionCount": 103,
+      "ExpectedInstructionCount": 105,
       "Optimal": "No",
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
@@ -1051,8 +1057,9 @@
         "st1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x0], #64",
         "st1 {v24.2d, v25.2d, v26.2d, v27.2d}, [x0], #64",
         "st1 {v28.2d, v29.2d, v30.2d, v31.2d}, [x0], #64",
-        "sub sp, sp, #0xd0 (208)",
+        "sub sp, sp, #0xf0 (240)",
         "mov x0, sp",
+        "st1 {v2.2d, v3.2d}, [x0], #32",
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "st1 {v8.2d, v9.2d, v10.2d, v11.2d}, [x0], #64",
         "st1 {v12.2d, v13.2d, v14.2d, v15.2d}, [x0], #64",
@@ -1060,6 +1067,7 @@
         "uxth w0, w20",
         "ldr x1, [x28, #1144]",
         "blr x1",
+        "ld1 {v2.2d, v3.2d}, [sp], #32",
         "ld1 {v4.2d, v5.2d, v6.2d, v7.2d}, [sp], #64",
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
@@ -1091,22 +1099,22 @@
         "strb w20, [x28, #750]",
         "ldrb w20, [x4, #4]",
         "strb w20, [x28, #1010]",
-        "ldr q4, [x4, #32]",
-        "str q4, [x28, #752]",
-        "ldr q4, [x4, #48]",
-        "str q4, [x28, #768]",
-        "ldr q4, [x4, #64]",
-        "str q4, [x28, #784]",
-        "ldr q4, [x4, #80]",
-        "str q4, [x28, #800]",
-        "ldr q4, [x4, #96]",
-        "str q4, [x28, #816]",
-        "ldr q4, [x4, #112]",
-        "str q4, [x28, #832]",
-        "ldr q4, [x4, #128]",
-        "str q4, [x28, #848]",
-        "ldr q4, [x4, #144]",
-        "str q4, [x28, #864]",
+        "ldr q2, [x4, #32]",
+        "str q2, [x28, #752]",
+        "ldr q2, [x4, #48]",
+        "str q2, [x28, #768]",
+        "ldr q2, [x4, #64]",
+        "str q2, [x28, #784]",
+        "ldr q2, [x4, #80]",
+        "str q2, [x28, #800]",
+        "ldr q2, [x4, #96]",
+        "str q2, [x28, #816]",
+        "ldr q2, [x4, #112]",
+        "str q2, [x28, #832]",
+        "ldr q2, [x4, #128]",
+        "str q2, [x28, #848]",
+        "ldr q2, [x4, #144]",
+        "str q2, [x28, #864]",
         "ldr q16, [x4, #160]",
         "ldr q17, [x4, #176]",
         "ldr q18, [x4, #192]",
@@ -1271,22 +1279,22 @@
         "strh w22, [x21, #2]",
         "ldrb w22, [x28, #1010]",
         "strb w22, [x21, #4]",
-        "ldr q4, [x28, #752]",
-        "str q4, [x21, #32]",
-        "ldr q4, [x28, #768]",
-        "str q4, [x21, #48]",
-        "ldr q4, [x28, #784]",
-        "str q4, [x21, #64]",
-        "ldr q4, [x28, #800]",
-        "str q4, [x21, #80]",
-        "ldr q4, [x28, #816]",
-        "str q4, [x21, #96]",
-        "ldr q4, [x28, #832]",
-        "str q4, [x21, #112]",
-        "ldr q4, [x28, #848]",
-        "str q4, [x21, #128]",
-        "ldr q4, [x28, #864]",
-        "str q4, [x21, #144]",
+        "ldr q2, [x28, #752]",
+        "str q2, [x21, #32]",
+        "ldr q2, [x28, #768]",
+        "str q2, [x21, #48]",
+        "ldr q2, [x28, #784]",
+        "str q2, [x21, #64]",
+        "ldr q2, [x28, #800]",
+        "str q2, [x21, #80]",
+        "ldr q2, [x28, #816]",
+        "str q2, [x21, #96]",
+        "ldr q2, [x28, #832]",
+        "str q2, [x21, #112]",
+        "ldr q2, [x28, #848]",
+        "str q2, [x21, #128]",
+        "ldr q2, [x28, #864]",
+        "str q2, [x21, #144]",
         "ubfx x22, x20, #1, #1",
         "cbnz x22, #+0x8",
         "b #+0x44",
@@ -1342,7 +1350,7 @@
       ]
     },
     "xrstor [rax]": {
-      "ExpectedInstructionCount": 190,
+      "ExpectedInstructionCount": 194,
       "Optimal": "No",
       "Comment": "GROUP15 0x0F 0xAE /5",
       "ExpectedArm64ASM": [
@@ -1350,7 +1358,7 @@
         "ldr x21, [x20, #512]",
         "ubfx x22, x21, #0, #1",
         "cbnz x22, #+0x8",
-        "b #+0x120",
+        "b #+0x128",
         "ldrh w22, [x20]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
@@ -1365,8 +1373,9 @@
         "st1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x0], #64",
         "st1 {v24.2d, v25.2d, v26.2d, v27.2d}, [x0], #64",
         "st1 {v28.2d, v29.2d, v30.2d, v31.2d}, [x0], #64",
-        "sub sp, sp, #0xd0 (208)",
+        "sub sp, sp, #0xf0 (240)",
         "mov x0, sp",
+        "st1 {v2.2d, v3.2d}, [x0], #32",
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "st1 {v8.2d, v9.2d, v10.2d, v11.2d}, [x0], #64",
         "st1 {v12.2d, v13.2d, v14.2d, v15.2d}, [x0], #64",
@@ -1374,6 +1383,7 @@
         "uxth w0, w22",
         "ldr x1, [x28, #1144]",
         "blr x1",
+        "ld1 {v2.2d, v3.2d}, [sp], #32",
         "ld1 {v4.2d, v5.2d, v6.2d, v7.2d}, [sp], #64",
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
@@ -1405,23 +1415,23 @@
         "strb w22, [x28, #750]",
         "ldrb w22, [x20, #4]",
         "strb w22, [x28, #1010]",
-        "ldr q4, [x20, #32]",
-        "str q4, [x28, #752]",
-        "ldr q4, [x20, #48]",
-        "str q4, [x28, #768]",
-        "ldr q4, [x20, #64]",
-        "str q4, [x28, #784]",
-        "ldr q4, [x20, #80]",
-        "str q4, [x28, #800]",
-        "ldr q4, [x20, #96]",
-        "str q4, [x28, #816]",
-        "ldr q4, [x20, #112]",
-        "str q4, [x28, #832]",
-        "ldr q4, [x20, #128]",
-        "str q4, [x28, #848]",
-        "ldr q4, [x20, #144]",
-        "str q4, [x28, #864]",
-        "b #+0xe8",
+        "ldr q2, [x20, #32]",
+        "str q2, [x28, #752]",
+        "ldr q2, [x20, #48]",
+        "str q2, [x28, #768]",
+        "ldr q2, [x20, #64]",
+        "str q2, [x28, #784]",
+        "ldr q2, [x20, #80]",
+        "str q2, [x28, #800]",
+        "ldr q2, [x20, #96]",
+        "str q2, [x28, #816]",
+        "ldr q2, [x20, #112]",
+        "str q2, [x28, #832]",
+        "ldr q2, [x20, #128]",
+        "str q2, [x28, #848]",
+        "ldr q2, [x20, #144]",
+        "str q2, [x28, #864]",
+        "b #+0xf0",
         "mov w22, #0x0",
         "mov w23, #0x37f",
         "stp x4, x5, [x28, #8]",
@@ -1437,8 +1447,9 @@
         "st1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x0], #64",
         "st1 {v24.2d, v25.2d, v26.2d, v27.2d}, [x0], #64",
         "st1 {v28.2d, v29.2d, v30.2d, v31.2d}, [x0], #64",
-        "sub sp, sp, #0xd0 (208)",
+        "sub sp, sp, #0xf0 (240)",
         "mov x0, sp",
+        "st1 {v2.2d, v3.2d}, [x0], #32",
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "st1 {v8.2d, v9.2d, v10.2d, v11.2d}, [x0], #64",
         "st1 {v12.2d, v13.2d, v14.2d, v15.2d}, [x0], #64",
@@ -1446,6 +1457,7 @@
         "uxth w0, w23",
         "ldr x1, [x28, #1144]",
         "blr x1",
+        "ld1 {v2.2d, v3.2d}, [sp], #32",
         "ld1 {v4.2d, v5.2d, v6.2d, v7.2d}, [sp], #64",
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
@@ -1470,15 +1482,15 @@
         "strb w22, [x28, #746]",
         "strb w22, [x28, #750]",
         "strb w22, [x28, #1010]",
-        "movi v4.2d, #0x0",
-        "str q4, [x28, #752]",
-        "str q4, [x28, #768]",
-        "str q4, [x28, #784]",
-        "str q4, [x28, #800]",
-        "str q4, [x28, #816]",
-        "str q4, [x28, #832]",
-        "str q4, [x28, #848]",
-        "str q4, [x28, #864]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #752]",
+        "str q2, [x28, #768]",
+        "str q2, [x28, #784]",
+        "str q2, [x28, #800]",
+        "str q2, [x28, #816]",
+        "str q2, [x28, #832]",
+        "str q2, [x28, #848]",
+        "str q2, [x28, #864]",
         "ubfx x22, x21, #1, #1",
         "cbnz x22, #+0x8",
         "b #+0x48",

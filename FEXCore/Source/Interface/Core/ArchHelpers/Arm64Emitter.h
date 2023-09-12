@@ -42,8 +42,6 @@ constexpr auto TMP4 = FEXCore::ARMEmitter::XReg::x3;
 // Vector temporaries
 constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v0;
 constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v1;
-constexpr auto VTMP3 = FEXCore::ARMEmitter::VReg::v2;
-constexpr auto VTMP4 = FEXCore::ARMEmitter::VReg::v3;
 
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.

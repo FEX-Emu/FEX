@@ -16,12 +16,12 @@
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z17.d",
-        "mov z5.d, p7/m, z18.d",
-        "ext v5.16b, v5.16b, v5.16b, #8",
-        "fcadd v4.2d, v4.2d, v5.2d, #90",
-        "mov v4.16b, v4.16b",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "ext v3.16b, v3.16b, v3.16b, #8",
+        "fcadd v2.2d, v2.2d, v3.2d, #90",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
@@ -31,11 +31,11 @@
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z17.d",
-        "mov z5.d, p7/m, z18.d",
-        "ext z5.b, z5.b, z5.b, #8",
-        "fcadd z4.d, p7/m, z4.d, z5.d, #90",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "ext z3.b, z3.b, z3.b, #8",
+        "fcadd z2.d, p7/m, z2.d, z3.d, #90",
+        "mov z16.d, p7/m, z2.d"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
@@ -45,12 +45,12 @@
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z17.d",
-        "mov z5.d, p7/m, z18.d",
-        "rev64 v5.4s, v5.4s",
-        "fcadd v4.4s, v4.4s, v5.4s, #90",
-        "mov v4.16b, v4.16b",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "rev64 v3.4s, v3.4s",
+        "fcadd v2.4s, v2.4s, v3.4s, #90",
+        "mov v2.16b, v2.16b",
+        "mov z16.d, p7/m, z2.d"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
@@ -60,11 +60,11 @@
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z4.d, p7/m, z17.d",
-        "mov z5.d, p7/m, z18.d",
-        "revw z5.d, p7/m, z5.d",
-        "fcadd z4.s, p7/m, z4.s, z5.s, #90",
-        "mov z16.d, p7/m, z4.d"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "revw z3.d, p7/m, z3.d",
+        "fcadd z2.s, p7/m, z2.s, z3.s, #90",
+        "mov z16.d, p7/m, z2.d"
       ]
     }
   }
