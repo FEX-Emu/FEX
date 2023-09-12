@@ -302,16 +302,6 @@ DEF_OP(LoadRegisterSRA) {
     const auto reg = StaticRegisters[regId];
 
     switch (OpSize) {
-      case 1:
-        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
-        ubfx(ARMEmitter::Size::i64Bit, GetReg(Node), reg, regOffs * 8, 8);
-        break;
-
-      case 2:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        ubfx(ARMEmitter::Size::i64Bit, GetReg(Node), reg, 0, 16);
-        break;
-
       case 4:
         LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (GetReg(Node).Idx() != reg.Idx())
@@ -491,19 +481,11 @@ DEF_OP(StoreRegisterSRA) {
     const auto Src = GetReg(Op->Value.ID());
 
     switch (OpSize) {
-      case 1:
-        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
-        bfi(ARMEmitter::Size::i64Bit, reg, Src, regOffs * 8, 8);
-        break;
-
-      case 2:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        bfi(ARMEmitter::Size::i64Bit, reg, Src, 0, 16);
-        break;
-
       case 4:
         LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        bfi(ARMEmitter::Size::i64Bit, reg, Src, 0, 32);
+        if (Src.Idx() != reg.Idx()) {
+          mov(ARMEmitter::Size::i32Bit, reg, Src);
+        }
         break;
       case 8:
         LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
