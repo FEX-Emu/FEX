@@ -469,6 +469,7 @@ private:
   DEF_OP(VUABDL);
   DEF_OP(VUABDL2);
   DEF_OP(VTBL1);
+  DEF_OP(VTBL2);
   DEF_OP(VRev32);
   DEF_OP(VRev64);
   DEF_OP(VFCADD);

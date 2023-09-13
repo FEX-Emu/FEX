@@ -38,6 +38,7 @@ namespace CPU {
     bool SupportsShiftedBitwise = false;
     bool SupportsFlags = false;
     bool SupportsSaturatingRoundingShifts = false;
+    bool SupportsVTBL2 = false;
   };
 
   class CPUBackend {

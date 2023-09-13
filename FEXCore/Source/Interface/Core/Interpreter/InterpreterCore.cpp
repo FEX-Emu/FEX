@@ -93,6 +93,8 @@ fextl::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::ContextImp
 }
 
 CPUBackendFeatures GetInterpreterBackendFeatures() {
-  return CPUBackendFeatures { };
+  return CPUBackendFeatures {
+    .SupportsVTBL2 = true,
+  };
 }
 }

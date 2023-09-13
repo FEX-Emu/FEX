@@ -1726,7 +1726,16 @@
                 ],
         "DestSize": "RegisterSize"
       },
-
+      "FPR = VTBL2 u8:#RegisterSize, FPR:$VectorTable1, FPR:$VectorTable2, FPR:$VectorIndices": {
+        "Desc": ["Does a vector table lookup from two registers in to the destination",
+                 "Lookup is byte sized per byte element.",
+                 "Any index larger than what the registers provide will result in zero for that element",
+                 "Table is always treated as a two 128bit registers",
+                 "Indices matches destination size. Either 64bit or 128bit",
+                 "Careful about not using sequential table registers, will result in some moves if they aren't sequential."
+                ],
+        "DestSize": "RegisterSize"
+      },
       "FPR = VBSL u8:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
         "Desc": ["Does a vector bitwise select.",
                  "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
