@@ -1392,6 +1392,24 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize,
           break;
       }
     }
+    else {
+      switch (Shuffle & 0b11) {
+        case 0b00:
+          // Low 64-bits of each source interleaved.
+          return _VZip(DstSize, ElementSize, Src1Node, Src2Node);
+        case 0b01:
+          // Upper 64-bits of Src1 in lower bits
+          // Lower 64-bits of Src2 in upper bits.
+          return _VExtr(DstSize, 1, Src2Node, Src1Node, 8);
+        case 0b10:
+          // Lower 32-bits of Src1 in lower bits.
+          // Upper 64-bits of Src2 in upper bits.
+          return _VInsElement(DstSize, ElementSize, 1, 1, Src1Node, Src2Node);
+        case 0b11:
+          // Upper 64-bits of each source interleaved.
+          return _VZip2(DstSize, ElementSize, Src1Node, Src2Node);
+      }
+    }
 
     for (uint8_t Element = 0; Element < NumElements; ++Element) {
       const auto SrcIndex = Shuffle & SelectionMask;
