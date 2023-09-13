@@ -66,7 +66,7 @@ DEF_OP(LoadNamedVectorIndexedConstant) {
   auto Op = IROp->C<IR::IROp_LoadNamedVectorIndexedConstant>();
   uint8_t OpSize = IROp->Size;
 
-  memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.NamedVectorConstantPointers[Op->Constant] + Op->Index), OpSize);
+  memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant] + Op->Index), OpSize);
 }
 
 DEF_OP(VMov) {
