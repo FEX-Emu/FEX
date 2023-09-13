@@ -1262,6 +1262,135 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize,
       Shuffle >>= ShiftAmount;
     }
   } else {
+    if (ElementSize == 4) {
+      // We can shuffle optimally in a lot of cases.
+      // TODO: We can optimize more of these cases.
+      switch (Shuffle) {
+        case 0b01'00'01'00:
+          // Combining of low 64-bits.
+          // Dest[63:0]   = Src1[63:0]
+          // Dest[127:64] = Src2[63:0]
+          return _VZip(DstSize, 8, Src1Node, Src2Node);
+        case 0b11'10'11'10:
+          // Combining of high 64-bits.
+          // Dest[63:0]   = Src1[127:64]
+          // Dest[127:64] = Src2[127:64]
+          return _VZip2(DstSize, 8, Src1Node, Src2Node);
+        case 0b11'10'01'00:
+          // Mixing Low and high elements
+          // Dest[63:0]   = Src1[63:0]
+          // Dest[127:64] = Src2[127:64]
+          return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        case 0b01'00'11'10:
+          // Mixing Low and high elements, inverse of above
+          // Dest[63:0]   = Src1[127:64]
+          // Dest[127:64] = Src2[63:0]
+          return _VExtr(DstSize, 1, Src2Node, Src1Node, 8);
+        case 0b10'00'10'00:
+          // Mixing even elements.
+          // Dest[31:0]   = Src1[31:0]
+          // Dest[63:32]  = Src1[95:64]
+          // Dest[95:64]  = Src2[31:0]
+          // Dest[127:96] = Src2[95:64]
+          return _VUnZip(DstSize, ElementSize, Src1Node, Src2Node);
+        case 0b11'01'11'01:
+          // Mixing odd elements.
+          // Dest[31:0]   = Src1[63:32]
+          // Dest[63:32]  = Src1[127:96]
+          // Dest[95:64]  = Src2[63:32]
+          // Dest[127:96] = Src2[127:96]
+          return _VUnZip2(DstSize, ElementSize, Src1Node, Src2Node);
+        case 0b11'10'00'00:
+        case 0b11'10'01'01:
+        case 0b11'10'10'10:
+        case 0b11'10'11'11: {
+          // Bottom elements duplicated, Top 64-bits inserted
+          auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
+          return _VZip2(DstSize, 8, DupSrc1, Src2Node);
+        }
+        case 0b01'00'00'00:
+        case 0b01'00'01'01:
+        case 0b01'00'10'10:
+        case 0b01'00'11'11: {
+          // Bottom elements duplicated, Bottom 64-bits inserted
+          auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
+          return _VZip(DstSize, 8, DupSrc1, Src2Node);
+        }
+        case 0b00'00'01'00:
+        case 0b01'01'01'00:
+        case 0b10'10'01'00:
+        case 0b11'11'01'00: {
+          // Top elements duplicated, Bottom 64-bits inserted
+          auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
+          return _VZip(DstSize, 8, Src1Node, DupSrc2);
+        }
+        case 0b00'00'11'10:
+        case 0b01'01'11'10:
+        case 0b10'10'11'10:
+        case 0b11'11'11'10: {
+          // Top elements duplicated, Top 64-bits inserted
+          auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
+          return _VZip2(DstSize, 8, Src1Node, DupSrc2);
+        }
+        case 0b01'00'01'11: {
+          // TODO: This doesn't generate optimal code.
+          // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+          // With RA fixes this would be 2 instructions.
+          // Odd elements inverted, Low 64-bits inserted
+          Src1Node = _VInsElement(DstSize, 4, 0, 3, Src1Node, Src1Node);
+          return _VZip(DstSize, 8, Src1Node, Src2Node);
+        }
+        case 0b11'10'01'11: {
+          // TODO: This doesn't generate optimal code.
+          // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+          // With RA fixes this would be 2 instructions.
+          // Odd elements inverted, Top 64-bits inserted
+          Src1Node = _VInsElement(DstSize, 4, 0, 3, Src1Node, Src1Node);
+          return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        }
+        case 0b01'00'00'01: {
+          // Lower 32-bit elements inverted, low 64-bits inserted
+          Src1Node = _VRev64(DstSize, 4, Src1Node);
+          return _VZip(DstSize, 8, Src1Node, Src2Node);
+        }
+        case 0b11'10'00'01: {
+          // TODO: This doesn't generate optimal code.
+          // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+          // With RA fixes this would be 2 instructions.
+          // Lower 32-bit elements inverted, Top 64-bits inserted
+          Src1Node = _VRev64(DstSize, 4, Src1Node);
+          return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        }
+        case 0b00'00'00'00:
+        case 0b00'00'01'01:
+        case 0b00'00'10'10:
+        case 0b00'00'11'11:
+        case 0b01'01'00'00:
+        case 0b01'01'01'01:
+        case 0b01'01'10'10:
+        case 0b01'01'11'11:
+        case 0b10'10'00'00:
+        case 0b10'10'01'01:
+        case 0b10'10'10'10:
+        case 0b10'10'11'11:
+        case 0b11'11'00'00:
+        case 0b11'11'01'01:
+        case 0b11'11'10'10:
+        case 0b11'11'11'11:
+        {
+          // Duplicate element in upper and lower across each 64-bit segment.
+          auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
+          auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
+          return _VZip(DstSize, 8, DupSrc1, DupSrc2);
+        }
+        default:
+          // Intentional doing nothing.
+          // Uncomment if you want to see remaining fallthrough in the output logs.
+          //LogMan::Msg::DFmt("shufps: 0x{:x}", Shuffle);
+          break;
+      }
+    }
+
     for (uint8_t Element = 0; Element < NumElements; ++Element) {
       const auto SrcIndex = Shuffle & SelectionMask;
       Dest = _VInsElement(DstSize, ElementSize, Element, SrcIndex, Dest, Srcs[Element]);
