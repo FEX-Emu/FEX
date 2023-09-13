@@ -4914,10 +4914,10 @@ DEF_OP(VRev64) {
       } else if (OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
         vpshufd(Dst,
           Vector,
-          (0b11 << 0) |
-          (0b10 << 2) |
-          (0b01 << 4) |
-          (0b00 << 6));
+          (0b01 << 0) |
+          (0b00 << 2) |
+          (0b11 << 4) |
+          (0b10 << 6));
       } else {
         vpshufd(Dst,
           Vector,

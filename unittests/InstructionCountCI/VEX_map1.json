@@ -3145,7 +3145,7 @@
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 00b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
@@ -3153,14 +3153,9 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[1], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[2], v3.s[0]",
-        "mov v2.s[3], v3.s[0]",
+        "dup v2.4s, v2.s[0]",
+        "dup v3.4s, v3.s[0]",
+        "zip1 v2.2d, v2.2d, v3.2d",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
