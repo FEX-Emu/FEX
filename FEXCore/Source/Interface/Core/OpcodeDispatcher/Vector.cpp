@@ -1384,9 +1384,11 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize,
           return _VZip(DstSize, 8, DupSrc1, DupSrc2);
         }
         default:
-          // Intentional doing nothing.
-          // Uncomment if you want to see remaining fallthrough in the output logs.
-          //LogMan::Msg::DFmt("shufps: 0x{:x}", Shuffle);
+          // Use a TBL2 operation to handle this implementation. If the backend supports it.
+          if (CTX->BackendFeatures.SupportsVTBL2) {
+            auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
+            return _VTBL2(DstSize, Src1Node, Src2Node, LookupIndexes);
+          }
           break;
       }
     }
