@@ -620,47 +620,43 @@
       ]
     },
     "pextrb eax, xmm0, 0000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
       "ExpectedArm64ASM": [
-        "umov w20, v16.b[0]",
-        "uxtb x4, w20"
+        "umov w4, v16.b[0]"
       ]
     },
     "pextrb eax, xmm0, 1111b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
       "ExpectedArm64ASM": [
-        "umov w20, v16.b[15]",
-        "uxtb x4, w20"
+        "umov w4, v16.b[15]"
       ]
     },
     "pextrw eax, xmm0, 000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
       "ExpectedArm64ASM": [
-        "umov w20, v16.h[0]",
-        "uxth x4, w20"
+        "umov w4, v16.h[0]"
       ]
     },
     "pextrw eax, xmm0, 111b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
       "ExpectedArm64ASM": [
-        "umov w20, v16.h[7]",
-        "uxth x4, w20"
+        "umov w4, v16.h[7]"
       ]
     },
     "pextrd eax, xmm0, 00b": {
@@ -701,6 +697,86 @@
       ],
       "ExpectedArm64ASM": [
         "mov x4, v16.d[1]"
+      ]
+    },
+    "pextrb [rax], xmm0, 0000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x14"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.b}[0], [x4]"
+      ]
+    },
+    "pextrb [rax], xmm0, 1111b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x14"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.b}[15], [x4]"
+      ]
+    },
+    "pextrw [rax], xmm0, 000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x15"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.h}[0], [x4]"
+      ]
+    },
+    "pextrw [rax], xmm0, 111b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x15"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.h}[7], [x4]"
+      ]
+    },
+    "pextrd [rax], xmm0, 00b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x16"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.s}[0], [x4]"
+      ]
+    },
+    "pextrd [rax], xmm0, 11b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x16"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.s}[3], [x4]"
+      ]
+    },
+    "pextrq [rax], xmm0, 0b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 REX.W 0x0f 0x3a 0x16"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.d}[0], [x4]"
+      ]
+    },
+    "pextrq [rax], xmm0, 1b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 REX.W 0x0f 0x3a 0x16"
+      ],
+      "ExpectedArm64ASM": [
+        "st1 {v16.d}[1], [x4]"
       ]
     },
     "extractps eax, xmm0, 00b": {

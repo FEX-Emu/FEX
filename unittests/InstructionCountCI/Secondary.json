@@ -3562,53 +3562,48 @@
       ]
     },
     "pextrw eax, mm0, 0": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc5",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "umov w20, v2.h[0]",
-        "uxth x4, w20"
+        "umov w4, v2.h[0]"
       ]
     },
     "pextrw eax, mm0, 1": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc5",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "umov w20, v2.h[1]",
-        "uxth x4, w20"
+        "umov w4, v2.h[1]"
       ]
     },
     "pextrw eax, mm0, 2": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc5",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "umov w20, v2.h[2]",
-        "uxth x4, w20"
+        "umov w4, v2.h[2]"
       ]
     },
     "pextrw eax, mm0, 3": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc5",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "umov w20, v2.h[3]",
-        "uxth x4, w20"
+        "umov w4, v2.h[3]"
       ]
     },
     "pextrw eax, mm0, 4": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc5",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "umov w20, v2.h[0]",
-        "uxth x4, w20"
+        "umov w4, v2.h[0]"
       ]
     },
     "shufps xmm0, xmm1, 01000100b": {

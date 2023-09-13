@@ -3109,39 +3109,69 @@
       ]
     },
     "vpextrw eax, xmm0, 000b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z16.d",
-        "umov w20, v2.h[0]",
-        "uxth x4, w20"
+        "umov w4, v2.h[0]"
       ]
     },
     "vpextrw eax, xmm0, 001b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z16.d",
-        "umov w20, v2.h[1]",
-        "uxth x4, w20"
+        "umov w4, v2.h[1]"
       ]
     },
     "vpextrw eax, xmm0, 111b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC5 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z16.d",
-        "umov w20, v2.h[7]",
-        "uxth x4, w20"
+        "umov w4, v2.h[7]"
+      ]
+    },
+    "vpextrw [rax], xmm0, 000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
+        "st1 {v2.h}[0], [x4]"
+      ]
+    },
+    "vpextrw [rax], xmm0, 001b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
+        "st1 {v2.h}[1], [x4]"
+      ]
+    },
+    "vpextrw [rax], xmm0, 111b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b01 0xC5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z16.d",
+        "st1 {v2.h}[7], [x4]"
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 00b": {
