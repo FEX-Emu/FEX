@@ -724,36 +724,63 @@
       ]
     },
     "pinsrb xmm0, eax, 0000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "mov v16.b[0], w20"
+        "mov v16.b[0], w4"
       ]
     },
     "pinsrb xmm0, eax, 0001b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "mov v16.b[1], w20"
+        "mov v16.b[1], w4"
       ]
     },
     "pinsrb xmm0, eax, 1111b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "mov v16.b[15], w20"
+        "mov v16.b[15], w4"
+      ]
+    },
+    "pinsrb xmm0, [rax], 0000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x20"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.b}[0], [x4]"
+      ]
+    },
+    "pinsrb xmm0, [rax], 0001b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x20"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.b}[1], [x4]"
+      ]
+    },
+    "pinsrb xmm0, [rax], 1111b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x20"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.b}[15], [x4]"
       ]
     },
     "insertps xmm0, xmm1, 00000000b": {
@@ -787,36 +814,33 @@
       ]
     },
     "pinsrd xmm0, eax, 00b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "mov v16.s[0], w20"
+        "mov v16.s[0], w4"
       ]
     },
     "pinsrd xmm0, eax, 01b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "mov v16.s[1], w20"
+        "mov v16.s[1], w4"
       ]
     },
     "pinsrd xmm0, eax, 11b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "mov v16.s[3], w20"
+        "mov v16.s[3], w4"
       ]
     },
     "pinsrq xmm0, rax, 0b": {
@@ -837,6 +861,56 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.d[1], x4"
+      ]
+    },
+    "pinsrd xmm0, [rax], 00b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.s}[0], [x4]"
+      ]
+    },
+    "pinsrd xmm0, [rax], 01b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.s}[1], [x4]"
+      ]
+    },
+    "pinsrd xmm0, [rax], 11b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.s}[3], [x4]"
+      ]
+    },
+    "pinsrq xmm0, [rax], 0b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 REX.W 0x0f 0x3a 0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.d}[0], [x4]"
+      ]
+    },
+    "pinsrq xmm0, [rax], 1b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 REX.W 0x0f 0x3a 0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1 {v16.d}[1], [x4]"
       ]
     },
     "dpps xmm0, xmm1, 00000000b": {
