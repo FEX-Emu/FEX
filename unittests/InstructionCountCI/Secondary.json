@@ -3611,35 +3611,523 @@
         "uxth x4, w20"
       ]
     },
-    "shufps xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 8,
+    "shufps xmm0, xmm1, 01000100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Dst[63:0]    = Src1[63:0]",
+        "Dest[127:64] = Src2[63:0]",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 v16.2d, v16.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11101110b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Dst[63:0]    = Src1[127:64]",
+        "Dest[127:64] = Src2[127:64]",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "zip2 v16.2d, v16.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Dst[63:0]    = Src1[63:0]",
+        "Dest[127:64] = Src2[127:64]",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.d[1], v17.d[1]"
+      ]
+    },
+    "shufps xmm0, xmm1, 01001110b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Dst[63:0]    = Src1[63:0]",
+        "Dest[127:64] = Src2[127:64]",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "ext v16.16b, v16.16b, v17.16b, #8"
+      ]
+    },
+    "shufps xmm0, xmm1, 00000000b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "dup v3.4s, v17.s[0]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 00000101b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "dup v3.4s, v17.s[0]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 00001010b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "dup v3.4s, v17.s[0]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 00001111b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "dup v3.4s, v17.s[0]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01010000b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "dup v3.4s, v17.s[1]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01010101b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "dup v3.4s, v17.s[1]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01011010b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "dup v3.4s, v17.s[1]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01011111b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "dup v3.4s, v17.s[1]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10100000b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "dup v3.4s, v17.s[2]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10100101b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "dup v3.4s, v17.s[2]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10101010b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "dup v3.4s, v17.s[2]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10101111b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "dup v3.4s, v17.s[2]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11110000b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "dup v3.4s, v17.s[3]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11110101b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "dup v3.4s, v17.s[3]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11111010b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "dup v3.4s, v17.s[3]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11100000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "zip2 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11100101b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "zip2 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11101010b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "zip2 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11101111b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "zip2 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01000000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[0]",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01000101b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[1]",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01001010b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[2]",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01001111b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Bottom elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 00000100b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Bottom 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[0]",
+        "zip1 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01010100b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Bottom 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[1]",
+        "zip1 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10100100b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Bottom 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[2]",
+        "zip1 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11110100b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Bottom 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[3]",
+        "zip1 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 00001110b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[0]",
+        "zip2 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01011110b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[1]",
+        "zip2 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 10101110b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[2]",
+        "zip2 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11111110b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Top elements duplicated, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v17.s[3]",
+        "zip2 v16.2d, v16.2d, v2.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 01000111b": {
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
-      "Comment": "0x0f 0xc6",
+      "Comment": [
+        "odd elements inverted, Low 64-bits inserted",
+        "SRA quirks with RA fail to understand that v16 is dead",
+        "Could InsElement directly in to v16 but it does two moves instead",
+        "0x0f 0xc6"
+      ],
       "ExpectedArm64ASM": [
         "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[0]",
+        "mov v0.s[0], v16.s[3]",
         "mov v2.16b, v0.16b",
-        "mov v2.s[1], v16.s[0]",
-        "mov v2.s[2], v17.s[0]",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11100111b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "odd elements inverted, Top 64-bits inserted",
+        "SRA quirks with RA fail to understand that v16 is dead",
+        "Could InsElement directly in to v16 but it does two moves instead",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v0.16b, v16.16b",
+        "mov v0.s[0], v16.s[3]",
+        "mov v2.16b, v0.16b",
         "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[0]",
+        "mov v0.d[1], v17.d[1]",
         "mov v16.16b, v0.16b"
       ]
     },
+    "shufps xmm0, xmm1, 11100001b": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "Lower 32-bit elements inverted, Top 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "rev64 v2.4s, v16.4s",
+        "mov v0.16b, v2.16b",
+        "mov v0.d[1], v17.d[1]",
+        "mov v16.16b, v0.16b"
+      ]
+    },
+    "shufps xmm0, xmm1, 01000001b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Lower 32-bit elements inverted, Low 64-bits inserted",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "rev64 v2.4s, v16.4s",
+        "zip1 v16.2d, v2.2d, v17.2d"
+      ]
+    },
+    "shufps xmm0, xmm1, 11111111b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Duplicate selected element between each 64-bit segment",
+        "0x0f 0xc6"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "dup v3.4s, v17.s[3]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
     "shufps xmm0, [rax], 0": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[0]",
-        "mov v3.16b, v0.16b",
-        "mov v3.s[1], v16.s[0]",
-        "mov v3.s[2], v2.s[0]",
-        "mov v0.16b, v3.16b",
-        "mov v0.s[3], v2.s[0]",
-        "mov v16.16b, v0.16b"
+        "dup v3.4s, v16.s[0]",
+        "dup v2.4s, v2.s[0]",
+        "zip1 v16.2d, v3.2d, v2.2d"
       ]
     },
     "shufps xmm0, xmm1, 1": {
@@ -3673,35 +4161,15 @@
         "mov v16.16b, v0.16b"
       ]
     },
-    "shufps xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0x0f 0xc6",
-      "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[3]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[1], v16.s[3]",
-        "mov v2.s[2], v17.s[3]",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[3]",
-        "mov v16.16b, v0.16b"
-      ]
-    },
     "shufps xmm0, [rax], 0xFF": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[3]",
-        "mov v3.16b, v0.16b",
-        "mov v3.s[1], v16.s[3]",
-        "mov v3.s[2], v2.s[3]",
-        "mov v0.16b, v3.16b",
-        "mov v0.s[3], v2.s[3]",
-        "mov v16.16b, v0.16b"
+        "dup v3.4s, v16.s[3]",
+        "dup v2.4s, v2.s[3]",
+        "zip1 v16.2d, v3.2d, v2.2d"
       ]
     },
     "bswap eax": {
