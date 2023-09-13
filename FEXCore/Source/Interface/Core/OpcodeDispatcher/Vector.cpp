@@ -1501,20 +1501,19 @@ OrderedNode* OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize,
                                             const X86Tables::DecodedOperand& Imm) {
   const auto Size = GetDstSize(Op);
   const auto NumElements = Size / ElementSize;
-
-  OrderedNode *Src2{};
-  if (Src2Op.IsGPR()) {
-    Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
-  } else {
-    // If loading from memory then we only load the element size
-    Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, -1);
-  }
-  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags, -1);
-
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   const uint64_t Index = Imm.Data.Literal.Value & (NumElements - 1);
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags, -1);
 
-  return _VInsGPR(Size, ElementSize, Index, Src1, Src2);
+  if (Src2Op.IsGPR()) {
+    // If the source is a GPR then convert directly from the GPR.
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags, -1);
+    return _VInsGPR(Size, ElementSize, Index, Src1, Src2);
+  }
+
+  // If loading from memory then we only load the element size
+  auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, -1, false);
+  return _VLoadVectorElement(Size, ElementSize, Src1, Index, Src2);
 }
 
 template<size_t ElementSize>
