@@ -3705,12 +3705,11 @@
       ]
     },
     "bswap eax": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xc8",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "rev w4, w20"
+        "rev w4, w4"
       ]
     },
     "bswap rax": {

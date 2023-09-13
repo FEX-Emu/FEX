@@ -4337,7 +4337,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
     Dest = _Constant(0);
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
     Dest = _Rev(IR::SizeToOpSize(Size), Dest);
   }
   StoreResult(GPRClass, Op, Dest, -1);
