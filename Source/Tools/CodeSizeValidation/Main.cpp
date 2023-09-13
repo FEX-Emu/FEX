@@ -251,6 +251,8 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
   TestInfo const *CurrentTest = &TestHeaderData->Tests[0];
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
     uint64_t CodeRIP = (uint64_t)&CurrentTest->Code[0];
+    LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
+
     // Compile the INST.
     CTX->CompileRIP(Thread, CodeRIP);
 
