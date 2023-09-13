@@ -4131,34 +4131,38 @@
       ]
     },
     "shufps xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[1]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[1], v16.s[0]",
-        "mov v2.s[2], v17.s[0]",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[0]",
-        "mov v16.16b, v0.16b"
+        "ldr x0, [x28, #1640]",
+        "ldr q2, [x0, #16]",
+        "tbl v16.16b, {v16.16b, v17.16b}, v2.16b"
+      ]
+    },
+    "shufps xmm1, xmm0, 1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6",
+      "ExpectedArm64ASM": [
+        "ldr x0, [x28, #1640]",
+        "ldr q2, [x0, #16]",
+        "mov v0.16b, v17.16b",
+        "mov v1.16b, v16.16b",
+        "tbl v17.16b, {v0.16b, v1.16b}, v2.16b"
       ]
     },
     "shufps xmm0, [rax], 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
+        "ldr x0, [x28, #1640]",
+        "ldr q3, [x0, #16]",
         "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[1]",
-        "mov v3.16b, v0.16b",
-        "mov v3.s[1], v16.s[0]",
-        "mov v3.s[2], v2.s[0]",
-        "mov v0.16b, v3.16b",
-        "mov v0.s[3], v2.s[0]",
-        "mov v16.16b, v0.16b"
+        "mov v1.16b, v2.16b",
+        "tbl v16.16b, {v0.16b, v1.16b}, v3.16b"
       ]
     },
     "shufps xmm0, [rax], 0xFF": {
