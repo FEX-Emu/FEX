@@ -280,15 +280,12 @@
       ]
     },
     "blendps xmm0, xmm1, 0000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
-      "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v16.16b, v2.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "blendps xmm0, xmm1, 0001b": {
       "ExpectedInstructionCount": 1,
@@ -311,18 +308,13 @@
       ]
     },
     "blendps xmm0, xmm1, 0011b": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v17.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[1], v17.s[1]",
-        "mov v16.16b, v0.16b"
+        "mov v16.d[0], v17.d[0]"
       ]
     },
     "blendps xmm0, xmm1, 0100b": {
@@ -366,16 +358,15 @@
       ]
     },
     "blendps xmm0, xmm1, 0111b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
         "mov v0.16b, v16.16b",
-        "mov v0.s[0], v17.s[0]",
+        "mov v0.d[0], v17.d[0]",
         "mov v2.16b, v0.16b",
-        "mov v2.s[1], v17.s[1]",
         "mov v0.16b, v2.16b",
         "mov v0.s[2], v17.s[2]",
         "mov v16.16b, v0.16b"
@@ -422,22 +413,6 @@
       ]
     },
     "blendps xmm0, xmm1, 1011b": {
-      "ExpectedInstructionCount": 7,
-      "Optimal": "No",
-      "Comment": [
-        "0x66 0x0f 0x3a 0x0c"
-      ],
-      "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v17.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[1], v17.s[1]",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[3]",
-        "mov v16.16b, v0.16b"
-      ]
-    },
-    "blendps xmm0, xmm1, 1100b": {
       "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
@@ -445,15 +420,25 @@
       ],
       "ExpectedArm64ASM": [
         "mov v0.16b, v16.16b",
-        "mov v0.s[2], v17.s[2]",
+        "mov v0.d[0], v17.d[0]",
         "mov v2.16b, v0.16b",
         "mov v0.16b, v2.16b",
         "mov v0.s[3], v17.s[3]",
         "mov v16.16b, v0.16b"
       ]
     },
+    "blendps xmm0, xmm1, 1100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0c"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.d[1], v17.d[1]"
+      ]
+    },
     "blendps xmm0, xmm1, 1101b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
@@ -462,14 +447,13 @@
         "mov v0.16b, v16.16b",
         "mov v0.s[0], v17.s[0]",
         "mov v2.16b, v0.16b",
-        "mov v2.s[2], v17.s[2]",
         "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[3]",
+        "mov v0.d[1], v17.d[1]",
         "mov v16.16b, v0.16b"
       ]
     },
     "blendps xmm0, xmm1, 1110b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
@@ -478,39 +462,28 @@
         "mov v0.16b, v16.16b",
         "mov v0.s[1], v17.s[1]",
         "mov v2.16b, v0.16b",
-        "mov v2.s[2], v17.s[2]",
         "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[3]",
+        "mov v0.d[1], v17.d[1]",
         "mov v16.16b, v0.16b"
       ]
     },
     "blendps xmm0, xmm1, 1111b": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v17.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[1], v17.s[1]",
-        "mov v2.s[2], v17.s[2]",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[3], v17.s[3]",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v17.16b"
       ]
     },
     "blendpd xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
-      "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v16.16b, v2.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "blendpd xmm0, xmm1, 01b": {
       "ExpectedInstructionCount": 1,
@@ -533,18 +506,13 @@
       ]
     },
     "blendpd xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v17.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v0.16b, v2.16b",
-        "mov v0.d[1], v17.d[1]",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v17.16b"
       ]
     },
     "pblendw xmm0, xmm1, 00000000b": {

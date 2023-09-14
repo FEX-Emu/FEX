@@ -4026,15 +4026,131 @@ void OpDispatchBuilder::AVXVectorRound<8, true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Select = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  for (size_t i = 0; i < (16 / ElementSize); ++i) {
-    if (Select & (1 << i)) {
-      // This could be optimized if it becomes costly
-      Dest = _VInsElement(16, ElementSize, i, i, Dest, Src);
+
+  if constexpr (ElementSize == 4) {
+    Select &= 0b1111;
+    switch (Select) {
+      case 0b0000:
+        // No-op
+        return;
+      case 0b0001:
+        // Dest[31:0] = Src[31:0]
+        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
+        break;
+      case 0b0010:
+        // Dest[63:32] = Src[63:32]
+        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
+        break;
+      case 0b0011:
+        // Dest[31:0] = Src[31:0]
+        // Dest[63:32] = Src[63:32]
+        Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
+        break;
+      case 0b0100:
+        // Dest[95:64] = Src[95:64]
+        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        break;
+      case 0b0101:
+        // Dest[31:0] = Src[31:0]
+        // Dest[95:64] = Src[95:64]
+        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        break;
+      case 0b0110:
+        // Dest[63:32] = Src[63:32]
+        // Dest[95:64] = Src[95:64]
+        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        break;
+      case 0b0111:
+        // Dest[31:0]  = Src[31:0]
+        // Dest[63:32] = Src[63:32]
+        // Dest[95:64] = Src[95:64]
+        Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        break;
+      case 0b1000:
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        break;
+      case 0b1001:
+        // Dest[31:0]   = Src[31:0]
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        break;
+      case 0b1010:
+        // Dest[63:32] = Src[63:32]
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        break;
+      case 0b1011:
+        // Dest[31:0]  = Src[31:0]
+        // Dest[63:32] = Src[63:32]
+        // Dest[95:64] = Src[95:64]
+        Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
+        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        break;
+      case 0b1100:
+        // Dest[95:64] = Src[95:64]
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
+        break;
+      case 0b1101:
+        // Dest[31:0]  = Src[31:0]
+        // Dest[95:64] = Src[95:64]
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
+        Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
+        break;
+      case 0b1110:
+        // Dest[63:32] = Src[63:32]
+        // Dest[95:64] = Src[95:64]
+        // Dest[127:96] = Src[127:96]
+        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
+        Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
+        break;
+      case 0b1111:
+        // Copy
+        Dest = Src;
+        break;
+      default: break;
+    }
+  }
+  else if constexpr (ElementSize == 8) {
+    Select &= 0b11;
+    switch (Select) {
+      case 0b00:
+        // No-op
+        return;
+      case 0b01:
+        // Dest[63:0] = Src[63:0]
+        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
+        break;
+      case 0b10:
+        // Dest[127:64] = Src[127:64]
+        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
+        break;
+      case 0b11:
+        // Copy
+        Dest = Src;
+        break;
+    }
+  }
+  else {
+    for (size_t i = 0; i < (16 / ElementSize); ++i) {
+      if (Select & (1 << i)) {
+        // This could be optimized if it becomes costly
+        Dest = _VInsElement(16, ElementSize, i, i, Dest, Src);
+      }
     }
   }
   StoreResult(FPRClass, Op, Dest, -1);
