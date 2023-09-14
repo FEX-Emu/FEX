@@ -1047,50 +1047,43 @@
       ]
     },
     "crc32 eax, bl": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "uxtb w21, w7",
-        "crc32cb w4, w20, w21"
+        "crc32cb w4, w4, w7"
       ]
     },
     "crc32 eax, bx": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "uxth w21, w7",
-        "crc32ch w4, w20, w21"
+        "crc32ch w4, w4, w7"
       ]
     },
     "crc32 eax, ebx": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w7, #0",
-        "crc32cw w4, w20, w21"
+        "crc32cw w4, w4, w7"
       ]
     },
     "crc32 rax, bl": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "crc32cb w4, w4, w20"
+        "crc32cb w4, w4, w7"
       ]
     },
     "crc32 rax, rbx": {
