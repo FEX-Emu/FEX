@@ -1627,34 +1627,36 @@ void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
-  const auto Is32Bit = ElementSize == 4;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
-  const uint8_t NumElements = Is32Bit ? Size / DstSize
-                                      : Size / ElementSize;
-  Index &= NumElements - 1;
+  // Fixup of 32-bit element size.
+  // When the element size is 32-bit then it can be overriden as 64-bit because the encoding of PEXTRD/PEXTRQ
+  // is the same except that REX.W or VEX.W is set to 1. Incredibly frustrating.
+  // Use the destination size as the element size in this case.
+  size_t OverridenElementSize = ElementSize;
+  if constexpr (ElementSize == 4) {
+    OverridenElementSize = DstSize;
+  }
 
-  OrderedNode *Result = Is32Bit ? _VExtractToGPR(16, DstSize, Src, Index)
-                                : _VExtractToGPR(16, ElementSize, Src, Index);
+  // AVX version only operates on 128-bit.
+  const uint8_t NumElements = std::min<uint8_t>(GetSrcSize(Op), 16) / OverridenElementSize;
+  Index &= NumElements - 1;
 
   if (Op->Dest.IsGPR()) {
     const uint8_t GPRSize = CTX->GetGPRSize();
-
-    // If we are storing to a GPR then we zero extend it
-    if constexpr (ElementSize < 4) {
-      Result = _Bfe(IR::SizeToOpSize(GPRSize), ElementSize * 8, 0, Result);
-    }
+    // Extract already zero extends the result.
+    OrderedNode *Result = _VExtractToGPR(16, OverridenElementSize, Src, Index);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
-  } else {
-    // If we are storing to memory then we store the size of the element extracted
-    const auto StoreSize = Is32Bit ? DstSize : ElementSize;
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, StoreSize, -1);
+    return;
   }
+
+  // If we are storing to memory then we store the size of the element extracted
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  _VStoreVectorElement(16, OverridenElementSize, Src, Index, Dest);
 }
 
 template
