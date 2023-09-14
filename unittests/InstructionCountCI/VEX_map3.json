@@ -3296,31 +3296,29 @@
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x20 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
         "mov z2.d, p7/m, z17.d",
-        "mov v2.b[0], w20",
+        "mov v2.b[0], w4",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 15": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x20 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
         "mov z2.d, p7/m, z17.d",
-        "mov v2.b[15], w20",
+        "mov v2.b[15], w4",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
@@ -3369,31 +3367,29 @@
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x22 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
         "mov z2.d, p7/m, z17.d",
-        "mov v2.s[0], w20",
+        "mov v2.s[0], w4",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x22 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
         "mov z2.d, p7/m, z17.d",
-        "mov v2.s[3], w20",
+        "mov v2.s[3], w4",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
