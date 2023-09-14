@@ -84,6 +84,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(COUNTLEADINGZEROES,     CountLeadingZeroes);
   REGISTER_OP(REV,                    Rev);
   REGISTER_OP(BFI,                    Bfi);
+  REGISTER_OP(BFXIL,                  Bfxil);
   REGISTER_OP(BFE,                    Bfe);
   REGISTER_OP(SBFE,                   Sbfe);
   REGISTER_OP(SELECT,                 Select);

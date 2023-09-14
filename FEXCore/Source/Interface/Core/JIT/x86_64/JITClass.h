@@ -280,6 +280,7 @@ private:
   DEF_OP(CountLeadingZeroes);
   DEF_OP(Rev);
   DEF_OP(Bfi);
+  DEF_OP(Bfxil);
   DEF_OP(Bfe);
   DEF_OP(Sbfe);
   DEF_OP(Select);

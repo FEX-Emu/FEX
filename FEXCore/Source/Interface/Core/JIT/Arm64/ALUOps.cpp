@@ -1177,6 +1177,29 @@ DEF_OP(Bfi) {
   }
 }
 
+DEF_OP(Bfxil) {
+  auto Op = IROp->C<IR::IROp_Bfxil>();
+  const uint8_t OpSize = IROp->Size;
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  const auto Dst = GetReg(Node);
+  const auto SrcDst = GetReg(Op->Dest.ID());
+  const auto Src = GetReg(Op->Src.ID());
+
+  if (Dst == SrcDst) {
+    // If Dst and SrcDst match then this turns in to a single instruction.
+    bfxil(EmitSize, Dst, Src, Op->lsb, Op->Width);
+  }
+  else {
+    // Destination didn't match the dst source register.
+    // TODO: Inefficient until FEX can have RA constraints here.
+    mov(EmitSize, TMP1, SrcDst);
+    bfxil(EmitSize, TMP1, Src, Op->lsb, Op->Width);
+    mov(EmitSize, Dst, TMP1.R());
+  }
+}
+
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
   LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
