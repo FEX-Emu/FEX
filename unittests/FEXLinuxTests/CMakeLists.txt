@@ -44,6 +44,16 @@ function(AddTests Tests BinDirectory Bitness)
     set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
     set(TEST_CASE "${TEST_NAME}.${Bitness}")
 
+    set(THUNK_ARGS "")
+    if(TEST_NAME STREQUAL "thunk_testlib")
+      # Test thunking only if thunks are enabled and supported
+      if(NOT BUILD_THUNKS OR ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
+        continue()
+      endif()
+
+      set(THUNK_ARGS "-k" "${CMAKE_SOURCE_DIR}/CI/FEXLinuxTestsThunks.json")
+    endif()
+
     # Add jit test case
     add_test(NAME "${TEST_CASE}.jit.flt"
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
@@ -54,9 +64,11 @@ function(AddTests Tests BinDirectory Bitness)
       "${TEST_CASE}"
       "guest"
       "$<TARGET_FILE:FEXLoader>"
+      ${THUNK_ARGS}
       "--no-silent" "-c" "irjit" "-n" "500" "--"
       "${BIN_PATH}")
-    if (_M_X86_64)
+
+    if (_M_X86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
       # Add host test case
       add_test(NAME "${TEST_CASE}.host.flt"
         COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
@@ -78,6 +90,12 @@ AddTests("${TESTS}" "FEXLinuxTests_32" 32)
 AddTests("${TESTS_64_ONLY}" "FEXLinuxTests_64" 64)
 # Execute tests that are only 32-bit.
 AddTests("${TESTS_32_ONLY}" "FEXLinuxTests_32" 32)
+
+if(TEST thunk_testlib.64.jit.flt)
+  # Ensure libfex_thunk_test is found even when using an uncommon install prefix
+  set_property(TEST "thunk_testlib.32.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+  set_property(TEST "thunk_testlib.64.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+endif()
 
 execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
