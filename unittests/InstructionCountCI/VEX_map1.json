@@ -3393,7 +3393,7 @@
       ]
     },
     "vshufpd xmm0, xmm1, xmm2, 0b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 128-bit"
@@ -3401,8 +3401,7 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v2.d[0], v2.d[0]",
-        "mov v2.d[1], v3.d[0]",
+        "zip1 v2.2d, v2.2d, v3.2d",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
@@ -3438,7 +3437,7 @@
       ]
     },
     "vshufpd xmm0, xmm1, xmm2, 1b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xC6 128-bit"
@@ -3446,8 +3445,7 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v2.d[0], v2.d[1]",
-        "mov v2.d[1], v3.d[0]",
+        "ext v2.16b, v2.16b, v3.16b, #8",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
