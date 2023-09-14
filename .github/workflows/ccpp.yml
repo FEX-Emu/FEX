@@ -78,18 +78,6 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
 
-    - name: ASM Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
-
-    - name: ASM Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
-
     - name: IR Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
@@ -101,30 +89,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
-
-    - name: Posix Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the posixtest
-      run: cmake --build . --config $BUILD_TYPE --target posix_tests
-
-    - name: Posix Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
-
-    - name: gvisor tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
-
-    - name: GVisor Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
 
     - name: gcc target tests 64
       working-directory: ${{runner.workspace}}/build
@@ -149,17 +113,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
-
-    - name: Struct verifier tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
-
-    - name: Struct verifier Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
     - name: APITest tests
       working-directory: ${{runner.workspace}}/build
@@ -243,6 +196,53 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkResults.log || true
+
+    - name: ASM Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the unit tests
+      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+
+    - name: ASM Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+
+    - name: Posix Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the posixtest
+      run: cmake --build . --config $BUILD_TYPE --target posix_tests
+
+    - name: Posix Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
+
+    - name: gvisor tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the gvisor tests
+      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
+
+    - name: GVisor Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
+
+    - name: Struct verifier tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
+
+    - name: Struct verifier Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
     - name: Truncate test results
       if: ${{ always() }}

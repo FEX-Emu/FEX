@@ -86,18 +86,6 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
 
-    - name: ASM Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
-
-    - name: ASM Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
-
     - name: IR Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
@@ -109,18 +97,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
-
-    - name: Posix Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the posixtest
-      run: cmake --build . --config $BUILD_TYPE --target posix_tests
-
-    - name: Posix Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
 
     - name: gcc target tests 64
       working-directory: ${{runner.workspace}}/build
@@ -178,6 +154,30 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
+
+    - name: ASM Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the unit tests
+      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+
+    - name: ASM Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+
+    - name: Posix Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the posixtest
+      run: cmake --build . --config $BUILD_TYPE --target posix_tests
+
+    - name: Posix Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
