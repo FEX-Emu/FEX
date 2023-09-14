@@ -3845,6 +3845,52 @@ DEF_OP(VTBL1) {
   }
 }
 
+DEF_OP(VTBL2) {
+  const auto Op = IROp->C<IR::IROp_VTBL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorIndices = GetVReg(Op->VectorIndices.ID());
+  auto VectorTable1 = GetVReg(Op->VectorTable1.ID());
+  auto VectorTable2 = GetVReg(Op->VectorTable2.ID());
+
+  if (!AreVectorsSequential(VectorTable1, VectorTable2)) {
+    // Vector registers aren't sequential, need to move to temporaries.
+    if (OpSize == 32) {
+      mov(VTMP1.Z(), VectorTable1.Z());
+      mov(VTMP2.Z(), VectorTable2.Z());
+    }
+    else {
+      mov(VTMP1.Q(), VectorTable1.Q());
+      mov(VTMP2.Q(), VectorTable2.Q());
+    }
+
+    VectorTable1 = VTMP1;
+    VectorTable2 = VTMP2;
+  }
+
+  switch (OpSize) {
+    case 8: {
+      tbl(Dst.D(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.D());
+      break;
+    }
+    case 16: {
+      tbl(Dst.Q(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.Q());
+      break;
+    }
+    case 32: {
+      LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
+                          "Host does not support SVE. Cannot perform 256-bit table lookup");
+
+      tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable1.Z(), VectorTable2.Z(), VectorIndices.Z());
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+      break;
+  }
+}
+
 DEF_OP(VRev32) {
   const auto Op = IROp->C<IR::IROp_VRev32>();
   const auto OpSize = IROp->Size;

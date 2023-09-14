@@ -66,7 +66,7 @@ DEF_OP(LoadNamedVectorIndexedConstant) {
   auto Op = IROp->C<IR::IROp_LoadNamedVectorIndexedConstant>();
   uint8_t OpSize = IROp->Size;
 
-  memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.NamedVectorConstantPointers[Op->Constant] + Op->Index), OpSize);
+  memcpy(GDP, reinterpret_cast<void*>(Data->State->CurrentFrame->Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant] + Op->Index), OpSize);
 }
 
 DEF_OP(VMov) {
@@ -2482,6 +2482,31 @@ DEF_OP(VTBL1) {
   for (size_t i = 0; i < OpSize; ++i) {
     const uint8_t Index = Src2[i];
     Tmp[i] = Index >= OpSize ? 0 : Src1[Index];
+  }
+  memcpy(GDP, Tmp.data(), OpSize);
+}
+
+DEF_OP(VTBL2) {
+  const auto Op = IROp->C<IR::IROp_VTBL2>();
+  const uint8_t OpSize = IROp->Size;
+
+  const auto *VectorTable1 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorTable1);
+  const auto *VectorTable2 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorTable2);
+  const auto *VectorIndices = GetSrc<uint8_t*>(Data->SSAData, Op->VectorIndices);
+
+  TempVectorDataArray Tmp;
+
+  for (size_t i = 0; i < OpSize; ++i) {
+    const uint8_t Index = VectorIndices[i];
+    if (Index >= (OpSize * 2)) {
+      Tmp[i] = 0;
+    }
+    else if (Index >= OpSize) {
+      Tmp[i] = VectorTable2[Index - OpSize];
+    }
+    else {
+      Tmp[i] = VectorTable1[Index];
+    }
   }
   memcpy(GDP, Tmp.data(), OpSize);
 }

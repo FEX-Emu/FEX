@@ -3207,7 +3207,7 @@
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 01b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
@@ -3215,14 +3215,9 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[1]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[1], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[2], v3.s[0]",
-        "mov v2.s[3], v3.s[0]",
+        "ldr x0, [x28, #1640]",
+        "ldr q4, [x0, #16]",
+        "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
@@ -3274,7 +3269,7 @@
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 10b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
@@ -3282,14 +3277,9 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[2]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[1], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[2], v3.s[0]",
-        "mov v2.s[3], v3.s[0]",
+        "ldr x0, [x28, #1640]",
+        "ldr q4, [x0, #32]",
+        "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]
@@ -3341,7 +3331,7 @@
       ]
     },
     "vshufps xmm0, xmm1, xmm2, 11b": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0xC6 128-bit"
@@ -3349,14 +3339,9 @@
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
         "mov z3.d, p7/m, z18.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[3]",
-        "mov v4.16b, v0.16b",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[1], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v2.s[2], v3.s[0]",
-        "mov v2.s[3], v3.s[0]",
+        "ldr x0, [x28, #1640]",
+        "ldr q4, [x0, #48]",
+        "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",
         "mov v2.16b, v2.16b",
         "mov z16.d, p7/m, z2.d"
       ]

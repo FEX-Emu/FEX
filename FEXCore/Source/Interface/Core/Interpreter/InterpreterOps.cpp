@@ -281,6 +281,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VUABDL,                 VUABDL);
   REGISTER_OP(VUABDL2,                VUABDL2);
   REGISTER_OP(VTBL1,                  VTBL1);
+  REGISTER_OP(VTBL2,                  VTBL2);
   REGISTER_OP(VREV32,                 VRev32);
   REGISTER_OP(VREV64,                 VRev64);
   REGISTER_OP(VPCMPESTRX,             VPCMPESTRX);

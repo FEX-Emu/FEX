@@ -126,6 +126,55 @@ constexpr static auto PSHUFD_LUT {
 }()
 };
 
+constexpr static auto SHUFPS_LUT {
+[]() consteval {
+  struct LUTType {
+    uint64_t Val[2];
+  };
+  // 32-bit words in [127:96], [95:64], [63:32], [31:0] are selected using the 8-bit Index.
+  // Expectation for this LUT is to simulate SHUFPS with ARM's TBL (two register) instruction.
+  // SHUFPS behaviour:
+  // Two 32-bits words from each source are selected from each source in the lower and upper halves of the 128-bit destination.
+  // Dest[31:0]   = Src1[<Word0>]
+  // Dest[63:32]  = Src1[<Word1>]
+  // Dest[95:64]  = Src2[<Word2>]
+  // Dest[127:96] = Src2[<Word3>]
+
+  std::array<LUTType, 256> TotalLUT{};
+  const uint64_t WordSelectionSrc1[4] = {
+    0x03'02'01'00,
+    0x07'06'05'04,
+    0x0b'0a'09'08,
+    0x0f'0e'0d'0c,
+  };
+
+  // Src2 needs to offset each byte index by 16-bytes to pull from the second source.
+  const uint64_t WordSelectionSrc2[4] = {
+    0x03'02'01'00 + (0x10101010),
+    0x07'06'05'04 + (0x10101010),
+    0x0b'0a'09'08 + (0x10101010),
+    0x0f'0e'0d'0c + (0x10101010),
+  };
+
+  for (size_t i = 0; i < 256; ++i) {
+    auto &LUT = TotalLUT[i];
+    const auto Word0 = (i >> 0) & 0b11;
+    const auto Word1 = (i >> 2) & 0b11;
+    const auto Word2 = (i >> 4) & 0b11;
+    const auto Word3 = (i >> 6) & 0b11;
+
+    LUT.Val[0] =
+      (WordSelectionSrc1[Word0] << 0) |
+      (WordSelectionSrc1[Word1] << 32);
+
+    LUT.Val[1] =
+      (WordSelectionSrc2[Word2] << 0) |
+      (WordSelectionSrc2[Word3] << 32);
+  }
+  return TotalLUT;
+}()
+};
+
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
     : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
 
@@ -140,6 +189,7 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] = reinterpret_cast<uint64_t>(PSHUFLW_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] = reinterpret_cast<uint64_t>(PSHUFHW_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD] = reinterpret_cast<uint64_t>(PSHUFD_LUT.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS] = reinterpret_cast<uint64_t>(SHUFPS_LUT.data());
 
 #ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values
