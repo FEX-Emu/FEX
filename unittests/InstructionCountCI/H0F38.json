@@ -1012,16 +1012,15 @@
       ]
     },
     "movbe ax, word [rbx]": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
         "ldrh w20, [x7]",
         "rev w20, w20",
-        "lsr w20, w20, #16",
-        "bfxil x4, x20, #0, #16"
+        "bfxil x4, x20, #16, #16"
       ]
     },
     "movbe eax, dword [rbx]": {
