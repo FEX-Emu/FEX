@@ -262,6 +262,10 @@ DEF_OP(SubNZCV) {
     break;
   }
 
+  if (!Op->InvertCarry) {
+    cmc();
+  }
+
   mov(TMP1, 0);
   mov(TMP2, 0);
   mov(TMP3, 0);
