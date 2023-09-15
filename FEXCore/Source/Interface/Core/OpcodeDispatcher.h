@@ -869,8 +869,9 @@ private:
     }
   }
 
-  OrderedNode* CachedNZCV = {};
-  uint32_t PossiblySetNZCVBits = 0;
+  OrderedNode* CachedNZCV{};
+  bool NZCVDirty{};
+  uint32_t PossiblySetNZCVBits{};
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock{false};
@@ -1115,11 +1116,13 @@ private:
 
   void SetNZCV(OrderedNode *Value) {
     CachedNZCV = Value;
+    NZCVDirty = true;
   }
 
   void ZeroNZCV() {
     CachedNZCV = _Constant(0);
     PossiblySetNZCVBits = 0;
+    NZCVDirty = true;
   }
 
   void ZeroCV() {
@@ -1152,6 +1155,7 @@ private:
     // Mask off just the N bit, which now equals the sign bit
     CachedNZCV = _And(OpSize::i32Bit, Shifted, _Constant(1u << NBit));
     PossiblySetNZCVBits = (1u << NBit);
+    NZCVDirty = true;
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
@@ -1160,6 +1164,7 @@ private:
     if (SrcSize >= 4) {
       CachedNZCV = _TestNZ(SrcSize, Res);
       PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+      NZCVDirty = true;
     } else {
       // N
       SetN_ZeroZCV(SrcSize, Res);
@@ -1274,7 +1279,9 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
+  // TODO: SelectCC is duplicated SelectCCExplicitSize. Should get removed once all users are removed.
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectCCExplicitSize(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**
    * @name Deferred RFLAG calculation and generation.

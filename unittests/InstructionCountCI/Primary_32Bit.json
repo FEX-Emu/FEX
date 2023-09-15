@@ -563,18 +563,17 @@
       ]
     },
     "salc": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0xd6",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "ldr w21, [x28, #728]",
-        "ubfx w22, w21, #29, #1",
-        "add w20, w20, w22",
-        "uxtb w22, w4",
-        "sub w20, w22, w20",
-        "bfxil w4, w20, #0, #8",
-        "str w21, [x28, #728]"
+        "ubfx w21, w21, #29, #1",
+        "add w20, w20, w21",
+        "uxtb w21, w4",
+        "sub w20, w21, w20",
+        "bfxil w4, w20, #0, #8"
       ]
     }
   }
