@@ -654,6 +654,7 @@ DEF_OP(PDep) {
 DEF_OP(PExt) {
   auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
+  const auto OpSizeBitsM1 = (OpSize * 8) - 1;
 
   LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
@@ -662,11 +663,9 @@ DEF_OP(PExt) {
   const auto Mask = GetReg(Op->Mask.ID());
   const auto Dest = GetReg(Node);
 
-  const auto MaskReg    = TMP1;
-  const auto BitReg     = TMP2;
-  const auto SubMaskReg = TMP3;
-  const auto Offset     = TMP4;
-  const auto ZeroReg    = ARMEmitter::Reg::zr;
+  const auto MaskReg  = TMP1;
+  const auto BitReg   = TMP2;
+  const auto ValueReg = TMP3;
 
   ARMEmitter::ForwardLabel EarlyExit;
   ARMEmitter::BackwardLabel NextBit;
@@ -674,35 +673,22 @@ DEF_OP(PExt) {
 
   cbz(EmitSize, Mask, &EarlyExit);
   mov(EmitSize, MaskReg, Mask);
-  mov(EmitSize, Offset, ZeroReg);
-
-  // We sadly need to spill a reg for this for the time being
-  // TODO: Remove when scratch registers can be allocated
-  //       explicitly.
-  SpillStaticRegs(TMP2, false, 1U << Mask.Idx());
-  mov(EmitSize, Mask, ZeroReg);
+  mov(EmitSize, ValueReg, Input);
+  mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
   // Main loop
   Bind(&NextBit);
-  rbit(EmitSize, BitReg, MaskReg);
-  clz(EmitSize, BitReg, BitReg);
-  sub(EmitSize, SubMaskReg, MaskReg, 1);
-  ands(EmitSize, MaskReg.R(), SubMaskReg.R(), MaskReg.R());
-  lsrv(EmitSize, BitReg, Input, BitReg);
-  and_(EmitSize, BitReg, BitReg, 1);
-  lslv(EmitSize, BitReg, BitReg, Offset);
-  add(EmitSize, Offset, Offset, 1);
-  orr(EmitSize, Mask, BitReg, Mask);
-  b(ARMEmitter::Condition::CC_NE, &NextBit);
-  mov(EmitSize, Dest, Mask);
-  // Restore our mask register before leaving
-  // TODO: Also remove along with above TODO.
-  FillStaticRegs(false, 1U << Mask.Idx());
-  b(&Done);
+  cbz(EmitSize, MaskReg, &Done);
+  clz(EmitSize, BitReg, MaskReg);
+  lslv(EmitSize, ValueReg, ValueReg, BitReg);
+  lslv(EmitSize, MaskReg, MaskReg, BitReg);
+  extr(EmitSize, Dest, Dest, ValueReg, OpSizeBitsM1);
+  bfc(EmitSize, MaskReg, OpSizeBitsM1, 1);
+  b(&NextBit);
 
   // Early exit
   Bind(&EarlyExit);
-  mov(EmitSize, Dest, ZeroReg);
+  mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
   // All done with nothing to do.
   Bind(&Done);
