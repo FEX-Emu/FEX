@@ -4182,13 +4182,13 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xd1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.8h, v0.h[0]",
         "neg v0.8h, v0.8h",
-        "ushl v2.8h, v3.8h, v0.8h",
+        "ushl v2.8h, v2.8h, v0.8h",
         "str d2, [x28, #752]"
       ]
     },
@@ -4197,13 +4197,13 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xd2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.4s, v0.s[0]",
         "neg v0.4s, v0.4s",
-        "ushl v2.4s, v3.4s, v0.4s",
+        "ushl v2.4s, v2.4s, v0.4s",
         "str d2, [x28, #752]"
       ]
     },
@@ -4212,13 +4212,13 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xd3",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.2d, v0.d[0]",
         "neg v0.2d, v0.2d",
-        "ushl v2.2d, v3.2d, v0.2d",
+        "ushl v2.2d, v2.2d, v0.2d",
         "str d2, [x28, #752]"
       ]
     },
@@ -4367,13 +4367,13 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xe1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.8h, v0.h[0]",
         "neg v0.8h, v0.8h",
-        "sshl v2.8h, v3.8h, v0.8h",
+        "sshl v2.8h, v2.8h, v0.8h",
         "str d2, [x28, #752]"
       ]
     },
@@ -4382,13 +4382,13 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xe2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.4s, v0.s[0]",
         "neg v0.4s, v0.4s",
-        "sshl v2.4s, v3.4s, v0.4s",
+        "sshl v2.4s, v2.4s, v0.4s",
         "str d2, [x28, #752]"
       ]
     },
@@ -4529,12 +4529,12 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xf1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.8h, v0.h[0]",
-        "ushl v2.8h, v3.8h, v0.8h",
+        "ushl v2.8h, v2.8h, v0.8h",
         "str d2, [x28, #752]"
       ]
     },
@@ -4543,12 +4543,12 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xf2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.4s, v0.s[0]",
-        "ushl v2.4s, v3.4s, v0.4s",
+        "ushl v2.4s, v2.4s, v0.4s",
         "str d2, [x28, #752]"
       ]
     },
@@ -4557,12 +4557,12 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0xf3",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "uqshl d0, d2, #57",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "uqshl d0, d3, #57",
         "ushr d0, d0, #57",
         "dup v0.2d, v0.d[0]",
-        "ushl v2.2d, v3.2d, v0.2d",
+        "ushl v2.2d, v2.2d, v0.2d",
         "str d2, [x28, #752]"
       ]
     },

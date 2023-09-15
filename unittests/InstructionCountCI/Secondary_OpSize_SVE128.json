@@ -9,7 +9,7 @@
   "Instructions": {
     "psrlw xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd1",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -18,7 +18,7 @@
     },
     "psrld xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd2",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -27,7 +27,7 @@
     },
     "psrlq xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd3",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -36,7 +36,7 @@
     },
     "psraw xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe1",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -45,7 +45,7 @@
     },
     "psrad xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xe2",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -70,7 +70,7 @@
     },
     "psllw xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf1",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -79,7 +79,7 @@
     },
     "pslld xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf2",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
@@ -88,7 +88,7 @@
     },
     "psllq xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf3",
       "ExpectedArm64ASM": [
         "mov z0.d, d17",
