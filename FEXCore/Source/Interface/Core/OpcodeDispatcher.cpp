@@ -2678,12 +2678,32 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
+  const auto Amount = Op->Src[1].Data.Literal.Value;
+  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSizeBits = SrcSize * 8;
+  const auto GPRSize = CTX->GetGPRSize();
+
+  const auto DoRotation = Amount != 0 && Amount < SrcSizeBits;
+  const auto IsSameGPR = Op->Src[0].IsGPR() && Op->Dest.IsGPR() &&
+                         Op->Src[0].Data.GPR.GPR == Op->Dest.Data.GPR.GPR;
+  const auto SrcSizeIsGPRSize = SrcSize == GPRSize;
+
+  // If we don't need to rotate and our source is the same as the destination
+  // then we don't need to do anything at all. We still need to be careful,
+  // since 32-bit operations on 64-bit mode still need to zero-extend the
+  // destination register. So also compare source size and GPR size.
+  //
+  // Very unlikely, but hey, we can do nothing faster.
+  if (!DoRotation && IsSameGPR && SrcSizeIsGPRSize) [[unlikely]] {
+    return;
+  }
+
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Amount = Op->Src[1].Data.Literal.Value;
-
-  auto Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
+  auto* Result = Src;
+  if (DoRotation) [[likely]] {
+    Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
+  }
 
   StoreResult(GPRClass, Op, Result, -1);
 }

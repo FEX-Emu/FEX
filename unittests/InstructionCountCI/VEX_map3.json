@@ -5415,14 +5415,23 @@
       ]
     },
     "rorx eax, ebx, 0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "ror w4, w20, #0"
+        "lsr w4, w7, #0"
+      ]
+    },
+    "rorx eax, eax, 0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 3 0b11 0xf0 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "lsr w4, w4, #0"
       ]
     },
     "rorx eax, ebx, 31": {
@@ -5437,14 +5446,23 @@
       ]
     },
     "rorx eax, ebx, 32": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "ror w4, w20, #0"
+        "lsr w4, w7, #0"
+      ]
+    },
+    "rorx eax, eax, 32": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 3 0b11 0xf0 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "lsr w4, w4, #0"
       ]
     },
     "rorx rax, rbx, 0": {
@@ -5454,8 +5472,16 @@
         "Map 3 0b11 0xf0 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ror x4, x7, #0"
+        "mov x4, x7"
       ]
+    },
+    "rorx rax, rax, 0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 3 0b11 0xf0 64-bit"
+      ],
+      "ExpectedArm64ASM": []
     },
     "rorx rax, rbx, 63": {
       "ExpectedInstructionCount": 1,
@@ -5469,13 +5495,21 @@
     },
     "rorx rax, rbx, 64": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "Map 3 0b11 0xf0 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ror x4, x7, #0"
+        "mov x4, x7"
       ]
+    },
+    "rorx rax, rax, 64": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 3 0b11 0xf0 64-bit"
+      ],
+      "ExpectedArm64ASM": []
     }
   }
 }
