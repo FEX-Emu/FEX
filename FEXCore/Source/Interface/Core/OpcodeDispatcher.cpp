@@ -5737,16 +5737,23 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CRC32(OpcodeArgs) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
   // Destination GPR size is always 4 or 8 bytes depending on widening
   uint8_t DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
-  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
 
   // Incoming memory is 8, 16, 32, or 64
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  OrderedNode *Src{};
+  if (Op->Src[0].IsGPR()) {
+    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
+  }
+  else {
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  }
   auto Result = _CRC32(Dest, Src, GetSrcSize(Op));
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
-
 
 template<bool Reseed>
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
