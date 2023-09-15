@@ -6,7 +6,8 @@
       "RCX": "0xF00000000000000F",
       "RDX": "0x80000000",
       "RSI": "0xFF",
-      "RDI": "0xF000000F"
+      "RDI": "0xF000000F",
+      "R8":  "0"
   },
   "HostFeatures": ["BMI2"]
 }
@@ -35,5 +36,9 @@ rorx edi, esi, 4,
 
 ; Test that we mask the rotation amount above the operand size (should leave edi's value alone).
 rorx edi, edi, 32
+
+; Zero-extending behavior
+mov r8, 0xFFFFFFFF00000000
+rorx r8d, r8d, 0
 
 hlt

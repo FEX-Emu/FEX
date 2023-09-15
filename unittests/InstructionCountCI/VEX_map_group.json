@@ -809,10 +809,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "lsr w21, w7, #0",
+        "mov w21, w7",
         "sub x22, x21, #0x1 (1)",
         "and x22, x22, x21",
-        "lsr w4, w22, #0",
+        "mov w4, w22",
         "mov w23, #0x0",
         "tst w22, w22",
         "mrs x22, nzcv",
@@ -849,10 +849,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "lsr w21, w7, #0",
+        "mov w21, w7",
         "sub x22, x21, #0x1 (1)",
         "eor x22, x22, x21",
-        "lsr w4, w22, #0",
+        "mov w4, w22",
         "mov w22, #0x0",
         "mov w23, #0x50000000",
         "ldr w24, [x28, #728]",
@@ -894,7 +894,7 @@
         "Map group 17 0b011 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "neg w21, w20",
         "and w4, w20, w21",
         "mov w20, #0x0",

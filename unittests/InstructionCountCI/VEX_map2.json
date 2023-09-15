@@ -3717,8 +3717,8 @@
         "Map 2 0b00 0xf2 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "bic w4, w21, w20",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -3747,8 +3747,8 @@
         "Map 2 0b00 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "and x21, x21, #0xff",
         "mov w22, #0xffff",
         "movk w22, #0xffff, lsl #16",
@@ -3800,8 +3800,8 @@
         "Map 2 0b10 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "cbz w21, #+0x40",
         "mov w0, w21",
         "mov w3, wzr",
@@ -3856,8 +3856,8 @@
         "Map 2 0b11 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "cbz w21, #+0x58",
         "mov w3, wzr",
         "stp x4, x5, [x28, #8]",
@@ -3922,8 +3922,8 @@
         "Map 2 0b11 0xf6 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w6, #0",
+        "mov w20, w5",
+        "mov w21, w6",
         "mul w7, w20, w21",
         "ubfx x0, x20, #0, #32",
         "ubfx x1, x21, #0, #32",
@@ -3949,8 +3949,8 @@
         "Map 2 0b00 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "mov w22, #0x1f",
         "uxtb w23, w21",
         "lsr w20, w20, w23",
@@ -4003,8 +4003,8 @@
         "Map 2 0b01 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "lsl w4, w20, w21"
       ]
     },
@@ -4025,8 +4025,8 @@
         "Map 2 0b10 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "asr w4, w20, w21"
       ]
     },
@@ -4047,8 +4047,8 @@
         "Map 2 0b11 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "lsr w4, w20, w21"
       ]
     },

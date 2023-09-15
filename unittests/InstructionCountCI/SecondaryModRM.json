@@ -70,7 +70,7 @@
       "ExpectedArm64ASM": [
         "dmb ld",
         "mrs x20, S3_3_c14_c0_2",
-        "ubfx x4, x20, #0, #32",
+        "mov w4, w20",
         "lsr x6, x20, #32",
         "str x8, [x28, #40]",
         "mov w0, #0x100",

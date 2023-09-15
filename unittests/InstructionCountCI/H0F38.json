@@ -1104,8 +1104,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #29, #1",
-        "lsr w22, w7, #0",
-        "lsr w23, w4, #0",
+        "mov w22, w7",
+        "mov w23, w4",
         "add w24, w22, w21",
         "add w4, w23, w24",
         "cmp w4, w22",
@@ -1148,8 +1148,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w21, w20, #28, #1",
-        "lsr w22, w7, #0",
-        "lsr w23, w4, #0",
+        "mov w22, w7",
+        "mov w23, w4",
         "add w24, w22, w21",
         "add w4, w23, w24",
         "cmp w4, w22",
