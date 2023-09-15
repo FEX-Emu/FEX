@@ -219,7 +219,7 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   auto Parity = _VExtractToGPR(8, 1, Count, 0);
 
   // Mask off the bottom bit only.
-  return _And(OpSize::i64Bit, _Constant(1), Parity);
+  return _And(OpSize::i64Bit, Parity, _Constant(1));
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
