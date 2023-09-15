@@ -1073,6 +1073,17 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = Bfxil OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
+        "Desc": ["Copies a bitfield from one GPR to another",
+                 "Inserting in to the low bits of the destination",
+                 "The source bitfield is from Src[(Width + lsb):lsb]",
+                 "The bitfield is copied in to Dest[Width:0]"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
         "Desc": ["Extracts a bitfield from one GPR with zext",
                  "The source bitfield is from Src[Width:0]",

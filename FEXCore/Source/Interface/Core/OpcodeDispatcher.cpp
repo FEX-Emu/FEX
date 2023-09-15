@@ -5647,9 +5647,24 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto SrcSize = GetSrcSize(Op);
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
-  Src = _Rev(OpSizeFromSrc(Op), Src);
-  StoreResult(GPRClass, Op, Src, 1);
+  Src = _Rev(IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize)), Src);
+
+  if (SrcSize == 2) {
+    // 16-bit does an insert.
+    // Rev of 16-bit value as 32-bit replaces the result in the upper 16-bits of the result.
+    // bfxil the 16-bit result in to the GPR.
+    OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+    auto Result = _Bfxil(IR::SizeToOpSize(GPRSize), 16, 16, Dest, Src);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
+  }
+  else {
+    // 32-bit does regular zext
+    StoreResult(GPRClass, Op, Op->Dest, Src, -1);
+  }
 }
 
 void OpDispatchBuilder::CLWB(OpcodeArgs) {

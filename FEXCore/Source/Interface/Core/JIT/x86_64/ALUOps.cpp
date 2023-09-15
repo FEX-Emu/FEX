@@ -1056,6 +1056,34 @@ DEF_OP(Bfi) {
   }
 }
 
+DEF_OP(Bfxil) {
+  auto Op = IROp->C<IR::IROp_Bfxil>();
+  const uint8_t OpSize = IROp->Size;
+
+  auto Dst = GetDst<RA_64>(Node);
+
+  uint64_t SourceMask = (1ULL << Op->Width) - 1;
+  if (Op->Width == 64) {
+    SourceMask = ~0ULL;
+  }
+  const uint64_t DestMask = ~SourceMask;
+
+  mov(TMP1, GetSrc<RA_64>(Op->Src.ID()));
+  shr(TMP1, Op->lsb);
+  mov(Dst, GetSrc<RA_64>(Op->Dest.ID()));
+
+  mov(TMP2, DestMask);
+  and_(Dst, TMP2);
+  mov(TMP2, SourceMask);
+  and_(TMP1, TMP2);
+  or_(Dst, TMP1);
+
+  if (OpSize != 8) {
+    mov(rcx, uint64_t((1ULL << (OpSize * 8)) - 1));
+    and_(Dst, rcx);
+  }
+}
+
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
   LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
@@ -1375,6 +1403,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(COUNTLEADINGZEROES, CountLeadingZeroes);
   REGISTER_OP(REV,               Rev);
   REGISTER_OP(BFI,               Bfi);
+  REGISTER_OP(BFXIL,             Bfxil);
   REGISTER_OP(BFE,               Bfe);
   REGISTER_OP(SBFE,              Sbfe);
   REGISTER_OP(SELECT,            Select);

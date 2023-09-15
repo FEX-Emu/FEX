@@ -856,6 +856,18 @@ DEF_OP(Bfi) {
   GD = Res;
 }
 
+DEF_OP(Bfxil) {
+  auto Op = IROp->C<IR::IROp_Bfxil>();
+  uint64_t SourceMask = (1ULL << Op->Width) - 1;
+  if (Op->Width == 64) {
+    SourceMask = ~0ULL;
+  }
+  const uint64_t Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Dest);
+  const uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Src);
+  const uint64_t Res = (Src1 & ~SourceMask) | ((Src2 >> Op->lsb) & SourceMask);
+  GD = Res;
+}
+
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
 
