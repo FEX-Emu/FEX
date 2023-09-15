@@ -378,6 +378,20 @@ namespace FEXCore::Context {
       UpdateAtomicTSOEmulationConfig();
     }
 
+    // Returns if Software TSO emulation is required.
+    // NOTE: This doesn't necessary return if Atomic-based TSO is currently enabled.
+    // This will still return true if on a single thread and TSO is currently disabled.
+    //
+    // This is to ensure that if early initialization checks CPU features and TSO /could/ be enabled, that
+    // we return consistent results.
+    //
+    // To check if Atomic TSO is currently enabled in the JIT, use `IsAtomicTSOEnabled` instead.
+    bool SoftwareTSORequired() const {
+      if (SupportsHardwareTSO) return false;
+
+      return Config.TSOEnabled;
+    }
+
     void EnableExitOnHLT() override { ExitOnHLT = true; }
 
     bool ExitOnHLTEnabled() const { return ExitOnHLT; }

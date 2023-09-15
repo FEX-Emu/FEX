@@ -618,6 +618,11 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h(uint32_t Leaf) {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   if (Leaf == 0) {
+    // Disable Enhanced REP MOVS when TSO is enabled.
+    // vcruntime140 memmove will use `rep movsb` in this case which completely destroys perf in Hades(appId 1145360)
+    // This is due to LRCPC performance on Cortex being abysmal.
+    const uint32_t SupportsEnhancedREPMOVS = CTX->SoftwareTSORequired() ? 0 : 1;
+
     // Number of subfunctions
     Res.eax = 0x0;
     Res.ebx =
@@ -630,7 +635,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (1 <<  6) | // FPU data pointer updated only on exception
       (1 <<  7) | // SMEP support
       (SupportsAVX() << 8) | // BMI2
-      (1 <<  9) | // Enhanced REP MOVSB/STOSB
+      (SupportsEnhancedREPMOVS << 9) | // Enhanced REP MOVSB/STOSB
       (1 << 10) | // INVPCID for system software control of process-context
       (0 << 11) | // Restricted transactional memory
       (0 << 12) | // Intel resource directory technology Monitoring
