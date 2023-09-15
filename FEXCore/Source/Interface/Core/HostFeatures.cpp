@@ -279,7 +279,7 @@ HostFeatures::HostFeatures() {
   SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
   SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
   SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
-  SupportsBMI2 = Features.has(Xbyak::util::Cpu::tCLWB);
+  SupportsCLWB = Features.has(Xbyak::util::Cpu::tCLWB);
   SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
 
   // xbyak doesn't know how to check for CLZero
