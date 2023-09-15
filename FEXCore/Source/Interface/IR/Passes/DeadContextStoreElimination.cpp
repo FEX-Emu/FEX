@@ -59,6 +59,7 @@ namespace {
     return (Type & ACCESS_PARTIAL) == ACCESS_PARTIAL;
   }
 
+  [[maybe_unused]]
   static bool IsFullAccess(LastAccessType Type) {
     return (Type & ACCESS_PARTIAL) == 0;
   }
