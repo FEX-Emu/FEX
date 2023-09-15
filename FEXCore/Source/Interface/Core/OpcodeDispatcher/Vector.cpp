@@ -1751,8 +1751,8 @@ OrderedNode* OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -1887,8 +1887,8 @@ OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLL(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = PSLLImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -1927,8 +1927,8 @@ OrderedNode* OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize,
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = PSRAOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
