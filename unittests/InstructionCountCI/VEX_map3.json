@@ -1324,197 +1324,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 000000b": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "movi v3.2d, #0x0",
-        "mov z1.q, q2",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, q2",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 000001b": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "movi v3.2d, #0x0",
-        "mov z1.q, z2.q[1]",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, q2",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 000010b": {
-      "ExpectedInstructionCount": 11,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, q3",
-        "mov z3.d, z4.d",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, q2",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 000011b": {
-      "ExpectedInstructionCount": 11,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, z3.q[1]",
-        "mov z3.d, z4.d",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, q2",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 010000b": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "movi v3.2d, #0x0",
-        "mov z1.q, q2",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, z2.q[1]",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 010001b": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "movi v3.2d, #0x0",
-        "mov z1.q, z2.q[1]",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, z2.q[1]",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 010010b": {
-      "ExpectedInstructionCount": 11,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, q3",
-        "mov z3.d, z4.d",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, z2.q[1]",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 010011b": {
-      "ExpectedInstructionCount": 11,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, z3.q[1]",
-        "mov z3.d, z4.d",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, z2.q[1]",
-        "mov z2.d, z3.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 100000b": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, q2",
-        "mov z2.d, z4.d",
-        "mov z2.b, p6/m, z1.b",
-        "mov z1.q, q3",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 100001b": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
-      "Comment": [
-        "Map 3 0b01 0x06 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
-        "movi v4.2d, #0x0",
-        "mov z1.q, z2.q[1]",
-        "mov z2.d, z4.d",
-        "mov z2.b, p6/m, z1.b",
-        "mov z1.q, q3",
-        "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z16.d, p7/m, z2.d"
-      ]
-    },
-    "vperm2f128 ymm0, ymm1, 100010b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00000000b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -1532,7 +1342,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 100011b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00000001b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -1550,15 +1360,205 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 110000b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00000010b": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, q3",
+        "mov z3.d, z4.d",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00000011b": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, z3.q[1]",
+        "mov z3.d, z4.d",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00010000b": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00010001b": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00010010b": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, q3",
+        "mov z3.d, z4.d",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00010011b": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, z3.q[1]",
+        "mov z3.d, z4.d",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00100000b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z4.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z1.q, q3",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00100001b": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movi v4.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z4.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z1.q, q3",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00100010b": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00100011b": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00110000b": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
         "movi v4.2d, #0x0",
         "mov z1.q, q2",
         "mov z2.d, z4.d",
@@ -1569,15 +1569,15 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 110001b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00110001b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z3.d, p7/m, z17.d",
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
         "movi v4.2d, #0x0",
         "mov z1.q, z2.q[1]",
         "mov z2.d, z4.d",
@@ -1588,14 +1588,14 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 110010b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00110010b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z17.d",
+        "mov z2.d, p7/m, z18.d",
         "movi v3.2d, #0x0",
         "mov z1.q, q2",
         "mov z3.b, p6/m, z1.b",
@@ -1606,8 +1606,42 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2f128 ymm0, ymm1, 110011b": {
+    "vperm2f128 ymm0, ymm1, ymm2, 00110011b": {
       "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z3.b, p6/m, z1.b",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00001000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00011000b": {
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x06 256-bit"
@@ -1616,11 +1650,112 @@
         "mov z2.d, p7/m, z17.d",
         "movi v3.2d, #0x0",
         "mov z1.q, z2.q[1]",
-        "mov z3.b, p6/m, z1.b",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00101000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 00111000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
         "mov z1.q, z2.q[1]",
         "mov z2.d, z3.d",
         "not p0.b, p7/z, p6.b",
         "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 10001000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 10000000b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 10000001b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 10000010b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2f128 ymm0, ymm1, ymm2, 10000011b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x06 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
         "mov z16.d, p7/m, z2.d"
       ]
     },
@@ -4468,7 +4603,7 @@
         "Map 3 0b01 0x44 256-bit"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 00b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00000000b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4486,7 +4621,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 01b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00000001b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4504,7 +4639,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 10b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00000010b": {
       "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
@@ -4524,7 +4659,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 11b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00000011b": {
       "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
@@ -4544,7 +4679,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 010000b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00010000b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4562,7 +4697,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 010001b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00010001b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4580,7 +4715,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 010010b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00010010b": {
       "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
@@ -4600,7 +4735,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 010011b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00010011b": {
       "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
@@ -4620,7 +4755,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 100000b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00100000b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
@@ -4639,7 +4774,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 100001b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00100001b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
@@ -4658,7 +4793,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 100010b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00100010b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4676,7 +4811,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 100011b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00100011b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4694,7 +4829,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 110000b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00110000b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
@@ -4713,7 +4848,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 110001b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00110001b": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
@@ -4732,7 +4867,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 110010b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00110010b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4750,7 +4885,7 @@
         "mov z16.d, p7/m, z2.d"
       ]
     },
-    "vperm2i128 ymm0, ymm1, ymm2, 110011b": {
+    "vperm2i128 ymm0, ymm1, ymm2, 00110011b": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
@@ -4765,6 +4900,141 @@
         "mov z2.d, z3.d",
         "not p0.b, p7/z, p6.b",
         "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 00001000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 00011000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 00101000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 00111000b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z2.b, p0/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 10001000b": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 10000000b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 10000001b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z17.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 10000010b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, q2",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
+        "mov z16.d, p7/m, z2.d"
+      ]
+    },
+    "vperm2i128 ymm0, ymm1, ymm2, 10000011b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 3 0b01 0x46 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.d, p7/m, z18.d",
+        "movi v3.2d, #0x0",
+        "mov z1.q, z2.q[1]",
+        "mov z2.d, z3.d",
+        "mov z2.b, p6/m, z1.b",
         "mov z16.d, p7/m, z2.d"
       ]
     },
