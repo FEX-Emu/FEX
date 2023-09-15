@@ -1301,13 +1301,22 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  // Destination is always a GPR.
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+  OrderedNode *Src{};
+  if (Op->Src[0].IsGPR()) {
+    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
+  }
+  else {
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  }
 
-  auto SrcCond = SelectCC(Op->OP & 0xF, Src, Dest);
+  auto SrcCond = SelectCCExplicitSize(Op->OP & 0xF, IR::SizeToOpSize(std::max<uint8_t>(4u, GetSrcSize(Op))), Src, Dest);
 
   StoreResult(GPRClass, Op, SrcCond, -1);
 }
