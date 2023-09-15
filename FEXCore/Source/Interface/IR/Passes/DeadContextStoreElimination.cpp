@@ -7,11 +7,12 @@ $end_info$
 
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
-#include <FEXCore/Core/CoreState.h>
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/unordered_map.h>
@@ -30,38 +31,39 @@ namespace {
     uint16_t Size;
   };
 
-  enum LastAccessType {
-    ACCESS_NONE      = (0b000 << 0), ///< Was never previously accessed
-    ACCESS_WRITE     = (0b001 << 0), ///< Was fully overwritten
-    ACCESS_READ      = (0b010 << 0), ///< Was fully read
-    ACCESS_INVALID   = (0b011 << 0), ///< Accessing this is invalid
-    ACCESS_TYPE_MASK = (0b011 << 0),
-    ACCESS_PARTIAL   = (0b100 << 0),
-    ACCESS_PARTIAL_WRITE = (ACCESS_PARTIAL | ACCESS_WRITE), ///< Was partially written
-    ACCESS_PARTIAL_READ  = (ACCESS_PARTIAL | ACCESS_READ),  ///< Was partially read
+  enum class LastAccessType {
+    NONE          = (0b000 << 0), ///< Was never previously accessed
+    WRITE         = (0b001 << 0), ///< Was fully overwritten
+    READ          = (0b010 << 0), ///< Was fully read
+    INVALID       = (0b011 << 0), ///< Accessing this is invalid
+    MASK          = (0b011 << 0),
+    PARTIAL       = (0b100 << 0),
+    PARTIAL_WRITE = (PARTIAL | WRITE), ///< Was partially written
+    PARTIAL_READ  = (PARTIAL | READ),  ///< Was partially read
   };
+  FEX_DEF_NUM_OPS(LastAccessType);
 
   static bool IsWriteAccess(LastAccessType Type) {
-    return (Type & ACCESS_TYPE_MASK) == ACCESS_WRITE;
+    return (Type & LastAccessType::MASK) == LastAccessType::WRITE;
   }
 
   static bool IsReadAccess(LastAccessType Type) {
-    return (Type & ACCESS_TYPE_MASK) == ACCESS_READ;
+    return (Type & LastAccessType::MASK) == LastAccessType::READ;
   }
 
   [[maybe_unused]]
   static bool IsInvalidAccess(LastAccessType Type) {
-    return (Type & ACCESS_TYPE_MASK) == ACCESS_INVALID;
+    return (Type & LastAccessType::MASK) == LastAccessType::INVALID;
   }
 
   [[maybe_unused]]
   static bool IsPartialAccess(LastAccessType Type) {
-    return (Type & ACCESS_PARTIAL) == ACCESS_PARTIAL;
+    return (Type & LastAccessType::PARTIAL) == LastAccessType::PARTIAL;
   }
 
   [[maybe_unused]]
   static bool IsFullAccess(LastAccessType Type) {
-    return (Type & ACCESS_PARTIAL) == 0;
+    return (Type & LastAccessType::PARTIAL) == LastAccessType::NONE;
   }
 
   struct ContextMemberInfo {
@@ -89,7 +91,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, rip),
         sizeof(FEXCore::Core::CPUState::rip),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -99,7 +101,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, gregs[0]) + sizeof(FEXCore::Core::CPUState::gregs[0]) * i,
           FEXCore::Core::CPUState::GPR_REG_SIZE,
         },
-        ACCESS_NONE,
+        LastAccessType::NONE,
         FEXCore::IR::InvalidClass,
       });
     }
@@ -109,7 +111,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, es_idx),
         sizeof(FEXCore::Core::CPUState::es_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -118,7 +120,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, cs_idx),
         sizeof(FEXCore::Core::CPUState::cs_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -127,7 +129,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, ss_idx),
         sizeof(FEXCore::Core::CPUState::ss_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -136,7 +138,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, ds_idx),
         sizeof(FEXCore::Core::CPUState::ds_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -145,7 +147,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, gs_idx),
         sizeof(FEXCore::Core::CPUState::gs_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -154,7 +156,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, fs_idx),
         sizeof(FEXCore::Core::CPUState::fs_idx),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -163,7 +165,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, _pad),
         sizeof(FEXCore::Core::CPUState::_pad),
       },
-      ACCESS_INVALID,
+      LastAccessType::INVALID,
       FEXCore::IR::InvalidClass,
     });
 
@@ -172,7 +174,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, es_cached),
         sizeof(FEXCore::Core::CPUState::es_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -181,7 +183,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, cs_cached),
         sizeof(FEXCore::Core::CPUState::cs_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -190,7 +192,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, ss_cached),
         sizeof(FEXCore::Core::CPUState::ss_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -199,7 +201,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, ds_cached),
         sizeof(FEXCore::Core::CPUState::ds_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -208,7 +210,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, gs_cached),
         sizeof(FEXCore::Core::CPUState::gs_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -217,7 +219,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, fs_cached),
         sizeof(FEXCore::Core::CPUState::fs_cached),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -226,7 +228,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader),
         sizeof(FEXCore::Core::CPUState::InlineJITBlockHeader),
       },
-      ACCESS_INVALID,
+      LastAccessType::INVALID,
       FEXCore::IR::InvalidClass,
     });
 
@@ -237,7 +239,7 @@ namespace {
             offsetof(FEXCore::Core::CPUState, xmm.avx.data[0][0]) + FEXCore::Core::CPUState::XMM_AVX_REG_SIZE * i,
             FEXCore::Core::CPUState::XMM_AVX_REG_SIZE,
           },
-          ACCESS_NONE,
+          LastAccessType::NONE,
           FEXCore::IR::InvalidClass,
         });
       }
@@ -248,7 +250,7 @@ namespace {
             offsetof(FEXCore::Core::CPUState, xmm.sse.data[0][0]) + FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * i,
             FEXCore::Core::CPUState::XMM_SSE_REG_SIZE,
           },
-          ACCESS_NONE,
+          LastAccessType::NONE,
           FEXCore::IR::InvalidClass,
         });
       }
@@ -258,7 +260,7 @@ namespace {
             offsetof(FEXCore::Core::CPUState, xmm.sse.pad[0][0]),
             static_cast<uint16_t>(FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * FEXCore::Core::CPUState::NUM_XMMS),
           },
-          ACCESS_INVALID,
+          LastAccessType::INVALID,
           FEXCore::IR::InvalidClass,
         });
     }
@@ -269,7 +271,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, flags[0]) + sizeof(FEXCore::Core::CPUState::flags[0]) * i,
           FEXCore::Core::CPUState::FLAG_SIZE,
         },
-        ACCESS_NONE,
+        LastAccessType::NONE,
         FEXCore::IR::InvalidClass,
       });
     }
@@ -280,7 +282,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, mm[0][0]) + sizeof(FEXCore::Core::CPUState::mm[0]) * i,
           FEXCore::Core::CPUState::MM_REG_SIZE
         },
-        ACCESS_NONE,
+        LastAccessType::NONE,
         FEXCore::IR::InvalidClass,
       });
     }
@@ -292,7 +294,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, gdt[0]) + sizeof(FEXCore::Core::CPUState::gdt[0]) * i,
           sizeof(FEXCore::Core::CPUState::gdt[0]),
         },
-        ACCESS_NONE,
+        LastAccessType::NONE,
         FEXCore::IR::InvalidClass,
       });
     }
@@ -303,7 +305,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, FCW),
         sizeof(FEXCore::Core::CPUState::FCW),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -313,7 +315,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, AbridgedFTW),
         sizeof(FEXCore::Core::CPUState::AbridgedFTW),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -323,7 +325,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, _pad2),
         sizeof(FEXCore::Core::CPUState::_pad2),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -333,7 +335,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount),
         sizeof(FEXCore::Core::CPUState::DeferredSignalRefCount),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -343,7 +345,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress),
         sizeof(FEXCore::Core::CPUState::DeferredSignalFaultAddress),
       },
-      ACCESS_NONE,
+      LastAccessType::NONE,
       FEXCore::IR::InvalidClass,
     });
 
@@ -370,66 +372,66 @@ namespace {
   static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo, bool SupportsAVX) {
     auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
-    auto SetAccess = [&](size_t Offset, auto Access) {
+    auto SetAccess = [&](size_t Offset, LastAccessType Access) {
       ContextClassification->at(Offset).Accessed = Access;
       ContextClassification->at(Offset).AccessRegClass = FEXCore::IR::InvalidClass;
       ContextClassification->at(Offset).AccessOffset = 0;
       ContextClassification->at(Offset).StoreNode = nullptr;
     };
     size_t Offset = 0;
-    SetAccess(Offset++, ACCESS_NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
     // Segment indexes
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
 
     // Pad
-    SetAccess(Offset++, ACCESS_INVALID);
+    SetAccess(Offset++, LastAccessType::INVALID);
 
     // Segments
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
 
     // Pad2
-    SetAccess(Offset++, ACCESS_INVALID);
+    SetAccess(Offset++, LastAccessType::INVALID);
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
     if (!SupportsAVX) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+      SetAccess(Offset++, LastAccessType::NONE);
     }
 
-    SetAccess(Offset++, ACCESS_NONE);
-    SetAccess(Offset++, ACCESS_NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
 
-    SetAccess(Offset++, ACCESS_INVALID);
-    SetAccess(Offset++, ACCESS_INVALID);
-    SetAccess(Offset++, ACCESS_INVALID);
+    SetAccess(Offset++, LastAccessType::INVALID);
+    SetAccess(Offset++, LastAccessType::INVALID);
+    SetAccess(Offset++, LastAccessType::INVALID);
   }
 
   struct BlockInfo {
@@ -472,11 +474,12 @@ ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo,
 
 ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *ValueNode, FEXCore::IR::OrderedNode *StoreNode) {
   LOGMAN_THROW_AA_FMT((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
-  LOGMAN_THROW_AA_FMT(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
+  LOGMAN_THROW_AA_FMT(Info->Accessed != LastAccessType::INVALID, "Tried to access invalid member");
 
   // If we aren't fully overwriting the member then it is a partial write that we need to track
   if (Size < Info->Class.Size) {
-    AccessType = AccessType == ACCESS_WRITE ? ACCESS_PARTIAL_WRITE : ACCESS_PARTIAL_READ;
+    AccessType = AccessType == LastAccessType::WRITE ? LastAccessType::PARTIAL_WRITE
+                                                     : LastAccessType::PARTIAL_READ;
   }
   if (Size > Info->Class.Size) {
     LOGMAN_MSG_A_FMT("Can't handle this");
@@ -500,7 +503,7 @@ ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR:
 bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::NodeIterator BlockEnd) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
-  RecordAccess(Info, Class, Offset, Size, ACCESS_READ, CodeNode);
+  RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, CodeNode);
 
   if (IsReadAccess(PreviousMemberInfoCopy.Accessed) &&
       IsReadAccess(Info->Accessed) &&
@@ -509,7 +512,7 @@ bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *Loc
       PreviousMemberInfoCopy.AccessSize == Size) {
     // Optimize the case of redundant reads of the same exact value.
     IREmit->ReplaceAllUsesWithRange(CodeNode, PreviousMemberInfoCopy.ValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-    RecordAccess(Info, Class, Offset, Size, ACCESS_READ, PreviousMemberInfoCopy.ValueNode);
+    RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, PreviousMemberInfoCopy.ValueNode);
     return true;
   }
   // TODO: Optimize the case of Store->Load.
@@ -518,7 +521,7 @@ bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *Loc
 
 bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
-  Info = RecordAccess(Info, Class, Offset, Size, ACCESS_WRITE, ValueNode, CodeNode);
+  Info = RecordAccess(Info, Class, Offset, Size, LastAccessType::WRITE, ValueNode, CodeNode);
   // TODO: Optimize redundant stores.
   // ContextMemberInfo PreviousMemberInfoCopy = *Info;
   return false;
@@ -592,10 +595,12 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
       }
       else if (IROp->Op == OP_STOREFLAG) {
-        auto Op = IROp->CW<IR::IROp_StoreFlag>();
-        auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
+        const auto Op = IROp->CW<IR::IROp_StoreFlag>();
+        const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
+        auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
         auto LastStoreNode = Info->StoreNode;
-        RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, CurrentIR.GetNode(Op->Header.Args[0]), CodeNode);
+        RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, FlagOffset,
+                     1, LastAccessType::WRITE, CurrentIR.GetNode(Op->Header.Args[0]), CodeNode);
 
         // Flags don't alias, so we can take the simple route here. Kill any flags that have been overwritten
         if (LastStoreNode != nullptr)
@@ -613,14 +618,16 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             continue;
           }
 
-          auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1);
+          const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + F;
+          auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
           auto LastStoreNode = Info->StoreNode;
 
           // Flags don't alias, so we can take the simple route here. Kill any flags that have been invalidated without a read.
           if (LastStoreNode != nullptr)
           {
             IREmit->SetWriteCursor(CodeNode);
-            RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1, ACCESS_WRITE, IREmit->_Constant(0), CodeNode);
+            RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, FlagOffset,
+                         1, LastAccessType::WRITE, IREmit->_Constant(0), CodeNode);
 
             IREmit->Remove(LastStoreNode);
             Changed = true;
@@ -628,8 +635,9 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         }
       }
       else if (IROp->Op == OP_LOADFLAG) {
-        auto Op = IROp->CW<IR::IROp_LoadFlag>();
-        auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
+        const auto Op = IROp->CW<IR::IROp_LoadFlag>();
+        const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
+        auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastValueNode = Info->ValueNode;
 
@@ -637,12 +645,12 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
           IREmit->SetWriteCursor(CodeNode);
           IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
-          RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastValueNode);
+          RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
           Changed = true;
         }
         else if (IsReadAccess(LastAccess)) {
           IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
-          RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastValueNode);
+          RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
           Changed = true;
         }
       }
