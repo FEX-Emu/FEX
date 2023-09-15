@@ -83,37 +83,18 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 #endif
   } else {
     switch(Info.ABI) {
-      case FABI_VOID_U16:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
-
-        const auto Src1 = GetReg(IROp->Args[0].ID());
-        uxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
-        ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<void, uint16_t>(ARMEmitter::Reg::r1);
-#else
-        blr(ARMEmitter::Reg::r1);
-#endif
-
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
-      }
-      break;
-
-      case FABI_F80_F32:{
+      case FABI_F80_I16_F32:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         fmov(ARMEmitter::SReg::s0, Src1.S());
-        ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, float>(ARMEmitter::Reg::r0);
+        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, float>(ARMEmitter::Reg::r1);
 #else
-        blr(ARMEmitter::Reg::r0);
+        blr(ARMEmitter::Reg::r1);
 #endif
 
         PopDynamicRegsAndLR();
@@ -127,47 +108,17 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F80_F64:{
+      case FABI_F80_I16_F64:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         mov(ARMEmitter::DReg::d0, Src1.D());
-        ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, double>(ARMEmitter::Reg::r0);
-#else
-        blr(ARMEmitter::Reg::r0);
-#endif
-
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
-      }
-      break;
-
-      case FABI_F80_I16:
-      case FABI_F80_I32: {
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
-
-        const auto Src1 = GetReg(IROp->Args[0].ID());
-        if (Info.ABI == FABI_F80_I16) {
-          sxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
-        }
-        else {
-          mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
-        }
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint32_t>(ARMEmitter::Reg::r1);
+        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, double>(ARMEmitter::Reg::r1);
 #else
         blr(ARMEmitter::Reg::r1);
 #endif
@@ -183,21 +134,54 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F32_F80:{
+      case FABI_F80_I16_I16:
+      case FABI_F80_I16_I32: {
+        SpillStaticRegs(TMP1);
+
+        PushDynamicRegsAndLR(TMP1);
+
+        const auto Src1 = GetReg(IROp->Args[0].ID());
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        if (Info.ABI == FABI_F80_I16_I16) {
+          sxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, Src1);
+        }
+        else {
+          mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, Src1);
+        }
+        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
+#else
+        blr(ARMEmitter::Reg::r2);
+#endif
+
+        PopDynamicRegsAndLR();
+
+        FillStaticRegs();
+
+        const auto Dst = GetVReg(Node);
+        eor(Dst.Q(), Dst.Q(), Dst.Q());
+        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
+        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+      }
+      break;
+
+      case FABI_F32_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<float, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<float, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -209,21 +193,22 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F64_F80:{
+      case FABI_F64_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<double, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -235,7 +220,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F64_F64: {
+      case FABI_F64_I16_F64: {
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
@@ -243,11 +228,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
         mov(ARMEmitter::DReg::d0, Src1.D());
-        ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, double>(ARMEmitter::Reg::r0);
+        GenerateIndirectRuntimeCall<double, uint16_t, double>(ARMEmitter::Reg::r1);
 #else
-        blr(ARMEmitter::Reg::r0);
+        blr(ARMEmitter::Reg::r1);
 #endif
 
         PopDynamicRegsAndLR();
@@ -259,7 +245,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F64_F64_F64: {
+      case FABI_F64_I16_F64_F64: {
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
@@ -269,11 +255,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         mov(ARMEmitter::DReg::d0, Src1.D());
         mov(ARMEmitter::DReg::d1, Src2.D());
-        ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, double, double>(ARMEmitter::Reg::r0);
+        GenerateIndirectRuntimeCall<double, uint16_t, double, double>(ARMEmitter::Reg::r1);
 #else
-        blr(ARMEmitter::Reg::r0);
+        blr(ARMEmitter::Reg::r1);
 #endif
 
         PopDynamicRegsAndLR();
@@ -285,21 +272,22 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_I16_F80:{
+      case FABI_I16_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -310,21 +298,22 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         sxth(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
-      case FABI_I32_F80:{
+      case FABI_I32_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -335,21 +324,22 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::Size::i32Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
-      case FABI_I64_F80:{
+      case FABI_I64_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -360,7 +350,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
-      case FABI_I64_F80_F80:{
+      case FABI_I64_I16_F80_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
@@ -368,17 +358,18 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r2, Src2, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r3, Src2, 4);
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src2, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
 
-        ldr(ARMEmitter::XReg::x4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
 #else
-        blr(ARMEmitter::Reg::r4);
+        blr(ARMEmitter::Reg::r5);
 #endif
         PopDynamicRegsAndLR();
 
@@ -388,21 +379,22 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
-      case FABI_F80_F80:{
+      case FABI_F80_I16_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-        blr(ARMEmitter::Reg::r2);
+        blr(ARMEmitter::Reg::r3);
 #endif
 
         PopDynamicRegsAndLR();
@@ -415,7 +407,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
       }
       break;
-      case FABI_F80_F80_F80:{
+      case FABI_F80_I16_F80_F80:{
         SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
@@ -423,17 +415,18 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r0, Src1, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r1, Src1, 4);
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
-        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r2, Src2, 0);
-        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r3, Src2, 4);
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src2, 0);
+        umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
 
-        ldr(ARMEmitter::XReg::x4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+        ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
 #ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
 #else
-        blr(ARMEmitter::Reg::r4);
+        blr(ARMEmitter::Reg::r5);
 #endif
 
         PopDynamicRegsAndLR();

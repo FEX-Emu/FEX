@@ -46,7 +46,6 @@ class OrderedNode;
 void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
-  _F80LoadFCW(NewFCW);
   // Init host rounding mode to zero
   auto Zero = _Constant(0);
   _SetRoundingMode(Zero);
@@ -78,8 +77,6 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
   roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
-  _F80LoadFCW(NewFCW);
-
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   OrderedNode *MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
@@ -96,7 +93,6 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
   OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  _F80LoadFCW(NewFCW); //keeps BCD code working
   //ignore the rounding precision, we're always 64-bit in F64.
   //extract rounding mode
   OrderedNode *roundingMode = NewFCW;
@@ -1026,7 +1022,6 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
   roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
-  _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 

@@ -7,13 +7,41 @@
 #include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
 
 namespace FEXCore::CPU {
+static void LoadDeferredFCW(uint16_t NewFCW) {
+  auto PC = (NewFCW >> 8) & 3;
+  switch(PC) {
+    case 0: extF80_roundingPrecision = 32; break;
+    case 2: extF80_roundingPrecision = 64; break;
+    case 3: extF80_roundingPrecision = 80; break;
+    case 1: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
+  }
+
+  auto RC = (NewFCW >> 10) & 3;
+  switch(RC) {
+    case 0:
+      softfloat_roundingMode = softfloat_round_near_even;
+      break;
+    case 1:
+      softfloat_roundingMode = softfloat_round_min;
+      break;
+    case 2:
+      softfloat_roundingMode = softfloat_round_max;
+      break;
+    case 3:
+      softfloat_roundingMode = softfloat_round_minMag;
+    break;
+  }
+}
+
 template<>
 struct OpHandlers<IR::OP_F80CVTTO> {
-  static X80SoftFloat handle4(float src) {
+  static X80SoftFloat handle4(uint16_t NewFCW, float src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static X80SoftFloat handle8(double src) {
+  static X80SoftFloat handle8(uint16_t NewFCW, double src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 };
@@ -21,7 +49,9 @@ struct OpHandlers<IR::OP_F80CVTTO> {
 template<>
 struct OpHandlers<IR::OP_F80CMP> {
   template<uint32_t Flags>
-  static uint64_t handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static uint64_t handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
+
     bool eq, lt, nan;
     uint64_t ResultFlags = 0;
 
@@ -44,30 +74,36 @@ struct OpHandlers<IR::OP_F80CMP> {
 
 template<>
 struct OpHandlers<IR::OP_F80CVT> {
-  static float handle4(X80SoftFloat src) {
+  static float handle4(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static double handle8(X80SoftFloat src) {
+  static double handle8(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80CVTINT> {
-  static  int16_t handle2(X80SoftFloat src) {
+  static  int16_t handle2(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static int32_t handle4(X80SoftFloat src) {
+  static int32_t handle4(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static int64_t handle8(X80SoftFloat src) {
+  static int64_t handle8(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static  int16_t handle2t(X80SoftFloat src) {
+  static  int16_t handle2t(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     auto rv = extF80_to_i32(src, softfloat_round_minMag, false);
 
     if (rv > INT16_MAX) {
@@ -79,216 +115,243 @@ struct OpHandlers<IR::OP_F80CVTINT> {
     }
   }
 
-  static int32_t handle4t(X80SoftFloat src) {
+  static int32_t handle4t(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return extF80_to_i32(src, softfloat_round_minMag, false);
   }
 
-  static int64_t handle8t(X80SoftFloat src) {
+  static int64_t handle8t(uint16_t NewFCW, X80SoftFloat src) {
+    LoadDeferredFCW(NewFCW);
     return extF80_to_i64(src, softfloat_round_minMag, false);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80CVTTOINT> {
-  static X80SoftFloat handle2(int16_t src) {
+  static X80SoftFloat handle2(uint16_t NewFCW, int16_t src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 
-  static X80SoftFloat handle4(int32_t src) {
+  static X80SoftFloat handle4(uint16_t NewFCW, int32_t src) {
+    LoadDeferredFCW(NewFCW);
     return src;
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80ROUND> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FRNDINT(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80F2XM1> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::F2XM1(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80TAN> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FTAN(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80SQRT> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FSQRT(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80SIN> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FSIN(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80COS> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FCOS(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80XTRACT_EXP> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FXTRACT_EXP(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80XTRACT_SIG> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FXTRACT_SIG(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80ADD> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FADD(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80SUB> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FSUB(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80MUL> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FMUL(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80DIV> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FDIV(Src1, Src2);
   }
 };
 
-
 template<>
 struct OpHandlers<IR::OP_F80FYL2X> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FYL2X(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80ATAN> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FATAN(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80FPREM1> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FREM1(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80FPREM> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FREM(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80SCALE> {
-  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
+    LoadDeferredFCW(NewFCW);
     return X80SoftFloat::FSCALE(Src1, Src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64SIN> {
-  static double handle(double src) {
+  static double handle(uint16_t NewFCW, double src) {
+    LoadDeferredFCW(NewFCW);
     return sin(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64COS> {
-  static double handle(double src) {
+  static double handle(uint16_t NewFCW, double src) {
+    LoadDeferredFCW(NewFCW);
     return cos(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64TAN> {
-  static double handle(double src) {
+  static double handle(uint16_t NewFCW, double src) {
+    LoadDeferredFCW(NewFCW);
     return tan(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64F2XM1> {
-  static double handle(double src) {
+  static double handle(uint16_t NewFCW, double src) {
+    LoadDeferredFCW(NewFCW);
     return exp2(src) - 1.0;
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64ATAN> {
-  static double handle(double src1, double src2) {
+  static double handle(uint16_t NewFCW, double src1, double src2) {
+    LoadDeferredFCW(NewFCW);
     return atan2(src1, src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM> {
-  static double handle(double src1, double src2) {
+  static double handle(uint16_t NewFCW, double src1, double src2) {
+    LoadDeferredFCW(NewFCW);
     return fmod(src1, src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM1> {
-  static double handle(double src1, double src2) {
+  static double handle(uint16_t NewFCW, double src1, double src2) {
+    LoadDeferredFCW(NewFCW);
     return remainder(src1, src2);
   }
 };
 
-
 template<>
 struct OpHandlers<IR::OP_F64FYL2X> {
-  static double handle(double src1, double src2) {
+  static double handle(uint16_t NewFCW, double src1, double src2) {
+    LoadDeferredFCW(NewFCW);
     return src2 * log2(src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64SCALE> {
-  static double handle(double src1, double src2) {
+  static double handle(uint16_t NewFCW, double src1, double src2) {
+    LoadDeferredFCW(NewFCW);
     double trunc = (double)(int64_t)(src2); //truncate
     return src1 * exp2(trunc);
   }
 };
 
-
-
 template<>
 struct OpHandlers<IR::OP_F80BCDSTORE> {
-  static X80SoftFloat handle(X80SoftFloat Src1) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src1) {
+    LoadDeferredFCW(NewFCW);
     bool Negative = Src1.Sign;
 
     Src1 = X80SoftFloat::FRNDINT(Src1);
@@ -328,7 +391,8 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
 
 template<>
 struct OpHandlers<IR::OP_F80BCDLOAD> {
-  static X80SoftFloat handle(X80SoftFloat Src) {
+  static X80SoftFloat handle(uint16_t NewFCW, X80SoftFloat Src) {
+    LoadDeferredFCW(NewFCW);
     uint8_t *Src1 = reinterpret_cast<uint8_t *>(&Src);
     uint64_t BCD{};
     // We walk through each uint8_t and pull out the BCD encoding
@@ -359,36 +423,6 @@ struct OpHandlers<IR::OP_F80BCDLOAD> {
     Tmp = BCD;
     Tmp.Sign = Negative;
     return Tmp;
-  }
-};
-
-template<>
-struct OpHandlers<IR::OP_F80LOADFCW> {
-  static void handle(uint16_t NewFCW) {
-
-    auto PC = (NewFCW >> 8) & 3;
-    switch(PC) {
-      case 0: extF80_roundingPrecision = 32; break;
-      case 2: extF80_roundingPrecision = 64; break;
-      case 3: extF80_roundingPrecision = 80; break;
-      case 1: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
-    }
-
-    auto RC = (NewFCW >> 10) & 3;
-    switch(RC) {
-      case 0:
-        softfloat_roundingMode = softfloat_round_near_even;
-        break;
-      case 1:
-        softfloat_roundingMode = softfloat_round_min;
-        break;
-      case 2:
-        softfloat_roundingMode = softfloat_round_max;
-        break;
-      case 3:
-        softfloat_roundingMode = softfloat_round_minMag;
-      break;
-    }
   }
 };
 

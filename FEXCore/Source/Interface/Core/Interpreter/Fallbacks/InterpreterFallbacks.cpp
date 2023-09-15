@@ -15,78 +15,73 @@ static FallbackInfo GetFallbackInfo(R(*fn)(Args...), FEXCore::Core::FallbackHand
 }
 
 template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(float), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_F32, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, float), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_F32, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_F64, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_F64, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int16_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_I16, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, int16_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_I16, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(void(*fn)(uint16_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_VOID_U16, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, int32_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_I32, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int32_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_I32, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(float(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F32_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(float(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F32_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(double(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(double(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F64_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(double(*fn)(uint16_t, double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_I16_F64, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(double(*fn)(double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F64_F64, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(double(*fn)(uint16_t, double,double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_I16_F64_F64, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(double(*fn)(double,double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F64_F64_F64, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(int16_t(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_I16_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(int16_t(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_I16_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(int32_t(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_I32_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(int32_t(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_I32_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(int64_t(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_I64_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(int64_t(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_I64_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(uint64_t(*fn)(uint16_t, X80SoftFloat, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_I64_I16_F80_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(uint64_t(*fn)(X80SoftFloat, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_I64_F80_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_F80, (void*)fn, HandlerIndex};
-}
-
-template<>
-FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F80_F80_F80, (void*)fn, HandlerIndex};
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(uint16_t, X80SoftFloat, X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F80_I16_F80_F80, (void*)fn, HandlerIndex};
 }
 
 template<>
@@ -100,7 +95,6 @@ FallbackInfo GetFallbackInfo(uint32_t(*fn)(__uint128_t, __uint128_t, uint16_t), 
 }
 
 void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
-  Info[Core::OPINDEX_F80LOADFCW] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80LOADFCW>::handle, Core::OPINDEX_F80LOADFCW).fn);
   Info[Core::OPINDEX_F80CVTTO_4] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4).fn);
   Info[Core::OPINDEX_F80CVTTO_8] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle8, Core::OPINDEX_F80CVTTO_8).fn);
   Info[Core::OPINDEX_F80CVT_4] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle4, Core::OPINDEX_F80CVT_4).fn);
@@ -164,11 +158,6 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
 bool InterpreterOps::GetFallbackHandler(IR::IROp_Header const *IROp, FallbackInfo *Info) {
   uint8_t OpSize = IROp->Size;
   switch(IROp->Op) {
-    case IR::OP_F80LOADFCW: {
-      *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80LOADFCW>::handle, Core::OPINDEX_F80LOADFCW);
-      return true;
-    }
-
     case IR::OP_F80CVTTO: {
       auto Op = IROp->C<IR::IROp_F80CVTTo>();
 
