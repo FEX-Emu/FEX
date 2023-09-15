@@ -1223,7 +1223,6 @@ fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *
 CPUBackendFeatures GetArm64JITBackendFeatures() {
   return CPUBackendFeatures {
     .SupportsStaticRegisterAllocation = true,
-    .SupportsShiftedBitwise = true,
     .SupportsFlags = true,
     .SupportsSaturatingRoundingShifts = true,
     .SupportsVTBL2 = true,

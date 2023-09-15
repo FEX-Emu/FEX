@@ -143,8 +143,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
-               (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_LOC)) &&
-               CTX->BackendFeatures.SupportsShiftedBitwise;
+               (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_LOC));
 
   // Handle CF first, since it's at bit 0 and hence doesn't need shift or OR.
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_LOC)) {
@@ -175,11 +174,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     else
       Flag = GetRFLAG(FlagOffset);
 
-    if (CTX->BackendFeatures.SupportsShiftedBitwise) {
-      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
-    } else {
-      Original = _Bfi(OpSize::i32Bit, 1, FlagOffset, Original, Flag);
-    }
+    Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
@@ -537,7 +532,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
-  if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+  if (SrcSize >= 4) {
     SetNZCV(_SubNZCV(OpSize, Src1, Src2));
   } else {
     // SF/ZF
@@ -580,7 +575,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
-  if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+  if (SrcSize >= 4) {
     SetNZCV(_AddNZCV(OpSize, Src1, Src2));
   } else {
     // SF/ZF

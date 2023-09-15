@@ -84,7 +84,10 @@ namespace FEXCore::CPU {
   DEF_OP(InlineEntrypointOffset);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
+  DEF_OP(AddNZCV);
+  DEF_OP(TestNZ);
   DEF_OP(Sub);
+  DEF_OP(SubNZCV);
   DEF_OP(Neg);
   DEF_OP(Abs);
   DEF_OP(Mul);
@@ -96,6 +99,8 @@ namespace FEXCore::CPU {
   DEF_OP(MulH);
   DEF_OP(UMulH);
   DEF_OP(Or);
+  DEF_OP(Orlshl);
+  DEF_OP(Orlshr);
   DEF_OP(And);
   DEF_OP(Andn);
   DEF_OP(Xor);
