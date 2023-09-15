@@ -251,7 +251,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "add w4, w20, #0x100 (256)",
         "eor w21, w20, #0x100",
         "strb w21, [x28, #708]",
@@ -281,7 +281,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "orr w4, w20, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -310,7 +310,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "add w4, w22, w20",
         "eor w20, w22, #0x100",
         "strb w20, [x28, #708]",
@@ -372,7 +372,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "sub w4, w22, w20",
         "eor w20, w22, #0x100",
         "strb w20, [x28, #708]",
@@ -430,7 +430,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "and w4, w20, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -455,7 +455,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w4, w20, #0x100 (256)",
         "eor w21, w20, #0x100",
         "strb w21, [x28, #708]",
@@ -487,7 +487,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "eor w4, w20, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -512,7 +512,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w21, w20, #0x100 (256)",
         "eor w22, w20, #0x100",
         "strb w22, [x28, #708]",
@@ -571,7 +571,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "add w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
@@ -601,7 +601,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "orr w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -630,7 +630,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "add w4, w22, w20",
         "eor w20, w22, #0x1",
         "strb w20, [x28, #708]",
@@ -692,7 +692,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "sub w4, w22, w20",
         "eor w20, w22, #0x1",
         "strb w20, [x28, #708]",
@@ -750,7 +750,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "and w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -775,7 +775,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
@@ -807,7 +807,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "eor w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -832,7 +832,7 @@
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w21, w20, #0x1 (1)",
         "eor w22, w20, #0x1",
         "strb w22, [x28, #708]",
@@ -1041,7 +1041,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xC1 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ror w4, w20, #30",
         "ubfx w20, w4, #0, #1",
         "ldr w21, [x28, #728]",
@@ -1084,7 +1084,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xC1 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ror w4, w20, #2",
         "lsr w20, w4, #31",
         "ldr w21, [x28, #728]",
@@ -1146,7 +1146,7 @@
       "Comment": "GROUP2 0xC1 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x2",
-        "lsr w21, w4, #0",
+        "mov w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
         "lsl w24, w21, #2",
@@ -1238,7 +1238,7 @@
       "Comment": "GROUP2 0xC1 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x2",
-        "lsr w21, w4, #0",
+        "mov w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
         "lsr w24, w21, #2",
@@ -1323,7 +1323,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xC1 /4",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "lsl w4, w20, #2",
         "tst w4, w4",
         "mrs x21, nzcv",
@@ -1375,7 +1375,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xC1 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "lsr w4, w20, #2",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #28, #1",
@@ -1431,7 +1431,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xC1 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "asr w4, w20, #2",
         "tst w4, w4",
         "mrs x21, nzcv",
@@ -1626,7 +1626,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ror w4, w20, #31",
         "ubfx w20, w4, #0, #1",
         "ldr w21, [x28, #728]",
@@ -1678,7 +1678,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ror w4, w20, #1",
         "lsr w20, w4, #31",
         "ldr w21, [x28, #728]",
@@ -1732,7 +1732,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /2",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ldr w21, [x28, #728]",
         "ubfx w22, w21, #29, #1",
         "lsr w23, w20, #31",
@@ -1792,7 +1792,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /3",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ldr w21, [x28, #728]",
         "ubfx w22, w21, #29, #1",
         "extr w4, w22, w20, #1",
@@ -1855,7 +1855,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /4",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "lsl w4, w20, #1",
         "tst w4, w4",
         "mrs x21, nzcv",
@@ -1912,7 +1912,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "lsr w4, w20, #1",
         "tst w4, w4",
         "mrs x21, nzcv",
@@ -1966,7 +1966,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "asr w4, w20, #1",
         "tst w4, w4",
         "mrs x21, nzcv",
@@ -2241,8 +2241,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w4",
+        "mov w21, w5",
         "and w21, w21, #0x1f",
         "mov w22, #0x20",
         "sub w22, w22, w21",
@@ -2308,8 +2308,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w4",
+        "mov w21, w5",
         "and w21, w21, #0x1f",
         "ror w4, w20, w21",
         "ldr w20, [x28, #728]",
@@ -2390,8 +2390,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /2",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w4, #0",
+        "mov w20, w5",
+        "mov w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
         "lsl w24, w21, w20",
@@ -2499,8 +2499,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /3",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w4, #0",
+        "mov w20, w5",
+        "mov w21, w4",
         "ldr w22, [x28, #728]",
         "ubfx w23, w22, #29, #1",
         "lsr w24, w21, w20",
@@ -2615,8 +2615,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /4",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w4",
+        "mov w21, w5",
         "lsl w4, w20, w21",
         "ldr w22, [x28, #728]",
         "tst w4, w4",
@@ -2701,8 +2701,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w4",
+        "mov w21, w5",
         "lsr w4, w20, w21",
         "ldr w22, [x28, #728]",
         "tst w4, w4",
@@ -2783,8 +2783,8 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xd3 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w4",
+        "mov w21, w5",
         "asr w4, w20, w21",
         "ldr w22, [x28, #728]",
         "tst w4, w4",
@@ -2972,7 +2972,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "and w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "tst w20, w20",
@@ -3007,9 +3007,9 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "eor x20, x20, #0xffffffff",
-        "lsr w7, w20, #0"
+        "mov w7, w20"
       ]
     },
     "not rbx": {
@@ -3052,7 +3052,7 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "neg w7, w20",
         "strb w20, [x28, #708]",
         "strb w7, [x28, #706]",
@@ -3100,10 +3100,10 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "ubfx x21, x4, #0, #32",
+        "mov w20, w7",
+        "mov w21, w4",
         "mul x20, x20, x21",
-        "ubfx x4, x20, #0, #32",
+        "mov w4, w20",
         "lsr x6, x20, #32",
         "mov w20, #0x0",
         "mov w21, #0x30000000",
@@ -3152,11 +3152,11 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /5",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "sxtw x20, w20",
         "sxtw x21, w4",
         "mul x20, x20, x21",
-        "ubfx x4, x20, #0, #32",
+        "mov w4, w20",
         "lsr x6, x20, #32",
         "asr x21, x20, #32",
         "sxtw x20, w20",
@@ -3208,18 +3208,18 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
-        "lsr w22, w6, #0",
+        "mov w20, w7",
+        "mov w21, w4",
+        "mov w22, w6",
         "mov x0, x21",
         "bfi x0, x22, #32, #32",
         "udiv x23, x0, x20",
-        "lsr w4, w23, #0",
+        "mov w4, w23",
         "mov x0, x21",
         "bfi x0, x22, #32, #32",
         "udiv x1, x0, x20",
         "msub x20, x1, x20, x0",
-        "lsr w6, w20, #0"
+        "mov w6, w20"
       ]
     },
     "div rbx": {
@@ -3279,20 +3279,20 @@
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /7",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
-        "lsr w22, w6, #0",
+        "mov w20, w7",
+        "mov w21, w4",
+        "mov w22, w6",
         "mov x0, x21",
         "bfi x0, x22, #32, #32",
         "sxtw x1, w20",
         "sdiv x23, x0, x1",
-        "lsr w4, w23, #0",
+        "mov w4, w23",
         "mov x0, x21",
         "bfi x0, x22, #32, #32",
         "sxtw x2, w20",
         "sdiv x1, x0, x2",
         "msub x20, x1, x2, x0",
-        "lsr w6, w20, #0"
+        "mov w6, w20"
       ]
     },
     "idiv rbx": {
@@ -3419,7 +3419,7 @@
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "add w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
@@ -3483,7 +3483,7 @@
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",

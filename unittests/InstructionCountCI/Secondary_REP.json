@@ -457,7 +457,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "fmov s0, w20",
         "cnt v0.8b, v0.8b",
         "addv b0, v0.8b",
@@ -514,7 +514,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "rbit w4, w20",
         "clz w4, w4",
         "cmp x4, #0x0 (0)",
@@ -563,7 +563,7 @@
       "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "clz w4, w20",
         "cmp x20, #0x0 (0)",
         "cset x21, eq",

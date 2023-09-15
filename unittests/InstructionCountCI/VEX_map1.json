@@ -634,7 +634,7 @@
         "lsr w21, w21, #31",
         "lsl w21, w21, #7",
         "orr x20, x20, x21",
-        "lsr w4, w20, #0"
+        "mov w4, w20"
       ]
     },
     "vmovmskpd rax, xmm0": {
@@ -679,7 +679,7 @@
         "lsr x21, x21, #63",
         "lsl x21, x21, #3",
         "orr x20, x20, x21",
-        "lsr w4, w20, #0"
+        "mov w4, w20"
       ]
     },
     "vsqrtps xmm0, xmm1": {

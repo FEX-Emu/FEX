@@ -71,8 +71,8 @@
       "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "add w7, w21, w20",
         "eor w22, w21, w20",
         "strb w22, [x28, #708]",
@@ -169,8 +169,8 @@
         "add ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "add w5, w21, w20",
         "eor w22, w21, w20",
         "strb w22, [x28, #708]",
@@ -259,7 +259,7 @@
       "Optimal": "No",
       "Comment": "0x05",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "add w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
@@ -325,8 +325,8 @@
       "Optimal": "No",
       "Comment": "0x09",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "orr w7, w21, w20",
         "strb w7, [x28, #706]",
         "tst w7, w7",
@@ -396,8 +396,8 @@
         "or ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "orr w5, w21, w20",
         "strb w5, [x28, #706]",
         "tst w5, w5",
@@ -459,7 +459,7 @@
       "Optimal": "No",
       "Comment": "0x0D",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "orr w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -556,11 +556,11 @@
       "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
+        "mov w20, w5",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
-        "lsr w23, w7, #0",
+        "mov w23, w7",
         "add w7, w23, w22",
         "eor w22, w23, w20",
         "strb w22, [x28, #708]",
@@ -698,11 +698,11 @@
         "adc ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
-        "lsr w23, w5, #0",
+        "mov w23, w5",
         "add w5, w23, w22",
         "eor w22, w23, w20",
         "strb w22, [x28, #708]",
@@ -838,7 +838,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "add w4, w22, w20",
         "eor w20, w22, #0x1",
         "strb w20, [x28, #708]",
@@ -968,11 +968,11 @@
       "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
+        "mov w20, w5",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
-        "lsr w23, w7, #0",
+        "mov w23, w7",
         "sub w7, w23, w22",
         "eor w22, w23, w20",
         "strb w22, [x28, #708]",
@@ -1110,11 +1110,11 @@
         "sbb ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
-        "lsr w23, w5, #0",
+        "mov w23, w5",
         "sub w5, w23, w22",
         "eor w22, w23, w20",
         "strb w22, [x28, #708]",
@@ -1250,7 +1250,7 @@
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
-        "lsr w22, w4, #0",
+        "mov w22, w4",
         "sub w4, w22, w20",
         "eor w20, w22, #0x1",
         "strb w20, [x28, #708]",
@@ -1344,8 +1344,8 @@
       "Optimal": "No",
       "Comment": "0x21",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "and w7, w21, w20",
         "strb w7, [x28, #706]",
         "tst w7, w7",
@@ -1415,8 +1415,8 @@
         "and ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "and w5, w21, w20",
         "strb w5, [x28, #706]",
         "tst w5, w5",
@@ -1478,7 +1478,7 @@
       "Optimal": "No",
       "Comment": "0x25",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "and w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -1561,8 +1561,8 @@
       "Optimal": "No",
       "Comment": "0x29",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "sub w7, w21, w20",
         "eor w22, w21, w20",
         "strb w22, [x28, #708]",
@@ -1661,8 +1661,8 @@
         "sub ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "sub w5, w21, w20",
         "eor w22, w21, w20",
         "strb w22, [x28, #708]",
@@ -1753,7 +1753,7 @@
       "Optimal": "No",
       "Comment": "0x2D",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w4, w20, #0x1 (1)",
         "eor w21, w20, #0x1",
         "strb w21, [x28, #708]",
@@ -1821,8 +1821,8 @@
       "Optimal": "No",
       "Comment": "0x31",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "eor w7, w21, w20",
         "strb w7, [x28, #706]",
         "tst w7, w7",
@@ -1892,8 +1892,8 @@
         "xor ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "eor w5, w21, w20",
         "strb w5, [x28, #706]",
         "tst w5, w5",
@@ -1955,7 +1955,7 @@
       "Optimal": "No",
       "Comment": "0x35",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "eor w4, w20, #0x1",
         "strb w4, [x28, #706]",
         "tst w4, w4",
@@ -2036,8 +2036,8 @@
       "Optimal": "No",
       "Comment": "0x39",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
-        "lsr w21, w7, #0",
+        "mov w20, w5",
+        "mov w21, w7",
         "sub w22, w21, w20",
         "eor w23, w21, w20",
         "strb w23, [x28, #708]",
@@ -2133,8 +2133,8 @@
         "cmp ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w5, #0",
+        "mov w20, w7",
+        "mov w21, w5",
         "sub w22, w21, w20",
         "eor w23, w21, w20",
         "strb w23, [x28, #708]",
@@ -2222,7 +2222,7 @@
       "Optimal": "No",
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sub w21, w20, #0x1 (1)",
         "eor w22, w20, #0x1",
         "strb w22, [x28, #708]",
@@ -2289,7 +2289,7 @@
       "Optimal": "No",
       "Comment": "0x63",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "sxtw x4, w20"
       ]
     },
@@ -2335,12 +2335,12 @@
       "Optimal": "No",
       "Comment": "0x69",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "sxtw x20, w20",
         "mov w21, #0x101",
         "mul x20, x20, x21",
         "asr x21, x20, #32",
-        "lsr w4, w20, #0",
+        "mov w4, w20",
         "mov w22, #0x0",
         "sbfx x20, x20, #31, #1",
         "mov w23, #0x30000000",
@@ -2416,12 +2416,12 @@
       "Optimal": "No",
       "Comment": "0x6b",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "sxtw x20, w20",
         "mov w21, #0x3",
         "mul x20, x20, x21",
         "asr x21, x20, #32",
-        "lsr w4, w20, #0",
+        "mov w4, w20",
         "mov w22, #0x0",
         "sbfx x20, x20, #31, #1",
         "mov w23, #0x30000000",
@@ -2485,8 +2485,8 @@
       "Optimal": "No",
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w21, w4, #0",
+        "mov w20, w7",
+        "mov w21, w4",
         "and w20, w21, w20",
         "strb w20, [x28, #706]",
         "tst w20, w20",
@@ -2555,8 +2555,8 @@
       "Optimal": "No",
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
-        "lsr w7, w5, #0",
+        "mov w20, w7",
+        "mov w7, w5",
         "mov x5, x20"
       ]
     },
@@ -2565,7 +2565,7 @@
       "Optimal": "No",
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "lsr w20, w5, #0",
+        "mov w20, w5",
         "mov w1, w20",
         "swpal w1, w5, [x4]"
       ]
@@ -2612,7 +2612,7 @@
       "Optimal": "No",
       "Comment": "0x89",
       "ExpectedArm64ASM": [
-        "lsr w20, w7, #0",
+        "mov w20, w7",
         "str w20, [x4]"
       ]
     },
@@ -2821,8 +2821,8 @@
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
         "add x20, x5, x7",
-        "lsr x20, x20, #0",
-        "lsr w4, w20, #0"
+        "mov x20, x20",
+        "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*1 + 0]": {
@@ -2850,8 +2850,8 @@
       "ExpectedArm64ASM": [
         "lsl x20, x5, #1",
         "add x20, x20, x7",
-        "lsr x20, x20, #0",
-        "lsr w4, w20, #0"
+        "mov x20, x20",
+        "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*2 + 0]": {
@@ -2880,8 +2880,8 @@
       "ExpectedArm64ASM": [
         "lsl x20, x5, #2",
         "add x20, x20, x7",
-        "lsr x20, x20, #0",
-        "lsr w4, w20, #0"
+        "mov x20, x20",
+        "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*4 + 0]": {
@@ -2910,8 +2910,8 @@
       "ExpectedArm64ASM": [
         "lsl x20, x5, #3",
         "add x20, x20, x7",
-        "lsr x20, x20, #0",
-        "lsr w4, w20, #0"
+        "mov x20, x20",
+        "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*8 + 0]": {
@@ -3016,8 +3016,8 @@
       "Optimal": "No",
       "Comment": "0x90",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
-        "lsr w4, w7, #0",
+        "mov w20, w4",
+        "mov w4, w7",
         "mov x7, x20"
       ]
     },
@@ -3052,9 +3052,9 @@
       "Optimal": "No",
       "Comment": "0x98",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sxth x20, w20",
-        "lsr w4, w20, #0"
+        "mov w4, w20"
       ]
     },
     "cdqe": {
@@ -3080,9 +3080,9 @@
       "Optimal": "No",
       "Comment": "0x98",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "sbfx x20, x20, #31, #1",
-        "lsr w6, w20, #0"
+        "mov w6, w20"
       ]
     },
     "cqo": {
@@ -3346,7 +3346,7 @@
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "mov w21, #0x6f6d",
         "movk w21, #0x7376, lsl #16",
         "str w20, [x21]"
@@ -4007,7 +4007,7 @@
       "Optimal": "No",
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "and w20, w20, #0x1",
         "strb w20, [x28, #706]",
         "tst w20, w20",
@@ -4062,7 +4062,7 @@
       "Optimal": "No",
       "Comment": "0xab",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "str w20, [x11]",
         "mov w20, #0x4",
         "mov x21, #0xfffffffffffffffc",
@@ -4139,7 +4139,7 @@
       "Optimal": "No",
       "Comment": "0xab",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ldrb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
@@ -4386,7 +4386,7 @@
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
-        "lsr w20, w4, #0",
+        "mov w20, w4",
         "ldr w21, [x11]",
         "sub w22, w20, w21",
         "mov w23, #0x4",
@@ -4513,7 +4513,7 @@
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
         "cbz x5, #+0x3c",
-        "lsr w21, w4, #0",
+        "mov w21, w4",
         "ldr w22, [x11]",
         "sub w23, w21, w22",
         "eor w24, w21, w22",
@@ -4642,7 +4642,7 @@
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
         "cbz x5, #+0x3c",
-        "lsr w21, w4, #0",
+        "mov w21, w4",
         "ldr w22, [x11]",
         "sub w23, w21, w22",
         "eor w24, w21, w22",
