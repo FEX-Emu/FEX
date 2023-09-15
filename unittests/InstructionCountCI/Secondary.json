@@ -687,107 +687,101 @@
       ]
     },
     "cmovpe ax, bx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
         "uxth w21, w4",
         "ldrb w22, [x28, #706]",
-        "mov w23, #0x1",
         "eor w22, w22, #0x1",
         "fmov s2, w22",
         "cnt v2.16b, v2.16b",
         "umov w22, v2.b[0]",
-        "and x22, x23, x22",
+        "and x22, x22, #0x1",
         "cmp x22, #0x0 (0)",
         "csel w20, w20, w21, ne",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "cmovpe eax, ebx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
         "lsr w21, w4, #0",
         "ldrb w22, [x28, #706]",
-        "mov w23, #0x1",
         "eor w22, w22, #0x1",
         "fmov s2, w22",
         "cnt v2.16b, v2.16b",
         "umov w22, v2.b[0]",
-        "and x22, x23, x22",
+        "and x22, x22, #0x1",
         "cmp x22, #0x0 (0)",
         "csel w4, w20, w21, ne"
       ]
     },
     "cmovpe rax, rbx": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #706]",
-        "mov w21, #0x1",
         "eor w20, w20, #0x1",
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
-        "and x20, x21, x20",
+        "and x20, x20, #0x1",
         "cmp x20, #0x0 (0)",
         "csel x4, x7, x4, ne"
       ]
     },
     "cmovnp ax, bx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
         "uxth w21, w4",
         "ldrb w22, [x28, #706]",
-        "mov w23, #0x1",
         "eor w22, w22, #0x1",
         "fmov s2, w22",
         "cnt v2.16b, v2.16b",
         "umov w22, v2.b[0]",
-        "and x22, x23, x22",
+        "and x22, x22, #0x1",
         "cmp x22, #0x0 (0)",
         "csel w20, w20, w21, eq",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "cmovnp eax, ebx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
         "lsr w20, w7, #0",
         "lsr w21, w4, #0",
         "ldrb w22, [x28, #706]",
-        "mov w23, #0x1",
         "eor w22, w22, #0x1",
         "fmov s2, w22",
         "cnt v2.16b, v2.16b",
         "umov w22, v2.b[0]",
-        "and x22, x23, x22",
+        "and x22, x22, #0x1",
         "cmp x22, #0x0 (0)",
         "csel w4, w20, w21, eq"
       ]
     },
     "cmovnp rax, rbx": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #706]",
-        "mov w21, #0x1",
         "eor w20, w20, #0x1",
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
-        "and x20, x21, x20",
+        "and x20, x20, #0x1",
         "cmp x20, #0x0 (0)",
         "csel x4, x7, x4, eq"
       ]
@@ -1708,34 +1702,32 @@
       ]
     },
     "setpe al": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "Yes",
       "Comment": "0x0f 0x9a",
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "eor w20, w20, #0x1",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x20, x20, x21",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
         "cmp x20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
     },
     "setnp al": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "Yes",
       "Comment": "0x0f 0x9b",
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "eor w20, w20, #0x1",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x20, x20, x21",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
