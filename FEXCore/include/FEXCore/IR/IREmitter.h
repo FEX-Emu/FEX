@@ -69,11 +69,12 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
     return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
+  // TODO: Work to remove this implicit sized Select implementation.
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3, uint8_t CompareSize = 0) {
     if (CompareSize == 0)
       CompareSize = std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa0), GetOpSize(ssa1)));
 
-    return _Select(CondClassType{Cond}, ssa0, ssa1, ssa2, ssa3, CompareSize);
+    return _Select(IR::SizeToOpSize(std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa2), GetOpSize(ssa3)))), IR::SizeToOpSize(CompareSize), CondClassType{Cond}, ssa0, ssa1, ssa2, ssa3);
   }
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);

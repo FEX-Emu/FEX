@@ -1093,14 +1093,15 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = Select CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal, u8:$CompareSize": {
+      "GPR = Select OpSize:#ResultSize, OpSize:$CompareSize, CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal": {
         "Desc": ["Ternary selection of GPRs",
                  "op:",
-                 "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal",
-                 "TODO: Make this less opaque about how it operates"
+                 "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(_TrueVal), GetOpSize(_FalseVal)))",
+        "DestSize": "ResultSize",
         "EmitValidation": [
+          "_CompareSize == FEXCore::IR::OpSize::i32Bit || _CompareSize == FEXCore::IR::OpSize::i64Bit || _CompareSize == FEXCore::IR::OpSize::i128Bit",
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit",
           "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
         ]
       },
