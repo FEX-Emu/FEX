@@ -205,7 +205,7 @@ DEF_OP(SubNZCV) {
       if (Result == 0) {
         NZCV |= 1U << 30;
       }
-      if (__builtin_usub_overflow(Src1, Src2, &Result)) {
+      if (__builtin_usub_overflow(Src1, Src2, &Result) ^ !(Op->InvertCarry)) {
         NZCV |= 1U << 29;
       }
       if (__builtin_ssub_overflow(Src1, Src2, &ResultSigned)) {
@@ -222,7 +222,7 @@ DEF_OP(SubNZCV) {
       if (Result == 0) {
         NZCV |= 1U << 30;
       }
-      if (__builtin_usubl_overflow(Src1, Src2, &Result)) {
+      if (__builtin_usubl_overflow(Src1, Src2, &Result) ^ !(Op->InvertCarry)) {
         NZCV |= 1U << 29;
       }
       if (__builtin_ssubl_overflow(Src1, Src2, &ResultSigned)) {

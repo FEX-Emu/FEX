@@ -154,13 +154,15 @@ DEF_OP(SubNZCV) {
   // TODO: Optimize this out
   mrs(Dst, ARMEmitter::SystemRegister::NZCV);
 
-  // The carry flag produced by arm64 subs is inverted compared to the x86 carry
-  // flag. Invert it now.
-  //
-  // TODO: Once we optimize out the mrs, this will become a cfinv operation, but
-  // that's only available with Feat_FlagM. For now the portable way is to flip
-  // bit 29 (carry) manually.
-  eor(ARMEmitter::Size::i32Bit, Dst, Dst, 1u << 29);
+  if (Op->InvertCarry) {
+    // The carry flag produced by arm64 subs is inverted compared to the x86 carry
+    // flag. Invert it now.
+    //
+    // TODO: Once we optimize out the mrs, this will become a cfinv operation, but
+    // that's only available with Feat_FlagM. For now the portable way is to flip
+    // bit 29 (carry) manually.
+    eor(ARMEmitter::Size::i32Bit, Dst, Dst, 1u << 29);
+  }
 }
 
 DEF_OP(Neg) {

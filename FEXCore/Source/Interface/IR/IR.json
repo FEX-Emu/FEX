@@ -901,9 +901,9 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+      "GPR = SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, u8:$InvertCarry": {
         "Desc": ["Return NZCV for the difference of two GPRs. ",
-                 "Note: Carry flag uses x86 definition, inverted from arm64.",
+                 "If InvertCarry is nonzero, carry flag uses x86 definition, inverted from arm64.",
                  ""],
         "DestSize": "4",
         "EmitValidation": [

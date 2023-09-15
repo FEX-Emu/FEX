@@ -533,7 +533,8 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
-    SetNZCV(_SubNZCV(OpSize, Src1, Src2));
+    // We only bother inverting CF if we're actually going to update CF.
+    SetNZCV(_SubNZCV(OpSize, Src1, Src2, UpdateCF));
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);

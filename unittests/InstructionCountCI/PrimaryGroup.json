@@ -3479,7 +3479,7 @@
       ]
     },
     "dec eax": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
@@ -3492,13 +3492,12 @@
         "ubfx w21, w21, #29, #1",
         "cmp w20, #0x1 (1)",
         "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
         "bfi w20, w21, #29, #1",
         "str w20, [x28, #728]"
       ]
     },
     "dec rax": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
@@ -3511,7 +3510,6 @@
         "ubfx w21, w21, #29, #1",
         "cmp x20, #0x1 (1)",
         "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
         "bfi w20, w21, #29, #1",
         "str w20, [x28, #728]"
       ]
