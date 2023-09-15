@@ -34,106 +34,90 @@
       ]
     },
     "psrlw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xd1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsr z2.h, p6/m, z2.h, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsr z2.h, p6/m, z2.h, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psrld mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xd2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsr z2.s, p6/m, z2.s, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsr z2.s, p6/m, z2.s, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psrlq mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xd3",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsr z2.d, p6/m, z2.d, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsr z2.d, p6/m, z2.d, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psraw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xe1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "asr z2.h, p6/m, z2.h, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "asr z2.h, p6/m, z2.h, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psrad mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xe2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "asr z2.s, p6/m, z2.s, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "asr z2.s, p6/m, z2.s, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psllw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xf1",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsl z2.h, p6/m, z2.h, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsl z2.h, p6/m, z2.h, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "pslld mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xf2",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsl z2.s, p6/m, z2.s, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsl z2.s, p6/m, z2.s, z3.d",
         "str d2, [x28, #752]"
       ]
     },
     "psllq mm0, mm1": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
       "Comment": "0x0f 0xf3",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #752]",
-        "mov z0.d, d2",
-        "movprfx z2, z3",
-        "lsl z2.d, p6/m, z2.d, z0.d",
+        "ldr d2, [x28, #752]",
+        "ldr d3, [x28, #768]",
+        "lsl z2.d, p6/m, z2.d, z3.d",
         "str d2, [x28, #752]"
       ]
     }

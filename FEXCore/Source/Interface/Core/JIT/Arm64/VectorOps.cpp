@@ -2543,16 +2543,23 @@ DEF_OP(VUShrSWide) {
   else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
-    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    auto ShiftRegister = ShiftScalar.Z();
+    if (OpSize > 8) {
+      // SVE wide shifts don't need to duplicate the low bits unless the OpSize is 16-bytes
+      // Slightly more optimal for 8-byte opsize.
+      dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+      ShiftRegister = VTMP1.Z();
+    }
+
     if (Dst != Vector) {
       // NOTE: SVE LSR is a destructive operation.
       movprfx(Dst.Z(), Vector.Z());
     }
     if (ElementSize == 8) {
-      lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
     else {
-      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
   } else {
     // uqshl + ushr of 57-bits leaves 7-bits remaining.
@@ -2603,16 +2610,23 @@ DEF_OP(VSShrSWide) {
   else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
-    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    auto ShiftRegister = ShiftScalar.Z();
+    if (OpSize > 8) {
+      // SVE wide shifts don't need to duplicate the low bits unless the OpSize is 16-bytes
+      // Slightly more optimal for 8-byte opsize.
+      dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+      ShiftRegister = VTMP1.Z();
+    }
+
     if (Dst != Vector) {
       // NOTE: SVE LSR is a destructive operation.
       movprfx(Dst.Z(), Vector.Z());
     }
     if (ElementSize == 8) {
-      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
     else {
-      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
   } else {
     // uqshl + ushr of 57-bits leaves 7-bits remaining.
@@ -2663,16 +2677,23 @@ DEF_OP(VUShlSWide) {
   else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
-    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+    auto ShiftRegister = ShiftScalar.Z();
+    if (OpSize > 8) {
+      // SVE wide shifts don't need to duplicate the low bits unless the OpSize is 16-bytes
+      // Slightly more optimal for 8-byte opsize.
+      dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
+      ShiftRegister = VTMP1.Z();
+    }
+
     if (Dst != Vector) {
       // NOTE: SVE LSR is a destructive operation.
       movprfx(Dst.Z(), Vector.Z());
     }
     if (ElementSize == 8) {
-      lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
     else {
-      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister);
     }
   } else {
     // uqshl + ushr of 57-bits leaves 7-bits remaining.
