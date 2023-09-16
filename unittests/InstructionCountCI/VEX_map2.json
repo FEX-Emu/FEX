@@ -4036,6 +4036,16 @@
       ]
     },
     "shlx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xf7 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "lsl w4, w7, w5"
+      ]
+    },
+    "shlx eax, [ebx], ecx": {
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
@@ -4043,8 +4053,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "mov w21, w5",
-        "lsl w4, w20, w21"
+        "ldr w20, [x20]",
+        "lsl w4, w20, w5"
       ]
     },
     "shlx rax, rbx, rcx": {
@@ -4057,7 +4067,28 @@
         "lsl x4, x7, x5"
       ]
     },
+    "shlx rax, [rbx], rcx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xf7 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x7]",
+        "lsl x4, x20, x5"
+      ]
+    },
     "sarx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b10 0xf7 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "asr w4, w7, w5"
+      ]
+    },
+    "sarx eax, [ebx], ecx": {
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
@@ -4065,8 +4096,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "mov w21, w5",
-        "asr w4, w20, w21"
+        "ldr w20, [x20]",
+        "asr w4, w20, w5"
       ]
     },
     "sarx rax, rbx, rcx": {
@@ -4079,7 +4110,28 @@
         "asr x4, x7, x5"
       ]
     },
+    "sarx rax, [rbx], rcx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b10 0xf7 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x7]",
+        "asr x4, x20, x5"
+      ]
+    },
     "shrx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b11 0xf7 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "lsr w4, w7, w5"
+      ]
+    },
+    "shrx eax, [ebx], ecx": {
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
@@ -4087,8 +4139,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "mov w21, w5",
-        "lsr w4, w20, w21"
+        "ldr w20, [x20]",
+        "lsr w4, w20, w5"
       ]
     },
     "shrx rax, rbx, rcx": {
@@ -4099,6 +4151,17 @@
       ],
       "ExpectedArm64ASM": [
         "lsr x4, x7, x5"
+      ]
+    },
+    "shrx rax, [rbx], rcx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b11 0xf7 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x7]",
+        "lsr x4, x20, x5"
       ]
     }
   }
