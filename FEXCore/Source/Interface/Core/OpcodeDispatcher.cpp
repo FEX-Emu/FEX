@@ -2711,15 +2711,29 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
 void OpDispatchBuilder::MULX(OpcodeArgs) {
   // RDX is the implied source operand in the instruction
   const auto OperandSize = GetSrcSize(Op);
+  const auto OpSize = IR::SizeToOpSize(OperandSize);
 
-  OrderedNode* Src1 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, OperandSize);
+  // Src1 can be a memory operand, so ensure we constrain to the
+  // absolute width of the access in that scenario.
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Src1Size = Op->Src[1].IsGPR() ? GPRSize : OperandSize;
 
-  OrderedNode* ResultLo = _UMul(IR::SizeToOpSize(OperandSize), Src1, Src2);
-  OrderedNode* ResultHi = _UMulH(IR::SizeToOpSize(OperandSize), Src1, Src2);
+  OrderedNode* Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], Src1Size, Op->Flags, -1);
+  OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, GPRSize);
 
-  StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
-  StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
+  // As per the Intel Software Development Manual, if the destination and
+  // first operand correspond to the same register, then the result
+  // will be the high half of the multiplication result.
+  if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    OrderedNode* ResultHi = _UMulH(OpSize, Src1, Src2);
+    StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
+  } else {
+    OrderedNode* ResultLo = _UMul(OpSize, Src1, Src2);
+    OrderedNode* ResultHi = _UMulH(OpSize, Src1, Src2);
+
+    StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
+    StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
+  }
 }
 
 void OpDispatchBuilder::PDEP(OpcodeArgs) {

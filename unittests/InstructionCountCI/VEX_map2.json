@@ -3916,6 +3916,34 @@
       ]
     },
     "mulx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b11 0xf6 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mul w7, w5, w6",
+        "ubfx x0, x5, #0, #32",
+        "ubfx x1, x6, #0, #32",
+        "mul x4, x0, x1",
+        "lsr x4, x4, #32"
+      ]
+    },
+    "mulx eax, eax, ebx": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Same two destinations should only compute high part",
+        "Map 2 0b11 0xf6 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ubfx x0, x7, #0, #32",
+        "ubfx x1, x6, #0, #32",
+        "mul x4, x0, x1",
+        "lsr x4, x4, #32"
+      ]
+    },
+    "mulx eax, ebx, [ecx]": {
       "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
@@ -3923,10 +3951,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w5",
-        "mov w21, w6",
-        "mul w7, w20, w21",
+        "ldr w20, [x20]",
+        "mul w7, w20, w6",
         "ubfx x0, x20, #0, #32",
-        "ubfx x1, x21, #0, #32",
+        "ubfx x1, x6, #0, #32",
         "mul x4, x0, x1",
         "lsr x4, x4, #32"
       ]
@@ -3940,6 +3968,29 @@
       "ExpectedArm64ASM": [
         "mul x7, x5, x6",
         "umulh x4, x5, x6"
+      ]
+    },
+    "mulx rax, rax, rbx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Same two destinations should only compute high part",
+        "Map 2 0b11 0xf6 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "umulh x4, x7, x6"
+      ]
+    },
+    "mulx rax, rbx, [rcx]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b11 0xf6 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x5]",
+        "mul x7, x20, x6",
+        "umulh x4, x20, x6"
       ]
     },
     "bextr eax, ebx, ecx": {
