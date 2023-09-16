@@ -2627,12 +2627,16 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   GenerateFlags_BLSR(Op, Result, Src);
 }
 
+// Handles SARX, SHLX, and SHRX
 void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
-  // Handles SARX, SHLX, and SHRX
-
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  // In the event the source is a memory operand, use the
+  // exact width instead of the GPR size.
+  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? GPRSize : Size;
+
+  auto* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
+  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags, -1);
 
   auto* Result = [&]() -> OrderedNode* {
     // SARX
