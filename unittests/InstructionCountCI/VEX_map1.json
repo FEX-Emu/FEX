@@ -1355,16 +1355,15 @@
       ]
     },
     "vpshufd xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.s[0], v2.s[0]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -1375,16 +1374,15 @@
       ]
     },
     "vpshufd xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[1]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.s[0], v2.s[1]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -1395,16 +1393,15 @@
       ]
     },
     "vpshufd xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[2]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.s[0], v2.s[2]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -1415,16 +1412,15 @@
       ]
     },
     "vpshufd xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.s[0], v2.s[3]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.s[0], v2.s[3]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -1615,16 +1611,15 @@
       ]
     },
     "vpshufhw xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[4], v2.h[4]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[4], v2.h[4]",
         "mov v3.h[5], v2.h[4]",
         "mov v3.h[6], v2.h[4]",
         "mov v0.16b, v3.16b",
@@ -1635,16 +1630,15 @@
       ]
     },
     "vpshufhw xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[4], v2.h[5]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[4], v2.h[5]",
         "mov v3.h[5], v2.h[4]",
         "mov v3.h[6], v2.h[4]",
         "mov v0.16b, v3.16b",
@@ -1655,16 +1649,15 @@
       ]
     },
     "vpshufhw xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[4], v2.h[6]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[4], v2.h[6]",
         "mov v3.h[5], v2.h[4]",
         "mov v3.h[6], v2.h[4]",
         "mov v0.16b, v3.16b",
@@ -1675,16 +1668,15 @@
       ]
     },
     "vpshufhw xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[4], v2.h[7]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[4], v2.h[7]",
         "mov v3.h[5], v2.h[4]",
         "mov v3.h[6], v2.h[4]",
         "mov v0.16b, v3.16b",
@@ -1875,16 +1867,15 @@
       ]
     },
     "vpshuflw xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[0], v2.h[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[0], v2.h[0]",
         "mov v3.h[1], v2.h[0]",
         "mov v3.h[2], v2.h[0]",
         "mov v0.16b, v3.16b",
@@ -1895,16 +1886,15 @@
       ]
     },
     "vpshuflw xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[0], v2.h[1]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[0], v2.h[1]",
         "mov v3.h[1], v2.h[0]",
         "mov v3.h[2], v2.h[0]",
         "mov v0.16b, v3.16b",
@@ -1915,16 +1905,15 @@
       ]
     },
     "vpshuflw xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[0], v2.h[2]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[0], v2.h[2]",
         "mov v3.h[1], v2.h[0]",
         "mov v3.h[2], v2.h[0]",
         "mov v0.16b, v3.16b",
@@ -1935,16 +1924,15 @@
       ]
     },
     "vpshuflw xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "mov v0.16b, v2.16b",
-        "mov v0.h[0], v2.h[3]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v2.16b",
+        "mov v3.h[0], v2.h[3]",
         "mov v3.h[1], v2.h[0]",
         "mov v3.h[2], v2.h[0]",
         "mov v0.16b, v3.16b",

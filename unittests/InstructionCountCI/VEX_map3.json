@@ -3624,7 +3624,7 @@
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 00001111b": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
@@ -3640,9 +3640,8 @@
         "mov v2.s[3], v4.s[0]",
         "faddp v2.4s, v2.4s, v4.4s",
         "faddp v2.4s, v2.4s, v4.4s",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v4.16b",
+        "mov v3.s[0], v2.s[0]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -3665,7 +3664,7 @@
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
@@ -3677,9 +3676,8 @@
         "fmul v2.4s, v2.4s, v3.4s",
         "faddp v2.4s, v2.4s, v4.4s",
         "faddp v2.4s, v2.4s, v4.4s",
-        "mov v0.16b, v4.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v4.16b",
+        "mov v3.s[0], v2.s[0]",
         "mov v3.s[1], v2.s[0]",
         "mov v3.s[2], v2.s[0]",
         "mov v0.16b, v3.16b",
@@ -3872,7 +3870,7 @@
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 00001111b": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 14,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x41 128-bit"
@@ -3885,9 +3883,8 @@
         "mov v2.d[0], v4.d[0]",
         "mov v2.d[1], v4.d[0]",
         "faddp v2.2d, v2.2d, v4.2d",
-        "mov v0.16b, v4.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v4.16b",
+        "mov v3.d[0], v2.d[0]",
         "mov v0.16b, v3.16b",
         "mov v0.d[1], v2.d[0]",
         "mov v2.16b, v0.16b",
@@ -3908,7 +3905,7 @@
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x41 128-bit"
@@ -3919,9 +3916,8 @@
         "movi v4.2d, #0x0",
         "fmul v2.2d, v2.2d, v3.2d",
         "faddp v2.2d, v2.2d, v4.2d",
-        "mov v0.16b, v4.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v3.16b, v0.16b",
+        "mov v3.16b, v4.16b",
+        "mov v3.d[0], v2.d[0]",
         "mov v0.16b, v3.16b",
         "mov v0.d[1], v2.d[0]",
         "mov v2.16b, v0.16b",

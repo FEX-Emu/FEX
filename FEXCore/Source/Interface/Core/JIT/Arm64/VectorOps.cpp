@@ -2802,14 +2802,29 @@ DEF_OP(VInsElement) {
       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
-    if (Dst.Idx() != Reg.Idx()) {
+    // If nothing aliases the destination, then we can just
+    // move the DestVector over and directly insert.
+    if (Dst != Reg && Dst != SrcVector) {
+      mov(Dst.Q(), Reg.Q());
+      ins(SubRegSize, Dst.Q(), DestIdx, SrcVector.Q(), SrcIdx);
+      return;
+    }
+
+    // If our vector data to insert into is within a register
+    // that aliases the destination, then we can avoid using a
+    // temporary and just perform the insert.
+    //
+    // Otherwise, if the source vector to select from aliases
+    // the destination, then we hit the worst case where we
+    // need to use a temporary to avoid clobbering data.
+    if (Dst != Reg) {
       mov(VTMP1.Q(), Reg.Q());
       Reg = VTMP1;
     }
 
     ins(SubRegSize, Reg.Q(), DestIdx, SrcVector.Q(), SrcIdx);
 
-    if (Dst.Idx() != Reg.Idx()) {
+    if (Dst != Reg) {
       mov(Dst.Q(), Reg.Q());
     }
   }

@@ -3904,7 +3904,7 @@
       ]
     },
     "shufps xmm0, xmm1, 01000111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "odd elements inverted, Low 64-bits inserted",
@@ -3913,14 +3913,13 @@
         "0x0f 0xc6"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[3]",
-        "mov v2.16b, v0.16b",
+        "mov v2.16b, v16.16b",
+        "mov v2.s[0], v16.s[3]",
         "zip1 v16.2d, v2.2d, v17.2d"
       ]
     },
     "shufps xmm0, xmm1, 11100111b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "odd elements inverted, Top 64-bits inserted",
@@ -3929,16 +3928,14 @@
         "0x0f 0xc6"
       ],
       "ExpectedArm64ASM": [
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v16.s[3]",
-        "mov v2.16b, v0.16b",
-        "mov v0.16b, v2.16b",
-        "mov v0.d[1], v17.d[1]",
-        "mov v16.16b, v0.16b"
+        "mov v2.16b, v16.16b",
+        "mov v2.s[0], v16.s[3]",
+        "mov v16.16b, v2.16b",
+        "mov v16.d[1], v17.d[1]"
       ]
     },
     "shufps xmm0, xmm1, 11100001b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
         "Lower 32-bit elements inverted, Top 64-bits inserted",
@@ -3946,9 +3943,8 @@
       ],
       "ExpectedArm64ASM": [
         "rev64 v2.4s, v16.4s",
-        "mov v0.16b, v2.16b",
-        "mov v0.d[1], v17.d[1]",
-        "mov v16.16b, v0.16b"
+        "mov v16.16b, v2.16b",
+        "mov v16.d[1], v17.d[1]"
       ]
     },
     "shufps xmm0, xmm1, 01000001b": {
