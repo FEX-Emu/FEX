@@ -3078,9 +3078,17 @@ DEF_OP(VUShrNI2) {
     }
     splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
-    mov(VTMP1.Q(), VectorLower.Q());
-    shrn2(SubRegSize, VTMP1.Q(), VectorUpper.Q(), BitShift);
-    mov(Dst.Q(), VTMP1.Q());
+    auto Lower = VectorLower;
+    if (Dst != VectorLower) {
+      mov(VTMP1.Q(), VectorLower.Q());
+      Lower = VTMP1;
+    }
+
+    shrn2(SubRegSize, Lower.Q(), VectorUpper.Q(), BitShift);
+
+    if (Dst != VectorLower) {
+      mov(Dst.Q(), Lower.Q());
+    }
   }
 }
 
