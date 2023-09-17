@@ -3875,7 +3875,7 @@ DEF_OP(VTBL2) {
   auto VectorTable1 = GetVReg(Op->VectorTable1.ID());
   auto VectorTable2 = GetVReg(Op->VectorTable2.ID());
 
-  if (!AreVectorsSequential(VectorTable1, VectorTable2)) {
+  if (!ARMEmitter::AreVectorsSequential(VectorTable1, VectorTable2)) {
     // Vector registers aren't sequential, need to move to temporaries.
     if (OpSize == 32) {
       mov(VTMP1.Z(), VectorTable1.Z());
@@ -3886,6 +3886,8 @@ DEF_OP(VTBL2) {
       mov(VTMP2.Q(), VectorTable2.Q());
     }
 
+    static_assert(ARMEmitter::AreVectorsSequential(VTMP1, VTMP2),
+                  "VTMP1 and VTMP2 must be sequential in order to use double-table TBL");
     VectorTable1 = VTMP1;
     VectorTable2 = VTMP2;
   }
