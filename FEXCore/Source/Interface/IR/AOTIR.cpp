@@ -310,7 +310,7 @@ namespace FEXCore::IR {
 
       if (AOTIRCacheEntry.Entry) {
         if (DebugData && CTX->Config.LibraryJITNaming()) {
-          CTX->Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
+          CTX->Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
         }
 
         if (CTX->Config.GDBSymbols()) {
