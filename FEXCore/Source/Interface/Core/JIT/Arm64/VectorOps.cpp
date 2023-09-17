@@ -2405,7 +2405,7 @@ DEF_OP(VSShr) {
 
     if (Dst == ShiftVector) {
       // If destination aliases the shift vector then we need to move it temporarily.
-      mov(VTMP2.Z(), ShiftVector.Z());
+      mov(VTMP1.Z(), ShiftVector.Z());
       ShiftVector = VTMP1;
     }
 
