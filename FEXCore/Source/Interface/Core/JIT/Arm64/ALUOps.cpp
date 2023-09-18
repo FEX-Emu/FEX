@@ -1285,13 +1285,19 @@ DEF_OP(Select) {
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
   bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
+  uint64_t all_ones = OpSize == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+
   ARMEmitter::Register Dst = GetReg(Node);
 
   if (is_const_true || is_const_false) {
-    if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
+    if (is_const_false != true || is_const_true != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
       LOGMAN_MSG_A_FMT("Select: Unsupported compare inline parameters");
     }
-    cset(EmitSize, Dst, cc);
+
+    if (const_true == all_ones)
+      csetm(EmitSize, Dst, cc);
+    else
+      cset(EmitSize, Dst, cc);
   } else {
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
   }

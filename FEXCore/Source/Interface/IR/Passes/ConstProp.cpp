@@ -1110,11 +1110,18 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           }
         }
 
+        uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+#ifdef JIT_ARM64
+        bool SupportsAllOnes = true;
+#else
+        bool SupportsAllOnes = false;
+#endif
+
         uint64_t Constant2{};
         uint64_t Constant3{};
         if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
             IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
-            Constant2 == 1 &&
+            (Constant2 == 1 || (SupportsAllOnes && Constant2 == AllOnes)) &&
             Constant3 == 0)
         {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
