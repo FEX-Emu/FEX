@@ -8516,16 +8516,15 @@
       ]
     },
     "fcmove st0, st0": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc8 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8544,16 +8543,15 @@
       ]
     },
     "fcmove st0, st1": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc9 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8572,16 +8570,15 @@
       ]
     },
     "fcmove st0, st2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xca /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8600,16 +8597,15 @@
       ]
     },
     "fcmove st0, st3": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcb /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8628,16 +8624,15 @@
       ]
     },
     "fcmove st0, st4": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcc /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8656,16 +8651,15 @@
       ]
     },
     "fcmove st0, st5": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcd /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8684,16 +8678,15 @@
       ]
     },
     "fcmove st0, st6": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xce /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8712,16 +8705,15 @@
       ]
     },
     "fcmove st0, st7": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcf /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8964,20 +8956,19 @@
       ]
     },
     "fcmovu st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd8 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -8996,20 +8987,19 @@
       ]
     },
     "fcmovu st0, st1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd9 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9028,20 +9018,19 @@
       ]
     },
     "fcmovu st0, st2": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xda /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9060,20 +9049,19 @@
       ]
     },
     "fcmovu st0, st3": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdb /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9092,20 +9080,19 @@
       ]
     },
     "fcmovu st0, st4": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdc /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9124,20 +9111,19 @@
       ]
     },
     "fcmovu st0, st5": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdd /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9156,20 +9142,19 @@
       ]
     },
     "fcmovu st0, st6": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xde /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9188,20 +9173,19 @@
       ]
     },
     "fcmovu st0, st7": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdf /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov w21, #0x0",
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
@@ -9787,16 +9771,15 @@
       ]
     },
     "fcmovne st0, st0": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc8 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9815,16 +9798,15 @@
       ]
     },
     "fcmovne st0, st1": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc9 /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9843,16 +9825,15 @@
       ]
     },
     "fcmovne st0, st2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xca /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9871,16 +9852,15 @@
       ]
     },
     "fcmovne st0, st3": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcb /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9899,16 +9879,15 @@
       ]
     },
     "fcmovne st0, st4": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcc /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9927,16 +9906,15 @@
       ]
     },
     "fcmovne st0, st5": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcd /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9955,16 +9933,15 @@
       ]
     },
     "fcmovne st0, st6": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xce /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -9983,16 +9960,15 @@
       ]
     },
     "fcmovne st0, st7": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcf /1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldr w21, [x28, #728]",
-        "ubfx w21, w21, #30, #1",
-        "orr x20, x20, x21, lsl #6",
+        "ldr w20, [x28, #728]",
+        "ubfx w20, w20, #30, #1",
+        "lsl x20, x20, #6",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10235,20 +10211,19 @@
       ]
     },
     "fcmovnu st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd8 /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10267,20 +10242,19 @@
       ]
     },
     "fcmovnu st0, st1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd9 /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10299,20 +10273,19 @@
       ]
     },
     "fcmovnu st0, st2": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xda /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10331,20 +10304,19 @@
       ]
     },
     "fcmovnu st0, st3": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdb /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10363,20 +10335,19 @@
       ]
     },
     "fcmovnu st0, st4": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdc /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10395,20 +10366,19 @@
       ]
     },
     "fcmovnu st0, st5": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdd /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10427,20 +10397,19 @@
       ]
     },
     "fcmovnu st0, st6": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xde /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
@@ -10459,20 +10428,19 @@
       ]
     },
     "fcmovnu st0, st7": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdf /3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "ldrb w21, [x28, #706]",
-        "eor w21, w21, #0x1",
-        "fmov s2, w21",
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
         "cnt v2.16b, v2.16b",
-        "umov w21, v2.b[0]",
-        "and x21, x21, #0x1",
-        "orr x20, x20, x21, lsl #2",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "eor w20, w20, #0x1",
+        "lsl x20, x20, #2",
         "mov x21, #0xffffffffffffffff",
         "mov w22, #0x0",
         "cmp x20, #0x0 (0)",
