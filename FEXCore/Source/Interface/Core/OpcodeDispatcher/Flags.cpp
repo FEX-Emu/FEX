@@ -140,6 +140,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   CalculateDeferredFlags();
 
   OrderedNode *Original = _Constant(0);
+  bool Nonzero = false;
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
@@ -149,6 +150,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_LOC)) {
     static_assert(FEXCore::X86State::RFLAG_CF_LOC == 0);
     Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    Nonzero = true;
   }
 
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
@@ -174,7 +176,12 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     else
       Flag = GetRFLAG(FlagOffset);
 
-    Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
+    if (Nonzero)
+      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
+    else
+      Original = _Lshl(OpSize::i64Bit, Flag, _Constant(FlagOffset));
+
+    Nonzero = true;
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
@@ -201,14 +208,9 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPF() {
+OrderedNode *OpDispatchBuilder::LoadPFInverted() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-
-  // We will use the bottom bit of the popcount, set if an odd number of bits are set.
-  // But the x86 parity flag is supposed to be set for an even number of bits.
-  // Simply invert any bit of the input GPR and that will invert the bottom bit of the
-  PFByte = _Xor(OpSize::i32Bit, PFByte, _Constant(1));
 
   // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
   // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
@@ -220,6 +222,10 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
 
   // Mask off the bottom bit only.
   return _And(OpSize::i64Bit, Parity, _Constant(1));
+}
+
+OrderedNode *OpDispatchBuilder::LoadPF() {
+  return _Xor(OpSize::i32Bit, LoadPFInverted(), _Constant(1));
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {

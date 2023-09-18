@@ -906,11 +906,11 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       break;
     }
     case 0xA: { // JP - Jump if PF == 1
-      SrcCond = _Select(FEXCore::IR::COND_NEQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(FEXCore::IR::COND_EQ, LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xB: { // JNP - Jump if PF == 0
-      SrcCond = _Select(FEXCore::IR::COND_EQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ, LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xC: { // SF <> OF
