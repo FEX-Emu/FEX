@@ -140,6 +140,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   CalculateDeferredFlags();
 
   OrderedNode *Original = _Constant(0);
+  bool Nonzero = false;
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
@@ -149,6 +150,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_LOC)) {
     static_assert(FEXCore::X86State::RFLAG_CF_LOC == 0);
     Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    Nonzero = true;
   }
 
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
@@ -174,7 +176,12 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     else
       Flag = GetRFLAG(FlagOffset);
 
-    Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
+    if (Nonzero)
+      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
+    else
+      Original = _Lshl(OpSize::i64Bit, Flag, _Constant(FlagOffset));
+
+    Nonzero = true;
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
