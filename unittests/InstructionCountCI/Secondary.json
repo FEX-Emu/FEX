@@ -617,22 +617,6 @@
       ]
     },
     "cmovpe ax, bx": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": "0x0f 0x4a",
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #706]",
-        "fmov s2, w20",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
-        "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
-        "cmp w20, #0x0 (0)",
-        "csel w20, w7, w4, ne",
-        "bfxil x4, x20, #0, #16"
-      ]
-    },
-    "cmovpe eax, ebx": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0x4a",
@@ -642,58 +626,40 @@
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
-        "cmp w20, #0x0 (0)",
-        "csel w4, w7, w4, ne"
-      ]
-    },
-    "cmovpe rax, rbx": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
-      "Comment": "0x0f 0x4a",
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #706]",
-        "fmov s2, w20",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
-        "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
-        "cmp w20, #0x0 (0)",
-        "csel x4, x7, x4, ne"
-      ]
-    },
-    "cmovnp ax, bx": {
-      "ExpectedInstructionCount": 9,
-      "Optimal": "No",
-      "Comment": "0x0f 0x4b",
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #706]",
-        "fmov s2, w20",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
-        "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
         "cmp w20, #0x0 (0)",
         "csel w20, w7, w4, eq",
         "bfxil x4, x20, #0, #16"
       ]
     },
-    "cmovnp eax, ebx": {
-      "ExpectedInstructionCount": 8,
+    "cmovpe eax, ebx": {
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
-      "Comment": "0x0f 0x4b",
+      "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #706]",
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
         "cmp w20, #0x0 (0)",
         "csel w4, w7, w4, eq"
       ]
     },
-    "cmovnp rax, rbx": {
+    "cmovpe rax, rbx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4a",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
+        "cnt v2.16b, v2.16b",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "cmp w20, #0x0 (0)",
+        "csel x4, x7, x4, eq"
+      ]
+    },
+    "cmovnp ax, bx": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0f 0x4b",
@@ -703,9 +669,37 @@
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "and x20, x20, #0x1",
-        "eor w20, w20, #0x1",
         "cmp w20, #0x0 (0)",
-        "csel x4, x7, x4, eq"
+        "csel w20, w7, w4, ne",
+        "bfxil x4, x20, #0, #16"
+      ]
+    },
+    "cmovnp eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4b",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
+        "cnt v2.16b, v2.16b",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "cmp w20, #0x0 (0)",
+        "csel w4, w7, w4, ne"
+      ]
+    },
+    "cmovnp rax, rbx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4b",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #706]",
+        "fmov s2, w20",
+        "cnt v2.16b, v2.16b",
+        "umov w20, v2.b[0]",
+        "and x20, x20, #0x1",
+        "cmp w20, #0x0 (0)",
+        "csel x4, x7, x4, ne"
       ]
     },
     "cmovl ax, bx": {
