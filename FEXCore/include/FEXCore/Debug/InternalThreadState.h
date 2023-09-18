@@ -13,6 +13,7 @@
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
+#include <chrono>
 #include <shared_mutex>
 #include <type_traits>
 
@@ -69,6 +70,27 @@ namespace FEXCore::Core {
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
   };
 
+  // Buffered JIT symbol tracking.
+  struct JITSymbolBuffer {
+    // Maximum buffer size to ensure we are a page in size.
+    constexpr static size_t BUFFER_SIZE = 4096 - (8 * 2);
+    // Maximum distance until the end of the buffer to do a write.
+    constexpr static size_t NEEDS_WRITE_DISTANCE = BUFFER_SIZE - 64;
+    // Maximum time threshhold to wait before a buffer write occurs.
+    constexpr static std::chrono::milliseconds MAXIMUM_THRESHOLD {100};
+
+    JITSymbolBuffer()
+      : LastWrite {std::chrono::steady_clock::now()} {
+    }
+    // stead_clock to ensure a monotonic increasing clock.
+    // In highly stressed situations this can still cause >2% CPU time in vdso_clock_gettime.
+    // If we need lower CPU time when JIT symbols are enabled then FEX can read the cycle counter directly.
+    std::chrono::steady_clock::time_point LastWrite{};
+    size_t Offset{};
+    char Buffer[BUFFER_SIZE]{};
+  };
+  static_assert(sizeof(JITSymbolBuffer) == 4096, "Ensure this is one page in size");
+
   struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
     FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
@@ -97,6 +119,7 @@ namespace FEXCore::Core {
     fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
     FEXCore::HLE::ThreadManagement ThreadManager;
+    fextl::unique_ptr<JITSymbolBuffer> SymbolBuffer;
 
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};

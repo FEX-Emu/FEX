@@ -338,7 +338,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
   if (CTX->Config.BlockJITNaming()) {
     fextl::string Name = fextl::fmt::format("Dispatch_{}", FHU::Syscalls::gettid());
-    CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
+    CTX->Symbols.RegisterNamedRegion(reinterpret_cast<void*>(Start), End-Start, Name);
   }
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(Start), End-Start);

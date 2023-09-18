@@ -26,42 +26,6 @@ namespace FEXCore {
     fd = open(PerfMap.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_APPEND, 0644);
   }
 
-  void JITSymbols::Register(const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
-    if (fd == -1) return;
-
-    // Linux perf format is very straightforward
-    // `<HostPtr> <Size> <Name>\n`
-    const auto Buffer = fextl::fmt::format("{} {:x} JIT_0x{:x}_{}\n", HostAddr, CodeSize, GuestAddr, HostAddr);
-    auto Result = write(fd, Buffer.c_str(), Buffer.size());
-    if (Result == -1 && errno == EBADF) {
-      fd = -1;
-    }
-  }
-
-  void JITSymbols::Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
-    if (fd == -1) return;
-
-    // Linux perf format is very straightforward
-    // `<HostPtr> <Size> <Name>\n`
-    const auto Buffer = fextl::fmt::format("{} {:x} {}_{}\n", HostAddr, CodeSize, Name, HostAddr);
-    auto Result = write(fd, Buffer.c_str(), Buffer.size());
-    if (Result == -1 && errno == EBADF) {
-      fd = -1;
-    }
-  }
-
-  void JITSymbols::Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset) {
-    if (fd == -1) return;
-
-    // Linux perf format is very straightforward
-    // `<HostPtr> <Size> <Name>\n`
-    const auto Buffer = fextl::fmt::format("{} {:x} {}+0x{:x} ({})\n", HostAddr, CodeSize, Name, Offset, HostAddr);
-    auto Result = write(fd, Buffer.c_str(), Buffer.size());
-    if (Result == -1 && errno == EBADF) {
-      fd = -1;
-    }
-  }
-
   void JITSymbols::RegisterNamedRegion(const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
     if (fd == -1) return;
 
@@ -86,4 +50,89 @@ namespace FEXCore {
     }
   }
 
+  // Buffered JIT symbols.
+  void JITSymbols::Register(Core::JITSymbolBuffer *Buffer, const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
+    if (fd == -1) return;
+
+    // Calculate remaining sizes.
+    const auto RemainingSize = Buffer->BUFFER_SIZE - Buffer->Offset;
+    const auto CurrentBufferOffset = &Buffer->Buffer[Buffer->Offset];
+
+    // Linux perf format is very straightforward
+    // `<HostPtr> <Size> <Name>\n`
+    const auto FMTResult = fmt::format_to_n(CurrentBufferOffset, RemainingSize, "{} {:x} JIT_0x{:x}_{}\n", HostAddr, CodeSize, GuestAddr, HostAddr);
+    if (FMTResult.out >= &Buffer->Buffer[Buffer->BUFFER_SIZE]) {
+      // Couldn't fit, need to force a write.
+      WriteBuffer(Buffer, true);
+      // Rerun
+      Register(Buffer, HostAddr, GuestAddr, CodeSize);
+      return;
+    }
+
+    Buffer->Offset += FMTResult.size;
+    WriteBuffer(Buffer);
+  }
+
+  void JITSymbols::Register(Core::JITSymbolBuffer *Buffer, const void *HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset) {
+    if (fd == -1) return;
+
+    // Calculate remaining sizes.
+    const auto RemainingSize = Buffer->BUFFER_SIZE - Buffer->Offset;
+    const auto CurrentBufferOffset = &Buffer->Buffer[Buffer->Offset];
+
+    // Linux perf format is very straightforward
+    // `<HostPtr> <Size> <Name>\n`
+    const auto FMTResult = fmt::format_to_n(CurrentBufferOffset, RemainingSize, "{} {:x} {}+0x{:x} ({})\n", HostAddr, CodeSize, Name, Offset, HostAddr);
+    if (FMTResult.out >= &Buffer->Buffer[Buffer->BUFFER_SIZE]) {
+      // Couldn't fit, need to force a write.
+      WriteBuffer(Buffer, true);
+      // Rerun
+      Register(Buffer, HostAddr, CodeSize, Name, Offset);
+      return;
+    }
+
+    Buffer->Offset += FMTResult.size;
+    WriteBuffer(Buffer);
+  }
+
+  void JITSymbols::RegisterNamedRegion(Core::JITSymbolBuffer *Buffer, const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
+    if (fd == -1) return;
+
+    // Calculate remaining sizes.
+    const auto RemainingSize = Buffer->BUFFER_SIZE - Buffer->Offset;
+    const auto CurrentBufferOffset = &Buffer->Buffer[Buffer->Offset];
+
+    // Linux perf format is very straightforward
+    // `<HostPtr> <Size> <Name>\n`
+    const auto FMTResult = fmt::format_to_n(CurrentBufferOffset, RemainingSize, "{} {:x} {}\n", HostAddr, CodeSize, Name);
+    if (FMTResult.out >= &Buffer->Buffer[Buffer->BUFFER_SIZE]) {
+      // Couldn't fit, need to force a write.
+      WriteBuffer(Buffer, true);
+      // Rerun
+      RegisterNamedRegion(Buffer, HostAddr, CodeSize, Name);
+      return;
+    }
+
+    Buffer->Offset += FMTResult.size;
+    WriteBuffer(Buffer);
+  }
+
+  void JITSymbols::WriteBuffer(Core::JITSymbolBuffer *Buffer, bool ForceWrite) {
+    auto Now = std::chrono::steady_clock::now();
+    if (!ForceWrite) {
+      if (((Buffer->LastWrite - Now) < Buffer->MAXIMUM_THRESHOLD) &&
+          Buffer->Offset < Buffer->NEEDS_WRITE_DISTANCE) {
+        // Still buffering, no need to write.
+        return;
+      }
+    }
+
+    Buffer->LastWrite = Now;
+    auto Result = write(fd, Buffer->Buffer, Buffer->Offset);
+    if (Result == -1 && errno == EBADF) {
+      fd = -1;
+    }
+
+    Buffer->Offset = 0;
+  }
 } // namespace FEXCore
