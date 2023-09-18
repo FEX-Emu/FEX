@@ -201,14 +201,9 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPF() {
+OrderedNode *OpDispatchBuilder::LoadPFInverted() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-
-  // We will use the bottom bit of the popcount, set if an odd number of bits are set.
-  // But the x86 parity flag is supposed to be set for an even number of bits.
-  // Simply invert any bit of the input GPR and that will invert the bottom bit of the
-  PFByte = _Xor(OpSize::i32Bit, PFByte, _Constant(1));
 
   // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
   // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
@@ -220,6 +215,10 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
 
   // Mask off the bottom bit only.
   return _And(OpSize::i64Bit, Parity, _Constant(1));
+}
+
+OrderedNode *OpDispatchBuilder::LoadPF() {
+  return _Xor(OpSize::i32Bit, LoadPFInverted(), _Constant(1));
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
