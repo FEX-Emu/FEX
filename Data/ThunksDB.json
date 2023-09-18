@@ -144,6 +144,12 @@
         "@PREFIX_LIB@/libasound.so.2.0.0"
       ]
     },
+    "fex_thunk_test": {
+      "Library": "libfex_thunk_test-guest.so",
+      "Overlay": [
+        "@PREFIX_LIB@/libfex_thunk_test.so"
+      ]
+    },
     "Xrender": {
       "Library": "libXrender-guest.so",
       "Overlay": [

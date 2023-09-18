@@ -3,8 +3,8 @@ project(FEXLinuxTests)
 
 set(CMAKE_CXX_STANDARD 17)
 
-unset (CMAKE_C_FLAGS)
-unset (CMAKE_CXX_FLAGS)
+unset(CMAKE_C_FLAGS)
+unset(CMAKE_CXX_FLAGS)
 
 set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
 
@@ -39,5 +39,7 @@ target_link_libraries(smc-mt-2.${BITNESS} PRIVATE pthread)
 target_link_libraries(smc-shared-1.${BITNESS} PRIVATE rt pthread)
 
 target_link_libraries(smc-shared-2.${BITNESS} PRIVATE rt pthread)
+
+target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
 
 target_link_libraries(timer-sigev-thread.${BITNESS} PRIVATE rt pthread)

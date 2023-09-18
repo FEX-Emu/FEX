@@ -20,7 +20,7 @@ foreach(TEST ${TESTS})
     "${TEST_NAME}"
     "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "--no-silent" "-c" "irjit" "-n" "500" "--"
+    "-o" "stderr" "--no-silent" "-c" "irjit" "-n" "500" "--"
     "${TEST}")
 
 endforeach()
