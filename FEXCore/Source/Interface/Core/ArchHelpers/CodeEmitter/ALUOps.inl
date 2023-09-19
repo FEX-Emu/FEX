@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /* ALU instruction emitters.
  *
  * Almost all of these operations have `ARMEmitter::Size` as their first argument.
