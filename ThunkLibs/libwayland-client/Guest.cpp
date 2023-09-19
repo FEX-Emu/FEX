@@ -85,57 +85,57 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     auto [ptr, res] = std::from_chars(signature.begin(), signature.end(), since_version, 10);
     signature = signature.substr(ptr - signature.begin());
 
-    if (signature == "u") {
-      // E.g. wl_registry::global_remove
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u'>(callback[i]);
-    } else if (signature == "usu") {
-      // E.g. wl_registry::global
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 's', 'u'>(callback[i]);
-    } else if (signature == "s") {
-      // E.g. wl_seat::name
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s'>(callback[i]);
-    } else if (signature == "") {
+    if (signature == "") {
       // E.g. xdg_toplevel::close
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<>(callback[i]);
+    } else if (signature == "a") {
+      // E.g. xdg_toplevel::wm_capabilities
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'a'>(callback[i]);
     } else if (signature == "ii") {
       // E.g. xdg_toplevel::configure_bounds
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'i'>(callback[i]);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'i', 'a'>(callback[i]);
-    } else if (signature == "a") {
-      // E.g. xdg_toplevel::wm_capabilities
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'a'>(callback[i]);
-    } else if (signature == "uoff") {
-      // E.g. wl_pointer_listener::enter
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback[i]);
-    } else if (signature == "uo") {
-      // E.g. wl_pointer_listener::leave
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o'>(callback[i]);
+    } else if (signature == "u") {
+      // E.g. wl_registry::global_remove
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u'>(callback[i]);
     } else if (signature == "uff") {
       // E.g. wl_pointer_listener::motion
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'f', 'f'>(callback[i]);
-    } else if (signature == "uuuu") {
-      // E.g. wl_pointer_listener::button
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'u', 'u'>(callback[i]);
-    } else if (signature == "uuf") {
-      // E.g. wl_pointer_listener::axis
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'f'>(callback[i]);
-    } else if (signature == "uu") {
-      // E.g. wl_pointer_listener::axis_stop
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u'>(callback[i]);
-    } else if (signature == "ui") {
-      // E.g. wl_pointer_listener::axis_discrete
-      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'i'>(callback[i]);
     } else if (signature == "uhu") {
       // E.g. wl_keyboard_listener::keymap
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'h', 'u'>(callback[i]);
+    } else if (signature == "ui") {
+      // E.g. wl_pointer_listener::axis_discrete
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'i'>(callback[i]);
+    } else if (signature == "uo") {
+      // E.g. wl_pointer_listener::leave
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o'>(callback[i]);
     } else if (signature == "uoa") {
       // E.g. wl_keyboard_listener::enter
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o', 'a'>(callback[i]);
+    } else if (signature == "uoff") {
+      // E.g. wl_pointer_listener::enter
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback[i]);
+    } else if (signature == "usu") {
+      // E.g. wl_registry::global
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 's', 'u'>(callback[i]);
+    } else if (signature == "uu") {
+      // E.g. wl_pointer_listener::axis_stop
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u'>(callback[i]);
+    } else if (signature == "uuf") {
+      // E.g. wl_pointer_listener::axis
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'f'>(callback[i]);
+    } else if (signature == "uuuu") {
+      // E.g. wl_pointer_listener::button
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'u', 'u'>(callback[i]);
     } else if (signature == "uuuuu") {
       // E.g. wl_keyboard_listener::modifiers
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'u', 'u', 'u'>(callback[i]);
+    } else if (signature == "s") {
+      // E.g. wl_seat::name
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s'>(callback[i]);
     } else {
       fprintf(stderr, "Unknown wayland event signature descriptor %s\n", signature.data());
       std::abort();
