@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | location pointed to by `zPtr'.  If the NaN is a signaling NaN, the invalid
 | exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void softfloat_f32UIToCommonNaN( uint_fast32_t uiA, struct commonNaN *zPtr )
 {
 

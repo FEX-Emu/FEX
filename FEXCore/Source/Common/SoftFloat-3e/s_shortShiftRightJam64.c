@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_shortShiftRightJam64
 
+FEXCORE_PRESERVE_ALL_ATTR
 uint64_t softfloat_shortShiftRightJam64( uint64_t a, uint_fast8_t dist )
 {
 

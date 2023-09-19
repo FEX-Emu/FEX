@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_shiftRightJam64Extra
 
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint64_extra
  softfloat_shiftRightJam64Extra(
      uint64_t a, uint64_t extra, uint_fast32_t dist )

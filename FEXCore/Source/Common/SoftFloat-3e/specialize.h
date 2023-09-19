@@ -135,12 +135,14 @@ uint_fast16_t
 | location pointed to by 'zPtr'.  If the NaN is a signaling NaN, the invalid
 | exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void softfloat_f32UIToCommonNaN( uint_fast32_t uiA, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into a 32-bit floating-point
 | NaN, and returns the bit pattern of this value as an unsigned integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 uint_fast32_t softfloat_commonNaNToF32UI( const struct commonNaN *aPtr );
 
 /*----------------------------------------------------------------------------
@@ -170,12 +172,14 @@ uint_fast32_t
 | location pointed to by 'zPtr'.  If the NaN is a signaling NaN, the invalid
 | exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void softfloat_f64UIToCommonNaN( uint_fast64_t uiA, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into a 64-bit floating-point
 | NaN, and returns the bit pattern of this value as an unsigned integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 uint_fast64_t softfloat_commonNaNToF64UI( const struct commonNaN *aPtr );
 
 /*----------------------------------------------------------------------------
@@ -215,6 +219,7 @@ uint_fast64_t
 | location pointed to by 'zPtr'.  If the NaN is a signaling NaN, the invalid
 | exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void
  softfloat_extF80UIToCommonNaN(
      uint_fast16_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
@@ -224,6 +229,7 @@ void
 | floating-point NaN, and returns the bit pattern of this value as an unsigned
 | integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_commonNaNToExtF80UI( const struct commonNaN *aPtr );
 
 /*----------------------------------------------------------------------------
@@ -235,6 +241,7 @@ struct uint128 softfloat_commonNaNToExtF80UI( const struct commonNaN *aPtr );
 | result.  If either original floating-point value is a signaling NaN, the
 | invalid exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_propagateNaNExtF80UI(
      uint_fast16_t uiA64,
@@ -264,6 +271,7 @@ struct uint128
 | pointed to by 'zPtr'.  If the NaN is a signaling NaN, the invalid exception
 | is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void
  softfloat_f128UIToCommonNaN(
      uint_fast64_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
@@ -272,6 +280,7 @@ void
 | Converts the common NaN pointed to by 'aPtr' into a 128-bit floating-point
 | NaN, and returns the bit pattern of this value as an unsigned integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_commonNaNToF128UI( const struct commonNaN * );
 
 /*----------------------------------------------------------------------------

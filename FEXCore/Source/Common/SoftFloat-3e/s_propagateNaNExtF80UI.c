@@ -50,6 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | result.  If either original floating-point value is a signaling NaN, the
 | invalid exception is raised.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_propagateNaNExtF80UI(
      uint_fast16_t uiA64,

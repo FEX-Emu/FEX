@@ -68,9 +68,11 @@ uint_fast64_t
 uint_fast64_t softfloat_roundMToUI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
 
+FEXCORE_PRESERVE_ALL_ATTR
 int_fast32_t softfloat_roundToI32( bool, uint_fast64_t, uint_fast8_t, bool );
 
 #ifdef SOFTFLOAT_FAST_INT64
+FEXCORE_PRESERVE_ALL_ATTR
 int_fast64_t
  softfloat_roundToI64(
      bool, uint_fast64_t, uint_fast64_t, uint_fast8_t, bool );
@@ -109,8 +111,10 @@ float16_t
 #define isNaNF32UI( a ) (((~(a) & 0x7F800000) == 0) && ((a) & 0x007FFFFF))
 
 struct exp16_sig32 { int_fast16_t exp; uint_fast32_t sig; };
+FEXCORE_PRESERVE_ALL_ATTR
 struct exp16_sig32 softfloat_normSubnormalF32Sig( uint_fast32_t );
 
+FEXCORE_PRESERVE_ALL_ATTR
 float32_t softfloat_roundPackToF32( bool, int_fast16_t, uint_fast32_t );
 float32_t softfloat_normRoundPackToF32( bool, int_fast16_t, uint_fast32_t );
 
@@ -130,8 +134,10 @@ float32_t
 #define isNaNF64UI( a ) (((~(a) & UINT64_C( 0x7FF0000000000000 )) == 0) && ((a) & UINT64_C( 0x000FFFFFFFFFFFFF )))
 
 struct exp16_sig64 { int_fast16_t exp; uint_fast64_t sig; };
+FEXCORE_PRESERVE_ALL_ATTR
 struct exp16_sig64 softfloat_normSubnormalF64Sig( uint_fast64_t );
 
+FEXCORE_PRESERVE_ALL_ATTR
 float64_t softfloat_roundPackToF64( bool, int_fast16_t, uint_fast64_t );
 float64_t softfloat_normRoundPackToF64( bool, int_fast16_t, uint_fast64_t );
 
@@ -155,11 +161,14 @@ float64_t
 *----------------------------------------------------------------------------*/
 
 struct exp32_sig64 { int_fast32_t exp; uint64_t sig; };
+FEXCORE_PRESERVE_ALL_ATTR
 struct exp32_sig64 softfloat_normSubnormalExtF80Sig( uint_fast64_t );
 
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_roundPackToExtF80(
      bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_normRoundPackToExtF80(
      bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
@@ -181,6 +190,7 @@ extFloat80_t
 #define isNaNF128UI( a64, a0 ) (((~(a64) & UINT64_C( 0x7FFF000000000000 )) == 0) && (a0 || ((a64) & UINT64_C( 0x0000FFFFFFFFFFFF ))))
 
 struct exp32_sig128 { int_fast32_t exp; struct uint128 sig; };
+FEXCORE_PRESERVE_ALL_ATTR
 struct exp32_sig128
  softfloat_normSubnormalF128Sig( uint_fast64_t, uint_fast64_t );
 

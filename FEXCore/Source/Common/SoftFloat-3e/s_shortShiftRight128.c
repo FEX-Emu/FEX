@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_shortShiftRight128
 
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_shortShiftRight128( uint64_t a64, uint64_t a0, uint_fast8_t dist )
 {
