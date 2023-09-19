@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 meta: frontend|x86-tables ~ Metadata that drives the frontend x86/64 decoding

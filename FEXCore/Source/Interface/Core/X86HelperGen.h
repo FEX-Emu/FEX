@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 tags: glue|x86-guest-code

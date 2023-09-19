@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Interface/Core/CPUID.h"
 #include <FEXCore/Core/HostFeatures.h>
 

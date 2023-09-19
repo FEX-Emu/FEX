@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Interface/Core/BlockSamplingData.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
