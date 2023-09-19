@@ -284,8 +284,10 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_guest) {
                         file << "fex_guest_function_ptr a_" << idx;
+                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                        fmt::print(file, "guest_layout<{}> a_{}", type.getAsString(), idx);
                     } else {
-                      file << format_decl(type, fmt::format("a_{}", idx));
+                        file << format_decl(type, fmt::format("a_{}", idx));
                     }
                 }
                 // Using trailing return type as it makes handling function pointer returns much easier
@@ -293,11 +295,13 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             }
 
             // Packed argument structs used in fexfn_unpack_*
-            auto GeneratePackedArgs = [&](const auto &function_name, const auto &thunk) -> std::string {
+            auto GeneratePackedArgs = [&](const auto &function_name, const ThunkedFunction &thunk) -> std::string {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
                 file << "struct " << struct_name << " {\n";
 
-                file << format_struct_members(thunk, "  ");
+                for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
+                }
                 if (!thunk.return_type->isVoidType()) {
                     file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
                 } else if (thunk.param_types.size() == 0) {
@@ -319,18 +323,22 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
             file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
             {
                 auto format_param = [&](std::size_t idx) {
+                    std::string raw_arg = fmt::format("args->a_{}.data", idx);
+
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return fmt::format("fex_guest_function_ptr {{ args->a_{} }}", idx);
+                        return fmt::format("fex_guest_function_ptr {{ {} }}", raw_arg);
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = fmt::format("args->a_{}", idx);
+                        auto arg_name = fmt::format("args->a_{}.data", idx);
                         // Use comma operator to inject a function call before returning the argument
                         return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
-
-                    } else {
+                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                        // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
+                    } else {
+                        return raw_arg;
                     }
                 };
 
@@ -362,8 +370,12 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                     annotations += ", ";
                 }
 
-                // TODO: Add annotations as needed
-                annotations += "ParameterAnnotations {}";
+                annotations += "ParameterAnnotations {";
+                if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).is_passthrough) {
+                    // TODO: Rename annotation in Host.h?
+                    annotations += ".is_passthrough=true,";
+                }
+                annotations += "}";
             }
             fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&GuestWrapperForHostFunction<{}({})>::Call<{}>}}, // {}\n",
                         fmt::join(info.sha256, "\\x"), info.result, fmt::join(info.args, ", "), annotations, host_funcptr_entry.first);

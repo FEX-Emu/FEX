@@ -70,4 +70,3 @@ template<> struct fex_gen_config<wl_proxy_marshal_array_flags> {};
 wl_interface* fex_wl_exchange_interface_pointer(wl_interface*, const char* name);
 template<> struct fex_gen_config<fex_wl_exchange_interface_pointer> : fexgen::custom_host_impl/*, fexgen::custom_guest_entrypoint*/ {};
 //template<> struct fex_gen_param<fex_wl_exchange_interface_pointer, 0, wl_interface*> : fexgen::ptr_passthrough {};
-template<> struct fex_gen_param<fex_wl_exchange_interface_pointer, 1, const char*> : fexgen::ptr_passthrough {};

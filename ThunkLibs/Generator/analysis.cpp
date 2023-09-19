@@ -159,7 +159,12 @@ static ParameterAnnotations GetParameterAnnotations(clang::ASTContext& context, 
     ParameterAnnotations ret;
 
     for (const clang::CXXBaseSpecifier& base : decl->bases()) {
-        throw report_error(base.getSourceRange().getBegin(), "Unknown parameter annotation");
+        auto annotation = base.getType().getAsString();
+        if (annotation == "fexgen::ptr_passthrough") {
+            ret.is_passthrough = true;
+        } else {
+            throw report_error(base.getSourceRange().getBegin(), "Unknown parameter annotation");
+        }
     }
 
     return ret;
@@ -358,6 +363,9 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             if (funcptr->isVariadic() && !callback.is_stub) {
                                 throw report_error(template_arg_loc, "Variadic callbacks are not supported");
                             }
+
+                            // Force treatment as passthrough-pointer
+                            data.param_annotations[param_idx].is_passthrough = true;
                         } else if (param_type->isBuiltinType()) {
                             // NOTE: Intentionally not using getCanonicalType here since that would turn e.g. size_t into platform-specific types
                             // TODO: Still, we may want to de-duplicate some of these...
@@ -372,6 +380,12 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             if ( pointee_type->isStructureType()) {
                                 check_struct_type(pointee_type.getTypePtr());
                                 types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType { });
+                            } else if (data.param_annotations[param_idx].is_passthrough) {
+                                if (!data.custom_host_impl) {
+                                    throw report_error(param_loc, "Passthrough annotation requires custom host implementation");
+                                }
+
+                                // Nothing to do
                             } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
                                 fprintf(stderr, "NAME: %s\n", pointee_type.getAsString().c_str());
                                 throw report_error(param_loc, "Unsupported parameter type")
