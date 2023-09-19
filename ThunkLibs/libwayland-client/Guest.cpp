@@ -213,6 +213,23 @@ static void wl_argument_from_va_list(const char *signature, wl_argument *args,
   }
 }
 
+extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
+  wl_argument args[WL_CLOSURE_MAX_ARGS];
+  va_list ap;
+
+  va_start(ap, opcode);
+#ifdef IS_32BIT_THUNK
+// Must extract signature from host due to different data layout on 32-bit
+#error Not implemented
+#else
+  wl_argument_from_va_list(((wl_proxy_private*)proxy)->interface->methods[opcode].signature,
+                           args, WL_CLOSURE_MAX_ARGS, ap);
+#endif
+  va_end(ap);
+
+  wl_proxy_marshal_array(proxy, opcode, args);
+}
+
 extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
            const wl_interface *interface,
            uint32_t version,
