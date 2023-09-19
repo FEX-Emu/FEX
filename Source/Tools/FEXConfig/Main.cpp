@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Common/Config.h"
 #include "Common/FileFormatCheck.h"
 #include "FEXCore/Config/Config.h"
