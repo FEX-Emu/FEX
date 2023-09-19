@@ -1834,7 +1834,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "ldr x0, [x28, #1552]",
+        "ldr x0, [x28, #1544]",
         "ldr q3, [x0]",
         "zip1 v4.8h, v3.8h, v2.8h",
         "zip2 v2.8h, v3.8h, v2.8h",
