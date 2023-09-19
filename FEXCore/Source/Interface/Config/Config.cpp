@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Common/StringConv.h"
 #include "Common/StringUtils.h"
 #include "FEXCore/Utils/EnumUtils.h"
