@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes/IRValidation.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
