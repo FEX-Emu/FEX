@@ -35,6 +35,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     NegativeMasked,
   };
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t handle(uint64_t RAX, uint64_t RDX, __uint128_t lhs, __uint128_t rhs, uint16_t control) {
     // Subtract by 1 in order to make validity limits 0-based
     const auto valid_lhs = GetExplicitLength(RAX, control) - 1;
@@ -44,6 +45,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   }
 
   // Main PCMPXSTRX algorithm body. Allows for reuse with both implicit and explicit length variants.
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t MainBody(const __uint128_t& lhs, int valid_lhs, const __uint128_t& rhs, int valid_rhs, uint16_t control) {
     const uint32_t aggregation = PerformAggregation(lhs, valid_lhs, rhs, valid_rhs, control);
     const int32_t upper_limit = (16 >> (control & 1)) - 1;
@@ -68,6 +70,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     return result | (flags << 16);
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static int32_t GetExplicitLength(uint64_t reg, uint16_t control) {
     // Bit 8 controls whether or not the reg value is 64-bit or 32-bit.
     int64_t value = 0;
@@ -91,6 +94,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     return std::abs(static_cast<int>(value));
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static int32_t GetElement(const __uint128_t& vec, int32_t index, uint16_t control) {
     const auto* vec_ptr = reinterpret_cast<const uint8_t*>(&vec);
 
@@ -114,6 +118,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     }
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t PerformAggregation(const __uint128_t& lhs, int32_t valid_lhs,
                                      const __uint128_t& rhs, int32_t valid_rhs,
                                      uint16_t control) {
@@ -130,6 +135,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     }
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t HandlePolarity(uint32_t value, uint16_t control, int upper_limit, int valid_rhs) {
     switch (static_cast<Polarity>((control >> 4) & 0b11)) {
       case Polarity::Negative:
@@ -169,6 +175,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                   │
   // 'c' match ────────┘
   //
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t HandleEqualAny(const __uint128_t& lhs, int32_t valid_lhs,
                                  const __uint128_t& rhs, int32_t valid_rhs,
                                  uint16_t control) {
@@ -215,6 +222,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                                    │
   // 'Z' >= 'z' && 'A' <= 'z' ──────────┘
   //
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t HandleRanges(const __uint128_t& lhs, int32_t valid_lhs,
                                const __uint128_t& rhs, int32_t valid_rhs,
                                uint16_t control) {
@@ -267,6 +275,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                      │
   // 'a' == 'a' ──────────┘
   //
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t HandleEqualEach(const __uint128_t& lhs, int32_t valid_lhs,
                                   const __uint128_t& rhs, int32_t valid_rhs,
                                   uint16_t control) {
@@ -321,6 +330,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                      │
   // At index 0 ──────────┘
   //
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t HandleEqualOrdered(const __uint128_t& lhs, int32_t valid_lhs,
                                      const __uint128_t& rhs, int32_t valid_rhs,
                                      uint16_t control) {
@@ -369,6 +379,7 @@ struct OpHandlers<IR::OP_VPCMPISTRX> {
   //      to be the max length possible for the given character size specified
   //      in the control flags (16 characters for 8-bit, and 8 characters for 16-bit).
   //
+  FEXCORE_PRESERVE_ALL_ATTR
   static uint32_t handle(__uint128_t lhs, __uint128_t rhs, uint16_t control) {
     // Subtract by 1 in order to make validity limits 0-based
     const auto valid_lhs = GetImplicitLength(lhs, control) - 1;
@@ -377,6 +388,7 @@ struct OpHandlers<IR::OP_VPCMPISTRX> {
     return OpHandlers<IR::OP_VPCMPESTRX>::MainBody(lhs, valid_lhs, rhs, valid_rhs, control);
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static int32_t GetImplicitLength(const __uint128_t& data, uint16_t control) {
     const auto* data_u8 = reinterpret_cast<const uint8_t*>(&data);
     const auto is_using_words = (control & 1) != 0;

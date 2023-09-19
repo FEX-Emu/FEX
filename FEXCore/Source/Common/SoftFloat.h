@@ -62,6 +62,7 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   // Ops
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FADD(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -83,6 +84,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FSUB(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -104,6 +106,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FMUL(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -125,6 +128,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FDIV(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -146,6 +150,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FREM(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
@@ -168,6 +173,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FREM1(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
@@ -190,14 +196,17 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FRNDINT(X80SoftFloat const &lhs) {
     return extF80_roundToInt(lhs, softfloat_roundingMode, false);
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FRNDINT(X80SoftFloat const &lhs, uint_fast8_t RoundMode) {
     return extF80_roundToInt(lhs, RoundMode, false);
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FXTRACT_SIG(X80SoftFloat const &lhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
@@ -221,6 +230,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FXTRACT_EXP(X80SoftFloat const &lhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
@@ -242,12 +252,14 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static void FCMP(X80SoftFloat const &lhs, X80SoftFloat const &rhs, bool *eq, bool *lt, bool *nan) {
     *eq = extF80_eq(lhs, rhs);
     *lt = extF80_lt(lhs, rhs);
     *nan = IsNan(lhs) || IsNan(rhs);
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FSCALE(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
     WARN_ONCE_FMT("x87: Application used FSCALE which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -276,6 +288,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat F2XM1(X80SoftFloat const &lhs) {
     WARN_ONCE_FMT("x87: Application used F2XM1 which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -299,6 +312,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FYL2X(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
     WARN_ONCE_FMT("x87: Application used FYL2X which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -324,6 +338,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FATAN(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
     WARN_ONCE_FMT("x87: Application used FATAN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -349,6 +364,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FTAN(X80SoftFloat const &lhs) {
     WARN_ONCE_FMT("x87: Application used FTAN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -372,6 +388,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FSIN(X80SoftFloat const &lhs) {
     WARN_ONCE_FMT("x87: Application used FSIN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -394,6 +411,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FCOS(X80SoftFloat const &lhs) {
     WARN_ONCE_FMT("x87: Application used FCOS which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
@@ -416,6 +434,7 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
+  FEXCORE_PRESERVE_ALL_ATTR
   static X80SoftFloat FSQRT(X80SoftFloat const &lhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
