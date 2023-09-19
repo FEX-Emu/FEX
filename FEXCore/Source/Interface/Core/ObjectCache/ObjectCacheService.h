@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
