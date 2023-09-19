@@ -1286,73 +1286,45 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
-  enum CompareType {
-    COMPARE_ZERO,
-    COMPARE_NOTZERO,
-  };
-  uint32_t FLAGMask{};
-  CompareType Type = COMPARE_ZERO;
-  OrderedNode *SrcCond;
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
+  CalculateDeferredFlags();
 
   uint16_t Opcode = Op->OP & 0b1111'1111'1000;
+  uint8_t CC = 0;
+
   switch (Opcode) {
   case 0x3'C0:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
+    CC = 0x3; // JNC
   break;
   case 0x2'C0:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
+    CC = 0x2; // JC
   break;
   case 0x2'C8:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_NOTZERO;
+    CC = 0x4; // JE
   break;
   case 0x3'C8:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_ZERO;
+    CC = 0x5; // JNE
   break;
   case 0x2'D0:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_NOTZERO;
+    CC = 0x6; // JNA
   break;
   case 0x3'D0:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_ZERO;
+    CC = 0x7; // JA
   break;
   case 0x2'D8:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_NOTZERO;
+    CC = 0xA; // JP
   break;
   case 0x3'D8:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_ZERO;
+    CC = 0xB; // JNP
   break;
   default:
     LOGMAN_MSG_A_FMT("Unhandled FCMOV op: 0x{:x}", Opcode);
   break;
   }
 
-  auto RFLAG = GetPackedRFLAG(FLAGMask);
+  auto ZeroConst = _Constant(0);
+  auto AllOneConst = _Constant(0xffff'ffff'ffff'ffffull);
 
-  switch (Type) {
-    case COMPARE_ZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-      RFLAG, ZeroConst, OneConst, ZeroConst);
-      break;
-    }
-    case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-      RFLAG, ZeroConst, ZeroConst, OneConst);
-      break;
-    }
-  }
-
-  SrcCond = _Sbfe(OpSize::i64Bit, 1, 0, SrcCond);
-
+  OrderedNode *SrcCond = SelectCCExplicitSize(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
   OrderedNode *VecCond = _VDupFromGPR(16, 8, SrcCond);
 
   auto top = GetX87Top();

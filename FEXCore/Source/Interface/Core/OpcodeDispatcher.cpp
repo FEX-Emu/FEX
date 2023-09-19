@@ -1133,11 +1133,13 @@ OrderedNode *OpDispatchBuilder::SelectCCExplicitSize(uint8_t OP, IR::OpSize Resu
       break;
     }
     case 0xA: { // JP - Jump if PF == 1
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ}, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
+          LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xB: { // JNP - Jump if PF == 0
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ}, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
+          LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xC: { // SF <> OF
