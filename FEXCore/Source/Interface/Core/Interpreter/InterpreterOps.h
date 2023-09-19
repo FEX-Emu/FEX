@@ -46,6 +46,7 @@ namespace FEXCore::CPU {
     FallbackABI ABI;
     void *fn;
     FEXCore::Core::FallbackHandlerIndex HandlerIndex;
+    bool SupportsPreserveAllABI;
   };
 
   class InterpreterOps {

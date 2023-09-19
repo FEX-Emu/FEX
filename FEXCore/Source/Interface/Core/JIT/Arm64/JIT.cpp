@@ -84,9 +84,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
   } else {
     switch(Info.ABI) {
       case FABI_F80_I16_F32:{
-        SpillStaticRegs(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
-        PushDynamicRegsAndLR(TMP1);
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         fmov(ARMEmitter::SReg::s0, Src1.S());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
@@ -97,9 +96,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r1);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         eor(Dst.Q(), Dst.Q(), Dst.Q());
@@ -109,9 +106,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F80_I16_F64:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         mov(ARMEmitter::DReg::d0, Src1.D());
@@ -123,9 +118,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r1);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         eor(Dst.Q(), Dst.Q(), Dst.Q());
@@ -136,9 +129,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
       case FABI_F80_I16_I16:
       case FABI_F80_I16_I32: {
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetReg(IROp->Args[0].ID());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
@@ -155,9 +146,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r2);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         eor(Dst.Q(), Dst.Q(), Dst.Q());
@@ -167,9 +156,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F32_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -184,9 +171,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r3);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         fmov(Dst.S(), ARMEmitter::SReg::s0);
@@ -194,9 +179,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -211,9 +194,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r3);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         mov(Dst.D(), ARMEmitter::DReg::d0);
@@ -221,9 +202,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_I16_F64: {
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -236,9 +215,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r1);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         mov(Dst.D(), ARMEmitter::DReg::d0);
@@ -246,9 +223,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_I16_F64_F64: {
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
@@ -263,9 +238,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r1);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         mov(Dst.D(), ARMEmitter::DReg::d0);
@@ -273,9 +246,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_I16_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -290,18 +261,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r3);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         sxth(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
       case FABI_I32_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -316,18 +283,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r3);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         mov(ARMEmitter::Size::i32Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
       case FABI_I64_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -341,19 +304,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 #else
         blr(ARMEmitter::Reg::r3);
 #endif
-
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
       case FABI_I64_I16_F80_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
@@ -371,18 +329,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 #else
         blr(ARMEmitter::Reg::r5);
 #endif
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
       case FABI_F80_I16_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
 
@@ -397,9 +351,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r3);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         eor(Dst.Q(), Dst.Q(), Dst.Q());
@@ -408,9 +360,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_F80_I16_F80_F80:{
-        SpillStaticRegs(TMP1);
-
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
@@ -429,9 +379,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r5);
 #endif
 
-        PopDynamicRegsAndLR();
-
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
         eor(Dst.Q(), Dst.Q(), Dst.Q());
@@ -440,8 +388,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_I32_I64_I64_I128_I128_I16: {
-        SpillStaticRegs(TMP1);
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
         const auto Control = Op->Control;
@@ -469,16 +416,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r7);
 #endif
 
-        PopDynamicRegsAndLR();
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         mov(Dst.W(), ARMEmitter::WReg::w0);
         break;
       }
       case FABI_I32_I128_I128_I16: {
-        SpillStaticRegs(TMP1);
-        PushDynamicRegsAndLR(TMP1);
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Op = IROp->C<IR::IROp_VPCMPISTRX>();
 
@@ -501,8 +446,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         blr(ARMEmitter::Reg::r5);
 #endif
 
-        PopDynamicRegsAndLR();
-        FillStaticRegs();
+        FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
         mov(Dst.W(), ARMEmitter::WReg::w0);
