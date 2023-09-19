@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 tags: LinuxSyscalls|syscalls-x86-64
