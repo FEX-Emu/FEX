@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Common/FEXServerClient.h"
 
 #include <atomic>

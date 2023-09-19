@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ArgumentLoader.h"
 #include "Logger.h"
 #include "PipeScanner.h"
