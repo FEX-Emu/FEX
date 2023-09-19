@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/LogManager.h>

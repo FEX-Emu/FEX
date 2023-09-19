@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Utils/Allocator/HostAllocator.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
