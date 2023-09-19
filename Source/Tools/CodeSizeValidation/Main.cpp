@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "DummyHandlers.h"
 #include "FEXCore/Core/Context.h"
 #include "FEXCore/Debug/InternalThreadState.h"
