@@ -48,12 +48,15 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
   auto guest_interface = ((wl_proxy_private*)proxy)->interface;
 
   for (int i = 0; i < guest_interface->event_count; ++i) {
-    auto signature = std::string_view { guest_interface->events[i].signature };
+    auto signature_view = std::string_view { guest_interface->events[i].signature };
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
-    auto [ptr, res] = std::from_chars(signature.begin(), signature.end(), since_version, 10);
-    signature = signature.substr(ptr - signature.begin());
+    auto [ptr, res] = std::from_chars(signature_view.begin(), signature_view.end(), since_version, 10);
+    std::string signature { ptr, &*signature_view.end() };
+
+    // ? just indicates that the argument may be null, so it doesn't change the signature
+    signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
 
     if (signature == "") {
       // E.g. xdg_toplevel::close

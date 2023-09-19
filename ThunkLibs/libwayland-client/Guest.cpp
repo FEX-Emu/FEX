@@ -26,6 +26,7 @@ extern "C" const wl_interface wl_surface_interface {};
 extern "C" const wl_interface wl_keyboard_interface {};
 extern "C" const wl_interface wl_callback_interface {};
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cstdio>
@@ -78,12 +79,15 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
   auto& host_callbacks = proxy_listeners[proxy];
 
   for (int i = 0; i < ((wl_proxy_private*)proxy)->interface->event_count; ++i) {
-    auto signature = std::string_view { interface->events[i].signature };
+    auto signature_view = std::string_view { interface->events[i].signature };
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
-    auto [ptr, res] = std::from_chars(signature.begin(), signature.end(), since_version, 10);
-    signature = signature.substr(ptr - signature.begin());
+    auto [ptr, res] = std::from_chars(signature_view.begin(), signature_view.end(), since_version, 10);
+    std::string signature { ptr, &*signature_view.end() };
+
+    // ? just indicates that the argument may be null, so it doesn't change the signature
+    signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
 
     if (signature == "") {
       // E.g. xdg_toplevel::close
