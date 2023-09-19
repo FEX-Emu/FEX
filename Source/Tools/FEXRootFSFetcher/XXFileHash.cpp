@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "XXFileHash.h"
 
 #include <chrono>
