@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <string_view>
 
 namespace FEX::EnvLoader {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
