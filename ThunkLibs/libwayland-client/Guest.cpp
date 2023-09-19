@@ -44,11 +44,13 @@ struct wl_proxy_private {
   // Other data members omitted
 };
 
+// See wayland-util.h for documentation on protocol message signatures
 template<char> struct ArgType;
 template<> struct ArgType<'s'> { using type = const char*; };
 template<> struct ArgType<'u'> { using type = uint32_t; };
 template<> struct ArgType<'i'> { using type = int32_t; };
 template<> struct ArgType<'o'> { using type = wl_proxy*; };
+template<> struct ArgType<'n'> { using type = wl_proxy*; };
 template<> struct ArgType<'a'> { using type = wl_array*; };
 template<> struct ArgType<'f'> { using type = wl_fixed_t; };
 template<> struct ArgType<'h'> { using type = int32_t; }; // fd?
@@ -95,12 +97,33 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     } else if (signature == "a") {
       // E.g. xdg_toplevel::wm_capabilities
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'a'>(callback[i]);
+    } else if (signature == "hu") {
+      // E.g. zwp_linux_dmabuf_feedback_v1::format_table
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'h', 'u'>(callback[i]);
+    } else if (signature == "i") {
+      // E.g. wl_output_listener::scale
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i'>(callback[i]);
+    } else if (signature == "if") {
+      // E.g. wl_touch_listener::orientation
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'f'>(callback[i]);
+    } else if (signature == "iff") {
+      // E.g. wl_touch_listener::shape
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'f', 'f'>(callback[i]);
     } else if (signature == "ii") {
       // E.g. xdg_toplevel::configure_bounds
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'i'>(callback[i]);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'i', 'a'>(callback[i]);
+    } else if (signature == "iiiiissi") {
+      // E.g. wl_output_listener::geometry
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'i', 'i', 'i', 'i', 'i', 's', 's', 'i'>(callback[i]);
+    } else if (signature == "n") {
+      // E.g. wl_data_device_listener::data_offer
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'n'>(callback[i]);
+    } else if (signature == "o") {
+      // E.g. wl_data_device_listener::selection
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'o'>(callback[i]);
     } else if (signature == "u") {
       // E.g. wl_registry::global_remove
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u'>(callback[i]);
@@ -113,6 +136,12 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     } else if (signature == "ui") {
       // E.g. wl_pointer_listener::axis_discrete
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'i'>(callback[i]);
+    } else if (signature == "uiff") {
+      // E.g. wl_touch_listener::motion
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'i', 'f', 'f'>(callback[i]);
+    } else if (signature == "uiii") {
+      // E.g. wl_output_listener::mode
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'i', 'i', 'i'>(callback[i]);
     } else if (signature == "uo") {
       // E.g. wl_pointer_listener::leave
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o'>(callback[i]);
@@ -122,6 +151,9 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     } else if (signature == "uoff") {
       // E.g. wl_pointer_listener::enter
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback[i]);
+    } else if (signature == "uoffo") {
+      // E.g. wl_data_device_listener::enter
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'o', 'f', 'f', 'o'>(callback[i]);
     } else if (signature == "usu") {
       // E.g. wl_registry::global
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 's', 'u'>(callback[i]);
@@ -131,6 +163,15 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     } else if (signature == "uuf") {
       // E.g. wl_pointer_listener::axis
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'f'>(callback[i]);
+    } else if (signature == "uui") {
+      // E.g. wl_touch_listener::up
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'i'>(callback[i]);
+    } else if (signature == "uuoiff") {
+      // E.g. wl_touch_listener::down
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'o', 'i', 'f', 'f'>(callback[i]);
+    } else if (signature == "uuu") {
+      // E.g. zwp_linux_dmabuf_v1::modifier
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'u'>(callback[i]);
     } else if (signature == "uuuu") {
       // E.g. wl_pointer_listener::button
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'u', 'u', 'u', 'u'>(callback[i]);
@@ -140,8 +181,11 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     } else if (signature == "s") {
       // E.g. wl_seat::name
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s'>(callback[i]);
+    } else if (signature == "sii") {
+      // E.g. zwp_text_input_v3::preedit_string
+      host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s', 'i', 'i'>(callback[i]);
     } else {
-      fprintf(stderr, "Unknown wayland event signature descriptor %s\n", signature.data());
+      fprintf(stderr, "Unknown wayland signature descriptor \"%s\" for event \"%s\" in interface \"%s\"\n", signature.data(), interface->events[i].name, interface->name);
       std::abort();
     }
   }
