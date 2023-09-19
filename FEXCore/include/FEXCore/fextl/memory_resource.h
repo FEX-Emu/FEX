@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
