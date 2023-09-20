@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 
 #include "Interface/Core/X86Tables/X86Tables.h"

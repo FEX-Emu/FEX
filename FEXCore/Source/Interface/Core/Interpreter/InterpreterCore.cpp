@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Interface/Context/Context.h"
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"

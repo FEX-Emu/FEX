@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef NDEBUG
 
 #include "Interface/Core/X86Tables/X86Tables.h"

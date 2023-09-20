@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>

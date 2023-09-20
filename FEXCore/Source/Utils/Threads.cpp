@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>

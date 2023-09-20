@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 glossary: Splatter ~ a code generator backend that concaternates configurable macros instead of doing isel

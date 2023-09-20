@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 meta: ir|emitter ~ C++ Functions to generate IR. See IR.json for spec.

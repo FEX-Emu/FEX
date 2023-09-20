@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /* Scalar instruction emitters.
  *
  * These contain instruction emitters for scalar ASIMD operations explicitly.

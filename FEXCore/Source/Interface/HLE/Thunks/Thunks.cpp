@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 meta: glue|thunks ~ FEXCore side of thunks: Registration, Lookup
