@@ -1,6 +1,14 @@
 set(NAME CommonTools)
 set(SRCS
-  DummyHandlers.cpp)
+  DummyHandlers.cpp
+  )
+
+if (NOT MINGW_BUILD)
+  list(APPEND SRCS
+  Linux/Utils/ELFContainer.cpp
+  Linux/Utils/ELFSymbolDatabase.cpp
+  )
+endif()
 
 add_library(${NAME} STATIC ${SRCS})
 target_link_libraries(${NAME} FEXCore_Base FEXHeaderUtils)

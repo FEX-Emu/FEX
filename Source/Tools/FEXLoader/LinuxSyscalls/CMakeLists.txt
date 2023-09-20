@@ -87,7 +87,7 @@ target_link_libraries(LinuxEmulation
 PRIVATE
   Common
   FEXCore
-  FEX_Utils
+  CommonTools
 )
 
 set(HEADERS_TO_VERIFY

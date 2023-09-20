@@ -26,6 +26,7 @@ if (NOT MINGW_BUILD)
       PRIVATE
         ${LIBS}
         LinuxEmulation
+        CommonTools
         ${PTHREAD_LIB}
         fmt::fmt
     )
