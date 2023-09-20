@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "CoreDumpService.h"
 #include "ProcessPipe.h"
 #include "Common/FEXServerClient.h"
@@ -6,6 +7,7 @@
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <chrono>
 #include <dirent.h>
 #include <mutex>
 #include <poll.h>
@@ -239,47 +241,25 @@ namespace CoreDumpService {
     }
   }
 
-  void CoreDumpClass::ExecutionFunc() {
-    auto LastDataTime = std::chrono::system_clock::now();
-
-    while (!ShouldShutdown) {
-      struct timespec ts{};
-      ts.tv_sec = RequestTimeout;
-
-      int Result = ppoll(&PollFD, 1, &ts, nullptr);
-      if (Result > 0) {
-        // Walk the FDs and see if we got any results
-        if (PollFD.revents != 0) {
-          //LogMan::Msg::DFmt("Event: 0x{:x}", Event.revents);
-          if (PollFD.revents & POLLIN) {
-            HandleSocketData();
-          }
-
-          // Handle POLLIN and other events at the same time.
-          if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP)) {
-            // Listen socket error or shutting down
-            ShouldShutdown = true;
-          }
-
-          // Reset the revents for the next query.
-          PollFD.revents = 0;
-        }
-      }
-      else {
-        auto Now = std::chrono::system_clock::now();
-        auto Diff = Now - LastDataTime;
-        if (Diff >= std::chrono::seconds(RequestTimeout)) {
-          // If we have no data after a timeout
-          // Then we can just go ahead and leave
-          ShouldShutdown = true;
-        }
-      }
+  FEXServer::SocketConnectionHandler::FDEventResult CoreDumpClass::HandleFDEvent(struct pollfd &Event) {
+    if (Event.revents & POLLIN) {
+      HandleSocketData();
     }
+    if (Event.revents & (POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP)) {
+      RequestShutdown();
+      return FEXServer::SocketConnectionHandler::FDEventResult::ERASE;
+    }
+    return FEXServer::SocketConnectionHandler::FDEventResult::SUCCESS;
+  }
 
+  void CoreDumpClass::OnShutdown() {
     // Close the socket on this side
     shutdown(ServerSocket, SHUT_RDWR);
     close(ServerSocket);
+  }
 
+  void CoreDumpClass::ExecutionFunc() {
+    RunUntilShutdown(std::chrono::seconds(10), 10);
     Running = false;
   }
 
@@ -302,6 +282,10 @@ namespace CoreDumpService {
           }
         }
       }
+    }
+
+    for (auto it = CoreDumpObjects.begin(); it != CoreDumpObjects.end(); ) {
+      it->get()->RequestShutdown();
     }
   }
 

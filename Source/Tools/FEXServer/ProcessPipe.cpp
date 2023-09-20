@@ -2,6 +2,7 @@
 #include "CoreDumpService.h"
 #include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
+#include "SocketConnectionHandler.h"
 #include "SquashFS.h"
 
 #include "Common/FEXServerClient.h"
@@ -382,92 +383,66 @@ namespace ProcessPipe {
     close(ServerSocketFD);
   }
 
-  void WaitForRequests() {
-    auto LastDataTime = std::chrono::system_clock::now();
-
-    while (!ShouldShutdown) {
-      struct timespec ts{};
-      ts.tv_sec = RequestTimeout;
-
-      int Result = ppoll(&PollFDs.at(0), PollFDs.size(), &ts, nullptr);
-      std::vector<struct pollfd> NewPollFDs{};
-
-      if (Result > 0) {
-        // Walk the FDs and see if we got any results
-        for (auto it = PollFDs.begin(); it != PollFDs.end(); ) {
-          auto &Event = *it;
-          bool Erase{};
-
-          if (Event.revents != 0) {
-            if (Event.fd == ServerSocketFD) {
-              if (Event.revents & POLLIN) {
-                // If it is the listen socket then we have a new connection
-                struct sockaddr_storage Addr{};
-                socklen_t AddrSize{};
-                int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
-
-                // Add the new client to the temporary array
-                NewPollFDs.emplace_back(pollfd {
-                  .fd = NewFD,
-                  .events = POLLIN | POLLPRI | POLLRDHUP,
-                  .revents = 0,
-                });
-              }
-              else if (Event.revents & (POLLHUP | POLLERR | POLLNVAL)) {
-                // Listen socket error or shutting down
-                break;
-              }
-            }
-            else {
-              if (Event.revents & POLLIN) {
-                // Data from the socket
-                HandleSocketData(Event.fd);
-              }
-
-              if (Event.revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
-                // Error or hangup, close the socket and erase it from our list
-                Erase = true;
-                close(Event.fd);
-              }
-            }
-
-            Event.revents = 0;
-            --Result;
-          }
-
-          if (Erase) {
-            it = PollFDs.erase(it);
-          }
-          else {
-            ++it;
-          }
-
-          if (Result == 0) {
-            // Early break if we've consumed all the results
-            break;
-          }
-        }
-
-        // Insert the new FDs to poll
-        PollFDs.insert(PollFDs.begin(), NewPollFDs.begin(), NewPollFDs.end());
-
-        LastDataTime = std::chrono::system_clock::now();
+  class ProcessPipeHandler final : public FEXServer::SocketConnectionHandler {
+    public:
+      ProcessPipeHandler(int ServerSocketFD) {
+        PollFDs.push_back(pollfd {
+          .fd = ServerSocketFD,
+          .events = POLLIN | POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP,
+          .revents = 0,
+        });
       }
-      else {
-        auto Now = std::chrono::system_clock::now();
-        auto Diff = Now - LastDataTime;
-        if (Diff >= std::chrono::seconds(RequestTimeout) &&
-            !Foreground &&
-            PollFDs.size() == 1) {
-          // If we aren't running in the foreground and we have no connections after a timeout
-          // Then we can just go ahead and leave
-          ShouldShutdown = true;
-          LogMan::Msg::DFmt("[FEXServer] Shutting Down");
-        }
+    protected:
+      void OnShutdown() override {
+        CloseConnections();
+      }
+
+      void CheckShouldShutdownHandler(std::chrono::seconds TimeDuration) override;
+
+      FDEventResult HandleFDEvent(struct pollfd &Event) override;
+  };
+
+  FEXServer::SocketConnectionHandler::FDEventResult ProcessPipeHandler::HandleFDEvent(struct pollfd &Event) {
+    if (Event.fd == ServerSocketFD) {
+      if (Event.revents & POLLIN) {
+        // If it is the listen socket then we have a new connection
+        struct sockaddr_storage Addr{};
+        socklen_t AddrSize{};
+        int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
+
+        // Track the new FD
+        AppendFDToTrack(NewFD);
+      }
+    }
+    else {
+      if (Event.revents & POLLIN) {
+        // Data from the socket
+        HandleSocketData(Event.fd);
+      }
+
+      if (Event.revents & (POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP)) {
+        // Error or hangup, close the socket and erase it from our list
+        return FEXServer::SocketConnectionHandler::FDEventResult::ERASE;
       }
     }
 
-    CloseConnections();
+    return FEXServer::SocketConnectionHandler::FDEventResult::SUCCESS;
+  }
+
+  void ProcessPipeHandler::CheckShouldShutdownHandler(std::chrono::seconds TimeDuration) {
+    if (TimeDuration >= std::chrono::duration_cast<std::chrono::seconds>(ExecutionTimeout) &&
+        !Foreground &&
+        PollFDs.size() == 1) {
+      // If we aren't running in the foreground and we have no connections after a timeout
+      // Then we can just go ahead and leave
+      RequestShutdown();
+      LogMan::Msg::DFmt("[FEXServer] Shutting Down");
+    }
+  }
+
+  void WaitForRequests() {
+    ProcessPipeHandler Handler(ServerSocketFD);
+    Handler.RunUntilShutdown(std::chrono::seconds(RequestTimeout), RequestTimeout);
   }
 
   void SetConfiguration(bool Foreground, uint32_t PersistentTimeout) {

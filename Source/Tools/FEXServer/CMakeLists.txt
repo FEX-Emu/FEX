@@ -5,6 +5,7 @@ set(SRCS Main.cpp
   Logger.cpp
   PipeScanner.cpp
   ProcessPipe.cpp
+  SocketConnectionHandler.cpp
   SquashFS.cpp)
 
 add_executable(${NAME} ${SRCS})

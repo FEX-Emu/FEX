@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "Common/FEXServerClient.h"
 #include "Unwind/FileMapping.h"
+#include "SocketConnectionHandler.h"
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/list.h>
@@ -19,8 +21,11 @@ class Unwinder;
 }
 
 namespace CoreDumpService {
-  class CoreDumpClass {
+  class CoreDumpClass final : public FEXServer::SocketConnectionHandler {
     public:
+      void OnShutdown() override;
+      SocketConnectionHandler::FDEventResult HandleFDEvent(struct pollfd &Event) override;
+
       struct Description {
         uint32_t pid;
         uint32_t tid;
@@ -32,7 +37,6 @@ namespace CoreDumpService {
         uint8_t GuestArch;
       };
 
-
       // Initializes this CoreDumpClass's execution thread and associated sockets.
       // Returns one socket of the socketpair for the paired connection.
       int InitExecutionThread() {
@@ -42,12 +46,11 @@ namespace CoreDumpService {
           return -1;
         }
 
-        PollFD = {
+        PollFDs.push_back(pollfd {
           .fd = SVs[0],
           .events = POLLIN | POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP,
           .revents = 0,
-        };
-
+        });
         ExecutionThread = std::thread(&CoreDumpClass::ExecutionFunc, this);
 
         ServerSocket = SVs[0];
@@ -174,8 +177,6 @@ namespace CoreDumpService {
 
       int ServerSocket;
       std::thread ExecutionThread;
-      pollfd PollFD;
-      time_t RequestTimeout {10};
       std::atomic<bool> ShouldShutdown {false};
       std::atomic<bool> Running {true};
 
