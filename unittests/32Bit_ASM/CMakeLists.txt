@@ -61,14 +61,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
       )
   endif()
 
-  if (ENABLE_INTERPRETER)
-    list(APPEND TEST_ARGS
-      "--no-silent -g -c irint -n 1   --no-multiblock"    "int_1"     "int"
-      "--no-silent -g -c irint -n 500 --no-multiblock"    "int_500"   "int"
-      "--no-silent -g -c irint -n 500 --multiblock"       "int_500_m" "int"
-    )
-  endif()
-
   if (NOT MINGW_BUILD)
     set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
   else()

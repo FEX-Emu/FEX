@@ -339,11 +339,7 @@ namespace DefaultValues {
 #else
       constexpr uint32_t MaxCoreNumber = 1;
 #endif
-#ifdef INTERPRETER_ENABLED
-      constexpr uint32_t MinCoreNumber = 0;
-#else
       constexpr uint32_t MinCoreNumber = 1;
-#endif
       if (Core > MaxCoreNumber || Core < MinCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint32_t>(FEXCore::Config::CONFIG_IRJIT)));
@@ -353,11 +349,6 @@ namespace DefaultValues {
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION)) {
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(Core, CORE);
-
-      if (CacheObjectCodeCompilation() && Core() == FEXCore::Config::CONFIG_INTERPRETER) {
-        // If running the interpreter then disable cache code compilation
-        FEXCore::Config::Erase(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION);
-      }
     }
 
     fextl::string ContainerPrefix { FindContainerPrefix() };
