@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 tags: Bin|FEXBash

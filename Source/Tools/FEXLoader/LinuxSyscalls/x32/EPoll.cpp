@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 meta: LinuxSyscalls|syscalls-x86-32 ~ x86-32 specific syscall implementations

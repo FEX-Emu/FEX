@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 category: LinuxSyscalls ~ Linux syscall emulation, marshaling and passthrough

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ConfigDefines.h"
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/Config.h"

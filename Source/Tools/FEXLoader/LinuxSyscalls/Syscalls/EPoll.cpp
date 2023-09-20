@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 $info$
 meta: LinuxSyscalls|syscalls-shared ~ Syscall implementations shared between x86 and x86-64

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #ifdef _WIN32
 #include <FEXCore/Utils/LogManager.h>
