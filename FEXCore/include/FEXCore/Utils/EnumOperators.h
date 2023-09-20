@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 
 #define FEX_DEF_ENUM_CLASS_BIN_OP(Enum, Op) \
