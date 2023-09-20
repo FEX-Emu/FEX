@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>

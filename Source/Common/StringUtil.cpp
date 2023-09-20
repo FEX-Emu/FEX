@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Common/StringUtil.h"
 
 namespace FEX::StringUtil {
