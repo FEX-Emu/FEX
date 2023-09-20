@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
