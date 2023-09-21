@@ -91,20 +91,19 @@ void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
 
 OrderedNode *OpDispatchBuilder::ReconstructFSW() {
   // We must construct the FSW from our various bits
-  // TODO: These should use BFI
   OrderedNode *FSW = _Constant(0);
   auto Top = GetX87Top();
-  FSW = _Or(OpSize::i64Bit, FSW, _Lshl(OpSize::i32Bit, Top, _Constant(11)));
+  FSW = _Bfi(OpSize::i64Bit, 3, 11, FSW, Top);
 
   auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
   auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
   auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-  FSW = _Or(OpSize::i64Bit, FSW, _Lshl(OpSize::i32Bit, C0, _Constant(8)));
-  FSW = _Or(OpSize::i64Bit, FSW, _Lshl(OpSize::i32Bit, C1, _Constant(9)));
-  FSW = _Or(OpSize::i64Bit, FSW, _Lshl(OpSize::i32Bit, C2, _Constant(10)));
-  FSW = _Or(OpSize::i64Bit, FSW, _Lshl(OpSize::i32Bit, C3, _Constant(14)));
+  FSW = _Bfi(OpSize::i64Bit, 1,  8, FSW, C0);
+  FSW = _Bfi(OpSize::i64Bit, 1,  9, FSW, C1);
+  FSW = _Bfi(OpSize::i64Bit, 1, 10, FSW, C2);
+  FSW = _Bfi(OpSize::i64Bit, 1, 14, FSW, C3);
   return FSW;
 }
 
