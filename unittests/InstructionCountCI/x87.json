@@ -5548,7 +5548,7 @@
       ]
     },
     "fnstenv [rax]": {
-      "ExpectedInstructionCount": 72,
+      "ExpectedInstructionCount": 69,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /6"
@@ -5558,20 +5558,17 @@
         "str w20, [x4]",
         "mov w20, #0x0",
         "ldrb w21, [x28, #747]",
-        "lsl w21, w21, #11",
-        "orr x21, x20, x21",
+        "mov x0, x20",
+        "bfi x0, x21, #11, #3",
+        "mov x21, x0",
         "ldrb w22, [x28, #744]",
         "ldrb w23, [x28, #745]",
         "ldrb w24, [x28, #746]",
         "ldrb w25, [x28, #750]",
-        "lsl w22, w22, #8",
-        "orr x21, x21, x22",
-        "lsl w22, w23, #9",
-        "orr x21, x21, x22",
-        "lsl w22, w24, #10",
-        "orr x21, x21, x22",
-        "lsl w22, w25, #14",
-        "orr x21, x21, x22",
+        "bfi x21, x22, #8, #1",
+        "bfi x21, x23, #9, #1",
+        "bfi x21, x24, #10, #1",
+        "bfi x21, x25, #14, #1",
         "str w21, [x4, #4]",
         "ldrb w21, [x28, #1010]",
         "and w22, w21, #0x1",
@@ -15909,7 +15906,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 128,
+      "ExpectedInstructionCount": 125,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /6"
@@ -15919,20 +15916,17 @@
         "ldrh w21, [x28, #1008]",
         "str w21, [x4]",
         "mov w21, #0x0",
-        "lsl w22, w20, #11",
-        "orr x22, x21, x22",
+        "mov x0, x21",
+        "bfi x0, x20, #11, #3",
+        "mov x22, x0",
         "ldrb w23, [x28, #744]",
         "ldrb w24, [x28, #745]",
         "ldrb w25, [x28, #746]",
         "ldrb w26, [x28, #750]",
-        "lsl w23, w23, #8",
-        "orr x22, x22, x23",
-        "lsl w23, w24, #9",
-        "orr x22, x22, x23",
-        "lsl w23, w25, #10",
-        "orr x22, x22, x23",
-        "lsl w23, w26, #14",
-        "orr x22, x22, x23",
+        "bfi x22, x23, #8, #1",
+        "bfi x22, x24, #9, #1",
+        "bfi x22, x25, #10, #1",
+        "bfi x22, x26, #14, #1",
         "str w22, [x4, #4]",
         "ldrb w22, [x28, #1010]",
         "and w23, w22, #0x1",
@@ -16046,7 +16040,7 @@
       ]
     },
     "fnstsw [rax]": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /7"
@@ -16054,20 +16048,15 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldrb w21, [x28, #747]",
-        "lsl w21, w21, #11",
-        "orr x20, x20, x21",
+        "bfi x20, x21, #11, #3",
         "ldrb w21, [x28, #744]",
         "ldrb w22, [x28, #745]",
         "ldrb w23, [x28, #746]",
         "ldrb w24, [x28, #750]",
-        "lsl w21, w21, #8",
-        "orr x20, x20, x21",
-        "lsl w21, w22, #9",
-        "orr x20, x20, x21",
-        "lsl w21, w23, #10",
-        "orr x20, x20, x21",
-        "lsl w21, w24, #14",
-        "orr x20, x20, x21",
+        "bfi x20, x21, #8, #1",
+        "bfi x20, x22, #9, #1",
+        "bfi x20, x23, #10, #1",
+        "bfi x20, x24, #14, #1",
         "strh w20, [x4]"
       ]
     },
@@ -22743,7 +22732,7 @@
       ]
     },
     "fnstsw ax": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": [
         "0xdf 11b 0xe0 /4"
@@ -22751,20 +22740,15 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "ldrb w21, [x28, #747]",
-        "lsl w21, w21, #11",
-        "orr x20, x20, x21",
+        "bfi x20, x21, #11, #3",
         "ldrb w21, [x28, #744]",
         "ldrb w22, [x28, #745]",
         "ldrb w23, [x28, #746]",
         "ldrb w24, [x28, #750]",
-        "lsl w21, w21, #8",
-        "orr x20, x20, x21",
-        "lsl w21, w22, #9",
-        "orr x20, x20, x21",
-        "lsl w21, w23, #10",
-        "orr x20, x20, x21",
-        "lsl w21, w24, #14",
-        "orr x20, x20, x21",
+        "bfi x20, x21, #8, #1",
+        "bfi x20, x22, #9, #1",
+        "bfi x20, x23, #10, #1",
+        "bfi x20, x24, #14, #1",
         "bfxil x4, x20, #0, #16"
       ]
     },
