@@ -64,9 +64,9 @@ void OpDispatchBuilder::SetX87FTW(OrderedNode *FTW) {
 
   for (int i = 0; i < 8; i++) {
     OrderedNode *RegTag = _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, FTW, _Constant(i * 2)), _Constant(0b11));
-    OrderedNode *RegValid = _Select(FEXCore::IR::COND_EQ,
+    OrderedNode *RegValid = _Select(FEXCore::IR::COND_NEQ,
       RegTag, X87Empty,
-      _Constant(0), _Constant(1));
+      _Constant(1), _Constant(0));
     NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
   }
 
@@ -1274,9 +1274,9 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto OneConst = _Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_EQ,
+  auto C3 = _Select(FEXCore::IR::COND_NEQ,
     TopValid, OneConst,
-    ZeroConst, OneConst);
+    OneConst, ZeroConst);
 
   auto C2 = TopValid;
   auto C0 = C3; // Mirror C3 until something other than zero is supported
