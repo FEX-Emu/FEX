@@ -60,14 +60,18 @@ OrderedNode *OpDispatchBuilder::GetX87Tag(OrderedNode *Value) {
 
 void OpDispatchBuilder::SetX87FTW(OrderedNode *FTW) {
   OrderedNode *X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
-  OrderedNode *NewAbridgedFTW = _Constant(0);
+  OrderedNode *NewAbridgedFTW;
 
   for (int i = 0; i < 8; i++) {
     OrderedNode *RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);
     OrderedNode *RegValid = _Select(FEXCore::IR::COND_NEQ,
       RegTag, X87Empty,
       _Constant(1), _Constant(0));
-    NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
+
+    if (i)
+      NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
+    else
+      NewAbridgedFTW = RegValid;
   }
 
   _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
