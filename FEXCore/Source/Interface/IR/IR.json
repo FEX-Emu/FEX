@@ -690,6 +690,19 @@
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = AtomicFetchCLR OpSize:#Size, GPR:$Value, GPR:$Addr": {
+        "HasSideEffects": true,
+        "Desc": ["Atomic integer fetch and binary clear",
+                 "Atomically fetches %Addr and binary clears %value to the memory location",
+                 "Dest is the value prior to operating on the value in memory",
+                 "Matches ARM ldclral semantics",
+                 "eg: Dest[Addr] &= ~Value"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = AtomicFetchOr OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary or",

@@ -84,6 +84,75 @@
         "str w20, [x28, #728]"
       ]
     },
+    "bt word [rax], 0": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bt dword [rax], 0": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bt qword [rax], 0": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bt word [rax], 15": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #1]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bt dword [rax], 31": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #3]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bt qword [rax], 63": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #7]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
     "bts ax, 0": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
@@ -158,6 +227,168 @@
         "lsr x20, x4, #63",
         "orr x4, x4, #0x8000000000000000",
         "ubfx x20, x20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "orr x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "orr x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "orr x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #1]",
+        "lsr w21, w20, #7",
+        "orr x20, x20, #0x80",
+        "strb w20, [x4, #1]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #3]",
+        "lsr w21, w20, #7",
+        "orr x20, x20, #0x80",
+        "strb w20, [x4, #3]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "bts qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #7]",
+        "lsr w21, w20, #7",
+        "orr x20, x20, #0x80",
+        "strb w20, [x4, #7]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldsetalb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldsetalb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldsetalb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x1 (1)",
+        "mov w21, #0x80",
+        "ldsetalb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x3 (3)",
+        "mov w21, #0x80",
+        "ldsetalb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock bts qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x7 (7)",
+        "mov w21, #0x80",
+        "ldsetalb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]
@@ -240,6 +471,168 @@
         "str w20, [x28, #728]"
       ]
     },
+    "btr word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "and x21, x20, #0xfffffffffffffffe",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btr dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "and x21, x20, #0xfffffffffffffffe",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btr qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "and x21, x20, #0xfffffffffffffffe",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btr word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #1]",
+        "lsr w21, w20, #7",
+        "and x20, x20, #0xffffffffffffff7f",
+        "strb w20, [x4, #1]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btr dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #3]",
+        "lsr w21, w20, #7",
+        "and x20, x20, #0xffffffffffffff7f",
+        "strb w20, [x4, #3]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btr qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #7]",
+        "lsr w21, w20, #7",
+        "and x20, x20, #0xffffffffffffff7f",
+        "strb w20, [x4, #7]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldclralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldclralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldclralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x1 (1)",
+        "mov w21, #0x80",
+        "ldclralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x3 (3)",
+        "mov w21, #0x80",
+        "ldclralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btr qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x7 (7)",
+        "mov w21, #0x80",
+        "ldclralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
     "btc ax, 0": {
       "ExpectedInstructionCount": 8,
       "Optimal": "No",
@@ -314,6 +707,168 @@
         "lsr x20, x4, #63",
         "eor x4, x4, #0x8000000000000000",
         "ubfx x20, x20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "eor x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "eor x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4]",
+        "eor x21, x20, #0x1",
+        "strb w21, [x4]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #1]",
+        "lsr w21, w20, #7",
+        "eor x20, x20, #0x80",
+        "strb w20, [x4, #1]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #3]",
+        "lsr w21, w20, #7",
+        "eor x20, x20, #0x80",
+        "strb w20, [x4, #3]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "btc qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x4, #7]",
+        "lsr w21, w20, #7",
+        "eor x20, x20, #0x80",
+        "strb w20, [x4, #7]",
+        "ubfx w20, w21, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc word [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldeoralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc dword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldeoralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc qword [rax], 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x0 (0)",
+        "mov w21, #0x1",
+        "ldeoralb w21, w20, [x20]",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc word [rax], 15": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x1 (1)",
+        "mov w21, #0x80",
+        "ldeoralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc dword [rax], 31": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x3 (3)",
+        "mov w21, #0x80",
+        "ldeoralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
+        "lsl x20, x20, #29",
+        "str w20, [x28, #728]"
+      ]
+    },
+    "lock btc qword [rax], 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6",
+      "ExpectedArm64ASM": [
+        "add x20, x4, #0x7 (7)",
+        "mov w21, #0x80",
+        "ldeoralb w21, w20, [x20]",
+        "lsr w20, w20, #7",
+        "ubfx w20, w20, #0, #1",
         "lsl x20, x20, #29",
         "str w20, [x28, #728]"
       ]

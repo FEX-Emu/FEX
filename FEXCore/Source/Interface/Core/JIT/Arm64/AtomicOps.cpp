@@ -361,6 +361,34 @@ DEF_OP(AtomicFetchAnd) {
   }
 }
 
+DEF_OP(AtomicFetchCLR) {
+  auto Op = IROp->C<IR::IROp_AtomicFetchCLR>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (CTX->HostFeatures.SupportsAtomics) {
+    ldclral(SubEmitSize, Src, GetReg(Node), MemSrc);
+  }
+  else {
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    bic(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
+  }
+}
+
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
   uint8_t OpSize = IROp->Size;
