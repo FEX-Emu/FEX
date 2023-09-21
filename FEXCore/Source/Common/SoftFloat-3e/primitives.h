@@ -53,6 +53,7 @@ INLINE
 uint64_t softfloat_shortShiftRightJam64( uint64_t a, uint_fast8_t dist )
     { return a>>dist | ((a & (((uint_fast64_t) 1<<dist) - 1)) != 0); }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 uint64_t softfloat_shortShiftRightJam64( uint64_t a, uint_fast8_t dist );
 #endif
 #endif
@@ -74,6 +75,7 @@ INLINE uint32_t softfloat_shiftRightJam32( uint32_t a, uint_fast16_t dist )
         (dist < 31) ? a>>dist | ((uint32_t) (a<<(-dist & 31)) != 0) : (a != 0);
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 uint32_t softfloat_shiftRightJam32( uint32_t a, uint_fast16_t dist );
 #endif
 #endif
@@ -95,6 +97,7 @@ INLINE uint64_t softfloat_shiftRightJam64( uint64_t a, uint_fast32_t dist )
         (dist < 63) ? a>>dist | ((uint64_t) (a<<(-dist & 63)) != 0) : (a != 0);
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 uint64_t softfloat_shiftRightJam64( uint64_t a, uint_fast32_t dist );
 #endif
 #endif
@@ -148,6 +151,7 @@ INLINE uint_fast8_t softfloat_countLeadingZeros32( uint32_t a )
     return count;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 uint_fast8_t softfloat_countLeadingZeros32( uint32_t a );
 #endif
 #endif
@@ -157,6 +161,7 @@ uint_fast8_t softfloat_countLeadingZeros32( uint32_t a );
 | Returns the number of leading 0 bits before the most-significant 1 bit of
 | 'a'.  If 'a' is zero, 64 is returned.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 uint_fast8_t softfloat_countLeadingZeros64( uint64_t a );
 #endif
 
@@ -178,6 +183,7 @@ extern const uint16_t softfloat_approxRecip_1k1s[16];
 #ifdef SOFTFLOAT_FAST_DIV64TO32
 #define softfloat_approxRecip32_1( a ) ((uint32_t) (UINT64_C( 0x7FFFFFFFFFFFFFFF ) / (uint32_t) (a)))
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 uint32_t softfloat_approxRecip32_1( uint32_t a );
 #endif
 #endif
@@ -204,6 +210,7 @@ extern const uint16_t softfloat_approxRecipSqrt_1k1s[16];
 | returned is also always within the range 0.5 to 1; thus, the most-
 | significant bit of the result is always set.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 uint32_t softfloat_approxRecipSqrt32_1( unsigned int oddExpA, uint32_t a );
 #endif
 
@@ -240,6 +247,7 @@ INLINE
 bool softfloat_le128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 )
     { return (a64 < b64) || ((a64 == b64) && (a0 <= b0)); }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 bool softfloat_le128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 );
 #endif
 #endif
@@ -255,6 +263,7 @@ INLINE
 bool softfloat_lt128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 )
     { return (a64 < b64) || ((a64 == b64) && (a0 < b0)); }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 bool softfloat_lt128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 );
 #endif
 #endif
@@ -275,6 +284,7 @@ struct uint128
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_shortShiftLeft128( uint64_t a64, uint64_t a0, uint_fast8_t dist );
 #endif
@@ -296,6 +306,7 @@ struct uint128
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_shortShiftRight128( uint64_t a64, uint64_t a0, uint_fast8_t dist );
 #endif
@@ -413,6 +424,7 @@ struct uint64_extra
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint64_extra
  softfloat_shiftRightJam64Extra(
      uint64_t a, uint64_t extra, uint_fast32_t dist );
@@ -492,6 +504,7 @@ struct uint128
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_add128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 );
 #endif
@@ -528,6 +541,7 @@ struct uint128
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_sub128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 );
 #endif
@@ -562,6 +576,7 @@ INLINE struct uint128 softfloat_mul64ByShifted32To128( uint64_t a, uint32_t b )
     return z;
 }
 #else
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_mul64ByShifted32To128( uint64_t a, uint32_t b );
 #endif
 #endif
@@ -570,6 +585,7 @@ struct uint128 softfloat_mul64ByShifted32To128( uint64_t a, uint32_t b );
 /*----------------------------------------------------------------------------
 | Returns the 128-bit product of 'a' and 'b'.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_mul64To128( uint64_t a, uint64_t b );
 #endif
 

@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "internals.h"
 #include "softfloat.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t extF80_sub( extFloat80_t a, extFloat80_t b )
 {
     union { struct extFloat80M s; extFloat80_t f; } uA;

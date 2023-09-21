@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "platform.h"
 #include "internals.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 struct exp32_sig128
  softfloat_normSubnormalF128Sig( uint_fast64_t sig64, uint_fast64_t sig0 )
 {

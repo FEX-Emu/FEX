@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define softfloat_countLeadingZeros64 softfloat_countLeadingZeros64
 #include "primitives.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 uint_fast8_t softfloat_countLeadingZeros64( uint64_t a )
 {
     uint_fast8_t count;

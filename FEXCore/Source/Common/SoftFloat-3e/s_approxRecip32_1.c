@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern const uint16_t softfloat_approxRecip_1k0s[16];
 extern const uint16_t softfloat_approxRecip_1k1s[16];
 
+FEXCORE_PRESERVE_ALL_ATTR
 uint32_t softfloat_approxRecip32_1( uint32_t a )
 {
     int index;

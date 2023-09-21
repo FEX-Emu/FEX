@@ -158,8 +158,7 @@ namespace FEXCore::Core {
   struct InternalThreadState;
 
   enum FallbackHandlerIndex {
-    OPINDEX_F80LOADFCW = 0,
-    OPINDEX_F80CVTTO_4,
+    OPINDEX_F80CVTTO_4 = 0,
     OPINDEX_F80CVTTO_8,
     OPINDEX_F80CVT_4,
     OPINDEX_F80CVT_8,

@@ -682,7 +682,7 @@
         "0x66 0x0f 0x38 0x41"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1552]",
+        "ldr x0, [x28, #1544]",
         "ldr q2, [x0]",
         "zip1 v3.8h, v2.8h, v17.8h",
         "zip2 v2.8h, v2.8h, v17.8h",

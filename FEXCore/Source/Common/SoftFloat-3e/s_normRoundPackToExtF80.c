@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "platform.h"
 #include "internals.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_normRoundPackToExtF80(
      bool sign,

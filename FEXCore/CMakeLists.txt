@@ -33,6 +33,22 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
+include(CheckCXXSourceCompiles)
+
+set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
+check_cxx_source_compiles(
+  "
+  __attribute__((preserve_all))
+  void Testy() {
+  }
+  int main() {
+  return 0;
+  }"
+  HAS_CLANG_PRESERVE_ALL)
+unset(CMAKE_REQUIRED_FLAGS)
+if (HAS_CLANG_PRESERVE_ALL)
+  message(STATUS "Has clang::preserve_all")
+endif ()
 
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
     # Useful to have for freestanding libFEXCore

@@ -98,11 +98,51 @@ protected:
   // We can't guarantee only the lower 64bits are used so flush everything
   static constexpr uint32_t CALLER_FPR_MASK = ~0U;
 
+  // Generic push and pop vector registers.
+  void PushVectorRegisters(FEXCore::ARMEmitter::Register TmpReg, bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs);
+  void PushGeneralRegisters(FEXCore::ARMEmitter::Register TmpReg, std::span<const FEXCore::ARMEmitter::Register> Regs);
+
+  void PopVectorRegisters(bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs);
+  void PopGeneralRegisters(std::span<const FEXCore::ARMEmitter::Register> Regs);
+
   void PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg);
   void PopDynamicRegsAndLR();
 
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
+
+  // Spills and fills SRA/Dynamic registers that are required for Arm64 `preserve_all` ABI.
+  // This ABI changes most registers to be callee saved.
+  // Caller Saved:
+  // - X0-X8, X16-X18.
+  // - v0-v7
+  // - For 256-bit SVE hosts: top 128-bits of v8-v31
+  //
+  // Callee Saved:
+  // - X9-X15, X19-X31
+  // - Low 128-bits of v8-v31
+  void SpillForPreserveAllABICall(FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true);
+  void FillForPreserveAllABICall(bool FPRs = true);
+
+  void SpillForABICall(bool SupportsPreserveAllABI, FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true) {
+    if (SupportsPreserveAllABI) {
+      SpillForPreserveAllABICall(TMP1, true);
+    }
+    else {
+      SpillStaticRegs(TMP1);
+      PushDynamicRegsAndLR(TMP1);
+    }
+  }
+
+  void FillForABICall(bool SupportsPreserveAllABI, bool FPRs = true) {
+    if (SupportsPreserveAllABI) {
+      FillForPreserveAllABICall(true);
+    }
+    else {
+      PopDynamicRegsAndLR();
+      FillStaticRegs();
+    }
+  }
 
   void Align16B();
 

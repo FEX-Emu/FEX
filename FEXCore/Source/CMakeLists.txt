@@ -214,6 +214,15 @@ if (ENABLE_JIT_ARM64)
     )
 endif()
 
+if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+  list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
+else()
+  list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
+endif()
+
+# Some defines for the softfloat library
+list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ")
+
 set (LIBS fmt::fmt vixl xxhash FEXHeaderUtils)
 
 if (NOT MINGW_BUILD)

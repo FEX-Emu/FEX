@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "specialize.h"
 #include "softfloat.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 int_fast32_t
  softfloat_roundToI32(
      bool sign, uint_fast64_t sig, uint_fast8_t roundingMode, bool exact )

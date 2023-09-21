@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_sub128
 
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_sub128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 )
 {

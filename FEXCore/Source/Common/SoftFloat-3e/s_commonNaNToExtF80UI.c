@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | floating-point NaN, and returns the bit pattern of this value as an unsigned
 | integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_commonNaNToExtF80UI( const struct commonNaN *aPtr )
 {
     struct uint128 uiZ;

@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | Converts the common NaN pointed to by `aPtr' into a 128-bit floating-point
 | NaN, and returns the bit pattern of this value as an unsigned integer.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 struct uint128 softfloat_commonNaNToF128UI( const struct commonNaN *aPtr )
 {
     struct uint128 uiZ;

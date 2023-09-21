@@ -335,7 +335,7 @@
         "0xf2 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1616]",
+        "ldr x0, [x28, #1608]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -515,7 +515,7 @@
       "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1568]",
+        "ldr x0, [x28, #1560]",
         "ldr q2, [x0]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.4s, v16.4s, v2.4s"

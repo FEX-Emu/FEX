@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | to substitute a result value.  If traps are not implemented, this routine
 | should be simply `softfloat_exceptionFlags |= flags;'.
 *----------------------------------------------------------------------------*/
+FEXCORE_PRESERVE_ALL_ATTR
 void softfloat_raiseFlags( uint_fast8_t flags )
 {
 

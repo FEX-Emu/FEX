@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_le128
 
+FEXCORE_PRESERVE_ALL_ATTR
 bool softfloat_le128( uint64_t a64, uint64_t a0, uint64_t b64, uint64_t b0 )
 {
 

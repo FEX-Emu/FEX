@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "specialize.h"
 #include "softfloat.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  extF80_roundToInt( extFloat80_t a, uint_fast8_t roundingMode, bool exact )
 {

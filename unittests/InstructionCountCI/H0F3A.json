@@ -1556,7 +1556,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1600]",
         "ldr q2, [x0]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
@@ -1571,7 +1571,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1600]",
         "ldr q2, [x0]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",

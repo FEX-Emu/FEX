@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "internals.h"
 #include "softfloat.h"
 
+FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t ui64_to_extF80( uint64_t a )
 {
     uint_fast16_t uiZ64;

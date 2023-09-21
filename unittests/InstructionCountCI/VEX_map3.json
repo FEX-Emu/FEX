@@ -5381,7 +5381,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1600]",
         "ldr q3, [x0]",
         "movi v4.2d, #0x0",
         "unimplemented (Unimplemented)",
@@ -5398,7 +5398,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov z2.d, p7/m, z17.d",
-        "ldr x0, [x28, #1608]",
+        "ldr x0, [x28, #1600]",
         "ldr q3, [x0]",
         "movi v4.2d, #0x0",
         "unimplemented (Unimplemented)",
