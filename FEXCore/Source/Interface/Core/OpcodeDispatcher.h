@@ -1280,9 +1280,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
-  // TODO: SelectCC is duplicated SelectCCExplicitSize. Should get removed once all users are removed.
-  OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
-  OrderedNode *SelectCCExplicitSize(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**
    * @name Deferred RFLAG calculation and generation.
