@@ -1325,7 +1325,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto AllOneConst = _Constant(0xffff'ffff'ffff'ffffull);
 
-  OrderedNode *SrcCond = SelectCCExplicitSize(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
+  OrderedNode *SrcCond = SelectCC(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
   OrderedNode *VecCond = _VDupFromGPR(16, 8, SrcCond);
 
   auto top = GetX87Top();
