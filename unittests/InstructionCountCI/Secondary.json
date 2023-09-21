@@ -1462,7 +1462,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #28, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1474,7 +1474,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #28, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1486,7 +1486,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #29, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1498,7 +1498,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #29, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1510,7 +1510,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #30, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1522,7 +1522,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "ubfx w20, w20, #30, #1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1536,7 +1536,7 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w20, w20, #29, #1",
         "orr w20, w21, w20",
-        "cmp x20, #0x1 (1)",
+        "cmp w20, #0x1 (1)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1550,7 +1550,7 @@
         "ubfx w21, w20, #30, #1",
         "ubfx w20, w20, #29, #1",
         "orr w20, w21, w20",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1562,7 +1562,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w20, w20, #31",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1574,7 +1574,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #728]",
         "lsr w20, w20, #31",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1589,7 +1589,7 @@
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "and x20, x20, #0x1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1604,7 +1604,7 @@
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "and x20, x20, #0x1",
-        "cmp x20, #0x0 (0)",
+        "cmp w20, #0x0 (0)",
         "cset x20, ne",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1644,12 +1644,12 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w20, w20, #28, #1",
-        "cmp x21, #0x1 (1)",
-        "cset x21, eq",
+        "cmp w21, #0x1 (1)",
+        "cset w21, eq",
         "cmp w22, w20",
-        "cset x20, ne",
-        "orr x20, x21, x20",
-        "cmp x20, #0x1 (1)",
+        "cset w20, ne",
+        "orr w20, w21, w20",
+        "cmp w20, #0x1 (1)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1663,12 +1663,12 @@
         "ubfx w21, w20, #30, #1",
         "lsr w22, w20, #31",
         "ubfx w20, w20, #28, #1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, eq",
+        "cmp w21, #0x0 (0)",
+        "cset w21, eq",
         "cmp w22, w20",
-        "cset x20, eq",
-        "and x20, x21, x20",
-        "cmp x20, #0x1 (1)",
+        "cset w20, eq",
+        "and w20, w21, w20",
+        "cmp w20, #0x1 (1)",
         "cset x20, eq",
         "bfxil x4, x20, #0, #8"
       ]
