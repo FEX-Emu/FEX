@@ -60,14 +60,18 @@ OrderedNode *OpDispatchBuilder::GetX87Tag(OrderedNode *Value) {
 
 void OpDispatchBuilder::SetX87FTW(OrderedNode *FTW) {
   OrderedNode *X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
-  OrderedNode *NewAbridgedFTW = _Constant(0);
+  OrderedNode *NewAbridgedFTW;
 
   for (int i = 0; i < 8; i++) {
-    OrderedNode *RegTag = _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, FTW, _Constant(i * 2)), _Constant(0b11));
-    OrderedNode *RegValid = _Select(FEXCore::IR::COND_EQ,
+    OrderedNode *RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);
+    OrderedNode *RegValid = _Select(FEXCore::IR::COND_NEQ,
       RegTag, X87Empty,
-      _Constant(0), _Constant(1));
-    NewAbridgedFTW = _Or(OpSize::i32Bit, NewAbridgedFTW, _Lshl(OpSize::i32Bit, RegValid, _Constant(i)));
+      _Constant(1), _Constant(0));
+
+    if (i)
+      NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
+    else
+      NewAbridgedFTW = RegValid;
   }
 
   _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
@@ -79,7 +83,7 @@ OrderedNode *OpDispatchBuilder::GetX87FTW() {
 
   for (int i = 0; i < 8; i++) {
     const auto RegTag = GetX87Tag(_Constant(i), AbridgedFTW);
-    FTW = _Or(OpSize::i32Bit, FTW, _Lshl(OpSize::i32Bit, RegTag, _Constant(i * 2)));
+    FTW = _Orlshl(OpSize::i32Bit, FTW, RegTag, i * 2);
   }
 
   return FTW;
@@ -100,10 +104,10 @@ OrderedNode *OpDispatchBuilder::ReconstructFSW() {
   auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-  FSW = _Bfi(OpSize::i64Bit, 1,  8, FSW, C0);
-  FSW = _Bfi(OpSize::i64Bit, 1,  9, FSW, C1);
-  FSW = _Bfi(OpSize::i64Bit, 1, 10, FSW, C2);
-  FSW = _Bfi(OpSize::i64Bit, 1, 14, FSW, C3);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C0, 8);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C1, 9);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C2, 10);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C3, 14);
   return FSW;
 }
 
@@ -1274,9 +1278,9 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto OneConst = _Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_EQ,
+  auto C3 = _Select(FEXCore::IR::COND_NEQ,
     TopValid, OneConst,
-    ZeroConst, OneConst);
+    OneConst, ZeroConst);
 
   auto C2 = TopValid;
   auto C0 = C3; // Mirror C3 until something other than zero is supported
