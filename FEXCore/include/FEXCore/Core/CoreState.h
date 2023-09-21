@@ -284,12 +284,6 @@ namespace FEXCore::Core {
       struct {
         // None so far
       } X86;
-
-      struct {
-        uint64_t FragmentExecuter;
-        using IntCallbackReturn =  void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
-        IntCallbackReturn CallbackReturn;
-      } Interpreter;
     };
   };
 

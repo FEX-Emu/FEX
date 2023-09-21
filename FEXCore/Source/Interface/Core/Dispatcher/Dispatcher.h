@@ -61,10 +61,8 @@ public:
 
   // These are across all arches for now
   static constexpr size_t MaxGDBPauseCheckSize = 128;
-  static constexpr size_t MaxInterpreterTrampolineSize = 128;
 
   virtual size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) = 0;
-  virtual size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) = 0;
 
   static fextl::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
   static fextl::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);

@@ -75,7 +75,7 @@ enum X86RegLocation : uint32_t {
   RFLAG_VIP_LOC   = 20,
   RFLAG_ID_LOC    = 21,
 
-  // So we can implement arm64-like flag manipulaton on the interpreter/x86 jit..
+  // So we can implement arm64-like flag manipulaton on the x86 jit..
   // SF/ZF/CF/OF packed into a 32-bit word, matching arm64's NZCV structure (not semantics).
   RFLAG_NZCV_LOC   = 24,
   RFLAG_NZCV_1_LOC = 25,

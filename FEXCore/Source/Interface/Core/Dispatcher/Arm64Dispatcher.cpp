@@ -3,7 +3,6 @@
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
-#include "Interface/Core/Interpreter/InterpreterClass.h"
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -548,28 +547,6 @@ size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t Gues
     emit.dc64(GuestRIP);
   }
   emit.Bind(&RunBlock);
-
-  auto UsedBytes = emit.GetCursorOffset();
-  emit.ClearICache(CodeBuffer, UsedBytes);
-  return UsedBytes;
-}
-
-size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
-  LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
-
-  FEXCore::ARMEmitter::Emitter emit{CodeBuffer, MaxInterpreterTrampolineSize};
-  ARMEmitter::ForwardLabel InlineIRData;
-
-  emit.mov(ARMEmitter::XReg::x0, STATE);
-  emit.adr(ARMEmitter::Reg::r1, &InlineIRData);
-
-  emit.ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
-  emit.blr(ARMEmitter::Reg::r3);
-
-  emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
-  emit.br(ARMEmitter::Reg::r0);
-
-  emit.Bind(&InlineIRData);
 
   auto UsedBytes = emit.GetCursorOffset();
   emit.ClearICache(CodeBuffer, UsedBytes);
