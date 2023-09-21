@@ -399,6 +399,92 @@ DEF_OP(AtomicFetchAnd) {
   }
 }
 
+DEF_OP(AtomicFetchCLR) {
+  auto Op = IROp->C<IR::IROp_AtomicFetchCLR>();
+
+  // TMP1 = rax
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+
+  switch (IROp->Size) {
+    case 1: {
+      mov(TMP1.cvt8(), byte [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt8(), TMP1.cvt8());
+      mov(TMP3.cvt8(), TMP1.cvt8());
+      mov(TMP4.cvt8(), GetSrc<RA_8>(Op->Value.ID()));
+      not_(TMP4.cvt8());
+      and_(TMP2.cvt8(), TMP4.cvt8());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
+      jne(Loop);
+      // Result is the previous value from memory, which is currently in TMP3
+      movzx(GetDst<RA_64>(Node), TMP3.cvt8());
+      break;
+    }
+    case 2: {
+      mov(TMP1.cvt16(), word [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt16(), TMP1.cvt16());
+      mov(TMP3.cvt16(), TMP1.cvt16());
+      mov(TMP4.cvt16(), GetSrc<RA_16>(Op->Value.ID()));
+      not_(TMP4.cvt16());
+      and_(TMP2.cvt16(), TMP4.cvt16());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(word [MemReg], TMP2.cvt16());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      movzx(GetDst<RA_64>(Node), TMP3.cvt16());
+      break;
+    }
+    case 4: {
+      mov(TMP1.cvt32(), dword [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt32(), TMP1.cvt32());
+      mov(TMP3.cvt32(), TMP1.cvt32());
+      mov(TMP4.cvt32(), GetSrc<RA_32>(Op->Value.ID()));
+      not_(TMP4.cvt32());
+      and_(TMP2.cvt32(), TMP4.cvt32());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      mov(GetDst<RA_32>(Node), TMP3.cvt32());
+      break;
+    }
+    case 8: {
+      mov(TMP1.cvt64(), qword [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt64(), TMP1.cvt64());
+      mov(TMP3.cvt64(), TMP1.cvt64());
+      mov(TMP4.cvt64(), GetSrc<RA_64>(Op->Value.ID()));
+      not_(TMP4.cvt64());
+      and_(TMP2.cvt64(), TMP4.cvt64());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      mov(GetDst<RA_64>(Node), TMP3.cvt64());
+      break;
+    }
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchAnd size: {}", IROp->Size);
+  }
+}
+
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
 
@@ -656,6 +742,8 @@ void X86JITCore::RegisterAtomicHandlers() {
   REGISTER_OP(ATOMICFETCHADD,    AtomicFetchAdd);
   REGISTER_OP(ATOMICFETCHSUB,    AtomicFetchSub);
   REGISTER_OP(ATOMICFETCHAND,    AtomicFetchAnd);
+  REGISTER_OP(ATOMICFETCHCLR,    AtomicFetchCLR);
+
   REGISTER_OP(ATOMICFETCHOR,     AtomicFetchOr);
   REGISTER_OP(ATOMICFETCHXOR,    AtomicFetchXor);
   REGISTER_OP(ATOMICFETCHNEG,    AtomicFetchNeg);

@@ -909,6 +909,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(ATOMICFETCHADD, AtomicFetchAdd);
         REGISTER_OP(ATOMICFETCHSUB, AtomicFetchSub);
         REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
+        REGISTER_OP(ATOMICFETCHCLR, AtomicFetchCLR);
         REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
         REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
         REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);

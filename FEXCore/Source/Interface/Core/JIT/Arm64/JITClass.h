@@ -295,6 +295,7 @@ private:
   DEF_OP(AtomicFetchAdd);
   DEF_OP(AtomicFetchSub);
   DEF_OP(AtomicFetchAnd);
+  DEF_OP(AtomicFetchCLR);
   DEF_OP(AtomicFetchOr);
   DEF_OP(AtomicFetchXor);
   DEF_OP(AtomicFetchNeg);
