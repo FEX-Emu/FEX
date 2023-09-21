@@ -100,10 +100,10 @@ OrderedNode *OpDispatchBuilder::ReconstructFSW() {
   auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-  FSW = _Bfi(OpSize::i64Bit, 1,  8, FSW, C0);
-  FSW = _Bfi(OpSize::i64Bit, 1,  9, FSW, C1);
-  FSW = _Bfi(OpSize::i64Bit, 1, 10, FSW, C2);
-  FSW = _Bfi(OpSize::i64Bit, 1, 14, FSW, C3);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C0, 8);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C1, 9);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C2, 10);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C3, 14);
   return FSW;
 }
 
