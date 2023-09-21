@@ -308,11 +308,6 @@ namespace FEXCore::Context {
   FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
-#ifdef INTERPRETER_ENABLED
-    case FEXCore::Config::CONFIG_INTERPRETER:
-      BackendFeatures = FEXCore::CPU::GetInterpreterBackendFeatures();
-      break;
-#endif
     case FEXCore::Config::CONFIG_IRJIT:
 #if (_M_X86_64 && JIT_X86_64)
       BackendFeatures = FEXCore::CPU::GetX86JITBackendFeatures();
@@ -671,11 +666,6 @@ namespace FEXCore::Context {
 
     // Create CPU backend
     switch (Config.Core) {
-#ifdef INTERPRETER_ENABLED
-    case FEXCore::Config::CONFIG_INTERPRETER:
-      Thread->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, Thread);
-      break;
-#endif
     case FEXCore::Config::CONFIG_IRJIT:
       Thread->PassManager->InsertRegisterAllocationPass(DoSRA, HostFeatures.SupportsAVX);
 

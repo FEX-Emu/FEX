@@ -159,23 +159,6 @@ if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
     Utils/AllocatorOverride.cpp)
 endif()
 
-if (ENABLE_INTERPRETER)
-  list(APPEND SRCS
-    Interface/Core/Interpreter/InterpreterCore.cpp
-    Interface/Core/Interpreter/InterpreterOps.cpp
-    Interface/Core/Interpreter/ALUOps.cpp
-    Interface/Core/Interpreter/AtomicOps.cpp
-    Interface/Core/Interpreter/BranchOps.cpp
-    Interface/Core/Interpreter/ConversionOps.cpp
-    Interface/Core/Interpreter/EncryptionOps.cpp
-    Interface/Core/Interpreter/F80Ops.cpp
-    Interface/Core/Interpreter/FlagOps.cpp
-    Interface/Core/Interpreter/MemoryOps.cpp
-    Interface/Core/Interpreter/MiscOps.cpp
-    Interface/Core/Interpreter/MoveOps.cpp
-    Interface/Core/Interpreter/VectorOps.cpp)
-endif()
-
 set(DEFINES -DTHREAD_LOCAL=_Thread_local)
 
 if (_M_X86_64)

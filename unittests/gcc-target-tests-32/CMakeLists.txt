@@ -9,8 +9,6 @@ foreach(TEST ${TESTS})
   list(GET TEST_NAME_LIST 1 TEST_NAME)
   string(REPLACE "/" "-" TEST_NAME ${TEST_NAME})
 
-  # Interpreter is too slow to run these tests, only generate for jit
-
   add_test(NAME "${TEST_NAME}.jit.gcc-target-32"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
     "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"

@@ -19,15 +19,13 @@
 namespace FEXCore::Config {
 namespace Handler {
   static inline std::optional<fextl::string> CoreHandler(std::string_view Value) {
-    if (Value == "irint")
+    if (Value == "irjit")
       return "0";
-    else if (Value == "irjit")
-      return "1";
 #ifdef _M_X86_64
     else if (Value == "host")
-      return "2";
+      return "1";
 #endif
-    return "1";
+    return "0";
   }
 
   static inline std::optional<fextl::string> SMCCheckHandler(std::string_view Value) {
@@ -61,7 +59,6 @@ namespace Handler {
 #include <FEXCore/Config/ConfigOptions.inl>
 
   enum ConfigCore {
-    CONFIG_INTERPRETER,
     CONFIG_IRJIT,
     CONFIG_CUSTOM,
   };

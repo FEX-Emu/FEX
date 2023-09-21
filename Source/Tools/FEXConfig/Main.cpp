@@ -246,21 +246,6 @@ namespace {
 
     if (ImGui::BeginTabItem("CPU")) {
       std::optional<fextl::string*> Value{};
-#ifdef INTERPRETER_ENABLED
-      ImGui::Text("Core:");
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
-
-      ImGui::SameLine();
-      if (ImGui::RadioButton("Int", Value.has_value() && **Value == "0")) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CORE, "0");
-        ConfigChanged = true;
-      }
-      ImGui::SameLine();
-      if (ImGui::RadioButton("JIT", Value.has_value() && **Value == "1")) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CORE, "1");
-        ConfigChanged = true;
-      }
-#endif
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MAXINST);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(BlockSize, &(*Value)->at(0), 32);

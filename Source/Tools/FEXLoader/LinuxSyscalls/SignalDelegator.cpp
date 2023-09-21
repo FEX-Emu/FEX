@@ -1735,26 +1735,7 @@ namespace FEX::HLE {
       return Result.first;
     };
 
-    const auto SigbusHandlerInterpreter = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *_info, void *ucontext) -> bool {
-      const auto PC = ArchHelpers::Context::GetPc(ucontext);
-      siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-      if (info->si_code != BUS_ADRALN) {
-        // This only handles alignment problems
-        return false;
-      }
-
-      const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, ArchHelpers::Context::GetArmGPRs(ucontext));
-      ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
-      return Result.first;
-    };
-
-    if (Core == FEXCore::Config::CONFIG_INTERPRETER) {
-      RegisterHostSignalHandler(SIGBUS, SigbusHandlerInterpreter, true);
-    }
-    else {
-      RegisterHostSignalHandler(SIGBUS, SigbusHandler, true);
-    }
+    RegisterHostSignalHandler(SIGBUS, SigbusHandler, true);
 #endif
     // Register pause signal handler.
     RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, PauseHandler, true);
