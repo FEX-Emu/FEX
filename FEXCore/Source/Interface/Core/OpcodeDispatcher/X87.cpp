@@ -63,7 +63,7 @@ void OpDispatchBuilder::SetX87FTW(OrderedNode *FTW) {
   OrderedNode *NewAbridgedFTW = _Constant(0);
 
   for (int i = 0; i < 8; i++) {
-    OrderedNode *RegTag = _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, FTW, _Constant(i * 2)), _Constant(0b11));
+    OrderedNode *RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);
     OrderedNode *RegValid = _Select(FEXCore::IR::COND_NEQ,
       RegTag, X87Empty,
       _Constant(1), _Constant(0));
