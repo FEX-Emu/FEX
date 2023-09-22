@@ -20,7 +20,6 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   # Interface target for the user to add include directories
   add_library(${NAME}-${GUEST_BITNESS}-deps INTERFACE)
   target_include_directories(${NAME}-${GUEST_BITNESS}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-  target_link_libraries(${NAME}-${GUEST_BITNESS}-deps INTERFACE FEXLoader)
   if (GUEST_BITNESS EQUAL 32)
     target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE IS_32BIT_THUNK)
   endif ()
@@ -83,6 +82,7 @@ function(add_host_lib NAME GUEST_BITNESS)
   target_include_directories(${NAME}-host-${GUEST_BITNESS} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen_${GUEST_BITNESS}/")
   target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE dl)
   target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE lib${NAME}-${GUEST_BITNESS}-deps)
+  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE FEXLoader)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-host-${GUEST_BITNESS} PRIVATE -fwrapv)
 
