@@ -286,7 +286,7 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
@@ -300,10 +300,8 @@
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "eor w24, w20, #0x1",
         "eor w20, w21, w20",
         "bic w20, w20, w24",
@@ -332,7 +330,7 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
@@ -346,10 +344,8 @@
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "eor w24, w20, #0x1",
         "eor w20, w21, w20",
         "and w20, w24, w20",
