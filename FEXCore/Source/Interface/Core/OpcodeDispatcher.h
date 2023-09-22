@@ -1280,6 +1280,8 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
+  OrderedNode *SelectMask(OrderedNode *Cmp, uint64_t Mask, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectNZCV(unsigned BitOffset, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**

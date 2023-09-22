@@ -835,6 +835,17 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
+OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  return _Select(ResultSize, OpSize::i32Bit,
+                 TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
+                 Cmp, _Constant(Mask),
+                 TrueValue, FalseValue);
+}
+
+OrderedNode *OpDispatchBuilder::SelectNZCV(unsigned BitOffset, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  return SelectMask(GetNZCV(), 1u << IndexNZCV(BitOffset), TrueIsNonzero, ResultSize, TrueValue, FalseValue);
+}
+
 OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
   OrderedNode *SrcCond = nullptr;
 
@@ -843,67 +854,47 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
 
   switch (OP) {
     case 0x0: { // JO - Jump if OF == 1
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x1:{ // JNO - Jump if OF == 0
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x2: { // JC - Jump if CF == 1
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x3: { // JNC - Jump if CF == 0
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x4: { // JE - Jump if ZF == 1
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x5: { // JNE - Jump if ZF == 0
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      auto Check = _Or(OpSize::i32Bit, Flag1, Flag2);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Check, OneConst, TrueValue, FalseValue);
+      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
+                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC)),
+                           true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      auto Check = _Or(OpSize::i32Bit, Flag1, Flag2);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Check, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
+                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC)),
+                           false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x8: { // JS - Jump if SF == 1
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x9: { // JNS - Jump if SF == 0
-      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0xA: { // JP - Jump if PF == 1
@@ -931,13 +922,11 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       break;
     }
     case 0xE: {// ZF = 1 || SF <> OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, true, OpSize::i32Bit,
+          OneConst, ZeroConst);
+
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-      auto Select1 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag1, OneConst, OneConst, ZeroConst);
-
       auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_NEQ},
           Flag2, Flag3, OneConst, ZeroConst);
 
@@ -947,13 +936,11 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       break;
     }
     case 0xF: {// ZF = 0 && SF = OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, false, OpSize::i32Bit,
+          OneConst, ZeroConst);
+
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-      auto Select1 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag1, ZeroConst, OneConst, ZeroConst);
-
       auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_EQ},
           Flag2, Flag3, OneConst, ZeroConst);
 
