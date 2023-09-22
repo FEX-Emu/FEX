@@ -7,6 +7,25 @@
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
 
+#ifdef _M_X86_64
+#define XBYAK64
+#define XBYAK_CUSTOM_ALLOC
+#define XBYAK_CUSTOM_MALLOC FEXCore::Allocator::malloc
+#define XBYAK_CUSTOM_FREE FEXCore::Allocator::free
+#define XBYAK_CUSTOM_SETS
+#define XBYAK_STD_UNORDERED_SET fextl::unordered_set
+#define XBYAK_STD_UNORDERED_MAP fextl::unordered_map
+#define XBYAK_STD_UNORDERED_MULTIMAP fextl::unordered_multimap
+#define XBYAK_STD_LIST fextl::list
+#define XBYAK_NO_EXCEPTION
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/unordered_set.h>
+
+#include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
+#endif
+
 namespace FEXCore {
 
 // Data Zero Prohibited flag
@@ -35,7 +54,11 @@ static void SetFPCR(uint64_t Value) {
   __asm ("msr FPCR, %[Value]"
     :: [Value] "r" (Value));
 }
-
+#else
+static uint32_t GetDCZID() {
+  // Return unsupported
+  return DCZID_DZP_MASK;
+}
 #endif
 
 static void OverrideFeatures(HostFeatures *Features) {
@@ -266,6 +289,37 @@ HostFeatures::HostFeatures() {
     // This means we can use the instruction
     SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
   }
+#endif
+
+#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
+  Xbyak::util::Cpu X86Features{};
+  SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
+  SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
+  SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
+  SupportsRCPC = true;
+  SupportsTSOImm9 = true;
+  Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
+  SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
+  SupportsAVX = true;
+  SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
+  SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
+  SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
+  SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+  SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
+
+  // xbyak doesn't know how to check for CLZero
+  // First ensure we support a new enough extended CPUID function range
+
+  uint32_t data[4];
+  Xbyak::util::Cpu::getCpuid(0x8000'0000, data);
+  if (data[0] >= 0x8000'0008U) {
+    // CLZero defined in 8000_00008_EBX[bit 0]
+    Xbyak::util::Cpu::getCpuid(0x8000'0008, data);
+    SupportsCLZERO = data[1] & 1;
+  }
+
+  SupportsFlushInputsToZero = true;
+  SupportsFloatExceptions = true;
 #endif
   OverrideFeatures(this);
 }

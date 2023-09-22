@@ -49,20 +49,22 @@ foreach(ASM_SRC ${ASM_SOURCES})
   list(APPEND ASM_DEPENDS "${OUTPUT_NAME};${OUTPUT_CONFIG_NAME}")
 
   # Format is "<Test Arguments>" "<Test Name>" "<Test Type>"
-  set(TEST_ARGS
-    "--no-silent -g -c irjit -n 1   --no-multiblock"   "jit_1"     "jit"
-    "--no-silent -g -c irjit -n 500 --no-multiblock"   "jit_500"   "jit"
-    "--no-silent -g -c irjit -n 500 --multiblock"      "jit_500_m" "jit"
-    )
+
+  set(TEST_ARGS)
+  if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
+    list(APPEND TEST_ARGS
+      "--no-silent -g -c irjit -n 1   --no-multiblock"   "jit_1"     "jit"
+      "--no-silent -g -c irjit -n 500 --no-multiblock"   "jit_500"   "jit"
+      "--no-silent -g -c irjit -n 500 --multiblock"      "jit_500_m" "jit"
+      )
+  endif()
 
   if (ENABLE_VIXL_SIMULATOR)
     set(CPU_CLASS Simulator)
-  else()
-    if (_M_X86_64)
-      list(APPEND TEST_ARGS
-        "--no-silent -g -c host"       "host"      "host"
-        )
-    endif()
+  elseif (_M_X86_64)
+    list(APPEND TEST_ARGS
+      "--no-silent -g -c host"       "host"      "host"
+      )
   endif()
 
   if (NOT MINGW_BUILD)
