@@ -17,8 +17,14 @@ struct ThunkedCallback : FunctionParams {
     clang::QualType return_type;
 
     bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
-    bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
+};
+
+struct ParameterAnnotations {
+    bool is_passthrough = false;
+    bool is_opaque = false;
+
+    bool operator==(const ParameterAnnotations&) const = default;
 };
 
 /**
@@ -51,6 +57,10 @@ struct ThunkedFunction : FunctionParams {
 
     // Maps parameter index to ThunkedCallback
     std::unordered_map<unsigned, ThunkedCallback> callbacks;
+
+    // Maps parameter index to ParameterAnnotations
+    // TODO: Use index -1 for the return value?
+    std::unordered_map<unsigned, ParameterAnnotations> param_annotations;
 
     clang::FunctionDecl* decl;
 };
@@ -109,6 +119,9 @@ protected:
     // Build the internal API representation by processing fex_gen_config and other annotated entities
     void ParseInterface(clang::ASTContext&);
 
+    // Recursively extend the type set to include types of struct members
+    void CoverReferencedTypes(clang::ASTContext&);
+
     // Called from ExecuteAction() after parsing is complete
     virtual void EmitOutput(clang::ASTContext&) {};
 
@@ -116,8 +129,68 @@ protected:
 
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
-    std::unordered_set<const clang::Type*> funcptr_types;
 
+    // TODO: Rename, since this is now not just per type but also per set of annotations
+    std::unordered_map<std::string, std::pair<const clang::Type*, std::unordered_map<unsigned, ParameterAnnotations>>> funcptr_types;
+
+public: // TODO: Remove, make only RepackedType public
+    struct RepackedType {
+        bool is_opaque = false; // opaque or assumed_compatible (TODO: Rename to the latter)
+        bool pointers_only = is_opaque; // if true, only pointers to this type may be used
+
+        // Set of members (identified by their field name) with custom repacking
+        std::unordered_set<std::string> custom_repacked_members;
+
+        bool UsesCustomRepackFor(const clang::FieldDecl* member) const {
+            return custom_repacked_members.contains(member->getNameAsString());
+        }
+        bool UsesCustomRepackFor(const std::string& member_name) const {
+            return custom_repacked_members.contains(member_name);
+        }
+    };
+
+    std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;
     std::vector<NamespaceInfo> namespaces;
+
+    RepackedType& LookupType(clang::ASTContext& context, const clang::Type* type) {
+      return types.at(context.getCanonicalType(type));
+    }
 };
+
+inline std::string get_type_name(const clang::ASTContext& context, const clang::Type* type) {
+    if (type->isBuiltinType()) {
+        // Skip canonicalization
+        return clang::QualType { type, 0 }.getAsString();
+    }
+
+    if (auto decl = type->getAsTagDecl()) {
+        // Replace unnamed types with a placeholder. This will fail to compile if referenced
+        // anywhere in generated code, but at least it will point to a useful location.
+        //
+        // A notable exception are C-style struct declarations like "typedef struct (unnamed) { ... } MyStruct;".
+        // A typedef name is associated with these for linking purposes, so
+        // getAsString() will produce a usable identifier.
+        // TODO: Consider turning this into a hard error instead of replacing the name
+        if (!decl->getDeclName() && !decl->getTypedefNameForAnonDecl()) {
+            auto loc = context.getSourceManager().getPresumedLoc(decl->getLocation());
+            std::string filename = loc.getFilename();
+            filename = std::move(filename).substr(filename.rfind("/"));
+            filename = std::move(filename).substr(1);
+            std::replace(filename.begin(), filename.end(), '.', '_');
+            return "unnamed_type_" + filename + "_" + std::to_string(loc.getLine());
+        }
+    }
+
+    auto type_name = clang::QualType { context.getCanonicalType(type), 0 }.getAsString();
+    if (type_name.starts_with("struct ")) {
+        type_name = type_name.substr(7);
+    }
+    if (type_name.starts_with("class ") || type_name.starts_with("union ")) {
+        type_name = type_name.substr(6);
+    }
+    if (type_name.starts_with("enum ")) {
+        type_name = type_name.substr(5);
+    }
+    return type_name;
+}

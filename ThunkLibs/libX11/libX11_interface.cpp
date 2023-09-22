@@ -10,10 +10,14 @@ extern "C" {
 
 #include <X11/ImUtil.h>
 
+#include <X11/extensions/extutil.h>
 #include <X11/extensions/Xext.h>
+#include <X11/extensions/XKBgeom.h>
 
 #include <X11/Xlibint.h>
 #include <X11/XKBlib.h>
+
+#include <X11/Xtrans/Xtransint.h>
 
 #include <X11/Xutil.h>
 }
@@ -27,6 +31,10 @@ struct fex_gen_config {
 
 template<typename>
 struct fex_gen_type {};
+
+// Function, parameter index, parameter type [optional]
+template<auto, int, typename = void>
+struct fex_gen_param {};
 
 template<> struct fex_gen_type<XID(Display*)> {}; // XDisplay::resource_alloc
 
@@ -53,6 +61,61 @@ template<> struct fex_gen_type<int(XImage*)> {};                          // XIm
 template<> struct fex_gen_type<unsigned long(XImage*, int, int)> {};      // XImage::f.get_pixel
 template<> struct fex_gen_type<int(XImage*, int, int, unsigned long)> {}; // XImage::f.put_pixel
 template<> struct fex_gen_type<int(XImage*, long)> {};                    // XImage::f.add_pixel
+
+template<> struct fex_gen_type<std::remove_pointer_t<XIC>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<XIM>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<XOC>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<XOM>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XrmHashBucketRec> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XkbInfoRec> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XContextDB> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XDisplayAtoms> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XLockInfo> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XIMFilter> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XErrorThreadInfo> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XKeytrans> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_X11XCBPrivate> : fexgen::opaque_type {};
+
+
+#ifndef IS_32BIT_THUNK
+// This has a public definition but is used as an opaque type in most APIs
+template<> struct fex_gen_type<std::remove_pointer_t<Region>> : fexgen::assume_compatible_data_layout {};
+
+// Union types
+template<> struct fex_gen_type<XEvent> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<xEvent> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XkbDoodadRec> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<xReply> : fexgen::assume_compatible_data_layout {};
+
+// Union type of all sorts of different X objects... Further, XEHeadOfExtensionList casts this to XExtData**.
+// This is likely highly unsafe to assume compatible.
+template<> struct fex_gen_type<XEDataObject> : fexgen::assume_compatible_data_layout {};
+
+// Linked-list types
+template<> struct fex_gen_type<_XtransConnFd> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XkbDeviceLedChanges> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XQEvent> : fexgen::assume_compatible_data_layout {};
+
+// Contains nontrivial circular pointer relationships
+template<> struct fex_gen_type<XkbOverlayRec> : fexgen::assume_compatible_data_layout {};
+
+// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
+template<> struct fex_gen_type<_XConnWatchInfo> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XLockPtrs> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XFreeFuncRec> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XExtension> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+template<> struct fex_gen_type<_XConnectionInfo> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+template<> struct fex_gen_type<_XInternalAsync> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+template<> struct fex_gen_type<_XDisplay> : fexgen::assume_compatible_data_layout {};
+
+// TODO: This contains a nested struct type of function pointer members
+template<> struct fex_gen_type<XImage> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XExtensionHooks> : fexgen::assume_compatible_data_layout {};
+#endif
+
+// Union type (each member is defined in terms of char members)
+template<> struct fex_gen_type<XkbAction> : fexgen::assume_compatible_data_layout {};
 
 // Xlibint
 template<> struct fex_gen_config<_XGetRequest> {};

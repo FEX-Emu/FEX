@@ -17,7 +17,7 @@ endif()
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 
   # This gets passed in from the main cmake project
   set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
@@ -52,6 +52,9 @@ function(generate NAME SOURCE_FILE)
   add_library(${NAME}-guest-deps INTERFACE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   target_compile_definitions(${NAME}-guest-deps INTERFACE GUEST_THUNK_LIBRARY)
+  if (BITNESS EQUAL 32)
+    target_compile_definitions(${NAME}-guest-deps INTERFACE IS_32BIT_THUNK)
+  endif ()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
@@ -64,16 +67,18 @@ function(generate NAME SOURCE_FILE)
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
   if (BITNESS EQUAL 32)
-    set (BITNESS_FLAGS "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
+    set (BITNESS_FLAGS "-for-32bit-guest")
+    set (BITNESS_FLAGS2 "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
   else()
-    set (BITNESS_FLAGS "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
+    set (BITNESS_FLAGS "")
+    set (BITNESS_FLAGS2 "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
   endif()
 
   add_custom_command(
     OUTPUT "${OUTFILE}"
     DEPENDS "${GENERATOR_EXE}"
     DEPENDS "${SOURCE_FILE}"
-    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" -- -std=c++17 ${BITNESS_FLAGS}
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
@@ -213,10 +218,6 @@ if (BITNESS EQUAL 64)
   generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
   add_guest_lib(Xfixes "libXfixes.so.3")
 
-  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
-  target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-  add_guest_lib(vulkan "libvulkan.so.1")
-
   find_package(PkgConfig)
   pkg_search_module(XCB REQUIRED xcb)
   version_to_variables(${XCB_VERSION} XCB)
@@ -227,9 +228,6 @@ if (BITNESS EQUAL 64)
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MAJOR=${XCB_VERSION_MAJOR})
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
-
-  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
-  add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
 
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
   add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
@@ -294,3 +292,10 @@ endif()
 
 generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp)
 add_guest_lib(fex_thunk_test "libfex_thunk_test.so")
+
+generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
+add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
+
+generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
+target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+add_guest_lib(vulkan "libvulkan.so.1")

@@ -45,7 +45,7 @@ namespace FEX::VDSO {
     // glibc handlers
     namespace glibc {
       static void time(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           time_t *a_0;
           uint64_t rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
@@ -55,7 +55,7 @@ namespace FEX::VDSO {
       }
 
       static void gettimeofday(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           struct timeval *tv;
           struct timezone *tz;
           uint64_t rv;
@@ -66,7 +66,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
           uint64_t rv;
@@ -77,7 +77,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_getres(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
           uint64_t rv;
@@ -88,7 +88,7 @@ namespace FEX::VDSO {
       }
 
       static void getcpu(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           uint32_t *cpu;
           uint32_t *node;
           uint64_t rv;
@@ -102,7 +102,7 @@ namespace FEX::VDSO {
     namespace VDSO {
       // VDSO handlers
       static void time(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           time_t *a_0;
           uint64_t rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
@@ -111,7 +111,7 @@ namespace FEX::VDSO {
       }
 
       static void gettimeofday(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           struct timeval *tv;
           struct timezone *tz;
           uint64_t rv;
@@ -121,7 +121,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
           uint64_t rv;
@@ -131,7 +131,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_getres(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
           uint64_t rv;
@@ -141,7 +141,7 @@ namespace FEX::VDSO {
       }
 
       static void getcpu(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           uint32_t *cpu;
           uint32_t *node;
           uint64_t rv;
@@ -168,7 +168,7 @@ namespace FEX::VDSO {
 
       // glibc handlers
       static void time(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<FEX::HLE::x32::old_time32_t> a_0;
           int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
@@ -182,7 +182,7 @@ namespace FEX::VDSO {
       }
 
       static void gettimeofday(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<FEX::HLE::x32::timeval32> tv;
           HLE::x32::compat_ptr<struct timezone> tz;
           int rv;
@@ -203,7 +203,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
           int rv;
@@ -219,7 +219,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime64(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<struct timespec> tp;
           int rv;
@@ -230,7 +230,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_getres(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
           int rv;
@@ -247,7 +247,7 @@ namespace FEX::VDSO {
       }
 
       static void getcpu(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<uint32_t> cpu;
           HLE::x32::compat_ptr<uint32_t> node;
           int rv;
@@ -265,7 +265,7 @@ namespace FEX::VDSO {
 
       // VDSO handlers
       static void time(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<FEX::HLE::x32::old_time32_t> a_0;
           int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
@@ -279,7 +279,7 @@ namespace FEX::VDSO {
       }
 
       static void gettimeofday(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<FEX::HLE::x32::timeval32> tv;
           HLE::x32::compat_ptr<struct timezone> tz;
           int rv;
@@ -300,7 +300,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
           int rv;
@@ -316,7 +316,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_gettime64(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<struct timespec> tp;
           int rv;
@@ -326,7 +326,7 @@ namespace FEX::VDSO {
       }
 
       static void clock_getres(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
           int rv;
@@ -343,7 +343,7 @@ namespace FEX::VDSO {
       }
 
       static void getcpu(void* ArgsRV) {
-        struct ArgsRV_t {
+        struct __attribute__((packed)) ArgsRV_t {
           HLE::x32::compat_ptr<uint32_t> cpu;
           HLE::x32::compat_ptr<uint32_t> node;
           int rv;

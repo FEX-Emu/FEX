@@ -2,10 +2,27 @@
 
 #include <X11/extensions/Xrender.h>
 
+#include <type_traits>
+
 template<auto>
 struct fex_gen_config {
     unsigned version = 1;
 };
+
+template<typename>
+struct fex_gen_type {};
+
+// Struct with multi-dimensional array member. Compatible data layout across all architectures
+template<> struct fex_gen_type<_XTransform> : fexgen::assume_compatible_data_layout {};
+
+#ifndef IS_32BIT_THUNK
+// This has a public definition but is used as an opaque type in most APIs
+template<> struct fex_gen_type<std::remove_pointer_t<Region>> : fexgen::assume_compatible_data_layout {};
+
+// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
+template<> struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XDisplay> : fexgen::assume_compatible_data_layout {};
+#endif
 
 template<> struct fex_gen_config<XRenderCreateAnimCursor> {};
 template<> struct fex_gen_config<XRenderCreateCursor> {};

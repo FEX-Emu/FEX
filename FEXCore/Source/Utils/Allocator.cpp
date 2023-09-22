@@ -82,7 +82,7 @@ namespace FEXCore::Allocator {
   // so that when the sbrk syscall is used to allocate more memory, it fails with an ENOMEM since it runs in to the allocated guard page.
   //
   // glibc notices the sbrk failure and falls back to regular mmap based allocations when this occurs. Ensuring that memory can still be allocated.
-  void *DisableSBRKAllocations() {
+  extern "C" void *DisableSBRKAllocations() {
     void* INVALID_PTR = reinterpret_cast<void*>(~0ULL);
     // Get the starting sbrk pointer.
     void *StartingSBRK = sbrk(0);
@@ -121,10 +121,15 @@ namespace FEXCore::Allocator {
     }
   }
 
+extern "C" void BigYolo() {
+    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void SetupHooks() {
-    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+//    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+
 #ifdef ENABLE_JEMALLOC
     je___mmap_hook   = FEX_mmap;
     je___munmap_hook = FEX_munmap;

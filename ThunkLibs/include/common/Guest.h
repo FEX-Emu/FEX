@@ -10,7 +10,8 @@
 #ifdef __clang__
 #define THUNK_ABI __fastcall
 #else
-#define THUNK_ABI [[gnu::fastcall]]
+// TODO: [[gnu::fastcall]] doesn't seem to work?
+#define THUNK_ABI __attribute__((fastcall)) // [[gnu::fastcall]]
 #endif
 #endif
 
@@ -61,13 +62,20 @@ MAKE_THUNK(fex, is_lib_loaded, "0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 
 MAKE_THUNK(fex, is_host_heap_allocation, "0xf5, 0x77, 0x68, 0x43, 0xbb, 0x6b, 0x28, 0x18, 0x40, 0xb0, 0xdb, 0x8a, 0x66, 0xfb, 0x0e, 0x2d, 0x98, 0xc2, 0xad, 0xe2, 0x5a, 0x18, 0x5a, 0x37, 0x2e, 0x13, 0xc9, 0xe7, 0xb9, 0x8c, 0xa9, 0x3e")
 MAKE_THUNK(fex, link_address_to_function, "0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77")
 MAKE_THUNK(fex, allocate_host_trampoline_for_guest_function, "0x9b, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a")
+MAKE_THUNK(fex, register_async_worker_thread, "0x9c, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a")
+MAKE_THUNK(fex, unregister_async_worker_thread, "0x9d, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a")
 
 #define LOAD_LIB_BASE(name, init_fn) \
   __attribute__((constructor)) static void loadlib() \
   { \
+    static bool inited = false; \
+    if (inited) { \
+      return; \
+    } \
     LoadlibArgs args =  { #name }; \
     fexthunks_fex_loadlib(&args); \
     if ((init_fn)) ((void(*)())init_fn)(); \
+    inited = true; \
   }
 
 #define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr)
@@ -75,8 +83,8 @@ MAKE_THUNK(fex, allocate_host_trampoline_for_guest_function, "0x9b, 0xb2, 0xf4, 
 
 inline void LinkAddressToFunction(uintptr_t addr, uintptr_t target) {
     struct args_t {
-        uintptr_t original_callee;
-        uintptr_t target_addr; // Function to call when branching to replaced_addr
+        uint64_t original_callee;
+        uint64_t target_addr; // Function to call when branching to replaced_addr
     };
     args_t args = { addr, target };
     fexthunks_fex_link_address_to_function(&args);
@@ -126,14 +134,17 @@ inline Result CallHostFunction(Args... args) {
   // Use mm0 to pass in host_addr (chosen to avoid conflicts with vectorcall).
   // Note this register overlaps the x87 st(0) register (used to return float values),
   // so applications that expect this register to be preserved could run into problems.
-  register uintptr_t host_addr asm ("mm0");
-  asm volatile("" : "=r" (host_addr));
+//  register uintptr_t host_addr asm ("mm0");
+//  asm volatile("" : "=r" (host_addr));
+
+    uintptr_t host_addr; \
+    asm volatile("movd %%mm0, %0" : "=r" (host_addr));
 #endif
 #else
   uintptr_t host_addr = 0;
 #endif
 
-  PackedArguments<Result, Args..., uintptr_t> packed_args = {
+  PackedArguments<Result, Args..., uint64_t> packed_args = {
     args...,
     host_addr
     // Return value not explicitly initialized since an initializer would fail to compile for the void case
@@ -162,20 +173,20 @@ inline void MakeHostFunctionGuestCallable(THUNK_ABI Result (*host_func)(Args...)
 }
 
 template<typename Target>
-inline Target *AllocateHostTrampolineForGuestFunction(void (*GuestUnpacker)(uintptr_t, void*), Target *GuestTarget) {
+inline Target* AllocateHostTrampolineForGuestFunction(void THUNK_ABI (*GuestUnpacker)(uintptr_t, void*), Target *GuestTarget) {
   if (!GuestTarget) {
-    return nullptr;
+    return 0;
   }
 
   struct {
-    uintptr_t GuestUnpacker;
-    uintptr_t GuestTarget;
-    uintptr_t rv;
+    uint64_t GuestUnpacker;
+    uint64_t GuestTarget;
+    uint64_t rv;
   } argsrv = { (uintptr_t)GuestUnpacker, (uintptr_t)GuestTarget };
 
   fexthunks_fex_allocate_host_trampoline_for_guest_function((void*)&argsrv);
 
-  return (Target *)argsrv.rv;
+  return (Target*)argsrv.rv;
 }
 
 template<typename F>
@@ -183,7 +194,7 @@ struct CallbackUnpack;
 
 template<typename Result, typename... Args>
 struct CallbackUnpack<Result(Args...)> {
-    static void Unpack(uintptr_t cb, void* argsv) {
+    static void THUNK_ABI Unpack(uintptr_t cb, void* argsv) {
         using fn_t = Result(Args...);
         auto callback = reinterpret_cast<fn_t*>(cb);
         auto args = reinterpret_cast<PackedArguments<Result, Args...>*>(argsv);

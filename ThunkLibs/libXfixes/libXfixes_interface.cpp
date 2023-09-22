@@ -1,11 +1,23 @@
 #include <common/GeneratorInterface.h>
 
+extern "C" {
 #include <X11/extensions/Xfixes.h>
+#include <X11/Xlibint.h>
+}
 
 template<auto>
 struct fex_gen_config {
     unsigned version = 3;
 };
+
+template<typename>
+struct fex_gen_type {};
+
+#ifndef IS_32BIT_THUNK
+// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
+template<> struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XDisplay> : fexgen::assume_compatible_data_layout {};
+#endif
 
 template<> struct fex_gen_config<XFixesGetCursorName> {};
 template<> struct fex_gen_config<XFixesQueryExtension> {};

@@ -6,9 +6,14 @@ $end_info$
 
 #include <stdio.h>
 
+extern "C" {
 #include <X11/Xlib.h>
+#include <X11/Xlibint.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
+}
+#undef min
+#undef max
 
 #include "common/Host.h"
 #include <dlfcn.h>

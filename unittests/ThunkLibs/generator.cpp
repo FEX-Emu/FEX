@@ -73,7 +73,7 @@ struct Fixture {
      * It will be prepended to "code" before processing and also to the generator output.
      */
     SourceWithAST run_thunkgen_guest(std::string_view prelude, std::string_view code, bool silent = false);
-    SourceWithAST run_thunkgen_host(std::string_view prelude, std::string_view code, bool silent = false);
+    SourceWithAST run_thunkgen_host(std::string_view prelude, std::string_view code, GuestABI = GuestABI::X86_64, bool silent = false);
     GenOutput run_thunkgen(std::string_view prelude, std::string_view code, bool silent = false);
 
     const std::string libname = "libtest";
@@ -202,7 +202,14 @@ SourceWithAST::SourceWithAST(std::string_view input) : code(input) {
  */
 SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_view code, bool silent) {
     const std::string full_code = std::string { prelude } + std::string { code };
-    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
+
+    // These tests don't deal with data layout differences, so just run data
+    // layout analysis with host configuration
+    auto data_layout_analysis_factory = std::make_unique<AnalyzeDataLayoutActionFactory>();
+    run_tool(*data_layout_analysis_factory, full_code, silent);
+    auto& data_layout = data_layout_analysis_factory->GetDataLayout();
+
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
         "#include <cstdint>\n"
@@ -229,13 +236,23 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
 /**
  * Generates host thunk library code from the given input
  */
-SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_view code, bool silent) {
+SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_view code, GuestABI guest_abi, bool silent) {
     const std::string full_code = std::string { prelude } + std::string { code };
-    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
+
+    // These tests don't deal with data layout differences, so just run data
+    // layout analysis with host configuration
+    auto data_layout_analysis_factory = std::make_unique<AnalyzeDataLayoutActionFactory>();
+    run_tool(*data_layout_analysis_factory, full_code, silent, guest_abi);
+    auto& data_layout = data_layout_analysis_factory->GetDataLayout();
+
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
+        "#include <array>\n"
         "#include <cstdint>\n"
+        "#include <cstring>\n"
         "#include <dlfcn.h>\n"
+        "#include <type_traits>\n"
         "template<typename Fn>\n"
         "struct function_traits;\n"
         "template<typename Result, typename Arg>\n"
@@ -256,29 +273,194 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  uintptr_t GuestUnpacker;\n"
         "  uintptr_t GuestTarget;\n"
         "};\n"
-        "template<typename>\n"
-        "struct CallbackUnpack {\n"
-        "  static void ForIndirectCall(void* argsv);\n"
+        "struct ParameterAnnotations {\n"
+        "    bool is_passthrough = false;\n"
+        "    bool is_opaque = false;\n"
         "};\n"
-        "template<typename F>\n"
-        "void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "template<typename, typename...>\n"
+        "struct GuestWrapperForHostFunction {\n"
+        "  template<ParameterAnnotations...> static void Call(void*);\n"
+        "};\n"
         "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
-        "void *dlsym_default(void* handle, const char* symbol);\n";
+        "void *dlsym_default(void* handle, const char* symbol);\n"
+        "template<typename>\n"
+        "struct pmd_traits;\n"
+        "template<typename Parent, typename Data>\n"
+        "struct pmd_traits<Data Parent::*> {\n"
+        "    using parent_t = Parent;\n"
+        "    using member_t = Data;\n"
+        "};\n"
+        "template<typename T> inline constexpr bool has_compatible_data_layout = std::is_integral_v<T> || std::is_enum_v<T>;\n"
+        "template<typename T>\n"
+        "struct guest_layout {\n"
+        "  static_assert(!std::is_class_v<T>, \"No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.\");\n"
+        "  static_assert(!std::is_union_v<T>, \"No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.\");\n"
+        "\n"
+        "  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;\n"
+        "  type data;\n"
+        "\n"
+        "  guest_layout& operator=(const T from);\n"
+        "};\n"
+        "\n"
+        "template<typename T, std::size_t N>\n"
+        "struct guest_layout<T[N]> {\n"
+        "  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;\n"
+        "  std::array<guest_layout<type>, N> data;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout;\n"
+        "\n"
+        "template<typename T>\n"
+        "struct guest_layout<T*> {\n"
+        "#ifdef IS_32BIT_THUNK\n"
+        "  using type = uint32_t;\n"
+        "#else\n"
+        "  using type = uint64_t;\n"
+        "#endif\n"
+        "  type data;\n"
+        "\n"
+        "  guest_layout& operator=(const T* from);\n"
+        "  guest_layout<T>* get_pointer();\n"
+        "  const guest_layout<T>* get_pointer() const;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct guest_layout<T* const> {\n"
+        "#ifdef IS_32BIT_THUNK\n"
+        "  using type = uint32_t;\n"
+        "#else\n"
+        "  using type = uint64_t;\n"
+        "#endif\n"
+        "  type data;\n"
+        "\n"
+        "  guest_layout& operator=(const T* from);\n"
+        "\n"
+        "  guest_layout<T>* get_pointer();\n"
+        "  const guest_layout<T>* get_pointer() const;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout {\n"
+        "  T data;\n"
+        "\n"
+        "  template<typename U>\n"
+        "  host_layout(const guest_layout<U>& from) requires(!std::is_integral_v<T> || sizeof(T) == sizeof(U));\n"
+        "};\n"
+        "\n"
+        "// Specialization for size_t, which is 64-bit on 64-bit but 32-bit on 32-bit\n"
+        "template<>\n"
+        "struct host_layout<size_t> {\n"
+        "  size_t data;\n"
+        "\n"
+        "  host_layout(const guest_layout<uint32_t>& from);\n"
+        "  host_layout(const guest_layout<size_t>& from);\n"
+        "};\n"
+        "\n"
+        "template<typename T, size_t N>\n"
+        "struct host_layout<T[N]> {\n"
+        "  std::array<T, N> data;\n"
+        "  host_layout(const guest_layout<T[N]>& from);\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout<T*> {\n"
+        "  T* data;\n"
+        "\n"
+        "  static_assert(!std::is_function_v<T>, \"Function types must be handled separately\");\n"
+        "\n"
+        "  host_layout(const guest_layout<T*>& from);\n"
+        "\n"
+        "  host_layout() = default;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout<T* const> {\n"
+        "  T* data;\n"
+        "\n"
+        "  static_assert(!std::is_function_v<T>, \"Function types must be handled separately\");\n"
+        "\n"
+        "  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit\n"
+        "  host_layout(const guest_layout<T* const>& from);\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct unpacked_arg {\n"
+        "  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;\n"
+        "  host_layout<type> data;\n"
+        "  type get();\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct unpacked_arg<T*> {\n"
+        "  unpacked_arg(const guest_layout<T*>&);\n"
+        "  unpacked_arg(const guest_layout<const T*>&);\n"
+        "\n"
+        "  T* get();\n"
+        "  host_layout<T*> data;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct unpacked_arg_base;\n"
+        "template<typename T>\n"
+        "struct unpacked_arg_base<T*> {\n"
+        "  unpacked_arg_base(host_layout<T>*);\n"
+        "  unpacked_arg_base(host_layout<const T>*);\n"
+        "\n"
+        "  T* get();\n"
+        "  host_layout<T>* data;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct unpacked_arg_with_storage;\n"
+        "template<typename T>\n"
+        "struct unpacked_arg_with_storage<T*> : unpacked_arg_base<T*> {\n"
+        "  unpacked_arg_with_storage(const guest_layout<T*>&);\n"
+        "  unpacked_arg_with_storage(const guest_layout<const T*>&);\n"
+        "};\n"
+        "template<>\n"
+        "struct unpacked_arg_with_storage<char*> {\n"
+        "  using type = char*;\n"
+        "\n"
+        "  unpacked_arg_with_storage(guest_layout<const char*>& data);\n"
+        "  unpacked_arg_with_storage(guest_layout<char*>& data);\n"
+        "\n"
+        "  type get();\n"
+        "  uint64_t data;\n"
+        "};\n"
+        "\n"
+        "template<typename T> guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>);\n"
+        "template<typename T> guest_layout<T*> to_guest(const host_layout<T*>& from);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(const guest_layout<F*>&);\n"
+        "template<typename T> T& unwrap_host(host_layout<T>&);\n"
+        "template<typename T> T* unwrap_host(unpacked_arg_base<T*>&);\n"
+        "template<typename T> const host_layout<T>& to_host_layout(const T& t);\n";
 
     auto& filename = output_filenames.host;
     {
         std::ifstream file(filename);
-        const auto current_size = result.size();
+        const auto prelude_size = result.size();
         const auto new_data_size = std::filesystem::file_size(filename);
         result.resize(result.size() + new_data_size);
-        file.read(result.data() + current_size, result.size());
+        file.read(result.data() + prelude_size, result.size());
+
+        // Force all functions to be non-static, since having to define them
+        // would add a lot of noise to simple tests.
+        while (true) {
+            auto pos = result.find("static ", prelude_size);
+            if (pos == std::string::npos) {
+                break;
+            }
+            result.replace(pos, 6, "      "); // Replace "static" with 6 spaces (avoiding reallocation)
+        }
     }
     return SourceWithAST { std::string { prelude } + result };
 }
 
 Fixture::GenOutput Fixture::run_thunkgen(std::string_view prelude, std::string_view code, bool silent) {
     return { run_thunkgen_guest(prelude, code, silent),
-             run_thunkgen_host(prelude, code, silent) };
+             run_thunkgen_host(prelude, code, GuestABI::X86_64, silent) };
 }
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
@@ -353,10 +535,10 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack"))).bind("funcptr")))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
-                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
+                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (unsigned char, unsigned char)";
             }));
 }
 
@@ -383,7 +565,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             hasDescendant(callExpr(callee(functionDecl(hasName("FinalizeHostTrampolineForGuestFunction"))), hasArgument(0, expr().bind("funcptr"))))
         )).check_binding("funcptr", +[](const clang::Expr* funcptr) {
             // Check that the argument type matches the function pointer
-            return funcptr->getType().getAsString() == "int (*)(char, char)";
+            return funcptr->getType().getAsString() == "guest_layout<int (*)(char, char)>";
         }));
 
     // Host should export the unpacking function for function pointer arguments
@@ -391,33 +573,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack")))))))
-            )));
-}
-
-// Parameter is a guest function pointer
-TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
-    const std::string prelude =
-        "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
-        "static void fexfn_impl_libtest_func(fex_guest_function_ptr) {}\n";
-    const auto output = run_thunkgen(prelude,
-        "#include <thunks_common.h>\n"
-        "void func(int (*funcptr)(char, char));\n"
-        "template<auto> struct fex_gen_config {};\n"
-        "template<> struct fex_gen_config<func> : fexgen::callback_guest, fexgen::custom_host_impl {};\n");
-
-    CHECK_THAT(output.guest,
-        matches(functionDecl(
-            hasName("fexfn_pack_func"),
-            returns(asString("void")),
-            parameterCountIs(1),
-            hasParameter(0, hasType(asString("int (*)(char, char)")))
-        )));
-
-    // Host-side implementation only sees an opaque type that it can't call
-    CHECK_THAT(output.host,
-        matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
-                         hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction")))))))
             )));
 }
 
@@ -461,10 +617,10 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             parameterCountIs(1),
             hasParameter(0, hasType(pointerType(pointee(
                 recordType(hasDeclaration(decl(
-                    has(fieldDecl(hasType(asString("int")))),
-                    has(fieldDecl(hasType(asString("char")))),
-                    has(fieldDecl(hasType(asString("unsigned long")))),
-                    has(fieldDecl(hasType(asString("struct TestStruct"))))
+                    has(fieldDecl(hasType(asString("guest_layout<int32_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint8_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint64_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
                     )))))))
             )));
 }
@@ -510,4 +666,139 @@ TEST_CASE_METHOD(Fixture, "VariadicFunctionsWithoutAnnotation") {
     REQUIRE_THROWS(run_thunkgen_guest("void func(int arg, ...);\n",
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
+}
+
+TEST_CASE_METHOD(Fixture, "StructRepacking") {
+    auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
+    INFO(guest_abi);
+
+    // All tests use the same function, but the prelude defining its parameter type "A" varies
+    const std::string code =
+        "#include <thunks_common.h>\n"
+        "void func(A*);\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n";
+
+    SECTION("Pointer to struct with consistent data layout") {
+        // TODO: NOTHROW
+        auto output = run_thunkgen_host("struct A { int a; };\n", code, guest_abi);
+    }
+
+    SECTION("Pointer to struct with unannotated pointer member with inconsistent data layout") {
+        // TODO: Should B have incompatible data layout?
+        const auto prelude =
+            "#ifdef HOST\n"
+            "struct B { int a; };\n"
+            "#else\n"
+            "struct B { int b; };\n"
+            "#endif\n"
+            "struct A { B* a; };\n";
+
+        SECTION("Parameter unannotated") {
+            CHECK_THROWS(run_thunkgen_host(prelude, code, guest_abi, true));
+        }
+
+
+//        SECTION("Parameter annotated as ptr_passthrough") {
+              // TODO: NOTHROW
+//            auto output = run_thunkgen_host(prelude, code + "template<> struct fex_gen_param<func, 0, A*> : fexgen::ptr_passthrough {};\n", guest_abi);
+//        }
+
+//        SECTION("Struct member annotated as custom_repack") {
+              // TODO: NOTHROW
+//            auto output = run_thunkgen_host("struct A { void* a; };\n",
+//                  code + "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n", guest_abi);
+//        }
+    }
+
+    SECTION("Pointer to struct with pointer member of consistent data layout") {
+        std::string type = GENERATE("char", "short", "int", "float");
+        REQUIRE_NOTHROW(run_thunkgen_host("struct A { " + type + "* a; };\n", code, guest_abi));
+    }
+
+    SECTION("Pointer to struct with pointer member of opaque type") {
+        const auto prelude =
+            "struct B;\n"
+            "struct A { B* a; };\n";
+
+        // Unannotated
+        REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Contains("incomplete type"));
+
+        // Annotated as opaque_type
+        auto output = run_thunkgen_host(prelude,
+              code + "template<> struct fex_gen_type<B> : fexgen::opaque_type {};\n", guest_abi);
+    }
+
+    // TODO: Array arguments (ints, floats, enum, compatible structs)
+
+    // TODO: Check that the right repacking code gets emitted for each type of data layout compatibility:
+        // TODO: Check that fully compatible types use unpacked_arg, and that to_guest isn't called
+        // TODO: Check that repackable types use unpacked_arg_with_storage
+        // TODO: Check that custom_repack annotations cause fex_apply_custom_repacking(_postcall) to be called
+
+    // TODO: "assume compatible" annotations (and they should repack the pointer on 32-bit, without modifying the data!)
+        // TODO: assume_compatible annotations (void* arguments)
+
+    // TODO: Determine if we can do similar tests for calls through function pointers
+}
+
+TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
+    auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
+    INFO(guest_abi);
+
+    SECTION("Unannotated") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        if (guest_abi == GuestABI::X86_32) {
+//            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Contains("unsupported parameter type", Catch::CaseSensitive::No));
+        } else {
+            // Pointee data is assumed to be compatible on 64-bit
+            CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+        }
+    }
+
+    SECTION("Passthrough") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::ptr_passthrough {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+    }
+
+    SECTION("Assumed compatible") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::assume_compatible_data_layout {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+    }
+
+    SECTION("Unannotated in struct") {
+        const char* prelude =
+            "struct A { void* a; };\n";
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(A*);\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        if (guest_abi == GuestABI::X86_32) {
+            CHECK_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi, true), Catch::Contains("unsupported parameter type", Catch::CaseSensitive::No));
+        } else {
+            CHECK_NOTHROW(run_thunkgen_host(prelude, code, guest_abi));
+        }
+    }
+
+    SECTION("Custom repack in struct") {
+        const char* prelude =
+            "struct A { void* a; };\n";
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(A*);\n"
+            "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        CHECK_NOTHROW(run_thunkgen_host(prelude, code, guest_abi));
+    }
 }
