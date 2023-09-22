@@ -96,7 +96,9 @@ DEF_OP(Jump) {
 
 static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
+  case FEXCore::IR::COND_ANDZ:
   case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_ANDNZ:
   case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
   case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
   case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
@@ -129,6 +131,8 @@ DEF_OP(CondJump) {
 
   uint64_t Const;
   const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+  bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
+               Op->Cond == FEXCore::IR::COND_ANDNZ;
 
   const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
   const auto SubSize = ARMEmitter::ToVectorSizePair(Op->CompareSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
@@ -141,10 +145,18 @@ DEF_OP(CondJump) {
     cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
     if (IsGPR(Op->Cmp1.ID())) {
-      if (isConst) {
-        cmp(Size, GetReg(Op->Cmp1.ID()), Const);
+      if (tests) {
+        if (isConst) {
+          tst(Size, GetReg(Op->Cmp1.ID()), Const);
+        } else {
+          tst(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
+        }
       } else {
-        cmp(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
+        if (isConst) {
+          cmp(Size, GetReg(Op->Cmp1.ID()), Const);
+        } else {
+          cmp(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
+        }
       }
     } else if (IsFPR(Op->Cmp1.ID())) {
       fcmp(SubSize.Scalar, GetVReg(Op->Cmp1.ID()), GetVReg(Op->Cmp2.ID()));
