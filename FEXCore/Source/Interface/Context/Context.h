@@ -87,6 +87,8 @@ namespace FEXCore::Context {
 
       ExitReason RunUntilExit() override;
 
+      void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) override;
+
       void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) override;
 
       int GetProgramStatus() const override;

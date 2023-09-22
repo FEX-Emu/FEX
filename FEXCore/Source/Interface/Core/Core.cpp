@@ -561,6 +561,10 @@ namespace FEXCore::Context {
     }
   }
 
+  void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState *Thread) {
+    Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
+  }
+
   int ContextImpl::GetProgramStatus() const {
     return ParentThread->StatusCode;
   }

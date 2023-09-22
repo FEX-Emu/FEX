@@ -176,6 +176,11 @@ namespace FEXCore::Context {
        */
       FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit() = 0;
 
+      /**
+       * @brief Executes the supplied thread context on the current thread until a return is requested
+       */
+      FEX_DEFAULT_VISIBILITY virtual void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) = 0;
+
       FEX_DEFAULT_VISIBILITY virtual void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) = 0;
 
       /**
