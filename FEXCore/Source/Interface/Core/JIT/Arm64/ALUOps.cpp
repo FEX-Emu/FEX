@@ -106,12 +106,18 @@ DEF_OP(AddNZCV) {
 DEF_OP(TestNZ) {
   auto Op = IROp->C<IR::IROp_TestNZ>();
   const uint8_t OpSize = Op->Size;
-
-  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
-  const auto Src = GetReg(Op->Src1.ID());
+  auto Src = GetReg(Op->Src1.ID());
+
+  // Shift the sign bit into place, clearing out the garbage in upper bits.
+  // setf+rmif would avoid the scratch register, but higher latency on M1.
+  if (OpSize < 4) {
+    lsl(EmitSize, Dst, Src, 32 - (OpSize * 8));
+    Src = Dst;
+  }
+
   tst(EmitSize, Src, Src);
 
   // TODO: Optimize this out
