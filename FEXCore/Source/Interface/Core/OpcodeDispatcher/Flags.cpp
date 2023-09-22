@@ -270,6 +270,14 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
 }
 
 void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
+  // there's no sense XOR'ing at all. This affects INC.
+  uint64_t Const;
+  if (IsValueConstant(WrapNode(Src2), &Const) && (Const & (1u << 4)) == 0) {
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Src1);
+    return;
+  }
+
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit.
