@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        arch: [[self-hosted, x64, mingw], [self-hosted, ARM64, mingw]]
+        arch: [[self-hosted, ARM64, mingw]]
       fail-fast: false
 
     steps:
