@@ -2,15 +2,28 @@
 #include "Interface/Core/CPUID.h"
 #include <FEXCore/Core/HostFeatures.h>
 
-#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
-#endif
 
 #ifdef _M_X86_64
-#include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#define XBYAK64
+#define XBYAK_CUSTOM_ALLOC
+#define XBYAK_CUSTOM_MALLOC FEXCore::Allocator::malloc
+#define XBYAK_CUSTOM_FREE FEXCore::Allocator::free
+#define XBYAK_CUSTOM_SETS
+#define XBYAK_STD_UNORDERED_SET fextl::unordered_set
+#define XBYAK_STD_UNORDERED_MAP fextl::unordered_map
+#define XBYAK_STD_UNORDERED_MULTIMAP fextl::unordered_multimap
+#define XBYAK_STD_LIST fextl::list
+#define XBYAK_NO_EXCEPTION
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/unordered_set.h>
+
+#include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
 #endif
 
 namespace FEXCore {
@@ -41,7 +54,6 @@ static void SetFPCR(uint64_t Value) {
   __asm ("msr FPCR, %[Value]"
     :: [Value] "r" (Value));
 }
-
 #else
 static uint32_t GetDCZID() {
   // Return unsupported
@@ -190,17 +202,15 @@ static void OverrideFeatures(HostFeatures *Features) {
 }
 
 HostFeatures::HostFeatures() {
-#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
 #ifdef VIXL_SIMULATOR
   auto Features = vixl::CPUFeatures::All();
-#else
-#ifndef _WIN32
+#elif !defined(_WIN32)
   auto Features = vixl::CPUFeatures::InferFromOS();
 #else
   // Need to use ID registers in WINE.
   auto Features = vixl::CPUFeatures::InferFromIDRegisters();
 #endif
-#endif
+
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
@@ -266,22 +276,36 @@ HostFeatures::HostFeatures() {
   SetFPCR(OriginalFPCR);
 #endif
 
+#ifdef VIXL_SIMULATOR
+  // simulator doesn't support dc(ZVA)
+  SupportsCLZERO = false;
+#else
+  // Check if we can support cacheline clears
+  uint32_t DCZID = GetDCZID();
+  if ((DCZID & DCZID_DZP_MASK) == 0) {
+    uint32_t DCZID_Log2 = DCZID & DCZID_BS_MASK;
+    uint32_t DCZID_Bytes = (1 << DCZID_Log2) * sizeof(uint32_t);
+    // If the DC ZVA size matches the emulated cache line size
+    // This means we can use the instruction
+    SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
+  }
 #endif
+
 #if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
-  Xbyak::util::Cpu Features{};
-  SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
-  SupportsCRC = Features.has(Xbyak::util::Cpu::tSSE42);
-  SupportsRAND = Features.has(Xbyak::util::Cpu::tRDRAND) && Features.has(Xbyak::util::Cpu::tRDSEED);
+  Xbyak::util::Cpu X86Features{};
+  SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
+  SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
+  SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
   SupportsRCPC = true;
   SupportsTSOImm9 = true;
-  Supports3DNow = Features.has(Xbyak::util::Cpu::t3DN) && Features.has(Xbyak::util::Cpu::tE3DN);
-  SupportsSSE4A = Features.has(Xbyak::util::Cpu::tSSE4a);
+  Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
+  SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
   SupportsAVX = true;
-  SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
-  SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
-  SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
-  SupportsCLWB = Features.has(Xbyak::util::Cpu::tCLWB);
-  SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
+  SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
+  SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
+  SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
+  SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+  SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
 
   // xbyak doesn't know how to check for CLZero
   // First ensure we support a new enough extended CPUID function range
@@ -296,21 +320,6 @@ HostFeatures::HostFeatures() {
 
   SupportsFlushInputsToZero = true;
   SupportsFloatExceptions = true;
-#endif
-
-#ifdef VIXL_SIMULATOR
-  // simulator doesn't support dc(ZVA)
-  SupportsCLZERO = false;
-#else
-  // Check if we can support cacheline clears
-  uint32_t DCZID = GetDCZID();
-  if ((DCZID & DCZID_DZP_MASK) == 0) {
-    uint32_t DCZID_Log2 = DCZID & DCZID_BS_MASK;
-    uint32_t DCZID_Bytes = (1 << DCZID_Log2) * sizeof(uint32_t);
-    // If the DC ZVA size matches the emulated cache line size
-    // This means we can use the instruction
-    SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
-  }
 #endif
   OverrideFeatures(this);
 }

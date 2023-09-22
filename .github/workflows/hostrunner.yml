@@ -1,4 +1,4 @@
-name: Mingw build
+name: Hostrunner tests
 
 on:
   push:
@@ -9,7 +9,10 @@ on:
       - main
 
 env:
-  BUILD_TYPE: Debug
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  CC: clang
+  CXX: clang++
   FEX_ENABLEAVX: 1
 
 jobs:
@@ -17,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        arch: [[self-hosted, ARM64, mingw]]
+        arch: [[self-hosted, x64]]
       fail-fast: false
 
     steps:
@@ -25,19 +28,6 @@ jobs:
 
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
-
-    - name: Add MingGW to PATH
-      run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
-
-    - name: Set CC x86
-      if: matrix.arch[1] == 'x64'
-      run: |
-        echo "MINGW_TRIPLE=x86_64-w64-mingw32" >> $GITHUB_ENV
-
-    - name: Set CC Arm64
-      if: matrix.arch[1] == 'ARM64'
-      run: |
-        echo "MINGW_TRIPLE=aarch64-w64-mingw32" >> $GITHUB_ENV
 
     - name: Set rootfs paths
       run: |
@@ -74,13 +64,33 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/toolchain_mingw.cmake -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTS=False -DENABLE_JEMALLOC=False -DENABLE_JEMALLOC_GLIBC_ALLOC=False -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
+
+    - name: ASM Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the unit tests
+      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+
+    - name: ASM Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+
+    - name: Truncate test results
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Cap out the log files at 20M in case something crash spins and dumps fault text
+      # ASM tests get quite close to 10MB
+      run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
 
     - name: Set runner name
       if: ${{ always() }}

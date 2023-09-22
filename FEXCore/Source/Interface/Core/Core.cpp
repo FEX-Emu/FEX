@@ -308,13 +308,7 @@ namespace FEXCore::Context {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
     case FEXCore::Config::CONFIG_IRJIT:
-#if (_M_X86_64 && JIT_X86_64)
-      BackendFeatures = FEXCore::CPU::GetX86JITBackendFeatures();
-#elif (_M_ARM_64 && JIT_ARM64) || defined(VIXL_SIMULATOR)
       BackendFeatures = FEXCore::CPU::GetArm64JITBackendFeatures();
-#else
-      ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
-#endif
       break;
     case FEXCore::Config::CONFIG_CUSTOM:
       // Do nothing
@@ -325,14 +319,7 @@ namespace FEXCore::Context {
     }
 
     DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
-
-#if JIT_ARM64
     Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
-#elif JIT_X86_64
-    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
-#else
-    ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
-#endif
 
     // Set up the SignalDelegator config since core is initialized.
     FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {
@@ -667,15 +654,7 @@ namespace FEXCore::Context {
     switch (Config.Core) {
     case FEXCore::Config::CONFIG_IRJIT:
       Thread->PassManager->InsertRegisterAllocationPass(DoSRA, HostFeatures.SupportsAVX);
-
-#if (_M_X86_64 && JIT_X86_64)
-      Thread->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, Thread);
-#elif (_M_ARM_64 && JIT_ARM64) || defined(VIXL_SIMULATOR)
       Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
-#else
-      ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
-#endif
-
       break;
     case FEXCore::Config::CONFIG_CUSTOM:
       Thread->CPUBackend = CustomCPUFactory(this, Thread);
