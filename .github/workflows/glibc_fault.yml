@@ -28,8 +28,7 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        # Run on an x86 device and any ARM runner.
-        arch: [[self-hosted, x64], [self-hosted, ARM64]]
+        arch: [[self-hosted, ARM64]]
       fail-fast: false
 
     steps:
