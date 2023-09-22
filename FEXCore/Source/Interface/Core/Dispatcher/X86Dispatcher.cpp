@@ -4,7 +4,6 @@
 
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 
-#include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Context/Context.h"
 
@@ -381,29 +380,6 @@ size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestR
   return emit.getSize();
 }
 
-
-size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
-  using namespace Xbyak;
-  using namespace Xbyak::util;
-
-  Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
-  emit.setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
-
-  Label InlineIRData;
-
-  emit.mov(rdi, STATE);
-  emit.lea(rsi, ptr[rip + InlineIRData]);
-  emit.call(qword STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
-
-  emit.jmp(qword STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
-
-  emit.L(InlineIRData);
-
-  emit.ready();
-
-  return emit.getSize();
-}
-
 X86Dispatcher::~X86Dispatcher() {
   FEXCore::Allocator::VirtualFree(top_, MAX_DISPATCHER_CODE_SIZE);
 }
@@ -423,9 +399,6 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
     Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
     Common.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
-
-    auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
-    (uintptr_t&)Interpreter.CallbackReturn = IntCallbackReturnAddress;
   }
 }
 

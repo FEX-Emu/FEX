@@ -17,7 +17,6 @@ $end_info$
 #include "Interface/Core/GdbServer.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
-#include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"

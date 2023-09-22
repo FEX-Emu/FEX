@@ -22,7 +22,6 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config);
     void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) override;
     size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) override;
-    size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
 
 #ifdef VIXL_SIMULATOR
   void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) override;

@@ -339,8 +339,7 @@ namespace DefaultValues {
 #else
       constexpr uint32_t MaxCoreNumber = 1;
 #endif
-      constexpr uint32_t MinCoreNumber = 1;
-      if (Core > MaxCoreNumber || Core < MinCoreNumber) {
+      if (Core > MaxCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint32_t>(FEXCore::Config::CONFIG_IRJIT)));
       }
