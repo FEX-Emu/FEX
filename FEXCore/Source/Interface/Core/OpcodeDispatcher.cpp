@@ -894,13 +894,12 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       break;
     }
     case 0xA: { // JP - Jump if PF == 1
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
+      // Raw value contains inverted PF in bottom bit
+      SrcCond = SelectMask(LoadPFRaw(), 0x1, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0xB: { // JNP - Jump if PF == 0
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          LoadPFInverted(), ZeroConst, TrueValue, FalseValue);
+      SrcCond = SelectMask(LoadPFRaw(), 0x1, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0xC: { // SF <> OF

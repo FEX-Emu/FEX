@@ -1388,7 +1388,7 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPF();
-  OrderedNode *LoadPFInverted();
+  OrderedNode *LoadPFRaw();
   OrderedNode *LoadAF();
   void FixupAF();
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
