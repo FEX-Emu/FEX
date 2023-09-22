@@ -286,7 +286,7 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
@@ -294,16 +294,13 @@
         "add w21, w20, #0x1 (1)",
         "bfxil w4, w21, #0, #16",
         "uxth w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "eor w24, w20, #0x1",
         "eor w20, w21, w20",
         "bic w20, w20, w24",
@@ -314,14 +311,13 @@
       ]
     },
     "inc eax": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "add w4, w20, #0x1 (1)",
-        "eor w21, w20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",
@@ -332,7 +328,7 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
@@ -340,16 +336,13 @@
         "sub w21, w20, #0x1 (1)",
         "bfxil w4, w21, #0, #16",
         "uxth w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
         "ubfx w22, w22, #29, #1",
         "lsl w23, w21, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "eor w24, w20, #0x1",
         "eor w20, w21, w20",
         "and w20, w24, w20",
@@ -360,14 +353,13 @@
       ]
     },
     "dec eax": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "sub w4, w20, #0x1 (1)",
-        "eor w21, w20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "ldr w21, [x28, #728]",
         "ubfx w21, w21, #29, #1",

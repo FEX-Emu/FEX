@@ -9,7 +9,7 @@
   },
   "Instructions": {
     "add bl, cl": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0x00",
       "ExpectedArm64ASM": [
@@ -22,10 +22,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w22, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -38,7 +36,7 @@
       ]
     },
     "add bx, cx": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
@@ -51,10 +49,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w22, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -98,7 +94,7 @@
       ]
     },
     "db 0x02, 0xcb": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0x02",
@@ -114,10 +110,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w22, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -130,7 +124,7 @@
       ]
     },
     "db 0x66, 0x03, 0xcb": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0x03",
@@ -146,10 +140,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w22, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -199,7 +191,7 @@
       ]
     },
     "add al, 1": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x04",
       "ExpectedArm64ASM": [
@@ -207,14 +199,11 @@
         "add w21, w20, #0x1 (1)",
         "bfxil x4, x21, #0, #8",
         "uxtb w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #24",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w21, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -227,7 +216,7 @@
       ]
     },
     "add ax, 1": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x05",
       "ExpectedArm64ASM": [
@@ -235,14 +224,11 @@
         "add w21, w20, #0x1 (1)",
         "bfxil x4, x21, #0, #16",
         "uxth w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #16",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w21, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -255,14 +241,13 @@
       ]
     },
     "add eax, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0x05",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "add w4, w20, #0x1 (1)",
-        "eor w21, w20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "cmn w20, #0x1 (1)",
         "mrs x20, nzcv",
@@ -270,14 +255,13 @@
       ]
     },
     "add rax, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0x05",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "add x4, x20, #0x1 (1)",
-        "eor x21, x20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "cmn x20, #0x1 (1)",
         "mrs x20, nzcv",
@@ -285,7 +269,7 @@
       ]
     },
     "or bl, cl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x08",
       "ExpectedArm64ASM": [
@@ -294,16 +278,14 @@
         "orr w20, w21, w20",
         "bfxil x7, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "or bx, cx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x09",
       "ExpectedArm64ASM": [
@@ -312,11 +294,9 @@
         "orr w20, w21, w20",
         "bfxil x7, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -347,7 +327,7 @@
       ]
     },
     "db 0x0A, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x0A",
@@ -359,16 +339,14 @@
         "orr w20, w21, w20",
         "bfxil x5, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "db 0x66, 0x0B, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x0B",
@@ -380,11 +358,9 @@
         "orr w20, w21, w20",
         "bfxil x5, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -421,7 +397,7 @@
       ]
     },
     "or al, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0C",
       "ExpectedArm64ASM": [
@@ -429,16 +405,14 @@
         "orr w20, w20, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "or ax, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x0D",
       "ExpectedArm64ASM": [
@@ -446,11 +420,9 @@
         "orr w20, w20, #0x1",
         "bfxil x4, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -480,7 +452,7 @@
       ]
     },
     "adc bl, cl": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0x10",
       "ExpectedArm64ASM": [
@@ -496,10 +468,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w20",
         "cset x25, lo",
         "cmp w22, w20",
@@ -516,7 +486,7 @@
       ]
     },
     "adc bx, cx": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
@@ -532,10 +502,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w20",
         "cset x25, lo",
         "cmp w22, w20",
@@ -613,7 +581,7 @@
       ]
     },
     "db 0x12, 0xcb": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": [
         "0x12",
@@ -632,10 +600,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w20",
         "cset x25, lo",
         "cmp w22, w20",
@@ -652,7 +618,7 @@
       ]
     },
     "db 0x66, 0x13, 0xcb": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": [
         "0x13",
@@ -671,10 +637,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w20",
         "cset x25, lo",
         "cmp w22, w20",
@@ -758,7 +722,7 @@
       ]
     },
     "adc al, 1": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0x14",
       "ExpectedArm64ASM": [
@@ -770,14 +734,11 @@
         "add w20, w22, w20",
         "bfxil x4, x20, #0, #8",
         "uxtb w20, w20",
-        "eor w23, w22, #0x1",
-        "strb w23, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w20, [x28, #706]",
         "lsl w23, w20, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x24, lo",
         "cmp w20, #0x1 (1)",
@@ -794,7 +755,7 @@
       ]
     },
     "adc ax, 1": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0x15",
       "ExpectedArm64ASM": [
@@ -806,14 +767,11 @@
         "add w20, w22, w20",
         "bfxil x4, x20, #0, #16",
         "uxth w20, w20",
-        "eor w23, w22, #0x1",
-        "strb w23, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w20, [x28, #706]",
         "lsl w23, w20, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x24, lo",
         "cmp w20, #0x1 (1)",
@@ -830,7 +788,7 @@
       ]
     },
     "adc eax, 1": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0x15",
       "ExpectedArm64ASM": [
@@ -840,8 +798,7 @@
         "add w20, w20, w21",
         "mov w22, w4",
         "add w4, w22, w20",
-        "eor w20, w22, #0x1",
-        "strb w20, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -861,7 +818,7 @@
       ]
     },
     "adc rax, 1": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0x15",
       "ExpectedArm64ASM": [
@@ -871,8 +828,7 @@
         "add x20, x20, x21",
         "mov x22, x4",
         "add x4, x22, x20",
-        "eor x20, x22, #0x1",
-        "strb w20, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
@@ -892,7 +848,7 @@
       ]
     },
     "sbb bl, cl": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0x18",
       "ExpectedArm64ASM": [
@@ -908,10 +864,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w23",
         "cset x25, hi",
         "cmp w22, w23",
@@ -928,7 +882,7 @@
       ]
     },
     "sbb bx, cx": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
@@ -944,10 +898,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w23",
         "cset x25, hi",
         "cmp w22, w23",
@@ -1025,7 +977,7 @@
       ]
     },
     "db 0x1A, 0xcb": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": [
         "0x1A",
@@ -1044,10 +996,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w23",
         "cset x25, hi",
         "cmp w22, w23",
@@ -1064,7 +1014,7 @@
       ]
     },
     "db 0x66, 0x1B, 0xcb": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": [
         "0x1B",
@@ -1083,10 +1033,8 @@
         "strb w24, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w24, w22, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w23",
         "cset x25, hi",
         "cmp w22, w23",
@@ -1170,7 +1118,7 @@
       ]
     },
     "sbb al, 1": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0x1C",
       "ExpectedArm64ASM": [
@@ -1182,14 +1130,11 @@
         "sub w20, w22, w20",
         "bfxil x4, x20, #0, #8",
         "uxtb w20, w20",
-        "eor w23, w22, #0x1",
-        "strb w23, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w20, [x28, #706]",
         "lsl w23, w20, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, w22",
         "cset x24, hi",
         "cmp w20, w22",
@@ -1206,7 +1151,7 @@
       ]
     },
     "sbb ax, 1": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
@@ -1218,14 +1163,11 @@
         "sub w20, w22, w20",
         "bfxil x4, x20, #0, #16",
         "uxth w20, w20",
-        "eor w23, w22, #0x1",
-        "strb w23, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w20, [x28, #706]",
         "lsl w23, w20, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, w22",
         "cset x24, hi",
         "cmp w20, w22",
@@ -1242,7 +1184,7 @@
       ]
     },
     "sbb eax, 1": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
@@ -1252,8 +1194,7 @@
         "add w20, w20, w21",
         "mov w22, w4",
         "sub w4, w22, w20",
-        "eor w20, w22, #0x1",
-        "strb w20, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -1273,7 +1214,7 @@
       ]
     },
     "sbb rax, 1": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
@@ -1283,8 +1224,7 @@
         "add x20, x20, x21",
         "mov x22, x4",
         "sub x4, x22, x20",
-        "eor x20, x22, #0x1",
-        "strb w20, [x28, #708]",
+        "strb w22, [x28, #708]",
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
@@ -1304,7 +1244,7 @@
       ]
     },
     "and bl, cl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x20",
       "ExpectedArm64ASM": [
@@ -1313,16 +1253,14 @@
         "and w20, w21, w20",
         "bfxil x7, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "and bx, cx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x21",
       "ExpectedArm64ASM": [
@@ -1331,11 +1269,9 @@
         "and w20, w21, w20",
         "bfxil x7, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1366,7 +1302,7 @@
       ]
     },
     "db 0x22, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x22",
@@ -1378,16 +1314,14 @@
         "and w20, w21, w20",
         "bfxil x5, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "db 0x66, 0x23, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x23",
@@ -1399,11 +1333,9 @@
         "and w20, w21, w20",
         "bfxil x5, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1440,7 +1372,7 @@
       ]
     },
     "and al, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x24",
       "ExpectedArm64ASM": [
@@ -1448,16 +1380,14 @@
         "and w20, w20, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "and ax, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x25",
       "ExpectedArm64ASM": [
@@ -1465,11 +1395,9 @@
         "and w20, w20, #0x1",
         "bfxil x4, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1499,7 +1427,7 @@
       ]
     },
     "sub bl, cl": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0x28",
       "ExpectedArm64ASM": [
@@ -1512,10 +1440,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -1528,7 +1454,7 @@
       ]
     },
     "sub bx, cx": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0x29",
       "ExpectedArm64ASM": [
@@ -1541,10 +1467,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -1590,7 +1514,7 @@
       ]
     },
     "db 0x2A, 0xcb": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0x2A",
@@ -1606,10 +1530,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -1622,7 +1544,7 @@
       ]
     },
     "db 0x66, 0x2B, 0xcb": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": [
         "0x2B",
@@ -1638,10 +1560,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -1693,7 +1613,7 @@
       ]
     },
     "sub al, 1": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x2C",
       "ExpectedArm64ASM": [
@@ -1701,14 +1621,11 @@
         "sub w21, w20, #0x1 (1)",
         "bfxil x4, x21, #0, #8",
         "uxtb w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #24",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -1721,7 +1638,7 @@
       ]
     },
     "sub ax, 1": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0x2D",
       "ExpectedArm64ASM": [
@@ -1729,14 +1646,11 @@
         "sub w21, w20, #0x1 (1)",
         "bfxil x4, x21, #0, #16",
         "uxth w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #16",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -1749,14 +1663,13 @@
       ]
     },
     "sub eax, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x2D",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "sub w4, w20, #0x1 (1)",
-        "eor w21, w20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "cmp w20, #0x1 (1)",
         "mrs x20, nzcv",
@@ -1765,14 +1678,13 @@
       ]
     },
     "sub rax, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x2D",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "sub x4, x20, #0x1 (1)",
-        "eor x21, x20, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w4, [x28, #706]",
         "cmp x20, #0x1 (1)",
         "mrs x20, nzcv",
@@ -1781,7 +1693,7 @@
       ]
     },
     "xor bl, cl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x30",
       "ExpectedArm64ASM": [
@@ -1790,16 +1702,14 @@
         "eor w20, w21, w20",
         "bfxil x7, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "xor bx, cx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x31",
       "ExpectedArm64ASM": [
@@ -1808,11 +1718,9 @@
         "eor w20, w21, w20",
         "bfxil x7, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1843,7 +1751,7 @@
       ]
     },
     "db 0x32, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x32",
@@ -1855,16 +1763,14 @@
         "eor w20, w21, w20",
         "bfxil x5, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "db 0x66, 0x33, 0xcb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "0x33",
@@ -1876,11 +1782,9 @@
         "eor w20, w21, w20",
         "bfxil x5, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1917,7 +1821,7 @@
       ]
     },
     "xor al, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x34",
       "ExpectedArm64ASM": [
@@ -1925,16 +1829,14 @@
         "eor w20, w20, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "xor ax, 1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x35",
       "ExpectedArm64ASM": [
@@ -1942,11 +1844,9 @@
         "eor w20, w20, #0x1",
         "bfxil x4, x20, #0, #16",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -1976,7 +1876,7 @@
       ]
     },
     "cmp bl, cl": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x38",
       "ExpectedArm64ASM": [
@@ -1988,10 +1888,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -2004,7 +1902,7 @@
       ]
     },
     "cmp bx, cx": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0x39",
       "ExpectedArm64ASM": [
@@ -2016,10 +1914,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -2064,7 +1960,7 @@
       ]
     },
     "db 0x3A, 0xcb": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0x3A",
@@ -2079,10 +1975,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -2095,7 +1989,7 @@
       ]
     },
     "db 0x66, 0x3B, 0xcb": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0x3B",
@@ -2110,10 +2004,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -2164,21 +2056,18 @@
       ]
     },
     "cmp al, 1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": "0x3C",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "sub w21, w20, #0x1 (1)",
         "uxtb w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #24",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -2191,21 +2080,18 @@
       ]
     },
     "cmp ax, 1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "sub w21, w20, #0x1 (1)",
         "uxth w21, w21",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "lsl w22, w21, #16",
-        "and w22, w22, #0x80000000",
-        "cmp x21, #0x0 (0)",
-        "cset x23, eq",
-        "orr w22, w22, w23, lsl #30",
+        "tst w22, w22",
+        "mrs x22, nzcv",
         "cmp w20, #0x1 (1)",
         "cset x23, lo",
         "orr w22, w22, w23, lsl #29",
@@ -2218,14 +2104,13 @@
       ]
     },
     "cmp eax, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "sub w21, w20, #0x1 (1)",
-        "eor w22, w20, #0x1",
-        "strb w22, [x28, #708]",
+        "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "cmp w20, #0x1 (1)",
         "mrs x20, nzcv",
@@ -2234,13 +2119,12 @@
       ]
     },
     "cmp rax, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "Yes",
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
         "sub x20, x4, #0x1 (1)",
-        "eor x21, x4, #0x1",
-        "strb w21, [x28, #708]",
+        "strb w4, [x28, #708]",
         "strb w20, [x28, #706]",
         "cmp x4, #0x1 (1)",
         "mrs x20, nzcv",
@@ -2447,7 +2331,7 @@
       ]
     },
     "test al, bl": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x84",
       "ExpectedArm64ASM": [
@@ -2455,16 +2339,14 @@
         "uxtb w21, w4",
         "and w20, w21, w20",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "test ax, bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x84",
       "ExpectedArm64ASM": [
@@ -2472,11 +2354,9 @@
         "uxth w21, w4",
         "and w20, w21, w20",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -3573,7 +3453,7 @@
       ]
     },
     "cmpsb": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": [
         "Direction flag increment/decrement location can be made with a single sbfx",
@@ -3595,10 +3475,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -3611,7 +3489,7 @@
       ]
     },
     "cmpsw": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": [
         "Direction flag increment/decrement location can be made with a tst+mov+csel triple",
@@ -3633,10 +3511,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w21, w20",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -3703,7 +3579,7 @@
       ]
     },
     "repz cmpsb": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Optimal": "No",
       "Comment": "0xa6",
       "ExpectedArm64ASM": [
@@ -3712,7 +3588,7 @@
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
         "csel x20, x21, x22, eq",
-        "cbz x5, #+0x6c",
+        "cbz x5, #+0x64",
         "ldrb w21, [x11]",
         "ldrb w22, [x10]",
         "sub w23, w22, w21",
@@ -3721,10 +3597,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w21",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -3738,11 +3612,11 @@
         "add x11, x11, x20",
         "add x10, x10, x20",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x68"
+        "cbnz w21, #-0x60"
       ]
     },
     "repz cmpsw": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
@@ -3751,7 +3625,7 @@
         "mov x22, #0xfffffffffffffffe",
         "cmp x20, #0x0 (0)",
         "csel x20, x21, x22, eq",
-        "cbz x5, #+0x6c",
+        "cbz x5, #+0x64",
         "ldrh w21, [x11]",
         "ldrh w22, [x10]",
         "sub w23, w22, w21",
@@ -3760,10 +3634,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w21",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -3777,7 +3649,7 @@
         "add x11, x11, x20",
         "add x10, x10, x20",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x68"
+        "cbnz w21, #-0x60"
       ]
     },
     "repz cmpsd": {
@@ -3837,7 +3709,7 @@
       ]
     },
     "repnz cmpsb": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Optimal": "No",
       "Comment": "0xa6",
       "ExpectedArm64ASM": [
@@ -3846,7 +3718,7 @@
         "mov x22, #0xffffffffffffffff",
         "cmp x20, #0x0 (0)",
         "csel x20, x21, x22, eq",
-        "cbz x5, #+0x6c",
+        "cbz x5, #+0x64",
         "ldrb w21, [x11]",
         "ldrb w22, [x10]",
         "sub w23, w22, w21",
@@ -3855,10 +3727,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w21",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -3872,11 +3742,11 @@
         "add x11, x11, x20",
         "add x10, x10, x20",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x68"
+        "cbz w21, #-0x60"
       ]
     },
     "repnz cmpsw": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
@@ -3885,7 +3755,7 @@
         "mov x22, #0xfffffffffffffffe",
         "cmp x20, #0x0 (0)",
         "csel x20, x21, x22, eq",
-        "cbz x5, #+0x6c",
+        "cbz x5, #+0x64",
         "ldrh w21, [x11]",
         "ldrh w22, [x10]",
         "sub w23, w22, w21",
@@ -3894,10 +3764,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w22, w21",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -3911,7 +3779,7 @@
         "add x11, x11, x20",
         "add x10, x10, x20",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x68"
+        "cbz w21, #-0x60"
       ]
     },
     "repnz cmpsd": {
@@ -3971,34 +3839,30 @@
       ]
     },
     "test al, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0xa8",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "and w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #24",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
     "test ax, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "and w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "lsl w21, w20, #16",
-        "and w21, w21, #0x80000000",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
-        "orr w20, w21, w20, lsl #30",
+        "lsl w20, w20, #16",
+        "tst w20, w20",
+        "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
     },
@@ -4314,7 +4178,7 @@
       ]
     },
     "scasb": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": "0xae",
       "ExpectedArm64ASM": [
@@ -4332,10 +4196,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #24",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, w21",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -4348,7 +4210,7 @@
       ]
     },
     "scasw": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
@@ -4366,10 +4228,8 @@
         "strb w23, [x28, #708]",
         "strb w22, [x28, #706]",
         "lsl w23, w22, #16",
-        "and w23, w23, #0x80000000",
-        "cmp x22, #0x0 (0)",
-        "cset x24, eq",
-        "orr w23, w23, w24, lsl #30",
+        "tst w23, w23",
+        "mrs x23, nzcv",
         "cmp w20, w21",
         "cset x24, lo",
         "orr w23, w23, w24, lsl #29",
@@ -4427,7 +4287,7 @@
       ]
     },
     "repz scasb": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": "0xae",
       "ExpectedArm64ASM": [
@@ -4436,7 +4296,7 @@
         "ldrb w22, [x28, #714]",
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
-        "cbz x5, #+0x68",
+        "cbz x5, #+0x60",
         "uxtb w21, w4",
         "ldrb w22, [x11]",
         "sub w23, w21, w22",
@@ -4445,10 +4305,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w21, w22",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -4461,11 +4319,11 @@
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x64"
+        "cbnz w21, #-0x5c"
       ]
     },
     "repz scasw": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
@@ -4474,7 +4332,7 @@
         "ldrb w22, [x28, #714]",
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
-        "cbz x5, #+0x68",
+        "cbz x5, #+0x60",
         "uxth w21, w4",
         "ldrh w22, [x11]",
         "sub w23, w21, w22",
@@ -4483,10 +4341,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w21, w22",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -4499,7 +4355,7 @@
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x64"
+        "cbnz w21, #-0x5c"
       ]
     },
     "repz scasd": {
@@ -4556,7 +4412,7 @@
       ]
     },
     "repnz scasb": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": "0xae",
       "ExpectedArm64ASM": [
@@ -4565,7 +4421,7 @@
         "ldrb w22, [x28, #714]",
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
-        "cbz x5, #+0x68",
+        "cbz x5, #+0x60",
         "uxtb w21, w4",
         "ldrb w22, [x11]",
         "sub w23, w21, w22",
@@ -4574,10 +4430,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #24",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w21, w22",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -4590,11 +4444,11 @@
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x64"
+        "cbz w21, #-0x5c"
       ]
     },
     "repnz scasw": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
@@ -4603,7 +4457,7 @@
         "ldrb w22, [x28, #714]",
         "cmp x22, #0x0 (0)",
         "csel x20, x20, x21, eq",
-        "cbz x5, #+0x68",
+        "cbz x5, #+0x60",
         "uxth w21, w4",
         "ldrh w22, [x11]",
         "sub w23, w21, w22",
@@ -4612,10 +4466,8 @@
         "strb w24, [x28, #708]",
         "strb w23, [x28, #706]",
         "lsl w24, w23, #16",
-        "and w24, w24, #0x80000000",
-        "cmp x23, #0x0 (0)",
-        "cset x25, eq",
-        "orr w24, w24, w25, lsl #30",
+        "tst w24, w24",
+        "mrs x24, nzcv",
         "cmp w21, w22",
         "cset x25, lo",
         "orr w24, w24, w25, lsl #29",
@@ -4628,7 +4480,7 @@
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x64"
+        "cbz w21, #-0x5c"
       ]
     },
     "repnz scasd": {

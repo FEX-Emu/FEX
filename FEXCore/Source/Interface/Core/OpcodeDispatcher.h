@@ -1137,45 +1137,10 @@ private:
     SetNZCV(_And(OpSize::i32Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
   }
 
-  void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
-    static_assert(IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC) == 31);
-
-    unsigned NBit = 31;
-    unsigned SignBit = (SrcSize * 8) - 1;
-
-    OrderedNode *Shifted;
-
-    // Shift the sign bit into the N bit
-    if (SignBit > NBit)
-      Shifted = _Ashr(OpSize::i64Bit, Res, _Constant(SignBit - NBit));
-    else if (SignBit < NBit)
-      Shifted = _Lshl(OpSize::i32Bit, Res, _Constant(NBit - SignBit));
-    else
-      Shifted = Res;
-
-    // Mask off just the N bit, which now equals the sign bit
-    CachedNZCV = _And(OpSize::i32Bit, Shifted, _Constant(1u << NBit));
-    PossiblySetNZCVBits = (1u << NBit);
-    NZCVDirty = true;
-  }
-
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
-    // The TestNZ opcode does this operation natively for 32-bit or 64-bit.
-    // Otherwise we can implement the functionality ourselves with some bit math.
-    if (SrcSize >= 4) {
-      CachedNZCV = _TestNZ(SrcSize, Res);
-      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-      NZCVDirty = true;
-    } else {
-      // N
-      SetN_ZeroZCV(SrcSize, Res);
-
-      // Z
-      auto Zero = _Constant(0);
-      auto One = _Constant(1);
-      auto SelectOp = _Select(FEXCore::IR::COND_EQ, Res, Zero, One, Zero);
-      SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-    }
+    CachedNZCV = _TestNZ(SrcSize, Res);
+    PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+    NZCVDirty = true;
   }
 
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
@@ -1280,6 +1245,8 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
+  OrderedNode *SelectMask(OrderedNode *Cmp, uint64_t Mask, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectNZCV(unsigned BitOffset, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**
@@ -1386,7 +1353,7 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPF();
-  OrderedNode *LoadPFInverted();
+  OrderedNode *LoadPFRaw();
   OrderedNode *LoadAF();
   void FixupAF();
   void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);

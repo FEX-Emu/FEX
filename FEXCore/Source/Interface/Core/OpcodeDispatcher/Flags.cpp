@@ -209,7 +209,7 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPFInverted() {
+OrderedNode *OpDispatchBuilder::LoadPFRaw() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
 
@@ -219,14 +219,15 @@ OrderedNode *OpDispatchBuilder::LoadPFInverted() {
 
   // Calculate the popcount.
   auto Count = _VPopcount(1, 1, InputFPR);
-  auto Parity = _VExtractToGPR(8, 1, Count, 0);
-
-  // Mask off the bottom bit only.
-  return _And(OpSize::i64Bit, Parity, _Constant(1));
+  return _VExtractToGPR(8, 1, Count, 0);
 }
 
 OrderedNode *OpDispatchBuilder::LoadPF() {
-  return _Xor(OpSize::i32Bit, LoadPFInverted(), _Constant(1));
+  // Mask off the bottom bit only.
+  OrderedNode *Bit = _And(OpSize::i64Bit, LoadPFRaw(), _Constant(1));
+
+  // Invert
+  return _Xor(OpSize::i32Bit, Bit, _Constant(1));
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
@@ -269,6 +270,14 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
 }
 
 void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
+  // there's no sense XOR'ing at all. This affects INC.
+  uint64_t Const;
+  if (IsValueConstant(WrapNode(Src2), &Const) && (Const & (1u << 4)) == 0) {
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Src1);
+    return;
+  }
+
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit.
