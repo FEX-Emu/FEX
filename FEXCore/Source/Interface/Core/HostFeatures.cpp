@@ -2,16 +2,10 @@
 #include "Interface/Core/CPUID.h"
 #include <FEXCore/Core/HostFeatures.h>
 
-#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
-#endif
-
-#ifdef _M_X86_64
-#include "Interface/Core/Dispatcher/X86Dispatcher.h"
-#endif
 
 namespace FEXCore {
 
@@ -42,11 +36,6 @@ static void SetFPCR(uint64_t Value) {
     :: [Value] "r" (Value));
 }
 
-#else
-static uint32_t GetDCZID() {
-  // Return unsupported
-  return DCZID_DZP_MASK;
-}
 #endif
 
 static void OverrideFeatures(HostFeatures *Features) {
@@ -190,17 +179,15 @@ static void OverrideFeatures(HostFeatures *Features) {
 }
 
 HostFeatures::HostFeatures() {
-#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
 #ifdef VIXL_SIMULATOR
   auto Features = vixl::CPUFeatures::All();
-#else
-#ifndef _WIN32
+#elif !defined(_WIN32)
   auto Features = vixl::CPUFeatures::InferFromOS();
 #else
   // Need to use ID registers in WINE.
   auto Features = vixl::CPUFeatures::InferFromIDRegisters();
 #endif
-#endif
+
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
@@ -264,38 +251,6 @@ HostFeatures::HostFeatures() {
 
   // Set FPCR back to original just in case anything changed
   SetFPCR(OriginalFPCR);
-#endif
-
-#endif
-#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
-  Xbyak::util::Cpu Features{};
-  SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
-  SupportsCRC = Features.has(Xbyak::util::Cpu::tSSE42);
-  SupportsRAND = Features.has(Xbyak::util::Cpu::tRDRAND) && Features.has(Xbyak::util::Cpu::tRDSEED);
-  SupportsRCPC = true;
-  SupportsTSOImm9 = true;
-  Supports3DNow = Features.has(Xbyak::util::Cpu::t3DN) && Features.has(Xbyak::util::Cpu::tE3DN);
-  SupportsSSE4A = Features.has(Xbyak::util::Cpu::tSSE4a);
-  SupportsAVX = true;
-  SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
-  SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
-  SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
-  SupportsCLWB = Features.has(Xbyak::util::Cpu::tCLWB);
-  SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
-
-  // xbyak doesn't know how to check for CLZero
-  // First ensure we support a new enough extended CPUID function range
-
-  uint32_t data[4];
-  Xbyak::util::Cpu::getCpuid(0x8000'0000, data);
-  if (data[0] >= 0x8000'0008U) {
-    // CLZero defined in 8000_00008_EBX[bit 0]
-    Xbyak::util::Cpu::getCpuid(0x8000'0008, data);
-    SupportsCLZERO = data[1] & 1;
-  }
-
-  SupportsFlushInputsToZero = true;
-  SupportsFloatExceptions = true;
 #endif
 
 #ifdef VIXL_SIMULATOR

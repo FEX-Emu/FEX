@@ -19,7 +19,7 @@ endif()
 
 add_subdirectory(ASM/)
 add_subdirectory(32Bit_ASM/)
-if (ENABLE_VIXL_DISASSEMBLER AND (ENABLE_JIT_ARM64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*") AND NOT ENABLE_JIT_X86_64)
+if (ENABLE_VIXL_DISASSEMBLER AND (ENABLE_JIT_ARM64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*"))
   # Tests are only valid to run if the vixl disassembler is enabled and the active JIT is the ARM64 JIT.
   add_subdirectory(InstructionCountCI/)
 endif()

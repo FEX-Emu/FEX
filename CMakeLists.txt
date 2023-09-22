@@ -112,15 +112,8 @@ else()
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
-  if (NOT ENABLE_X86_HOST_DEBUG)
-    message(FATAL_ERROR
-      " Be warned: FEX isn't optimized for x86_64 hosts!\n"
-      " Support for x86_64 hosts is only for debugging and convenience!\n"
-      " Don't expect amazing performance or optimal code generation!\n"
-      " Pass -DENABLE_X86_HOST_DEBUG=True to bypass this message!")
-  endif()
   set(_M_X86_64 1)
+  set(ENABLE_VIXL_SIMULATOR TRUE)
   add_definitions(-D_M_X86_64=1)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
 endif()

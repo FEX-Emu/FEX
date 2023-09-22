@@ -7,13 +7,11 @@ $end_info$
 */
 
 
-#if JIT_ARM64
 //aarch64 heuristics
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
-#endif
 
 #include "Interface/IR/PassManager.h"
 
@@ -59,23 +57,12 @@ static bool HasConsecutiveBits(uint64_t imm, unsigned width) {
   return ((imm ^ (imm >> 1)) & ((1ULL << (width - 1)) - 1)) == 0;
 }
 
-#if JIT_ARM64
 //aarch64 heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { if (width < 32) width = 32; return vixl::aarch64::Assembler::IsImmLogical(imm, width); }
 static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAddSub(imm); }
 static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
   return Scale  == AccessSize;
 }
-#elif JIT_X86_64
-// very lazy heuristics
-static bool IsImmLogical(uint64_t imm, unsigned width) { return imm < 0x8000'0000; }
-static bool IsImmAddSub(uint64_t imm) { return imm < 0x8000'0000; }
-static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
-  return Scale  == 1 || Scale  == 2 || Scale  == 4 || Scale  == 8;
-}
-#else
-#error No inline constant heuristics for this target
-#endif
 
 static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
   if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )

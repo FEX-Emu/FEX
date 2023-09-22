@@ -21,9 +21,6 @@ $end_info$
 #include "git_version.h"
 
 #include <cstring>
-#ifdef _M_X86_64
-#include "Interface/Core/Dispatcher/X86Dispatcher.h"
-#endif
 
 namespace FEXCore {
 namespace ProductNames {
@@ -67,7 +64,6 @@ namespace ProductNames {
   static const char ARM_Firestorm[] = "Apple Firestorm";
   static const char ARM_Icestorm[] = "Apple Icestorm";
 #else
-  static const char UNKNOWN[] = "Unknown CPU";
 #endif
 }
 
@@ -343,33 +339,10 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
 #else
 static uint32_t GetCycleCounterFrequency() {
-  uint32_t data[4];
-  Xbyak::util::Cpu::getCpuid(0, data);
-  if (data[0] >= 0x15) {
-    Xbyak::util::Cpu::getCpuid(0x15, data);
-
-    if (data[0] && data[1] && data[2]) {
-      return data[2] * data[1] / data[0];
-    }
-  }
   return 0;
 }
 
 void CPUIDEmu::SetupHostHybridFlag() {
-  uint32_t data[4];
-  Xbyak::util::Cpu::getCpuid(0, data);
-  if (data[0] >= 0x7) {
-    Xbyak::util::Cpu::getCpuid(0x7, data);
-    // Bit 15 of edx claims hybrid CPU
-    Hybrid = (data[3] & (1U << 15)) != 0;
-  }
-
-  size_t CPUs = FEXCore::CPUInfo::CalculateNumberOfCPUs();
-  PerCPUData.resize(CPUs);
-  for (size_t i = 0; i < CPUs; ++i) {
-    PerCPUData[i].IsBig = true;
-    PerCPUData[i].ProductName = ProductNames::UNKNOWN;
-  }
 }
 
 #endif

@@ -107,9 +107,20 @@ set (SRCS
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
-  Interface/Core/Dispatcher/X86Dispatcher.cpp
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp
   Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp
+  Interface/Core/JIT/Arm64/JIT.cpp
+  Interface/Core/JIT/Arm64/ALUOps.cpp
+  Interface/Core/JIT/Arm64/AtomicOps.cpp
+  Interface/Core/JIT/Arm64/BranchOps.cpp
+  Interface/Core/JIT/Arm64/ConversionOps.cpp
+  Interface/Core/JIT/Arm64/EncryptionOps.cpp
+  Interface/Core/JIT/Arm64/FlagOps.cpp
+  Interface/Core/JIT/Arm64/MemoryOps.cpp
+  Interface/Core/JIT/Arm64/MiscOps.cpp
+  Interface/Core/JIT/Arm64/MoveOps.cpp
+  Interface/Core/JIT/Arm64/VectorOps.cpp
+  Interface/Core/JIT/Arm64/Arm64Relocations.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/EVEXTables.cpp
@@ -159,7 +170,7 @@ if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
     Utils/AllocatorOverride.cpp)
 endif()
 
-set(DEFINES -DTHREAD_LOCAL=_Thread_local)
+set(DEFINES -DTHREAD_LOCAL=_Thread_local -DJIT_ARM64)
 
 if (_M_X86_64)
   list(APPEND DEFINES -D_M_X86_64=1)
@@ -176,42 +187,6 @@ endif()
 
 if (ENABLE_VIXL_DISASSEMBLER)
   list(APPEND DEFINES -DVIXL_DISASSEMBLER=1)
-endif()
-
-if (ENABLE_JIT_X86_64)
-  list(APPEND SRCS
-    Interface/Core/JIT/x86_64/JIT.cpp
-    Interface/Core/JIT/x86_64/ALUOps.cpp
-    Interface/Core/JIT/x86_64/AtomicOps.cpp
-    Interface/Core/JIT/x86_64/BranchOps.cpp
-    Interface/Core/JIT/x86_64/ConversionOps.cpp
-    Interface/Core/JIT/x86_64/EncryptionOps.cpp
-    Interface/Core/JIT/x86_64/FlagOps.cpp
-    Interface/Core/JIT/x86_64/MemoryOps.cpp
-    Interface/Core/JIT/x86_64/MiscOps.cpp
-    Interface/Core/JIT/x86_64/MoveOps.cpp
-    Interface/Core/JIT/x86_64/VectorOps.cpp
-    Interface/Core/JIT/x86_64/x64Relocations.cpp
-    )
-  list(APPEND DEFINES -DJIT_X86_64)
-endif()
-
-if (ENABLE_JIT_ARM64)
-  list(APPEND DEFINES -DJIT_ARM64)
-  list(APPEND SRCS
-    Interface/Core/JIT/Arm64/JIT.cpp
-    Interface/Core/JIT/Arm64/ALUOps.cpp
-    Interface/Core/JIT/Arm64/AtomicOps.cpp
-    Interface/Core/JIT/Arm64/BranchOps.cpp
-    Interface/Core/JIT/Arm64/ConversionOps.cpp
-    Interface/Core/JIT/Arm64/EncryptionOps.cpp
-    Interface/Core/JIT/Arm64/FlagOps.cpp
-    Interface/Core/JIT/Arm64/MemoryOps.cpp
-    Interface/Core/JIT/Arm64/MiscOps.cpp
-    Interface/Core/JIT/Arm64/MoveOps.cpp
-    Interface/Core/JIT/Arm64/VectorOps.cpp
-    Interface/Core/JIT/Arm64/Arm64Relocations.cpp
-    )
 endif()
 
 if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
