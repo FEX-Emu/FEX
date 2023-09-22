@@ -209,7 +209,7 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPFInverted() {
+OrderedNode *OpDispatchBuilder::LoadPFRaw() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
 
@@ -219,14 +219,15 @@ OrderedNode *OpDispatchBuilder::LoadPFInverted() {
 
   // Calculate the popcount.
   auto Count = _VPopcount(1, 1, InputFPR);
-  auto Parity = _VExtractToGPR(8, 1, Count, 0);
-
-  // Mask off the bottom bit only.
-  return _And(OpSize::i64Bit, Parity, _Constant(1));
+  return _VExtractToGPR(8, 1, Count, 0);
 }
 
 OrderedNode *OpDispatchBuilder::LoadPF() {
-  return _Xor(OpSize::i32Bit, LoadPFInverted(), _Constant(1));
+  // Mask off the bottom bit only.
+  OrderedNode *Bit = _And(OpSize::i64Bit, LoadPFRaw(), _Constant(1));
+
+  // Invert
+  return _Xor(OpSize::i32Bit, Bit, _Constant(1));
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
