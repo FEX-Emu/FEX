@@ -3,6 +3,7 @@
 #include "Common/FEXServerClient.h"
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/fextl/fmt.h>
@@ -143,7 +144,11 @@ namespace FEXServerClient {
   }
 
   fextl::string GetServerSocketName() {
-    return fextl::fmt::format("{}.FEXServer.Socket", ::geteuid());
+    FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
+    if (ServerSocketPath().empty()) {
+      return fextl::fmt::format("{}.FEXServer.Socket", ::geteuid());
+    }
+    return ServerSocketPath;
   }
 
   int GetServerFD() {
