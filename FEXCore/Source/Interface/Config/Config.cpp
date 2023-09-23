@@ -335,9 +335,9 @@ namespace DefaultValues {
       // Sanitize Core option
       FEX_CONFIG_OPT(Core, CORE);
 #if (_M_X86_64)
-      constexpr uint32_t MaxCoreNumber = 2;
-#else
       constexpr uint32_t MaxCoreNumber = 1;
+#else
+      constexpr uint32_t MaxCoreNumber = 0;
 #endif
       if (Core > MaxCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
