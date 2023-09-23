@@ -295,13 +295,13 @@ DEF_OP(InlineSyscall) {
       // for registers RAX, RBX, and RSI. Which have just been spilled
       // Just load back from the context. Could be slightly smarter but this is fairly uncommon
       if (Reg == ARMEmitter::Reg::r8) {
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI]));
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP]));
       }
       else if (Reg == ARMEmitter::Reg::r4) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX]));
       }
       else if (Reg == ARMEmitter::Reg::r5) {
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX]));
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RCX]));
       }
       else {
         mov(EmitSize, RegArgs[i].R(), Reg);
