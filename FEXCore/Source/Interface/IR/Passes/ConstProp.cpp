@@ -64,8 +64,15 @@ static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
   return Scale  == AccessSize;
 }
 
+static bool IsSIMM9Range(uint64_t imm) {
+  // AArch64 signed immediate unscaled 9-bit range.
+  // Used for both regular unscaled loadstore instructions
+  // and LRPCPC2 unscaled loadstore instructions.
+  return ((int64_t)imm >= -256) && ((int64_t)imm <= 255);
+}
+
 static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
-  if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )
+  if (IsSIMM9Range(imm))
     return true;
   else if ( (imm & (AccessSize-1)) == 0 &&  imm/AccessSize <= 4095 )
     return true;
@@ -76,7 +83,7 @@ static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
 
 static bool IsTSOImm9(uint64_t imm) {
   // RCPC2 only has a 9-bit signed offset
-  if ( ((int64_t)imm >= -256) && ((int64_t)imm <= 255) )
+  if (IsSIMM9Range(imm))
     return true;
   else {
     return false;
