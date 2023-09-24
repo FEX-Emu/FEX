@@ -20,16 +20,16 @@ $end_info$
 
 namespace FEXCore::IR {
 
-class SyscallOptimization final : public FEXCore::IR::Pass {
+class InlineCallOptimization final : public FEXCore::IR::Pass {
 public:
-  SyscallOptimization(const FEXCore::CPUIDEmu* CPUID)
+  InlineCallOptimization(const FEXCore::CPUIDEmu* CPUID)
     : CPUID {CPUID} {}
   bool Run(IREmitter *IREmit) override;
 private:
   const FEXCore::CPUIDEmu* CPUID;
 };
 
-bool SyscallOptimization::Run(IREmitter *IREmit) {
+bool InlineCallOptimization::Run(IREmitter *IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::SyscallOpt");
 
   bool Changed = false;
@@ -129,8 +129,8 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization(const FEXCore::CPUIDEmu* CPUID) {
-  return fextl::make_unique<SyscallOptimization>(CPUID);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<InlineCallOptimization>(CPUID);
 }
 
 }

@@ -152,7 +152,7 @@ set (SRCS
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
   Interface/IR/Passes/DeadStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
-  Interface/IR/Passes/SyscallOptimization.cpp
+  Interface/IR/Passes/InlineCallOptimization.cpp
   Utils/NetStream.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp

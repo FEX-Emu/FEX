@@ -18,7 +18,7 @@ class RegisterAllocationData;
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX);
-fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization(const FEXCore::CPUIDEmu* CPUID);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX);
 fextl::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();

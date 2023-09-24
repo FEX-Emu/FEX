@@ -45,7 +45,7 @@ protected:
 };
 
 class PassManager final {
-  friend class SyscallOptimization;
+  friend class InlineCallOptimization;
 public:
   void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
