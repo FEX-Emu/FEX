@@ -1092,9 +1092,7 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
 
   // CF
   {
-    auto CFOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        Zero, One);
+    auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
     SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
   }
 }
@@ -1115,9 +1113,7 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
   _InvalidateFlags((1UL << X86State::RFLAG_PF_LOC) |
                    (1UL << X86State::RFLAG_AF_LOC));
 
-  auto CFOp = _Select(IR::COND_EQ,
-                      Src, Zero,
-                      Zero, One);
+  auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
   SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
 }
 
@@ -1134,9 +1130,7 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result
 
   // CF
   {
-    auto CFOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        Zero, One);
+    auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
     SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
   }
 }
