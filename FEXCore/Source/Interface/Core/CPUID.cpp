@@ -347,7 +347,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
 #endif
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
 
   // EBX, EDX, ECX become the manufacturer id string
@@ -366,7 +366,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) {
 }
 
 // Processor Info and Features bits
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   uint32_t CoreCount = Cores();
 
@@ -451,7 +451,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
 }
 
 // 2: Cache and TLB information
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
 
   // returns default values from i7 model 1Ah
@@ -476,7 +476,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) {
 }
 
 // 4: Deterministic cache parameters for each level
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   constexpr uint32_t CacheType_Data = 1;
   constexpr uint32_t CacheType_Instruction = 2;
@@ -582,14 +582,14 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // Always running APIC
   Res.ecx = (0 << 3); // Intel performance energy bias preference (EPB)
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   if (Leaf == 0) {
     // Disable Enhanced REP MOVS when TSO is enabled.
@@ -705,7 +705,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) const {
   // Leaf 0
   FEXCore::CPUID::FunctionResults Res{};
 
@@ -759,7 +759,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   // TSC frequency = ECX * EBX / EAX
   uint32_t FrequencyHz = GetCycleCounterFrequency();
@@ -771,7 +771,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_1Ah(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_1Ah(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   if (Hybrid) {
     uint32_t CPU = GetCPUID();
@@ -784,7 +784,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_1Ah(uint32_t Leaf) {
 }
 
 // Hypervisor CPUID information leaf
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   // Maximum supported hypervisor leafs
   // We only expose the information leaf
@@ -806,7 +806,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) {
 }
 
 // Hypervisor CPUID information leaf
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   if (Leaf == 0) {
     // EAX[3:0] Is the host architecture that FEX is running under
@@ -825,7 +825,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) {
 }
 
 // Highest extended function implemented
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = 0x8000001F;
 
@@ -844,7 +844,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
 }
 
 // Extended processor and feature bits
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) const {
 
   // RDTSCP is disabled on WIN32/Wine because there is no sane way to query processor ID.
 #ifndef _WIN32
@@ -934,33 +934,33 @@ constexpr ssize_t DESCRIBE_STR_SIZE = std::char_traits<char>::length(GIT_DESCRIB
 static_assert(DESCRIBE_STR_SIZE < 32);
 
 //Processor brand string
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf) const {
   return Function_8000_0002h(Leaf, GetCPUID());
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf) const {
   return Function_8000_0003h(Leaf, GetCPUID());
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) const {
   return Function_8000_0004h(Leaf, GetCPUID());
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
   memcpy(&Res, &ProcessorBrand[0], std::min(ssize_t{16L}, DESCRIBE_STR_SIZE));
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
   memcpy(&Res, &ProcessorBrand[16], std::max(ssize_t{0L}, DESCRIBE_STR_SIZE - 16));
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uint32_t CPU) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res{};
   auto &Data = PerCPUData[CPU];
   memcpy(&Res, Data.ProductName, std::min(strlen(Data.ProductName), sizeof(FEXCore::CPUID::FunctionResults)));
@@ -968,7 +968,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uin
 }
 
 // L1 Cache and TLB identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
 
   // L1 TLB Information for 2MB and 4MB pages
@@ -1003,7 +1003,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h(uint32_t Leaf) {
 }
 
 // L2 Cache identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
 
   // L2 TLB Information for 2MB and 4MB pages
@@ -1037,7 +1037,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h(uint32_t Leaf) {
 }
 
 // Advanced power management
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // APIC timer not affected by p-state
   Res.edx =
@@ -1046,7 +1046,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h(uint32_t Leaf) {
 }
 
 // Virtual and physical address sizes
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax =
     (48 << 0) | // PhysAddrSize = 48-bit
@@ -1068,7 +1068,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) {
 }
 
 // TLB 1GB page identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax =
     (0xF << 28) | // L1 DTLB associativity for 1GB pages
@@ -1085,7 +1085,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h(uint32_t Leaf) {
 }
 
 // Deterministic cache parameters for each level
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_001Dh(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_001Dh(uint32_t Leaf) const {
   // This is nearly a copy of CPUID function 4h
   // There are some minor changes though
 
@@ -1180,12 +1180,12 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_001Dh(uint32_t Leaf) {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
   return Res;
 }
 
-FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() {
+FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
   // This just returns XCR0
   FEXCore::CPUID::XCRResults Res{
     .eax = static_cast<uint32_t>(XCR0),

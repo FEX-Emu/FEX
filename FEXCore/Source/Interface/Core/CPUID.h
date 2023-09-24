@@ -34,7 +34,7 @@ public:
 
   void Init(FEXCore::Context::ContextImpl *ctx);
 
-  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) const {
     if (Function < Primary.size()) {
       const auto Handler = Primary[Function];
       return (this->*Handler)(Leaf);
@@ -55,7 +55,7 @@ public:
     return Function_Reserved(Leaf);
   }
 
-  FEXCore::CPUID::FunctionResults RunFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
+  FEXCore::CPUID::FunctionResults RunFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) const {
     if (Function == 0x8000'0002U)
       return Function_8000_0002h(Leaf, CPU % PerCPUData.size());
     else if (Function == 0x8000'0003U)
@@ -64,7 +64,7 @@ public:
       return Function_8000_0004h(Leaf, CPU % PerCPUData.size());
   }
 
-  FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) {
+  FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) const {
     if (Function >= 1) {
       // XCR function 1 is not yet supported.
       return {};
@@ -108,7 +108,7 @@ private:
     return (XCR0 & XCR0_AVX) ? 1 : 0;
   }
 
-  using FunctionHandler = FEXCore::CPUID::FunctionResults (CPUIDEmu::*)(uint32_t Leaf);
+  using FunctionHandler = FEXCore::CPUID::FunctionResults (CPUIDEmu::*)(uint32_t Leaf) const;
 
   struct CPUData {
     const char *ProductName{};
@@ -120,36 +120,36 @@ private:
   fextl::vector<CPUData> PerCPUData{};
 
   // Functions
-  FEXCore::CPUID::FunctionResults Function_0h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_01h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_02h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_04h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_06h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_07h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_0Dh(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_1Ah(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_4000_0000h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_4000_0001h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0001h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_0h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_01h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_02h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_04h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_06h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_07h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_0Dh(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_1Ah(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_4000_0000h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_4000_0001h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0001h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf) const;
 
-  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf, uint32_t CPU);
-  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf, uint32_t CPU);
-  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf, uint32_t CPU);
+  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf, uint32_t CPU) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf, uint32_t CPU) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf, uint32_t CPU) const;
 
-  FEXCore::CPUID::FunctionResults Function_8000_0005h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0006h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0007h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0008h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_0019h(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_8000_001Dh(uint32_t Leaf);
-  FEXCore::CPUID::FunctionResults Function_Reserved(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0005h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0006h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0007h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0008h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_0019h(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_8000_001Dh(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_Reserved(uint32_t Leaf) const;
 
-  FEXCore::CPUID::XCRResults XCRFunction_0h();
+  FEXCore::CPUID::XCRResults XCRFunction_0h() const;
 
   void SetupHostHybridFlag();
   static constexpr std::array<FunctionHandler, 27> Primary = {
