@@ -6,6 +6,7 @@ desc: Removes unused arguments if known syscall number
 $end_info$
 */
 
+#include "Interface/Core/CPUID.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/IR/IR.h>
@@ -21,7 +22,11 @@ namespace FEXCore::IR {
 
 class SyscallOptimization final : public FEXCore::IR::Pass {
 public:
+  SyscallOptimization(const FEXCore::CPUIDEmu* CPUID)
+    : CPUID {CPUID} {}
   bool Run(IREmitter *IREmit) override;
+private:
+  const FEXCore::CPUIDEmu* CPUID;
 };
 
 bool SyscallOptimization::Run(IREmitter *IREmit) {
@@ -78,13 +83,54 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
         Changed = true;
       }
     }
-  }
+    else if (IROp->Op == FEXCore::IR::OP_CPUID) {
+      auto Op = IROp->CW<IR::IROp_CPUID>();
 
+      uint64_t ConstantFunction{}, ConstantLeaf{};
+      bool IsConstantFunction = IREmit->IsValueConstant(Op->Function, &ConstantFunction);
+      bool IsConstantLeaf = IREmit->IsValueConstant(Op->Leaf, &ConstantLeaf);
+      // If the CPUID function is constant then we can try and optimize.
+      if (IsConstantFunction) { // && ConstantFunction != 1) {
+        // Check if it supports constant data reporting for this function.
+        const auto SupportsConstant = CPUID->DoesFunctionReportConstantData(ConstantFunction);
+        if (SupportsConstant.SupportsConstantFunction == CPUIDEmu::SupportsConstant::CONSTANT) {
+          // If the CPUID needs a constant leaf to be optimized then this can't work if we didn't const-prop the leaf register.
+          if (!(SupportsConstant.NeedsLeaf == CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT && !IsConstantLeaf)) {
+            // Calculate the constant data and replace all uses.
+            // DCE will remove the CPUID IR operation.
+            const auto ConstantCPUIDResult = CPUID->RunFunction(ConstantFunction, ConstantLeaf);
+            uint64_t ResultsLower = (static_cast<uint64_t>(ConstantCPUIDResult.ebx) << 32) | ConstantCPUIDResult.eax;
+            uint64_t ResultsUpper = (static_cast<uint64_t>(ConstantCPUIDResult.edx) << 32) | ConstantCPUIDResult.ecx;
+            IREmit->SetWriteCursor(CodeNode);
+            auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i128Bit, IREmit->_Constant(ResultsLower), IREmit->_Constant(ResultsUpper));
+            // Replace all CPUID uses with this inline one
+            IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+            Changed = true;
+          }
+        }
+      }
+    }
+
+    else if (IROp->Op == FEXCore::IR::OP_XGETBV) {
+      auto Op = IROp->CW<IR::IROp_XGetBV>();
+
+      uint64_t ConstantFunction{};
+      if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) &&
+          CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
+        const auto ConstantXCRResult = CPUID->RunXCRFunction(ConstantFunction);
+        IREmit->SetWriteCursor(CodeNode);
+        auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
+        // Replace all xgetbv uses with this inline one
+        IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+        Changed = true;
+      }
+    }
+  }
   return Changed;
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization() {
-  return fextl::make_unique<SyscallOptimization>();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization(const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<SyscallOptimization>(CPUID);
 }
 
 }

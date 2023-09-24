@@ -3,6 +3,10 @@
 
 #include <FEXCore/fextl/memory.h>
 
+namespace FEXCore {
+  class CPUIDEmu;
+}
+
 namespace FEXCore::Utils {
 class IntrusivePooledAllocator;
 }
@@ -14,7 +18,7 @@ class RegisterAllocationData;
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX);
-fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization(const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX);
 fextl::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();
