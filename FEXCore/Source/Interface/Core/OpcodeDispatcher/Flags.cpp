@@ -200,27 +200,35 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   return Original;
 }
 
-void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub) {
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   uint64_t SignBit = (SrcSize * 8) - 1;
   OrderedNode *Anded = nullptr;
 
-  // OF is set iff the sources have the same sign but the destination sign
-  // differs. If we know a source sign, we can simplify the expression: if
+  // For add, OF is set iff the sources have the same sign but the destination
+  // sign differs. If we know a source sign, we can simplify the expression: if
   // source 2 is known to be positive, we set OF if source 1 is positive and
   // source 2 is negative. Similarly if source 2 is known negative.
+  //
+  // For sub, OF is set iff the sources have differing signs and the destination
+  // sign matches the second source. If source 2 is known positive, set iff
+  // source 1 negative and source 2 positive.
   uint64_t Const;
   if (IsValueConstant(WrapNode(Src2), &Const)) {
     bool Negative = (Const & (1ull << SignBit)) != 0;
 
-    if (Negative)
+    if (Negative ^ Sub)
       Anded = _Andn(OpSize, Src1, Res);
     else
       Anded = _Andn(OpSize, Res, Src1);
   } else {
     auto XorOp1 = _Xor(OpSize, Src1, Src2);
     auto XorOp2 = _Xor(OpSize, Res, Src1);
-    Anded = _Andn(OpSize, XorOp2, XorOp1);
+
+    if (Sub)
+      Anded = _And(OpSize, XorOp2, XorOp1);
+    else
+      Anded = _Andn(OpSize, XorOp2, XorOp1);
   }
 
   auto OF = _Bfe(OpSize, 1, SrcSize * 8 - 1, Anded);
@@ -522,7 +530,7 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   }
 
   // Signed
-  CalculateOF_Add(SrcSize, Res, Src1, Src2);
+  CalculateOF(SrcSize, Res, Src1, Src2, false);
 }
 
 void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
@@ -545,15 +553,8 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
 
-  // OF
   // Signed
-  {
-    auto XorOp1 = _Xor(OpSize, Src1, Src2);
-    auto XorOp2 = _Xor(OpSize, Res, Src1);
-    OrderedNode *AndOp1 = _And(OpSize, XorOp1, XorOp2);
-    AndOp1 = _Bfe(OpSize, 1, SrcSize * 8 - 1, AndOp1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
-  }
+  CalculateOF(SrcSize, Res, Src1, Src2, true);
 }
 
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
@@ -583,16 +584,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
       SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
     }
 
-    // OF
-    {
-      auto XorOp1 = _Xor(OpSize, Src1, Src2);
-      auto XorOp2 = _Xor(OpSize, Res, Src1);
-      OrderedNode *FinalAnd = _And(OpSize, XorOp1, XorOp2);
-
-      FinalAnd = _Bfe(OpSize, 1, SrcSize * 8 - 1, FinalAnd);
-
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
-    }
+    CalculateOF(SrcSize, Res, Src1, Src2, true);
   }
 
   // We stomped over CF while calculation flags, restore it.
@@ -625,7 +617,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
       SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
     }
 
-    CalculateOF_Add(SrcSize, Res, Src1, Src2);
+    CalculateOF(SrcSize, Res, Src1, Src2, false);
   }
 
   // We stomped over CF while calculation flags, restore it.
