@@ -286,10 +286,8 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
       LogMan::Msg::EFmt("Fail: '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
       LogMan::Msg::EFmt("Fail: Test took {} instructions but we expected {} instructions!", INSTStats->first.HostCodeInstructions, CurrentTest->ExpectedInstructionCount);
 
-      if (CurrentTest->Optimal) {
-        // Don't count the test as a failure if it's known non-optimal.
-        TestsPassed = false;
-      }
+      // Fail the test if the instruction count has changed at all.
+      TestsPassed = false;
     }
 
     // Go to the next test.
