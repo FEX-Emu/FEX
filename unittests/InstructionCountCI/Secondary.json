@@ -2318,7 +2318,7 @@
         "orr w21, w21, w24, lsl #29",
         "eor w23, w22, w23",
         "eor w20, w20, w22",
-        "and w20, w23, w20",
+        "and w20, w20, w23",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "str w20, [x28, #728]"
@@ -2348,7 +2348,7 @@
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
-        "and w20, w20, w21",
+        "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "str w20, [x28, #728]"
@@ -2381,7 +2381,7 @@
         "orr w21, w21, w24, lsl #29",
         "eor w23, w22, w23",
         "eor w20, w20, w22",
-        "and w20, w23, w20",
+        "and w20, w20, w23",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "str w20, [x28, #728]"
@@ -2411,7 +2411,7 @@
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
-        "and w20, w20, w21",
+        "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "str w20, [x28, #728]"
