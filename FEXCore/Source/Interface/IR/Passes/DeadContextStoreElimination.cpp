@@ -506,17 +506,17 @@ bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *Loc
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
   RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, CodeNode);
 
-  if (IsReadAccess(PreviousMemberInfoCopy.Accessed) &&
-      IsReadAccess(Info->Accessed) &&
-      PreviousMemberInfoCopy.AccessRegClass == Info->AccessRegClass &&
+  if (PreviousMemberInfoCopy.AccessRegClass == Info->AccessRegClass &&
       PreviousMemberInfoCopy.AccessOffset == Info->AccessOffset &&
       PreviousMemberInfoCopy.AccessSize == Size) {
-    // Optimize the case of redundant reads of the same exact value.
+    // This optimizes two cases:
+    // - Previous access was a load, and we have a redundant load of the same value.
+    // - Previous access was a store, and we are redundantly loading immediately after the store. Eliminating the store.
     IREmit->ReplaceAllUsesWithRange(CodeNode, PreviousMemberInfoCopy.ValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
     RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, PreviousMemberInfoCopy.ValueNode);
     return true;
   }
-  // TODO: Optimize the case of Store->Load.
+  // TODO: Optimize the case of partial loads.
   return false;
 }
 
