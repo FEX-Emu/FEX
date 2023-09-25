@@ -5430,8 +5430,13 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   auto Size = GetDstSize(Op);
   const auto OpSize = Size == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
+  // Logical ops can tolerate garbage in the upper bits, so don't mask.
+  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_AND ||
+                           ALUIROp == FEXCore::IR::IROps::OP_XOR ||
+                           ALUIROp == FEXCore::IR::IROps::OP_OR;
+
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5453,7 +5458,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     Result = ALUOp;
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
 
     /* On x86, the canonical way to zero a register is XOR with itself...
      * because modern x86 detects this pattern in hardware. arm64 does not
