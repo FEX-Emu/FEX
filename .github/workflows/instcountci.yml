@@ -86,6 +86,25 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_InstCountCI.log || true
 
+    - name: Update local repo instcount
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config $BUILD_TYPE --target instcountci_update_tests
+
+    - name: Get instcountCI diff
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{github.workspace}}/
+      run: git diff --output=${{runner.workspace}}/build/InstCountCI.diff
+
+    - name: Check if InstCountCI Diff exists
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{github.workspace}}/
+      # Check if the file is empty
+      run: sh -c "! test -s ${{runner.workspace}}/build/InstCountCI.diff"
+
     - name: Truncate test results
       if: ${{ always() }}
       shell: bash
@@ -105,5 +124,14 @@ jobs:
       with:
         name: Results-${{ env.runner_name }}
         path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        retention-days: 3
+
+    - name: Upload results InstCountCI
+      if: ${{ always() }}
+      uses: 'actions/upload-artifact@v3'
+      timeout-minutes: 1
+      with:
+        name: Results-${{ env.runner_name }}-instcountci
+        path: ${{runner.workspace}}/build/InstCountCI.diff
         retention-days: 3
 
