@@ -949,6 +949,14 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = Ornror OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
+        "Desc": ["Integer binary or with NOT on second source and rotation right"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary exclusive or"
                 ],

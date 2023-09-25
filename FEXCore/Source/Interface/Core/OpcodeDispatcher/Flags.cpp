@@ -141,7 +141,6 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   CalculateDeferredFlags();
 
   OrderedNode *Original = _Constant(0);
-  bool Nonzero = false;
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
@@ -151,7 +150,6 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_LOC)) {
     static_assert(FEXCore::X86State::RFLAG_CF_LOC == 0);
     Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    Nonzero = true;
   }
 
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
@@ -162,7 +160,8 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 
     if ((GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_LOC ||
                    FlagOffset == FEXCore::X86State::RFLAG_ZF_LOC)) ||
-        FlagOffset == FEXCore::X86State::RFLAG_CF_LOC) {
+        FlagOffset == FEXCore::X86State::RFLAG_CF_LOC ||
+        FlagOffset == FEXCore::X86State::RFLAG_PF_LOC) {
       // Already handled
       continue;
     }
@@ -170,19 +169,26 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     // Note that the Bfi only considers the bottom bit of the flag, the rest of
     // the byte is allowed to be garbage.
     OrderedNode *Flag;
-    if (FlagOffset == FEXCore::X86State::RFLAG_PF_LOC)
-      Flag = LoadPF();
-    else if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC)
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_LOC)
       Flag = LoadAF();
     else
       Flag = GetRFLAG(FlagOffset);
 
-    if (Nonzero)
-      Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
-    else
-      Original = _Lshl(OpSize::i64Bit, Flag, _Constant(FlagOffset));
+    Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
+  }
 
-    Nonzero = true;
+  // Raw PF value needs to have its bottom bit masked out and inverted. The
+  // naive sequence is and/eor/orlshl. But we can do the inversion implicitly
+  // instead.
+  if (FlagsMask & (1 << FEXCore::X86State::RFLAG_PF_LOC)) {
+    // Set every bit except the bottommost.
+    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(), _Constant(~1ull));
+
+    // Rotate the bottom bit to the appropriate location for PF, so we get
+    // something like 111P1111. Then invert that to get 000p0000. Then OR that
+    // into the flags. This is 1 A64 instruction :-)
+    auto RightRotation = 64 - FEXCore::X86State::RFLAG_PF_LOC;
+    Original = _Ornror(OpSize::i64Bit, Original, OnesInvPF, RightRotation);
   }
 
   // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
@@ -248,14 +254,6 @@ OrderedNode *OpDispatchBuilder::LoadPFRaw() {
   return _VExtractToGPR(8, 1, Count, 0);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPF() {
-  // Mask off the bottom bit only.
-  OrderedNode *Bit = _And(OpSize::i64Bit, LoadPFRaw(), _Constant(1));
-
-  // Invert
-  return _Xor(OpSize::i32Bit, Bit, _Constant(1));
-}
-
 OrderedNode *OpDispatchBuilder::LoadAF() {
   // Read the stored byte. This is the XOR of the arguments.
   auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
@@ -283,7 +281,7 @@ void OpDispatchBuilder::FixupAF() {
 
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   // For shifts, we can only update for nonzero shift. If zero, we nop out the flag write by
-  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPF, because
+  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPFRaw, because
   // we need the existing /encoded/ value rather than the decoded PF value. In particular,
   // this does not calculate a popcount.
   if (condition) {
