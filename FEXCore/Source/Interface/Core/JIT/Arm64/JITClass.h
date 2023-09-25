@@ -249,6 +249,7 @@ private:
   DEF_OP(Or);
   DEF_OP(Orlshl);
   DEF_OP(Orlshr);
+  DEF_OP(Ornror);
   DEF_OP(And);
   DEF_OP(Andn);
   DEF_OP(Xor);
