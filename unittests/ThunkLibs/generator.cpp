@@ -202,7 +202,14 @@ SourceWithAST::SourceWithAST(std::string_view input) : code(input) {
  */
 SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_view code, bool silent) {
     const std::string full_code = std::string { prelude } + std::string { code };
-    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
+
+    // These tests don't deal with data layout differences, so just run data
+    // layout analysis with host configuration
+    auto data_layout_analysis_factory = std::make_unique<AnalyzeDataLayoutActionFactory>();
+    run_tool(*data_layout_analysis_factory, full_code, silent);
+    auto& data_layout = data_layout_analysis_factory->GetDataLayout();
+
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
         "#include <cstdint>\n"
@@ -231,7 +238,14 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
  */
 SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_view code, bool silent) {
     const std::string full_code = std::string { prelude } + std::string { code };
-    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
+
+    // These tests don't deal with data layout differences, so just run data
+    // layout analysis with host configuration
+    auto data_layout_analysis_factory = std::make_unique<AnalyzeDataLayoutActionFactory>();
+    run_tool(*data_layout_analysis_factory, full_code, silent);
+    auto& data_layout = data_layout_analysis_factory->GetDataLayout();
+
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
         "#include <cstdint>\n"

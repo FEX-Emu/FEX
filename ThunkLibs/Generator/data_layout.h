@@ -77,6 +77,40 @@ struct TypeInfo : std::variant<std::monostate, SimpleTypeInfo, StructInfo> {
     }
 };
 
+struct FuncPtrInfo {
+    std::array<uint8_t, 32> sha256;
+    std::string result;
+    std::vector<std::string> args;
+};
+
+struct ABI : std::unordered_map<std::string, TypeInfo> {
+    int pointer_size; // in bytes
+};
+
 std::unordered_map<const clang::Type*, TypeInfo>
 ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, AnalysisAction::RepackedType>& types);
 
+// Convert the output of ComputeDataLayout to a format that isn't tied to a libclang session.
+// As a consequence, type information is indexed by type name instead of clang::Type.
+ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, TypeInfo>& data_layout);
+
+enum class TypeCompatibility {
+    Full,       // Type has matching data layout across architectures
+    Repackable, // Type has different data layout but can be repacked automatically
+    None,       // Type has different data layout and cannot be repacked automatically
+};
+
+class DataLayoutCompareAction : public AnalysisAction {
+public:
+    DataLayoutCompareAction(const ABI& guest_abi) : guest_abi(guest_abi) {
+    }
+
+    TypeCompatibility GetTypeCompatibility(
+            const clang::ASTContext&,
+            const clang::Type*,
+            const std::unordered_map<const clang::Type*, TypeInfo> host_abi,
+            std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat);
+
+private:
+    const ABI& guest_abi;
+};
