@@ -73,6 +73,7 @@ def parse_json_data(json_filename, json_data, output_binary_path):
     Bitness = 64
     EnabledHostFeatures = HostFeatures.FEATURE_ANY
     DisabledHostFeatures = HostFeatures.FEATURE_ANY
+    OptionEnvironmentVariables = {}
 
     if "Features" in json_data:
         items = json_data["Features"]
@@ -84,6 +85,14 @@ def parse_json_data(json_filename, json_data, output_binary_path):
 
         if ("DisabledHostFeatures" in items):
             DisabledHostFeatures = GetHostFeatures(items["DisabledHostFeatures"])
+
+        if ("Env" in items):
+            data = items["Env"]
+            if not (type(data) is dict):
+                sys.exit("Environment variables value must be list of key:value pairs")
+
+            for data_key, data_val in data.items():
+                OptionEnvironmentVariables[data_key] = data_val
 
     for key, items in json_data["Instructions"].items():
         ExpectedInstructionCount = 0
@@ -140,6 +149,8 @@ def parse_json_data(json_filename, json_data, output_binary_path):
         #   uint64_t NumTests;
         #   uint64_t EnabledHostFeatures;
         #   uint64_t DisabledHostFeatures;
+        #   uint64_t EnvironmentVariableCount;
+        #   char env[];
         #   TestInfo Tests[NumTests];
         # };
         # struct TestInfo {
@@ -152,11 +163,20 @@ def parse_json_data(json_filename, json_data, output_binary_path):
         # };
 
     MemData = bytes()
+
     # Add the header
     MemData += struct.pack('Q', Bitness)
     MemData += struct.pack('Q', len(TestDataMap))
     MemData += struct.pack('Q', EnabledHostFeatures.value)
     MemData += struct.pack('Q', DisabledHostFeatures.value)
+    MemData += struct.pack('Q', len(OptionEnvironmentVariables.items()))
+
+    # Write environment variables
+    for key, val in OptionEnvironmentVariables.items():
+        MemData += key.encode()
+        MemData += struct.pack('B', 0)
+        MemData += val.encode()
+        MemData += struct.pack('B', 0)
 
     # Add each test
     for key, item in TestDataMap.items():
