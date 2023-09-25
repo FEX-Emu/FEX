@@ -24,7 +24,7 @@ env:
   FEX_ENABLEAVX: 1
 
 jobs:
-  build:
+  glibc_fault_test:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
