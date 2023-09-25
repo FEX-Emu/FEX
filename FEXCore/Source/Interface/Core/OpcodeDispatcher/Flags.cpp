@@ -254,14 +254,6 @@ OrderedNode *OpDispatchBuilder::LoadPFRaw() {
   return _VExtractToGPR(8, 1, Count, 0);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPF() {
-  // Mask off the bottom bit only.
-  OrderedNode *Bit = _And(OpSize::i64Bit, LoadPFRaw(), _Constant(1));
-
-  // Invert
-  return _Xor(OpSize::i32Bit, Bit, _Constant(1));
-}
-
 OrderedNode *OpDispatchBuilder::LoadAF() {
   // Read the stored byte. This is the XOR of the arguments.
   auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
@@ -289,7 +281,7 @@ void OpDispatchBuilder::FixupAF() {
 
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   // For shifts, we can only update for nonzero shift. If zero, we nop out the flag write by
-  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPF, because
+  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPFRaw, because
   // we need the existing /encoded/ value rather than the decoded PF value. In particular,
   // this does not calculate a popcount.
   if (condition) {
