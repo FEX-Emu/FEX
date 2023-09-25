@@ -83,47 +83,32 @@ DEF_OP(Break) {
 DEF_OP(GetRoundingMode) {
   auto Dst = GetReg(Node);
   mrs(Dst, ARMEmitter::SystemRegister::FPCR);
-  lsr(ARMEmitter::Size::i64Bit, Dst, Dst, 22);
+  ubfx(ARMEmitter::Size::i64Bit, Dst, Dst, 22, 3);
 
   // FTZ is already in the correct location
   // Rounding mode is different
-  and_(ARMEmitter::Size::i64Bit, TMP1, Dst, 0b11);
+  //
+  // Need to remap rounding mode from order nearest, pos inf, neg inf, toward
+  // zero. Just swapping 01 and 10. That's a bitfield reverse. Round mode is in
+  // bottom two bits. After reversing as a 32-bit operation, it'll be in [31:30]
+  // and ripe for reinsertion back at 0.
+  static_assert(IR::ROUND_MODE_NEAREST == 0);
+  static_assert(IR::ROUND_MODE_NEGATIVE_INFINITY == 1);
+  static_assert(IR::ROUND_MODE_POSITIVE_INFINITY == 2);
+  static_assert(IR::ROUND_MODE_TOWARDS_ZERO == 3);
 
-  cmp(ARMEmitter::Size::i64Bit, TMP1, 1);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_POSITIVE_INFINITY);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_EQ);
-
-  cmp(ARMEmitter::Size::i64Bit, TMP1, 2);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_NEGATIVE_INFINITY);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
-
-  cmp(ARMEmitter::Size::i64Bit, TMP1, 3);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_TOWARDS_ZERO);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
-
-  orr(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2.R());
-
-  bfi(ARMEmitter::Size::i64Bit, Dst, TMP2, 0, 2);
+  rbit(ARMEmitter::Size::i32Bit, TMP1, Dst);
+  bfi(ARMEmitter::Size::i64Bit, Dst, TMP1, 30, 2);
 }
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
   auto Src = GetReg(Op->RoundMode.ID());
 
-  // Setup the rounding flags correctly
-  and_(ARMEmitter::Size::i64Bit, TMP1, Src, 0b11);
-
-  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 1);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_EQ);
-
-  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 2);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
-
-  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 3);
-  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
+  // As above, setup the rounding flags in [31:30]
+  rbit(ARMEmitter::Size::i32Bit, TMP2, Src);
+  // and extract
+  lsr(ARMEmitter::Size::i32Bit, TMP2, TMP2, 30);
 
   mrs(TMP1, ARMEmitter::SystemRegister::FPCR);
 
