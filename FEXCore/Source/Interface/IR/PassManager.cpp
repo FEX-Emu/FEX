@@ -84,7 +84,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool Inli
 
     ////// InsertPass(CreateDeadFlagCalculationEliminination());
 
-    InsertPass(CreateSyscallOptimization());
+    InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
     InsertPass(CreatePassDeadCodeElimination());
   }
 

@@ -1758,7 +1758,9 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto GPRSize = CTX->GetGPRSize();
+
+  OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
   OrderedNode *Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   auto Res = _CPUID(Src, Leaf);
