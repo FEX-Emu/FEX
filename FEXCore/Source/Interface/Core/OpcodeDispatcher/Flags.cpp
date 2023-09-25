@@ -556,8 +556,6 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(OpSize, Res, Src1, Src2);
@@ -576,10 +574,9 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
     // CF
     if (UpdateCF) {
-      auto SelectOp = _Select(FEXCore::IR::COND_ULT,
-          Src1, Src2, One, Zero);
-
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+      // Grab carry bit from unmasked output.
+      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Bfe);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, true);
@@ -591,8 +588,6 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(OpSize, Res, Src1, Src2);
@@ -610,9 +605,9 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
     // CF
     if (UpdateCF) {
-      auto SelectOp = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
-
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+      // Grab carry bit from unmasked output
+      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Bfe);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, false);
