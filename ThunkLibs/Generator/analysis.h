@@ -110,7 +110,7 @@ protected:
     void ParseInterface(clang::ASTContext&);
 
     // Called from ExecuteAction() after parsing is complete
-    virtual void EmitOutput(clang::ASTContext&) {};
+    virtual void OnAnalysisComplete(clang::ASTContext&) {};
 
     std::vector<clang::DeclContext*> decl_contexts;
 

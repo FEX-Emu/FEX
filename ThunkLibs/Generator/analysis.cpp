@@ -128,7 +128,7 @@ void AnalysisAction::ExecuteAction() {
 
     try {
         ParseInterface(context);
-        EmitOutput(context);
+        OnAnalysisComplete(context);
     } catch (ClangDiagnosticAsException& exception) {
         exception.Report(context.getDiagnostics());
     }

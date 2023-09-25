@@ -20,7 +20,7 @@ public:
 
 private:
     // Generate helper code for thunk libraries and write them to the output file
-    void EmitOutput(clang::ASTContext&) override;
+    void OnAnalysisComplete(clang::ASTContext&) override;
 
     const std::string& libfilename;
     std::string libname; // sanitized filename, usable as part of emitted function names
@@ -47,7 +47,7 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     return ret;
 };
 
-void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
+void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         clang::QualType innermostPointee = type;
         while (innermostPointee->isPointerType()) {
