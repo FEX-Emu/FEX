@@ -16,7 +16,7 @@ env:
   FEX_ENABLEAVX: 1
 
 jobs:
-  build:
+  hostrunner_tests:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
