@@ -239,17 +239,20 @@ struct TestHeader {
   uint64_t NumTests{};
   uint64_t EnabledHostFeatures;
   uint64_t DisabledHostFeatures;
-  TestInfo Tests[];
+  uint64_t EnvironmentVariableCount;
+  uint8_t Data[];
 };
 
 static fextl::vector<char> TestData;
 static TestHeader const *TestHeaderData{};
+static TestInfo const *TestsStart{};
+static fextl::vector<std::pair<std::string_view, std::string_view>> EnvironmentVariables{};
 
 static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, const char *UpdatedInstructionCountsPath) {
   LogMan::Msg::IFmt("Compiling code");
 
   // Tell FEXCore to compile all the instructions upfront.
-  TestInfo const *CurrentTest = &TestHeaderData->Tests[0];
+  TestInfo const *CurrentTest = TestsStart;
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
     uint64_t CodeRIP = (uint64_t)&CurrentTest->Code[0];
     LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
@@ -264,7 +267,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
   bool TestsPassed {true};
 
   // Get all the data for the instructions compiled.
-  CurrentTest = &TestHeaderData->Tests[0];
+  CurrentTest = TestsStart;
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
     uint64_t CodeRIP = (uint64_t)CurrentTest->Code;
     // Get the instruction stats.
@@ -308,7 +311,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
 
     FD.Write("{\n", 2);
 
-    CurrentTest = &TestHeaderData->Tests[0];
+    CurrentTest = TestsStart;
     for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
       uint64_t CodeRIP = (uint64_t)CurrentTest->Code;
       // Get the instruction stats.
@@ -348,7 +351,73 @@ bool LoadTests(const char *Path) {
   }
 
   TestHeaderData = reinterpret_cast<TestHeader const*>(TestData.data());
+
+  // Need to walk past the environment variables to get to the actual tests.
+  const uint8_t *Data = TestHeaderData->Data;
+  for (size_t i = 0; i < TestHeaderData->EnvironmentVariableCount; ++i) {
+    // Environment variables are a pair of null terminated strings.
+    Data += strlen(reinterpret_cast<const char*>(Data)) + 1;
+    Data += strlen(reinterpret_cast<const char*>(Data)) + 1;
+  }
+  TestsStart = reinterpret_cast<const TestInfo*>(Data);
   return true;
+}
+
+namespace {
+static const fextl::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+}};
+
+// Claims to be a local application config layer
+class TestEnvLoader final : public FEXCore::Config::Layer {
+public:
+  explicit TestEnvLoader()
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
+    Load();
+  }
+
+  void Load() override {
+    fextl::unordered_map<std::string_view, std::string> EnvMap;
+    const uint8_t *Data = TestHeaderData->Data;
+    for (size_t i = 0; i < TestHeaderData->EnvironmentVariableCount; ++i) {
+      // Environment variables are a pair of null terminated strings.
+      const std::string_view Key = reinterpret_cast<const char*>(Data);
+      Data += strlen(reinterpret_cast<const char*>(Data)) + 1;
+
+      const std::string_view Value_View = reinterpret_cast<const char*>(Data);
+      Data += strlen(reinterpret_cast<const char*>(Data)) + 1;
+      std::optional<fextl::string> Value;
+
+#define ENVLOADER
+#include <FEXCore/Config/ConfigOptions.inl>
+
+      if (Value) {
+        EnvMap.insert_or_assign(Key, *Value);
+      }
+      else {
+        EnvMap.insert_or_assign(Key, Value_View);
+      }
+    }
+
+    auto GetVar = [&](const std::string_view id) -> std::optional<std::string_view> {
+      const auto it = EnvMap.find(id);
+      if (it == EnvMap.end())
+        return std::nullopt;
+
+      return it->second;
+    };
+
+    for (auto &it : EnvConfigLookup) {
+      if (auto Value = GetVar(it.first); Value) {
+        Set(it.second, *Value);
+      }
+    }
+  }
+
+private:
+  fextl::vector<std::pair<std::string_view, std::string_view>> Env;
+};
 }
 
 int main(int argc, char **argv, char **const envp) {
@@ -357,7 +426,6 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
   FEXCore::Config::Load();
-  FEXCore::Config::ReloadMetaLayer();
 
   if (argc < 2) {
     LogMan::Msg::EFmt("Usage: {} <Test binary> [Changed instruction count.json]", argv[0]);
@@ -368,6 +436,9 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::EFmt("Couldn't load tests from {}", argv[1]);
     return 1;
   }
+
+  FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>());
+  FEXCore::Config::ReloadMetaLayer();
 
   // Setup configurations that this tool needs
   // Maximum one instruction.
