@@ -5167,7 +5167,11 @@ OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
-    Reg = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, Offset, Reg);
+    const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
+    if (AllowUpperGarbage)
+      Reg = _Lshr(OpSize, Reg, _Constant(Offset));
+    else
+      Reg = _Bfe(OpSize, Size * 8, Offset, Reg);
   }
   return Reg;
 }
