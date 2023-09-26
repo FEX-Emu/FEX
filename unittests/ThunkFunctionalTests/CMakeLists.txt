@@ -39,19 +39,19 @@ add_custom_target(
   thunk_functional_tests_nothunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-NoThunks-\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-NoThunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
 add_custom_target(
   thunk_functional_tests_thunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-Thunks-\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-Thunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
 add_custom_target(
   thunk_functional_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")

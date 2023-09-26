@@ -20,7 +20,7 @@ add_custom_target(
   api_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.APITest")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.APITest")
 
 foreach(API_TEST ${TESTS})
   add_dependencies(api_tests ${API_TEST})
