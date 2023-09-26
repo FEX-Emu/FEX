@@ -4990,7 +4990,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t S
   }
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
+OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
   LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
                      Operand.IsLiteral() ||
                      Operand.IsGPRDirect() ||
@@ -5035,7 +5035,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       }
     }
     else {
-      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0);
+      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0, AllowUpperGarbage);
     }
   }
   else if (Operand.IsGPRDirect()) {
@@ -5158,14 +5158,14 @@ OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp con
   return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
 }
 
-OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {
+OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset, bool AllowUpperGarbage) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   if (Size == -1) {
     Size = GPRSize;
   }
   OrderedNode *Reg = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 
-  if (Size != GPRSize || Offset != 0) {
+  if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
     Reg = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, Offset, Reg);
   }
@@ -5207,9 +5207,9 @@ void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode *const Src) {
   _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
+OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
   const uint8_t OpSize = GetSrcSize(Op);
-  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType);
+  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage);
 }
 
 void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType) {
