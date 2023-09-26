@@ -322,7 +322,6 @@ void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
-  bool RequiresMask = false;
   FEXCore::IR::IROps IROp;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
   switch (Op->OP) {
@@ -330,7 +329,6 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0):
     IROp = FEXCore::IR::IROps::OP_ADD;
-    RequiresMask = true;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1):
@@ -346,7 +344,6 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5):
     IROp = FEXCore::IR::IROps::OP_SUB;
-    RequiresMask = true;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6):
@@ -409,11 +406,6 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     Result = ALUOp;
 
     StoreResult(GPRClass, Op, Result, -1);
-  }
-
-  // Store result masks, but we need to
-  if (RequiresMask && Size < 4) {
-    Result = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, 0, Result);
   }
 
   // Flags set
@@ -1452,10 +1444,6 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   auto ALUOp = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   OrderedNode *Result = ALUOp;
-  if (Size < 4) {
-    Result = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, 0, ALUOp);
-  }
-
   GenerateFlags_SUB(Op, Result, Dest, Src);
 
   flagsOp = SelectionFlag::CMP;
@@ -3427,10 +3415,6 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     // Calculated value gets stored in dst (order is important if dst is same as src)
     StoreResult(GPRClass, Op, Result, -1);
 
-    if (Size < 32) {
-      Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-    }
-
     GenerateFlags_ADD(Op, Result, Dest, Src);
   }
   else {
@@ -3439,10 +3423,6 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
     Result = _Add(OpSize, Before, Src); // Seperate result just for flags
-
-    if (Size < 32) {
-      Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-    }
 
     GenerateFlags_ADD(Op, Result, Before, Src);
   }
@@ -3859,9 +3839,6 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  if (Size < 32) {
-    Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-  }
   GenerateFlags_ADD(Op, Result, Dest, OneConst, false);
 }
 
@@ -3891,9 +3868,6 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
-  }
-  if (Size < 32) {
-    Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
   }
 
   GenerateFlags_SUB(Op, Result, Dest, OneConst, false);
@@ -4032,9 +4006,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
     OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src2, Src1);
-    if (Size < 4)
-      Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
-
     GenerateFlags_SUB(Op, Result, Src2, Src1);
 
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
@@ -4094,9 +4065,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
       OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src2, Src1);
-      if (Size < 4)
-        Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
-
       GenerateFlags_SUB(Op, Result, Src2, Src1);
 
       // Calculate flags early.
@@ -4259,8 +4227,6 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
     OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
-    if (Size < 4)
-      Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
     GenerateFlags_SUB(Op, Result, Src1, Src2);
 
     auto SizeConst = _Constant(Size);
@@ -4322,9 +4288,6 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
       OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
-      if (Size < 4)
-        Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
-
       GenerateFlags_SUB(Op, Result, Src1, Src2);
 
       // Calculate flags early.
@@ -4434,9 +4397,6 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Result, -1);
   }
-
-  if (Size < 4)
-    Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
 
   GenerateFlags_SUB(Op, Result, ZeroConst, Dest);
 }
@@ -4672,13 +4632,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       StoreResult(GPRClass, Op, DestResult, -1);
     }
 
-    const auto Size = GetDstBitSize(Op);
-
     OrderedNode *Result = _Sub(IR::SizeToOpSize(GPRSize), Src3Lower, CASResult);
-    if (Size < 32) {
-      Result = _Bfe(OpSize::i64Bit, Size, 0, Result);
-    }
-
     GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
   else {
@@ -4721,10 +4675,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     const auto Size = GetDstBitSize(Op);
 
     OrderedNode *Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src3Lower, CASResult);
-    if (Size < 32) {
-      Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-    }
-
     GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
 }
@@ -5476,7 +5426,7 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
-void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask) {
+void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
   auto Size = GetDstSize(Op);
   const auto OpSize = Size == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
@@ -5527,10 +5477,6 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  if (RequiresMask && Size < 4) {
-    Result = _Bfe(OpSize::i32Bit, Size * 8, 0, Result);
-  }
-
   // Flags set
   {
     switch (ALUIROp) {
@@ -5551,9 +5497,9 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   }
 }
 
-template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask>
+template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
 void OpDispatchBuilder::ALUOp(OpcodeArgs) {
-  ALUOpImpl(Op, ALUIROp, AtomicFetchOp, RequiresMask);
+  ALUOpImpl(Op, ALUIROp, AtomicFetchOp);
 }
 
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
@@ -6342,19 +6288,19 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable[] = {
     // Instructions
-    {0x00, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, true>},
+    {0x00, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD>},
 
-    {0x08, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, false>},
+    {0x08, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR>},
 
     {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
 
     {0x18, 6, &OpDispatchBuilder::SBBOp<0, true>},
 
-    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND, false>},
+    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
 
-    {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, true>},
+    {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB>},
 
-    {0x30, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, false>},
+    {0x30, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR>},
 
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
     {0x50, 8, &OpDispatchBuilder::PUSHREGOp},

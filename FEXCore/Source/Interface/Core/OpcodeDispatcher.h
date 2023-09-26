@@ -187,7 +187,7 @@ public:
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs);
-  template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask>
+  template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
@@ -881,7 +881,7 @@ private:
   // Used during new op bringup
   bool ShouldDump{false};
 
-  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask);
+  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp);
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 

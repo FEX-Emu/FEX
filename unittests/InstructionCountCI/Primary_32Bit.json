@@ -286,14 +286,13 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "add w21, w20, #0x1 (1)",
         "bfxil w4, w21, #0, #16",
-        "uxth w21, w21",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
@@ -326,14 +325,13 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "sub w21, w20, #0x1 (1)",
         "bfxil w4, w21, #0, #16",
-        "uxth w21, w21",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
         "ldr w22, [x28, #728]",
