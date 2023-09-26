@@ -330,6 +330,22 @@
         "str w20, [x28, #728]"
       ]
     },
+    "or bl, bh": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "",
+      "ExpectedArm64ASM": [
+        "ubfx w20, w7, #8, #8",
+        "uxtb w21, w7",
+        "orr w20, w21, w20",
+        "bfxil x7, x20, #0, #8",
+        "strb w20, [x28, #706]",
+        "lsl w20, w20, #24",
+        "tst w20, w20",
+        "mrs x20, nzcv",
+        "str w20, [x28, #728]"
+      ]
+    },
     "or bl, cl": {
       "ExpectedInstructionCount": 9,
       "Optimal": "No",
