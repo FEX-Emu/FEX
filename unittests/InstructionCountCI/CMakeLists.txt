@@ -56,10 +56,10 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS instcountci_test_files
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*.instcountci$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*.instcountci$$")
 
 add_custom_target(
   instcountci_update_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*new_numbers$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*new_numbers$$")

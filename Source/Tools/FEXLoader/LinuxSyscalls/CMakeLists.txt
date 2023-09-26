@@ -164,4 +164,4 @@ add_custom_target(
   struct_verifier
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "Test_verify*")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "Test_verify*")

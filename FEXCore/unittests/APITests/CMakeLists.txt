@@ -17,5 +17,5 @@ add_custom_target(
   fexcore_apitests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.FEXCore_Tests$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.FEXCore_Tests$$")
 

@@ -33,4 +33,4 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "sh" "-c" "${RM_DIR_COMMAND}"
-  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.gvisor$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.gvisor$$")

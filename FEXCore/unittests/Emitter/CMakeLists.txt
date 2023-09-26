@@ -18,7 +18,7 @@ if (COMPILE_VIXL_DISASSEMBLER)
     emitter_tests
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/"
     USES_TERMINAL
-    COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.Emitter$$")
+    COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.Emitter$$")
 else()
   message(AUTHOR_WARNING "Tests are enabled but vixl disassembler is not. Emitter tests won't be built.")
 endif()
