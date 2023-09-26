@@ -515,20 +515,24 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
-  // SF/ZF
-  SetNZ_ZeroCV(SrcSize, Res);
+  if (SrcSize >= 4) {
+    SetNZCV(_AdcNZCV(OpSize, Src1, Src2, GetNZCV()));
+  } else {
+    // SF/ZF
+    SetNZ_ZeroCV(SrcSize, Res);
 
-  // CF
-  // Unsigned
-  {
-    auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, One, Zero);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
+    // CF
+    // Unsigned
+    {
+      auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
+      auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, One, Zero);
+      auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
+    }
+
+    // Signed
+    CalculateOF(SrcSize, Res, Src1, Src2, false);
   }
-
-  // Signed
-  CalculateOF(SrcSize, Res, Src1, Src2, false);
 }
 
 void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
@@ -539,20 +543,24 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
 
-  // SF/ZF
-  SetNZ_ZeroCV(SrcSize, Res);
+  if (SrcSize >= 4) {
+    SetNZCV(_SbbNZCV(OpSize, Src1, Src2, GetNZCV()));
+  } else {
+    // SF/ZF
+    SetNZ_ZeroCV(SrcSize, Res);
 
-  // CF
-  // Unsigned
-  {
-    auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
+    // CF
+    // Unsigned
+    {
+      auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
+      auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
+      auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
+    }
+
+    // Signed
+    CalculateOF(SrcSize, Res, Src1, Src2, true);
   }
-
-  // Signed
-  CalculateOF(SrcSize, Res, Src1, Src2, true);
 }
 
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {

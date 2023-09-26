@@ -233,6 +233,8 @@ private:
   DEF_OP(CycleCounter);
   DEF_OP(Add);
   DEF_OP(AddNZCV);
+  DEF_OP(AdcNZCV);
+  DEF_OP(SbbNZCV);
   DEF_OP(TestNZ);
   DEF_OP(Sub);
   DEF_OP(SubNZCV);
