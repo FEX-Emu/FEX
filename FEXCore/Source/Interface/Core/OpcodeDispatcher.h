@@ -917,6 +917,14 @@ public:
 
 protected:
   void SaveNZCV() override {
+    // Invariant: When executing instructions that clobber NZCV, the flags must
+    // be resident in a GPR, which is equivalent to CachedNZCV != nullptr. Get
+    // the NZCV which fills the cache if necessary.
+    if (CachedNZCV == nullptr)
+      GetNZCV();
+
+    // Assume we'll need a reload.
+    NZCVDirty = true;
   }
 
 private:
