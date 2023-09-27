@@ -416,7 +416,7 @@
       ]
     },
     "ptest xmm0, xmm1": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0x17"
@@ -438,8 +438,6 @@
         "cset x21, eq",
         "lsl x20, x20, #30",
         "orr w20, w20, w21, lsl #29",
-        "mov w21, #0x90000000",
-        "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
         "str w20, [x28, #728]"

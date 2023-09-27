@@ -3602,7 +3602,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    ZeroNZCV();
     SetAF(0);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3614,6 +3614,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     auto NewAX = _Add(OpSize::i64Bit, AX, _Constant(0x106));
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
+    ZeroNZCV();
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetAF(1);
     CalculateDeferredFlags();
@@ -3641,7 +3642,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   {
     auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    ZeroNZCV();
     SetAF(0);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3653,6 +3654,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     NewAX = _Sub(OpSize::i64Bit, NewAX, _Constant(0x100));
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
+    ZeroNZCV();
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetAF(1);
     CalculateDeferredFlags();
@@ -3675,8 +3677,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetNZ_ZeroCV(1, AL);
   CalculatePF(AL);
   _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }
@@ -3693,8 +3694,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetNZ_ZeroCV(1, AL);
   CalculatePF(AL);
   _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
 }

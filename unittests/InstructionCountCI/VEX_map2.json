@@ -791,7 +791,7 @@
       ]
     },
     "vptest xmm0, xmm1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x16 128-bit"
@@ -815,15 +815,13 @@
         "cset x21, eq",
         "lsl x20, x20, #30",
         "orr w20, w20, w21, lsl #29",
-        "mov w21, #0x90000000",
-        "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
         "str w20, [x28, #728]"
       ]
     },
     "vptest ymm0, ymm1": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x16 256-bit"
@@ -855,8 +853,6 @@
         "cset x21, eq",
         "lsl x20, x20, #30",
         "orr w20, w20, w21, lsl #29",
-        "mov w21, #0x90000000",
-        "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
         "str w20, [x28, #728]"
