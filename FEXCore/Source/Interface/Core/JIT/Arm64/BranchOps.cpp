@@ -145,6 +145,9 @@ DEF_OP(CondJump) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
+    // FIXME: We should split up this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     if (IsGPR(Op->Cmp1.ID())) {
       if (tests) {
         if (isConst) {
@@ -165,7 +168,12 @@ DEF_OP(CondJump) {
       LOGMAN_MSG_A_FMT("CondJump: Expected GPR or FPR");
     }
 
-    b(MapBranchCC(Op->Cond), TrueTargetLabel);
+    // Restore NZCV
+    cset(Size, TMP2, MapBranchCC(Op->Cond));
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+
+    // Non-NZCV using branch so we can keep the guest value
+    cbnz(Size, TMP2, TrueTargetLabel);
   }
 
   PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
