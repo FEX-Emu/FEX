@@ -592,6 +592,14 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
   }
 #endif
 
+  // Regardless of what GPRs/FPRs we're spilling, we need to spill NZCV since it
+  // is always static and almost certainly clobbered by the subsequent code.
+  //
+  // TODO: Can we prove that NZCV is not used across a call in some cases and
+  // omit this? Might help x87 perf? Future idea.
+  mrs(TmpReg, ARMEmitter::SystemRegister::NZCV);
+  str(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+
   if (!StaticRegisterAllocation()) {
     return;
   }
@@ -687,6 +695,14 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
   }
 #endif
+
+  // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
+  // is always static and was almost certainly clobbered.
+  //
+  // TODO: Can we prove that NZCV is not used across a call in some cases and
+  // omit this? Might help x87 perf? Future idea.
+  ldr(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
 
   if (!StaticRegisterAllocation()) {
     return;

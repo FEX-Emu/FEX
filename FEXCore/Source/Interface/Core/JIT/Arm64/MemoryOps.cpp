@@ -1036,7 +1036,7 @@ DEF_OP(LoadFlag) {
   auto Dst = GetReg(Node);
 
   if (Op->Flag == 24 /* NZCV */)
-    ldr(Dst.W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+    mrs(Dst, ARMEmitter::SystemRegister::NZCV);
   else
     ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
@@ -1045,7 +1045,7 @@ DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
 
   if (Op->Flag == 24 /* NZCV */)
-    str(GetReg(Op->Value.ID()).W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+    msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->Value.ID()));
   else
     strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
