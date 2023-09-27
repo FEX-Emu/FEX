@@ -894,6 +894,10 @@ public:
     }
   }
 
+protected:
+  void SaveNZCV() override {
+  }
+
 private:
   enum class SelectionFlag {
     Nothing,  // must rely on x86 flags

@@ -277,7 +277,8 @@ void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& Cur
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     auto BlockOp = BlockIROp->CW<FEXCore::IR::IROp_CodeBlock>();
     for (auto [UnaryOpNode, UnaryOpHdr] : CurrentIR.GetCode(BlockNode)) {
-      if (IR::GetArgs(UnaryOpHdr->Op) == 1 && !HasSideEffects(UnaryOpHdr->Op)) {
+      if (IR::GetArgs(UnaryOpHdr->Op) == 1 && !HasSideEffects(UnaryOpHdr->Op)
+                                           && !ImplicitFlagClobber(UnaryOpHdr->Op)) {
         // could be moved
         auto SelectOpNode = IREmit->UnwrapNode(UnaryOpHdr->Args[0]);
         auto SelectOpHdr = IREmit->GetOpHeader(UnaryOpHdr->Args[0]);

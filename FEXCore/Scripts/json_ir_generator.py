@@ -46,6 +46,7 @@ class OpDefinition:
     NumElements: str
     OpClass: str
     HasSideEffects: bool
+    ImplicitFlagClobber: bool
     RAOverride: int
     SwitchGen: bool
     ArgPrinter: bool
@@ -67,6 +68,7 @@ class OpDefinition:
         self.OpClass = None
         self.OpSize = 0
         self.HasSideEffects = False
+        self.ImplicitFlagClobber = False
         self.RAOverride = -1
         self.SwitchGen = True
         self.ArgPrinter = True
@@ -218,6 +220,9 @@ def parse_ops(ops):
 
             if "HasSideEffects" in op_val:
                 OpDef.HasSideEffects = bool(op_val["HasSideEffects"])
+
+            if "ImplicitFlagClobber" in op_val:
+                OpDef.ImplicitFlagClobber = bool(op_val["ImplicitFlagClobber"])
 
             if "ArgPrinter" in op_val:
                 OpDef.ArgPrinter = bool(op_val["ArgPrinter"])
@@ -372,6 +377,7 @@ def print_ir_sizes():
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetRAArgs(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool ImplicitFlagClobber(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool GetHasDest(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
@@ -465,15 +471,17 @@ def print_ir_getraargs():
 def print_ir_hassideeffects():
     output_file.write("#ifdef IROP_HASSIDEEFFECTS_IMPL\n")
 
-    output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> SideEffects = {\n")
-    for op in IROps:
-        output_file.write("\t{},\n".format(("true" if op.HasSideEffects else "false")))
+    for array, prop in [("SideEffects", "HasSideEffects"),
+                        ("ImplicitFlagClobbers", "ImplicitFlagClobber")]:
+        output_file.write(f"constexpr std::array<uint8_t, OP_LAST + 1> {array} = {{\n")
+        for op in IROps:
+            output_file.write("\t{},\n".format(("true" if getattr(op, prop) else "false")))
 
-    output_file.write("};\n\n")
+        output_file.write("};\n\n")
 
-    output_file.write("bool HasSideEffects(IROps Op) {\n")
-    output_file.write("  return SideEffects[Op];\n")
-    output_file.write("}\n")
+        output_file.write(f"bool {prop}(IROps Op) {{\n")
+        output_file.write(f"  return {array}[Op];\n")
+        output_file.write("}\n")
 
     output_file.write("#undef IROP_HASSIDEEFFECTS_IMPL\n")
     output_file.write("#endif\n\n")
@@ -641,6 +649,10 @@ def print_ir_allocator_helpers():
                     output_file.write(", ")
 
             output_file.write(") {\n")
+
+            # Save NZCV if needed before clobbering NZCV
+            if op.ImplicitFlagClobber:
+                output_file.write("\t\tSaveNZCV();")
 
             output_file.write("\t\tauto Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 
