@@ -34,12 +34,11 @@
       ]
     },
     "or al, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "orr w20, w20, #0x1",
+        "orr w20, w4, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -111,12 +110,11 @@
       ]
     },
     "and al, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /4",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "and w20, w20, #0x1",
+        "and w20, w4, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -147,12 +145,11 @@
       ]
     },
     "xor al, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "eor w20, w20, #0x1",
+        "eor w20, w4, #0x1",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -204,12 +201,11 @@
       ]
     },
     "or al, -1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "orr w20, w20, #0xff",
+        "orr w20, w4, #0xff",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -283,12 +279,11 @@
       ]
     },
     "and al, -1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /4",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "and w20, w20, #0xff",
+        "and w20, w4, #0xff",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -320,12 +315,11 @@
       ]
     },
     "xor al, -1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "eor w20, w20, #0xff",
+        "eor w20, w4, #0xff",
         "bfxil x4, x20, #0, #8",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
@@ -405,12 +399,11 @@
       ]
     },
     "or eax, 256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "orr w4, w20, #0x100",
+        "orr w4, w4, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -510,12 +503,11 @@
       ]
     },
     "and eax, 256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "and w4, w20, #0x100",
+        "and w4, w4, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -565,12 +557,11 @@
       ]
     },
     "xor eax, 256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "eor w4, w20, #0x100",
+        "eor w4, w4, #0x100",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -671,12 +662,11 @@
       ]
     },
     "or eax, -256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "orr w4, w20, #0xffffff00",
+        "orr w4, w4, #0xffffff00",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -776,12 +766,11 @@
       ]
     },
     "and eax, -256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "and w4, w20, #0xffffff00",
+        "and w4, w4, #0xffffff00",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -833,12 +822,11 @@
       ]
     },
     "xor eax, -256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "eor w4, w20, #0xffffff00",
+        "eor w4, w4, #0xffffff00",
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
@@ -3378,12 +3366,11 @@
       ]
     },
     "test bl, 1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "GROUP2 0xf6 /0",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "and w20, w20, #0x1",
+        "and w20, w7, #0x1",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #24",
         "tst w20, w20",
@@ -3497,12 +3484,11 @@
       ]
     },
     "test bx, 1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "and w20, w20, #0x1",
+        "and w20, w7, #0x1",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #16",
         "tst w20, w20",
@@ -3511,12 +3497,11 @@
       ]
     },
     "test ebx, 1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "and w20, w20, #0x1",
+        "and w20, w7, #0x1",
         "strb w20, [x28, #706]",
         "tst w20, w20",
         "mrs x20, nzcv",
@@ -3536,12 +3521,11 @@
       ]
     },
     "test bx, -1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "and w20, w20, #0xffff",
+        "and w20, w7, #0xffff",
         "strb w20, [x28, #706]",
         "lsl w20, w20, #16",
         "tst w20, w20",
@@ -3550,14 +3534,13 @@
       ]
     },
     "test ebx, -1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "movk w20, #0xffff, lsl #16",
-        "mov w21, w7",
-        "and w20, w21, w20",
+        "and w20, w7, w20",
         "strb w20, [x28, #706]",
         "tst w20, w20",
         "mrs x20, nzcv",

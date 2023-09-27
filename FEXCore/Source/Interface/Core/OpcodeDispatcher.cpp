@@ -1372,8 +1372,8 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
 
   auto Size = GetDstSize(Op);
 
@@ -4990,7 +4990,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t S
   }
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
+OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
   LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
                      Operand.IsLiteral() ||
                      Operand.IsGPRDirect() ||
@@ -5035,7 +5035,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       }
     }
     else {
-      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0);
+      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0, AllowUpperGarbage);
     }
   }
   else if (Operand.IsGPRDirect()) {
@@ -5158,16 +5158,20 @@ OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp con
   return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
 }
 
-OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {
+OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset, bool AllowUpperGarbage) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   if (Size == -1) {
     Size = GPRSize;
   }
   OrderedNode *Reg = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 
-  if (Size != GPRSize || Offset != 0) {
+  if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
-    Reg = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, Offset, Reg);
+    const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
+    if (AllowUpperGarbage)
+      Reg = _Lshr(OpSize, Reg, _Constant(Offset));
+    else
+      Reg = _Bfe(OpSize, Size * 8, Offset, Reg);
   }
   return Reg;
 }
@@ -5207,9 +5211,9 @@ void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode *const Src) {
   _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
+OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
   const uint8_t OpSize = GetSrcSize(Op);
-  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType);
+  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage);
 }
 
 void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType) {
@@ -5430,8 +5434,13 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   auto Size = GetDstSize(Op);
   const auto OpSize = Size == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
+  // Logical ops can tolerate garbage in the upper bits, so don't mask.
+  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_AND ||
+                           ALUIROp == FEXCore::IR::IROps::OP_XOR ||
+                           ALUIROp == FEXCore::IR::IROps::OP_OR;
+
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5453,7 +5462,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     Result = ALUOp;
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
 
     /* On x86, the canonical way to zero a register is XOR with itself...
      * because modern x86 detects this pattern in hardware. arm64 does not
