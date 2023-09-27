@@ -4248,14 +4248,13 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
       Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
+  ZeroNZCV();
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Test2);
 
   uint32_t FlagsMaskToZero =
     (1U << X86State::RFLAG_PF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC) |
-    (1U << X86State::RFLAG_SF_LOC) |
-    (1U << X86State::RFLAG_OF_LOC);
+    (1U << X86State::RFLAG_AF_LOC);
 
   ZeroMultipleFlags(FlagsMaskToZero);
 }
