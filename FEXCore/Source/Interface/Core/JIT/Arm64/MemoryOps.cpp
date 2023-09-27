@@ -1034,13 +1034,13 @@ DEF_OP(FillRegister) {
 DEF_OP(LoadNZCV) {
   auto Dst = GetReg(Node);
 
-  ldr(Dst.W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + 24);
+  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(StoreNZCV) {
   auto Op = IROp->C<IR::IROp_StoreNZCV>();
 
-  str(GetReg(Op->Value.ID()).W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + 24);
+  msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->Value.ID()));
 }
 
 DEF_OP(LoadFlag) {
