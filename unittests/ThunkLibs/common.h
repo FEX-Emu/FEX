@@ -65,6 +65,10 @@ inline void run_tool(clang::tooling::ToolAction& action, std::string_view code, 
     const char* memory_filename = "gen_input.cpp";
     auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
+    if (CLANG_RESOURCE_DIR[0] != 0) {
+        args.push_back("-resource-dir");
+        args.push_back(CLANG_RESOURCE_DIR);
+    }
     if (guest_abi == GuestABI::X86_64) {
         args.push_back("-target");
         args.push_back("x86_64-linux-gnu");
