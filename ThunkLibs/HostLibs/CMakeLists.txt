@@ -78,8 +78,11 @@ function(add_host_lib NAME GUEST_BITNESS)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-host-${GUEST_BITNESS} PRIVATE -fwrapv)
 
-  # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
-  target_link_options(${NAME}-host-${GUEST_BITNESS} PRIVATE "LINKER:--no-undefined")
+  if (NOT ENABLE_ASAN)
+    # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
+    # NOTE: ASan is not compatible with --no-undefined, see https://github.com/google/sanitizers/issues/380 for details
+    target_link_options(${NAME}-host-${GUEST_BITNESS} PRIVATE "LINKER:--no-undefined")
+  endif()
 
   if (${GUEST_BITNESS} EQUAL 32)
     install(TARGETS ${NAME}-host-${GUEST_BITNESS} DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks_32/)
