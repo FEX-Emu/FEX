@@ -79,7 +79,7 @@ namespace FEXCore {
       const char *Name;
   };
 
-  static thread_local FEXCore::Core::InternalThreadState *Thread;
+  static thread_local FEXCore::Core::InternalThreadState *Thread = nullptr;
 
 
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
@@ -171,6 +171,10 @@ namespace FEXCore {
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
         */
         static void CallCallback(void *callback, void *arg0, void* arg1) {
+          if (!Thread) {
+            ERROR_AND_DIE_FMT("Thunked library attempted to invoke guest callback asynchronously");
+          }
+
           auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
           if (CTX->Config.Is64BitMode) {
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
