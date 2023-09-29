@@ -73,6 +73,10 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableAVX = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAVX;
   LogMan::Throw::AFmt(!(DisableAVX && EnableAVX), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableAVX2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAVX2;
+  const bool EnableAVX2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAVX2;
+  LogMan::Throw::AFmt(!(DisableAVX2 && EnableAVX2), "Disabling and Enabling CPU features are mutually exclusive");
+
   const bool DisableSVE = HostFeatures() & FEXCore::Config::HostFeatures::DISABLESVE;
   const bool EnableSVE = HostFeatures() & FEXCore::Config::HostFeatures::ENABLESVE;
   LogMan::Throw::AFmt(!(DisableSVE && EnableSVE), "Disabling and Enabling CPU features are mutually exclusive");
@@ -126,6 +130,12 @@ static void OverrideFeatures(HostFeatures *Features) {
   }
   else if (DisableAVX) {
     Features->SupportsAVX = false;
+  }
+  if (EnableAVX2) {
+    Features->SupportsAVX2 = true;
+  }
+  else if (DisableAVX2) {
+    Features->SupportsAVX2 = false;
   }
   if (EnableSVE) {
     Features->SupportsSVE = true;
@@ -237,6 +247,8 @@ HostFeatures::HostFeatures() {
   SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) &&
                 vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
+  // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
+  SupportsAVX2 = false;
   SupportsSHA = true;
   SupportsBMI1 = true;
   SupportsBMI2 = true;
@@ -301,6 +313,7 @@ HostFeatures::HostFeatures() {
   Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
   SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
   SupportsAVX = true;
+  SupportsAVX2 = true;
   SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
   SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
   SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
