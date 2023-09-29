@@ -372,12 +372,13 @@ namespace FEX::HarnessHelper {
       FEATURE_BMI2   = (1 << 7),
       FEATURE_CLWB   = (1 << 8),
       FEATURE_LINUX  = (1 << 9),
-
+      FEATURE_AVX2   = (1 << 10),
     };
 
     bool Requires3DNow()  const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_3DNOW; }
     bool RequiresSSE4A()  const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SSE4A; }
     bool RequiresAVX()    const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX; }
+    bool RequiresAVX2()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX2; }
     bool RequiresRAND()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_RAND; }
     bool RequiresSHA()    const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SHA; }
     bool RequiresCLZERO() const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_CLZERO; }
@@ -527,6 +528,7 @@ namespace FEX::HarnessHelper {
     bool Requires3DNow()  const { return Config.Requires3DNow(); }
     bool RequiresSSE4A()  const { return Config.RequiresSSE4A(); }
     bool RequiresAVX()    const { return Config.RequiresAVX(); }
+    bool RequiresAVX2()   const { return Config.RequiresAVX2(); }
     bool RequiresRAND()   const { return Config.RequiresRAND(); }
     bool RequiresSHA()    const { return Config.RequiresSHA(); }
     bool RequiresCLZERO() const { return Config.RequiresCLZERO(); }
