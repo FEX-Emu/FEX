@@ -279,6 +279,10 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::ReloadMetaLayer();
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
+#ifdef VIXL_SIMULATOR
+  // If running under the vixl simulator, ensure that indirect runtime calls are enabled.
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
+#endif
 
   // Early check for process stall
   // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance

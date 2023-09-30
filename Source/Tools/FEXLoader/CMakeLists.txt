@@ -1,5 +1,10 @@
 list(APPEND LIBS FEXCore Common)
 
+set (DEFINES)
+if (ENABLE_VIXL_SIMULATOR)
+  list(APPEND DEFINES -DVIXL_SIMULATOR=1)
+endif()
+
 if (NOT MINGW_BUILD)
   add_subdirectory(LinuxSyscalls)
 
@@ -13,6 +18,8 @@ if (NOT MINGW_BUILD)
       FEXLoader.cpp
       VDSO_Emulation.cpp
       AOT/AOTGenerator.cpp)
+
+    target_compile_definitions(${NAME} PRIVATE ${DEFINES})
 
     # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
     set_target_properties(${NAME} PROPERTIES ENABLE_EXPORTS 1)
@@ -161,6 +168,8 @@ if (BUILD_TESTS)
   endif()
 
   add_executable(TestHarnessRunner ${SRCS})
+  target_compile_definitions(TestHarnessRunner PRIVATE ${DEFINES})
+
   target_include_directories(TestHarnessRunner
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/Source/
@@ -176,6 +185,8 @@ if (BUILD_TESTS)
     add_executable(IRLoader
       IRLoader.cpp
     )
+    target_compile_definitions(IRLoader PRIVATE ${DEFINES})
+
     target_include_directories(IRLoader
       PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Source/
