@@ -91,11 +91,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         fmov(ARMEmitter::SReg::s0, Src1.S());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, float>(ARMEmitter::Reg::r1);
-#else
-        blr(ARMEmitter::Reg::r1);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<__uint128_t, uint16_t, float>(ARMEmitter::Reg::r1);
+        }
+        else {
+          blr(ARMEmitter::Reg::r1);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -113,11 +114,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::DReg::d0, Src1.D());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, double>(ARMEmitter::Reg::r1);
-#else
-        blr(ARMEmitter::Reg::r1);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<__uint128_t, uint16_t, double>(ARMEmitter::Reg::r1);
+        }
+        else {
+          blr(ARMEmitter::Reg::r1);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -141,11 +143,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, Src1);
         }
         ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
-#else
-        blr(ARMEmitter::Reg::r2);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
+        }
+        else {
+          blr(ARMEmitter::Reg::r2);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -166,11 +169,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<float, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<float, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -189,11 +193,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<double, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -210,11 +215,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::DReg::d0, Src1.D());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, uint16_t, double>(ARMEmitter::Reg::r1);
-#else
-        blr(ARMEmitter::Reg::r1);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<double, uint16_t, double>(ARMEmitter::Reg::r1);
+        }
+        else {
+          blr(ARMEmitter::Reg::r1);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -233,11 +239,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         mov(ARMEmitter::DReg::d1, Src2.D());
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<double, uint16_t, double, double>(ARMEmitter::Reg::r1);
-#else
-        blr(ARMEmitter::Reg::r1);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<double, uint16_t, double, double>(ARMEmitter::Reg::r1);
+        }
+        else {
+          blr(ARMEmitter::Reg::r1);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -256,11 +263,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -278,11 +286,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -300,11 +309,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
@@ -325,11 +335,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
 
         ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
-#else
-        blr(ARMEmitter::Reg::r5);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
+        }
+        else {
+          blr(ARMEmitter::Reg::r5);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
@@ -346,11 +357,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
 
         ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-        blr(ARMEmitter::Reg::r3);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        }
+        else {
+          blr(ARMEmitter::Reg::r3);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -374,11 +386,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
 
         ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
-#else
-        blr(ARMEmitter::Reg::r5);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
+        }
+        else {
+          blr(ARMEmitter::Reg::r5);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -411,11 +424,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         movz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r6, Control);
 
         ldr(ARMEmitter::XReg::x7, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r7);
-#else
-        blr(ARMEmitter::Reg::r7);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r7);
+        }
+        else {
+          blr(ARMEmitter::Reg::r7);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
@@ -441,11 +455,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         movz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r4, Control);
 
         ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-#ifdef VIXL_SIMULATOR
-        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r5);
-#else
-        blr(ARMEmitter::Reg::r5);
-#endif
+        if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+          GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r5);
+        }
+        else {
+          blr(ARMEmitter::Reg::r5);
+        }
 
         FillForABICall(Info.SupportsPreserveAllABI, true);
 

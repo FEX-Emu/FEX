@@ -210,11 +210,12 @@ DEF_OP(Syscall) {
 
   // SP supporting move
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
-#ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
-#else
-  blr(ARMEmitter::Reg::r3);
-#endif
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
+  }
+  else {
+    blr(ARMEmitter::Reg::r3);
+  }
 
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
@@ -349,11 +350,12 @@ DEF_OP(Thunk) {
 
   auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
-#ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
-#else
-  blr(ARMEmitter::Reg::r2);
-#endif
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+  }
+  else {
+    blr(ARMEmitter::Reg::r2);
+  }
 
   PopDynamicRegsAndLR();
 
@@ -422,11 +424,12 @@ DEF_OP(ThreadRemoveCodeEntry) {
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry);
 
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
-#ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
-#else
-  blr(ARMEmitter::Reg::r2);
-#endif
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+  }
+  else {
+    blr(ARMEmitter::Reg::r2);
+  }
   FillStaticRegs();
 
   // Fix the stack and any values that were stepped on
@@ -446,11 +449,12 @@ DEF_OP(CPUID) {
   ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction));
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, GetReg(Op->Leaf.ID()));
-#ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-  blr(ARMEmitter::Reg::r3);
-#endif
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+  }
+  else {
+    blr(ARMEmitter::Reg::r3);
+  }
 
   FillStaticRegs();
 
@@ -474,11 +478,12 @@ DEF_OP(XGETBV) {
   ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction));
   mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
-#ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
-#else
-  blr(ARMEmitter::Reg::r2);
-#endif
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
+  }
+  else {
+    blr(ARMEmitter::Reg::r2);
+  }
 
   FillStaticRegs();
 
