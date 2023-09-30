@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/fextl/memory.h>
+
+#ifdef VIXL_SIMULATOR
+#include <aarch64/simulator-aarch64.h>
+#endif
 
 #include <cstdint>
 #include <signal.h>
@@ -29,9 +35,15 @@ struct DispatcherConfig {
   bool StaticRegisterAllocation = false;
 };
 
-class Dispatcher {
+#define STATE_PTR(STATE_TYPE, FIELD) \
+  STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
+
+class Dispatcher final : public Arm64Emitter {
 public:
-  virtual ~Dispatcher() = default;
+  static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
+
+  Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config);
+  ~Dispatcher() = default;
 
   /**
    * @name Dispatch Helper functions
@@ -57,46 +69,49 @@ public:
   uint64_t Start{};
   uint64_t End{};
 
-  virtual void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) = 0;
+  void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread);
 
   // These are across all arches for now
   static constexpr size_t MaxGDBPauseCheckSize = 128;
 
-  virtual size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) = 0;
+  size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP);
 
-  static fextl::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
-  static fextl::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
-
-  virtual void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
+#ifdef VIXL_SIMULATOR
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) ;
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
+#else
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
     DispatchPtr(Frame);
   }
 
-  virtual void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
     CallbackPtr(Frame, RIP);
   }
+#endif
 
-  virtual uint16_t GetSRAGPRCount() const {
-    return 0U;
+  uint16_t GetSRAGPRCount() const {
+    return StaticRegisters.size();
   }
 
-  virtual uint16_t GetSRAFPRCount() const {
-    return 0U;
+  uint16_t GetSRAFPRCount() const {
+    return StaticFPRegisters.size();
   }
 
-  virtual void GetSRAGPRMapping(uint8_t Mapping[16]) const {
+  void GetSRAGPRMapping(uint8_t Mapping[16]) const {
+    for (size_t i = 0; i < StaticRegisters.size(); ++i) {
+      Mapping[i] = StaticRegisters[i].Idx();
+    }
   }
 
-  virtual void GetSRAFPRMapping(uint8_t Mapping[16]) const {
+  void GetSRAFPRMapping(uint8_t Mapping[16]) const {
+    for (size_t i = 0; i < StaticFPRegisters.size(); ++i) {
+      Mapping[i] = StaticFPRegisters[i].Idx();
+    }
   }
 
   const DispatcherConfig& GetConfig() const { return config; }
 
 protected:
-  Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config)
-    : CTX {ctx}
-    , config {Config}
-    {}
-
   FEXCore::Context::ContextImpl *CTX;
   DispatcherConfig config;
 
@@ -109,6 +124,14 @@ protected:
 
   AsmDispatch DispatchPtr;
   JITCallback CallbackPtr;
+private:
+  // Long division helpers
+  uint64_t LUDIVHandlerAddress{};
+  uint64_t LDIVHandlerAddress{};
+  uint64_t LUREMHandlerAddress{};
+  uint64_t LREMHandlerAddress{};
+
+  void EmitDispatcher();
 };
 
 }

@@ -319,7 +319,7 @@ namespace FEXCore::Context {
     }
 
     DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
-    Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
+    Dispatcher = FEXCore::CPU::Dispatcher::Create(this, DispatcherConfig);
 
     // Set up the SignalDelegator config since core is initialized.
     FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {

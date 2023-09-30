@@ -7,7 +7,7 @@ $end_info$
 
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
-#include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 #include <FEXCore/Utils/MathUtils.h>
