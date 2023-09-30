@@ -259,6 +259,9 @@ namespace FEXCore::Core {
       uint64_t L1Pointer{};
       uint64_t L2Pointer{};
       /**  @} */
+
+      // Copy of process-wide named vector constants data.
+      alignas(16) uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX][2];
     } Common;
 
     union {
