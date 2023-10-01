@@ -643,7 +643,6 @@ DEF_OP(VFAbs) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -720,7 +719,6 @@ DEF_OP(VFAdd) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -803,7 +801,6 @@ DEF_OP(VFSub) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -848,7 +845,6 @@ DEF_OP(VFMul) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -905,7 +901,6 @@ DEF_OP(VFDiv) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -984,7 +979,6 @@ DEF_OP(VFMin) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -1064,7 +1058,6 @@ DEF_OP(VFMax) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -1128,7 +1121,6 @@ DEF_OP(VFRecp) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -1175,7 +1167,6 @@ DEF_OP(VFSqrt) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -1226,7 +1217,6 @@ DEF_OP(VFRSqrt) {
           break;
         }
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -1348,7 +1338,6 @@ DEF_OP(VUMin) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
   }
@@ -1400,7 +1389,6 @@ DEF_OP(VSMin) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
   }
@@ -1452,7 +1440,6 @@ DEF_OP(VUMax) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
   }
@@ -1504,7 +1491,6 @@ DEF_OP(VSMax) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
   }
@@ -1982,7 +1968,6 @@ DEF_OP(VFCMPEQ) {
           fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2);
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -2029,7 +2014,6 @@ DEF_OP(VFCMPNEQ) {
           fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2);
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
       mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
@@ -2078,7 +2062,6 @@ DEF_OP(VFCMPLT) {
           fcmgt(SubRegSize.Scalar, Dst, Vector2, Vector1);
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -2125,7 +2108,6 @@ DEF_OP(VFCMPGT) {
           fcmgt(SubRegSize.Scalar, Dst, Vector1, Vector2);
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -2172,7 +2154,6 @@ DEF_OP(VFCMPLE) {
           fcmge(SubRegSize.Scalar, Dst, Vector2, Vector1);
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -2228,7 +2209,6 @@ DEF_OP(VFCMPORD) {
           orr(Dst.D(), VTMP1.D(), VTMP2.D());
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
@@ -2284,7 +2264,6 @@ DEF_OP(VFCMPUNO) {
           mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
           break;
         default:
-          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
           break;
       }
     } else {
