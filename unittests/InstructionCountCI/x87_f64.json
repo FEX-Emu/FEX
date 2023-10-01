@@ -1746,15 +1746,14 @@
       ]
     },
     "fldenv [rax]": {
-      "ExpectedInstructionCount": 55,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /4"
       ],
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
-        "lsr w21, w20, #10",
-        "and w21, w21, #0x3",
+        "ubfx w21, w20, #10, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
@@ -1810,15 +1809,14 @@
       ]
     },
     "fldcw [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /5"
       ],
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
-        "lsr w21, w20, #10",
-        "and w21, w21, #0x3",
+        "ubfx w21, w20, #10, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
@@ -2272,7 +2270,7 @@
       "ExpectedArm64ASM": []
     },
     "fchs": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xe0 /4"
@@ -2281,9 +2279,7 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
-        "mov x21, #0x8000000000000000",
-        "fmov d3, x21",
-        "eor v2.16b, v2.16b, v3.16b",
+        "fneg v2.2d, v2.2d",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #752]"
       ]
