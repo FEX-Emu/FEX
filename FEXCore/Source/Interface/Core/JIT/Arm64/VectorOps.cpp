@@ -609,6 +609,50 @@ DEF_OP(VAbs) {
   }
 }
 
+DEF_OP(VFAbs) {
+  const auto Op = IROp->C<IR::IROp_VFAbs>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    fabs(SubRegSize, Dst.Z(), PRED_TMP_32B.Merging(), Src.Z());
+  } else {
+    if (ElementSize == OpSize) {
+      switch (ElementSize) {
+        case 2: {
+          fabs(Dst.H(), Src.H());
+          break;
+        }
+        case 4: {
+          fabs(Dst.S(), Src.S());
+          break;
+        }
+        case 8: {
+          fabs(Dst.D(), Src.D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    } else {
+      // Vector
+      fabs(SubRegSize, Dst.Q(), Src.Q());
+    }
+  }
+}
+
 DEF_OP(VPopcount) {
   const auto Op = IROp->C<IR::IROp_VPopcount>();
   const auto OpSize = IROp->Size;

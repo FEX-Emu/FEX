@@ -969,6 +969,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VUMINV,            VUMinV);
         REGISTER_OP(VURAVG,            VURAvg);
         REGISTER_OP(VABS,              VAbs);
+        REGISTER_OP(VFABS,             VFAbs);
         REGISTER_OP(VPOPCOUNT,         VPopcount);
         REGISTER_OP(VFADD,             VFAdd);
         REGISTER_OP(VFADDP,            VFAddP);

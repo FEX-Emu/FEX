@@ -399,6 +399,7 @@ private:
   DEF_OP(VUMinV);
   DEF_OP(VURAvg);
   DEF_OP(VAbs);
+  DEF_OP(VFAbs);
   DEF_OP(VPopcount);
   DEF_OP(VFAdd);
   DEF_OP(VFAddP);
