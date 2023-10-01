@@ -2285,7 +2285,7 @@
       ]
     },
     "fabs": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xe1 /4"
@@ -2294,9 +2294,7 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
-        "orr x21, xzr, #0x7fffffffffffffff",
-        "fmov d3, x21",
-        "and v2.16b, v2.16b, v3.16b",
+        "fabs d2, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #752]"
       ]
