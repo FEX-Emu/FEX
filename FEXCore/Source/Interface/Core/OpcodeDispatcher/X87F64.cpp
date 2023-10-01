@@ -589,9 +589,7 @@ void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
 void OpDispatchBuilder::FABSF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto b = _VCastFromGPR(8, 8, _Constant(0x7fffffffffffffff));
-  auto result = _VAnd(8, 8, a, b);
-
+  auto result = _VFAbs(8, 8, a);
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
