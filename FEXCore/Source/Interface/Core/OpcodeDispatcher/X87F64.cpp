@@ -72,11 +72,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   //ignore the rounding precision, we're always 64-bit in F64.
   //extract rounding mode
-  OrderedNode *roundingMode = NewFCW;
-  auto roundShift = _Constant(10);
-  auto roundMask = _Constant(3);
-  roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
-  roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
+  OrderedNode *roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
@@ -96,11 +92,11 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
   OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   //ignore the rounding precision, we're always 64-bit in F64.
   //extract rounding mode
-  OrderedNode *roundingMode = NewFCW;
-  auto shift = _Constant(10);
-  auto mask = _Constant(3);
-  roundingMode = _Lshr(OpSize::i32Bit, roundingMode, shift);
-  roundingMode = _And(OpSize::i32Bit, roundingMode, mask);
+  OrderedNode *roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
+  //auto shift = _Constant(10);
+  //auto mask = _Constant(3);
+  //roundingMode = _Lshr(OpSize::i32Bit, roundingMode, shift);
+  //roundingMode = _And(OpSize::i32Bit, roundingMode, mask);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
@@ -589,9 +585,7 @@ void OpDispatchBuilder::FSUBF64<32, true, true, OpDispatchBuilder::OpResult::RES
 void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto b = _VCastFromGPR(8, 8, _Constant(0x8000000000000000));
-
-  auto result = _VXor(8, 8, a, b);
+  auto result = _VFNeg(8, 8, a);
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
