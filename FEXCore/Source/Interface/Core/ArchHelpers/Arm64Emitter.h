@@ -5,7 +5,6 @@
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 
-#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
 
 #include <aarch64/assembler-aarch64.h>
@@ -28,6 +27,10 @@
 #include <cstdint>
 #include <utility>
 #include <span>
+
+namespace FEXCore::Context {
+class ContextImpl;
+}
 
 namespace FEXCore::CPU {
 // Contains the address to the currently available CPU state

@@ -107,7 +107,6 @@ set (SRCS
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
-  Interface/Core/Dispatcher/Arm64Dispatcher.cpp
   Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp
   Interface/Core/JIT/Arm64/JIT.cpp
   Interface/Core/JIT/Arm64/ALUOps.cpp

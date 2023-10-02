@@ -16,7 +16,7 @@ $end_info$
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
-#include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
 
