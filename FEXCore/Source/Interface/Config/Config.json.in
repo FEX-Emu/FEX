@@ -499,6 +499,15 @@
       "IS64BIT_MODE": {
         "Type": "bool",
         "Default": "false"
+      },
+      "DISABLE_VIXL_INDIRECT_RUNTIME_CALLS": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "This option is used for the InstructionCountCI so it can generate the same codegen between Arm64 hosts and vixl simulator hosts.",
+          "Vixl simulator indirect runtime calls are a special hlt instruction with metadata after it. Effectively making a custom call instruction.",
+          "With visual simulator calls disabled, the code generation would be the same as on a native Arm64 host, but running the code is broken."
+        ]
       }
     }
   }

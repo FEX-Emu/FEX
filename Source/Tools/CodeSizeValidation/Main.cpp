@@ -451,6 +451,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
   // Disable telemetry, it can affect instruction counts.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLETELEMETRY, "1");
+  // Disable vixl simulator indirect calls as it can affect instruction counts.
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "1");
 
   // Host feature override. Only supports overriding SVE width.
   enum HostFeatures {
@@ -459,6 +461,7 @@ int main(int argc, char **argv, char **const envp) {
     FEATURE_CLZERO = (1U << 2),
     FEATURE_RNG    = (1U << 3),
     FEATURE_FCMA   = (1U << 4),
+    FEATURE_CSSC   = (1U << 5),
   };
 
   uint64_t SVEWidth = 0;
@@ -480,6 +483,9 @@ int main(int argc, char **argv, char **const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_FCMA) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEFCMA);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_CSSC) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECSSC);
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
@@ -498,6 +504,9 @@ int main(int argc, char **argv, char **const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_FCMA) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEFCMA);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_CSSC) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECSSC);
   }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));

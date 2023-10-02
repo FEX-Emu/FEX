@@ -214,11 +214,12 @@ void Dispatcher::EmitDispatcher() {
     mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
 
     ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(ARMEmitter::Reg::r2);
-#else
-    blr(ARMEmitter::Reg::r2);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(ARMEmitter::Reg::r2);
+    }
+    else {
+      blr(ARMEmitter::Reg::r2);
+    }
 
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
@@ -250,11 +251,12 @@ void Dispatcher::EmitDispatcher() {
     ldr(ARMEmitter::XReg::x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(ARMEmitter::Reg::r3);
-#else
-    blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(ARMEmitter::Reg::r3);
+    }
+    else {
+      blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
+    }
 
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
@@ -345,11 +347,12 @@ void Dispatcher::EmitDispatcher() {
     ldr(ARMEmitter::XReg::x0, &l_CTX);
     mov(ARMEmitter::XReg::x1, STATE);
     ldr(ARMEmitter::XReg::x2, &l_Sleep);
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<void, void *, void *>(ARMEmitter::Reg::r2);
-#else
-    blr(ARMEmitter::Reg::r2);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void *, void *>(ARMEmitter::Reg::r2);
+    }
+    else {
+      blr(ARMEmitter::Reg::r2);
+    }
 
     PauseReturnInstruction = GetCursorAddress<uint64_t>();
     // Fault to start running again
@@ -415,11 +418,12 @@ void Dispatcher::EmitDispatcher() {
     SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-    blr(ARMEmitter::Reg::r3);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+    }
+    else {
+      blr(ARMEmitter::Reg::r3);
+    }
     FillStaticRegs();
 
     // Result is now in x0
@@ -437,11 +441,12 @@ void Dispatcher::EmitDispatcher() {
     SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-    blr(ARMEmitter::Reg::r3);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+    }
+    else {
+      blr(ARMEmitter::Reg::r3);
+    }
     FillStaticRegs();
 
     // Result is now in x0
@@ -459,11 +464,12 @@ void Dispatcher::EmitDispatcher() {
     SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-    blr(ARMEmitter::Reg::r3);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+    }
+    else {
+      blr(ARMEmitter::Reg::r3);
+    }
     FillStaticRegs();
 
     // Result is now in x0
@@ -482,11 +488,12 @@ void Dispatcher::EmitDispatcher() {
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 
-#ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-#else
-    blr(ARMEmitter::Reg::r3);
-#endif
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+    }
+    else {
+      blr(ARMEmitter::Reg::r3);
+    }
     FillStaticRegs();
 
     // Result is now in x0

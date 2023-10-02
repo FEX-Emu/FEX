@@ -303,7 +303,12 @@ HostFeatures::HostFeatures() {
   }
 #endif
 
-#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
+#if defined(_M_X86_64)
+  // Hardcoded cacheline size.
+  DCacheLineSize = 64U;
+  ICacheLineSize = 64U;
+
+#if !defined(VIXL_SIMULATOR)
   Xbyak::util::Cpu X86Features{};
   SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
   SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
@@ -333,6 +338,7 @@ HostFeatures::HostFeatures() {
 
   SupportsFlushInputsToZero = true;
   SupportsFloatExceptions = true;
+#endif
 #endif
   OverrideFeatures(this);
 }

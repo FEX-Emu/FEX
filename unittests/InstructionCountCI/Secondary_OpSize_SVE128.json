@@ -4,7 +4,9 @@
     "EnabledHostFeatures": [
       "SVE128"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "SVE256"
+    ]
   },
   "Instructions": {
     "psrlw xmm0, xmm1": {

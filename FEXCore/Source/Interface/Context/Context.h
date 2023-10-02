@@ -241,6 +241,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
       FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
+      FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     } Config;
 
     FEXCore::HostFeatures HostFeatures;

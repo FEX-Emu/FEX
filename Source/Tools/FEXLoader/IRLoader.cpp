@@ -148,6 +148,10 @@ int main(int argc, char **argv, char **const envp)
   // This is to ensure that static register allocation in the JIT
   // is configured correctly for accesses to the top 8 GPRs and 8 XMM registers.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
+#ifdef VIXL_SIMULATOR
+  // If running under the vixl simulator, ensure that indirect runtime calls are enabled.
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
+#endif
 
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();

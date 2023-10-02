@@ -9,6 +9,7 @@ $end_info$
 #include <syscall.h>
 #endif
 
+#include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
@@ -113,10 +114,10 @@ DEF_OP(SetRoundingMode) {
   mrs(TMP1, ARMEmitter::SystemRegister::FPCR);
 
   // vixl simulator doesn't support anything beyond ties-to-even rounding
-#ifndef VIXL_SIMULATOR
-  // Insert the rounding flags
-  bfi(ARMEmitter::Size::i64Bit, TMP1, TMP2, 22, 2);
-#endif
+  if (CTX->Config.DisableVixlIndirectCalls) [[likely]] {
+    // Insert the rounding flags
+    bfi(ARMEmitter::Size::i64Bit, TMP1, TMP2, 22, 2);
+  }
 
   // Insert the FTZ flag
   lsr(ARMEmitter::Size::i64Bit, TMP2, Src, 2);
@@ -170,7 +171,13 @@ DEF_OP(ProcessorID) {
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
 
   // Load the getcpu syscall number
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_getcpu);
+#if defined(_M_X86_64)
+  // Just to ensure the syscall number doesn't change if compiled for an x86_64 host.
+  constexpr auto GetCPUSyscallNum = 0xa8;
+#else
+  constexpr auto GetCPUSyscallNum = SYS_getcpu;
+#endif
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, GetCPUSyscallNum);
 
   // CPU pointer in x0
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::rsp, 0);

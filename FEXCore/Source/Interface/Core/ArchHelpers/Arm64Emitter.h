@@ -213,7 +213,15 @@ protected:
     // Call type
     dc32(vixl::aarch64::kCallRuntime);
   }
-
+#else
+  template<typename R, typename... P>
+  void GenerateRuntimeCall(R (*Function)(P...)) {
+    // Explicitly doing nothing.
+  }
+  template<typename R, typename... P>
+  void GenerateIndirectRuntimeCall(ARMEmitter::Register Reg) {
+    // Explicitly doing nothing.
+  }
 #endif
 
 #ifdef VIXL_SIMULATOR
