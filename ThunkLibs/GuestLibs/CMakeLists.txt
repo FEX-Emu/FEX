@@ -52,6 +52,9 @@ function(generate NAME SOURCE_FILE)
   add_library(${NAME}-guest-deps INTERFACE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   target_compile_definitions(${NAME}-guest-deps INTERFACE GUEST_THUNK_LIBRARY)
+  if (BITNESS EQUAL 32)
+    target_compile_definitions(${NAME}-guest-deps INTERFACE IS_32BIT_THUNK)
+  endif ()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
@@ -64,16 +67,18 @@ function(generate NAME SOURCE_FILE)
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
   if (BITNESS EQUAL 32)
-    set (BITNESS_FLAGS "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
+    set(BITNESS_FLAGS "-for-32bit-guest")
+    set(BITNESS_FLAGS2 "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
   else()
-    set (BITNESS_FLAGS "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
+    set(BITNESS_FLAGS "")
+    set(BITNESS_FLAGS2 "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
   endif()
 
   add_custom_command(
     OUTPUT "${OUTFILE}"
     DEPENDS "${GENERATOR_EXE}"
     DEPENDS "${SOURCE_FILE}"
-    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" -- -std=c++17 ${BITNESS_FLAGS}
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters

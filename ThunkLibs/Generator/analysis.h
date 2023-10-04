@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clang/Basic/FileEntry.h>
 #include <clang/Frontend/FrontendAction.h>
 
 #include <memory>
@@ -19,6 +20,10 @@ struct ThunkedCallback : FunctionParams {
     bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
     bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
+};
+
+struct ParameterAnnotations {
+    bool operator==(const ParameterAnnotations&) const = default;
 };
 
 /**
@@ -51,6 +56,10 @@ struct ThunkedFunction : FunctionParams {
 
     // Maps parameter index to ThunkedCallback
     std::unordered_map<unsigned, ThunkedCallback> callbacks;
+
+    // Maps parameter index to ParameterAnnotations
+    // TODO: Use index -1 for the return value?
+    std::unordered_map<unsigned, ParameterAnnotations> param_annotations;
 
     clang::FunctionDecl* decl;
 };
@@ -105,19 +114,76 @@ public:
 
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
+    struct RepackedType {
+    };
+
 protected:
     // Build the internal API representation by processing fex_gen_config and other annotated entities
     void ParseInterface(clang::ASTContext&);
 
+    // Recursively extend the type set to include types of struct members
+    void CoverReferencedTypes(clang::ASTContext&);
+
     // Called from ExecuteAction() after parsing is complete
-    virtual void EmitOutput(clang::ASTContext&) {};
+    virtual void OnAnalysisComplete(clang::ASTContext&) {};
 
     std::vector<clang::DeclContext*> decl_contexts;
 
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
+
     std::unordered_set<const clang::Type*> funcptr_types;
 
+    std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;
     std::vector<NamespaceInfo> namespaces;
+
+    RepackedType& LookupType(clang::ASTContext& context, const clang::Type* type) {
+      return types.at(context.getCanonicalType(type));
+    }
 };
+
+inline std::string get_type_name(const clang::ASTContext& context, const clang::Type* type) {
+    if (type->isBuiltinType()) {
+        // Skip canonicalization
+        return clang::QualType { type, 0 }.getAsString();
+    }
+
+    if (auto decl = type->getAsTagDecl()) {
+        // Replace unnamed types with a placeholder. This will fail to compile if referenced
+        // anywhere in generated code, but at least it will point to a useful location.
+        //
+        // A notable exception are C-style struct declarations like "typedef struct (unnamed) { ... } MyStruct;".
+        // A typedef name is associated with these for linking purposes, so
+        // getAsString() will produce a usable identifier.
+        // TODO: Consider turning this into a hard error instead of replacing the name
+        if (!decl->getDeclName() && !decl->getTypedefNameForAnonDecl()) {
+            auto loc = context.getSourceManager().getPresumedLoc(decl->getLocation());
+            std::string filename = loc.getFilename();
+            filename = std::move(filename).substr(filename.rfind("/"));
+            filename = std::move(filename).substr(1);
+            std::replace(filename.begin(), filename.end(), '.', '_');
+            return "unnamed_type_" + filename + "_" + std::to_string(loc.getLine());
+        }
+    }
+
+    auto type_name = clang::QualType { context.getCanonicalType(type), 0 }.getAsString();
+    if (type_name.starts_with("struct ")) {
+        type_name = type_name.substr(7);
+    }
+    if (type_name.starts_with("class ") || type_name.starts_with("union ")) {
+        type_name = type_name.substr(6);
+    }
+    if (type_name.starts_with("enum ")) {
+        type_name = type_name.substr(5);
+    }
+    return type_name;
+}
+
+// Analysis can't process interfaces of real libraries, yet. This function
+// defines a "strict mode" to use for tests, only. Real libraries will switch
+// to strict mode once analysis is more feature-complete.
+inline bool StrictModeEnabled(clang::ASTContext& context) {
+    auto filename = context.getSourceManager().getFileEntryForID(context.getSourceManager().getMainFileID())->getName();
+    return filename.endswith("libfex_thunk_test_interface.cpp") || filename.endswith("gen_input.cpp");
+}

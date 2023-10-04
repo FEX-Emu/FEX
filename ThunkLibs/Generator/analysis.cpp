@@ -128,7 +128,10 @@ void AnalysisAction::ExecuteAction() {
 
     try {
         ParseInterface(context);
-        EmitOutput(context);
+        if (StrictModeEnabled(context)) {
+            CoverReferencedTypes(context);
+        }
+        OnAnalysisComplete(context);
     } catch (ClangDiagnosticAsException& exception) {
         exception.Report(context.getDiagnostics());
     }
@@ -149,9 +152,25 @@ FindClassTemplateDeclByName(clang::DeclContext& decl_context, std::string_view s
     }
 }
 
+static ParameterAnnotations GetParameterAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
+    if (!decl->hasDefinition()) {
+        return {};
+    }
+
+    ErrorReporter report_error { context };
+    ParameterAnnotations ret;
+
+    for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+        throw report_error(base.getSourceRange().getBegin(), "Unknown parameter annotation");
+    }
+
+    return ret;
+}
+
 void AnalysisAction::ParseInterface(clang::ASTContext& context) {
     ErrorReporter report_error { context };
 
+    // TODO: Assert fex_gen_type is not declared at non-global namespaces
     if (auto template_decl = FindClassTemplateDeclByName(*context.getTranslationUnitDecl(), "fex_gen_type")) {
         for (auto* decl : template_decl->specializations()) {
             const auto& template_args = decl->getTemplateArgs();
@@ -161,8 +180,42 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             //       named types (e.g. GLuint/GLenum) are represented by
             //       different Type instances. The canonical type they refer
             //       to is unique, however.
-            auto type = context.getCanonicalType(template_args[0].getAsType()).getTypePtr();
-            funcptr_types.insert(type);
+            clang::QualType type = context.getCanonicalType(template_args[0].getAsType());
+            type = type->getLocallyUnqualifiedSingleStepDesugaredType();
+
+            if (type->isFunctionPointerType() || type->isFunctionType()) {
+                funcptr_types.insert(type.getTypePtr());
+            } else {
+                [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), RepackedType { });
+                assert(inserted);
+            }
+        }
+    }
+
+    // Process function parameter annotations
+    std::unordered_map<const clang::FunctionDecl*, std::unordered_map<unsigned, ParameterAnnotations>> param_annotations;
+    for (auto& decl_context : decl_contexts) {
+        if (auto template_decl = FindClassTemplateDeclByName(*decl_context, "fex_gen_param")) {
+            for (auto* decl : template_decl->specializations()) {
+                const auto& template_args = decl->getTemplateArgs();
+                assert(template_args.size() == 3);
+
+                auto function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl());
+                auto param_idx = template_args[1].getAsIntegral().getZExtValue();
+                clang::QualType type = context.getCanonicalType(template_args[2].getAsType());
+                type = type->getLocallyUnqualifiedSingleStepDesugaredType();
+
+                if (param_idx >= function->getNumParams()) {
+                    throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(1).getLocation(), "Out-of-bounds parameter index passed to fex_gen_param");
+                }
+
+                if (!type->isVoidType() && !context.hasSameType(type, function->getParamDecl(param_idx)->getType())) {
+                    throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(2).getLocation(), "Type passed to fex_gen_param doesn't match the function signature")
+                              .addNote(report_error(function->getParamDecl(param_idx)->getTypeSourceInfo()->getTypeLoc().getBeginLoc(), "Expected this type instead"));
+                }
+
+                param_annotations[function][param_idx] = GetParameterAnnotations(context, decl);
+            }
         }
     }
 
@@ -220,94 +273,200 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                 const auto template_arg_loc = decl->getTypeAsWritten()->getTypeLoc().castAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(0).getLocation();
 
-                auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl());
-                assert(emitted_function && "Argument is not a function");
-                auto return_type = emitted_function->getReturnType();
+                if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
+                    auto return_type = emitted_function->getReturnType();
 
-                const auto annotations = GetAnnotations(context, decl);
-                if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
-                    throw report_error( template_arg_loc,
-                                        "Function pointer return types require explicit annotation\n");
-                }
-
-                // TODO: Use the types as written in the signature instead?
-                ThunkedFunction data;
-                data.function_name = emitted_function->getName().str();
-                data.return_type = return_type;
-                data.is_variadic = emitted_function->isVariadic();
-
-                data.decl = emitted_function;
-
-                data.custom_host_impl = annotations.custom_host_impl;
-
-                for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
-                    auto* param = emitted_function->getParamDecl(param_idx);
-                    data.param_types.push_back(param->getType());
-
-                    if (param->getType()->isFunctionPointerType()) {
-                        auto funcptr = param->getFunctionType()->getAs<clang::FunctionProtoType>();
-                        ThunkedCallback callback;
-                        callback.return_type = funcptr->getReturnType();
-                        for (auto& cb_param : funcptr->getParamTypes()) {
-                            callback.param_types.push_back(cb_param);
-                        }
-                        callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
-                        callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
-                        callback.is_variadic = funcptr->isVariadic();
-
-                        if (callback.is_guest && !data.custom_host_impl) {
-                            throw report_error(template_arg_loc, "callback_guest can only be used with custom_host_impl");
-                        }
-
-                        data.callbacks.emplace(param_idx, callback);
-                        if (!callback.is_stub && !callback.is_guest) {
-                            funcptr_types.insert(context.getCanonicalType(funcptr));
-                        }
-
-                        if (data.callbacks.size() != 1) {
-                            throw report_error(template_arg_loc, "Support for more than one callback is untested");
-                        }
-                        if (funcptr->isVariadic() && !callback.is_stub) {
-                            throw report_error(template_arg_loc, "Variadic callbacks are not supported");
-                        }
-                    }
-                }
-
-                thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
-                                                            namespace_info.host_loader.empty() ? "dlsym_default" : namespace_info.host_loader,
-                                                            data.is_variadic || annotations.custom_guest_entrypoint,
-                                                            data.is_variadic,
-                                                            std::nullopt });
-                if (namespace_info.generate_guest_symtable) {
-                    thunked_api.back().symtable_namespace = namespace_idx;
-                }
-
-                if (data.is_variadic) {
-                    if (!annotations.uniform_va_type) {
-                        throw report_error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
+                    const auto annotations = GetAnnotations(context, decl);
+                    if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
+                        throw report_error( template_arg_loc,
+                                            "Function pointer return types require explicit annotation\n");
                     }
 
-                    // Convert variadic argument list into a count + pointer pair
-                    data.param_types.push_back(context.getSizeType());
-                    data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
-                }
+                    // TODO: Use the types as written in the signature instead?
+                    ThunkedFunction data;
+                    data.function_name = emitted_function->getName().str();
+                    data.return_type = return_type;
+                    data.is_variadic = emitted_function->isVariadic();
 
-                if (data.is_variadic) {
-                    // This function is thunked through an "_internal" symbol since its signature
-                    // is different from the one in the native host/guest libraries.
-                    data.function_name = data.function_name + "_internal";
-                    if (data.custom_host_impl) {
-                        throw report_error(decl->getBeginLoc(), "Custom host impl requested but this is implied by the function signature already");
+                    data.decl = emitted_function;
+
+                    data.custom_host_impl = annotations.custom_host_impl;
+
+                    data.param_annotations = param_annotations[emitted_function];
+
+                    const int retval_index = -1;
+                    for (int param_idx = retval_index; param_idx < (int)emitted_function->param_size(); ++param_idx) {
+                        auto param_type = param_idx == retval_index ? emitted_function->getReturnType() : emitted_function->getParamDecl(param_idx)->getType();
+                        auto param_loc = param_idx == retval_index ? emitted_function->getReturnTypeSourceRange().getBegin() : emitted_function->getParamDecl(param_idx)->getBeginLoc();
+
+                        if (param_idx != retval_index) {
+                            data.param_types.push_back(param_type);
+                        } else if (param_type->isVoidType()) {
+                            continue;
+                        }
+
+                        auto check_struct_type = [&](const clang::Type* type) {
+                            if (type->isIncompleteType()) {
+                                if (!StrictModeEnabled(context)) {
+                                    return;
+                                }
+                                throw report_error(type->getAsTagDecl()->getBeginLoc(), "Unannotated pointer with incomplete struct type; consider using an opaque_type annotation")
+                                      .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
+                                      .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));
+                            }
+
+                            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                                  /*if (!member->getType()->isPointerType())*/ {
+                                      // TODO: Perform more elaborate validation for non-pointers to ensure ABI compatibility
+                                      continue;
+                                  }
+
+                                  throw report_error(member->getBeginLoc(), "Unannotated pointer member")
+                                        .addNote(report_error(param_loc, "in struct type", clang::DiagnosticsEngine::Note))
+                                        .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));
+                            }
+                        };
+
+                        if (param_type->isFunctionPointerType()) {
+                            if (param_idx == retval_index) {
+                                // TODO: We already rely on this in a few places...
+//                                throw report_error(template_arg_loc, "Support for returning function pointers is not implemented");
+                                continue;
+                            }
+                            auto funcptr = emitted_function->getParamDecl(param_idx)->getFunctionType()->getAs<clang::FunctionProtoType>();
+                            ThunkedCallback callback;
+                            callback.return_type = funcptr->getReturnType();
+                            for (auto& cb_param : funcptr->getParamTypes()) {
+                                callback.param_types.push_back(cb_param);
+                            }
+                            callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
+                            callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
+                            callback.is_variadic = funcptr->isVariadic();
+
+                            if (callback.is_guest && !data.custom_host_impl) {
+                                throw report_error(template_arg_loc, "callback_guest can only be used with custom_host_impl");
+                            }
+
+                            data.callbacks.emplace(param_idx, callback);
+                            if (!callback.is_stub && !callback.is_guest && !data.custom_host_impl) {
+                                funcptr_types.insert(context.getCanonicalType(funcptr));
+                            }
+
+                            if (data.callbacks.size() != 1) {
+                                throw report_error(template_arg_loc, "Support for more than one callback is untested");
+                            }
+                            if (funcptr->isVariadic() && !callback.is_stub) {
+                                throw report_error(template_arg_loc, "Variadic callbacks are not supported");
+                            }
+                        } else if (param_type->isBuiltinType()) {
+                            // NOTE: Intentionally not using getCanonicalType here since that would turn e.g. size_t into platform-specific types
+                            // TODO: Still, we may want to de-duplicate some of these...
+                            types.emplace(param_type.getTypePtr(), RepackedType { });
+                        } else if (param_type->isEnumeralType()) {
+                            types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
+                        } else if ( param_type->isStructureType()) {
+                            check_struct_type(param_type.getTypePtr());
+                            types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
+                        } else if (param_type->isPointerType()) {
+                            auto pointee_type = param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
+                            if ( pointee_type->isStructureType()) {
+                                check_struct_type(pointee_type.getTypePtr());
+                                types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType { });
+                            } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
+                                throw report_error(param_loc, "Unsupported parameter type")
+                                              .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
+                                              .addNote(report_error(template_arg_loc, "used in definition here", clang::DiagnosticsEngine::Note));
+                            }
+                        } else {
+                            // TODO: For non-pointer parameters, perform more elaborate validation to ensure ABI compatibility
+                        }
                     }
-                    data.custom_host_impl = true;
+
+                    thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
+                                                                namespace_info.host_loader.empty() ? "dlsym_default" : namespace_info.host_loader,
+                                                                data.is_variadic || annotations.custom_guest_entrypoint,
+                                                                data.is_variadic,
+                                                                std::nullopt });
+                    if (namespace_info.generate_guest_symtable) {
+                        thunked_api.back().symtable_namespace = namespace_idx;
+                    }
+
+                    if (data.is_variadic) {
+                        if (!annotations.uniform_va_type) {
+                            throw report_error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
+                        }
+
+                        // Convert variadic argument list into a count + pointer pair
+                        data.param_types.push_back(context.getSizeType());
+                        data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
+                        types.emplace(context.getSizeType()->getTypePtr(), RepackedType { });
+                        if (!annotations.uniform_va_type.value()->isVoidPointerType()) {
+                            types.emplace(annotations.uniform_va_type->getTypePtr(), RepackedType { });
+                        }
+                    }
+
+                    if (data.is_variadic) {
+                        // This function is thunked through an "_internal" symbol since its signature
+                        // is different from the one in the native host/guest libraries.
+                        data.function_name = data.function_name + "_internal";
+                        if (data.custom_host_impl) {
+                            throw report_error(decl->getBeginLoc(), "Custom host impl requested but this is implied by the function signature already");
+                        }
+                        data.custom_host_impl = true;
+                    }
+
+                    // For indirect calls, register the function signature as a function pointer type
+                    if (namespace_info.indirect_guest_calls) {
+                        funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
+                    }
+
+                    thunks.push_back(std::move(data));
+                }
+            }
+        }
+    }
+}
+
+void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
+    // Repeat until no more children are appended
+    for (bool changed = true; std::exchange(changed, false);) {
+        for ( auto next_type_it = types.begin(), type_it = next_type_it;
+              type_it != types.end();
+              type_it = next_type_it) {
+            ++next_type_it;
+            const auto& [type, type_repack_info] = *type_it;
+            if (!type->isStructureType()) {
+                continue;
+            }
+
+            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                auto member_type = member->getType().getTypePtr();
+                while (member_type->isArrayType()) {
+                    member_type = member_type->getArrayElementTypeNoTypeQual();
+                }
+                while (member_type->isPointerType()) {
+                    member_type = member_type->getPointeeType().getTypePtr();
                 }
 
-                // For indirect calls, register the function signature as a function pointer type
-                if (namespace_info.indirect_guest_calls) {
-                    funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
+                if (!member_type->isBuiltinType()) {
+                    member_type = context.getCanonicalType(member_type);
+                }
+                if (member_type->isUnionType() && !types.contains(member_type)) {
+                    throw std::runtime_error(fmt::format("\"{}\" has unannotated member \"{}\" of union type \"{}\"",
+                                                         clang::QualType { type, 0 }.getAsString(),
+                                                         member->getNameAsString(),
+                                                         clang::QualType { member_type, 0 }.getAsString()));
                 }
 
-                thunks.push_back(std::move(data));
+                if (!member_type->isStructureType() && !(member_type->isBuiltinType() && !member_type->isVoidType()) && !member_type->isEnumeralType()) {
+                    continue;
+                }
+
+                auto [new_type_it, inserted] = types.emplace(member_type, RepackedType { });
+                if (inserted) {
+                    changed = true;
+                    next_type_it = new_type_it;
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
-add_executable(thunkgentest generator.cpp)
+add_executable(thunkgentest generator.cpp abi.cpp)
 target_link_libraries(thunkgentest PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(thunkgentest PRIVATE fmt::fmt)
 target_link_libraries(thunkgentest PRIVATE thunkgenlib)
 catch_discover_tests(thunkgentest TEST_SUFFIX ".ThunkGen")
 

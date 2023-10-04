@@ -1,6 +1,7 @@
 #include "analysis.h"
+#include "data_layout.h"
+#include "diagnostics.h"
 #include "interface.h"
-
 #include <clang/Frontend/CompilerInstance.h>
 
 #include <fstream>
@@ -8,27 +9,28 @@
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <openssl/sha.h>
 
-class GenerateThunkLibsAction : public AnalysisAction {
+class GenerateThunkLibsAction : public DataLayoutCompareAction {
 public:
-    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&);
+    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&, const ABI& abi);
 
 private:
     // Generate helper code for thunk libraries and write them to the output file
-    void EmitOutput(clang::ASTContext&) override;
+    void OnAnalysisComplete(clang::ASTContext&) override;
 
     const std::string& libfilename;
     std::string libname; // sanitized filename, usable as part of emitted function names
     const OutputFilenames& output_filenames;
 };
 
-GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_)
-    : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
+GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_, const ABI& abi)
+    : DataLayoutCompareAction(abi), libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
     for (auto& c : libname) {
         if (c == '-') {
             c = '_';
@@ -47,7 +49,21 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     return ret;
 };
 
-void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
+void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
+    ErrorReporter report_error { context };
+
+    // Compute data layout differences between host and guest
+    auto type_compat = [&]() {
+        std::unordered_map<const clang::Type*, TypeCompatibility> ret;
+        if (StrictModeEnabled(context)) {
+        const auto host_abi = ComputeDataLayout(context, types);
+        for (const auto& [type, type_repack_info] : types) {
+            GetTypeCompatibility(context, type, host_abi, ret);
+        }
+        }
+        return ret;
+    }();
+
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         clang::QualType innermostPointee = type;
         while (innermostPointee->isPointerType()) {
@@ -270,6 +286,24 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
                 file << ") -> " << thunk.return_type.getAsString() << ";\n";
             }
 
+            // Check data layout compatibility of parameter types
+            // TODO: Also check non-struct/non-pointer types
+            // TODO: Also check return type
+            for (size_t param_idx = 0; StrictModeEnabled(context) && param_idx != thunk.param_types.size(); ++param_idx) {
+                const auto& param_type = thunk.param_types[param_idx];
+                if (!param_type->isPointerType() || !param_type->getPointeeType()->isStructureType()) {
+                    continue;
+                }
+                auto type = param_type->getPointeeType();
+                if (type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
+                    // TODO: Factor in "assume_compatible_layout" annotations here
+                    //       That annotation should cause the type to be treated as TypeCompatibility::Full
+                    {
+                        throw report_error(thunk.decl->getLocation(), "Unsupported parameter type %0").AddTaggedVal(param_type);
+                    }
+                }
+            }
+
             // Packed argument structs used in fexfn_unpack_*
             auto GeneratePackedArgs = [&](const auto &function_name, const auto &thunk) -> std::string {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
@@ -295,6 +329,31 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
 
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(" << struct_name << "* args) {\n";
             file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
+
+            for (unsigned param_idx = 0; StrictModeEnabled(context) && param_idx != thunk.param_types.size(); ++param_idx) {
+                if (thunk.callbacks.contains(param_idx) && thunk.callbacks.at(param_idx).is_stub) {
+                    continue;
+                }
+
+                auto& param_type = thunk.param_types[param_idx];
+
+                std::optional<TypeCompatibility> pointee_compat;
+                if (param_type->isPointerType()) {
+                    // Get TypeCompatibility from existing entry, or register TypeCompatibility::None if no entry exists
+                    // TODO: Currently needs TypeCompatibility::Full workaround...
+                    pointee_compat = type_compat.emplace(context.getCanonicalType(param_type->getPointeeType().getTypePtr()), TypeCompatibility::Full).first->second;
+                }
+
+                if (!param_type->isPointerType() || pointee_compat == TypeCompatibility::Full ||
+                    param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
+                    // Fully compatible
+                } else if (pointee_compat == TypeCompatibility::Repackable) {
+                    throw report_error(thunk.decl->getLocation(), "Pointer parameter %1 of function %0 requires automatic repacking, which is not implemented yet").AddString(function_name).AddTaggedVal(param_type);
+                } else {
+                    throw report_error(thunk.decl->getLocation(), "Cannot generate unpacking function for function %0 with unannotated pointer parameter %1").AddString(function_name).AddTaggedVal(param_type);
+                }
+            }
+
             {
                 auto format_param = [&](std::size_t idx) {
                     auto cb = thunk.callbacks.find(idx);
@@ -371,7 +430,7 @@ bool GenerateThunkLibsActionFactory::runInvocation(
   Compiler.setInvocation(std::move(Invocation));
   Compiler.setFileManager(Files);
 
-  GenerateThunkLibsAction Action(libname, output_filenames);
+  GenerateThunkLibsAction Action(libname, output_filenames, abi);
 
   Compiler.createDiagnostics(DiagConsumer, false);
   if (!Compiler.hasDiagnostics())
