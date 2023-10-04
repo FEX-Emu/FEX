@@ -474,24 +474,27 @@ namespace {
     // Helpers
 
     // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
-    auto IsPreWritable = [](uint8_t Size, RegisterClassType StaticClass) {
+    auto IsPreWritable = [this](uint8_t Size, RegisterClassType StaticClass) {
       LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
         return Size == 8 || Size == 4;
       } else if (StaticClass == FPRFixedClass) {
-        return Size == 16;
+        return Size == 16 || (Size == 32 && SupportsAVX);
       }
       return false; // Unknown
     };
 
     // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
-    auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
+    auto IsAliasable = [this](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
       LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
         // We need more meta info to support not-size-of-reg
         return (Size == 8 || Size == 4) && ((Offset & 7) == 0);
       } else if (StaticClass == FPRFixedClass) {
         // We need more meta info to support not-size-of-reg
+        if (Size == 32 && SupportsAVX && (Offset & 31) == 0) {
+          return true;
+        }
         return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
       }
       return false; // Unknown
