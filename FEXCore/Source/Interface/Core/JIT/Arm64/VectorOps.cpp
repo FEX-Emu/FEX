@@ -3551,7 +3551,7 @@ DEF_OP(VSRSHR) {
     if (Dst != Vector) {
       movprfx(Dst.Z(), Vector.Z());
     }
-    srshr(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+    srshr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
   } else {
     if (OpSize == 8) {
       srshr(SubRegSize, Dst.D(), Vector.D(), BitShift);
@@ -3587,7 +3587,7 @@ DEF_OP(VSQSHL) {
     if (Dst != Vector) {
       movprfx(Dst.Z(), Vector.Z());
     }
-    sqshl(SubRegSize, Dst.Z(), Mask, Vector.Z(), BitShift);
+    sqshl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
   } else {
     if (OpSize == 8) {
       sqshl(SubRegSize, Dst.D(), Vector.D(), BitShift);
