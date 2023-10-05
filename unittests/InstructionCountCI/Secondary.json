@@ -833,26 +833,24 @@
       ]
     },
     "movmskps eax, xmm0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr x0, [x28, #1592]",
-        "ldr q3, [x0]",
+        "ldr q3, [x28, #1984]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
       ]
     },
     "movmskps rax, xmm0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr x0, [x28, #1592]",
-        "ldr q3, [x0]",
+        "ldr q3, [x28, #1984]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
