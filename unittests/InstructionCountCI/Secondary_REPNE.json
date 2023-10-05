@@ -511,12 +511,11 @@
       ]
     },
     "addsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1560]",
-        "ldr q2, [x0]",
+        "ldr q2, [x28, #1920]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.4s, v16.4s, v2.4s"
       ]

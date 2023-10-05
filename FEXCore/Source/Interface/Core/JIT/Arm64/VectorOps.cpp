@@ -101,28 +101,42 @@ DEF_OP(LoadNamedVectorConstant) {
     }
   }
   // Load the pointer.
-  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
+  auto GenerateMemOperand = [this](uint8_t OpSize, uint32_t NamedConstant, FEXCore::ARMEmitter::Register Base) {
+    const auto ConstantOffset = offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.NamedVectorConstants[NamedConstant]);
 
+    if (ConstantOffset <= 255 || // Unscaled 9-bit signed
+        ((ConstantOffset & (OpSize - 1)) == 0 && FEXCore::DividePow2(ConstantOffset, OpSize) <= 4095)) /* 12-bit unsigned scaled */ {
+      return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, ConstantOffset);
+    }
+
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[NamedConstant]));
+    return ARMEmitter::ExtendedMemOperand(TMP1, ARMEmitter::IndexType::OFFSET, 0);
+  };
+
+  if (OpSize == 32) {
+    // Handle SVE 32-byte variant upfront.
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
+    ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
+    return;
+  }
+
+  auto MemOperand = GenerateMemOperand(OpSize, Op->Constant, STATE);
   switch (OpSize) {
     case 1:
-      ldrb(Dst, TMP1, 0);
+      ldrb(Dst, MemOperand);
       break;
     case 2:
-      ldrh(Dst, TMP1, 0);
+      ldrh(Dst, MemOperand);
       break;
     case 4:
-      ldr(Dst.S(), TMP1, 0);
+      ldr(Dst.S(), MemOperand);
       break;
     case 8:
-      ldr(Dst.D(), TMP1, 0);
+      ldr(Dst.D(), MemOperand);
       break;
     case 16:
-      ldr(Dst.Q(), TMP1, 0);
+      ldr(Dst.Q(), MemOperand);
       break;
-    case 32: {
-      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
-      break;
-    }
     default:
       LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
       break;

@@ -4713,14 +4713,13 @@
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1600]",
-        "ldr q2, [x0]",
+        "ldr q2, [x28, #2000]",
         "movi v3.2d, #0x0",
         "mov v2.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -4729,14 +4728,13 @@
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1600]",
-        "ldr q2, [x0]",
+        "ldr q2, [x28, #2000]",
         "movi v3.2d, #0x0",
         "mov v2.16b, v17.16b",
         "unimplemented (Unimplemented)",

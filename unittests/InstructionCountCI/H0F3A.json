@@ -1550,14 +1550,13 @@
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1600]",
-        "ldr q2, [x0]",
+        "ldr q2, [x28, #2000]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -1565,14 +1564,13 @@
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1600]",
-        "ldr q2, [x0]",
+        "ldr q2, [x28, #2000]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",

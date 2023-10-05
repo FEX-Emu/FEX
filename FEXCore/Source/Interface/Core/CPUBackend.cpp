@@ -186,6 +186,9 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
     Common.NamedVectorConstantPointers[i] = reinterpret_cast<uint64_t>(NamedVectorConstants[i]);
   }
 
+  // Copy named vector constants.
+  memcpy(Common.NamedVectorConstants, NamedVectorConstants, sizeof(NamedVectorConstants));
+
   // Initialize Indexed named vector constants.
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] = reinterpret_cast<uint64_t>(PSHUFLW_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] = reinterpret_cast<uint64_t>(PSHUFHW_LUT.data());
