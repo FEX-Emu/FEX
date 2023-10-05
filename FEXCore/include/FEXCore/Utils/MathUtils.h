@@ -25,4 +25,12 @@ requires(std::is_unsigned_v<T>)
   return std::countr_zero(Value);
 }
 
+// Divide a number by a power-of-2 by avoiding integer division.
+// Can be a faster implementation than regular integer divide.
+// Divisor requires to be power-of-2, is enforced in ilog2 helper.
+template<typename T, typename TT>
+requires(std::is_unsigned_v<T> && std::is_unsigned_v<TT>)
+[[nodiscard]] constexpr T DividePow2(T Dividend, TT Divisor) {
+  return Dividend >> ilog2(Divisor);
+}
 } // namespace FEXCore
