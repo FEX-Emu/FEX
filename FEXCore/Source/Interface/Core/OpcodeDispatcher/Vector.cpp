@@ -4803,8 +4803,9 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
     // NOTE: Despite the name being VZEROALL, this will still only ever
     //       zero out up to the first 16 registers (even on AVX-512, where we have 32 registers)
 
-  OrderedNode* ZeroVector = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  for (uint32_t i = 0; i < NumRegs; i++) {
+    for (uint32_t i = 0; i < NumRegs; i++) {
+      // Explicitly not caching named vector zero. This ensures that every register gets movi #0.0 directly.
+      OrderedNode* ZeroVector = _LoadNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
       StoreXMMRegister(i, ZeroVector);
     }
   } else {

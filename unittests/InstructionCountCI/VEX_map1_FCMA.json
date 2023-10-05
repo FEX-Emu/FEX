@@ -10,61 +10,55 @@
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z17.d",
-        "mov z3.d, p7/m, z18.d",
-        "ext v3.16b, v3.16b, v3.16b, #8",
-        "fcadd v2.2d, v2.2d, v3.2d, #90",
-        "mov v2.16b, v2.16b",
-        "mov z16.d, p7/m, z2.d"
+        "ext v2.16b, v18.16b, v18.16b, #8",
+        "fcadd v2.2d, v17.2d, v2.2d, #90",
+        "mov v16.16b, v2.16b"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z17.d",
-        "mov z3.d, p7/m, z18.d",
-        "ext z3.b, z3.b, z3.b, #8",
-        "fcadd z2.d, p7/m, z2.d, z3.d, #90",
-        "mov z16.d, p7/m, z2.d"
+        "movprfx z1, z18",
+        "ext z1.b, z1.b, z18.b, #8",
+        "mov z2.d, z1.d",
+        "movprfx z0, z17",
+        "fcadd z0.d, p7/m, z0.d, z2.d, #90",
+        "mov z16.d, z0.d"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z17.d",
-        "mov z3.d, p7/m, z18.d",
-        "rev64 v3.4s, v3.4s",
-        "fcadd v2.4s, v2.4s, v3.4s, #90",
-        "mov v2.16b, v2.16b",
-        "mov z16.d, p7/m, z2.d"
+        "rev64 v2.4s, v18.4s",
+        "fcadd v2.4s, v17.4s, v2.4s, #90",
+        "mov v16.16b, v2.16b"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z17.d",
-        "mov z3.d, p7/m, z18.d",
-        "revw z3.d, p7/m, z3.d",
-        "fcadd z2.s, p7/m, z2.s, z3.s, #90",
-        "mov z16.d, p7/m, z2.d"
+        "revw z2.d, p7/m, z18.d",
+        "movprfx z0, z17",
+        "fcadd z0.s, p7/m, z0.s, z2.s, #90",
+        "mov z16.d, z0.d"
       ]
     }
   }
