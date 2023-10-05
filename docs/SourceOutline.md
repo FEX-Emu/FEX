@@ -1,4 +1,4 @@
-# FEX-2309
+# FEX-2310
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -30,36 +30,8 @@ IR to host code generation
 - [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MoveOps.cpp)
 - [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/VectorOps.cpp)
 
-#### interpreter
-- [ALUOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/ALUOps.cpp)
-- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/AtomicOps.cpp)
-- [BranchOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/BranchOps.cpp)
-- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/ConversionOps.cpp)
-- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/EncryptionOps.cpp)
-- [F80Ops.cpp](../FEXCore/Source/Interface/Core/Interpreter/F80Ops.cpp)
-- [FlagOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/FlagOps.cpp)
-- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MemoryOps.cpp)
-- [MiscOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MiscOps.cpp)
-- [MoveOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/MoveOps.cpp)
-- [VectorOps.cpp](../FEXCore/Source/Interface/Core/Interpreter/VectorOps.cpp)
-
 #### shared
 - [CPUBackend.h](../FEXCore/include/FEXCore/Core/CPUBackend.h)
-
-#### x86-64
-- [ALUOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/ALUOps.cpp)
-- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/AtomicOps.cpp)
-- [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/BranchOps.cpp)
-- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/ConversionOps.cpp)
-- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/EncryptionOps.cpp)
-- [FlagOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/FlagOps.cpp)
-- [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/JIT.cpp): Main glue logic of the x86-64 splatter backend
-- [JITClass.h](../FEXCore/Source/Interface/Core/JIT/x86_64/JITClass.h)
-- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MemoryOps.cpp)
-- [MiscOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MiscOps.cpp)
-- [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/MoveOps.cpp)
-- [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/VectorOps.cpp)
-- [x64Relocations.cpp](../FEXCore/Source/Interface/Core/JIT/x86_64/x64Relocations.cpp): relocation logic of the x86-64 splatter backend
 
 
 
@@ -146,11 +118,11 @@ IR to IR Optimization
 - [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
 - [IRCompaction.cpp](../FEXCore/Source/Interface/IR/Passes/IRCompaction.cpp): Sorts the ssa storage in memory, needed for RA and others
 - [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
+- [InlineCallOptimization.cpp](../FEXCore/Source/Interface/IR/Passes/InlineCallOptimization.cpp): Removes unused arguments if known syscall number
 - [LongDivideRemovalPass.cpp](../FEXCore/Source/Interface/IR/Passes/LongDivideRemovalPass.cpp): Long divide elimination pass
 - [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
 - [RegisterAllocationPass.h](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
-- [SyscallOptimization.cpp](../FEXCore/Source/Interface/IR/Passes/SyscallOptimization.cpp): Removes unused arguments if known syscall number
 - [ValueDominanceValidation.cpp](../FEXCore/Source/Interface/IR/Passes/ValueDominanceValidation.cpp): Sanity Checking
 
 #### parser
@@ -228,6 +200,10 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 
 #### fex_malloc_symbols
 - [Host.cpp](../ThunkLibs/libfex_malloc_symbols/Host.cpp): Allows FEX to export allocation symbols
+
+#### fex_thunk_test
+- [Guest.cpp](../ThunkLibs/libfex_thunk_test/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libfex_thunk_test/Host.cpp)
 
 #### wayland-client
 - [Guest.cpp](../ThunkLibs/libwayland-client/Guest.cpp)
