@@ -82,7 +82,9 @@
           "ENABLEFLAGM": "enableflagm",
           "DISABLEFLAGM": "disableflagm",
           "ENABLEFLAGM2": "enableflagm2",
-          "DISABLEFLAGM2": "disableflagm2"
+          "DISABLEFLAGM2": "disableflagm2",
+          "ENABLECRYPTO": "enablecrypto",
+          "DISABLECRYPTO": "disablecrypto"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -100,7 +102,8 @@
           "\t{enable,disable}atomics: Will force enable or disable ARMv8.1 LSE atomics even if the host doesn't support it",
           "\t{enable,disable}fcma: Will force enable or disable fcma even if the host doesn't support it",
           "\t{enable,disable}flagm: Will force enable or disable flagm even if the host doesn't support it",
-          "\t{enable,disable}flagm2: Will force enable or disable flagm2 even if the host doesn't support it"
+          "\t{enable,disable}flagm2: Will force enable or disable flagm2 even if the host doesn't support it",
+          "\t{enable,disable}crypto: Will force enable or disable crypto extensions even if the host doesn't support it"
         ]
       }
     },
