@@ -5,7 +5,8 @@
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256",
-      "RPRES"
+      "RPRES",
+      "AFP"
     ]
   },
   "Instructions": {
@@ -71,7 +72,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
@@ -83,7 +83,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
@@ -105,7 +104,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
@@ -232,7 +230,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x58"
       ],
       "ExpectedArm64ASM": [
@@ -244,7 +241,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x59"
       ],
       "ExpectedArm64ASM": [
@@ -283,7 +279,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x5c"
       ],
       "ExpectedArm64ASM": [
@@ -295,7 +290,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
@@ -308,7 +302,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x5e"
       ],
       "ExpectedArm64ASM": [
@@ -320,7 +313,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
@@ -590,7 +582,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -602,7 +593,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -614,7 +604,6 @@
       "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -626,7 +615,6 @@
       "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -641,7 +629,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -654,7 +641,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -667,7 +653,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
@@ -680,7 +665,6 @@
       "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
-        "With AFP mode FEX can remove an insert after the operation.",
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [

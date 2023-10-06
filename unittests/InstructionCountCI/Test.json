@@ -1,0 +1,27 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "push ax, bx": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "0x50",
+      "x86Insts": [
+        "push ax",
+        "push bx"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth w20, w4",
+        "strh w20, [x8, #-2]!",
+        "uxth w20, w7",
+        "strh w20, [x8, #-2]!"
+      ]
+    }
+  }
+}

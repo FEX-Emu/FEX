@@ -4,7 +4,9 @@
     "EnabledHostFeatures": [
       "SVE256"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "AFP"
+    ]
   },
   "Instructions": {
     "vpermq ymm0, ymm1, 00000000b": {

@@ -1,0 +1,38 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "AFP"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "cvtpi2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "scvtf v2.4s, v2.4s",
+        "mov v16.d[0], v2.d[0]"
+      ]
+    },
+    "cvtpi2ps xmm0, mm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x28, #752]",
+        "scvtf v2.4s, v2.4s",
+        "mov v16.d[0], v2.d[0]"
+      ]
+    }
+  }
+}
