@@ -72,7 +72,7 @@ def GetHostFeatures(data):
         HostFeaturesData |= HostFeaturesLookup[data_key]
     return HostFeaturesData
 
-def parse_json_data(json_filename, json_data, output_binary_path):
+def parse_json_data(json_filepath, json_filename, json_data, output_binary_path):
     Bitness = 64
     EnabledHostFeatures = HostFeatures.FEATURE_ANY
     DisabledHostFeatures = HostFeatures.FEATURE_ANY
@@ -111,7 +111,7 @@ def parse_json_data(json_filename, json_data, output_binary_path):
                 if items["Skip"].upper() == "YES":
                     continue
 
-        TestName = base64.b64encode("{}.{}".format(json_filename, key).encode("ascii")).decode("ascii")
+        TestName = base64.b64encode("{}.{}.{}".format(str(hash(json_filepath)), json_filename, key).encode("ascii")).decode("ascii")
         tmp_asm = "/tmp/{}.asm".format(TestName)
         tmp_asm_out = "/tmp/{}.asm.o".format(TestName)
         logging.info("'{}' -> '{}' -> '{}'".format(key, tmp_asm, tmp_asm_out))
@@ -218,7 +218,7 @@ def main():
         if not isinstance(json_data, dict):
             raise TypeError('JSON data must be a dict')
 
-        return parse_json_data(os.path.basename(json_path), json_data, output_binary_path)
+        return parse_json_data(json_path, os.path.basename(json_path), json_data, output_binary_path)
 
     except ValueError as ve:
         logging.error(f'JSON error: {ve}')
