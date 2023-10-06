@@ -489,6 +489,8 @@ int main(int argc, char **argv, char **const envp) {
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
+  // Always enable crypto extensions.
+  HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECRYPTO);
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE128) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVE);

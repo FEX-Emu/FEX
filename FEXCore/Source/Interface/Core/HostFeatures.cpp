@@ -125,6 +125,10 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableFlagM2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFLAGM2;
   LogMan::Throw::AFmt(!(DisableFlagM2 && EnableFlagM2), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableCrypto = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECRYPTO;
+  const bool EnableCrypto = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECRYPTO;
+  LogMan::Throw::AFmt(!(DisableCrypto && EnableCrypto), "Disabling and Enabling CPU features are mutually exclusive");
+
   if (EnableAVX) {
     Features->SupportsAVX = true;
   }
@@ -208,6 +212,16 @@ static void OverrideFeatures(HostFeatures *Features) {
   }
   else if (DisableFlagM2) {
     Features->SupportsFlagM2 = false;
+  }
+  if (EnableCrypto) {
+    Features->SupportsAES = true;
+    Features->SupportsCRC = true;
+    Features->SupportsPMULL_128Bit = true;
+  }
+  else if (DisableCrypto) {
+    Features->SupportsAES = false;
+    Features->SupportsCRC = false;
+    Features->SupportsPMULL_128Bit = false;
   }
 }
 
