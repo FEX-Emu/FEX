@@ -798,6 +798,52 @@ public:
 // XXX:
 //
 // Floating-point data-processing (1 source)
+  void fmov(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b000000, rd, rn);
+  }
+  void fabs(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b000001, rd, rn);
+  }
+  void fneg(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b000010, rd, rn);
+  }
+  void fsqrt(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b000011, rd, rn);
+  }
+  void frintn(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001000, rd, rn);
+  }
+  void frintp(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001001, rd, rn);
+  }
+  void frintm(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001010, rd, rn);
+  }
+  void frintz(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001011, rd, rn);
+  }
+  void frinta(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001100, rd, rn);
+  }
+  void frintx(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001110, rd, rn);
+  }
+  void frinti(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b001111, rd, rn);
+  }
+  void frint32z(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b010000, rd, rn);
+  }
+  void frint32x(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b010001, rd, rn);
+  }
+  void frint64z(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b010010, rd, rn);
+  }
+  void frint64x(ScalarRegSize size, VRegister rd, VRegister rn) {
+    Float1Source(size, 0, 0, 0b010011, rd, rn);
+  }
+
   void fmov(SRegister rd, SRegister rn) {
     Float1Source(0, 0, 0b00, 0b000000, rd.V(), rn.V());
   }
@@ -1065,6 +1111,34 @@ public:
   }
 
 // Floating-point data-processing (2 source)
+  void fmul(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0000, rd, rn, rm);
+  }
+  void fdiv(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0001, rd, rn, rm);
+  }
+  void fadd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0010, rd, rn, rm);
+  }
+  void fsub(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0011, rd, rn, rm);
+  }
+  void fmax(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0100, rd, rn, rm);
+  }
+  void fmin(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0101, rd, rn, rm);
+  }
+  void fmaxnm(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0110, rd, rn, rm);
+  }
+  void fminnm(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b0111, rd, rn, rm);
+  }
+  void fnmul(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    Float2Source(size, 0, 0, 0b1000, rd, rn, rm);
+  }
+
   void fmul(SRegister rd, SRegister rn, SRegister rm) {
     Float2Source(0, 0, 0b00, 0b0000, rd.V(), rn.V(), rm.V());
   }
@@ -1150,6 +1224,16 @@ public:
   }
 
   // Floating-point conditional select
+  void fcsel(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, Condition Cond) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+
+    const uint32_t ConvertedSize =
+      size == ScalarRegSize::i64Bit ? 0b01 :
+      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+
+    FloatConditionalSelect(0, 0, ConvertedSize, rd, rn, rm, Cond);
+  }
+
   void fcsel(SRegister rd, SRegister rn, SRegister rm, Condition Cond) {
     FloatConditionalSelect(0, 0, 0b00, rd.V(), rn.V(), rm.V(), Cond);
   }
@@ -1305,6 +1389,16 @@ private:
 
     dc32(Instr);
   }
+  void Float1Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+
+    const uint32_t ConvertedSize =
+      size == ScalarRegSize::i64Bit ? 0b01 :
+      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+
+    Float1Source(M, S, ConvertedSize, opcode, rd, rn);
+  }
+
 // Floating-point compare
   void FloatCompare(uint32_t M, uint32_t S, uint32_t ftype, uint32_t op, uint32_t opcode2, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0001'1110'0010'0000'0010'0000'0000'0000;
@@ -1337,6 +1431,7 @@ private:
     dc32(Instr);
   }
 // Floating-point data-processing (2 source)
+
   void Float2Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0001'1110'0010'0000'0000'1000'0000'0000;
 
@@ -1349,6 +1444,16 @@ private:
     Instr |= Encode_rd(rd);
 
     dc32(Instr);
+  }
+
+  void Float2Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+
+    const uint32_t ConvertedSize =
+      size == ScalarRegSize::i64Bit ? 0b01 :
+      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+
+    Float2Source(M, S, ConvertedSize, opcode, rd, rn, rm);
   }
 
 // Floating-point conditional select
