@@ -69,65 +69,28 @@ static void OverrideFeatures(HostFeatures *Features) {
     return;
   }
 
-  const bool DisableAVX = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAVX;
-  const bool EnableAVX = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAVX;
-  LogMan::Throw::AFmt(!(DisableAVX && EnableAVX), "Disabling and Enabling CPU features are mutually exclusive");
+#define ENABLE_DISABLE_OPTION(name, enum_name) \
+    const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
+    const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
+    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
-  const bool DisableAVX2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAVX2;
-  const bool EnableAVX2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAVX2;
-  LogMan::Throw::AFmt(!(DisableAVX2 && EnableAVX2), "Disabling and Enabling CPU features are mutually exclusive");
+  ENABLE_DISABLE_OPTION(AVX, AVX);
+  ENABLE_DISABLE_OPTION(AVX2, AVX2);
+  ENABLE_DISABLE_OPTION(SVE, SVE);
+  ENABLE_DISABLE_OPTION(AFP, AFP);
+  ENABLE_DISABLE_OPTION(LRCPC, LRCPC);
+  ENABLE_DISABLE_OPTION(LRCPC2, LRCPC2);
+  ENABLE_DISABLE_OPTION(CSSC, CSSC);
+  ENABLE_DISABLE_OPTION(PMULL128, PMULL128);
+  ENABLE_DISABLE_OPTION(RNG, RNG);
+  ENABLE_DISABLE_OPTION(CLZERO, CLZERO);
+  ENABLE_DISABLE_OPTION(Atomics, ATOMICS);
+  ENABLE_DISABLE_OPTION(FCMA, FCMA);
+  ENABLE_DISABLE_OPTION(FlagM, FLAGM);
+  ENABLE_DISABLE_OPTION(FlagM2, FLAGM2);
+  ENABLE_DISABLE_OPTION(Crypto, CRYPTO);
 
-  const bool DisableSVE = HostFeatures() & FEXCore::Config::HostFeatures::DISABLESVE;
-  const bool EnableSVE = HostFeatures() & FEXCore::Config::HostFeatures::ENABLESVE;
-  LogMan::Throw::AFmt(!(DisableSVE && EnableSVE), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableAFP = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAFP;
-  const bool EnableAFP = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAFP;
-  LogMan::Throw::AFmt(!(DisableAFP && EnableAFP), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableLRCPC = HostFeatures() & FEXCore::Config::HostFeatures::DISABLELRCPC;
-  const bool EnableLRCPC = HostFeatures() & FEXCore::Config::HostFeatures::ENABLELRCPC;
-  LogMan::Throw::AFmt(!(DisableLRCPC && EnableLRCPC), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableLRCPC2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLELRCPC2;
-  const bool EnableLRCPC2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLELRCPC2;
-  LogMan::Throw::AFmt(!(DisableLRCPC2 && EnableLRCPC2), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableCSSC = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECSSC;
-  const bool EnableCSSC = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECSSC;
-  LogMan::Throw::AFmt(!(DisableCSSC && EnableCSSC), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisablePMULL128 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEPMULL128;
-  const bool EnablePMULL128 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEPMULL128;
-  LogMan::Throw::AFmt(!(DisablePMULL128 && EnablePMULL128), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableRNG = HostFeatures() & FEXCore::Config::HostFeatures::DISABLERNG;
-  const bool EnableRNG = HostFeatures() & FEXCore::Config::HostFeatures::ENABLERNG;
-  LogMan::Throw::AFmt(!(DisableRNG && EnableRNG), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableCLZERO = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECLZERO;
-  const bool EnableCLZERO = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECLZERO;
-  LogMan::Throw::AFmt(!(DisableCLZERO && EnableCLZERO), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableAtomics = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEATOMICS;
-  const bool EnableAtomics = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEATOMICS;
-  LogMan::Throw::AFmt(!(DisableAtomics && EnableAtomics), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableFCMA = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFCMA;
-  const bool EnableFCMA = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFCMA;
-  LogMan::Throw::AFmt(!(DisableFCMA && EnableFCMA), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableFlagM = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFLAGM;
-  const bool EnableFlagM = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFLAGM;
-  LogMan::Throw::AFmt(!(DisableFlagM && EnableFlagM), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableFlagM2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEFLAGM2;
-  const bool EnableFlagM2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEFLAGM2;
-  LogMan::Throw::AFmt(!(DisableFlagM2 && EnableFlagM2), "Disabling and Enabling CPU features are mutually exclusive");
-
-  const bool DisableCrypto = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECRYPTO;
-  const bool EnableCrypto = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECRYPTO;
-  LogMan::Throw::AFmt(!(DisableCrypto && EnableCrypto), "Disabling and Enabling CPU features are mutually exclusive");
+#undef ENABLE_DISABLE_OPTION
 
   if (EnableAVX) {
     Features->SupportsAVX = true;
