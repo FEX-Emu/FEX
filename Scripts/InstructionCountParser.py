@@ -48,7 +48,7 @@ class HostFeatures(Flag) :
     FEATURE_RNG    = (1 << 3)
     FEATURE_FCMA   = (1 << 4)
     FEATURE_CSSC   = (1 << 5)
-
+    FEATURE_AFP    = (1 << 6)
 
 HostFeaturesLookup = {
     "SVE128"  : HostFeatures.FEATURE_SVE128,
@@ -57,6 +57,7 @@ HostFeaturesLookup = {
     "RNG"     : HostFeatures.FEATURE_RNG,
     "FCMA"    : HostFeatures.FEATURE_FCMA,
     "CSSC"    : HostFeatures.FEATURE_CSSC,
+    "AFP"     : HostFeatures.FEATURE_AFP,
 }
 
 def GetHostFeatures(data):

@@ -38,7 +38,7 @@ class HostFeatures final {
     bool SupportsFlagM2{};
 
     // Float exception behaviour
-    bool SupportsFlushInputsToZero{};
+    bool SupportsAFP{};
     bool SupportsFloatExceptions{};
 };
 }
