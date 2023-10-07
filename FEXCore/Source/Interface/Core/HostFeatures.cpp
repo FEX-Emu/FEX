@@ -111,10 +111,10 @@ static void OverrideFeatures(HostFeatures *Features) {
     Features->SupportsSVE = false;
   }
   if (EnableAFP) {
-    Features->SupportsFlushInputsToZero = true;
+    Features->SupportsAFP = true;
   }
   else if (DisableAFP) {
-    Features->SupportsFlushInputsToZero = false;
+    Features->SupportsAFP = false;
   }
   if (EnableLRCPC) {
     Features->SupportsRCPC = true;
@@ -191,6 +191,8 @@ static void OverrideFeatures(HostFeatures *Features) {
 HostFeatures::HostFeatures() {
 #ifdef VIXL_SIMULATOR
   auto Features = vixl::CPUFeatures::All();
+  // Vixl simulator doesn't support AFP.
+  Features.Remove(vixl::CPUFeatures::Feature::kAFP);
 #elif !defined(_WIN32)
   auto Features = vixl::CPUFeatures::InferFromOS();
 #else
@@ -204,7 +206,7 @@ HostFeatures::HostFeatures() {
   SupportsRAND = Features.Has(vixl::CPUFeatures::Feature::kRNG);
 
   // Only supported when FEAT_AFP is supported
-  SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
+  SupportsAFP = Features.Has(vixl::CPUFeatures::Feature::kAFP);
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
   SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
   SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
@@ -313,7 +315,7 @@ HostFeatures::HostFeatures() {
     SupportsCLZERO = data[1] & 1;
   }
 
-  SupportsFlushInputsToZero = true;
+  SupportsAFP = true;
   SupportsFloatExceptions = true;
 #endif
 #endif
