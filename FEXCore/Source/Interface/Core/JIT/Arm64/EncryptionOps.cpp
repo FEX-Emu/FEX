@@ -12,12 +12,12 @@ $end_info$
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
-DEF_OP(AESImc) {
+DEF_OP(VAESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
   aesimc(GetVReg(Node), GetVReg(Op->Vector.ID()));
 }
 
-DEF_OP(AESEnc) {
+DEF_OP(VAESEnc) {
   const auto Op = IROp->C<IR::IROp_VAESEnc>();
   const auto OpSize = IROp->Size;
 
@@ -44,7 +44,7 @@ DEF_OP(AESEnc) {
   }
 }
 
-DEF_OP(AESEncLast) {
+DEF_OP(VAESEncLast) {
   const auto Op = IROp->C<IR::IROp_VAESEncLast>();
   const auto OpSize = IROp->Size;
 
@@ -69,7 +69,7 @@ DEF_OP(AESEncLast) {
   }
 }
 
-DEF_OP(AESDec) {
+DEF_OP(VAESDec) {
   const auto Op = IROp->C<IR::IROp_VAESDec>();
   const auto OpSize = IROp->Size;
 
@@ -96,7 +96,7 @@ DEF_OP(AESDec) {
   }
 }
 
-DEF_OP(AESDecLast) {
+DEF_OP(VAESDecLast) {
   const auto Op = IROp->C<IR::IROp_VAESDecLast>();
   const auto OpSize = IROp->Size;
 
@@ -121,7 +121,7 @@ DEF_OP(AESDecLast) {
   }
 }
 
-DEF_OP(AESKeyGenAssist) {
+DEF_OP(VAESKeyGenAssist) {
   auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
   const auto Dst = GetVReg(Node);
   const auto Src = GetVReg(Op->Src.ID());

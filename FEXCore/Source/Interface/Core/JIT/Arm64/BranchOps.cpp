@@ -467,7 +467,7 @@ DEF_OP(CPUID) {
   mov(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r1);
 }
 
-DEF_OP(XGETBV) {
+DEF_OP(XGetBV) {
   auto Op = IROp->C<IR::IROp_XGetBV>();
 
   PushDynamicRegsAndLR(TMP1);
