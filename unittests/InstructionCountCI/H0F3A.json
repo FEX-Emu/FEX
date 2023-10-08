@@ -168,8 +168,8 @@
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintn s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintn s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000001b": {
@@ -180,8 +180,8 @@
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintm s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintm s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000010b": {
@@ -192,8 +192,8 @@
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintp s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintp s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000011b": {
@@ -204,8 +204,8 @@
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintz s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintz s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000100b": {
@@ -216,8 +216,8 @@
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frinti s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frinti s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000000b": {
@@ -228,8 +228,8 @@
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintn d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintn d0, d17",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000001b": {
@@ -240,8 +240,8 @@
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintm d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintm d0, d17",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000010b": {
@@ -252,8 +252,8 @@
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintp d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintp d0, d17",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000011b": {
@@ -264,8 +264,8 @@
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintz d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintz d0, d17",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000100b": {
@@ -276,8 +276,8 @@
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frinti d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frinti d0, d17",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "blendps xmm0, xmm1, 0000b": {

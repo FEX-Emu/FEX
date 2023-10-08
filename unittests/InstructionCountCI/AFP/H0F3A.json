@@ -11,123 +11,113 @@
   },
   "Instructions": {
     "roundss xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintn s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintn s16, s17"
       ]
     },
     "roundss xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintm s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintm s16, s17"
       ]
     },
     "roundss xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintp s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintp s16, s17"
       ]
     },
     "roundss xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frintz s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frintz s16, s17"
       ]
     },
     "roundss xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "frinti s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frinti s16, s17"
       ]
     },
     "roundsd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintn d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintn d16, d17"
       ]
     },
     "roundsd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintm d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintm d16, d17"
       ]
     },
     "roundsd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintp d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintp d16, d17"
       ]
     },
     "roundsd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frintz d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frintz d16, d17"
       ]
     },
     "roundsd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "frinti d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "frinti d16, d17"
       ]
     }
   }

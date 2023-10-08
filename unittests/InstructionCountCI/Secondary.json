@@ -135,8 +135,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "scvtf v2.4s, v2.4s",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf v0.2s, v2.2s",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtpi2ps xmm0, mm0": {
@@ -147,8 +147,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "scvtf v2.4s, v2.4s",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf v0.2s, v2.2s",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "movntps [rax], xmm0": {

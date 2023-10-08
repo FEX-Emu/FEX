@@ -11,215 +11,197 @@
   },
   "Instructions": {
     "cvtsi2sd xmm0, eax": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "scvtf d2, w4",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf d16, w4"
       ]
     },
     "cvtsi2sd xmm0, dword [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
-        "scvtf d2, w20",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf d16, w20"
       ]
     },
     "cvtsi2sd xmm0, rax": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "scvtf d2, x4",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf d16, x4"
       ]
     },
     "cvtsi2sd xmm0, qword [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "scvtf d2, d2",
-        "mov v16.d[0], v2.d[0]"
+        "scvtf d16, d2"
       ]
     },
     "sqrtsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x51"
       ],
       "ExpectedArm64ASM": [
-        "fsqrt d2, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fsqrt d16, d17"
       ]
     },
     "addsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x58"
       ],
       "ExpectedArm64ASM": [
-        "fadd d2, d16, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fadd d16, d16, d17"
       ]
     },
     "mulsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x59"
       ],
       "ExpectedArm64ASM": [
-        "fmul d2, d16, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fmul d16, d16, d17"
       ]
     },
     "cvtsd2ss xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
-        "fcvt s2, d17",
-        "mov v16.s[0], v2.s[0]"
+        "fcvt s16, d17"
       ]
     },
     "cvtsd2ss xmm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x4]",
-        "fcvt s2, d2",
-        "mov v16.s[0], v2.s[0]"
+        "ldr q2, [x4]",
+        "fcvt s16, d2"
       ]
     },
     "subsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5c"
       ],
       "ExpectedArm64ASM": [
-        "fsub d2, d16, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fsub d16, d16, d17"
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
-        "fcmp d16, d17",
-        "fcsel d2, d16, d17, mi",
-        "mov v16.d[0], v2.d[0]"
+        "fmin d16, d16, d17"
       ]
     },
     "divsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5e"
       ],
       "ExpectedArm64ASM": [
-        "fdiv d2, d16, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fdiv d16, d16, d17"
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
-        "fcmp d16, d17",
-        "fcsel d2, d17, d16, mi",
-        "mov v16.d[0], v2.d[0]"
+        "fmax d16, d16, d17"
       ]
     },
     "cmpsd xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq d2, d16, d17",
-        "mov v16.d[0], v2.d[0]"
+        "fcmeq d16, d16, d17"
       ]
     },
     "cmpsd xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt d2, d17, d16",
-        "mov v16.d[0], v2.d[0]"
+        "fcmgt d16, d17, d16"
       ]
     },
     "cmpsd xmm0, xmm1, 2": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmge d2, d17, d16",
-        "mov v16.d[0], v2.d[0]"
+        "fcmge d16, d17, d16"
       ]
     },
     "cmpsd xmm0, xmm1, 3": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
         "fcmge d0, d16, d17",
         "fcmgt d1, d17, d16",
-        "orr v2.8b, v0.8b, v1.8b",
-        "mvn v2.8b, v2.8b",
-        "mov v16.d[0], v2.d[0]"
+        "orr v0.8b, v0.8b, v1.8b",
+        "mvn v0.8b, v0.8b",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 4": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq d2, d16, d17",
-        "mvn v2.8b, v2.8b",
-        "mov v16.d[0], v2.d[0]"
+        "fcmeq d0, d16, d17",
+        "mvn v0.8b, v0.8b",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 5": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -231,7 +213,7 @@
     },
     "cmpsd xmm0, xmm1, 6": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -243,15 +225,15 @@
     },
     "cmpsd xmm0, xmm1, 7": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
         "fcmge d0, d16, d17",
         "fcmgt d1, d17, d16",
-        "orr v2.8b, v0.8b, v1.8b",
-        "mov v16.d[0], v2.d[0]"
+        "orr v0.8b, v0.8b, v1.8b",
+        "mov v16.d[0], v0.d[0]"
       ]
     }
   }

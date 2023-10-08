@@ -10,33 +10,25 @@
   },
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "scvtf v2.4s, v2.4s",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "scvtf v16.2s, v2.2s"
       ]
     },
     "cvtpi2ps xmm0, mm0": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
-        "scvtf v2.4s, v2.4s",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "scvtf v16.2s, v2.2s"
       ]
     }
   }

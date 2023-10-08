@@ -4,7 +4,9 @@
     "EnabledHostFeatures": [
       "SVE256"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "AFP"
+    ]
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {

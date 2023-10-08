@@ -6,7 +6,8 @@
     ],
     "DisabledHostFeatures": [
       "SVE128",
-      "SVE256"
+      "SVE256",
+      "AFP"
     ]
   },
   "Instructions": {
@@ -18,8 +19,8 @@
         "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
-        "frsqrte s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frecpe s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "rcpss xmm0, xmm1": {
@@ -30,8 +31,8 @@
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [
-        "frecpe s2, s17",
-        "mov v16.s[0], v2.s[0]"
+        "frsqrte s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     }
   }

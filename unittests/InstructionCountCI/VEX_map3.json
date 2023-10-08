@@ -1747,153 +1747,133 @@
       ]
     },
     "vroundss xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintn s2, s17",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintn s0, s16",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vroundss xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintm s2, s17",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintm s0, s16",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vroundss xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintp s2, s17",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintp s0, s16",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vroundss xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintz s2, s17",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintz s0, s16",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vroundss xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frinti s2, s17",
-        "mov v0.16b, v16.16b",
-        "mov v0.s[0], v2.s[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frinti s0, s16",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintn d2, d17",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintn d0, d16",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintm d2, d17",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintm d0, d16",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintp d2, d17",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintp d0, d16",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frintz d2, d17",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frintz d0, d16",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frinti d2, d17",
-        "mov v0.16b, v16.16b",
-        "mov v0.d[0], v2.d[0]",
-        "mov v2.16b, v0.16b",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v16.16b",
+        "frinti d0, d16",
+        "mov v16.d[0], v0.d[0]"
       ]
     },
     "vblendps xmm0, xmm1, xmm2, 0000b": {

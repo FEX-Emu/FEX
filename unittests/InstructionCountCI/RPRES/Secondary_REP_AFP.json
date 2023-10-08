@@ -2,6 +2,7 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
+      "RPRES",
       "AFP"
     ],
     "DisabledHostFeatures": [
@@ -10,26 +11,26 @@
     ]
   },
   "Instructions": {
-    "cvtpi2ps xmm0, [rax]": {
-      "ExpectedInstructionCount": 2,
+    "rsqrtss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
-        "0x0f 0x2a"
+        "AFP can make this more optimal",
+        "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x4]",
-        "scvtf v16.2s, v2.2s"
+        "frecpe s16, s17"
       ]
     },
-    "cvtpi2ps xmm0, mm0": {
-      "ExpectedInstructionCount": 2,
+    "rcpss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
-        "0x0f 0x2a"
+        "AFP can make this more optimal",
+        "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #752]",
-        "scvtf v16.2s, v2.2s"
+        "frsqrte s16, s17"
       ]
     }
   }
