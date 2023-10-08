@@ -56,24 +56,24 @@ enum X86Reg : uint32_t {
  * @name RFLAG register bit locations
  * @{ */
 enum X86RegLocation : uint32_t {
-  RFLAG_CF_LOC    = 0,
-  RFLAG_RESERVED_LOC = 1, // Reserved Bit, Read-as-1
-  RFLAG_PF_LOC    = 2,
-  RFLAG_AF_LOC    = 4,
-  RFLAG_ZF_LOC    = 6,
-  RFLAG_SF_LOC    = 7,
-  RFLAG_TF_LOC    = 8,
-  RFLAG_IF_LOC    = 9,
-  RFLAG_DF_LOC    = 10,
-  RFLAG_OF_LOC    = 11,
-  RFLAG_IOPL_LOC  = 12,
-  RFLAG_NT_LOC    = 14,
-  RFLAG_RF_LOC    = 16,
-  RFLAG_VM_LOC    = 17,
-  RFLAG_AC_LOC    = 18,
-  RFLAG_VIF_LOC   = 19,
-  RFLAG_VIP_LOC   = 20,
-  RFLAG_ID_LOC    = 21,
+  RFLAG_CF_RAW_LOC    = 0, // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_RESERVED_LOC  = 1, // Reserved Bit, Read-as-1
+  RFLAG_PF_RAW_LOC    = 2, // Contains multiple bits, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_AF_RAW_LOC    = 4, // Contains multiple bits, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_ZF_RAW_LOC    = 6, // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_SF_RAW_LOC    = 7, // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_TF_LOC        = 8,
+  RFLAG_IF_LOC        = 9,
+  RFLAG_DF_LOC        = 10,
+  RFLAG_OF_RAW_LOC    = 11, // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
+  RFLAG_IOPL_LOC      = 12,
+  RFLAG_NT_LOC        = 14,
+  RFLAG_RF_LOC        = 16,
+  RFLAG_VM_LOC        = 17,
+  RFLAG_AC_LOC        = 18,
+  RFLAG_VIF_LOC       = 19,
+  RFLAG_VIP_LOC       = 20,
+  RFLAG_ID_LOC        = 21,
 
   // So we can implement arm64-like flag manipulaton on the x86 jit..
   // SF/ZF/CF/OF packed into a 32-bit word, matching arm64's NZCV structure (not semantics).

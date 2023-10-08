@@ -817,10 +817,10 @@ public:
 
   static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
     switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_OF_LOC: return 28;
-      case FEXCore::X86State::RFLAG_CF_LOC: return 29;
-      case FEXCore::X86State::RFLAG_ZF_LOC: return 30;
-      case FEXCore::X86State::RFLAG_SF_LOC: return 31;
+      case FEXCore::X86State::RFLAG_OF_RAW_LOC: return 28;
+      case FEXCore::X86State::RFLAG_CF_RAW_LOC: return 29;
+      case FEXCore::X86State::RFLAG_ZF_RAW_LOC: return 30;
+      case FEXCore::X86State::RFLAG_SF_RAW_LOC: return 31;
       default: FEX_UNREACHABLE;
     }
   }
@@ -848,10 +848,10 @@ private:
   OrderedNode* flagsOpSrcSigned{};
 
   constexpr static unsigned FullNZCVMask =
-    (1U << FEXCore::X86State::RFLAG_CF_LOC) |
-    (1U << FEXCore::X86State::RFLAG_ZF_LOC) |
-    (1U << FEXCore::X86State::RFLAG_SF_LOC) |
-    (1U << FEXCore::X86State::RFLAG_OF_LOC);
+    (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
+    (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) |
+    (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
+    (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC);
 
   static bool ContainsNZCV(unsigned BitMask) {
     return (BitMask & FullNZCVMask) != 0;
@@ -859,10 +859,10 @@ private:
 
   static bool IsNZCV(unsigned BitOffset) {
     switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_CF_LOC:
-      case FEXCore::X86State::RFLAG_ZF_LOC:
-      case FEXCore::X86State::RFLAG_SF_LOC:
-      case FEXCore::X86State::RFLAG_OF_LOC:
+      case FEXCore::X86State::RFLAG_CF_RAW_LOC:
+      case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
+      case FEXCore::X86State::RFLAG_SF_RAW_LOC:
+      case FEXCore::X86State::RFLAG_OF_RAW_LOC:
         return true;
 
       default:
@@ -1089,17 +1089,17 @@ private:
 
   static inline constexpr unsigned NZCVIndexMask(unsigned BitMask) {
     unsigned NZCVMask{};
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC);
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_CF_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC);
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
     }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_ZF_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC);
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
     }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_SF_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC);
+    if (BitMask & (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC)) {
+      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC);
     }
     return NZCVMask;
   }
@@ -1132,8 +1132,8 @@ private:
 
     // Mask out the NZ bits, clearing CV. Even if the code sets CV after, this can end up faster
     // moves by allowing orlshl to be used instead of bfi.
-    PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC)) |
-                          (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC));
+    PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC)) |
+                          (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
     SetNZCV(_And(OpSize::i32Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
   }
 
@@ -1176,7 +1176,7 @@ private:
     // bits. This allows us to defer the extract in the usual case. When it is
     // read, bit 4 is extracted.  In order to write a constant value of AF, that
     // means we need to left-shift here to compensate.
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(Constant << 4));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(Constant << 4));
   }
 
   void ZeroMultipleFlags(uint32_t BitMask);

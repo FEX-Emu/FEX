@@ -4249,12 +4249,12 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   ZeroNZCV();
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Test1);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Test2);
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Test1);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
 
   uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC);
+    (1U << X86State::RFLAG_PF_RAW_LOC) |
+    (1U << X86State::RFLAG_AF_RAW_LOC);
 
   ZeroMultipleFlags(FlagsMaskToZero);
 }
@@ -4294,14 +4294,14 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   OrderedNode *CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst,
                                   OneConst, ZeroConst);
 
-  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFResult);
-  SetRFLAG<X86State::RFLAG_CF_LOC>(CFResult);
+  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFResult);
 
   uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC) |
-    (1U << X86State::RFLAG_SF_LOC) |
-    (1U << X86State::RFLAG_OF_LOC);
+    (1U << X86State::RFLAG_PF_RAW_LOC) |
+    (1U << X86State::RFLAG_AF_RAW_LOC) |
+    (1U << X86State::RFLAG_SF_RAW_LOC) |
+    (1U << X86State::RFLAG_OF_RAW_LOC);
 
   ZeroMultipleFlags(FlagsMaskToZero);
 }
@@ -5019,14 +5019,14 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     return _Bfe(OpSize::i32Bit, 1, BitIndex, IntermediateResult);
   };
 
-  SetRFLAG<X86State::RFLAG_ZF_LOC>(GetFlagBit(16));
-  SetRFLAG<X86State::RFLAG_SF_LOC>(GetFlagBit(17));
-  SetRFLAG<X86State::RFLAG_CF_LOC>(GetFlagBit(18));
-  SetRFLAG<X86State::RFLAG_OF_LOC>(GetFlagBit(19));
+  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(GetFlagBit(16));
+  SetRFLAG<X86State::RFLAG_SF_RAW_LOC>(GetFlagBit(17));
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(GetFlagBit(18));
+  SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(GetFlagBit(19));
 
   uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_LOC) |
-    (1U << X86State::RFLAG_AF_LOC);
+    (1U << X86State::RFLAG_PF_RAW_LOC) |
+    (1U << X86State::RFLAG_AF_RAW_LOC);
 
   ZeroMultipleFlags(FlagsMaskToZero);
 }

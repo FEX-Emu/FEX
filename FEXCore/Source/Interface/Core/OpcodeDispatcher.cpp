@@ -437,7 +437,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   auto ALUOp = _Add(OpSize, Src, CF);
 
   OrderedNode *Result{};
@@ -469,7 +469,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   auto Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   auto ALUOp = _Add(OpSize, Src, CF);
 
   OrderedNode *Result{};
@@ -842,47 +842,47 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
 
   switch (OP) {
     case 0x0: { // JO - Jump if OF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_LOC, true, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x1:{ // JNO - Jump if OF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_LOC, false, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x2: { // JC - Jump if CF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_LOC, true, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x3: { // JNC - Jump if CF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_LOC, false, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x4: { // JE - Jump if ZF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, true, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x5: { // JNE - Jump if ZF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, false, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC)),
+      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
+                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
                            true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_LOC)),
+      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
+                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
                            false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x8: { // JS - Jump if SF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_LOC, true, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0x9: { // JNS - Jump if SF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_LOC, false, ResultSize, TrueValue, FalseValue);
+      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
       break;
     }
     case 0xA: { // JP - Jump if PF == 1
@@ -895,25 +895,25 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       break;
     }
     case 0xC: { // SF <> OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
       SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
           Flag1, Flag2, TrueValue, FalseValue);
       break;
     }
     case 0xD: { // SF = OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
       SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
           Flag1, Flag2, TrueValue, FalseValue);
       break;
     }
     case 0xE: {// ZF = 1 || SF <> OF
-      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, true, OpSize::i32Bit,
+      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, true, OpSize::i32Bit,
           OneConst, ZeroConst);
 
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
       auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_NEQ},
           Flag2, Flag3, OneConst, ZeroConst);
 
@@ -923,11 +923,11 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       break;
     }
     case 0xF: {// ZF = 0 && SF = OF
-      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_LOC, false, OpSize::i32Bit,
+      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false, OpSize::i32Bit,
           OneConst, ZeroConst);
 
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
       auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_EQ},
           Flag2, Flag3, OneConst, ZeroConst);
 
@@ -1244,7 +1244,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   // If LOOPE then jumps to target if RCX != 0 && ZF == 1
   // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
   if (CheckZF) {
-    OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+    OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
     if (!ZFTrue) {
       ZF = _Xor(OpSize::i64Bit, ZF, _Constant(1));
     }
@@ -1552,18 +1552,18 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   uint64_t Flag;
   switch (Op->OP) {
   case 0xF5: {// CMC
-    uint32_t Bit = 1u << IndexNZCV(X86State::RFLAG_CF_LOC);
+    uint32_t Bit = 1u << IndexNZCV(X86State::RFLAG_CF_RAW_LOC);
     SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(Bit)));
     PossiblySetNZCVBits |= Bit;
     return;
   }
 
   case 0xF8: // CLC
-    Flag= FEXCore::X86State::RFLAG_CF_LOC;
+    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
     Type = OpType::Clear;
   break;
   case 0xF9: // STC
-    Flag= FEXCore::X86State::RFLAG_CF_LOC;
+    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
     Type = OpType::Set;
   break;
   case 0xFC: // CLD
@@ -1577,7 +1577,7 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   }
 
   // AF would need special handling here. It doesn't matter.
-  LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_LOC,
+  LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_RAW_LOC,
                       "No AF complement instruction in x86");
 
   OrderedNode *Result{};
@@ -2516,9 +2516,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
   auto* Flag = [&]() -> OrderedNode* {
     if (IsADCX) {
-      return GetRFLAG(X86State::RFLAG_CF_LOC);
+      return GetRFLAG(X86State::RFLAG_CF_RAW_LOC);
     } else {
-      return GetRFLAG(X86State::RFLAG_OF_LOC);
+      return GetRFLAG(X86State::RFLAG_OF_RAW_LOC);
     }
   }();
 
@@ -2537,9 +2537,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   auto SelectFlag = _Select(IR::COND_EQ, Flag, One, SelectOpLE, SelectOpLT);
 
   if (IsADCX) {
-    SetRFLAG<X86State::RFLAG_CF_LOC>(SelectFlag);
+    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(SelectFlag);
   } else {
-    SetRFLAG<X86State::RFLAG_OF_LOC>(SelectFlag);
+    SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(SelectFlag);
   }
 }
 
@@ -2549,7 +2549,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   uint32_t Shift = 1;
 
@@ -2562,11 +2562,11 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Res, -1);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
     if (Shift == 1) {
       // OF is the top two MSBs XOR'd together
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSizeFromSrc(Op), _Bfe(OpSizeFromSrc(Op), 1, Size - 1, Res), _Bfe(OpSizeFromSrc(Op), 1, Size - 2, Res)));
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSizeFromSrc(Op), _Bfe(OpSizeFromSrc(Op), 1, Size - 1, Res), _Bfe(OpSizeFromSrc(Op), 1, Size - 2, Res)));
     }
   }
   else {
@@ -2581,11 +2581,11 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     // CF only changes if we actually shifted
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Bfe(OpSize::i32Bit, 1, Shift - 1, Dest);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, Size - 1, Res), _Bfe(OpSize::i32Bit, 1, Size - 2, Res)));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, Size - 1, Res), _Bfe(OpSize::i32Bit, 1, Size - 2, Res)));
   }
 }
 
@@ -2595,7 +2595,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto SizeBit = GetSrcBitSize(Op);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   uint32_t Shift = 1;
 
@@ -2608,11 +2608,11 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, SizeBit - 1, Res), _Bfe(OpSize::i32Bit, 1, SizeBit - 2, Res)));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, SizeBit - 1, Res), _Bfe(OpSize::i32Bit, 1, SizeBit - 2, Res)));
   }
 }
 
@@ -2630,7 +2630,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Res = Src >> Shift
   OrderedNode *Res = _Lshr(OpSize, Dest, Src);
@@ -2667,18 +2667,18 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     Src, One,
     NewCF, CF);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
 
   // OF is the top two MSBs XOR'd together
   // Only when Shift == 1, it is undefined otherwise
   // Only changed if shift isn't zero
-  auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+  auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
   auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, Size - 1, Res), _Bfe(OpSize, 1, Size - 2, Res));
   CompareResult = _Select(FEXCore::IR::COND_EQ,
     Src, _Constant(0),
     OF, NewOF);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(CompareResult);
 }
 
 void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
@@ -2687,7 +2687,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
 
@@ -2766,13 +2766,13 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     Src, One,
     NewCF, CF);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
 
   // OF is the top two MSBs XOR'd together
   // Only when Shift == 1, it is undefined otherwise
   // Make it easier, just store it regardless
   auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
 }
 
 void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
@@ -2782,7 +2782,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
   const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   uint32_t Shift = 1;
 
@@ -2795,12 +2795,12 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
     // Top two MSBs is CF and top bit of result
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize, 1, Size - 1, Res), NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize, 1, Size - 1, Res), NewCF));
   }
 }
 
@@ -2818,7 +2818,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Res = Src << Shift
   OrderedNode *Res = _Lshl(OpSize, Dest, Src);
@@ -2856,18 +2856,18 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
       Src, One,
       NewCF, CF);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
     // Only changed if shift isn't zero
-    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, Size - 1, Res), NewCF);
     CompareResult = _Select(FEXCore::IR::COND_EQ,
       Src, _Constant(0),
       OF, NewOF);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(CompareResult);
   }
 }
 
@@ -2877,7 +2877,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
 
@@ -2915,19 +2915,19 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
       Src, _Constant(1),
       NewCF, CF);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
 
     // OF is only defined for 1 bit shifts
     // To make it easy, just always store a result
     // OF is the XOR of the NewCF and the MSB of the result
     // Only changed if shift isn't zero
-    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), NewCF);
     CompareResult = _Select(FEXCore::IR::COND_EQ,
       Src, _Constant(0),
       OF, NewOF);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(CompareResult);
   }
 }
 
@@ -2991,7 +2991,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   }
 
   // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -3071,7 +3071,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   }
 
   // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -3149,7 +3149,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   }
 
   // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -3225,7 +3225,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
@@ -3438,11 +3438,11 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
   auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
@@ -3464,12 +3464,12 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     auto NewAL = _Add(OpSize::i64Bit, AL, _Constant(0x6));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
-    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
     // XXX: I don't think this is correct. Needs Investigation.
     // The `CF` variable is the original CF from the start of the operation
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
     SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3485,7 +3485,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   StartNewBlock();
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3496,7 +3496,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 
     auto NewAL = _Add(OpSize::i64Bit, AL, _Constant(0x60));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3505,19 +3505,19 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_RAW_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePF(AL);
   FixupAF();
 }
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
   CalculateDeferredFlags();
 
   auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
@@ -3539,12 +3539,12 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x6));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
-    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
     // XXX: I don't think this is correct. Needs Investigation.
     // The `CF` variable is the original CF from the start of the operation
     // The `NewCF` will be _Constant(0) stored aboved.
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
     SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3560,7 +3560,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   StartNewBlock();
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3570,7 +3570,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     AL = LoadGPRRegister(X86State::REG_RAX, 1);
     auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x60));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
     CalculateDeferredFlags();
     _Jump(EndBlock);
   }
@@ -3578,8 +3578,8 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   StartNewBlock();
   // Update Flags
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_RAW_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   CalculatePF(AL);
   FixupAF();
 }
@@ -3615,7 +3615,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ZeroNZCV();
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
     SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3655,7 +3655,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ZeroNZCV();
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
     SetAF(1);
     CalculateDeferredFlags();
     _Jump(EndBlock);
@@ -3679,7 +3679,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetNZ_ZeroCV(1, AL);
   CalculatePF(AL);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
+  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -3696,7 +3696,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetNZ_ZeroCV(1, AL);
   CalculatePF(AL);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_LOC);
+  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
@@ -4086,7 +4086,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, PtrDir);
       StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       CalculateDeferredFlags();
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
 
@@ -4306,7 +4306,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, PtrDir);
       StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       CalculateDeferredFlags();
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
 
@@ -4724,7 +4724,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
     OneConst, ZeroConst);
 
   // Set ZF
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
   CalculateDeferredFlags();
 
   auto CondJump = _CondJump(ZFResult);
@@ -5590,7 +5590,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     CalculateDeferredFlags();
 
     // If condition doesn't hold then keep going
