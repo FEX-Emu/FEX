@@ -555,6 +555,15 @@ enum OpSize : uint8_t {
   i256Bit = 32,
 };
 
+enum class FloatCompareOp : uint8_t {
+  EQ = 0,
+  LT,
+  LE,
+  UNO,
+  NEQ,
+  ORD,
+};
+
 // Converts a size stored as an integer in to an OpSize enum.
 // This is a nop operation and will be eliminated by the compiler.
 static inline OpSize SizeToOpSize(uint8_t Size) {
@@ -568,6 +577,7 @@ static inline OpSize SizeToOpSize(uint8_t Size) {
     default: FEX_UNREACHABLE;
   }
 }
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
