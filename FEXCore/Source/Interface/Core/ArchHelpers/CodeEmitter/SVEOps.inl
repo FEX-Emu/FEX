@@ -1390,14 +1390,6 @@ public:
   void ptrues(SubRegSize size, PRegister pd, PredicatePattern pattern) {
     SVEPredicateMisc(0b1001, 0b10000, FEXCore::ToUnderlying(pattern), size, pd);
   }
-  template <SubRegSize size>
-  void ptrue(PRegister pd, PredicatePattern pattern) {
-    SVEPredicateMisc(0b1000, 0b10000, FEXCore::ToUnderlying(pattern), size, pd);
-  }
-  template <SubRegSize size>
-  void ptrues(PRegister pd, PredicatePattern pattern) {
-    SVEPredicateMisc(0b1001, 0b10000, FEXCore::ToUnderlying(pattern), size, pd);
-  }
 
   // SVE Integer Compare - Scalars
   // SVE integer compare scalar count and limit

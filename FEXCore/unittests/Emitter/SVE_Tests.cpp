@@ -1805,175 +1805,175 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate read from FFR (u
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate initialize") {
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.b, pow2");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.h, pow2");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.s, pow2");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.d, pow2");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.b, pow2");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.h, pow2");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.s, pow2");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrue p6.d, pow2");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.b, pow2");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.h, pow2");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.s, pow2");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.d, pow2");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.b, pow2");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.h, pow2");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.s, pow2");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_POW2), "ptrues p6.d, pow2");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.b, vl1");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.h, vl1");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.s, vl1");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.d, vl1");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.b, vl1");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.h, vl1");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.s, vl1");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrue p6.d, vl1");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.b, vl1");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.h, vl1");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.s, vl1");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.d, vl1");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.b, vl1");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.h, vl1");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.s, vl1");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL1), "ptrues p6.d, vl1");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.b, vl2");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.h, vl2");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.s, vl2");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.d, vl2");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.b, vl2");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.h, vl2");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.s, vl2");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrue p6.d, vl2");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.b, vl2");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.h, vl2");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.s, vl2");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.d, vl2");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.b, vl2");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.h, vl2");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.s, vl2");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL2), "ptrues p6.d, vl2");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.b, vl3");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.h, vl3");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.s, vl3");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.d, vl3");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.b, vl3");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.h, vl3");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.s, vl3");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrue p6.d, vl3");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.b, vl3");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.h, vl3");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.s, vl3");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.d, vl3");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.b, vl3");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.h, vl3");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.s, vl3");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL3), "ptrues p6.d, vl3");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.b, vl4");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.h, vl4");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.s, vl4");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.d, vl4");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.b, vl4");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.h, vl4");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.s, vl4");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrue p6.d, vl4");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.b, vl4");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.h, vl4");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.s, vl4");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.d, vl4");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.b, vl4");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.h, vl4");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.s, vl4");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL4), "ptrues p6.d, vl4");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.b, vl5");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.h, vl5");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.s, vl5");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.d, vl5");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.b, vl5");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.h, vl5");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.s, vl5");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrue p6.d, vl5");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.b, vl5");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.h, vl5");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.s, vl5");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.d, vl5");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.b, vl5");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.h, vl5");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.s, vl5");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL5), "ptrues p6.d, vl5");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.b, vl6");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.h, vl6");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.s, vl6");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.d, vl6");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.b, vl6");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.h, vl6");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.s, vl6");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrue p6.d, vl6");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.b, vl6");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.h, vl6");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.s, vl6");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.d, vl6");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.b, vl6");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.h, vl6");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.s, vl6");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL6), "ptrues p6.d, vl6");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.b, vl7");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.h, vl7");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.s, vl7");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.d, vl7");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.b, vl7");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.h, vl7");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.s, vl7");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrue p6.d, vl7");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.b, vl7");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.h, vl7");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.s, vl7");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.d, vl7");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.b, vl7");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.h, vl7");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.s, vl7");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL7), "ptrues p6.d, vl7");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.b, vl8");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.h, vl8");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.s, vl8");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.d, vl8");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.b, vl8");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.h, vl8");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.s, vl8");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrue p6.d, vl8");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.b, vl8");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.h, vl8");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.s, vl8");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.d, vl8");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.b, vl8");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.h, vl8");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.s, vl8");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL8), "ptrues p6.d, vl8");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.b, vl16");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.h, vl16");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.s, vl16");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.d, vl16");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.b, vl16");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.h, vl16");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.s, vl16");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrue p6.d, vl16");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.b, vl16");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.h, vl16");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.s, vl16");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.d, vl16");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.b, vl16");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.h, vl16");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.s, vl16");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL16), "ptrues p6.d, vl16");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.b, vl32");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.h, vl32");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.s, vl32");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.d, vl32");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.b, vl32");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.h, vl32");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.s, vl32");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrue p6.d, vl32");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.b, vl32");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.h, vl32");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.s, vl32");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.d, vl32");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.b, vl32");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.h, vl32");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.s, vl32");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL32), "ptrues p6.d, vl32");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.b, vl64");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.h, vl64");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.s, vl64");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.d, vl64");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.b, vl64");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.h, vl64");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.s, vl64");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrue p6.d, vl64");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.b, vl64");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.h, vl64");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.s, vl64");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.d, vl64");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.b, vl64");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.h, vl64");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.s, vl64");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL64), "ptrues p6.d, vl64");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.b, vl128");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.h, vl128");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.s, vl128");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.d, vl128");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.b, vl128");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.h, vl128");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.s, vl128");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrue p6.d, vl128");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.b, vl128");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.h, vl128");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.s, vl128");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.d, vl128");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.b, vl128");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.h, vl128");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.s, vl128");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL128), "ptrues p6.d, vl128");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.b, vl256");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.h, vl256");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.s, vl256");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.d, vl256");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.b, vl256");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.h, vl256");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.s, vl256");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrue p6.d, vl256");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.b, vl256");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.h, vl256");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.s, vl256");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.d, vl256");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.b, vl256");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.h, vl256");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.s, vl256");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_VL256), "ptrues p6.d, vl256");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.b, mul4");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.h, mul4");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.s, mul4");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.d, mul4");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.b, mul4");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.h, mul4");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.s, mul4");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrue p6.d, mul4");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.b, mul4");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.h, mul4");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.s, mul4");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.d, mul4");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.b, mul4");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.h, mul4");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.s, mul4");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_MUL4), "ptrues p6.d, mul4");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.b, mul3");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.h, mul3");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.s, mul3");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.d, mul3");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.b, mul3");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.h, mul3");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.s, mul3");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrue p6.d, mul3");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.b, mul3");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.h, mul3");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.s, mul3");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.d, mul3");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.b, mul3");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.h, mul3");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.s, mul3");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_MUL3), "ptrues p6.d, mul3");
 
-  TEST_SINGLE(ptrue<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.b");
-  TEST_SINGLE(ptrue<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.h");
-  TEST_SINGLE(ptrue<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.s");
-  TEST_SINGLE(ptrue<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.d");
+  TEST_SINGLE(ptrue(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.b");
+  TEST_SINGLE(ptrue(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.h");
+  TEST_SINGLE(ptrue(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.s");
+  TEST_SINGLE(ptrue(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrue p6.d");
 
-  TEST_SINGLE(ptrues<SubRegSize::i8Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.b");
-  TEST_SINGLE(ptrues<SubRegSize::i16Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.h");
-  TEST_SINGLE(ptrues<SubRegSize::i32Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.s");
-  TEST_SINGLE(ptrues<SubRegSize::i64Bit>(PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.d");
+  TEST_SINGLE(ptrues(SubRegSize::i8Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.b");
+  TEST_SINGLE(ptrues(SubRegSize::i16Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.h");
+  TEST_SINGLE(ptrues(SubRegSize::i32Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.s");
+  TEST_SINGLE(ptrues(SubRegSize::i64Bit, PReg::p6, PredicatePattern::SVE_ALL), "ptrues p6.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare scalar count and limit") {

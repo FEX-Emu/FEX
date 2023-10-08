@@ -655,11 +655,11 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     // since all that matters is we restore them on a fill.
     // It's not a concern if they get trounced by something else.
     if (EmitterCTX->HostFeatures.SupportsSVE) {
-      ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
+      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
     }
 
     if (EmitterCTX->HostFeatures.SupportsAVX) {
-      ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
+      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
 
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
