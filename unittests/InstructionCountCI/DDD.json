@@ -4,7 +4,8 @@
     "EnabledHostFeatures": [],
     "DisabledHostFeatures": [
       "SVE128",
-      "SVE256"
+      "SVE256",
+      "RPRES"
     ]
   },
   "Comment": [
@@ -79,7 +80,6 @@
       "ExpectedInstructionCount": 4,
       "Optimal": "Yes",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x86"
       ],
       "ExpectedArm64ASM": [
@@ -93,7 +93,6 @@
       "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x87"
       ],
       "ExpectedArm64ASM": [
@@ -158,7 +157,6 @@
       "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x96"
       ],
       "ExpectedArm64ASM": [
@@ -173,7 +171,6 @@
       "ExpectedInstructionCount": 6,
       "Optimal": "Yes",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0x0f 0x0f 0x97"
       ],
       "ExpectedArm64ASM": [

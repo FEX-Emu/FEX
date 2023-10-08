@@ -4,7 +4,8 @@
     "EnabledHostFeatures": [],
     "DisabledHostFeatures": [
       "SVE128",
-      "SVE256"
+      "SVE256",
+      "RPRES"
     ]
   },
   "Instructions": {
@@ -206,7 +207,6 @@
       "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
@@ -220,7 +220,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [

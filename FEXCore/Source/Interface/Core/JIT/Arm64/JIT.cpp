@@ -533,6 +533,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
   , Arm64Emitter(ctx, 0)
   , HostSupportsSVE128{ctx->HostFeatures.SupportsSVE}
   , HostSupportsSVE256{ctx->HostFeatures.SupportsAVX}
+  , HostSupportsRPRES{ctx->HostFeatures.SupportsRPRES}
   , CTX {ctx} {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");

@@ -1,0 +1,34 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "RPRES"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "rsqrtps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x0f 0x52"
+      ],
+      "ExpectedArm64ASM": [
+        "frsqrte v16.4s, v17.4s"
+      ]
+    },
+    "rcpps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x0f 0x53"
+      ],
+      "ExpectedArm64ASM": [
+        "frecpe v16.4s, v17.4s"
+      ]
+    }
+  }
+}

@@ -58,6 +58,7 @@ private:
 
   const bool HostSupportsSVE128{};
   const bool HostSupportsSVE256{};
+  const bool HostSupportsRPRES{};
 
   ARMEmitter::BiDirectionalLabel *PendingTargetLabel;
   FEXCore::Context::ContextImpl *CTX;

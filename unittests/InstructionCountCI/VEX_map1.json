@@ -6,7 +6,8 @@
       "SVE256"
     ],
     "DisabledHostFeatures": [
-      "FCMA"
+      "FCMA",
+      "RPRES"
     ]
   },
   "Instructions": {
@@ -704,7 +705,6 @@
       "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x52 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -718,7 +718,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x52 256-bit"
       ],
       "ExpectedArm64ASM": [
@@ -731,7 +730,6 @@
       "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x52 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -748,7 +746,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x53 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -761,7 +758,6 @@
       "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b00 0x53 256-bit"
       ],
       "ExpectedArm64ASM": [
@@ -774,7 +770,6 @@
       "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
-        "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x53 128-bit"
       ],
       "ExpectedArm64ASM": [
