@@ -687,6 +687,53 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point data-process
   TEST_SINGLE(frintx(HReg::h30, HReg::h29), "frintx h30, h29");
   TEST_SINGLE(frinti(HReg::h30, HReg::h29), "frinti h30, h29");
 }
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point data-processing (1 source sized)") {
+  TEST_SINGLE(fmov(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "fmov s30, s29");
+  TEST_SINGLE(fabs(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "fabs s30, s29");
+  TEST_SINGLE(fneg(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "fneg s30, s29");
+  TEST_SINGLE(fsqrt(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "fsqrt s30, s29");
+  TEST_SINGLE(frintn(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frintn s30, s29");
+  TEST_SINGLE(frintp(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frintp s30, s29");
+  TEST_SINGLE(frintm(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frintm s30, s29");
+  TEST_SINGLE(frintz(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frintz s30, s29");
+  TEST_SINGLE(frinta(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frinta s30, s29");
+  TEST_SINGLE(frintx(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frintx s30, s29");
+  TEST_SINGLE(frinti(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frinti s30, s29");
+  TEST_SINGLE(frint32z(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frint32z s30, s29");
+  TEST_SINGLE(frint32x(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frint32x s30, s29");
+  TEST_SINGLE(frint64z(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frint64z s30, s29");
+  TEST_SINGLE(frint64x(ScalarRegSize::i32Bit, VReg::v30, VReg::v29), "frint64x s30, s29");
+
+  TEST_SINGLE(fmov(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "fmov d30, d29");
+  TEST_SINGLE(fabs(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "fabs d30, d29");
+  TEST_SINGLE(fneg(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "fneg d30, d29");
+  TEST_SINGLE(fsqrt(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "fsqrt d30, d29");
+  TEST_SINGLE(frintn(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frintn d30, d29");
+  TEST_SINGLE(frintp(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frintp d30, d29");
+  TEST_SINGLE(frintm(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frintm d30, d29");
+  TEST_SINGLE(frintz(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frintz d30, d29");
+  TEST_SINGLE(frinta(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frinta d30, d29");
+  TEST_SINGLE(frintx(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frintx d30, d29");
+  TEST_SINGLE(frinti(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frinti d30, d29");
+  TEST_SINGLE(frint32z(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frint32z d30, d29");
+  TEST_SINGLE(frint32x(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frint32x d30, d29");
+  TEST_SINGLE(frint64z(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frint64z d30, d29");
+  TEST_SINGLE(frint64x(ScalarRegSize::i64Bit, VReg::v30, VReg::v29), "frint64x d30, d29");
+
+  TEST_SINGLE(fmov(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "fmov h30, h29");
+  TEST_SINGLE(fabs(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "fabs h30, h29");
+  TEST_SINGLE(fneg(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "fneg h30, h29");
+  TEST_SINGLE(fsqrt(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "fsqrt h30, h29");
+  TEST_SINGLE(frintn(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frintn h30, h29");
+  TEST_SINGLE(frintp(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frintp h30, h29");
+  TEST_SINGLE(frintm(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frintm h30, h29");
+  TEST_SINGLE(frintz(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frintz h30, h29");
+  TEST_SINGLE(frinta(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frinta h30, h29");
+  TEST_SINGLE(frintx(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frintx h30, h29");
+  TEST_SINGLE(frinti(ScalarRegSize::i16Bit, VReg::v30, VReg::v29), "frinti h30, h29");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point compare") {
   // Commented out lines showcase unallocated encodings.
   //TEST_SINGLE(fcmp(ScalarRegSize::i8Bit, VReg::v30, VReg::v29), "fcmp b30, b29");
@@ -824,6 +871,39 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point data-process
   TEST_SINGLE(fminnm(HReg::h30, HReg::h29, HReg::h28), "fminnm h30, h29, h28");
   TEST_SINGLE(fnmul(HReg::h30, HReg::h29, HReg::h28), "fnmul h30, h29, h28");
 }
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point data-processing (2 source sized)") {
+  TEST_SINGLE(fmul(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fmul s30, s29, s28");
+  TEST_SINGLE(fdiv(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fdiv s30, s29, s28");
+  TEST_SINGLE(fadd(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fadd s30, s29, s28");
+  TEST_SINGLE(fsub(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fsub s30, s29, s28");
+  TEST_SINGLE(fmax(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fmax s30, s29, s28");
+  TEST_SINGLE(fmin(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fmin s30, s29, s28");
+  TEST_SINGLE(fmaxnm(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fmaxnm s30, s29, s28");
+  TEST_SINGLE(fminnm(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fminnm s30, s29, s28");
+  TEST_SINGLE(fnmul(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "fnmul s30, s29, s28");
+
+  TEST_SINGLE(fmul(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fmul d30, d29, d28");
+  TEST_SINGLE(fdiv(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fdiv d30, d29, d28");
+  TEST_SINGLE(fadd(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fadd d30, d29, d28");
+  TEST_SINGLE(fsub(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fsub d30, d29, d28");
+  TEST_SINGLE(fmax(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fmax d30, d29, d28");
+  TEST_SINGLE(fmin(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fmin d30, d29, d28");
+  TEST_SINGLE(fmaxnm(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fmaxnm d30, d29, d28");
+  TEST_SINGLE(fminnm(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fminnm d30, d29, d28");
+  TEST_SINGLE(fnmul(ScalarRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28), "fnmul d30, d29, d28");
+
+  TEST_SINGLE(fmul(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fmul h30, h29, h28");
+  TEST_SINGLE(fdiv(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fdiv h30, h29, h28");
+  TEST_SINGLE(fadd(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fadd h30, h29, h28");
+  TEST_SINGLE(fsub(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fsub h30, h29, h28");
+  TEST_SINGLE(fmax(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fmax h30, h29, h28");
+  TEST_SINGLE(fmin(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fmin h30, h29, h28");
+  TEST_SINGLE(fmaxnm(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fmaxnm h30, h29, h28");
+  TEST_SINGLE(fminnm(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fminnm h30, h29, h28");
+  TEST_SINGLE(fnmul(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "fnmul h30, h29, h28");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point conditional select") {
   TEST_SINGLE(fcsel(SReg::s30, SReg::s29, SReg::s28, Condition::CC_AL), "fcsel s30, s29, s28, al");
   TEST_SINGLE(fcsel(SReg::s30, SReg::s29, SReg::s28, Condition::CC_EQ), "fcsel s30, s29, s28, eq");
