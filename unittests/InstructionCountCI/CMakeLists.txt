@@ -30,8 +30,9 @@ foreach(JSON_SRC ${JSON_SOURCES})
     set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/CodeSizeValidation.exe")
   endif()
 
-  set(TEST_NAME "InstCountCI/Test_${JSON_NAME}.instcountci")
-  set(TEST_NAME_UPDATE_NUMBERS "InstCountCI/Test_${JSON_NAME}.new_numbers")
+  file(RELATIVE_PATH JSON_PATH_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${JSON_SRC})
+  set(TEST_NAME "InstCountCI/Test_${JSON_PATH_RELATIVE}.instcountci")
+  set(TEST_NAME_UPDATE_NUMBERS "InstCountCI/Test_${JSON_PATH_RELATIVE}.new_numbers")
 
   add_test(NAME ${TEST_NAME}
     COMMAND ${LAUNCH_PROGRAM} "${OUTPUT_JSON_NAME}" "${OUTPUT_JSON_NEWNUMBERS_NAME}")
