@@ -333,8 +333,6 @@ public:
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUROp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
-  void VectorScalarALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
   void VectorUnaryOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
@@ -379,7 +377,6 @@ public:
   void Vector_CVT_Float_To_Float(OpcodeArgs);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
-  template<size_t SrcElementSize, bool Widen>
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
@@ -387,7 +384,7 @@ public:
   void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);
   void LZCNT(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar>
+  template<size_t ElementSize>
   void VFCMPOp(OpcodeArgs);
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
@@ -424,11 +421,9 @@ public:
   template <IROps IROp, size_t ElementSize>
   void AVXVectorALUOp(OpcodeArgs);
   template <IROps IROp, size_t ElementSize>
-  void AVXVectorScalarALUOp(OpcodeArgs);
-  template <IROps IROp, size_t ElementSize, bool Scalar>
   void AVXVectorUnaryOp(OpcodeArgs);
 
-  template <size_t ElementSize, bool Scalar>
+  template <size_t ElementSize>
   void AVXVectorRound(OpcodeArgs);
 
   template <size_t DstElementSize, size_t SrcElementSize>
@@ -440,10 +435,41 @@ public:
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorScalarInsertALUOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void AVXVectorScalarInsertALUOp(OpcodeArgs);
+
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorScalarUnaryInsertALUOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
+
+  void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
+  template<size_t DstElementSize>
+  void InsertCVTGPR_To_FPR(OpcodeArgs);
+  template <size_t DstElementSize>
+  void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
+
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void InsertScalar_CVT_Float_To_Float(OpcodeArgs);
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
+
+  template <size_t ElementSize>
+  void InsertScalarRound(OpcodeArgs);
+  template <size_t ElementSize>
+  void AVXInsertScalarRound(OpcodeArgs);
+
+  template <size_t ElementSize>
+  void InsertScalarFCMPOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void AVXInsertScalarFCMPOp(OpcodeArgs);
+
   template <size_t DstElementSize>
   void AVXCVTGPR_To_FPR(OpcodeArgs);
 
-  template <size_t ElementSize, bool Scalar>
+  template <size_t ElementSize>
   void AVXVFCMPOp(OpcodeArgs);
 
   template <size_t ElementSize>
@@ -787,7 +813,7 @@ public:
 
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar>
+  template<size_t ElementSize>
   void VectorRound(OpcodeArgs);
 
   template<size_t ElementSize>
@@ -889,8 +915,7 @@ private:
                              OrderedNode *Src1, OrderedNode *Src2);
 
   void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
+  void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
   template <size_t ElementSize>
   void AVXVectorVariableBlend(OpcodeArgs);
@@ -997,19 +1022,63 @@ private:
   void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
   void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
 
-  OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,
+  OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize,
                            OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType);
 
   void VTESTOpImpl(OpcodeArgs, size_t ElementSize);
 
   void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
+  void VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
+  // x86 ALU scalar operations operate in three different ways
+  // - AVX512: Writemask shenanigans that we don't care about.
+  // - AVX/VEX: Two source
+  //   - Example 32bit VADDSS Dest, Src1, Src2
+  //   - Dest[31:0] = Src1[31:0] + Src2[31:0]
+  //   - Dest[127:32] = Src1[127:32]
+  // - SSE: Scalar operation inserts in to the low bits, upper bits completely unaffected.
+  //   - Example 32bit ADDSS Dest, Src
+  //   - Dest[31:0] = Dest[31:0] + Src[31:0]
+  //   - Dest[{256,128}:32] = (Unmodified)
+  OrderedNode* VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   bool ZeroUpperBits);
+
+  OrderedNode* VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   bool ZeroUpperBits);
+
+  OrderedNode* InsertCVTGPR_To_FPRImpl(OpcodeArgs,
+                                       size_t DstSize, size_t DstElementSize,
+                                       const X86Tables::DecodedOperand& Src1Op,
+                                       const X86Tables::DecodedOperand& Src2Op,
+                                       bool ZeroUpperBits);
+
+  OrderedNode* InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs,
+                                                   size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+                                                   const X86Tables::DecodedOperand& Src1Op,
+                                                   const X86Tables::DecodedOperand& Src2Op,
+                                                   bool ZeroUpperBits);
+  OrderedNode* InsertScalarRoundImpl(OpcodeArgs,
+                                     size_t DstSize, size_t ElementSize,
+                                     const X86Tables::DecodedOperand& Src1Op,
+                                     const X86Tables::DecodedOperand& Src2Op,
+                                     uint64_t Mode, bool ZeroUpperBits);
+
+  OrderedNode* InsertScalarFCMPOpImpl(OpcodeArgs,
+                                      size_t DstSize, size_t ElementSize,
+                                      const X86Tables::DecodedOperand& Src1Op,
+                                      const X86Tables::DecodedOperand& Src2Op,
+                                      uint8_t CompType, bool ZeroUpperBits);
+
   OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
-                               OrderedNode *Src, uint64_t Mode, bool IsScalar);
+                               OrderedNode *Src, uint64_t Mode);
 
   OrderedNode* Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
                                              const X86Tables::DecodedOperand& Src1Op,
@@ -1066,6 +1135,10 @@ private:
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+
+  constexpr OpSize GetGuestVectorLength() const {
+    return CTX->HostFeatures.SupportsAVX ? OpSize::i256Bit : OpSize::i128Bit;
+  }
 
   [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_AA_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");

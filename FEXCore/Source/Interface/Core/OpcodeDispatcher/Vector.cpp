@@ -500,236 +500,487 @@ void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
-void OpDispatchBuilder::VectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+OrderedNode* OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  auto ALUOp = _VFAddScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  return ALUOp;
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorScalarInsertALUOp(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>(OpcodeArgs);
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>(OpcodeArgs);
+
+OrderedNode* OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   bool ZeroUpperBits) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  auto ALUOp = _VFSqrtScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  return ALUOp;
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>(OpcodeArgs);
+
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 8>(OpcodeArgs);
+
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 8>(OpcodeArgs);
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>(OpcodeArgs);
+
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 8>(OpcodeArgs);
+
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 8>(OpcodeArgs);
+
+void OpDispatchBuilder::InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto DstSize = GetGuestVectorLength();
+  const auto SrcSize = Op->Src[0].IsGPR() ? 8 : GetSrcSize(Op);
 
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
-  // If OpSize == ElementSize then it only does the lower scalar op
-  auto ALUOp = _VAdd(ElementSize, ElementSize, Dest, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  // Always 32-bit.
+  const size_t ElementSize = 4;
+  // Always signed
+  Dest = _VSToFVectorInsert(IR::SizeToOpSize(DstSize), ElementSize, ElementSize, Dest, Src, true, false);
 
-  OrderedNode* Result = ALUOp;
-
-  if (DstSize != ElementSize) {
-    // Insert the lower bits
-    Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, ALUOp);
-  }
-
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Dest, DstSize, -1);
 }
 
-template <IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
-  VectorScalarALUOpImpl(Op, IROp, ElementSize);
-}
-
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
-
-void OpDispatchBuilder::AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+OrderedNode* OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs,
+                                                  size_t DstSize, size_t DstElementSize,
+                                                  const X86Tables::DecodedOperand& Src1Op,
+                                                  const X86Tables::DecodedOperand& Src2Op,
+                                                  bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
 
-  // If OpSize == ElementSize then it only does the lower scalar op
-  auto ALUOp = _VAdd(ElementSize, ElementSize, Src1, Src2);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
-
-  OrderedNode* Result = ALUOp;
-
-  if (DstSize != ElementSize) {
-    // Insert the lower bits
-    Result = _VInsElement(DstSize, ElementSize, 0, 0, Src1, ALUOp);
+  if (Src2Op.IsGPR()) {
+    // If the source is a GPR then convert directly from the GPR.
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags, -1);
+    return _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
+  }
+  else if (SrcSize != DstElementSize) {
+    // If the source is from memory but the Source size and destination size aren't the same,
+    // then it is more optimal to load in to a GPR and convert between GPR->FPR.
+    // ARM GPR->FPR conversion supports different size source and destinations while FPR->FPR doesn't.
+    auto Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
+    return _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
   }
 
-  StoreResult(FPRClass, Op, Result, -1);
+  // In the case of cvtsi2s{s,d} where the source and destination are the same size,
+  // then it is more optimal to load in to the FPR register directly and convert there.
+  auto Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
+  // Always signed
+  return _VSToFVectorInsert(IR::SizeToOpSize(DstSize), DstElementSize, DstElementSize, Src1, Src2, false, ZeroUpperBits);
 }
 
-template <IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVXVectorScalarALUOp(OpcodeArgs) {
-  AVXVectorScalarALUOpImpl(Op, IROp, ElementSize);
+template<size_t DstElementSize>
+void OpDispatchBuilder::InsertCVTGPR_To_FPR(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  auto Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Dest, Op->Src[0], false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
 template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
+void OpDispatchBuilder::InsertCVTGPR_To_FPR<4>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFDIV, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFDIV, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMIN, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMIN, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 8>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
+void OpDispatchBuilder::InsertCVTGPR_To_FPR<8>(OpcodeArgs);
 
-void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
+template <size_t DstElementSize>
+void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Src[0], Op->Src[1], true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+template
+void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<8>(OpcodeArgs);
+
+OrderedNode* OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs,
+                                                              size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+                                                              const X86Tables::DecodedOperand& Src1Op,
+                                                              const X86Tables::DecodedOperand& Src2Op,
+                                                              bool ZeroUpperBits) {
+
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+
+  return _VFToFScalarInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcElementSize, Src1, Src2, ZeroUpperBits);
+}
+
+template<size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0], false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+
+template <size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs) {
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1], true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+
+OrderedNode* OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   uint64_t Mode, bool ZeroUpperBits) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+
+  const uint64_t RoundControlSource = (Mode >> 2) & 1;
+  uint64_t RoundControl = Mode & 0b11;
+
+  static constexpr std::array SourceModes = {
+    FEXCore::IR::Round_Nearest,
+    FEXCore::IR::Round_Negative_Infinity,
+    FEXCore::IR::Round_Positive_Infinity,
+    FEXCore::IR::Round_Towards_Zero,
+  };
+
+  const auto SourceMode = RoundControlSource ? Round_Host : SourceModes[RoundControl];
+
+  auto ALUOp = _VFToIScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, SourceMode, ZeroUpperBits);
+
+  return ALUOp;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::InsertScalarRound(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Mode = Op->Src[1].Data.Literal.Value;
+
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::InsertScalarRound<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::InsertScalarRound<8>(OpcodeArgs);
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVXInsertScalarRound(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Mode = Op->Src[2].Data.Literal.Value;
+
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXInsertScalarRound<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXInsertScalarRound<8>(OpcodeArgs);
+
+
+OrderedNode* OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs,
+                                   size_t DstSize, size_t ElementSize,
+                                   const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op,
+                                   uint8_t CompType, bool ZeroUpperBits) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+
+  switch (CompType) {
+    case 0x00: case 0x08: case 0x10: case 0x18: // EQ
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::EQ, ZeroUpperBits);
+    case 0x01: case 0x09: case 0x11: case 0x19: // LT, GT(Swapped operand)
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LT, ZeroUpperBits);
+    case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LE, ZeroUpperBits);
+    case 0x03: case 0x0B: case 0x13: case 0x1B: // Unordered
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::UNO, ZeroUpperBits);
+    case 0x04: case 0x0C: case 0x14: case 0x1C: // NEQ
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::NEQ, ZeroUpperBits);
+    case 0x05: case 0x0D: case 0x15: case 0x1D: { // NLT, NGT(Swapped operand)
+      OrderedNode *Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
+      Result = _VNot(ElementSize, ElementSize, Result);
+      // Insert the lower bits
+      return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    }
+    case 0x06: case 0x0E: case 0x16: case 0x1E: { // NLE, NGE(Swapped operand)
+      OrderedNode *Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
+      Result = _VNot(ElementSize, ElementSize, Result);
+      // Insert the lower bits
+      return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    }
+    case 0x07: case 0x0F: case 0x17: case 0x1F: // Ordered
+      return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::ORD, ZeroUpperBits);
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType);
+      break;
+  }
+  FEX_UNREACHABLE;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[2] needs to be literal");
+  const uint8_t CompType = Op->Src[1].Data.Literal.Value;
+
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::InsertScalarFCMPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::InsertScalarFCMPOp<8>(OpcodeArgs);
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
+  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
+
+  const auto DstSize = GetGuestVectorLength();
+  OrderedNode *Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXInsertScalarFCMPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXInsertScalarFCMPOp<8>(OpcodeArgs);
+
+void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
   // In the event of a memory operand, we load the exact element size.
-  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto OpSize = Scalar ? ElementSize : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto OpSize = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
 
   auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
-  if (Scalar) {
-    // Insert the lower bits
-    auto Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, ALUOp);
-    StoreResult(FPRClass, Op, Result, -1);
-  } else {
-    StoreResult(FPRClass, Op, ALUOp, -1);
-  }
+  StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template <IROps IROp, size_t ElementSize, bool Scalar>
+template <IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
-  VectorUnaryOpImpl(Op, IROp, ElementSize, Scalar);
+  VectorUnaryOpImpl(Op, IROp, ElementSize);
 }
 
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4>(OpcodeArgs);
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4>(OpcodeArgs);
 
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4, true>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8>(OpcodeArgs);
 
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1>(OpcodeArgs);
 template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, true>(OpcodeArgs);
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4>(OpcodeArgs);
 
-template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
-
-void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
+void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
   // In the event of a memory operand, we load the exact element size.
-  const auto SrcSize = Scalar && Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto OpSize = Scalar ? ElementSize : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto OpSize = GetSrcSize(Op);
 
-  OrderedNode *Src = [&] {
-    const auto SrcIndex = Scalar ? 1 : 0;
-    return LoadSource_WithOpSize(FPRClass, Op, Op->Src[SrcIndex], SrcSize, Op->Flags, -1);
-  }();
-  OrderedNode *Dest = [&] {
-    const auto& Operand = Scalar ? Op->Src[0] : Op->Dest;
-    return LoadSource_WithOpSize(FPRClass, Op, Operand, DstSize, Op->Flags, -1);
-  }();
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
   auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
-
-  OrderedNode* Result = ALUOp;
-  if (Scalar) {
-    // Insert the lower bits
-    Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
-  }
 
   // NOTE: We don't need to clear the upper lanes here, since the
   //       IR ops make use of 128-bit AdvSimd for 128-bit cases,
   //       which, on hardware with SVE, zero-extends as part of
   //       storing into the destination.
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template <IROps IROp, size_t ElementSize, bool Scalar>
+template <IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
-  AVXVectorUnaryOpImpl(Op, IROp, ElementSize, Scalar);
+  AVXVectorUnaryOpImpl(Op, IROp, ElementSize);
 }
 
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 1, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 1>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 2>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 4>(OpcodeArgs);
 
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRECP, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRECP, 4>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRECP, 4, true>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4, true>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
@@ -2411,37 +2662,21 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  size_t ElementSize = SrcElementSize;
+  // Always 32-bit.
+  size_t ElementSize = 4;
   size_t DstSize = GetDstSize(Op);
-  if constexpr (Widen) {
-    Src = _VSXTL(DstSize, ElementSize, Src);
-    ElementSize <<= 1;
-  }
+
+  Src = _VSXTL(DstSize, ElementSize, Src);
+  ElementSize <<= 1;
 
   // Always signed
   Src = _Vector_SToF(DstSize, ElementSize, Src);
 
-  OrderedNode *Dest{};
-  if constexpr (Widen) {
-    Dest = Src;
-  }
-  else {
-    Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-    // Insert the lower bits
-    Dest = _VInsElement(GetDstSize(Op), 8, 0, 0, Dest, Src);
-  }
-
-  StoreResult(FPRClass, Op, Dest, -1);
+  StoreResult(FPRClass, Op, Src, -1);
 }
-
-template
-void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
@@ -2578,7 +2813,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   }
 }
 
-OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,
+OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize,
                                             OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType) {
   const auto Size = GetSrcSize(Op);
 
@@ -2615,44 +2850,35 @@ OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool
       break;
   }
 
-  if (Scalar) {
-    // Insert the lower bits
-    Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
-  }
-
   return Result;
 }
 
-template<size_t ElementSize, bool Scalar>
+template<size_t ElementSize>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   // No need for zero-extending in the scalar case, since
   // all we need is an insert at the end of the operation.
-  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   const uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Result = VFCMPOpImpl(Op, ElementSize, Scalar, Dest, Src, CompType);
+  OrderedNode* Result = VFCMPOpImpl(Op, ElementSize, Dest, Src, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
-void OpDispatchBuilder::VFCMPOp<4, false>(OpcodeArgs);
+void OpDispatchBuilder::VFCMPOp<4>(OpcodeArgs);
 template
-void OpDispatchBuilder::VFCMPOp<4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::VFCMPOp<8, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::VFCMPOp<8, true>(OpcodeArgs);
+void OpDispatchBuilder::VFCMPOp<8>(OpcodeArgs);
 
-template <size_t ElementSize, bool Scalar>
+template <size_t ElementSize>
 void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   // No need for zero-extending in the scalar case, since
   // all we need is an insert at the end of the operation.
-  const auto SrcSize = Scalar && Op->Src[1].IsGPR() ? 16U : GetSrcSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
@@ -2660,19 +2886,15 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
 
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, -1);
-  OrderedNode *Result = VFCMPOpImpl(Op, ElementSize, Scalar, Src1, Src2, CompType);
+  OrderedNode *Result = VFCMPOpImpl(Op, ElementSize, Src1, Src2, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
-void OpDispatchBuilder::AVXVFCMPOp<4, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVFCMPOp<4>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVFCMPOp<4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVFCMPOp<8, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVFCMPOp<8, true>(OpcodeArgs);
+void OpDispatchBuilder::AVXVFCMPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
@@ -3928,8 +4150,7 @@ template
 void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
-                                                OrderedNode *Src, uint64_t Mode,
-                                                bool IsScalar) {
+                                                OrderedNode *Src, uint64_t Mode) {
   const auto Size = GetDstSize(Op);
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
@@ -3947,82 +4168,48 @@ OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
   };
 
   const auto SourceMode = SourceModes[(RoundControlSource << 2) | RoundControl];
-  const auto OpSize = IsScalar ? ElementSize : Size;
-  return _Vector_FToI(OpSize, ElementSize, Src, SourceMode);
+  return _Vector_FToI(Size, ElementSize, Src, SourceMode);
 }
 
-template<size_t ElementSize, bool Scalar>
+template<size_t ElementSize>
 void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   // No need to zero extend the vector in the event we have a
   // scalar source, especially since it's only inserted into another vector.
-  const auto SrcSize = Scalar && Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Mode = Op->Src[1].Data.Literal.Value;
 
-  Src = VectorRoundImpl(Op, ElementSize, Src, Mode, Scalar);
+  Src = VectorRoundImpl(Op, ElementSize, Src, Mode);
 
-  if constexpr (Scalar) {
-    // Insert the lower bits
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-    auto Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-    StoreResult(FPRClass, Op, Result, -1);
-  } else {
-    StoreResult(FPRClass, Op, Src, -1);
-  }
+  StoreResult(FPRClass, Op, Src, -1);
 }
 
 template
-void OpDispatchBuilder::VectorRound<4, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorRound<4>(OpcodeArgs);
 template
-void OpDispatchBuilder::VectorRound<8, false>(OpcodeArgs);
+void OpDispatchBuilder::VectorRound<8>(OpcodeArgs);
 
-template
-void OpDispatchBuilder::VectorRound<4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::VectorRound<8, true>(OpcodeArgs);
-
-template <size_t ElementSize, bool Scalar>
+template <size_t ElementSize>
 void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
-  const auto GetMode = [&] {
-    if constexpr (Scalar) {
-      LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
-      return Op->Src[2].Data.Literal.Value;
-    } else {
-      LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-      return Op->Src[1].Data.Literal.Value;
-    }
-  };
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const auto Mode = Op->Src[1].Data.Literal.Value;
 
   // No need to zero extend the vector in the event we have a
   // scalar source, especially since it's only inserted into another vector.
-  const auto SrcIdx = Scalar ? 1 : 0;
-  const auto SrcSize = Scalar && Op->Src[SrcIdx].IsGPR() ? 16U : GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[SrcIdx], SrcSize, Op->Flags, -1);
-  OrderedNode *Result = VectorRoundImpl(Op, ElementSize, Src, GetMode(), Scalar);
-
-  if constexpr (Scalar) {
-    // Insert the lower bits
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
-    Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
-  }
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
+  OrderedNode *Result = VectorRoundImpl(Op, ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
-void OpDispatchBuilder::AVXVectorRound<4, false>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorRound<4>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorRound<8, false>(OpcodeArgs);
-
-template
-void OpDispatchBuilder::AVXVectorRound<4, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::AVXVectorRound<8, true>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorRound<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
