@@ -581,6 +581,24 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
 }
 
 void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
+#ifndef VIXL_SIMULATOR
+  if (EmitterCTX->HostFeatures.SupportsAFP) {
+    // Disable AFP features when spilling registers.
+    //
+    // Disable FPCR.NEP and FPCR.AH
+    // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
+    // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
+    //
+    // Additional interesting AFP bits:
+    // FIZ(0): Flush Inputs to Zero
+    mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
+    bic(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
+        (1U << 2) | // NEP
+        (1U << 1)); // AH
+    msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
+  }
+#endif
+
   if (!StaticRegisterAllocation()) {
     return;
   }
@@ -645,6 +663,26 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
 }
 
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
+#ifndef VIXL_SIMULATOR
+  if (EmitterCTX->HostFeatures.SupportsAFP) {
+    // Enable AFP features when filling JIT state.
+    LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
+    auto TmpReg = StaticRegisters[FindFirstSetBit(GPRFillMask)];
+    mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
+
+    // Enable FPCR.NEP and FPCR.AH
+    // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
+    // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
+    //
+    // Additional interesting AFP bits:
+    // FIZ(0): Flush Inputs to Zero
+    orr(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
+        (1U << 2) | // NEP
+        (1U << 1)); // AH
+    msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
+  }
+#endif
+
   if (!StaticRegisterAllocation()) {
     return;
   }
