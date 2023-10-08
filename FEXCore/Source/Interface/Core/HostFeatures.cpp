@@ -243,6 +243,9 @@ HostFeatures::HostFeatures() {
   SupportsBMI2 = true;
   SupportsCLWB = true;
 
+  // TODO: AFP is disabled until the scalar usage in the codebase can be audited to be working as expected.
+  SupportsAFP = false;
+
   if (!SupportsAtomics) {
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
   }
