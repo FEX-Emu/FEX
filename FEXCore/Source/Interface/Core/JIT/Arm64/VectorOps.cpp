@@ -1115,11 +1115,23 @@ DEF_OP(VFRecp) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
+    if (ElementSize == 4 && HostSupportsRPRES) {
+      // RPRES gives enough precision for this.
+      frecpe(SubRegSize.Vector, Dst.Z(), Vector.Z());
+      return;
+    }
+
     fmov(SubRegSize.Vector, VTMP1.Z(), 1.0);
     fdiv(SubRegSize.Vector, VTMP1.Z(), Pred, VTMP1.Z(), Vector.Z());
     mov(Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
+      if (ElementSize == 4 && HostSupportsRPRES) {
+        // RPRES gives enough precision for this.
+        frecpe(SubRegSize.Scalar, Dst.S(), Vector.S());
+        return;
+      }
+
       fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
       switch (ElementSize) {
         case 2: {
@@ -1138,6 +1150,17 @@ DEF_OP(VFRecp) {
           break;
       }
     } else {
+      if (ElementSize == 4 && HostSupportsRPRES) {
+        // RPRES gives enough precision for this.
+        if (OpSize == 8) {
+          frecpe(SubRegSize.Vector, Dst.D(), Vector.D());
+        }
+        else {
+          frecpe(SubRegSize.Vector, Dst.Q(), Vector.Q());
+        }
+        return;
+      }
+
       fmov(SubRegSize.Vector, VTMP1.Q(), 1.0f);
       fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), Vector.Q());
     }
@@ -1208,11 +1231,23 @@ DEF_OP(VFRSqrt) {
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
+    if (ElementSize == 4 && HostSupportsRPRES) {
+      // RPRES gives enough precision for this.
+      frsqrte(SubRegSize.Vector, Dst.Z(), Vector.Z());
+      return;
+    }
+
     fsqrt(SubRegSize.Vector, VTMP1.Z(), Pred, Vector.Z());
     fmov(SubRegSize.Vector, Dst.Z(), 1.0);
     fdiv(SubRegSize.Vector, Dst.Z(), Pred, Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
+      if (ElementSize == 4 && HostSupportsRPRES) {
+        // RPRES gives enough precision for this.
+        frsqrte(SubRegSize.Scalar, Dst.S(), Vector.S());
+        return;
+      }
+
       fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0);
       switch (ElementSize) {
         case 2: {
@@ -1234,6 +1269,17 @@ DEF_OP(VFRSqrt) {
           break;
       }
     } else {
+      if (ElementSize == 4 && HostSupportsRPRES) {
+        // RPRES gives enough precision for this.
+        if (OpSize == 8) {
+          frsqrte(SubRegSize.Vector, Dst.D(), Vector.D());
+        }
+        else {
+          frsqrte(SubRegSize.Vector, Dst.Q(), Vector.Q());
+        }
+        return;
+      }
+
       fmov(SubRegSize.Vector, VTMP1.Q(), 1.0);
       fsqrt(SubRegSize.Vector, VTMP2.Q(), Vector.Q());
       fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), VTMP2.Q());

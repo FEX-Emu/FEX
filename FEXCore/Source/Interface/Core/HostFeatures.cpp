@@ -89,6 +89,7 @@ static void OverrideFeatures(HostFeatures *Features) {
   ENABLE_DISABLE_OPTION(FlagM, FLAGM);
   ENABLE_DISABLE_OPTION(FlagM2, FLAGM2);
   ENABLE_DISABLE_OPTION(Crypto, CRYPTO);
+  ENABLE_DISABLE_OPTION(RPRES, RPRES);
 
 #undef ENABLE_DISABLE_OPTION
 
@@ -186,6 +187,12 @@ static void OverrideFeatures(HostFeatures *Features) {
     Features->SupportsCRC = false;
     Features->SupportsPMULL_128Bit = false;
   }
+  if (EnableRPRES) {
+    Features->SupportsRPRES = true;
+  }
+  else if (DisableRPRES) {
+    Features->SupportsRPRES = false;
+  }
 }
 
 HostFeatures::HostFeatures() {
@@ -193,6 +200,8 @@ HostFeatures::HostFeatures() {
   auto Features = vixl::CPUFeatures::All();
   // Vixl simulator doesn't support AFP.
   Features.Remove(vixl::CPUFeatures::Feature::kAFP);
+  // Vixl simulator doesn't support RPRES.
+  Features.Remove(vixl::CPUFeatures::Feature::kRPRES);
 #elif !defined(_WIN32)
   auto Features = vixl::CPUFeatures::InferFromOS();
 #else
@@ -214,6 +223,7 @@ HostFeatures::HostFeatures() {
   SupportsFCMA = Features.Has(vixl::CPUFeatures::Feature::kFcma);
   SupportsFlagM = Features.Has(vixl::CPUFeatures::Feature::kFlagM);
   SupportsFlagM2 = Features.Has(vixl::CPUFeatures::Feature::kAXFlag);
+  SupportsRPRES = Features.Has(vixl::CPUFeatures::Feature::kRPRES);
 
   Supports3DNow = true;
   SupportsSSE4A = true;
