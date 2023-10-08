@@ -1,0 +1,84 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES"
+    ],
+    "DisabledHostFeatures": []
+  },
+  "Instructions": {
+    "vrsqrtps xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b00 0x52 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frsqrte v2.4s, v17.4s",
+        "mov v16.16b, v2.16b"
+      ]
+    },
+    "vrsqrtps ymm0, ymm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 1 0b00 0x52 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frsqrte z16.s, z17.s"
+      ]
+    },
+    "vrsqrtss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "AFP can make this more optimal",
+        "Map 1 0b10 0x52 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frsqrte s2, s18",
+        "mov v0.16b, v17.16b",
+        "mov v0.s[0], v2.s[0]",
+        "mov v2.16b, v0.16b",
+        "mov v16.16b, v2.16b"
+      ]
+    },
+    "vrcpps xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b00 0x53 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frecpe v2.4s, v17.4s",
+        "mov v16.16b, v2.16b"
+      ]
+    },
+    "vrcpps ymm0, ymm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 1 0b00 0x53 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frecpe z16.s, z17.s"
+      ]
+    },
+    "vrcpss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 1 0b10 0x53 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "frecpe s2, s18",
+        "mov v0.16b, v17.16b",
+        "mov v0.s[0], v2.s[0]",
+        "mov v2.16b, v0.16b",
+        "mov v16.16b, v2.16b"
+      ]
+    }
+  }
+}
