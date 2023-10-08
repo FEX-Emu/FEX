@@ -163,28 +163,34 @@
     "Misc": {
       "Dummy": {
         "HasSideEffects": true,
-        "SwitchGen": false
+        "SwitchGen": false,
+        "JITDispatchOverride": "NoOp"
       },
       "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions": {
-        "SwitchGen": false
+        "SwitchGen": false,
+        "JITDispatchOverride": "NoOp"
       },
       "CodeBlock SSA:$Begin, SSA:$Last": {
         "SwitchGen": false,
-        "RAOverride": "0"
+        "RAOverride": "0",
+        "JITDispatchOverride": "NoOp"
       },
       "BeginBlock SSA:$BlockHeader": {
         "HasSideEffects": true,
         "SwitchGen": false,
-        "RAOverride": "0"
+        "RAOverride": "0",
+        "JITDispatchOverride": "NoOp"
       },
       "InvalidateFlags u64:$Flags": {
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "JITDispatchOverride": "NoOp"
       },
 
       "EndBlock SSA:$BlockHeader": {
         "HasSideEffects": true,
         "SwitchGen": false,
-        "RAOverride": "0"
+        "RAOverride": "0",
+        "JITDispatchOverride": "NoOp"
       },
 
       "GuestOpcode u32:$GuestEntryOffset": {
@@ -337,7 +343,8 @@
         "Desc": ["Loads a value from the static-ra context with offset",
                  "Dest = Ctx[Offset]"
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "DynamicDispatch": true
       },
 
       "StoreRegister SSA:$Value, i1:$IsPrewrite, u32:$Offset, RegisterClass:$Class, RegisterClass:$StaticClass, u8:#Size": {
@@ -348,6 +355,7 @@
                  "Truncates if value's type is too large"
                 ],
         "DestSize": "Size",
+        "DynamicDispatch": true,
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
         ]
@@ -472,7 +480,8 @@
       "SSA = LoadMemTSO RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "DynamicDispatch": true
       },
 
       "StoreMemTSO RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
@@ -480,6 +489,7 @@
                 ],
         "HasSideEffects": true,
         "DestSize": "Size",
+        "DynamicDispatch": true,
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
         ]
@@ -1621,11 +1631,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMul u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VSMul u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VMul u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1807,7 +1813,8 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "DestSize": "4"
+        "DestSize": "4",
+        "JITDispatch": false
       },
       "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
         "Desc": ["Performs intermediate behavior analogous to the x86 PCMPISTRI/PCMPISTRM instruction",
@@ -1818,7 +1825,8 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "DestSize": "4"
+        "DestSize": "4",
+        "JITDispatch": false
       },
       "FPR = VFCADD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
         "DestSize": "RegisterSize",
@@ -1925,111 +1933,143 @@
       }
     },
     "F64": {
-        "FPR = F64ATAN FPR:$Src1, FPR:$Src2": {
-            "DestSize": "8"
-        },
-        "FPR = F64FPREM FPR:$Src1, FPR:$Src2": {
-            "DestSize": "8"
-        },
-        "FPR = F64FPREM1 FPR:$Src1, FPR:$Src2": {
-            "DestSize": "8"
-        },
-        "FPR = F64SCALE FPR:$Src1, FPR:$Src2": {
-            "DestSize": "8"
-        },
-        "FPR = F64F2XM1 FPR:$Src": {
-            "DestSize": "8"
-        },
-        "FPR = F64FYL2X FPR:$Src, FPR:$Src2": {
-            "DestSize": "8"
-        },
-        "FPR = F64TAN FPR:$Src": {
-            "DestSize": "8"
-        },
-        "FPR = F64SIN FPR:$Src": {
-            "DestSize": "8"
-        },
-        "FPR = F64COS FPR:$Src": {
-            "DestSize": "8"
-        }
+      "FPR = F64ATAN FPR:$Src1, FPR:$Src2": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64FPREM FPR:$Src1, FPR:$Src2": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64FPREM1 FPR:$Src1, FPR:$Src2": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64SCALE FPR:$Src1, FPR:$Src2": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64F2XM1 FPR:$Src": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64FYL2X FPR:$Src, FPR:$Src2": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64TAN FPR:$Src": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64SIN FPR:$Src": {
+        "DestSize": "8",
+        "JITDispatch": false
+      },
+      "FPR = F64COS FPR:$Src": {
+        "DestSize": "8",
+        "JITDispatch": false
+      }
     },
     "F80": {
       "FPR = F80Add FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80Sub FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80Mul FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
-
       "FPR = F80Div FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80ATAN FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80FPREM FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80FPREM1 FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80SCALE FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80CVT u8:#Size, FPR:$X80Src": {
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "JITDispatch": false
       },
       "GPR = F80CVTInt u8:#Size, FPR:$X80Src, i1:$Truncate": {
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "JITDispatch": false
       },
       "FPR = F80CVTTo FPR:$X80Src, u8:$SrcSize": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80CVTToInt GPR:$Src, u8:$SrcSize": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80Round FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80F2XM1 FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80TAN FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80SIN FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80COS FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80SQRT FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80XTRACT_SIG FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2, u32:$Flags": {
         "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
                  "Ordering flag result is true if either float input is NaN"
                 ],
-        "DestSize": "4"
+        "DestSize": "4",
+        "JITDispatch": false
       },
       "FPR = F80BCDLoad FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
       "FPR = F80BCDStore FPR:$X80Src": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       },
 
       "FPR = F80FYL2X FPR:$X80Src1, FPR:$X80Src2": {
-        "DestSize": "16"
+        "DestSize": "16",
+        "JITDispatch": false
       }
     },
     "Backend": {

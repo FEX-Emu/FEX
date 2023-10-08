@@ -221,15 +221,16 @@ configure_file(
 # Generate IR include file
 set(OUTPUT_IR_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/IR")
 set(OUTPUT_NAME "${OUTPUT_IR_FOLDER}/IRDefines.inc")
+set(OUTPUT_DISPATCHER_NAME "${OUTPUT_IR_FOLDER}/IRDefines_Dispatch.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
 
 file(MAKE_DIRECTORY "${OUTPUT_IR_FOLDER}")
 
 add_custom_command(
-  OUTPUT "${OUTPUT_NAME}"
+  OUTPUT "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
   )
 
 set_source_files_properties(${OUTPUT_NAME} PROPERTIES

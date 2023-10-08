@@ -6048,7 +6048,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::VPSRLDOp<4>},
     {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 8>},
-    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMUL, 2>},
+    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 2>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::MOVQOp},
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
 
@@ -6162,7 +6162,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 2>},
     {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 4>},
 
-    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMUL, 4>},
+    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 4>},
     {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
     {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::VPSRLVOp},
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::VPSRAVDOp},
@@ -6488,7 +6488,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
     {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
+    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
     {0xD9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>},
@@ -6787,7 +6787,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
     {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
+    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
@@ -7475,7 +7475,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x3D), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 4>},
     {OPD(PF_38_66,   0x3E), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 2>},
     {OPD(PF_38_66,   0x3F), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 4>},
-    {OPD(PF_38_66,   0x40), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 4>},
+    {OPD(PF_38_66,   0x40), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 4>},
     {OPD(PF_38_66,   0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
 
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},

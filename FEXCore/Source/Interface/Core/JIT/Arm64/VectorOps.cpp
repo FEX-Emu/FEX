@@ -3613,7 +3613,7 @@ DEF_OP(VSQSHL) {
 }
 
 DEF_OP(VMul) {
-  const auto Op = IROp->C<IR::IROp_VUMul>();
+  const auto Op = IROp->C<IR::IROp_VMul>();
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;

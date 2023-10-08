@@ -51,6 +51,9 @@ class OpDefinition:
     ArgPrinter: bool
     SSAArgNum: int
     NonSSAArgNum: int
+    DynamicDispatch: bool
+    JITDispatch: bool
+    JITDispatchOverride: str
     Arguments: list
     EmitValidation: list
     Desc: list
@@ -69,6 +72,9 @@ class OpDefinition:
         self.ArgPrinter = True
         self.SSAArgNum = 0
         self.NonSSAArgNum = 0
+        self.DynamicDispatch = False
+        self.JITDispatch = True
+        self.JITDispatchOverride = None
         self.Arguments = []
         self.EmitValidation = []
         self.Desc = []
@@ -227,6 +233,15 @@ def parse_ops(ops):
 
             if "Desc" in op_val:
                 OpDef.Desc = op_val["Desc"]
+
+            if "DynamicDispatch" in op_val:
+                OpDef.DynamicDispatch = bool(op_val["DynamicDispatch"])
+
+            if "JITDispatch" in op_val:
+                OpDef.JITDispatch = bool(op_val["JITDispatch"])
+
+            if "JITDispatchOverride" in op_val:
+                OpDef.JITDispatchOverride = op_val["JITDispatchOverride"]
 
             # Do some fixups of the data here
             if len(OpDef.EmitValidation) != 0:
@@ -730,10 +745,38 @@ def print_ir_parser_switch_helper():
     output_file.write("#undef IROP_PARSER_SWITCH_HELPERS\n")
     output_file.write("#endif\n")
 
-if (len(sys.argv) < 3):
+def print_ir_dispatcher_defs():
+    output_dispatch_file.write("#ifdef IROP_DISPATCH_DEFS\n")
+    for op in IROps:
+        if op.Name != "Last" and op.SwitchGen and op.JITDispatch and op.JITDispatchOverride == None:
+            output_dispatch_file.write("DEF_OP({});\n".format(op.Name))
+
+    output_dispatch_file.write("#undef IROP_DISPATCH_DEFS\n")
+    output_dispatch_file.write("#endif\n")
+
+def print_ir_dispatcher_dispatch():
+    output_dispatch_file.write("#ifdef IROP_DISPATCH_DISPATCH\n")
+    for op in IROps:
+        if op.Name != "Last" and op.JITDispatch:
+            DispatchName = op.Name
+            if op.JITDispatchOverride != None:
+                DispatchName = op.JITDispatchOverride
+
+            if (op.DynamicDispatch):
+                output_dispatch_file.write("REGISTER_OP_RT({}, {});\n".format(op.Name.upper(), DispatchName))
+            else:
+                output_dispatch_file.write("REGISTER_OP({}, {});\n".format(op.Name.upper(), DispatchName))
+
+    output_dispatch_file.write("#undef IROP_DISPATCH_DISPATCH\n")
+    output_dispatch_file.write("#endif\n")
+
+
+if (len(sys.argv) < 4):
     ExitError()
 
 output_filename = sys.argv[2]
+output_dispatcher_filename = sys.argv[3]
+
 json_file = open(sys.argv[1], "r")
 json_text = json_file.read()
 json_file.close()
@@ -763,3 +806,10 @@ print_ir_allocator_helpers()
 print_ir_parser_switch_helper()
 
 output_file.close()
+
+output_dispatch_file = open(output_dispatcher_filename, "w")
+print_ir_dispatcher_defs()
+print_ir_dispatcher_dispatch()
+
+output_dispatch_file.close()
+

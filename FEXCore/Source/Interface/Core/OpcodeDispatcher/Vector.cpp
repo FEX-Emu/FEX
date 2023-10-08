@@ -291,9 +291,9 @@ template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 8>(OpcodeArgs);
 
 template
-void OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>(OpcodeArgs);
+void OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>(OpcodeArgs);
 template
-void OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 4>(OpcodeArgs);
+void OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 1>(OpcodeArgs);
 template
@@ -472,9 +472,9 @@ template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>(OpcodeArgs);
 
 template
-void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMUL, 2>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 2>(OpcodeArgs);
 template
-void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMUL, 4>(OpcodeArgs);
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
@@ -1699,7 +1699,7 @@ OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize,
   if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
     OrderedNode *Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
     Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
-    return _VSMul(Size, ElementSize, Src1, Control);
+    return _VMul(Size, ElementSize, Src1, Control);
   }
   else {
     auto NegVec = _VNeg(Size, ElementSize, Src1);
@@ -3543,12 +3543,12 @@ OrderedNode* OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::Dec
   // Src1 is unsigned
   auto Src1_16b_L = _VUXTL(Size, 1, Src1);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
   auto Src2_16b_L = _VSXTL(Size, 1, Src2);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
-  auto ResMul_L   = _VSMul(Size, 2, Src1_16b_L, Src2_16b_L);
+  auto ResMul_L   = _VMul(Size, 2, Src1_16b_L, Src2_16b_L);
 
   // Src2 is signed
   auto Src1_16b_H = _VUXTL2(Size, 1, Src1);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
   auto Src2_16b_H = _VSXTL2(Size, 1, Src2);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
-  auto ResMul_L_H = _VSMul(Size, 2, Src1_16b_H, Src2_16b_H);
+  auto ResMul_L_H = _VMul(Size, 2, Src1_16b_H, Src2_16b_H);
 
   auto TmpZip1 = _VUnZip(Size, 2, ResMul_L, ResMul_L_H);
   auto TmpZip2 = _VUnZip2(Size, 2, ResMul_L, ResMul_L_H);
