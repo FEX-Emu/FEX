@@ -1328,7 +1328,7 @@ DEF_OP(Select) {
   bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
                Op->Cond == FEXCore::IR::COND_ANDNZ;
 
-  LOGMAN_THROW_AA_FMT(!tests || IsGPR(Op->Cmp1.ID()), "Only GPRs can be tested");
+  LOGMAN_THROW_A_FMT(!tests || IsGPR(Op->Cmp1.ID()), "Only GPRs can be tested");
 
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
