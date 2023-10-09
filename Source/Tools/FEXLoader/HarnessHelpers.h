@@ -44,53 +44,10 @@ namespace FEX::HarnessHelper {
       fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
     };
 
-    const auto DumpFLAGs = [OutputGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
-      if (!OutputGPRs) {
-        return;
-      }
-      if (A == B) {
-        return;
-      }
-
-      static constexpr std::array<uint32_t, 17> Flags = {
-        FEXCore::X86State::RFLAG_CF_LOC,
-        FEXCore::X86State::RFLAG_PF_LOC,
-        FEXCore::X86State::RFLAG_AF_LOC,
-        FEXCore::X86State::RFLAG_ZF_LOC,
-        FEXCore::X86State::RFLAG_SF_LOC,
-        FEXCore::X86State::RFLAG_TF_LOC,
-        FEXCore::X86State::RFLAG_IF_LOC,
-        FEXCore::X86State::RFLAG_DF_LOC,
-        FEXCore::X86State::RFLAG_OF_LOC,
-        FEXCore::X86State::RFLAG_IOPL_LOC,
-        FEXCore::X86State::RFLAG_NT_LOC,
-        FEXCore::X86State::RFLAG_RF_LOC,
-        FEXCore::X86State::RFLAG_VM_LOC,
-        FEXCore::X86State::RFLAG_AC_LOC,
-        FEXCore::X86State::RFLAG_VIF_LOC,
-        FEXCore::X86State::RFLAG_VIP_LOC,
-        FEXCore::X86State::RFLAG_ID_LOC,
-      };
-
-      fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
-      for (const auto Flag : Flags) {
-        const auto FlagMask = uint64_t{1} << Flag;
-        if ((A & FlagMask) != (B & FlagMask)) {
-          fextl::fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
-        }
-      }
-    };
-
     const auto CheckGPRs = [&Matches, DumpGPRs](const fextl::string& Name, uint64_t A, uint64_t B){
       DumpGPRs(Name, A, B);
       Matches &= A == B;
     };
-
-    const auto CheckFLAGS = [&Matches, DumpFLAGs](const fextl::string& Name, uint64_t A, uint64_t B){
-      DumpFLAGs(Name, A, B);
-      Matches &= A == B;
-    };
-
 
     // RIP
     if (MatchMask & 1) {
@@ -135,22 +92,6 @@ namespace FEX::HarnessHelper {
     }
     MatchMask >>= 1;
 
-    auto CompactRFlags = [](auto Arg) -> uint32_t {
-      uint32_t Res = 2;
-      for (int i = 0; i < 32; ++i) {
-        Res |= Arg->flags[i] << i;
-      }
-      return Res;
-    };
-
-    // FLAGS
-    if (MatchMask & 1) {
-      uint32_t rflags1 = CompactRFlags(&State1);
-      uint32_t rflags2 = CompactRFlags(&State2);
-
-      CheckFLAGS("FLAGS", rflags1, rflags2);
-    }
-    MatchMask >>= 1;
     return Matches;
   }
 
@@ -184,7 +125,7 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        static constexpr std::array<uint64_t, 45> OffsetArrayAVX = {{
+        static constexpr std::array<uint64_t, 44> OffsetArrayAVX = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]),
@@ -220,7 +161,6 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, xmm.avx.data[15][0]),
           offsetof(FEXCore::Core::CPUState, gs_cached),
           offsetof(FEXCore::Core::CPUState, fs_cached),
-          offsetof(FEXCore::Core::CPUState, flags),
           offsetof(FEXCore::Core::CPUState, mm[0][0]),
           offsetof(FEXCore::Core::CPUState, mm[1][0]),
           offsetof(FEXCore::Core::CPUState, mm[2][0]),
@@ -231,7 +171,7 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, mm[7][0]),
           offsetof(FEXCore::Core::CPUState, mm[8][0]),
         }};
-        static constexpr std::array<uint64_t, 45> OffsetArraySSE = {{
+        static constexpr std::array<uint64_t, 44> OffsetArraySSE = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]),
@@ -267,7 +207,6 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, xmm.sse.data[15][0]),
           offsetof(FEXCore::Core::CPUState, gs_cached),
           offsetof(FEXCore::Core::CPUState, fs_cached),
-          offsetof(FEXCore::Core::CPUState, flags),
           offsetof(FEXCore::Core::CPUState, mm[0][0]),
           offsetof(FEXCore::Core::CPUState, mm[1][0]),
           offsetof(FEXCore::Core::CPUState, mm[2][0]),

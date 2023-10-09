@@ -40,18 +40,17 @@ class Regs(Flag):
     REG_XMM15 = (1 << 32)
     REG_GS    = (1 << 33)
     REG_FS    = (1 << 34)
-    REG_FLAGS = (1 << 35)
-    REG_MM0   = (1 << 36)
-    REG_MM1   = (1 << 37)
-    REG_MM2   = (1 << 38)
-    REG_MM3   = (1 << 39)
-    REG_MM4   = (1 << 40)
-    REG_MM5   = (1 << 41)
-    REG_MM6   = (1 << 42)
-    REG_MM7   = (1 << 43)
-    REG_MM8   = (1 << 44)
-    REG_ALL   = (1 << 45) - 1
-    REG_INVALID = (1 << 45)
+    REG_MM0   = (1 << 35)
+    REG_MM1   = (1 << 36)
+    REG_MM2   = (1 << 37)
+    REG_MM3   = (1 << 38)
+    REG_MM4   = (1 << 39)
+    REG_MM5   = (1 << 40)
+    REG_MM6   = (1 << 41)
+    REG_MM7   = (1 << 42)
+    REG_MM8   = (1 << 43)
+    REG_ALL   = (1 << 44) - 1
+    REG_INVALID = (1 << 44)
 
 class ABI(Flag) :
     ABI_SYSTEMV = 0
@@ -113,7 +112,6 @@ RegStringLookup = {
     "XMM15": Regs.REG_XMM15,
     "GS":    Regs.REG_GS,
     "FS":    Regs.REG_FS,
-    "FLAGS": Regs.REG_FLAGS,
     "ALL":   Regs.REG_ALL,
     "MM0":   Regs.REG_MM0,
     "MM1":   Regs.REG_MM1,

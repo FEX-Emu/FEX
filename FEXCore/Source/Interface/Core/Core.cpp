@@ -227,39 +227,46 @@ namespace FEXCore::Context {
 
     // Currently these flags just map 1:1 inside of the resulting value.
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
-      if (i == X86State::RFLAG_PF_LOC || i == X86State::RFLAG_AF_LOC) {
-        // Intentionally do nothing.
-        // These contain multiple bits which can corrupt other members when compacted.
-        continue;
+      switch (i) {
+        case X86State::RFLAG_CF_RAW_LOC:
+        case X86State::RFLAG_PF_RAW_LOC:
+        case X86State::RFLAG_AF_RAW_LOC:
+        case X86State::RFLAG_ZF_RAW_LOC:
+        case X86State::RFLAG_SF_RAW_LOC:
+        case X86State::RFLAG_OF_RAW_LOC:
+          // Intentionally do nothing.
+          // These contain multiple bits which can corrupt other members when compacted.
+          break;
+        default:
+          EFLAGS |= uint32_t{Frame->State.flags[i]} << i;
+          break;
       }
-
-      EFLAGS |= uint32_t{Frame->State.flags[i]} << i;
     }
 
     // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
     uint32_t Packed_NZCV{};
     memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
-    uint32_t OF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_LOC)) & 1;
-    uint32_t CF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_LOC)) & 1;
-    uint32_t ZF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_LOC)) & 1;
-    uint32_t SF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_LOC)) & 1;
+    uint32_t OF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_RAW_LOC)) & 1;
+    uint32_t CF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_RAW_LOC)) & 1;
+    uint32_t ZF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_RAW_LOC)) & 1;
+    uint32_t SF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_RAW_LOC)) & 1;
 
     // Pack in to EFLAGS
-    EFLAGS |= OF << X86State::RFLAG_OF_LOC;
-    EFLAGS |= CF << X86State::RFLAG_CF_LOC;
-    EFLAGS |= ZF << X86State::RFLAG_ZF_LOC;
-    EFLAGS |= SF << X86State::RFLAG_SF_LOC;
+    EFLAGS |= OF << X86State::RFLAG_OF_RAW_LOC;
+    EFLAGS |= CF << X86State::RFLAG_CF_RAW_LOC;
+    EFLAGS |= ZF << X86State::RFLAG_ZF_RAW_LOC;
+    EFLAGS |= SF << X86State::RFLAG_SF_RAW_LOC;
 
     // PF calculation is deferred, calculate it now.
     // Popcount the 8-bit flag and then extract the lower bit.
-    uint32_t PFByte = Frame->State.flags[X86State::RFLAG_PF_LOC];
+    uint32_t PFByte = Frame->State.flags[X86State::RFLAG_PF_RAW_LOC];
     uint32_t PF = std::popcount(PFByte ^ 1) & 1;
-    EFLAGS |= PF << X86State::RFLAG_PF_LOC;
+    EFLAGS |= PF << X86State::RFLAG_PF_RAW_LOC;
 
     // AF calculation is deferred, calculate it now.
     // XOR with PF byte and extract bit 4.
-    uint32_t AF = ((Frame->State.flags[X86State::RFLAG_AF_LOC] ^ PFByte) & (1 << 4)) ? 1 : 0;
-    EFLAGS |= AF << X86State::RFLAG_AF_LOC;
+    uint32_t AF = ((Frame->State.flags[X86State::RFLAG_AF_RAW_LOC] ^ PFByte) & (1 << 4)) ? 1 : 0;
+    EFLAGS |= AF << X86State::RFLAG_AF_RAW_LOC;
 
     return EFLAGS;
   }
@@ -268,19 +275,19 @@ namespace FEXCore::Context {
     const auto Frame = Thread->CurrentFrame;
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
       switch (i) {
-        case X86State::RFLAG_OF_LOC:
-        case X86State::RFLAG_CF_LOC:
-        case X86State::RFLAG_ZF_LOC:
-        case X86State::RFLAG_SF_LOC:
+        case X86State::RFLAG_OF_RAW_LOC:
+        case X86State::RFLAG_CF_RAW_LOC:
+        case X86State::RFLAG_ZF_RAW_LOC:
+        case X86State::RFLAG_SF_RAW_LOC:
           // Intentionally do nothing.
         break;
-        case X86State::RFLAG_AF_LOC:
+        case X86State::RFLAG_AF_RAW_LOC:
           // AF stored in bit 4 in our internal representation. It is also
           // XORed with byte 4 of the PF byte, but we write that as zero here so
           // we don't need any special handling for that.
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? (1 << 4) : 0;
           break;
-        case X86State::RFLAG_PF_LOC:
+        case X86State::RFLAG_PF_RAW_LOC:
           // PF is inverted in our internal representation.
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 0 : 1;
           break;
@@ -292,10 +299,10 @@ namespace FEXCore::Context {
 
     // Calculate packed NZCV
     uint32_t Packed_NZCV{};
-    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_OF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_LOC) : 0;
-    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_CF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_LOC) : 0;
-    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_ZF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_LOC) : 0;
-    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_SF_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_OF_RAW_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_RAW_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_CF_RAW_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_RAW_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_ZF_RAW_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_RAW_LOC) : 0;
+    Packed_NZCV |= (EFLAGS & (1U << X86State::RFLAG_SF_RAW_LOC)) ? 1U << IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_SF_RAW_LOC) : 0;
     memcpy(&Frame->State.flags[X86State::RFLAG_NZCV_LOC], &Packed_NZCV, sizeof(Packed_NZCV));
 
     // Reserved, Read-As-1, Write-as-1
