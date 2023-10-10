@@ -48,6 +48,10 @@ namespace FEXCore::Context {
     CompileBlock(Thread->CurrentFrame, GuestRIP);
   }
 
+  void FEXCore::Context::ContextImpl::CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) {
+    CompileBlock(Thread->CurrentFrame, GuestRIP, MaxInst);
+  }
+
   FEXCore::Context::ExitReason FEXCore::Context::ContextImpl::GetExitReason() {
     return ParentThread->ExitReason;
   }

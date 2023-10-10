@@ -90,6 +90,7 @@ namespace FEXCore::Context {
       void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) override;
 
       void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) override;
+      void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
 
       int GetProgramStatus() const override;
 
@@ -322,7 +323,7 @@ namespace FEXCore::Context {
       uint64_t StartAddr;
       uint64_t Length;
     };
-    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo);
+    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst);
 
     struct CompileCodeResult {
       void* CompiledCode;
@@ -333,8 +334,8 @@ namespace FEXCore::Context {
       uint64_t StartAddr;
       uint64_t Length;
     };
-    [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+    [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);
+    uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP, uint64_t MaxInst = 0);
 
     // same as CompileBlock, but aborts on failure
     void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);

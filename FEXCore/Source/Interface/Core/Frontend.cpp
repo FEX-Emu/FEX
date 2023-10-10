@@ -1095,7 +1095,7 @@ const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
+void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC, uint64_t MaxInst, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
@@ -1132,6 +1132,10 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   fextl::set<uint64_t> CodePages = { CurrentCodePage };
 
   AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
+
+  if (MaxInst == 0) {
+    MaxInst = CTX->Config.MaxInstPerBlock;
+  }
 
   while (!BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
@@ -1195,9 +1199,9 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
         CanContinue = true;
       }
 
-      bool FinalInstruction = DecodedSize >= CTX->Config.MaxInstPerBlock ||
+      bool FinalInstruction = DecodedSize >= MaxInst ||
           DecodedSize >= DefaultDecodedBufferSize ||
-          TotalInstructions >= CTX->Config.MaxInstPerBlock;
+          TotalInstructions >= MaxInst;
 
       if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
         // If we have multiblock enabled

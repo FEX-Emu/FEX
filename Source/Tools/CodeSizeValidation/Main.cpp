@@ -230,6 +230,7 @@ struct TestInfo {
   uint64_t Optimal;
   int64_t ExpectedInstructionCount;
   uint64_t CodeSize;
+  uint64_t x86InstCount;
   uint32_t Cookie;
   uint8_t Code[];
 };
@@ -258,7 +259,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
     LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
 
     // Compile the INST.
-    CTX->CompileRIP(Thread, CodeRIP);
+    CTX->CompileRIPCount(Thread, CodeRIP, CurrentTest->x86InstCount);
 
     // Go to the next test.
     CurrentTest = reinterpret_cast<TestInfo const*>(&CurrentTest->Code[CurrentTest->CodeSize]);
