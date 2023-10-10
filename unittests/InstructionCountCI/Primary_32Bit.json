@@ -342,6 +342,22 @@
         "str w20, [x28, #728]"
       ]
     },
+    "push ax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x50",
+      "ExpectedArm64ASM": [
+        "strh w4, [x8, #-2]!"
+      ]
+    },
+    "push eax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x50",
+      "ExpectedArm64ASM": [
+        "str w4, [x8, #-4]!"
+      ]
+    },
     "dec eax": {
       "ExpectedInstructionCount": 10,
       "Optimal": "No",
