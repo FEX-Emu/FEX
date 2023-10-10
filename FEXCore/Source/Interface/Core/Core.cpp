@@ -833,7 +833,7 @@ namespace FEXCore::Context {
     }
   }
 
-  ContextImpl::GenerateIRResult ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {
+  ContextImpl::GenerateIRResult ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
     FEXCORE_PROFILE_SCOPED("GenerateIR");
 
     Thread->OpDispatcher->ReownOrClaimBuffer();
@@ -858,7 +858,7 @@ namespace FEXCore::Context {
 
       bool HadDispatchError {false};
 
-      Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
+      Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
           static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
         }
@@ -1012,7 +1012,7 @@ namespace FEXCore::Context {
     };
   }
 
-  ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
@@ -1063,7 +1063,7 @@ namespace FEXCore::Context {
 
     if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols());
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
 
       // Setup pointers to internal structures
       IRList = IRCopy;
@@ -1105,7 +1105,7 @@ namespace FEXCore::Context {
     }
   }
 
-  uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+  uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP, uint64_t MaxInst) {
     FEXCORE_PROFILE_SCOPED("CompileBlock");
     auto Thread = Frame->Thread;
 
@@ -1125,7 +1125,7 @@ namespace FEXCore::Context {
     bool GeneratedIR {};
     uint64_t StartAddr {}, Length {};
 
-    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
+    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP, MaxInst);
     CodePtr = Code;
     IRList = IR;
     DebugData = Data;

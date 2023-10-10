@@ -34,7 +34,7 @@ public:
 
   Decoder(FEXCore::Context::ContextImpl *ctx);
   ~Decoder();
-  void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+  void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, uint64_t MaxInst, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
   DecodedBlockInformation const *GetDecodedBlockInfo() const {
     return &BlockInfo;

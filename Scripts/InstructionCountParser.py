@@ -17,11 +17,13 @@ class TestData:
     optimal: int
     expectedinstructioncount: int
     code: bytes
-    def __init__(self, Name, Optimal, ExpectedInstructionCount, Code):
+    instructions: list
+    def __init__(self, Name, Optimal, ExpectedInstructionCount, Code, Instructions):
         self.name = Name
         self.expectedinstructioncount = ExpectedInstructionCount
         self.optimal = Optimal
         self.code = Code
+        self.instructions = Instructions
 
     @property
     def Name(self):
@@ -38,6 +40,10 @@ class TestData:
     @property
     def Code(self):
         return self.code
+
+    @property
+    def Instructions(self):
+        return self.instructions
 
 TestDataMap = {}
 class HostFeatures(Flag) :
@@ -104,6 +110,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
     for key, items in json_data["Instructions"].items():
         ExpectedInstructionCount = 0
         Optimal = 0
+        Instructions = []
         if ("ExpectedInstructionCount" in items):
             ExpectedInstructionCount = int(items["ExpectedInstructionCount"])
 
@@ -115,14 +122,23 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
                 if items["Skip"].upper() == "YES":
                     continue
 
+        if "x86Insts" in items:
+            Instructions = items["x86Insts"]
+        else:
+            # No list of instructions, only one which is the key.
+            Instructions.append(key)
         TestName = base64.b64encode("{}.{}.{}".format(str(hash(json_filepath)), json_filename, key).encode("ascii")).decode("ascii")
         tmp_asm = "/tmp/{}.asm".format(TestName)
         tmp_asm_out = "/tmp/{}.asm.o".format(TestName)
         logging.info("'{}' -> '{}' -> '{}'".format(key, tmp_asm, tmp_asm_out))
 
+        if TestName in TestDataMap:
+            sys.exit("Duplicate test name {} in tests".format(TestName))
+
         with open(tmp_asm, "w") as tmp_asm_file:
             tmp_asm_file.write("BITS {};\n".format(Bitness))
-            tmp_asm_file.write("{}\n".format(key))
+            for Inst in Instructions:
+                tmp_asm_file.write("{}\n".format(Inst))
 
         Process = subprocess.Popen(["nasm", tmp_asm, "-o", tmp_asm_out])
         Process.wait()
@@ -144,7 +160,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         with open(tmp_asm_out, "rb") as tmp_asm_out_file:
             binary_hex = tmp_asm_out_file.read()
 
-        TestDataMap[TestName] = TestData(key, Optimal, ExpectedInstructionCount, binary_hex)
+        TestDataMap[TestName] = TestData(key, Optimal, ExpectedInstructionCount, binary_hex, Instructions)
 
         os.remove(tmp_asm)
         os.remove(tmp_asm_out)
@@ -165,6 +181,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         #   uint64_t Optimal;
         #   int64_t ExpectedInstructionCount;
         #   uint64_t CodeSize;
+        #   uint64_t x86InstCount;
         #   uint32_t Cookie;
         #   uint8_t Code[CodeSize];
         # };
@@ -191,6 +208,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         MemData += struct.pack('Q', item.Optimal)
         MemData += struct.pack('q', item.ExpectedInstructionCount)
         MemData += struct.pack('Q', len(item.Code))
+        MemData += struct.pack('Q', len(item.Instructions))
         MemData += struct.pack('I', 0x41424344)
         MemData += item.Code
 
