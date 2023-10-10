@@ -53,7 +53,7 @@ uint64_t Dispatcher::GetCompileBlockPtr() {
   return CompileBlockPtr.Data;
 }
 
-constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
+constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
 Dispatcher::Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
   : Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)

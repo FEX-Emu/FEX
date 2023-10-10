@@ -238,6 +238,18 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
   }
 }
 
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::FloatCompareOp Arg) {
+  switch (Arg) {
+    case FloatCompareOp::EQ:  *out << "FEQ"; break;
+    case FloatCompareOp::LT:  *out << "FLT"; break;
+    case FloatCompareOp::LE:  *out << "FLE"; break;
+    case FloatCompareOp::UNO: *out << "UNO"; break;
+    case FloatCompareOp::NEQ: *out << "NEQ"; break;
+    case FloatCompareOp::ORD: *out << "ORD"; break;
+    default: *out << "<Unknown OpSize Type>"; break;
+  }
+}
+
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
   *out << "{" << Arg.ErrorRegister << ".";
   *out << static_cast<uint32_t>(Arg.Signal) << ".";

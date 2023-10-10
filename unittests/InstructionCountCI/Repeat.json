@@ -1,0 +1,11 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {}
+}

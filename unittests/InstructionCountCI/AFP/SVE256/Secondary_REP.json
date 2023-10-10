@@ -1,0 +1,251 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "AFP"
+    ],
+    "DisabledHostFeatures": []
+  },
+  "Instructions": {
+    "cvtsi2ss xmm0, eax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "scvtf s16, w4"
+      ]
+    },
+    "cvtsi2ss xmm0, dword [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x4]",
+        "scvtf s16, s2"
+      ]
+    },
+    "cvtsi2ss xmm0, qword [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x2a"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x4]",
+        "scvtf s16, x20"
+      ]
+    },
+    "sqrtss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf3 0x0f 0x51",
+      "ExpectedArm64ASM": [
+        "fsqrt s16, s17"
+      ]
+    },
+    "rsqrtss xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0xf3 0x0f 0x52"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov s0, #0x70 (1.0000)",
+        "fsqrt s1, s17",
+        "fdiv s16, s0, s1"
+      ]
+    },
+    "rcpss xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0xf3 0x0f 0x53"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov s0, #0x70 (1.0000)",
+        "fdiv s16, s0, s17"
+      ]
+    },
+    "addss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x58"
+      ],
+      "ExpectedArm64ASM": [
+        "fadd s16, s16, s17"
+      ]
+    },
+    "mulss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x59"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul s16, s16, s17"
+      ]
+    },
+    "cvtss2sd xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf3 0x0f 0x5a",
+      "ExpectedArm64ASM": [
+        "fcvt d16, s17"
+      ]
+    },
+    "cvtss2sd xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0xf3 0x0f 0x5a",
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "fcvt d16, s2"
+      ]
+    },
+    "subss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x5c"
+      ],
+      "ExpectedArm64ASM": [
+        "fsub s16, s16, s17"
+      ]
+    },
+    "minss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x5d"
+      ],
+      "ExpectedArm64ASM": [
+        "fmin s16, s16, s17"
+      ]
+    },
+    "divss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x5e"
+      ],
+      "ExpectedArm64ASM": [
+        "fdiv s16, s16, s17"
+      ]
+    },
+    "maxss xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0x5f"
+      ],
+      "ExpectedArm64ASM": [
+        "fmax s16, s16, s17"
+      ]
+    },
+    "cmpss xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmeq s16, s16, s17"
+      ]
+    },
+    "cmpss xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmgt s16, s17, s16"
+      ]
+    },
+    "cmpss xmm0, xmm1, 2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmge s16, s17, s16"
+      ]
+    },
+    "cmpss xmm0, xmm1, 3": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmge s0, s16, s17",
+        "fcmgt s1, s17, s16",
+        "orr v0.8b, v0.8b, v1.8b",
+        "mvn v0.8b, v0.8b",
+        "ptrue p0.s, vl1",
+        "mov z16.s, p0/m, z0.s"
+      ]
+    },
+    "cmpss xmm0, xmm1, 4": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmeq s0, s16, s17",
+        "mvn v0.8b, v0.8b",
+        "ptrue p0.s, vl1",
+        "mov z16.s, p0/m, z0.s"
+      ]
+    },
+    "cmpss xmm0, xmm1, 5": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmgt s2, s17, s16",
+        "mvn v2.16b, v2.16b",
+        "mov v16.s[0], v2.s[0]"
+      ]
+    },
+    "cmpss xmm0, xmm1, 6": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmge s2, s17, s16",
+        "mvn v2.16b, v2.16b",
+        "mov v16.s[0], v2.s[0]"
+      ]
+    },
+    "cmpss xmm0, xmm1, 7": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "0xf3 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmge s0, s16, s17",
+        "fcmgt s1, s17, s16",
+        "orr v0.8b, v0.8b, v1.8b",
+        "ptrue p0.s, vl1",
+        "mov z16.s, p0/m, z0.s"
+      ]
+    }
+  }
+}

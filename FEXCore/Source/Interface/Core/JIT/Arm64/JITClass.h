@@ -26,6 +26,7 @@ $end_info$
 #include <array>
 #include <cstdint>
 #include <utility>
+#include <variant>
 
 namespace FEXCore::Core {
   struct InternalThreadState;
@@ -59,6 +60,7 @@ private:
   const bool HostSupportsSVE128{};
   const bool HostSupportsSVE256{};
   const bool HostSupportsRPRES{};
+  const bool HostSupportsAFP{};
 
   ARMEmitter::BiDirectionalLabel *PendingTargetLabel;
   FEXCore::Context::ContextImpl *CTX;
@@ -208,6 +210,11 @@ private:
 
   uint32_t SpillSlots{};
   using OpType = void (Arm64JITCore::*)(IR::IROp_Header const *IROp, IR::NodeID Node);
+
+  using ScalarBinaryOpCaller = std::function<void(ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2)>;
+  void VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2);
+  using ScalarUnaryOpCaller = std::function<void(ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar)>;
+  void VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarUnaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> Vector2);
 
   // Runtime selection;
   // Load and store register style.

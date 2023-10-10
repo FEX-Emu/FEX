@@ -156,6 +156,7 @@
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
     "RoundType": "RoundType",
+    "FloatCompareOp": "FloatCompareOp",
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant"
   },
@@ -1266,6 +1267,158 @@
                  "Ordering flag result is true if either float input is NaN"
                 ],
         "DestSize": "4"
+      }
+    },
+    "VectorScalar": {
+      "FPR = VFAddScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'add' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFSubScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'sub' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFMulScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'mul' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFDivScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'div' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFMinScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'min' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics.",
+                 "Additionally matches x86 zero and NaN semantics",
+                 "If both source operands are zero, return the second operand (in the case of negative and positive zero)",
+                 "If either source operand is NaN then return the second operand."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFMaxScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'max' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics.",
+                 "Additionally matches x86 zero and NaN semantics",
+                 "If both source operands are zero, return the second operand (in the case of negative and positive zero)",
+                 "If either source operand is NaN then return the second operand."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'sqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'rsqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFRecpScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'recip' on Vector2, inserting in to Vector1 and storing in to the destination.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFToFScalarInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'cvt' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / DstElementSize"
+      },
+      "FPR = VSToFVectorInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
+        "Desc": ["Does a Vector 'scvt' between Vector1 and Vector2.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics.",
+                 "HasTwoElements is slightly different than most of these scalar operations.",
+                 "Handles the edge case of cvtpi2ps xmm0, mm0 which is two elements in the lower 64-bits"
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / DstElementSize"
+      },
+      "FPR = VSToFGPRInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector, GPR:$Src, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'cvt' between Vector1 and GPR.",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / DstElementSize"
+      },
+      "FPR = VFToIScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, RoundType:$Round, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar round float to integral on Vector2, inserting in to Vector1 and storing in to the destination.",
+                 "Rounding mode determined by argument",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFCMPScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FloatCompareOp:$Op, i1:$ZeroUpperBits": {
+        "Desc": ["Does a scalar 'cmp' between Vector1 and Vecto2, inserting in to Vector1 and storing in to the destination.",
+                 "Compare op determined by argument",
+                 "Inserting the result in to the lower element of Vector1 and returning the results.",
+                 "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
+                 "For 128-bit operation this matches SSE insert semantics.",
+                 "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
       }
     },
     "Vector": {
