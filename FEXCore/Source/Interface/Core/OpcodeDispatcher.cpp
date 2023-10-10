@@ -512,7 +512,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest , Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
 
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
