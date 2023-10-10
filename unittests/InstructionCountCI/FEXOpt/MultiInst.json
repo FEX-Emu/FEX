@@ -1,0 +1,64 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP"
+    ]
+  },
+  "Comment": [
+    "These are instruction combinations that could be more optimal if FEX optimized for them"
+  ],
+  "Instructions": {
+    "push ax, bx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Mergable 16-bit pushes. May or may not be an optimization."
+      ],
+      "x86Insts": [
+        "push ax",
+        "push bx"
+      ],
+      "ExpectedArm64ASM": [
+        "strh w4, [x8, #-2]!",
+        "strh w7, [x8, #-2]!"
+      ]
+    },
+    "push rax, rbx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Mergable 64-bit pushes"
+      ],
+      "x86Insts": [
+        "push rax",
+        "push rbx"
+      ],
+      "ExpectedArm64ASM": [
+        "str x4, [x8, #-8]!",
+        "str x7, [x8, #-8]!"
+      ]
+    },
+    "adds xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Redundant scalar adds that can get eliminated without AFP."
+      ],
+      "x86Insts": [
+        "addss xmm0, xmm1",
+        "addss xmm0, xmm2"
+      ],
+      "ExpectedArm64ASM": [
+        "fadd s0, s16, s17",
+        "mov v16.s[0], v0.s[0]",
+        "fadd s0, s16, s18",
+        "mov v16.s[0], v0.s[0]"
+      ]
+    }
+  }
+}
