@@ -2451,7 +2451,8 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
     return;
   }
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, false,
+                         MemoryAccessType::ACCESS_DEFAULT, true);
   auto* Result = Src;
   if (DoRotation) [[likely]] {
     Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
