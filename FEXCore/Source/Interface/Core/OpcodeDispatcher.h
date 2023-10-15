@@ -27,6 +27,43 @@ namespace FEXCore::IR {
 class Pass;
 class PassManager;
 
+enum class MemoryAccessType {
+  // Choose TSO or Non-TSO depending on access type
+  ACCESS_DEFAULT,
+  // TSO access behaviour
+  ACCESS_TSO,
+  // Non-TSO access behaviour
+  ACCESS_NONTSO,
+  // Non-temporal streaming
+  ACCESS_STREAM,
+};
+
+struct LoadSourceOptions {
+  // Alignment of the load in bytes. -1 signifies unaligned
+  int8_t Align = -1;
+
+  // Whether or not to load the data if a memory access occurs.
+  // If set to false, then the address that would have been loaded from
+  // will be returned instead.
+  //
+  // Note: If returning the address, make sure to apply the segment offset
+  //       after with AppendSegmentOffset().
+  //
+  bool LoadData = true;
+
+  // Use to force a load even if the underlying type isn't loadable.
+  bool ForceLoad = false;
+
+  // Specifies the access type of the load.
+  MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT;
+
+  // Whether or not a zero extend should clear the upper bits
+  // in the register (e.g. an 8-bit load would clear the upper 24 bits
+  // or 56 bits depending on the operating mode).
+  // If true, no zero-extension occurs.
+  bool AllowUpperGarbage = false;
+};
+
 class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
@@ -1114,24 +1151,15 @@ private:
 
   void UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t SegmentReg);
 
-  enum class MemoryAccessType {
-    // Choose TSO or Non-TSO depending on access type
-    ACCESS_DEFAULT,
-    // TSO access behaviour
-    ACCESS_TSO,
-    // Non-TSO access behaviour
-    ACCESS_NONTSO,
-    // Non-temporal streaming
-    ACCESS_STREAM,
-  };
   OrderedNode *LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
   OrderedNode *LoadXMMRegister(uint32_t XMM);
   void StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, int8_t Size = -1, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, OrderedNode *const Src);
 
   OrderedNode *GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset = 0);
-  OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT, bool AllowUpperGarbage = false);
-  OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT, bool AllowUpperGarbage = false);
+
+  OrderedNode *LoadSource(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint32_t Flags, const LoadSourceOptions& Options = {});
+  OrderedNode *LoadSource_WithOpSize(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);

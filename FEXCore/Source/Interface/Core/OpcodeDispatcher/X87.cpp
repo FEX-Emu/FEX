@@ -139,7 +139,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
 
   if (!Op->Src[0].IsNone()) {
     // Read from memory
-    data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+    data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags);
   }
   else {
     // Implicit arg
@@ -178,7 +178,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   SetX87Top(top);
 
   // Read from memory
-  OrderedNode *data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
+  OrderedNode *data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
   OrderedNode *converted = _F80BCDLoad(data);
   _StoreContextIndexed(converted, top, 16, MMBaseOffset(), 16, FPRClass);
 }
@@ -238,7 +238,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   size_t read_width = GetSrcSize(Op);
 
   // Read from memory
-  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags);
 
   auto zero = _Constant(0);
 
@@ -334,11 +334,11 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
     // Memory arg
     if constexpr (width == 16 || width == 32 || width == 64) {
       if constexpr (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       }
       else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, width / 8);
       }
     }
@@ -395,11 +395,11 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
 
     if constexpr (width == 16 || width == 32 || width == 64) {
       if constexpr (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       }
       else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, width / 8);
       }
     }
@@ -458,11 +458,11 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
 
     if constexpr (width == 16 || width == 32 || width == 64) {
       if constexpr (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       }
       else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, width / 8);
       }
     }
@@ -543,11 +543,11 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
 
     if constexpr (width == 16 || width == 32 || width == 64) {
       if constexpr (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       }
       else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, width / 8);
       }
     }
@@ -724,11 +724,11 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
     // Memory arg
     if constexpr (width == 16 || width == 32 || width == 64) {
       if constexpr (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       }
       else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, width / 8);
       }
     }
@@ -1014,7 +1014,7 @@ void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
 
 void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
@@ -1052,7 +1052,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   // 4 bytes : data pointer selector
 
   auto Size = GetDstSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   {
@@ -1099,7 +1099,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
-  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
 
@@ -1110,7 +1110,7 @@ void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
-  OrderedNode *NewFSW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *NewFSW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   ReconstructX87StateFromFSW(NewFSW);
 }
 
@@ -1139,7 +1139,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   // 4 bytes : data pointer selector
 
   auto Size = GetDstSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   OrderedNode *Top = GetX87Top();
@@ -1213,7 +1213,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);

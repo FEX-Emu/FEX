@@ -23,8 +23,8 @@ class OrderedNode;
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto Tmp = _Ror(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
   auto Top = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Src, 3), Tmp);
@@ -34,8 +34,8 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   OrderedNode *NewVec = _VExtr(16, 8, Dest, Src, 1);
 
@@ -46,8 +46,8 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // ROR by 31 is equivalent to a ROL by 1
   auto ThirtyOne = _Constant(32, 31);
@@ -102,8 +102,8 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   const FnType Fn = fn_array[Imm8];
   auto K = _Constant(32, k_array[Imm8]);
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto W0E = _VExtractToGPR(16, 4, Src, 3);
   auto W1  = _VExtractToGPR(16, 4, Src, 2);
@@ -155,8 +155,8 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
   };
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto W4 = _VExtractToGPR(16, 4, Src, 0);
   auto W3 = _VExtractToGPR(16, 4, Dest, 3);
@@ -182,8 +182,8 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 17)), _Ror(OpSize::i32Bit, W, _Constant(32, 19))), _Lshr(OpSize::i32Bit, W, _Constant(32, 10)));
   };
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto W14 = _VExtractToGPR(16, 4, Src, 2);
   auto W15 = _VExtractToGPR(16, 4, Src, 3);
@@ -214,8 +214,8 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), _Ror(OpSize::i32Bit, E, _Constant(32, 11))), _Ror(OpSize::i32Bit, E, _Constant(32, 25)));
   };
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
@@ -260,14 +260,14 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Result = _VAESImc(Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESEnc(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
@@ -280,8 +280,8 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESENC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENC unimplemented");
 
-  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESEnc(DstSize, State, Key, ZeroRegister);
 
@@ -289,8 +289,8 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESEncLast(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
@@ -303,8 +303,8 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESENCLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
 
-  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESEncLast(DstSize, State, Key, ZeroRegister);
 
@@ -312,8 +312,8 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESDec(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
@@ -326,8 +326,8 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESDEC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDEC unimplemented");
 
-  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESDec(DstSize, State, Key, ZeroRegister);
 
@@ -335,8 +335,8 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESDecLast(16, Dest, Src, ZeroRegister);
   StoreResult(FPRClass, Op, Result, -1);
@@ -349,8 +349,8 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESDECLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDECLAST unimplemented");
 
-  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = _VAESDecLast(DstSize, State, Key, ZeroRegister);
 
@@ -358,7 +358,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
 }
 
 OrderedNode* OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
@@ -375,8 +375,8 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Selector needs to be literal here");
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Data.Literal.Value);
 
   auto Res = _PCLMUL(16, Dest, Src, Selector);
@@ -388,8 +388,8 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
 
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
 
   OrderedNode *Res = _PCLMUL(DstSize, Src1, Src2, Selector);
