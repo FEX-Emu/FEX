@@ -482,6 +482,9 @@ public:
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
 
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void AVXVector_CVT_Float_To_Float(OpcodeArgs);
+
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize>
   void InsertCVTGPR_To_FPR(OpcodeArgs);
@@ -551,6 +554,9 @@ public:
 
   void VMOVSDOp(OpcodeArgs);
   void VMOVSSOp(OpcodeArgs);
+
+  void VMOVAPS_VMOVAPDOp(OpcodeArgs);
+  void VMOVUPS_VMOVUPDOp(OpcodeArgs);
 
   void VMPSADBWOp(OpcodeArgs);
 
@@ -1121,7 +1127,7 @@ private:
                                              const X86Tables::DecodedOperand& Src1Op,
                                              const X86Tables::DecodedOperand& Src2Op);
 
-  void Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize);
+  void Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
 
   OrderedNode* Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 

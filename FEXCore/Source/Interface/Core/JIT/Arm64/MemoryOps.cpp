@@ -1520,13 +1520,13 @@ DEF_OP(VBroadcastFromMem) {
                       ElementSize == 4 || ElementSize == 8 ||
                       ElementSize == 16, "Invalid element size");
 
-  if (HostSupportsSVE128 || HostSupportsSVE256) {
-    if (Is256Bit) {
-      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use SVE 256-bit broadcast");
-    }
+  if (Is256Bit && !HostSupportsSVE256) {
+    LOGMAN_MSG_A_FMT("{}: 256-bit vectors must support SVE256", __func__);
+    return;
+  }
 
-    const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B.Zeroing()
-                                             : PRED_TMP_16B.Zeroing();
+  if (Is256Bit && HostSupportsSVE256) {
+    const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
 
     switch (ElementSize) {
     case 1:
