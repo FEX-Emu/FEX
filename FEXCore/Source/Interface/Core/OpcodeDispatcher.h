@@ -29,13 +29,13 @@ class PassManager;
 
 enum class MemoryAccessType {
   // Choose TSO or Non-TSO depending on access type
-  ACCESS_DEFAULT,
+  DEFAULT,
   // TSO access behaviour
-  ACCESS_TSO,
+  TSO,
   // Non-TSO access behaviour
-  ACCESS_NONTSO,
+  NONTSO,
   // Non-temporal streaming
-  ACCESS_STREAM,
+  STREAM,
 };
 
 struct LoadSourceOptions {
@@ -55,7 +55,7 @@ struct LoadSourceOptions {
   bool ForceLoad = false;
 
   // Specifies the access type of the load.
-  MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT;
+  MemoryAccessType AccessType = MemoryAccessType::DEFAULT;
 
   // Whether or not a zero extend should clear the upper bits
   // in the register (e.g. an 8-bit load would clear the upper 24 bits
@@ -1160,9 +1160,9 @@ private:
 
   OrderedNode *LoadSource(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint32_t Flags, const LoadSourceOptions& Options = {});
   OrderedNode *LoadSource_WithOpSize(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
-  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
   constexpr OpSize GetGuestVectorLength() const {
     return CTX->HostFeatures.SupportsAVX ? OpSize::i256Bit : OpSize::i128Bit;

@@ -5048,8 +5048,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
     Src = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     LoadableType = true;
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
@@ -5060,8 +5060,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
     Src = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
 
     LoadableType = true;
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsRIPRelative()) {
@@ -5095,8 +5095,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
         Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
       }
-      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+        AccessType = MemoryAccessType::NONTSO;
       }
     }
 
@@ -5110,8 +5110,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
         Tmp = GPR;
       }
 
-      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+        AccessType = MemoryAccessType::NONTSO;
       }
     }
 
@@ -5149,7 +5149,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
   if ((LoadableType && LoadData) || ForceLoad) {
     Src = AppendSegmentOffset(Src, Flags);
 
-    if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
+    if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
       Src = _LoadMem(Class, OpSize, Src, Align == -1 ? OpSize : Align);
     }
     else {
@@ -5302,8 +5302,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     MemStoreDst = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     MemStore = true;
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
@@ -5312,8 +5312,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     MemStoreDst = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
     MemStore = true;
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsRIPRelative()) {
@@ -5384,7 +5384,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       auto DestAddr = _Add(OpSize::i64Bit, MemStoreDst, _Constant(8));
       _StoreMem(GPRClass, 2, DestAddr, Upper, std::min<uint8_t>(Align, 8));
     } else {
-      if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
+      if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
         _StoreMem(Class, OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
       }
       else {
@@ -5434,7 +5434,7 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
-  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
+  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
 void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {

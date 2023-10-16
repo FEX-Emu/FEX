@@ -36,8 +36,8 @@ void OpDispatchBuilder::MOVVectorOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags,
-                                {.Align = 1, .AccessType = MemoryAccessType::ACCESS_STREAM});
-  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
+                                {.Align = 1, .AccessType = MemoryAccessType::STREAM});
+  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
 void OpDispatchBuilder::MOVAPS_MOVAPDOp(OpcodeArgs) {
