@@ -192,7 +192,7 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
     const uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
       X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
 
-    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false});
     if (DstSize != SrcSize) {
       // If the SrcSize isn't the DstSize then we need to zero extend.
       const uint8_t GPRSize = CTX->GetGPRSize();
@@ -203,7 +203,7 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   else {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
 
-    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false});
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
 }
@@ -231,7 +231,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   OrderedNode *NewSP;
   if (Op->OP == 0xC2) {
-    auto Offset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    auto Offset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     NewSP = _Add(IR::SizeToOpSize(GPRSize), _Add(IR::SizeToOpSize(GPRSize), OldSP, Constant), Offset);
   }
   else {
@@ -357,14 +357,14 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
   // X86 basic ALU ops just do the operation between the destination and a single source
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   uint8_t Size = GetDstSize(Op);
   OrderedNode *Result{};
   OrderedNode *Dest{};
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    auto DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    auto DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
@@ -398,7 +398,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     }
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     auto ALUOp = _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Dest, Src);
     // Overwrite our IR's op type
     ALUOp.first->Header.Op = IROp;
@@ -433,7 +433,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
@@ -444,13 +444,13 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Add(OpSize, Before, ALUOp);
   }
   else {
-    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     Result = _Add(OpSize, Before, ALUOp);
     StoreResult(GPRClass, Op, Result, -1);
   }
@@ -465,7 +465,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   auto Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
@@ -476,13 +476,13 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), ALUOp, DestMem);
     Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Before, ALUOp);
   }
   else {
-    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Before, ALUOp);
     StoreResult(GPRClass, Op, Result, -1);
   }
@@ -498,7 +498,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
@@ -512,7 +512,8 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest , Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest , Op->Flags,
+                                {.AllowUpperGarbage = true});
 
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
@@ -775,7 +776,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   auto ConstantPC = GetRelocatedPC(Op);
 
-  OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   OrderedNode *NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, JMPPCOffset);
 
@@ -807,7 +808,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   const uint8_t Size = GetSrcSize(Op);
-  OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   auto ConstantPCReturn = GetRelocatedPC(Op);
 
@@ -1057,13 +1058,13 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   // Destination is always a GPR.
-  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
   OrderedNode *Src{};
   if (Op->Src[0].IsGPR()) {
-    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
+    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   }
 
   auto SrcCond = SelectCC(Op->OP & 0xF, IR::SizeToOpSize(std::max<uint8_t>(4u, GetSrcSize(Op))), Src, Dest);
@@ -1234,7 +1235,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   CondReg = _Sub(SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, CondReg, _Constant(SrcSize * 8, 1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
@@ -1361,7 +1362,7 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // This is just an unconditional jump
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
-  auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   CalculateDeferredFlags();
 
   // Store the new RIP
@@ -1372,8 +1373,10 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, true);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, 
+                                {.AllowUpperGarbage = true});
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags,
+                                 {.AllowUpperGarbage = true});
 
   auto Size = GetDstSize(Op);
 
@@ -1401,7 +1404,7 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   //
   uint8_t Size = std::min(static_cast<uint8_t>(4), GetSrcSize(Op));
 
-  OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], Size, Op->Flags, -1);
+  OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], Size, Op->Flags);
   if (Size == 2) {
     // This'll make sure to insert in to the lower 16bits without modifying upper bits
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, Size, -1);
@@ -1421,13 +1424,13 @@ void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
   // This will ZExt the loaded size
   // We want to Sext it
   uint8_t Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
 void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   // Store result implicitly zero extends
   StoreResult(GPRClass, Op, Src, -1);
 }
@@ -1436,8 +1439,8 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   auto Size = GetDstSize(Op);
 
@@ -1459,7 +1462,7 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   auto Size = GetSrcSize(Op);
   OrderedNode *Upper = _Sbfe(OpSize::i64Bit, 1, Size * 8 - 1, Src);
 
@@ -1489,10 +1492,10 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     return;
   }
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   if (DestIsMem(Op)) {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
     Dest = AppendSegmentOffset(Dest, Op->Flags);
 
@@ -1500,7 +1503,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
   else {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
     // Swap the contents
     // Order matters here since we don't want to swap context contents for one that effects the other
@@ -1510,7 +1513,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CDQOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   uint8_t DstSize = GetDstSize(Op);
   uint8_t SrcSize = DstSize >> 1;
 
@@ -1614,7 +1617,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   // The loads here also load the selector, NOT the base
 
   if constexpr (ToSeg) {
-    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags, -1);
+    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags);
 
     switch (Op->Dest.Data.GPR.GPR) {
       case FEXCore::X86State::REG_RAX: // ES
@@ -1730,14 +1733,14 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   case 0xA1:
     // Source is memory(literal)
     // Dest is GPR
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, true);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
     StoreResult(GPRClass, Op, Op->Dest, Src, -1);
     break;
   case 0xA2:
   case 0xA3:
     // Source is GPR
     // Dest is memory(literal)
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
     StoreResult(GPRClass, Op, Op->Src[1], Src, -1);
@@ -1748,7 +1751,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPRSize();
 
-  OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
+  OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   OrderedNode *Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   auto Res = _CPUID(Src, Leaf);
@@ -1777,13 +1780,13 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 template<bool SHL1Bit>
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   OrderedNode *Src{};
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   if constexpr (SHL1Bit) {
     Src = _Constant(1);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   }
   const auto Size = GetSrcBitSize(Op);
 
@@ -1803,7 +1806,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -1832,13 +1835,13 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
 template<bool SHR1Bit>
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
   OrderedNode *Src;
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   if constexpr (SHR1Bit) {
     Src = _Constant(1);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   }
 
   auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
@@ -1853,7 +1856,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -1878,10 +1881,10 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  OrderedNode *Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], 1, Op->Flags, -1);
+  OrderedNode *Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], 1, Op->Flags);
 
   const auto Size = GetSrcBitSize(Op);
 
@@ -1935,8 +1938,8 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -1980,8 +1983,8 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   // This instruction conditionally generates flags so we need to insure sane state going in.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   OrderedNode *Shift = LoadGPRRegister(X86State::REG_RCX);
 
@@ -2035,8 +2038,8 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2079,14 +2082,14 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
 template<bool SHR1Bit>
 void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const auto Size = GetSrcBitSize(Op);
 
   if constexpr (SHR1Bit) {
     Src = _Constant(Size, 1);
   } else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   }
 
   if (Size < 32) {
@@ -2104,7 +2107,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2133,13 +2136,13 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
 template<bool Is1Bit>
 void OpDispatchBuilder::ROROp(OpcodeArgs) {
   OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const uint32_t Size = GetSrcBitSize(Op);
   if constexpr (Is1Bit) {
     Src = _Constant(std::max(32U, Size), 1);
   } else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -2172,7 +2175,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2209,7 +2212,7 @@ void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
 template<bool Is1Bit>
 void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const uint32_t Size = GetSrcBitSize(Op);
 
@@ -2217,7 +2220,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   if constexpr (Is1Bit) {
     Src = _Constant(Size, 1);
   } else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -2252,7 +2255,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2289,8 +2292,8 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
-  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
@@ -2302,8 +2305,8 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Essentially (Src1 >> Start) & ((1 << Length) - 1)
   // along with some edge-case handling and flag setting.
 
-  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   const auto Size = GetSrcSize(Op);
   const auto SrcSize = Size * 8;
@@ -2342,7 +2345,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
   auto Result = _And(OpSizeFromSrc(Op), Src, NegatedSrc);
 
@@ -2356,7 +2359,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) ^ Src
   auto One = _Constant(1);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   auto Result = _Xor(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
@@ -2367,7 +2370,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) & Src
   auto One = _Constant(1);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   auto Result = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
@@ -2383,8 +2386,8 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto SrcSize = Op->Src[0].IsGPR() ? GPRSize : Size;
 
-  auto* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1);
-  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags, -1);
+  auto* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags);
 
   auto* Result = [&]() -> OrderedNode* {
     // SARX
@@ -2407,8 +2410,8 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto OperandSize = Size * 8;
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   // Mask off the index so we only consider the lower byte.
   auto MaskedIndex = _And(OpSize::i64Bit, Index, _Constant(0xFF));
@@ -2451,8 +2454,7 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
     return;
   }
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, false,
-                         MemoryAccessType::ACCESS_DEFAULT, true);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Result = Src;
   if (DoRotation) [[likely]] {
     Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
@@ -2471,7 +2473,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPRSize();
   const auto Src1Size = Op->Src[1].IsGPR() ? GPRSize : OperandSize;
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], Src1Size, Op->Flags, -1);
+  OrderedNode* Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], Src1Size, Op->Flags);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, GPRSize);
 
   // As per the Intel Software Development Manual, if the destination and
@@ -2490,16 +2492,16 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
-  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   auto Result = _PDep(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
 }
 
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
-  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
@@ -2523,8 +2525,8 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
     }
   }();
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto* Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  auto* Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   auto ALUOp = _Add(OpSize, Src, Flag);
   auto Result = _Add(OpSize, Before, ALUOp);
@@ -2548,7 +2550,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2594,7 +2596,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   const auto SizeBit = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2629,8 +2631,8 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Res = Src >> Shift
@@ -2686,8 +2688,8 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
@@ -2780,7 +2782,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   const auto Size = GetSrcBitSize(Op);
   const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
@@ -2817,8 +2819,8 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Res = Src << Shift
@@ -2876,8 +2878,8 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
@@ -2945,7 +2947,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   } else {
     // Can only be an immediate
     // Masked by operand size
@@ -2956,7 +2958,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -2971,7 +2973,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
   } else {
     // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
@@ -3008,7 +3010,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   } else {
     // Can only be an immediate
     // Masked by operand size
@@ -3019,7 +3021,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -3038,7 +3040,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     Dest = AppendSegmentOffset(Dest, Op->Flags);
 
     // Get the bit selection from the src
@@ -3088,7 +3090,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   } else {
     // Can only be an immediate
     // Masked by operand size
@@ -3099,7 +3101,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -3118,7 +3120,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
@@ -3166,7 +3168,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   } else {
     // Can only be an immediate
     // Masked by operand size
@@ -3177,7 +3179,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
@@ -3196,7 +3198,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Dest, -1);
   } else {
     // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
@@ -3230,8 +3232,8 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
@@ -3252,8 +3254,8 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
@@ -3277,7 +3279,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
@@ -3329,7 +3331,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
@@ -3387,20 +3389,20 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     _AtomicXor(IR::SizeToOpSize(Size), MaskConst, DestMem);
   }
   else {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     Src = _Xor(OpSize::i64Bit, Src, MaskConst);
     StoreResult(GPRClass, Op, Src, -1);
   }
 }
 
 void OpDispatchBuilder::XADDOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Result;
 
   const auto Size = GetSrcBitSize(Op);
@@ -3430,7 +3432,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
@@ -3733,7 +3735,7 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
   // Documentation claims that the 32-bit version of this instruction inserts in to the lower 32-bits of the segment
   // This is incorrect and it instead zero extends the 32-bit value to 64-bit
   auto Size = GetDstSize(Op);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   if constexpr (Seg == Segment::FS) {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_cached));
   }
@@ -3781,7 +3783,7 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
-  auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
   // Store an emulated value in the format of:
   // uint16_t Limit;
@@ -3827,12 +3829,12 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 
   if (IsLocked) {
     HandledLock = true;
-    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   }
 
   Result = _Add(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
@@ -3859,11 +3861,11 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
   if (IsLocked) {
     HandledLock = true;
-    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   }
 
   Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
@@ -3885,7 +3887,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
@@ -3913,7 +3915,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // FEX doesn't support partial faulting REP instructions.
     // Converting this to a `MemSet` IR op optimizes this quite significantly in our codegen.
     // If FEX is to gain support for faulting REP instructions, then this implementation needs to change significantly.
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
@@ -4224,7 +4226,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
     Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
     OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
@@ -4285,7 +4287,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
       OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
@@ -4333,7 +4335,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
     Dest = _Constant(0);
   }
   else {
-    Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags, -1);
+    Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
     Dest = _Rev(IR::SizeToOpSize(Size), Dest);
   }
   StoreResult(GPRClass, Op, Dest, -1);
@@ -4386,14 +4388,14 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (DestIsLockedMem(Op)) {
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
     Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
@@ -4404,7 +4406,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   // This loads the divisor
-  OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
@@ -4457,7 +4459,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
 
 void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   // This loads the divisor
-  OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
@@ -4513,8 +4515,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
-  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   // Find the LSB of this source
   auto Result = _FindLSB(OpSizeFromSrc(Op), Src);
@@ -4534,8 +4536,8 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
-  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   // Find the MSB of this source
   auto Result = _FindMSB(OpSizeFromSrc(Op), Src);
@@ -4572,7 +4574,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
   // This is our source register
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   // 0x80014000
   // 0x80064000
   // 0x80064000
@@ -4584,11 +4586,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     OrderedNode *Src3{};
     OrderedNode *Src3Lower{};
     if (GPRSize == 8 && Size == 4) {
-      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     }
     else {
-      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, -1);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags);
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     }
 
@@ -4650,7 +4652,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       Src3Lower = Src3;
     }
     // If this is a memory location then we want the pointer to it
-    OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
     Src1 = AppendSegmentOffset(Src1, Op->Flags);
 
@@ -4690,7 +4692,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
   // If this is a memory location then we want the pointer to it
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
   Src1 = AppendSegmentOffset(Src1, Op->Flags);
 
@@ -4991,7 +4993,8 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t S
   }
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
+OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand,
+                                                      uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options) {
   LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
                      Operand.IsLiteral() ||
                      Operand.IsGPRDirect() ||
@@ -4999,6 +5002,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
                      Operand.IsRIPRelative() ||
                      Operand.IsSIB(),
                      "Unsupported Src type");
+
+  auto [Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage] = Options;
 
   OrderedNode *Src {nullptr};
   bool LoadableType = false;
@@ -5043,8 +5048,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     Src = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     LoadableType = true;
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
@@ -5055,8 +5060,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     Src = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
 
     LoadableType = true;
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsRIPRelative()) {
@@ -5090,8 +5095,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
         Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
       }
-      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+        AccessType = MemoryAccessType::NONTSO;
       }
     }
 
@@ -5105,8 +5110,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
         Tmp = GPR;
       }
 
-      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+        AccessType = MemoryAccessType::NONTSO;
       }
     }
 
@@ -5144,7 +5149,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   if ((LoadableType && LoadData) || ForceLoad) {
     Src = AppendSegmentOffset(Src, Flags);
 
-    if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
+    if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
       Src = _LoadMem(Class, OpSize, Src, Align == -1 ? OpSize : Align);
     }
     else {
@@ -5212,9 +5217,10 @@ void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode *const Src) {
   _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType, bool AllowUpperGarbage) {
+OrderedNode *OpDispatchBuilder::LoadSource(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand,
+                                           uint32_t Flags, const LoadSourceOptions& Options) {
   const uint8_t OpSize = GetSrcSize(Op);
-  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage);
+  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Options);
 }
 
 void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType) {
@@ -5296,8 +5302,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     MemStoreDst = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     MemStore = true;
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
@@ -5306,8 +5312,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     MemStoreDst = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
     MemStore = true;
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
-      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
   }
   else if (Operand.IsRIPRelative()) {
@@ -5378,7 +5384,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       auto DestAddr = _Add(OpSize::i64Bit, MemStoreDst, _Constant(8));
       _StoreMem(GPRClass, 2, DestAddr, Upper, std::min<uint8_t>(Align, 8));
     } else {
-      if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
+      if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
         _StoreMem(Class, OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
       }
       else {
@@ -5422,13 +5428,13 @@ void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, 1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1});
   StoreResult(GPRClass, Op, Src, 1);
 }
 
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
-  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
 void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
@@ -5441,14 +5447,15 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
                            ALUIROp == FEXCore::IR::IROps::OP_OR;
 
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
+                                {.AllowUpperGarbage = AllowUpperGarbage});
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
     auto FetchOp = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
@@ -5463,7 +5470,8 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     Result = ALUOp;
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, true, false, MemoryAccessType::ACCESS_DEFAULT, AllowUpperGarbage);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags,
+                      {.AllowUpperGarbage = AllowUpperGarbage});
 
     /* On x86, the canonical way to zero a register is XOR with itself...
      * because modern x86 detects this pattern in hardware. arm64 does not
@@ -5618,7 +5626,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
@@ -5627,7 +5635,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
@@ -5638,14 +5646,14 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
   Src = _Rev(IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize)), Src);
 
   if (SrcSize == 2) {
     // 16-bit does an insert.
     // Rev of 16-bit value as 32-bit replaces the result in the upper 16-bits of the result.
     // bfxil the 16-bit result in to the GPR.
-    OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+    OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
     auto Result = _Bfxil(IR::SizeToOpSize(GPRSize), 16, 16, Dest, Src);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
   }
@@ -5656,13 +5664,13 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CLWB(OpcodeArgs) {
-  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   DestMem = AppendSegmentOffset(DestMem, Op->Flags);
   _CacheLineClean(DestMem);
 }
 
 void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
-  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   DestMem = AppendSegmentOffset(DestMem, Op->Flags);
   _CacheLineClear(DestMem, false);
 }
@@ -5694,14 +5702,14 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   }
   else {
     // This is a CLFlush
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     _CacheLineClear(DestMem, true);
   }
 }
 
 void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
-  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   _CacheLineZero(DestMem);
 }
 
@@ -5729,15 +5737,15 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 
   // Destination GPR size is always 4 or 8 bytes depending on widening
   uint8_t DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
-  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
 
   // Incoming memory is 8, 16, 32, or 64
   OrderedNode *Src{};
   if (Op->Src[0].IsGPR()) {
-    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags, -1);
+    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
   }
   auto Result = _CRC32(Dest, Src, GetSrcSize(Op));
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, DstSize, -1);

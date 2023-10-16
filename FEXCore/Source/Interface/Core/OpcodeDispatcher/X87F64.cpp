@@ -66,7 +66,7 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
@@ -89,7 +89,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
 
 
 void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
-  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   //ignore the rounding precision, we're always 64-bit in F64.
   //extract rounding mode
   OrderedNode *roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
@@ -112,7 +112,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
 
   if (!Op->Src[0].IsNone()) {
     // Read from memory
-    data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+    data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags);
      // Convert to 64bit float
     if constexpr (width == 32) {
       converted = _Float_FToF(8, 4, data);
@@ -153,7 +153,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   SetX87Top(top);
 
   // Read from memory
-  OrderedNode *data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
+  OrderedNode *data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
   OrderedNode *converted = _F80BCDLoad(data);
   converted = _F80CVT(8, converted);
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
@@ -210,7 +210,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
 
   size_t read_width = GetSrcSize(Op);
   // Read from memory
-  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags);
   if(read_width == 2) {
     data = _Sbfe(OpSize::i64Bit, read_width * 8, 0, data);
   }
@@ -292,16 +292,16 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
     if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if(width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   } else {
     // Implicit arg
@@ -353,16 +353,16 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
     if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if(width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   } else {
     // Implicit arg
@@ -417,16 +417,16 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
  if (!Op->Src[0].IsNone()) {
     // Memory arg
     if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if(width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   } else {
     // Implicit arg
@@ -503,16 +503,16 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
  if (!Op->Src[0].IsNone()) {
     // Memory arg
     if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if(width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   } else {
     // Implicit arg
@@ -661,16 +661,16 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
     if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if(width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   } else {
     // Implicit arg
@@ -921,7 +921,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   // 4 bytes : data pointer selector
 
   auto Size = GetDstSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   OrderedNode *Top = GetX87Top();
@@ -999,7 +999,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
