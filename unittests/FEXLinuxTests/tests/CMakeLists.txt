@@ -22,7 +22,7 @@ set(CATCH_BUILD_STATIC_LIBRARY ON)
 add_subdirectory(../../../External/Catch2/ Catch2)
 
 foreach(TEST ${TESTS})
-  get_filename_component(TEST_NAME ${TEST} NAME_WLE)
+  get_filename_component(TEST_NAME ${TEST} NAME_WE)
 
   add_executable(${TEST_NAME}.${BITNESS} ${TEST})
   target_link_libraries(${TEST_NAME}.${BITNESS} PRIVATE Catch2::Catch2WithMain)

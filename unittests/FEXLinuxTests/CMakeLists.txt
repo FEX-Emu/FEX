@@ -34,7 +34,7 @@ list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
 
 function(AddTests Tests BinDirectory Bitness)
   foreach(TEST ${Tests})
-    get_filename_component(TEST_NAME ${TEST} NAME_WLE)
+    get_filename_component(TEST_NAME ${TEST} NAME_WE)
 
     file(READ ${TEST} TEST_CODE)
 
