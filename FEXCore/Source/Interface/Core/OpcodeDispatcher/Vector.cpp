@@ -45,8 +45,32 @@ void OpDispatchBuilder::MOVAPS_MOVAPDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
+void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  if (Is128Bit && Op->Dest.IsGPR()) {
+    Src = _VMov(16, Src);
+  }
+  StoreResult(FPRClass, Op, Src, -1);
+}
+
 void OpDispatchBuilder::MOVUPS_MOVUPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  StoreResult(FPRClass, Op, Src, 1);
+}
+
+void OpDispatchBuilder::VMOVUPS_VMOVUPDOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+
+  if (Is128Bit && Op->Dest.IsGPR()) {
+    Src = _VMov(16, Src);
+  }
   StoreResult(FPRClass, Op, Src, 1);
 }
 
@@ -1810,18 +1834,26 @@ void OpDispatchBuilder::PINSROp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
   OrderedNode *Result = PINSROpImpl(Op, 1, Op->Src[0], Op->Src[1], Op->Src[2]);
+  if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   OrderedNode *Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
-
+  if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
   OrderedNode *Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
+  if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2026,10 +2058,16 @@ void OpDispatchBuilder::PSRLDOp<8>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSRLDOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Shift = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   OrderedNode *Result = PSRLDOpImpl(Op, ElementSize, Src, Shift);
 
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2066,6 +2104,7 @@ void OpDispatchBuilder::PSRLI<8>(OpcodeArgs);
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
@@ -2075,6 +2114,10 @@ void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
 
   if (ShiftConstant != 0) [[likely]] {
     Result = _VUShrI(Size, ElementSize, Src, ShiftConstant);
+  } else {
+    if (Is128Bit) {
+      Result = _VMov(16, Result);
+    }
   }
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -2123,9 +2166,15 @@ template <size_t ElementSize>
 void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  if (ShiftConstant == 0 && Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2162,10 +2211,16 @@ void OpDispatchBuilder::PSLL<8>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
   OrderedNode *Result = PSLLImpl(Op, ElementSize, Src1, Src2);
 
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2200,10 +2255,16 @@ void OpDispatchBuilder::PSRAOp<4>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   OrderedNode *Result = PSRAOpImpl(Op, ElementSize, Src1, Src2);
 
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2242,7 +2303,11 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
 
   OrderedNode *Result{};
   if (Shift == 0) [[unlikely]] {
-    Result = Src;
+    if (Is128Bit) {
+      Result = _VMov(16, Src);
+    } else {
+      Result = Src;
+    }
   } else {
     Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
@@ -2292,7 +2357,12 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   OrderedNode *Result = Src;
-  if (Shift != 0) {
+
+  if (Shift == 0) {
+    if (Is128Bit) {
+      Result = _VMov(16, Result);
+    }
+  } else {
     Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
     if (Is128Bit) {
       if (Shift < DstSize) {
@@ -2336,12 +2406,17 @@ void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Shift = Op->Src[1].Data.Literal.Value;
   const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Result = Src;
 
   if (Shift != 0) [[likely]] {
     Result = _VSShrI(Size, ElementSize, Src, Shift);
+  } else {
+    if (Is128Bit) {
+      Result = _VMov(16, Result);
+    }
   }
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -2637,12 +2712,12 @@ void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize) {
-  const auto IsFloatSrc = SrcElementSize == 4;
-
+void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX) {
   const auto SrcSize = GetSrcSize(Op);
-  const auto StoreSize = IsFloatSrc ? SrcSize
-                                    : 16;
+
+  const auto IsFloatSrc = SrcElementSize == 4;
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ?
     SrcSize / 2 :
     SrcSize;
@@ -2656,18 +2731,35 @@ void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElem
     Result = _Vector_FToF(SrcSize, SrcElementSize >> 1, Src, SrcElementSize);
   }
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
+  if (IsAVX) {
+    if (!IsFloatSrc && !Is128Bit) {
+      // VCVTPD2PS path
+      Result = _VMov(16, Result);
+    } else if (IsFloatSrc && Is128Bit) {
+      // VCVTPS2PD path
+      Result = _VMov(16, Result);
+    }
+  }
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
-  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize);
+  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, false);
 }
-
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+
+template<size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Float(OpcodeArgs) {
+  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, true);
+}
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -2760,8 +2852,14 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t Da
     OrderedNode *Address = MakeAddress(Op->Dest);
     _VStoreVectorMasked(DataSize, ElementSize, Mask, Data, Address, Invalid(), MEM_OFFSET_SXTX, 1);
   } else {
+    const auto Is128Bit = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
+
     OrderedNode *Address = MakeAddress(DataOp);
     OrderedNode *Result = _VLoadVectorMasked(DataSize, ElementSize, Mask, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+
+    if (Is128Bit) {
+      Result = _VMov(16, Result);
+    }
     StoreResult(FPRClass, Op, Result, -1);
   }
 }
@@ -3823,10 +3921,16 @@ void OpDispatchBuilder::PMULHW<true>(OpcodeArgs);
 
 template <bool Signed>
 void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   OrderedNode *Result = PMULHWOpImpl(Op, Signed, Dest, Src);
 
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4906,12 +5010,14 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    StoreResult(FPRClass, Op, Src1, -1);
+    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   // Only the first four bits of the 8-bit immediate are used, so only check them.
   if (((Selector & 0b11) == 0b11 && !Is256Bit) || (Selector & 0b1111) == 0b1111) {
-    StoreResult(FPRClass, Op, Src2, -1);
+    OrderedNode *Result = Is256Bit ? Src2 : _VMov(16, Src2);
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
 
@@ -4940,11 +5046,13 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // silly is happening, we have your back.
 
   if (Selector == 0) {
-    StoreResult(FPRClass, Op, Src1, -1);
+    OrderedNode* Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   if (Selector == 0xFF && Is256Bit) {
-    StoreResult(FPRClass, Op, Src2, -1);
+    OrderedNode* Result = Is256Bit ? Src2 : _VMov(16, Src2);
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   // The only bits we care about from the 8-bit immediate for 128-bit operations
@@ -4952,17 +5060,21 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // silliness is going on and the upper bits are being set even when they'll
   // be ignored
   if ((Selector & 0xF) == 0xF && !Is256Bit) {
-    StoreResult(FPRClass, Op, Src2, -1);
+    StoreResult(FPRClass, Op, _VMov(16, Src2), -1);
     return;
   }
 
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
+  if (!Is256Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
@@ -4971,11 +5083,13 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    StoreResult(FPRClass, Op, Src1, -1);
+    OrderedNode *Result = Is128Bit ? _VMov(16, Src1) : Src1;
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   if (Selector == 0xFF) {
-    StoreResult(FPRClass, Op, Src2, -1);
+    OrderedNode *Result = Is128Bit ? _VMov(16, Src2) : Src2;
+    StoreResult(FPRClass, Op, Result, -1);
     return;
   }
 
@@ -4986,6 +5100,9 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
 
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 

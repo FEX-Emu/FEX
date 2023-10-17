@@ -5260,11 +5260,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         LOGMAN_THROW_A_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}",
                            Op->TableInfo->Name);
 
-        // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
-        // TODO: Longer term we should enforce the difference between zero and insert.
-        if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
-          Result = _VMov(OpSize, Src);
-        } else {
+        // XMM-size is handled in implementations.
+        if (VectorSize != Core::CPUState::XMM_AVX_REG_SIZE || OpSize != Core::CPUState::XMM_SSE_REG_SIZE) {
           auto SrcVector = LoadXMMRegister(gprIndex);
           Result = _VInsElement(VectorSize, OpSize, 0, 0, SrcVector, Src);
         }
@@ -5884,12 +5881,12 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   static constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> AVXTable[] = {
-    {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
-    {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
+    {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::VMOVSSOp},
     {OPD(1, 0b11, 0x10), 1, &OpDispatchBuilder::VMOVSDOp},
-    {OPD(1, 0b00, 0x11), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
-    {OPD(1, 0b01, 0x11), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
+    {OPD(1, 0b00, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b01, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b10, 0x11), 1, &OpDispatchBuilder::VMOVSSOp},
     {OPD(1, 0b11, 0x11), 1, &OpDispatchBuilder::VMOVSDOp},
 
@@ -5912,10 +5909,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
     {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
 
-    {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
-    {OPD(1, 0b01, 0x28), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
-    {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
-    {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
+    {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b01, 0x28), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
 
     {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<4>},
     {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<8>},
@@ -5970,8 +5967,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>},
-    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>},
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>},
 
@@ -6015,8 +6012,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
     {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
 
-    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
-    {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
+    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
 
     {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<4, true>},
     {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, false>},
@@ -6036,8 +6033,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::MOVQOp},
 
-    {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::MOVAPS_MOVAPDOp},
-    {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::MOVUPS_MOVUPDOp},
+    {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
 
     {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<4>},
     {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<8>},

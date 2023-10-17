@@ -10,15 +10,14 @@
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ext v2.16b, v18.16b, v18.16b, #8",
-        "fcadd v2.2d, v17.2d, v2.2d, #90",
-        "mov v16.16b, v2.16b"
+        "fcadd v16.2d, v17.2d, v2.2d, #90"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
@@ -37,15 +36,14 @@
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
         "rev64 v2.4s, v18.4s",
-        "fcadd v2.4s, v17.4s, v2.4s, #90",
-        "mov v16.16b, v2.16b"
+        "fcadd v16.4s, v17.4s, v2.4s, #90"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
