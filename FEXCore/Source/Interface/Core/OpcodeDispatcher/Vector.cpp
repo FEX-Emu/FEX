@@ -24,7 +24,17 @@ $end_info$
 namespace FEXCore::IR {
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
-void OpDispatchBuilder::MOVVectorOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVVectorAlignedOp(OpcodeArgs) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
+      Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    // Nop
+    return;
+  }
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  StoreResult(FPRClass, Op, Src, -1);
+}
+
+void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
       Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     // Nop
@@ -40,11 +50,6 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
-void OpDispatchBuilder::MOVAPS_MOVAPDOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  StoreResult(FPRClass, Op, Src, -1);
-}
-
 void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -55,11 +60,6 @@ void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
     Src = _VMov(16, Src);
   }
   StoreResult(FPRClass, Op, Src, -1);
-}
-
-void OpDispatchBuilder::MOVUPS_MOVUPDOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
-  StoreResult(FPRClass, Op, Src, 1);
 }
 
 void OpDispatchBuilder::VMOVUPS_VMOVUPDOp(OpcodeArgs) {
@@ -1051,6 +1051,11 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
     // This is simple, just store the result
     StoreResult(FPRClass, Op, Src, -1);
   }
+}
+
+void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  StoreResult(FPRClass, Op, Src, 1);
 }
 
 template<size_t ElementSize>

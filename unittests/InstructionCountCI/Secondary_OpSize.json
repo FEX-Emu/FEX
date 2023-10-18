@@ -87,6 +87,12 @@
         "st1 {v16.d}[1], [x4]"
       ]
     },
+    "movapd xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0x28",
+      "ExpectedArm64ASM": []
+    },
     "movapd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
@@ -521,6 +527,12 @@
       "ExpectedArm64ASM": [
         "fmov d16, x4"
       ]
+    },
+    "movdqa xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0x6f",
+      "ExpectedArm64ASM": []
     },
     "movdqa xmm0, xmm1": {
       "ExpectedInstructionCount": 1,

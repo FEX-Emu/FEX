@@ -222,7 +222,8 @@ public:
   template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
   void MOVGPRNTOp(OpcodeArgs);
-  void MOVVectorOp(OpcodeArgs);
+  void MOVVectorAlignedOp(OpcodeArgs);
+  void MOVVectorUnalignedOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs);
   template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
   void ALUOp(OpcodeArgs);
@@ -359,8 +360,6 @@ public:
   void SGDTOp(OpcodeArgs);
 
   // SSE
-  void MOVAPS_MOVAPDOp(OpcodeArgs);
-  void MOVUPS_MOVUPDOp(OpcodeArgs);
   void MOVLPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
@@ -375,6 +374,7 @@ public:
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
   void MOVQOp(OpcodeArgs);
+  void MOVQMMXOp(OpcodeArgs);
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
   void MOVMSKOpOne(OpcodeArgs);

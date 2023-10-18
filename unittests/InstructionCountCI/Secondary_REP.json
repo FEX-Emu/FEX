@@ -321,6 +321,12 @@
         "mov v16.s[0], v0.s[0]"
       ]
     },
+    "movdqu xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0xf3 0x0f 0x6f",
+      "ExpectedArm64ASM": []
+    },
     "movdqu xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
@@ -396,6 +402,14 @@
       "ExpectedArm64ASM": [
         "dup v2.8h, v17.h[7]",
         "trn1 v16.2d, v17.2d, v2.2d"
+      ]
+    },
+    "movq xmm0, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xf3 0x0f 0x7e",
+      "ExpectedArm64ASM": [
+        "mov v16.8b, v16.8b"
       ]
     },
     "movq xmm0, xmm1": {
