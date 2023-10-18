@@ -2153,14 +2153,18 @@ DEF_OP(VUMin) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
+    // In any case where the destination aliases one of the source vectors
+    // then we can just perform the UMIN in place.
     if (Dst == Vector1) {
-      // Trivial case where we can perform the operation in place.
       umin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else if (Dst == Vector2) {
+      umin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector1.Z());
     } else {
-      // SVE UMIN is a destructive operation so we need a temporary.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      umin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      // SVE UMIN is a destructive operation, but we know nothing is
+      // aliasing the destination by this point, so we can move into
+      // the destination without needing a temporary.
+      movprfx(Dst.Z(), Vector1.Z());
+      umin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
     }
   } else {
     switch (ElementSize) {
@@ -2204,14 +2208,18 @@ DEF_OP(VSMin) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
+    // In any case where the destination aliases one of the source vectors
+    // then we can just perform the SMIN in place.
     if (Dst == Vector1) {
-      // Trivial case where we can perform the operation in place.
       smin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else if (Dst == Vector2) {
+      smin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector1.Z());
     } else {
-      // SVE SMIN is a destructive operation, so we need a temporary.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      smin(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      // SVE SMIN is a destructive operation, but we know nothing is
+      // aliasing the destination by this point, so we can move into
+      // the destination without needing a temporary.
+      movprfx(Dst.Z(), Vector1.Z());
+      smin(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
     }
   } else {
     switch (ElementSize) {
@@ -2255,14 +2263,18 @@ DEF_OP(VUMax) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
+    // In any case where the destination aliases one of the source vectors
+    // then we can just perform the UMAX in place.
     if (Dst == Vector1) {
-      // Trivial case where we can perform the operation in place.
       umax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else if (Dst == Vector2) {
+      umax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector1.Z());
     } else {
-      // SVE UMAX is a destructive operation, so we need a temporary.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      umax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      // SVE UMAX is a destructive operation, but we know nothing is
+      // aliasing the destination by this point, so we can move into
+      // the destination without needing a temporary.
+      movprfx(Dst.Z(), Vector1.Z());
+      umax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
     }
   } else {
     switch (ElementSize) {
@@ -2306,14 +2318,18 @@ DEF_OP(VSMax) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
+    // In any case where the destination aliases one of the source vectors
+    // then we can just perform the SMAX in place.
     if (Dst == Vector1) {
-      // Trivial case where we can perform the operation in place.
       smax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
+    } else if (Dst == Vector2) {
+      smax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector1.Z());
     } else {
-      // SVE SMAX is a destructive operation, so we need a temporary.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      smax(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      // SVE SMAX is a destructive operation, but we know nothing is
+      // aliasing the destination by this point, so we can move into
+      // the destination without needing a temporary.
+      movprfx(Dst.Z(), Vector1.Z());
+      smax(SubRegSize, Dst.Z(), Pred, Dst.Z(), Vector2.Z());
     }
   } else {
     switch (ElementSize) {
