@@ -5004,16 +5004,37 @@
         "smin v16.8h, v17.8h, v18.8h"
       ]
     },
+    "vpminsw ymm0, ymm1, ymm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xea 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "smin z16.h, p7/m, z16.h, z17.h"
+      ]
+    },
+    "vpminsw ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xea 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "smin z16.h, p7/m, z16.h, z18.h"
+      ]
+    },
     "vpminsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b01 0xea 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z0, z17",
-        "smin z0.h, p7/m, z0.h, z18.h",
-        "mov z16.d, z0.d"
+        "movprfx z16, z17",
+        "smin z16.h, p7/m, z16.h, z18.h"
       ]
     },
     "vpor xmm0, xmm1, xmm2": {
