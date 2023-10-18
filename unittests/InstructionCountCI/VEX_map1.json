@@ -4662,22 +4662,44 @@
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
       "Comment": [
+        "Aliasing source and destination",
         "Map 1 0b01 0xdd 128-bit"
       ],
       "ExpectedArm64ASM": [
         "umax v16.16b, v17.16b, v18.16b"
       ]
     },
+    "vpmaxub ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xde 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "umax z16.b, p7/m, z16.b, z18.b"
+      ]
+    },
+    "vpmaxub ymm0, ymm1, ymm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xde 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "umax z16.b, p7/m, z16.b, z17.b"
+      ]
+    },
     "vpmaxub ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b01 0xde 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z0, z17",
-        "umax z0.b, p7/m, z0.b, z18.b",
-        "mov z16.d, z0.d"
+        "movprfx z16, z17",
+        "umax z16.b, p7/m, z16.b, z18.b"
       ]
     },
     "vpandn xmm0, xmm1, xmm2": {
