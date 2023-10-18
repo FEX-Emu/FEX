@@ -21,6 +21,7 @@ struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_
 };
 
 template<> struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
+template<> struct fex_gen_config<vkDestroyInstance> {};
 template<> struct fex_gen_config<vkCreateDevice> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkAllocateMemory> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkFreeMemory> : fexgen::custom_host_impl {};
