@@ -6706,7 +6706,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<8>},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, false>},
     {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
     {0x51, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>},
