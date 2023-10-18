@@ -22,7 +22,7 @@ set(CATCH_BUILD_STATIC_LIBRARY ON)
 add_subdirectory(../../../External/Catch2/ Catch2)
 
 foreach(TEST ${TESTS})
-  get_filename_component(TEST_NAME ${TEST} NAME_WLE)
+  get_filename_component(TEST_NAME ${TEST} NAME_WE)
 
   add_executable(${TEST_NAME}.${BITNESS} ${TEST})
   target_link_libraries(${TEST_NAME}.${BITNESS} PRIVATE Catch2::Catch2WithMain)
@@ -40,6 +40,8 @@ target_link_libraries(smc-shared-1.${BITNESS} PRIVATE rt pthread)
 
 target_link_libraries(smc-shared-2.${BITNESS} PRIVATE rt pthread)
 
-target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
+if(BITNESS EQUAL 64)
+  target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
+endif()
 
 target_link_libraries(timer-sigev-thread.${BITNESS} PRIVATE rt pthread)
