@@ -25,6 +25,20 @@
         "strb w20, [x28, #1010]"
       ]
     },
+    "movups xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x10",
+      "ExpectedArm64ASM": []
+    },
+    "movups xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x10",
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
+      ]
+    },
     "movups xmm0, [rax]": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",
@@ -110,6 +124,20 @@
       "Optimal": "Yes",
       "Comment": "0x0f 0x19",
       "ExpectedArm64ASM": []
+    },
+    "movaps xmm0, xmm0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x28",
+      "ExpectedArm64ASM": []
+    },
+    "movaps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x28",
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
+      ]
     },
     "movaps xmm0, [rax]": {
       "ExpectedInstructionCount": 1,
