@@ -106,6 +106,12 @@ struct GuestcallInfo {
 struct ParameterAnnotations {
 };
 
+// Placeholder type to indicate the given data is in guest-layout
+template<typename T>
+struct guest_layout {
+  T data;
+};
+
 template<typename>
 struct CallbackUnpack;
 
@@ -126,8 +132,8 @@ struct CallbackUnpack<Result(Args...)> {
 };
 
 template<ParameterAnnotations Annotation, typename T>
-auto Projection(T& data) {
-  return data;
+auto Projection(guest_layout<T>& data) {
+  return data.data;
 }
 
 template<typename>
@@ -140,7 +146,7 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
   static void Call(void* argsv) {
     static_assert(sizeof...(Annotations) == sizeof...(Args));
 
-    auto args = reinterpret_cast<PackedArguments<Result, Args..., uintptr_t>*>(argsv);
+    auto args = reinterpret_cast<PackedArguments<Result, guest_layout<Args>..., uintptr_t>*>(argsv);
     constexpr auto CBIndex = sizeof...(Args);
     uintptr_t cb;
     static_assert(CBIndex <= 18 || CBIndex == 23);
@@ -190,7 +196,8 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
     // individual parameters annotated as passthrough are replaced by guest_layout<GuestArgs>
     auto callback = reinterpret_cast<Result(*)(Args..., uintptr_t)>(cb);
 
-    auto f = [&callback](Args... args, uintptr_t target) -> Result {
+    auto f = [&callback](guest_layout<Args>... args, uintptr_t target) -> Result {
+      // Fold over each of Annotations, Args, and args. This will match up the elements in triplets.
       return callback(Projection<Annotations, Args>(args)..., target);
     };
     Invoke(f, *args);
