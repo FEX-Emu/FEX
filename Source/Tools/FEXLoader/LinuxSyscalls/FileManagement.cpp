@@ -416,8 +416,17 @@ fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSyml
 std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename) {
   constexpr auto NoEntry = std::make_pair(-1, nullptr);
 
-  if (!pathname || // If no pathname
-      pathname[0] != '/' || // If relative
+  if (!pathname) {
+    // No pathname.
+    return NoEntry;
+  }
+
+  if (pathname[0] == '/') {
+    // If the path is absolute then dirfd is ignored.
+    dirfd = AT_FDCWD;
+  }
+
+  if (pathname[0] != '/' || // If relative
       pathname[1] == 0 || // If we are getting root
       dirfd != AT_FDCWD) { // If dirfd isn't special FDCWD
     return NoEntry;
