@@ -24,6 +24,7 @@ struct ThunkedCallback : FunctionParams {
 
 struct ParameterAnnotations {
     bool is_passthrough = false;
+    bool assume_compatible = false;
 
     bool operator==(const ParameterAnnotations&) const = default;
 };
@@ -117,6 +118,8 @@ public:
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
     struct RepackedType {
+        bool assumed_compatible = false;         // opaque_type or assume_compatible_data_layout
+        bool pointers_only = assumed_compatible; // if true, only pointers to this type may be used
     };
 
 protected:

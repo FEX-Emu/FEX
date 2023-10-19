@@ -152,6 +152,33 @@ FindClassTemplateDeclByName(clang::DeclContext& decl_context, std::string_view s
     }
 }
 
+struct TypeAnnotations {
+    bool is_opaque = false;
+    bool assumed_compatible = false;
+};
+
+static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
+    if (!decl->hasDefinition()) {
+        return {};
+    }
+
+    ErrorReporter report_error { context };
+    TypeAnnotations ret;
+
+    for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+        auto annotation = base.getType().getAsString();
+        if (annotation == "fexgen::opaque_type") {
+            ret.is_opaque = true;
+        } else if (annotation == "fexgen::assume_compatible_data_layout") {
+            ret.assumed_compatible = true;
+        } else {
+            throw report_error(base.getSourceRange().getBegin(), "Unknown type annotation");
+        }
+    }
+
+    return ret;
+}
+
 static ParameterAnnotations GetParameterAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
     if (!decl->hasDefinition()) {
         return {};
@@ -164,6 +191,8 @@ static ParameterAnnotations GetParameterAnnotations(clang::ASTContext& context, 
         auto annotation = base.getType().getAsString();
         if (annotation == "fexgen::ptr_passthrough") {
             ret.is_passthrough = true;
+        } else if (annotation == "fexgen::assume_compatible_data_layout") {
+            ret.assume_compatible = true;
         } else {
             throw report_error(base.getSourceRange().getBegin(), "Unknown parameter annotation");
         }
@@ -193,7 +222,12 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             if (type->isFunctionPointerType() || type->isFunctionType()) {
                 thunked_funcptrs[type.getAsString()] = std::pair { type.getTypePtr(), no_param_annotations };
             } else {
-                [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), RepackedType { });
+                const auto annotations = GetTypeAnnotations(context, decl);
+                RepackedType repack_info = {
+                    .assumed_compatible = annotations.is_opaque || annotations.assumed_compatible,
+                    .pointers_only = annotations.is_opaque && !annotations.assumed_compatible,
+                };
+                [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), repack_info);
                 assert(inserted);
             }
         }
@@ -374,12 +408,19 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             types.emplace(param_type.getTypePtr(), RepackedType { });
                         } else if (param_type->isEnumeralType()) {
                             types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
-                        } else if ( param_type->isStructureType()) {
+                        } else if ( param_type->isStructureType() &&
+                                    !(types.contains(context.getCanonicalType(param_type.getTypePtr())) &&
+                                      LookupType(context, param_type.getTypePtr()).assumed_compatible)) {
                             check_struct_type(param_type.getTypePtr());
                             types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
                         } else if (param_type->isPointerType()) {
                             auto pointee_type = param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
-                            if ( pointee_type->isStructureType()) {
+                            if ((types.contains(context.getCanonicalType(pointee_type.getTypePtr())) && LookupType(context, pointee_type.getTypePtr()).assumed_compatible)) {
+                                // Nothing to do
+                                data.param_annotations[param_idx].assume_compatible = true;
+                            } else if ( pointee_type->isStructureType() &&
+                                        !(types.contains(context.getCanonicalType(pointee_type.getTypePtr())) &&
+                                          LookupType(context, pointee_type.getTypePtr()).assumed_compatible)) {
                                 check_struct_type(pointee_type.getTypePtr());
                                 types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType { });
                             } else if (data.param_annotations[param_idx].is_passthrough) {
@@ -387,6 +428,8 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                                     throw report_error(param_loc, "Passthrough annotation requires custom host implementation");
                                 }
 
+                                // Nothing to do
+                            } else if (data.param_annotations[param_idx].assume_compatible) {
                                 // Nothing to do
                             } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
                                 throw report_error(param_loc, "Unsupported parameter type")
@@ -455,6 +498,11 @@ void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
                 continue;
             }
 
+            if (type_repack_info.assumed_compatible) {
+                // If assumed compatible, we don't need the member definitions
+                continue;
+            }
+
             for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
                 auto member_type = member->getType().getTypePtr();
                 while (member_type->isArrayType()) {
@@ -466,6 +514,15 @@ void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
 
                 if (!member_type->isBuiltinType()) {
                     member_type = context.getCanonicalType(member_type);
+                }
+                if (types.contains(member_type) && types.at(member_type).pointers_only) {
+                    if (member_type == context.getCanonicalType(member->getType().getTypePtr())) {
+                        throw std::runtime_error(fmt::format("\"{}\" references opaque type \"{}\" via non-pointer member \"{}\"",
+                                                             clang::QualType { type, 0 }.getAsString(),
+                                                             clang::QualType { member_type, 0 }.getAsString(),
+                                                             member->getNameAsString()));
+                    }
+                    continue;
                 }
                 if (member_type->isUnionType() && !types.contains(member_type)) {
                     throw std::runtime_error(fmt::format("\"{}\" has unannotated member \"{}\" of union type \"{}\"",

@@ -58,7 +58,9 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
         if (StrictModeEnabled(context)) {
         const auto host_abi = ComputeDataLayout(context, types);
         for (const auto& [type, type_repack_info] : types) {
-            GetTypeCompatibility(context, type, host_abi, ret);
+            if (!type_repack_info.pointers_only) {
+                GetTypeCompatibility(context, type, host_abi, ret);
+            }
         }
         }
         return ret;
@@ -297,7 +299,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     continue;
                 }
                 auto type = param_type->getPointeeType();
-                if (type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
+                if (!types.at(context.getCanonicalType(type.getTypePtr())).assumed_compatible && type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
                     // TODO: Factor in "assume_compatible_layout" annotations here
                     //       That annotation should cause the type to be treated as TypeCompatibility::Full
                     if (!thunk.param_annotations[param_idx].is_passthrough) {
@@ -340,6 +342,9 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 }
 
                 auto& param_type = thunk.param_types[param_idx];
+                const bool is_assumed_compatible = param_type->isPointerType() &&
+                          (thunk.param_annotations[param_idx].assume_compatible || ((param_type->getPointeeType()->isStructureType() || (param_type->getPointeeType()->isPointerType() && param_type->getPointeeType()->getPointeeType()->isStructureType())) &&
+                          (types.contains(context.getCanonicalType(param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType().getTypePtr())) && LookupType(context, context.getCanonicalType(param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType().getTypePtr())).assumed_compatible)));
 
                 std::optional<TypeCompatibility> pointee_compat;
                 if (param_type->isPointerType()) {
@@ -353,7 +358,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     continue;
                 }
 
-                if (!param_type->isPointerType() || pointee_compat == TypeCompatibility::Full ||
+                if (!param_type->isPointerType() || (is_assumed_compatible || pointee_compat == TypeCompatibility::Full) ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
@@ -415,6 +420,9 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 annotations += "ParameterAnnotations {";
                 if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).is_passthrough) {
                     annotations += ".is_passthrough=true,";
+                }
+                if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).assume_compatible) {
+                    annotations += ".assume_compatible=true,";
                 }
                 annotations += "}";
             }

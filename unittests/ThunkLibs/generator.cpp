@@ -613,6 +613,15 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
         CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
     }
 
+    SECTION("Assumed compatible") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::assume_compatible_data_layout {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+    }
+
     SECTION("Unannotated in struct") {
         const char* prelude =
             "struct A { void* a; };\n";
