@@ -4963,13 +4963,16 @@ DEF_OP(VFCADD) {
       // Trivial case where we already have first vector in the destination
       // register. We can just do the operation in place.
       fcadd(SubRegSize, Dst.Z(), Mask, Vector1.Z(), Vector2.Z(), Rotate);
-    }
-    else {
+    } else if (Dst == Vector2) {
       // SVE FCADD is a destructive operation, so we need
       // a temporary for performing operations.
       movprfx(VTMP1.Z(), Vector1.Z());
       fcadd(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z(), Rotate);
       mov(Dst.Z(), VTMP1.Z());
+    } else {
+      // We have no source/dest aliasing, so we can move into the destination.
+      movprfx(Dst.Z(), Vector1.Z());
+      fcadd(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z(), Rotate);
     }
   } else {
     if (OpSize == 8) {
