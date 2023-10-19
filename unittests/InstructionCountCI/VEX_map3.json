@@ -3136,25 +3136,13 @@
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 00001111b": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 1,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.4s, v17.4s, v18.4s",
-        "mov v3.s[0], v2.s[0]",
-        "mov v3.s[1], v2.s[0]",
-        "mov v3.s[2], v2.s[0]",
-        "mov v3.s[3], v2.s[0]",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "mov v2.s[0], v3.s[0]",
-        "mov v2.s[1], v3.s[0]",
-        "mov v2.s[2], v3.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v3.s[0]"
+        "movi v16.2d, #0x0"
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11110000b": {
@@ -3168,21 +3156,16 @@
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.4s, v17.4s, v18.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "mov v2.s[0], v3.s[0]",
-        "mov v2.s[1], v3.s[0]",
-        "mov v2.s[2], v3.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v3.s[0]"
+        "fmul v2.4s, v17.4s, v18.4s",
+        "faddp v2.4s, v2.4s, v2.4s",
+        "faddp s2, v2.2s",
+        "dup v16.4s, v2.s[0]"
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 00000000b": {
@@ -3356,20 +3339,13 @@
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 00001111b": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 1,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x41 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.2d, v17.2d, v18.2d",
-        "mov v3.d[0], v2.d[0]",
-        "mov v3.d[1], v2.d[0]",
-        "faddp v3.2d, v3.2d, v2.2d",
-        "mov v2.d[0], v3.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v3.d[0]"
+        "movi v16.2d, #0x0"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 11110000b": {
@@ -3383,18 +3359,15 @@
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x41 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.2d, v17.2d, v18.2d",
-        "faddp v3.2d, v3.2d, v2.2d",
-        "mov v2.d[0], v3.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v3.d[0]"
+        "fmul v2.2d, v17.2d, v18.2d",
+        "faddp d2, v2.2d",
+        "dup v16.2d, v2.d[0]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 000b": {
@@ -4698,7 +4671,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2000]",
+        "ldr q2, [x28, #2016]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -4712,7 +4685,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2000]",
+        "ldr q2, [x28, #2016]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",

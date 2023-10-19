@@ -866,7 +866,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #1984]",
+        "ldr q3, [x28, #2000]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -878,7 +878,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #1984]",
+        "ldr q3, [x28, #2000]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -1285,7 +1285,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
-        "dup v2.8h, v2.h[0]",
+        "dup v2.4h, v2.h[0]",
         "str d2, [x28, #752]"
       ]
     },
@@ -1295,7 +1295,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "dup v2.8h, v2.h[0]",
+        "dup v2.4h, v2.h[0]",
         "str d2, [x28, #752]"
       ]
     },
@@ -1329,7 +1329,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
-        "dup v2.8h, v2.h[3]",
+        "dup v2.4h, v2.h[3]",
         "str d2, [x28, #752]"
       ]
     },
@@ -1339,7 +1339,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "dup v2.8h, v2.h[3]",
+        "dup v2.4h, v2.h[3]",
         "str d2, [x28, #752]"
       ]
     },

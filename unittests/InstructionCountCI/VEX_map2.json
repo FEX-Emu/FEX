@@ -1712,7 +1712,7 @@
         "Map 2 0b01 0x41 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #1888]",
+        "ldr q2, [x28, #1904]",
         "zip1 v3.8h, v2.8h, v17.8h",
         "zip2 v2.8h, v2.8h, v17.8h",
         "umin v2.4s, v3.4s, v2.4s",

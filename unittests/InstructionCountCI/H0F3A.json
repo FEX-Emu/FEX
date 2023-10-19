@@ -951,25 +951,13 @@
       ]
     },
     "dpps xmm0, xmm1, 00001111b": {
-      "ExpectedInstructionCount": 13,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.4s, v16.4s, v17.4s",
-        "mov v3.s[0], v2.s[0]",
-        "mov v3.s[1], v2.s[0]",
-        "mov v3.s[2], v2.s[0]",
-        "mov v3.s[3], v2.s[0]",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "mov v2.s[0], v3.s[0]",
-        "mov v2.s[1], v3.s[0]",
-        "mov v2.s[2], v3.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v3.s[0]"
+        "movi v16.2d, #0x0"
       ]
     },
     "dpps xmm0, xmm1, 11110000b": {
@@ -982,8 +970,76 @@
         "movi v16.2d, #0x0"
       ]
     },
-    "dpps xmm0, xmm1, 11111111b": {
-      "ExpectedInstructionCount": 9,
+    "dpps xmm0, xmm1, 11110001b": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "zip1 v16.4s, v3.4s, v2.4s"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110010b": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "zip1 v16.2s, v2.2s, v3.2s"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110011b": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul v2.4s, v16.4s, v17.4s",
+        "faddp v2.4s, v2.4s, v2.4s",
+        "faddp s2, v2.2s",
+        "dup v16.2s, v2.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110100b": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110101b": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul v2.4s, v16.4s, v17.4s",
+        "faddp v2.4s, v2.4s, v2.4s",
+        "faddp s2, v2.2s",
+        "zip1 v16.2d, v2.2d, v2.2d"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110110b": {
+      "ExpectedInstructionCount": 7,
       "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
@@ -991,13 +1047,148 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "fmul v3.4s, v16.4s, v17.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "faddp v3.4s, v3.4s, v2.4s",
-        "mov v2.s[0], v3.s[0]",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
         "mov v2.s[1], v3.s[0]",
-        "mov v2.s[2], v3.s[0]",
+        "mov v16.16b, v2.16b",
+        "mov v16.s[2], v3.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11110111b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "mov v16.16b, v3.16b",
+        "mov v16.s[3], v2.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111000b": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "ext v16.16b, v2.16b, v3.16b, #4"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111001b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "mov v2.s[0], v3.s[0]",
         "mov v16.16b, v2.16b",
         "mov v16.s[3], v3.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111010b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "zip1 v16.4s, v2.4s, v3.4s"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111011b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "mov v16.16b, v3.16b",
+        "mov v16.s[2], v2.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111100b": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "zip1 v16.2d, v2.2d, v3.2d"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111101b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "mov v16.16b, v3.16b",
+        "mov v16.s[1], v2.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111110b": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "fmul v3.4s, v16.4s, v17.4s",
+        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp s3, v3.2s",
+        "dup v3.4s, v3.s[0]",
+        "mov v16.16b, v3.16b",
+        "mov v16.s[0], v2.s[0]"
+      ]
+    },
+    "dpps xmm0, xmm1, 11111111b": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul v2.4s, v16.4s, v17.4s",
+        "faddp v2.4s, v2.4s, v2.4s",
+        "faddp s2, v2.2s",
+        "dup v16.4s, v2.s[0]"
       ]
     },
     "dppd xmm0, xmm1, 00000000b": {
@@ -1011,20 +1202,13 @@
       ]
     },
     "dppd xmm0, xmm1, 00001111b": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.2d, v16.2d, v17.2d",
-        "mov v3.d[0], v2.d[0]",
-        "mov v3.d[1], v2.d[0]",
-        "faddp v3.2d, v3.2d, v2.2d",
-        "mov v2.d[0], v3.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v3.d[0]"
+        "movi v16.2d, #0x0"
       ]
     },
     "dppd xmm0, xmm1, 11110000b": {
@@ -1038,18 +1222,15 @@
       ]
     },
     "dppd xmm0, xmm1, 11111111b": {
-      "ExpectedInstructionCount": 6,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
-        "fmul v3.2d, v16.2d, v17.2d",
-        "faddp v3.2d, v3.2d, v2.2d",
-        "mov v2.d[0], v3.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v3.d[0]"
+        "fmul v2.2d, v16.2d, v17.2d",
+        "faddp d2, v2.2d",
+        "dup v16.2d, v2.d[0]"
       ]
     },
     "mpsadbw xmm0, xmm1, 000b": {
@@ -1557,7 +1738,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2000]",
+        "ldr q2, [x28, #2016]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -1571,7 +1752,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2000]",
+        "ldr q2, [x28, #2016]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",

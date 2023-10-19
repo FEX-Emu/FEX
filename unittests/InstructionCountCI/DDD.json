@@ -123,7 +123,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
         "ldr d3, [x28, #768]",
-        "dup v4.4s, v2.s[1]",
+        "dup v4.2s, v2.s[1]",
         "fsub s2, s2, s4",
         "faddp v3.4s, v3.4s, v3.4s",
         "mov v2.s[1], v3.s[0]",
@@ -163,7 +163,7 @@
         "ldr d2, [x28, #768]",
         "fmov s0, #0x70 (1.0000)",
         "fdiv s2, s0, s2",
-        "dup v2.4s, v2.s[0]",
+        "dup v2.2s, v2.s[0]",
         "str d2, [x28, #752]"
       ]
     },
@@ -178,7 +178,7 @@
         "fmov s0, #0x70 (1.0000)",
         "fsqrt s1, s2",
         "fdiv s2, s0, s1",
-        "dup v2.4s, v2.s[0]",
+        "dup v2.2s, v2.s[0]",
         "str d2, [x28, #752]"
       ]
     },
