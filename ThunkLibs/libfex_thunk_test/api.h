@@ -10,4 +10,13 @@ extern "C" {
 
 uint32_t GetDoubledValue(uint32_t);
 
+
+/// Interfaces used to test opaque_type and assume_compatible_data_layout annotations
+
+struct OpaqueType;
+
+OpaqueType* MakeOpaqueType(uint32_t data);
+uint32_t ReadOpaqueTypeData(OpaqueType*);
+void DestroyOpaqueType(OpaqueType*);
+
 }

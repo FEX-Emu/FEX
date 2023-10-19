@@ -17,8 +17,18 @@ struct Fixture {
 
 #define GET_SYMBOL(name) decltype(&::name) name = (decltype(name))dlsym(lib, #name)
   GET_SYMBOL(GetDoubledValue);
+
+  GET_SYMBOL(MakeOpaqueType);
+  GET_SYMBOL(ReadOpaqueTypeData);
+  GET_SYMBOL(DestroyOpaqueType);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
   CHECK(GetDoubledValue(10) == 20);
+}
+
+TEST_CASE_METHOD(Fixture, "Opaque data types") {
+  auto data = MakeOpaqueType(0x1234);
+  CHECK(ReadOpaqueTypeData(data) == 0x1234);
+  DestroyOpaqueType(data);
 }
