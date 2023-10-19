@@ -3788,11 +3788,15 @@ DEF_OP(VExtr) {
   if (HostSupportsSVE256 && Is256Bit) {
     if (Dst == LowerBits) {
       // Trivial case where we don't need to do any moves
-      ext<FEXCore::ARMEmitter::OpType::Destructive>(Dst.Z(), Dst.Z(), UpperBits.Z(), CopyFromByte);
-    } else {
+      ext<ARMEmitter::OpType::Destructive>(Dst.Z(), Dst.Z(), UpperBits.Z(), CopyFromByte);
+    } else if (Dst == UpperBits) {
       movprfx(VTMP2.Z(), LowerBits.Z());
-      ext<FEXCore::ARMEmitter::OpType::Destructive>(VTMP2.Z(), VTMP2.Z(), UpperBits.Z(), CopyFromByte);
+      ext<ARMEmitter::OpType::Destructive>(VTMP2.Z(), VTMP2.Z(), UpperBits.Z(), CopyFromByte);
       mov(Dst.Z(), VTMP2.Z());
+    } else {
+      // No registers alias the destination, so we can safely move into it.
+      movprfx(Dst.Z(), LowerBits.Z());
+      ext<ARMEmitter::OpType::Destructive>(Dst.Z(), Dst.Z(), UpperBits.Z(), CopyFromByte);
     }
   } else {
     if (OpSize == 8) {
