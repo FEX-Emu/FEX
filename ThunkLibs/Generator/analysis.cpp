@@ -184,7 +184,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             type = type->getLocallyUnqualifiedSingleStepDesugaredType();
 
             if (type->isFunctionPointerType() || type->isFunctionType()) {
-                funcptr_types.insert(type.getTypePtr());
+                thunked_funcptrs.insert(type.getTypePtr());
             } else {
                 [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), RepackedType { });
                 assert(inserted);
@@ -349,7 +349,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                             data.callbacks.emplace(param_idx, callback);
                             if (!callback.is_stub && !callback.is_guest && !data.custom_host_impl) {
-                                funcptr_types.insert(context.getCanonicalType(funcptr));
+                                thunked_funcptrs.insert(context.getCanonicalType(funcptr));
                             }
 
                             if (data.callbacks.size() != 1) {
@@ -417,7 +417,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                     // For indirect calls, register the function signature as a function pointer type
                     if (namespace_info.indirect_guest_calls) {
-                        funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
+                        thunked_funcptrs.insert(context.getCanonicalType(emitted_function->getFunctionType()));
                     }
 
                     thunks.push_back(std::move(data));

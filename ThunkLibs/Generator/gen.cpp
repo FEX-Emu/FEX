@@ -148,7 +148,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
         file << "}\n";
 
         // Guest->Host transition points for invoking runtime host-function pointers based on their signature
-        for (auto type_it = funcptr_types.begin(); type_it != funcptr_types.end(); ++type_it) {
+        for (auto type_it = thunked_funcptrs.begin(); type_it != thunked_funcptrs.end(); ++type_it) {
             auto* type = *type_it;
             std::string funcptr_signature = clang::QualType { type, 0 }.getAsString();
 
@@ -156,7 +156,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
             // Thunk used for guest-side calls to host function pointers
             file << "  // " << funcptr_signature << "\n";
-            auto funcptr_idx = std::distance(funcptr_types.begin(), type_it);
+            auto funcptr_idx = std::distance(thunked_funcptrs.begin(), type_it);
             fmt::print( file, "  MAKE_CALLBACK_THUNK(callback_{}, {}, \"{:#02x}\");\n",
                         funcptr_idx, funcptr_signature, fmt::join(cb_sha256, ", "));
         }
@@ -388,7 +388,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
         }
 
         // Endpoints for Guest->Host invocation of runtime host-function pointers
-        for (auto& type : funcptr_types) {
+        for (auto& type : thunked_funcptrs) {
             std::string mangled_name = clang::QualType { type, 0 }.getAsString();
             auto cb_sha256 = get_sha256("fexcallback_" + mangled_name);
             fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&CallbackUnpack<{}>::ForIndirectCall}},\n",

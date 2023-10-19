@@ -132,7 +132,8 @@ protected:
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
 
-    std::unordered_set<const clang::Type*> funcptr_types;
+    // Set of function types for which to generate Guest->Host thunking trampolines.
+    std::unordered_set<const clang::Type*> thunked_funcptrs;
 
     std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;
