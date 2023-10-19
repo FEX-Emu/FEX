@@ -3764,16 +3764,39 @@
         "fdiv v16.4s, v17.4s, v18.4s"
       ]
     },
-    "vdivps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+    "vdivps ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b00 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fdiv z16.s, p7/m, z16.s, z18.s"
+      ]
+    },
+    "vdivps ymm0, ymm1, ymm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
         "Map 1 0b00 0x5e 256-bit"
       ],
       "ExpectedArm64ASM": [
         "movprfx z0, z17",
-        "fdiv z0.s, p7/m, z0.s, z18.s",
+        "fdiv z0.s, p7/m, z0.s, z16.s",
         "mov z16.d, z0.d"
+      ]
+    },
+    "vdivps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 1 0b00 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movprfx z16, z17",
+        "fdiv z16.s, p7/m, z16.s, z18.s"
       ]
     },
     "vdivpd xmm0, xmm1, xmm2": {
@@ -3786,16 +3809,39 @@
         "fdiv v16.2d, v17.2d, v18.2d"
       ]
     },
-    "vdivpd ymm0, ymm1, ymm2": {
+    "vdivpd ymm0, ymm1, ymm0": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
+        "Aliasing source and destination",
         "Map 1 0b01 0x5e 256-bit"
       ],
       "ExpectedArm64ASM": [
         "movprfx z0, z17",
-        "fdiv z0.d, p7/m, z0.d, z18.d",
+        "fdiv z0.d, p7/m, z0.d, z16.d",
         "mov z16.d, z0.d"
+      ]
+    },
+    "vdivpd ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fdiv z16.d, p7/m, z16.d, z18.d"
+      ]
+    },
+    "vdivpd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 1 0b01 0x5e 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movprfx z16, z17",
+        "fdiv z16.d, p7/m, z16.d, z18.d"
       ]
     },
     "vdivss xmm0, xmm1, xmm2": {
