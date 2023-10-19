@@ -1763,6 +1763,13 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
+      "FPR = VFAddV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+        "Desc": ["Does a horizontal float vector add of elements across the source vector",
+                 "Result is a zero extended scalar"
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "FPR = VFSub u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
