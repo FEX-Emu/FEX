@@ -90,7 +90,12 @@ struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
 struct callback_guest : callback_annotation_base {};
+
+struct ptr_passthrough {};
+
 } // namespace fexgen
+
+template<auto, int, typename = void> struct fex_gen_param {};
 
 template<typename>
 struct fex_gen_type;
