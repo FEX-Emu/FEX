@@ -176,6 +176,54 @@ constexpr static auto SHUFPS_LUT {
 }()
 };
 
+constexpr static auto DPPS_MASK {
+[]() consteval {
+  struct LUTType {
+    uint32_t Val[4];
+  };
+
+  std::array<LUTType, 16> TotalLUT{};
+  for (size_t i = 0; i < TotalLUT.size(); ++i) {
+    auto &LUT = TotalLUT[i];
+    constexpr auto GetLUT = [](size_t i, size_t Index) {
+      if (i & (1U << Index)) {
+        return -1U;
+      }
+      return 0U;
+    };
+
+    LUT.Val[0] = GetLUT(i, 0);
+    LUT.Val[1] = GetLUT(i, 1);
+    LUT.Val[2] = GetLUT(i, 2);
+    LUT.Val[3] = GetLUT(i, 3);
+  }
+  return TotalLUT;
+}()
+};
+
+constexpr static auto DPPD_MASK {
+[]() consteval {
+  struct LUTType {
+    uint64_t Val[2];
+  };
+
+  std::array<LUTType, 4> TotalLUT{};
+  for (size_t i = 0; i < TotalLUT.size(); ++i) {
+    auto &LUT = TotalLUT[i];
+    constexpr auto GetLUT = [](size_t i, size_t Index) {
+      if (i & (1U << Index)) {
+        return -1ULL;
+      }
+      return 0ULL;
+    };
+
+    LUT.Val[0] = GetLUT(i, 0);
+    LUT.Val[1] = GetLUT(i, 1);
+  }
+  return TotalLUT;
+}()
+};
+
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
     : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
 
@@ -194,6 +242,8 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] = reinterpret_cast<uint64_t>(PSHUFHW_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD] = reinterpret_cast<uint64_t>(PSHUFD_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS] = reinterpret_cast<uint64_t>(SHUFPS_LUT.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK] = reinterpret_cast<uint64_t>(DPPS_MASK.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK] = reinterpret_cast<uint64_t>(DPPD_MASK.data());
 
 #ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values
