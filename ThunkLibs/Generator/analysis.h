@@ -133,7 +133,9 @@ protected:
     std::vector<ThunkedAPIFunction> thunked_api;
 
     // Set of function types for which to generate Guest->Host thunking trampolines.
-    std::unordered_set<const clang::Type*> thunked_funcptrs;
+    // The map key is a unique identifier that must be consistent between guest/host processing passes.
+    // The map value is a pair of the function pointer's clang::Type and the mapping of parameter annotations
+    std::unordered_map<std::string, std::pair<const clang::Type*, std::unordered_map<unsigned, ParameterAnnotations>>> thunked_funcptrs;
 
     std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;

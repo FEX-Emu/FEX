@@ -151,9 +151,33 @@ ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<c
     return stable_layout;
 }
 
+static std::array<uint8_t, 32> GetSha256(const std::string& function_name) {
+    std::array<uint8_t, 32> sha256;
+    SHA256(reinterpret_cast<const unsigned char*>(function_name.data()),
+           function_name.size(),
+           sha256.data());
+    return sha256;
+};
+
 void AnalyzeDataLayoutAction::OnAnalysisComplete(clang::ASTContext& context) {
     if (StrictModeEnabled(context)) {
     type_abi = GetStableLayout(context, ComputeDataLayout(context, types));
+    }
+
+    // Register functions that must be guest-callable through host function pointers
+    for (auto funcptr_type_it = thunked_funcptrs.begin(); funcptr_type_it != thunked_funcptrs.end(); ++funcptr_type_it) {
+        auto& funcptr_id = funcptr_type_it->first;
+        auto& [type, param_annotations] = funcptr_type_it->second;
+        auto func_type = type->getAs<clang::FunctionProtoType>();
+        std::string mangled_name = clang::QualType { type, 0 }.getAsString();
+        auto cb_sha256 = GetSha256("fexcallback_" + mangled_name);
+        FuncPtrInfo info = { cb_sha256 };
+
+        info.result = func_type->getReturnType().getAsString();
+        for (auto arg : func_type->getParamTypes()) {
+            info.args.push_back(arg.getAsString());
+        }
+        type_abi.thunked_funcptrs[funcptr_id] = std::move(info);
     }
 }
 
@@ -295,6 +319,10 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
 
     type_compat.at(type) = compat;
     return compat;
+}
+
+FuncPtrInfo DataLayoutCompareAction::LookupGuestFuncPtrInfo(const char* funcptr_id) {
+    return guest_abi.thunked_funcptrs.at(funcptr_id);
 }
 
 DataLayoutCompareActionFactory::DataLayoutCompareActionFactory(const ABI& abi) : abi(abi) {
