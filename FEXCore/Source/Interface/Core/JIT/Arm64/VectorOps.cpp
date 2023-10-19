@@ -1357,16 +1357,18 @@ DEF_OP(VURAvg) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
+    // Trivial cases where we already have source data to be averaged in
+    // the destination register. We can just do the operation in place.
     if (Dst == Vector1) {
-      // Trivial case where we already have source data to be averaged in
-      // the destination register. We can just do the operation in place.
       urhadd(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
+    } else if (Dst == Vector2) {
+      urhadd(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
     } else {
-      // SVE URHADD is a destructive operation, so we need
-      // a temporary for performing operations.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      urhadd(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      // SVE URHADD is a destructive operation, but we know that
+      // we don't have any source/destination aliasing happening here
+      // so we can safely move one of the source operands into the destination.
+      movprfx(Dst.Z(), Vector1.Z());
+      urhadd(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
     }
   } else {
     urhadd(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
