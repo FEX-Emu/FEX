@@ -101,14 +101,6 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
         }
     };
 
-    auto format_struct_members = [](const FunctionParams& params, const char* indent) {
-        std::string ret;
-        for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
-            ret += indent + format_decl(params.param_types[idx].getUnqualifiedType(), fmt::format("a_{}", idx)) + ";\n";
-        }
-        return ret;
-    };
-
     auto format_function_params = [](const FunctionParams& params) {
         std::string ret;
         for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
@@ -286,8 +278,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_guest) {
                         file << "fex_guest_function_ptr a_" << idx;
+                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                        fmt::print(file, "guest_layout<{}> a_{}", type.getAsString(), idx);
                     } else {
-                      file << format_decl(type, fmt::format("a_{}", idx));
+                        file << format_decl(type, fmt::format("a_{}", idx));
                     }
                 }
                 // Using trailing return type as it makes handling function pointer returns much easier
@@ -306,18 +300,20 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 if (type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
                     // TODO: Factor in "assume_compatible_layout" annotations here
                     //       That annotation should cause the type to be treated as TypeCompatibility::Full
-                    {
+                    if (!thunk.param_annotations[param_idx].is_passthrough) {
                         throw report_error(thunk.decl->getLocation(), "Unsupported parameter type %0").AddTaggedVal(param_type);
                     }
                 }
             }
 
             // Packed argument structs used in fexfn_unpack_*
-            auto GeneratePackedArgs = [&](const auto &function_name, const auto &thunk) -> std::string {
+            auto GeneratePackedArgs = [&](const auto &function_name, const ThunkedFunction &thunk) -> std::string {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
                 file << "struct " << struct_name << " {\n";
 
-                file << format_struct_members(thunk, "  ");
+                for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
+                }
                 if (!thunk.return_type->isVoidType()) {
                     file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
                 } else if (thunk.param_types.size() == 0) {
@@ -352,6 +348,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     pointee_compat = type_compat.emplace(context.getCanonicalType(param_type->getPointeeType().getTypePtr()), TypeCompatibility::Full).first->second;
                 }
 
+                if (thunk.param_annotations[param_idx].is_passthrough) {
+                    // args are passed directly to function, no need to use `unpacked` wrappers
+                    continue;
+                }
+
                 if (!param_type->isPointerType() || pointee_compat == TypeCompatibility::Full ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible
@@ -364,18 +365,22 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
             {
                 auto format_param = [&](std::size_t idx) {
+                    std::string raw_arg = fmt::format("args->a_{}.data", idx);
+
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return fmt::format("fex_guest_function_ptr {{ args->a_{} }}", idx);
+                        return fmt::format("fex_guest_function_ptr {{ {} }}", raw_arg);
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = fmt::format("args->a_{}", idx);
+                        auto arg_name = fmt::format("args->a_{}.data", idx);
                         // Use comma operator to inject a function call before returning the argument
                         return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
-
-                    } else {
+                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                        // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
+                    } else {
+                        return raw_arg;
                     }
                 };
 
@@ -407,8 +412,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     annotations += ", ";
                 }
 
-                // TODO: Add annotations as needed
-                annotations += "ParameterAnnotations {}";
+                annotations += "ParameterAnnotations {";
+                if (param_annotations.contains(param_idx) && param_annotations.at(param_idx).is_passthrough) {
+                    annotations += ".is_passthrough=true,";
+                }
+                annotations += "}";
             }
             fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&GuestWrapperForHostFunction<{}({})>::Call<{}>}}, // {}\n",
                         fmt::join(info.sha256, "\\x"), info.result, fmt::join(info.args, ", "), annotations, host_funcptr_entry.first);

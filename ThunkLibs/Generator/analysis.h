@@ -23,6 +23,8 @@ struct ThunkedCallback : FunctionParams {
 };
 
 struct ParameterAnnotations {
+    bool is_passthrough = false;
+
     bool operator==(const ParameterAnnotations&) const = default;
 };
 

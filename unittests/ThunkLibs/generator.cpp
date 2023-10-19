@@ -248,8 +248,10 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
     run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
+        "#include <array>\n"
         "#include <cstdint>\n"
         "#include <dlfcn.h>\n"
+        "#include <type_traits>\n"
         "template<typename Fn>\n"
         "struct function_traits;\n"
         "template<typename Result, typename Arg>\n"
@@ -275,10 +277,14 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "struct GuestWrapperForHostFunction {\n"
         "  template<ParameterAnnotations...> static void Call(void*);\n"
         "};\n"
-        "template<typename F>\n"
-        "void FinalizeHostTrampolineForGuestFunction(F*);\n"
         "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
-        "void *dlsym_default(void* handle, const char* symbol);\n";
+        "void *dlsym_default(void* handle, const char* symbol);\n"
+        "template<typename T>\n"
+        "struct guest_layout {\n"
+        "  T data;\n"
+        "};\n"
+        "\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
 
     auto& filename = output_filenames.host;
     {
@@ -486,10 +492,10 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             parameterCountIs(1),
             hasParameter(0, hasType(pointerType(pointee(
                 recordType(hasDeclaration(decl(
-                    has(fieldDecl(hasType(asString("int")))),
-                    has(fieldDecl(hasType(asString("char")))),
-                    has(fieldDecl(hasType(asString("unsigned long")))),
-                    has(fieldDecl(hasType(asString("struct TestStruct"))))
+                    has(fieldDecl(hasType(asString("guest_layout<int>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<char>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
                     )))))))
             )));
 }

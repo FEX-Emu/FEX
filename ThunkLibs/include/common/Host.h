@@ -104,6 +104,7 @@ struct GuestcallInfo {
 #endif
 
 struct ParameterAnnotations {
+    bool is_passthrough = false;
 };
 
 // Placeholder type to indicate the given data is in guest-layout
@@ -133,7 +134,11 @@ struct CallbackUnpack<Result(Args...)> {
 
 template<ParameterAnnotations Annotation, typename T>
 auto Projection(guest_layout<T>& data) {
-  return data.data;
+  if constexpr (Annotation.is_passthrough) {
+    return data;
+  } else {
+    return data.data;
+  }
 }
 
 template<typename>
@@ -194,7 +199,7 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
 
     // This is almost the same type as "Result func(Args..., uintptr_t)", but
     // individual parameters annotated as passthrough are replaced by guest_layout<GuestArgs>
-    auto callback = reinterpret_cast<Result(*)(Args..., uintptr_t)>(cb);
+    auto callback = reinterpret_cast<Result(*)(std::conditional_t<Annotations.is_passthrough, guest_layout<Args>, Args>..., uintptr_t)>(cb);
 
     auto f = [&callback](guest_layout<Args>... args, uintptr_t target) -> Result {
       // Fold over each of Annotations, Args, and args. This will match up the elements in triplets.

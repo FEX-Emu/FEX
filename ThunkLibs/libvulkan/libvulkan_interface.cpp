@@ -16,11 +16,16 @@ template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_im
 
 namespace internal {
 
+// Function, parameter index, parameter type [optional]
+template<auto, int, typename = void>
+struct fex_gen_param {};
+
 template<auto>
 struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {
 };
 
 template<> struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<vkCreateInstance, 2, VkInstance*> : fexgen::ptr_passthrough {};
 template<> struct fex_gen_config<vkDestroyInstance> {};
 template<> struct fex_gen_config<vkEnumeratePhysicalDevices> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceFeatures> {};
@@ -30,6 +35,7 @@ template<> struct fex_gen_config<vkGetPhysicalDeviceProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceMemoryProperties> {};
 template<> struct fex_gen_config<vkCreateDevice> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<vkCreateDevice, 3, VkDevice*> : fexgen::ptr_passthrough {};
 template<> struct fex_gen_config<vkDestroyDevice> {};
 template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateDeviceExtensionProperties> {};
