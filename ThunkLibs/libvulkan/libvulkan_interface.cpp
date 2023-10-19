@@ -22,14 +22,6 @@ struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_
 
 template<> struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDestroyInstance> {};
-template<> struct fex_gen_config<vkCreateDevice> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkAllocateMemory> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkFreeMemory> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkCreateShaderModule> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkCreateDebugReportCallbackEXT> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkDestroyDebugReportCallbackEXT> : fexgen::custom_host_impl {};
-
-// Begin auto-generated result.
 template<> struct fex_gen_config<vkEnumeratePhysicalDevices> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceFeatures> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceFormatProperties> {};
@@ -37,6 +29,7 @@ template<> struct fex_gen_config<vkGetPhysicalDeviceImageFormatProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceMemoryProperties> {};
+template<> struct fex_gen_config<vkCreateDevice> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDestroyDevice> {};
 template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateDeviceExtensionProperties> {};
@@ -46,6 +39,8 @@ template<> struct fex_gen_config<vkGetDeviceQueue> {};
 template<> struct fex_gen_config<vkQueueSubmit> {};
 template<> struct fex_gen_config<vkQueueWaitIdle> {};
 template<> struct fex_gen_config<vkDeviceWaitIdle> {};
+template<> struct fex_gen_config<vkAllocateMemory> : fexgen::custom_host_impl {};
+template<> struct fex_gen_config<vkFreeMemory> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkMapMemory> {};
 template<> struct fex_gen_config<vkUnmapMemory> {};
 template<> struct fex_gen_config<vkFlushMappedMemoryRanges> {};
@@ -82,6 +77,7 @@ template<> struct fex_gen_config<vkDestroyImage> {};
 template<> struct fex_gen_config<vkGetImageSubresourceLayout> {};
 template<> struct fex_gen_config<vkCreateImageView> {};
 template<> struct fex_gen_config<vkDestroyImageView> {};
+template<> struct fex_gen_config<vkCreateShaderModule> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDestroyShaderModule> {};
 template<> struct fex_gen_config<vkCreatePipelineCache> {};
 template<> struct fex_gen_config<vkDestroyPipelineCache> {};
@@ -367,6 +363,8 @@ template<> struct fex_gen_config<vkGetRenderingAreaGranularityKHR> {};
 template<> struct fex_gen_config<vkGetDeviceImageSubresourceLayoutKHR> {};
 template<> struct fex_gen_config<vkGetImageSubresourceLayout2KHR> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR> {};
+template<> struct fex_gen_config<vkCreateDebugReportCallbackEXT> : fexgen::custom_host_impl {};
+template<> struct fex_gen_config<vkDestroyDebugReportCallbackEXT> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDebugReportMessageEXT> {};
 template<> struct fex_gen_config<vkDebugMarkerSetObjectTagEXT> {};
 template<> struct fex_gen_config<vkDebugMarkerSetObjectNameEXT> {};
