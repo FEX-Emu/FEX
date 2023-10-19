@@ -22,4 +22,12 @@ void DestroyOpaqueType(OpaqueType* value) {
   delete value;
 }
 
+UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+  return UnionType { .c = { a, b, c, d } };
+}
+
+uint32_t GetUnionTypeA(UnionType* value) {
+  return value->a;
+}
+
 } // extern "C"

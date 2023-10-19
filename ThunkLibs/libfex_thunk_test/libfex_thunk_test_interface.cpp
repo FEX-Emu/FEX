@@ -17,3 +17,7 @@ template<> struct fex_gen_type<OpaqueType> : fexgen::opaque_type {};
 template<> struct fex_gen_config<MakeOpaqueType> {};
 template<> struct fex_gen_config<ReadOpaqueTypeData> {};
 template<> struct fex_gen_config<DestroyOpaqueType> {};
+
+template<> struct fex_gen_type<UnionType> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_config<MakeUnionType> {};
+template<> struct fex_gen_config<GetUnionTypeA> {};

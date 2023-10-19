@@ -21,6 +21,9 @@ struct Fixture {
   GET_SYMBOL(MakeOpaqueType);
   GET_SYMBOL(ReadOpaqueTypeData);
   GET_SYMBOL(DestroyOpaqueType);
+
+  GET_SYMBOL(MakeUnionType);
+  GET_SYMBOL(GetUnionTypeA);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
@@ -28,7 +31,14 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
 }
 
 TEST_CASE_METHOD(Fixture, "Opaque data types") {
-  auto data = MakeOpaqueType(0x1234);
-  CHECK(ReadOpaqueTypeData(data) == 0x1234);
-  DestroyOpaqueType(data);
+  {
+    auto data = MakeOpaqueType(0x1234);
+    CHECK(ReadOpaqueTypeData(data) == 0x1234);
+    DestroyOpaqueType(data);
+  }
+
+  {
+    auto data = MakeUnionType(0x1, 0x2, 0x3, 0x4);
+    CHECK(GetUnionTypeA(&data) == 0x04030201);
+  }
 }
