@@ -384,7 +384,7 @@ DEF_OP(VFRSqrtScalarInsert) {
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
-    frecpe(SubRegSize.Scalar, Dst.S(), Src.S());
+    frsqrte(SubRegSize.Scalar, Dst.S(), Src.S());
   };
 
   std::array<ScalarUnaryOpCaller, 2> Handlers = {
@@ -421,7 +421,7 @@ DEF_OP(VFRecpScalarInsert) {
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
-    frsqrte(SubRegSize.Scalar, Dst, Src);
+    frecpe(SubRegSize.Scalar, Dst, Src);
   };
 
   std::array<ScalarUnaryOpCaller, 2> Handlers = {
