@@ -3432,8 +3432,9 @@ void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : GetSrcSize(Op);
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   OrderedNode *Res = _FCmp(ElementSize, Src1, Src2,
     (1 << FCMP_FLAG_EQ) |
     (1 << FCMP_FLAG_LT) |
