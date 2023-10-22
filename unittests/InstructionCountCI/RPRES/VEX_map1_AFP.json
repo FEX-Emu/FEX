@@ -39,7 +39,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "frecpe s16, s18"
+        "frsqrte s16, s18"
       ]
     },
     "vrcpps xmm0, xmm1": {
@@ -70,7 +70,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "frsqrte s16, s18"
+        "frecpe s16, s18"
       ]
     }
   }

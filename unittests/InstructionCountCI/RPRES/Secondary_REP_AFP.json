@@ -19,7 +19,7 @@
         "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
-        "frecpe s16, s17"
+        "frsqrte s16, s17"
       ]
     },
     "rcpss xmm0, xmm1": {
@@ -30,7 +30,7 @@
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [
-        "frsqrte s16, s17"
+        "frecpe s16, s17"
       ]
     }
   }
