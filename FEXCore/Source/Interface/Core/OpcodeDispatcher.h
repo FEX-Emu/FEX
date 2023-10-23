@@ -1301,9 +1301,10 @@ private:
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
-    CachedNZCV = _TestNZ(SrcSize, Res);
+    _TestNZ(SrcSize, Res);
+    CachedNZCV = _LoadNZCV();
     PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-    NZCVDirty = true;
+    NZCVDirty = false;
   }
 
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {

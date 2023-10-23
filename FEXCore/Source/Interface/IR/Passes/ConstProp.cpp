@@ -669,6 +669,8 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+    /* TODO: restore this when we have rmif or something? */
+#if 0
     case OP_TESTNZ: {
       auto Op = IROp->CW<IR::IROp_TestNZ>();
       uint64_t Constant1{};
@@ -683,6 +685,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+#endif
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
