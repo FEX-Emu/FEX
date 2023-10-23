@@ -1911,30 +1911,10 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  auto CondJump = _CondJump(Shift, {COND_EQ});
-
-  auto CurrentBlock = GetCurrentBlock();
-
-  // Do nothing if shift count is zero
-  auto JumpTarget = CreateNewCodeBlockAfter(CurrentBlock);
-  SetFalseJumpTarget(CondJump, JumpTarget);
-  SetCurrentCodeBlock(JumpTarget);
-  StartNewBlock();
-
   if (Size != 64) {
     Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
   }
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
-
-  // Calculate flags early.
-  CalculateDeferredFlags();
-
-  auto Jump = _Jump();
-  auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
-  SetJumpTarget(Jump, NextJumpTarget);
-  SetTrueJumpTarget(CondJump, NextJumpTarget);
-  SetCurrentCodeBlock(NextJumpTarget);
-  StartNewBlock();
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -2013,28 +1993,10 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  auto CondJump = _CondJump(Shift, {COND_EQ});
-
-  // Do not change flags if shift count is zero
-  auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
-  SetFalseJumpTarget(CondJump, JumpTarget);
-  SetCurrentCodeBlock(JumpTarget);
-  StartNewBlock();
-
   if (Size != 64) {
     Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
   }
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
-  // Calculate deferred flags immediately.
-  // This block is ending so it needs to serialize
-  CalculateDeferredFlags();
-
-  auto Jump = _Jump();
-  auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
-  SetJumpTarget(Jump, NextJumpTarget);
-  SetTrueJumpTarget(CondJump, NextJumpTarget);
-  SetCurrentCodeBlock(NextJumpTarget);
-  StartNewBlock();
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
