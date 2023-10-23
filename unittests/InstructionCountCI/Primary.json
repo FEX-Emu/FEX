@@ -321,7 +321,7 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
         "mov x21, x4",
-        "add x4, x21, x20",
+        "sub x4, x21, #0x1 (1)",
         "eor x22, x21, x20",
         "strb w22, [x28, #708]",
         "strb w4, [x28, #706]",

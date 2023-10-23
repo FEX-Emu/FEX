@@ -61,7 +61,7 @@
       ]
     },
     "positive movsb": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -74,16 +74,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "strb w20, [x28, #714]",
-        "mov w21, #0x1",
-        "sub x20, x21, x20, lsl #1",
-        "ldrb w21, [x10]",
-        "strb w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldrb w20, [x10]",
+        "strb w20, [x11]",
+        "add x10, x10, #0x1 (1)",
+        "add x11, x11, #0x1 (1)"
       ]
     },
     "positive movsw": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -96,16 +94,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "strb w20, [x28, #714]",
-        "mov w21, #0x2",
-        "sub x20, x21, x20, lsl #2",
-        "ldrh w21, [x10]",
-        "strh w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldrh w20, [x10]",
+        "strh w20, [x11]",
+        "add x10, x10, #0x2 (2)",
+        "add x11, x11, #0x2 (2)"
       ]
     },
     "positive movsd": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -118,16 +114,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "strb w20, [x28, #714]",
-        "mov w21, #0x4",
-        "sub x20, x21, x20, lsl #3",
-        "ldr w21, [x10]",
-        "str w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldr w20, [x10]",
+        "str w20, [x11]",
+        "add x10, x10, #0x4 (4)",
+        "add x11, x11, #0x4 (4)"
       ]
     },
     "positive movsq": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -140,16 +134,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "strb w20, [x28, #714]",
-        "mov w21, #0x8",
-        "sub x20, x21, x20, lsl #4",
-        "ldr x21, [x10]",
-        "str x21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldr x20, [x10]",
+        "str x20, [x11]",
+        "add x10, x10, #0x8 (8)",
+        "add x11, x11, #0x8 (8)"
       ]
     },
     "negative movsb": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -162,15 +154,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "strb w20, [x28, #714]",
-        "sub x20, x20, x20, lsl #1",
-        "ldrb w21, [x10]",
-        "strb w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldrb w20, [x10]",
+        "strb w20, [x11]",
+        "sub x10, x10, #0x1 (1)",
+        "sub x11, x11, #0x1 (1)"
       ]
     },
     "negative movsw": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -183,16 +174,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "strb w20, [x28, #714]",
-        "mov w21, #0x2",
-        "sub x20, x21, x20, lsl #2",
-        "ldrh w21, [x10]",
-        "strh w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldrh w20, [x10]",
+        "strh w20, [x11]",
+        "sub x10, x10, #0x2 (2)",
+        "sub x11, x11, #0x2 (2)"
       ]
     },
     "negative movsd": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -205,16 +194,14 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "strb w20, [x28, #714]",
-        "mov w21, #0x4",
-        "sub x20, x21, x20, lsl #3",
-        "ldr w21, [x10]",
-        "str w21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldr w20, [x10]",
+        "str w20, [x11]",
+        "sub x10, x10, #0x4 (4)",
+        "sub x11, x11, #0x4 (4)"
       ]
     },
     "negative movsq": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -227,12 +214,10 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "strb w20, [x28, #714]",
-        "mov w21, #0x8",
-        "sub x20, x21, x20, lsl #4",
-        "ldr x21, [x10]",
-        "str x21, [x11]",
-        "add x10, x10, x20",
-        "add x11, x11, x20"
+        "ldr x20, [x10]",
+        "str x20, [x11]",
+        "sub x10, x10, #0x8 (8)",
+        "sub x11, x11, #0x8 (8)"
       ]
     }
   }
