@@ -4,7 +4,10 @@
     "EnabledHostFeatures": [
       "SVE256"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ]
   },
   "Instructions": {
     "vpsrlw xmm0, xmm1, 0": {
