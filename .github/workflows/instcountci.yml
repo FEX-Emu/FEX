@@ -56,6 +56,16 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Set vixl_sim x86
+      if: matrix.arch[1] == 'x64'
+      run: |
+        echo "VIXL_SIM_ENABLED=True" >> $GITHUB_ENV
+
+    - name: Set vixl_sim Arm64
+      if: matrix.arch[1] == 'ARM64'
+      run: |
+        echo "VIXL_SIM_ENABLED=False" >> $GITHUB_ENV
+
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
@@ -64,7 +74,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=False -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=$VIXL_SIM_ENABLED -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
