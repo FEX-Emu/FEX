@@ -6,6 +6,7 @@ desc: Cross block store-after-store elimination
 $end_info$
 */
 
+#include "FEXCore/Core/X86Enums.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Core/CoreState.h>
@@ -339,6 +340,9 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
+          // NZCV would need special handling
+          if (Op->Flag == X86State::RFLAG_NZCV_LOC)
+            continue;
 
           auto& BlockInfo = InfoMap[BlockNode];
 

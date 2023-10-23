@@ -6,6 +6,7 @@ desc: Transforms ContextLoad/Store to temporaries, similar to mem2reg
 $end_info$
 */
 
+#include "FEXCore/Core/X86Enums.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 
@@ -597,6 +598,11 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       }
       else if (IROp->Op == OP_STOREFLAG) {
         const auto Op = IROp->CW<IR::IROp_StoreFlag>();
+
+        // NZCV is optimized in the dispatcher, ignore here
+        if (Op->Flag == X86State::RFLAG_NZCV_LOC)
+          continue;
+
         const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
         auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
         auto LastStoreNode = Info->StoreNode;
@@ -637,6 +643,10 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       }
       else if (IROp->Op == OP_LOADFLAG) {
         const auto Op = IROp->CW<IR::IROp_LoadFlag>();
+        // NZCV is optimized in the dispatcher, ignore here
+        if (Op->Flag == X86State::RFLAG_NZCV_LOC)
+          continue;
+
         const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
         auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
         LastAccessType LastAccess = Info->Accessed;
