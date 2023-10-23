@@ -202,6 +202,7 @@
       "GPR = ValidateCode u64:$CodeOriginalLow, u64:$CodeOriginalhigh, i64:$Offset, u8:$CodeLength": {
         "HasSideEffects": true,
         "HasDest": true,
+        "ImplicitFlagClobber": true,
         "DestSize": "8"
       },
 
@@ -247,6 +248,7 @@
                  "The second GPR pair element is a bool if the number is valid",
                  "RNG hardware is allowed to fail early and return. Software must always check this"
                 ],
+        "ImplicitFlagClobber": true,
         "DestSize": "16",
         "NumElements": "2"
       },
@@ -499,6 +501,7 @@
       "FPR = VLoadVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked load similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be loaded from memory"],
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -506,6 +509,7 @@
         "Desc": ["Does a masked store similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be stored to memory"],
         "HasSideEffects": true,
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -597,6 +601,7 @@
                 ],
 
         "DestSize": "Size",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -611,6 +616,7 @@
                 ],
         "HasDest": true,
         "DestSize": "Size",
+        "ImplicitFlagClobber": true,
         "NumElements": "2",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
@@ -753,6 +759,7 @@
         "Desc": ["Set Telemetry value if the passed in 32-bit value isn't zero.",
                  "Only useful for 32-bit applications."
                 ],
+        "ImplicitFlagClobber": true,
         "DestSize": "8"
       }
     },
@@ -830,6 +837,7 @@
                  "Will truncate to 64 or 32bits"
                 ],
         "DestSize": "Size",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -859,6 +867,7 @@
                  "In the case of zero returns ~0U"
                 ],
         "DestSize": "Size",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -914,6 +923,7 @@
       "GPR = AddNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Return NZCV for the sum of two GPRs"],
         "DestSize": "4",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -921,6 +931,7 @@
       "GPR = AdcNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, GPR:$NZCV": {
         "Desc": ["Return NZCV for the sum of two GPRs and carry-in given as NZCV"],
         "DestSize": "4",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -928,6 +939,7 @@
       "GPR = SbbNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, GPR:$NZCV": {
         "Desc": ["Return NZCV for the sum of two GPRs and carry-in given as NZCV"],
         "DestSize": "4",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -946,6 +958,7 @@
                  "If InvertCarry is nonzero, carry flag uses x86 definition, inverted from arm64.",
                  ""],
         "DestSize": "4",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1007,6 +1020,7 @@
       },
       "GPR = TestNZ u8:$Size, GPR:$Src1": {
         "Desc": ["Return NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
+        "ImplicitFlagClobber": true,
         "DestSize": "4"
       },
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1158,6 +1172,7 @@
                  "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal"
                 ],
         "DestSize": "ResultSize",
+        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "_CompareSize == FEXCore::IR::OpSize::i32Bit || _CompareSize == FEXCore::IR::OpSize::i64Bit || _CompareSize == FEXCore::IR::OpSize::i128Bit",
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit",
@@ -1266,6 +1281,7 @@
         "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
                  "Ordering flag result is true if either float input is NaN"
                 ],
+        "ImplicitFlagClobber": true,
         "DestSize": "4"
       }
     },
@@ -1520,6 +1536,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VCMPEQZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1528,6 +1545,7 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1536,6 +1554,7 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1777,10 +1796,12 @@
       },
 
       "FPR = VFMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VFMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1899,10 +1920,12 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero"
                 ],
 
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VFCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

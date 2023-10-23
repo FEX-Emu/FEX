@@ -3694,9 +3694,16 @@ DEF_OP(VInsElement) {
     } else {
       const auto UpperBound = 16 >> FEXCore::ilog2(ElementSize);
       const auto TargetElement = static_cast<int>(DestIdx) - UpperBound;
+
+      // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
       index(SubRegSize, VTMP1.Z(), -UpperBound, 1);
       cmpeq(SubRegSize, Predicate, PRED_TMP_32B.Zeroing(), VTMP1.Z(), TargetElement);
       mov(SubRegSize, Dst.Z(), Predicate.Merging(), VTMP2.Z());
+
+      // Restore NZCV
+      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
     }
   }
   else {

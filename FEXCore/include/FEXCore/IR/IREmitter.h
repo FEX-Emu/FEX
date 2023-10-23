@@ -27,6 +27,8 @@ friend class FEXCore::IR::PassManager;
       ResetWorkingList();
     }
 
+    virtual ~IREmitter() = default;
+
     void ReownOrClaimBuffer() {
       DualListData.ReownOrClaimBuffer();
     }
@@ -330,6 +332,10 @@ friend class FEXCore::IR::PassManager;
       OrderedNode *Ptr = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(Size));
       memcpy(Ptr, OldNode, Size);
       return Ptr;
+    }
+
+    virtual void SaveNZCV() {
+      // Overriden by dispatcher, stubbed for IR tests
     }
 
     OrderedNode *CurrentWriteCursor = nullptr;

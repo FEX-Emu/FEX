@@ -52,7 +52,7 @@
       ]
     },
     "vphaddw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x01 256-bit"
@@ -65,14 +65,18 @@
         "splice z2.d, p6, z2.d, z1.d",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vphaddd xmm0, xmm1, xmm2": {
@@ -86,7 +90,7 @@
       ]
     },
     "vphaddd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x02 256-bit"
@@ -99,14 +103,18 @@
         "splice z2.d, p6, z2.d, z1.d",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vphaddsw xmm0, xmm1, xmm2": {
@@ -122,7 +130,7 @@
       ]
     },
     "vphaddsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x03 256-bit"
@@ -133,14 +141,18 @@
         "sqadd z2.h, z2.h, z3.h",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vpmaddubsw xmm0, xmm1, xmm2": {
@@ -192,7 +204,7 @@
       ]
     },
     "vphsubw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x05 256-bit"
@@ -203,14 +215,18 @@
         "sub z2.h, z2.h, z3.h",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vphsubd xmm0, xmm1, xmm2": {
@@ -226,7 +242,7 @@
       ]
     },
     "vphsubd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x06 256-bit"
@@ -237,14 +253,18 @@
         "sub z2.s, z2.s, z3.s",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vphsubsw xmm0, xmm1, xmm2": {
@@ -260,7 +280,7 @@
       ]
     },
     "vphsubsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x07 256-bit"
@@ -271,14 +291,18 @@
         "sqsub z2.h, z2.h, z3.h",
         "mov z1.d, z2.d[2]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[1]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vpsignb xmm0, xmm1, xmm2": {
@@ -1060,7 +1084,7 @@
       ]
     },
     "vpackusdw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2b 256-bit"
@@ -1073,14 +1097,18 @@
         "splice z2.h, p6, z2.h, z1.h",
         "mov z1.d, z2.d[1]",
         "mov z3.d, z2.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
         "mov z3.d, p0/m, z1.d",
+        "msr nzcv, x0",
         "mov z1.d, z2.d[2]",
         "mov z16.d, z3.d",
+        "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",
-        "mov z16.d, p0/m, z1.d"
+        "mov z16.d, p0/m, z1.d",
+        "msr nzcv, x0"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
