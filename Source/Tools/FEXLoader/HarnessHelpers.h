@@ -24,6 +24,7 @@
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <unistd.h>
 
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
@@ -405,11 +406,7 @@ namespace FEX::HarnessHelper {
         return Result;
       };
 
-#ifndef _WIN32
-      const auto AllocPageSize = FHU::FEX_PAGE_SIZE;
-#else
-      const auto AllocPageSize = 64 * 1024;
-#endif
+      const auto AllocPageSize = sysconf(_SC_PAGESIZE);
       if (LimitedSize) {
         DoMMap(0xe000'0000, AllocPageSize * 10);
 
