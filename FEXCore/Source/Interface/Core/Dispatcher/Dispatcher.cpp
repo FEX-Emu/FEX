@@ -225,7 +225,7 @@ void Dispatcher::EmitDispatcher() {
       FillStaticRegs();
 
     ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
+    sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
     str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
@@ -262,7 +262,7 @@ void Dispatcher::EmitDispatcher() {
       FillStaticRegs();
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
+    sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
     str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
