@@ -971,6 +971,10 @@
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "CarryInvert": {
+        "Desc": ["Invert carry flag in NZCV"],
+        "HasSideEffects": true
+      },
       "AdcNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the sum of two GPRs and carry-in given as NZCV"],
         "HasSideEffects": true,
@@ -978,10 +982,9 @@
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = SbbNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, GPR:$NZCV": {
-        "Desc": ["Return NZCV for the sum of two GPRs and carry-in given as NZCV"],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+      "SbbNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the difference of two GPRs and carry-in given as NZCV"],
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1005,12 +1008,11 @@
           "_Shift != ShiftType::ROR"
         ]
       },
-      "GPR = SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, u8:$InvertCarry": {
-        "Desc": ["Return NZCV for the difference of two GPRs. ",
-                 "If InvertCarry is nonzero, carry flag uses x86 definition, inverted from arm64.",
+      "SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the difference of two GPRs. ",
+                 "Carry flag uses arm64 definition, inverted x86.",
                  ""],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]

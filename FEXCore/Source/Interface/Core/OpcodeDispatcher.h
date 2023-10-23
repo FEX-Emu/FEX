@@ -1321,6 +1321,21 @@ private:
       return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
   }
 
+  void CarryInvert() {
+    unsigned Bit = IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+      // Invert as NZCV.
+      _CarryInvert();
+      CachedNZCV = nullptr;
+    } else {
+      // Invert as a GPR
+      SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(1u << Bit)));
+    }
+
+    PossiblySetNZCVBits |= 1u << Bit;
+  }
+
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
     SetRFLAG(Value, BitOffset);

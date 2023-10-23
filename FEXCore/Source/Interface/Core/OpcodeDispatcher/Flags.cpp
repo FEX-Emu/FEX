@@ -549,7 +549,18 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
-    SetNZCV(_SbbNZCV(OpSize, Src1, Src2, GetNZCV()));
+    // Rectify input carry
+    CarryInvert();
+
+    if (NZCVDirty && CachedNZCV)
+      _StoreNZCV(CachedNZCV);
+    CachedNZCV = nullptr;
+
+    _SbbNZCV(OpSize, Src1, Src2);
+    PossiblySetNZCVBits = ~0;
+
+    // Rectify output carry
+    CarryInvert();
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -579,8 +590,13 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
+    _SubNZCV(OpSize, Src1, Src2);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
+
     // We only bother inverting CF if we're actually going to update CF.
-    SetNZCV(_SubNZCV(OpSize, Src1, Src2, UpdateCF));
+    if (UpdateCF)
+      CarryInvert();
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
