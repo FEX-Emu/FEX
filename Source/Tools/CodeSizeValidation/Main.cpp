@@ -465,6 +465,8 @@ int main(int argc, char **argv, char **const envp) {
     FEATURE_CSSC   = (1U << 5),
     FEATURE_AFP    = (1U << 6),
     FEATURE_RPRES  = (1U << 7),
+    FEATURE_FLAGM  = (1U << 8),
+    FEATURE_FLAGM2 = (1U << 9),
   };
 
   uint64_t SVEWidth = 0;
@@ -495,6 +497,12 @@ int main(int argc, char **argv, char **const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_RPRES) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLERPRES);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_FLAGM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEFLAGM);
+  }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_FLAGM2) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEFLAGM2);
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
@@ -524,6 +532,12 @@ int main(int argc, char **argv, char **const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_RPRES) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLERPRES);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_FLAGM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEFLAGM);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_FLAGM2) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEFLAGM2);
   }
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
