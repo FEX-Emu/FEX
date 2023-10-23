@@ -494,27 +494,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       break;
     }
 
-    case OP_VFADD:
-    case OP_VFSUB:
-    case OP_VFMUL:
-    case OP_VFDIV:
-    case OP_FCMP: {
-      auto flopSize = IROp->Size;
-      for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
-        auto argHeader = IREmit->GetOpHeader(IROp->Args[i]);
-
-        if (argHeader->Op == OP_VMOV) {
-          auto source = argHeader->Args[0];
-          auto sourceHeader = IREmit->GetOpHeader(source);
-          if (sourceHeader->Size >= flopSize) {
-            IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(source));
-            //printf("VMOV bypassed\n");
-          }
-        }
-      }
-      break;
-    }
-
     case OP_VMOV: {
       // elim from load mem
       auto source = IROp->Args[0];
