@@ -564,6 +564,13 @@ enum class FloatCompareOp : uint8_t {
   ORD,
 };
 
+enum class ShiftType : uint8_t {
+  LSL = 0,
+  LSR,
+  ASR,
+  ROR,
+};
+
 // Converts a size stored as an integer in to an OpSize enum.
 // This is a nop operation and will be eliminated by the compiler.
 static inline OpSize SizeToOpSize(uint8_t Size) {

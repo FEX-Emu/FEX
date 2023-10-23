@@ -116,6 +116,15 @@ private:
     return PhyReg;
   }
 
+  // Converts IR-base shift type to ARMEmitter shift type.
+  // Will be a no-op, only a type conversion since the two definitions match.
+  [[nodiscard]] ARMEmitter::ShiftType ConvertIRShiftType(IR::ShiftType Shift) const {
+    return Shift == IR::ShiftType::LSL ? ARMEmitter::ShiftType::LSL :
+           Shift == IR::ShiftType::LSR ? ARMEmitter::ShiftType::LSR :
+           Shift == IR::ShiftType::ASR ? ARMEmitter::ShiftType::ASR :
+           ARMEmitter::ShiftType::ROR;
+  }
+
   [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPRPair(IR::NodeID Node) const;

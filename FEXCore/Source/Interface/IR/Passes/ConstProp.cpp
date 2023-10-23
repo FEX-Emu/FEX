@@ -420,7 +420,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       }
       break;
     }
-
     case OP_AND: {
       // if AND's arguments are imms, they are masking
       for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
@@ -648,11 +647,29 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->C<IR::IROp_Add>();
       uint64_t Constant1{};
       uint64_t Constant2{};
+      bool IsConstant1 = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
+      bool IsConstant2 = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      if (IsConstant1 && IsConstant2) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+      else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(-Constant2)) {
+        // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
+        // This means we can convert the operation in to a subtract.
+        // Change the IR operation itself.
+        IROp->Op = OP_SUB;
+        // Set the write cursor to just before this operation.
+        auto CodeIter = CurrentIR.at(CodeNode);
+        --CodeIter;
+        IREmit->SetWriteCursor(std::get<0>(*CodeIter));
+
+        // Negate the constant.
+        auto NegConstant = IREmit->_Constant(-Constant2);
+
+        // Replace the second source with the negated constant.
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Src2_Index, NegConstant);
         Changed = true;
       }
     break;
@@ -669,6 +686,21 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         Changed = true;
       }
     break;
+    }
+    case OP_SUBSHIFT: {
+      auto Op = IROp->C<IR::IROp_SubShift>();
+
+      uint64_t Constant1, Constant2;
+      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
+          IREmit->IsValueConstant(IROp->Args[1], &Constant2) &&
+          Op->Shift == IR::ShiftType::LSL) {
+        // Optimize the LSL case when we know both sources are constant.
+        // This is a pattern that shows up with direction flag calculations if DF was set just before the operation.
+        uint64_t NewConstant = (Constant1 - (Constant2 << Op->ShiftAmount)) & getMask(Op);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+      break;
     }
     case OP_AND: {
       auto Op = IROp->CW<IR::IROp_And>();

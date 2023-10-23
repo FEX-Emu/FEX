@@ -59,6 +59,166 @@
         "fadd s0, s16, s18",
         "mov v16.s[0], v0.s[0]"
       ]
+    },
+    "positive movsb": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "cld",
+        "movsb"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "strb w20, [x28, #714]",
+        "ldrb w20, [x10]",
+        "strb w20, [x11]",
+        "add x10, x10, #0x1 (1)",
+        "add x11, x11, #0x1 (1)"
+      ]
+    },
+    "positive movsw": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "cld",
+        "movsw"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "strb w20, [x28, #714]",
+        "ldrh w20, [x10]",
+        "strh w20, [x11]",
+        "add x10, x10, #0x2 (2)",
+        "add x11, x11, #0x2 (2)"
+      ]
+    },
+    "positive movsd": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "cld",
+        "movsd"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "strb w20, [x28, #714]",
+        "ldr w20, [x10]",
+        "str w20, [x11]",
+        "add x10, x10, #0x4 (4)",
+        "add x11, x11, #0x4 (4)"
+      ]
+    },
+    "positive movsq": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "cld",
+        "movsq"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x0",
+        "strb w20, [x28, #714]",
+        "ldr x20, [x10]",
+        "str x20, [x11]",
+        "add x10, x10, #0x8 (8)",
+        "add x11, x11, #0x8 (8)"
+      ]
+    },
+    "negative movsb": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "std",
+        "movsb"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x1",
+        "strb w20, [x28, #714]",
+        "ldrb w20, [x10]",
+        "strb w20, [x11]",
+        "sub x10, x10, #0x1 (1)",
+        "sub x11, x11, #0x1 (1)"
+      ]
+    },
+    "negative movsw": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "std",
+        "movsw"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x1",
+        "strb w20, [x28, #714]",
+        "ldrh w20, [x10]",
+        "strh w20, [x11]",
+        "sub x10, x10, #0x2 (2)",
+        "sub x11, x11, #0x2 (2)"
+      ]
+    },
+    "negative movsd": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "std",
+        "movsd"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x1",
+        "strb w20, [x28, #714]",
+        "ldr w20, [x10]",
+        "str w20, [x11]",
+        "sub x10, x10, #0x4 (4)",
+        "sub x11, x11, #0x4 (4)"
+      ]
+    },
+    "negative movsq": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "When direction flag is a compile time constant we can optimize",
+        "loads and stores can turn in to post-increment when known"
+      ],
+      "x86Insts": [
+        "std",
+        "movsq"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x1",
+        "strb w20, [x28, #714]",
+        "ldr x20, [x10]",
+        "str x20, [x11]",
+        "sub x10, x10, #0x8 (8)",
+        "sub x11, x11, #0x8 (8)"
+      ]
     }
   }
 }
