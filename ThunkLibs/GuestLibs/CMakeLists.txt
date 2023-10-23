@@ -17,7 +17,7 @@ endif()
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 
   # This gets passed in from the main cmake project
   set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")

@@ -248,8 +248,10 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
     run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames, data_layout), full_code, silent);
 
     std::string result =
+        "#include <array>\n"
         "#include <cstdint>\n"
         "#include <dlfcn.h>\n"
+        "#include <type_traits>\n"
         "template<typename Fn>\n"
         "struct function_traits;\n"
         "template<typename Result, typename Arg>\n"
@@ -270,14 +272,19 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  uintptr_t GuestUnpacker;\n"
         "  uintptr_t GuestTarget;\n"
         "};\n"
+        "struct ParameterAnnotations {};\n"
         "template<typename>\n"
-        "struct CallbackUnpack {\n"
-        "  static void ForIndirectCall(void* argsv);\n"
+        "struct GuestWrapperForHostFunction {\n"
+        "  template<ParameterAnnotations...> static void Call(void*);\n"
         "};\n"
-        "template<typename F>\n"
-        "void FinalizeHostTrampolineForGuestFunction(F*);\n"
         "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
-        "void *dlsym_default(void* handle, const char* symbol);\n";
+        "void *dlsym_default(void* handle, const char* symbol);\n"
+        "template<typename T>\n"
+        "struct guest_layout {\n"
+        "  T data;\n"
+        "};\n"
+        "\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
 
     auto& filename = output_filenames.host;
     {
@@ -377,7 +384,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack"))).bind("funcptr")))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
                 return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
@@ -415,7 +422,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack")))))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction")))))))
             )));
 }
 
@@ -485,10 +492,10 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             parameterCountIs(1),
             hasParameter(0, hasType(pointerType(pointee(
                 recordType(hasDeclaration(decl(
-                    has(fieldDecl(hasType(asString("int")))),
-                    has(fieldDecl(hasType(asString("char")))),
-                    has(fieldDecl(hasType(asString("unsigned long")))),
-                    has(fieldDecl(hasType(asString("struct TestStruct"))))
+                    has(fieldDecl(hasType(asString("guest_layout<int>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<char>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
                     )))))))
             )));
 }
@@ -563,6 +570,10 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
         SECTION("Parameter unannotated") {
             CHECK_THROWS(run_thunkgen_host(prelude, code, guest_abi, true));
         }
+
+        SECTION("Parameter annotated as ptr_passthrough") {
+            CHECK_NOTHROW(run_thunkgen_host(prelude, code + "template<> struct fex_gen_param<func, 0, A*> : fexgen::ptr_passthrough {};\n", guest_abi));
+        }
     }
 
     SECTION("Pointer to struct with pointer member of opaque type") {
@@ -591,6 +602,24 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
             // Pointee data is assumed to be compatible on 64-bit
             CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
         }
+    }
+
+    SECTION("Passthrough") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::ptr_passthrough {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
+    }
+
+    SECTION("Assumed compatible") {
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(void*);\n"
+            "template<> struct fex_gen_config<func> {};\n"
+            "template<> struct fex_gen_param<func, 0, void*> : fexgen::assume_compatible_data_layout {};\n";
+        CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
     }
 
     SECTION("Unannotated in struct") {

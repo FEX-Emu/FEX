@@ -464,6 +464,21 @@ TEST_CASE_METHOD(Fixture, "DataLayout") {
                 "template<> struct fex_gen_type<A> {};\n", guest_abi),
                 Catch::Contains("unannotated member") && Catch::Contains("union type"));
         }
+
+        SECTION("with annotation") {
+            auto action = compute_data_layout(
+                "#include <thunks_common.h>\n"
+                "#include <cstdint>\n",
+                "union B { int32_t a; uint32_t b; };\n"
+                "struct A { B a; };\n"
+                "template<> struct fex_gen_type<B> : fexgen::assume_compatible_data_layout {};\n"
+                "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+            INFO(FormatDataLayout(action->host_layout));
+
+            REQUIRE(action->guest_layout->contains("A"));
+            CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Full);
+        }
     }
 }
 
@@ -593,6 +608,36 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
             Catch::Contains("unannotated member") && Catch::Contains("union type"));
     }
 
+    SECTION("Pointer to union type with assume_compatible_data_layout annotation") {
+        auto action = compute_data_layout(
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n",
+            "union B { int32_t a; uint32_t b; };\n"
+            "struct A { B* a; };\n"
+            "template<> struct fex_gen_type<B> : fexgen::assume_compatible_data_layout {};\n"
+            "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+        INFO(FormatDataLayout(action->host_layout));
+
+        REQUIRE(action->guest_layout->contains("A"));
+        CHECK(action->GetTypeCompatibility("struct A") == compat_full64_repackable32);
+    }
+
+    SECTION("Pointer to opaque type") {
+        auto action = compute_data_layout(
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n",
+            "struct B;\n"
+            "struct A { B* a; };\n"
+            "template<> struct fex_gen_type<B> : fexgen::opaque_type {};\n"
+            "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+        INFO(FormatDataLayout(action->host_layout));
+
+        REQUIRE(action->guest_layout->contains("A"));
+        CHECK(action->GetTypeCompatibility("struct A") == compat_full64_repackable32);
+    }
+
     SECTION("Self-referencing struct (like VkBaseOutStructure)") {
         // Without annotation
         auto action = compute_data_layout(
@@ -605,6 +650,20 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
 
         REQUIRE(action->guest_layout->contains("A"));
         CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), Catch::Contains("recursive reference"));
+
+        // With annotation
+        if (guest_abi == GuestABI::X86_64) {
+            auto action = compute_data_layout(
+                "#include <thunks_common.h>\n"
+                "#include <cstdint>\n",
+                "struct A { A* a; };\n"
+                "template<> struct fex_gen_type<A> : fexgen::assume_compatible_data_layout {};\n", guest_abi);
+
+            INFO(FormatDataLayout(action->host_layout));
+
+            REQUIRE(action->guest_layout->contains("A"));
+            CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Full);
+        }
     }
 
     SECTION("Circularly referencing structs") {
@@ -623,6 +682,22 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
         REQUIRE(action->guest_layout->contains("B"));
         CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), Catch::Contains("recursive reference"));
         CHECK_THROWS_WITH(action->GetTypeCompatibility("struct B"), Catch::Contains("recursive reference"));
+
+        // With annotation
+        if (guest_abi == GuestABI::X86_64) {
+            auto action = compute_data_layout(
+                "#include <thunks_common.h>\n"
+                "#include <cstdint>\n",
+                "struct B;\n"
+                "struct A { B* a; };\n"
+                "struct B { A* a; };\n"
+                "template<> struct fex_gen_type<B> : fexgen::assume_compatible_data_layout {};\n", guest_abi);
+
+            INFO(FormatDataLayout(action->host_layout));
+
+            REQUIRE(action->guest_layout->contains("B"));
+            CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::Full);
+        }
     }
 
     SECTION("Pointers to void") {

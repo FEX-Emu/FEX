@@ -84,6 +84,7 @@ struct FuncPtrInfo {
 };
 
 struct ABI : std::unordered_map<std::string, TypeInfo> {
+    std::unordered_map<std::string, FuncPtrInfo> thunked_funcptrs;
     int pointer_size; // in bytes
 };
 
@@ -110,6 +111,8 @@ public:
             const clang::Type*,
             const std::unordered_map<const clang::Type*, TypeInfo> host_abi,
             std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat);
+
+    FuncPtrInfo LookupGuestFuncPtrInfo(const char* funcptr_id);
 
 private:
     const ABI& guest_abi;

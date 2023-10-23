@@ -23,6 +23,9 @@ struct ThunkedCallback : FunctionParams {
 };
 
 struct ParameterAnnotations {
+    bool is_passthrough = false;
+    bool assume_compatible = false;
+
     bool operator==(const ParameterAnnotations&) const = default;
 };
 
@@ -115,6 +118,8 @@ public:
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
     struct RepackedType {
+        bool assumed_compatible = false;         // opaque_type or assume_compatible_data_layout
+        bool pointers_only = assumed_compatible; // if true, only pointers to this type may be used
     };
 
 protected:
@@ -132,7 +137,10 @@ protected:
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
 
-    std::unordered_set<const clang::Type*> funcptr_types;
+    // Set of function types for which to generate Guest->Host thunking trampolines.
+    // The map key is a unique identifier that must be consistent between guest/host processing passes.
+    // The map value is a pair of the function pointer's clang::Type and the mapping of parameter annotations
+    std::unordered_map<std::string, std::pair<const clang::Type*, std::unordered_map<unsigned, ParameterAnnotations>>> thunked_funcptrs;
 
     std::unordered_map<const clang::Type*, RepackedType> types;
     std::optional<unsigned> lib_version;

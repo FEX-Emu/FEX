@@ -26,6 +26,14 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
 
     // First, add all types directly used in function signatures of the library API to the meta set
     for (const auto& [type, type_repack_info] : types) {
+        if (type_repack_info.assumed_compatible) {
+            auto [_, inserted] = layout.insert(std::pair { context.getCanonicalType(type), TypeInfo {} });
+            if (!inserted) {
+                throw std::runtime_error("Failed to gather type metadata: Opaque type \"" + clang::QualType { type, 0 }.getAsString() + "\" already registered");
+            }
+            continue;
+        }
+
         if (type->isIncompleteType()) {
             throw std::runtime_error("Cannot compute data layout of incomplete type \"" + clang::QualType { type, 0 }.getAsString() + "\". Did you forget any annotations?");
         }
@@ -54,7 +62,7 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
 
     // Then, add information about members
     for (const auto& [type, type_repack_info] : types) {
-        if (!type->isStructureType()) {
+        if (!type->isStructureType() || type_repack_info.assumed_compatible) {
             continue;
         }
 
@@ -151,9 +159,33 @@ ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<c
     return stable_layout;
 }
 
+static std::array<uint8_t, 32> GetSha256(const std::string& function_name) {
+    std::array<uint8_t, 32> sha256;
+    SHA256(reinterpret_cast<const unsigned char*>(function_name.data()),
+           function_name.size(),
+           sha256.data());
+    return sha256;
+};
+
 void AnalyzeDataLayoutAction::OnAnalysisComplete(clang::ASTContext& context) {
     if (StrictModeEnabled(context)) {
     type_abi = GetStableLayout(context, ComputeDataLayout(context, types));
+    }
+
+    // Register functions that must be guest-callable through host function pointers
+    for (auto funcptr_type_it = thunked_funcptrs.begin(); funcptr_type_it != thunked_funcptrs.end(); ++funcptr_type_it) {
+        auto& funcptr_id = funcptr_type_it->first;
+        auto& [type, param_annotations] = funcptr_type_it->second;
+        auto func_type = type->getAs<clang::FunctionProtoType>();
+        std::string mangled_name = clang::QualType { type, 0 }.getAsString();
+        auto cb_sha256 = GetSha256("fexcallback_" + mangled_name);
+        FuncPtrInfo info = { cb_sha256 };
+
+        info.result = func_type->getReturnType().getAsString();
+        for (auto arg : func_type->getParamTypes()) {
+            info.args.push_back(arg.getAsString());
+        }
+        type_abi.thunked_funcptrs[funcptr_id] = std::move(info);
     }
 }
 
@@ -176,6 +208,14 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
 
             return existing_compat_it->second;
         }
+    }
+
+    if (types.contains(type) && types.at(type).assumed_compatible) {
+        if (types.at(type).pointers_only && !type->isPointerType()) {
+            throw std::runtime_error("Tried to dereference opaque type \"" + clang::QualType { type, 0 }.getAsString() + "\" when querying data layout compatibility");
+        }
+        type_compat.at(type) = TypeCompatibility::Full;
+        return TypeCompatibility::Full;
     }
 
     auto type_name = get_type_name(context, type);
@@ -233,12 +273,18 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
                 // * Pointer member is annotated
                 // TODO: Don't restrict this to structure types. it applies to pointers to builtin types too!
                 auto host_member_pointee_type = context.getCanonicalType(host_member_type->getPointeeType().getTypePtr());
-                if (host_member_pointee_type->isPointerType()) {
+                if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).assumed_compatible) {
+                    // Pointee doesn't need repacking, but pointer needs extending on 32-bit
+                    member_compat.push_back(is_32bit ? TypeCompatibility::Repackable : TypeCompatibility::Full);
+                } else if (host_member_pointee_type->isPointerType()) {
                     // This is a nested pointer, e.g. void**
 
                     if (is_32bit) {
                         // Nested pointers can't be repacked on 32-bit
                         member_compat.push_back(TypeCompatibility::None);
+                    } else if (types.contains(host_member_pointee_type->getPointeeType().getTypePtr()) && types.at(host_member_pointee_type->getPointeeType().getTypePtr()).assumed_compatible) {
+                        // Pointers to opaque types are fine
+                        member_compat.push_back(TypeCompatibility::Full);
                     } else {
                         // Check the innermost type's compatibility on 64-bit
                         auto pointee_pointee_type = host_member_pointee_type->getPointeeType().getTypePtr();
@@ -295,6 +341,10 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
 
     type_compat.at(type) = compat;
     return compat;
+}
+
+FuncPtrInfo DataLayoutCompareAction::LookupGuestFuncPtrInfo(const char* funcptr_id) {
+    return guest_abi.thunked_funcptrs.at(funcptr_id);
 }
 
 DataLayoutCompareActionFactory::DataLayoutCompareActionFactory(const ABI& abi) : abi(abi) {

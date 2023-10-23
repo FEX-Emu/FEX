@@ -60,7 +60,7 @@ static VkBool32 DummyVkDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportO
   return VK_FALSE;
 }
 
-static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, VkInstance* a_2) {
+static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, guest_layout<VkInstance*> a_2) {
   const VkInstanceCreateInfo* vk_struct_base = a_0;
   for (const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(vk_struct_base); vk_struct->pNext; vk_struct = vk_struct->pNext) {
     // Override guest callbacks used for VK_EXT_debug_report
@@ -74,11 +74,11 @@ static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, co
     }
   }
 
-  return LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, a_2);
+  return LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, a_2.data);
 }
 
-static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkDevice* a_3){
-  return LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, a_3);
+static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, guest_layout<VkDevice*> a_3){
+  return LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, a_3.data);
 }
 
 static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3){
