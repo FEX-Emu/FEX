@@ -187,6 +187,16 @@ DEF_OP(Sub) {
   }
 }
 
+DEF_OP(SubShift) {
+  auto Op = IROp->C<IR::IROp_SubShift>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+}
+
 DEF_OP(SubNZCV) {
   auto Op = IROp->C<IR::IROp_SubNZCV>();
   const IR::OpSize OpSize = Op->Size;

@@ -257,6 +257,16 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
   *out << static_cast<uint32_t>(Arg.si_code) << "}";
 }
 
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::ShiftType Arg) {
+  switch (Arg) {
+    case ShiftType::LSL:  *out << "LSL"; break;
+    case ShiftType::LSR:  *out << "LSR"; break;
+    case ShiftType::ASR:  *out << "ASR"; break;
+    case ShiftType::ROR:  *out << "ROR"; break;
+    default: *out << "<Unknown Shift Type>"; break;
+  }
+}
+
 void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 
