@@ -121,8 +121,8 @@ void Dispatcher::EmitDispatcher() {
   and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::r0, ARMEmitter::Reg::r3, ARMEmitter::ShiftType::LSL , 4);
   ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, 0);
-  cmp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, RipReg.R());
-  b(ARMEmitter::Condition::CC_NE, &FullLookup);
+  sub(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, RipReg);
+  cbnz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, &FullLookup);
 
   br(ARMEmitter::Reg::r3);
 
@@ -167,8 +167,8 @@ void Dispatcher::EmitDispatcher() {
     ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x1, ARMEmitter::Reg::r0, 0);
 
     // If the guest address doesn't match, Compile the block.
-    cmp(ARMEmitter::XReg::x1, RipReg);
-    b(ARMEmitter::Condition::CC_NE, &NoBlock);
+    sub(ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, RipReg);
+    cbnz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, &NoBlock);
 
     // Check the host address to see if it matches, else compile the block.
     cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, &NoBlock);
