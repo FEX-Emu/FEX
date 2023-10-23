@@ -1,0 +1,100 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "FCMA"
+    ]
+  },
+  "Instructions": {
+    "ucomisd xmm0, xmm1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0x2e",
+      "ExpectedArm64ASM": [
+        "fcmp d16, d17",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "lsl x21, x21, #29",
+        "orr w21, w21, w22, lsl #30",
+        "eor w20, w20, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic x21, x21, x22",
+        "strb w20, [x28, #708]",
+        "str w21, [x28, #728]"
+      ]
+    },
+    "comisd xmm0, xmm1": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": "0x66 0x0f 0x2f",
+      "ExpectedArm64ASM": [
+        "fcmp d16, d17",
+        "cset x20, eq",
+        "csinc x20, x20, xzr, vc",
+        "cset x1, lt",
+        "bfi x20, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x20, x1, #2, #1",
+        "ubfx x21, x20, #1, #1",
+        "ubfx x22, x20, #0, #1",
+        "ubfx x20, x20, #2, #1",
+        "ldr w23, [x28, #728]",
+        "mov w0, w23",
+        "bfi w0, w21, #29, #1",
+        "mov w21, w0",
+        "bfi w21, w22, #30, #1",
+        "eor w20, w20, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w22, #0x90000000",
+        "bic x21, x21, x22",
+        "strb w20, [x28, #708]",
+        "str w21, [x28, #728]"
+      ]
+    },
+    "pmovmskb eax, xmm0": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0xd7",
+      "ExpectedArm64ASM": [
+        "mov x20, #0x201",
+        "movk x20, #0x804, lsl #16",
+        "movk x20, #0x2010, lsl #32",
+        "movk x20, #0x8040, lsl #48",
+        "dup v2.2d, x20",
+        "cmlt v3.16b, v16.16b, #0",
+        "and v2.16b, v3.16b, v2.16b",
+        "addp v2.16b, v2.16b, v2.16b",
+        "addp v2.8b, v2.8b, v2.8b",
+        "addp v2.8b, v2.8b, v2.8b",
+        "umov w4, v2.h[0]"
+      ]
+    },
+    "maskmovdqu xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0xf7",
+      "ExpectedArm64ASM": [
+        "cmlt v2.16b, v17.16b, #0",
+        "ldr q3, [x11]",
+        "bsl v2.16b, v16.16b, v3.16b",
+        "str q2, [x11]"
+      ]
+    }
+  }
+}

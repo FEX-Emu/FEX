@@ -2,13 +2,13 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2",
       "RNG"
     ],
     "DisabledHostFeatures": [
       "SVE128",
-      "SVE256",
-      "FLAGM",
-      "FLAGM2"
+      "SVE256"
     ]
   },
   "Instructions": {

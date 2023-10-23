@@ -2,14 +2,14 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
-      "CLZERO"
+      "CLZERO",
+      "FLAGM",
+      "FLAGM2"
     ],
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256",
-      "AFP",
-      "FLAGM",
-      "FLAGM2"
+      "AFP"
     ]
   },
   "Instructions": {
@@ -88,14 +88,6 @@
         "ldr x8, [x28, #40]",
         "str xzr, [x28, #1040]",
         "orr x5, x0, x1, lsl #12"
-      ]
-    },
-    "clzero rax": {
-      "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
-      "Comment": "0xF 0x01 /7 RM-4",
-      "ExpectedArm64ASM": [
-        "dc zva, x4"
       ]
     }
   }

@@ -4,13 +4,14 @@
       "FEX_X87REDUCEDPRECISION": "1"
     },
     "Bitness": 64,
-    "EnabledHostFeatures": [],
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256",
-      "AFP",
-      "FLAGM",
-      "FLAGM2"
+      "AFP"
     ]
   },
   "Instructions": {

@@ -1,12 +1,13 @@
 {
   "Features": {
     "Bitness": 64,
-    "EnabledHostFeatures": [],
-    "DisabledHostFeatures": [
-      "SVE128",
-      "SVE256",
+    "EnabledHostFeatures": [
       "FLAGM",
       "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
     ]
   },
   "Instructions": {
@@ -458,47 +459,6 @@
         "cmn x20, x5",
         "mrs x20, nzcv",
         "str w20, [x28, #728]"
-      ]
-    },
-    "xchg byte [rax], cl": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
-      "Comment": "0x86",
-      "ExpectedArm64ASM": [
-        "uxtb w20, w5",
-        "mov w1, w20",
-        "swpalb w1, w20, [x4]",
-        "bfxil x5, x20, #0, #8"
-      ]
-    },
-    "xchg word [rax], cx": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
-      "Comment": "0x87",
-      "ExpectedArm64ASM": [
-        "uxth w20, w5",
-        "mov w1, w20",
-        "swpalh w1, w20, [x4]",
-        "bfxil x5, x20, #0, #16"
-      ]
-    },
-    "xchg dword [rax], ecx": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
-      "Comment": "0x87",
-      "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "mov w1, w20",
-        "swpal w1, w5, [x4]"
-      ]
-    },
-    "xchg qword [rax], rcx": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
-      "Comment": "0x87",
-      "ExpectedArm64ASM": [
-        "mov x1, x5",
-        "swpal x1, x5, [x4]"
       ]
     },
     "xadd byte [rax], bl": {

@@ -6,7 +6,9 @@
       "SVE128",
       "SVE256",
       "RPRES",
-      "AFP"
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
     ]
   },
   "Instructions": {

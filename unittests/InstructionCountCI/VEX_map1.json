@@ -8,7 +8,9 @@
     "DisabledHostFeatures": [
       "FCMA",
       "RPRES",
-      "AFP"
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
     ]
   },
   "Instructions": {
