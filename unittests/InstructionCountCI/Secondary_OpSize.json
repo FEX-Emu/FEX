@@ -727,6 +727,22 @@
         "fsub v16.2d, v2.2d, v3.2d"
       ]
     },
+    "movd eax, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0x7e",
+      "ExpectedArm64ASM": [
+        "mov w4, v16.s[0]"
+      ]
+    },
+    "movq rax, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x66 0x0f 0x7e",
+      "ExpectedArm64ASM": [
+        "mov x4, v16.d[0]"
+      ]
+    },
     "movd dword [rax], xmm0": {
       "ExpectedInstructionCount": 1,
       "Optimal": "Yes",

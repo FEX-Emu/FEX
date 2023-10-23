@@ -1089,7 +1089,7 @@
     "psrlw xmm0, 16": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1197,7 +1197,7 @@
     "psllw xmm0, 16": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP12 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1251,7 +1251,7 @@
     "psrld xmm0, 32": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1359,7 +1359,7 @@
     "pslld xmm0, 32": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP13 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1413,7 +1413,7 @@
     "psrlq xmm0, 64": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1422,14 +1422,14 @@
     "psrldq xmm0, 0": {
       "ExpectedInstructionCount": 0,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /3",
       "ExpectedArm64ASM": []
     },
     "psrldq xmm0, 15": {
       "ExpectedInstructionCount": 2,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
@@ -1439,7 +1439,7 @@
     "psrldq xmm0, 16": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
@@ -1493,7 +1493,7 @@
     "psllq xmm0, 64": {
       "ExpectedInstructionCount": 1,
       "Type": "SSE",
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": "GROUP14 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0"
