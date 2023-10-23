@@ -516,7 +516,12 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
-    SetNZCV(_AdcNZCV(OpSize, Src1, Src2, GetNZCV()));
+    if (NZCVDirty && CachedNZCV)
+      _StoreNZCV(CachedNZCV);
+    CachedNZCV = nullptr;
+
+    _AdcNZCV(OpSize, Src1, Src2);
+    PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -606,7 +611,9 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
-    SetNZCV(_AddNZCV(OpSize, Src1, Src2));
+    _AddNZCV(OpSize, Src1, Src2);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);

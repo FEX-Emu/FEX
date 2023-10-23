@@ -98,9 +98,6 @@ DEF_OP(AddNZCV) {
   } else {
     cmn(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
   }
-
-  // TODO: Optimize this out
-  mrs(GetReg(Node), ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(AdcNZCV) {
@@ -109,15 +106,8 @@ DEF_OP(AdcNZCV) {
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto Dst = GetReg(Node);
-
-  // TODO: Optimize this out
-  msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->NZCV.ID()));
 
   adcs(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
-
-  // TODO: Optimize this out
-  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(SbbNZCV) {
