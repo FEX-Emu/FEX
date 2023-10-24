@@ -380,17 +380,17 @@ namespace FEX::HarnessHelper {
     }
 
     uint64_t StackSize() const override {
-      return STACK_SIZE;
+      return sysconf(_SC_PAGESIZE);
     }
 
     uint64_t GetStackPointer() override {
       if (Config.Is64BitMode()) {
-        return reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(STACK_SIZE)) + STACK_SIZE;
+        return reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(StackSize())) + StackSize();
       }
       else {
-        uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE));
+        uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(STACK_OFFSET), StackSize()));
         LOGMAN_THROW_AA_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
-        return Result + STACK_SIZE;
+        return Result + StackSize();
       }
     }
 
@@ -474,7 +474,6 @@ namespace FEX::HarnessHelper {
     bool RequiresLinux()  const { return Config.RequiresLinux(); }
 
   private:
-    constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;
     constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
     // Zero is special case to know when we are done
     uint64_t Code_start_page = 0x1'0000;
