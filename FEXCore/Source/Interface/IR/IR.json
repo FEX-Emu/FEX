@@ -975,6 +975,10 @@
         "Desc": ["Invert carry flag in NZCV"],
         "HasSideEffects": true
       },
+      "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
+        "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
+        "HasSideEffects": true
+      },
       "AdcNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the sum of two GPRs and carry-in given as NZCV"],
         "HasSideEffects": true,

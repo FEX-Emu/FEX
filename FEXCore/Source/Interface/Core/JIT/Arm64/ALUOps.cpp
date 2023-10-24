@@ -185,6 +185,13 @@ DEF_OP(CarryInvert) {
   cfinv();
 }
 
+DEF_OP(RmifNZCV) {
+  auto Op = IROp->C<IR::IROp_RmifNZCV>();
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
+
+  rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
+}
+
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
   const uint8_t OpSize = IROp->Size;

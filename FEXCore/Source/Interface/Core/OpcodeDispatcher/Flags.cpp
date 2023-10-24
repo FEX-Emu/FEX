@@ -129,6 +129,16 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
       OrderedNode *Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
       Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
       SetRFLAG(Tmp, FlagOffset);
+    } else if (IsNZCV(FlagOffset) && CTX->HostFeatures.SupportsFlagM) {
+      if (NZCVDirty && CachedNZCV)
+        _StoreNZCV(CachedNZCV);
+
+      CachedNZCV = nullptr;
+      NZCVDirty = false;
+
+      unsigned Bit = IndexNZCV(FlagOffset) - 28;
+      _RmifNZCV(Src, (FlagOffset - Bit) % 64, 1u << Bit);
+      PossiblySetNZCVBits |= 1u << IndexNZCV(FlagOffset);
     } else {
       auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
       SetRFLAG(Tmp, FlagOffset);
