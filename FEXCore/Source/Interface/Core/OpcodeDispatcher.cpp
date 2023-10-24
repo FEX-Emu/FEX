@@ -1558,9 +1558,7 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   uint64_t Flag;
   switch (Op->OP) {
   case 0xF5: {// CMC
-    uint32_t Bit = 1u << IndexNZCV(X86State::RFLAG_CF_RAW_LOC);
-    SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(Bit)));
-    PossiblySetNZCVBits |= Bit;
+    CarryInvert();
     return;
   }
 
