@@ -1005,37 +1005,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
       break;
     }
-    case OP_CONDJUMP: {
-      auto Op = IROp->CW<IR::IROp_CondJump>();
-
-      auto Select = IREmit->GetOpHeader(Op->Header.Args[0]);
-
-      uint64_t Constant;
-      // Fold the select into the CondJump if possible. Could handle more complex cases, too.
-      if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
-
-        const auto SelectCmpClass = IREmit->WalkFindRegClass(Select->Args[0]);
-        if (SelectCmpClass == GPRPairClass) {
-          // If the comparison class is a GPRPair then don't fold the select since it isn't free.
-          break;
-        }
-        uint64_t Constant1{};
-        uint64_t Constant2{};
-
-        if (IREmit->IsValueConstant(Select->Args[2], &Constant1) && IREmit->IsValueConstant(Select->Args[3], &Constant2)) {
-          if (Constant1 == 1 && Constant2 == 0) {
-            auto slc = Select->C<IR::IROp_Select>();
-            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(Select->Args[0]));
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(Select->Args[1]));
-            Op->Cond = slc->Cond;
-            Op->CompareSize = slc->CompareSize;
-            Changed = true;
-          }
-        }
-      }
-      break;
-    }
-
     default:
       break;
     }
