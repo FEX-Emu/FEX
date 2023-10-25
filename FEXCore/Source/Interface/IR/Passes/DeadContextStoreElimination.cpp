@@ -625,6 +625,10 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             continue;
           }
 
+          // NZCV is optimized in the dispatcher, ignore here
+          if (F == X86State::RFLAG_NZCV_LOC)
+            continue;
+
           const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + F;
           auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
           auto LastStoreNode = Info->StoreNode;
