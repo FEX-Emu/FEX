@@ -171,8 +171,14 @@ namespace FEXCore {
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
         */
         static void CallCallback(void *callback, void *arg0, void* arg1) {
-          Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
-          Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+          auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
+          if (CTX->Config.Is64BitMode) {
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+          } else {
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RCX] = (uintptr_t)arg0;
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = (uintptr_t)arg1;
+          }
 
           Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
         }
@@ -220,7 +226,7 @@ namespace FEXCore {
                           emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
                         }
                         else {
-                          emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, mm[0][0]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
+                          emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
                         }
                         emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
                     }, CTX->ThunkHandler.get(), (void*)args->target_addr);
