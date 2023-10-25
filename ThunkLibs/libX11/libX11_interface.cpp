@@ -72,7 +72,6 @@ template<> struct fex_gen_type<_XContextDB> : fexgen::opaque_type {};
 template<> struct fex_gen_type<_XDisplayAtoms> : fexgen::opaque_type {};
 template<> struct fex_gen_type<_XLockInfo> : fexgen::opaque_type {};
 template<> struct fex_gen_type<_XIMFilter> : fexgen::opaque_type {};
-template<> struct fex_gen_type<_XErrorThreadInfo> : fexgen::opaque_type {};
 template<> struct fex_gen_type<_XKeytrans> : fexgen::opaque_type {};
 template<> struct fex_gen_type<_X11XCBPrivate> : fexgen::opaque_type {};
 
