@@ -6,6 +6,7 @@ desc: This is not used right now, possibly broken
 $end_info$
 */
 
+#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
@@ -46,6 +47,11 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STOREFLAG) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
+
+        // We don't handle nzcv yet, it'd be complex to do properly.
+        if (Op->Flag == X86State::RFLAG_NZCV_LOC)
+          continue;
+
         // Set this node as the last one valid for this flag
         LastValidFlagStores[Op->Flag] = CodeNode;
       }
