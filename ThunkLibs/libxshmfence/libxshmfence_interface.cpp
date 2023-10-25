@@ -9,6 +9,11 @@ struct fex_gen_config {
     unsigned version = 1;
 };
 
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<xshmfence> : fexgen::opaque_type {};
+
 template<> struct fex_gen_config<xshmfence_trigger> {};
 template<> struct fex_gen_config<xshmfence_await> {};
 template<> struct fex_gen_config<xshmfence_query> {};

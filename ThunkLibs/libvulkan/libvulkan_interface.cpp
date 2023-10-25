@@ -1,9 +1,18 @@
 #include <common/GeneratorInterface.h>
 
+#include <type_traits>
+
 template<auto>
 struct fex_gen_config {
     unsigned version = 1;
 };
+
+// Some of Vulkan's handle types are so-called "non-dispatchable handles".
+// On 64-bit, these are defined as dedicated types by default, which makes
+// annotating these handle types unnecessarily complicated. Instead, setting
+// the following define will make the Vulkan headers alias all handle types
+// to uint64_t.
+#define VK_USE_64_BIT_PTR_DEFINES 0
 
 #define VK_USE_PLATFORM_XLIB_XRANDR_EXT
 #define VK_USE_PLATFORM_XLIB_KHR
@@ -13,6 +22,52 @@ struct fex_gen_config {
 
 template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+
+template<typename>
+struct fex_gen_type {};
+
+// So-called "dispatchable" handles are represented as opaque pointers.
+// In addition to marking them as such, API functions that create these objects
+// need special care since they wrap these handles in another pointer, which
+// the thunk generator can't automatically handle.
+//
+// So-called "non-dispatchable" handles don't need this extra treatment, since
+// they are uint64_t IDs on both 32-bit and 64-bit systems.
+template<> struct fex_gen_type<VkCommandBuffer_T> : fexgen::opaque_type {};
+template<> struct fex_gen_type<VkDevice_T> : fexgen::opaque_type {};
+template<> struct fex_gen_type<VkInstance_T> : fexgen::opaque_type {};
+template<> struct fex_gen_type<VkPhysicalDevice_T> : fexgen::opaque_type {};
+template<> struct fex_gen_type<VkQueue_T> : fexgen::opaque_type {};
+
+// Mark union types with compatible layout as such
+// TODO: These may still have different alignment requirements!
+template<> struct fex_gen_type<VkClearValue> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkClearColorValue> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkPipelineExecutableStatisticValueKHR> : fexgen::assume_compatible_data_layout {};
+#ifndef IS_32BIT_THUNK
+template<> struct fex_gen_type<VkAccelerationStructureGeometryDataKHR> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkDescriptorDataEXT> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkDeviceOrHostAddressKHR> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkDeviceOrHostAddressConstKHR> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<VkPerformanceValueDataINTEL> : fexgen::assume_compatible_data_layout {};
+#endif
+
+#ifndef IS_32BIT_THUNK
+// The pNext member of this is a pointer to another VkBaseOutStructure, so data layout compatibility can't be inferred automatically
+template<> struct fex_gen_type<VkBaseOutStructure> : fexgen::assume_compatible_data_layout {};
+#endif
+
+
+// TODO: Should not be opaque, but it's usually NULL anyway. Supporting the contained function pointers will need more work.
+template<> struct fex_gen_type<VkAllocationCallbacks> : fexgen::opaque_type {};
+
+// X11 interop
+template<> struct fex_gen_type<Display> : fexgen::opaque_type {};
+template<> struct fex_gen_type<xcb_connection_t> : fexgen::opaque_type {};
+
+// Wayland interop
+template<> struct fex_gen_type<wl_display> : fexgen::opaque_type {};
+template<> struct fex_gen_type<wl_surface> : fexgen::opaque_type {};
 
 namespace internal {
 
@@ -31,6 +86,7 @@ template<> struct fex_gen_config<vkEnumeratePhysicalDevices> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceFeatures> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceFormatProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceImageFormatProperties> {};
+// TODO: Output parameter must repack on exit!
 template<> struct fex_gen_config<vkGetPhysicalDeviceProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceMemoryProperties> {};
@@ -74,6 +130,7 @@ template<> struct fex_gen_config<vkResetEvent> {};
 template<> struct fex_gen_config<vkCreateQueryPool> {};
 template<> struct fex_gen_config<vkDestroyQueryPool> {};
 template<> struct fex_gen_config<vkGetQueryPoolResults> {};
+template<> struct fex_gen_param<vkGetQueryPoolResults, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCreateBuffer> {};
 template<> struct fex_gen_config<vkDestroyBuffer> {};
 template<> struct fex_gen_config<vkCreateBufferView> {};
@@ -185,6 +242,7 @@ template<> struct fex_gen_config<vkDestroySamplerYcbcrConversion> {};
 template<> struct fex_gen_config<vkCreateDescriptorUpdateTemplate> {};
 template<> struct fex_gen_config<vkDestroyDescriptorUpdateTemplate> {};
 template<> struct fex_gen_config<vkUpdateDescriptorSetWithTemplate> {};
+template<> struct fex_gen_param<vkUpdateDescriptorSetWithTemplate, 3, const void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceExternalBufferProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceExternalFenceProperties> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceExternalSemaphoreProperties> {};
@@ -296,9 +354,11 @@ template<> struct fex_gen_config<vkImportSemaphoreFdKHR> {};
 template<> struct fex_gen_config<vkGetSemaphoreFdKHR> {};
 template<> struct fex_gen_config<vkCmdPushDescriptorSetKHR> {};
 template<> struct fex_gen_config<vkCmdPushDescriptorSetWithTemplateKHR> {};
+template<> struct fex_gen_param<vkCmdPushDescriptorSetWithTemplateKHR, 4, const void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCreateDescriptorUpdateTemplateKHR> {};
 template<> struct fex_gen_config<vkDestroyDescriptorUpdateTemplateKHR> {};
 template<> struct fex_gen_config<vkUpdateDescriptorSetWithTemplateKHR> {};
+template<> struct fex_gen_param<vkUpdateDescriptorSetWithTemplateKHR, 3, const void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCreateRenderPass2KHR> {};
 template<> struct fex_gen_config<vkCmdBeginRenderPass2KHR> {};
 template<> struct fex_gen_config<vkCmdNextSubpass2KHR> {};
@@ -370,6 +430,7 @@ template<> struct fex_gen_config<vkGetDeviceImageSubresourceLayoutKHR> {};
 template<> struct fex_gen_config<vkGetImageSubresourceLayout2KHR> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR> {};
 template<> struct fex_gen_config<vkCreateDebugReportCallbackEXT> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<vkCreateDebugReportCallbackEXT, 1, const VkDebugReportCallbackCreateInfoEXT*> : fexgen::ptr_passthrough {};
 template<> struct fex_gen_config<vkDestroyDebugReportCallbackEXT> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDebugReportMessageEXT> {};
 template<> struct fex_gen_config<vkDebugMarkerSetObjectTagEXT> {};
@@ -393,6 +454,7 @@ template<> struct fex_gen_config<vkGetImageViewAddressNVX> {};
 template<> struct fex_gen_config<vkCmdDrawIndirectCountAMD> {};
 template<> struct fex_gen_config<vkCmdDrawIndexedIndirectCountAMD> {};
 template<> struct fex_gen_config<vkGetShaderInfoAMD> {};
+template<> struct fex_gen_param<vkGetShaderInfoAMD, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceExternalImageFormatPropertiesNV> {};
 template<> struct fex_gen_config<vkCmdBeginConditionalRenderingEXT> {};
 template<> struct fex_gen_config<vkCmdEndConditionalRenderingEXT> {};
@@ -417,7 +479,8 @@ template<> struct fex_gen_config<vkQueueInsertDebugUtilsLabelEXT> {};
 template<> struct fex_gen_config<vkCmdBeginDebugUtilsLabelEXT> {};
 template<> struct fex_gen_config<vkCmdEndDebugUtilsLabelEXT> {};
 template<> struct fex_gen_config<vkCmdInsertDebugUtilsLabelEXT> {};
-template<> struct fex_gen_config<vkCreateDebugUtilsMessengerEXT> {};
+template<> struct fex_gen_config<vkCreateDebugUtilsMessengerEXT> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<vkCreateDebugUtilsMessengerEXT, 1, const VkDebugUtilsMessengerCreateInfoEXT*> : fexgen::ptr_passthrough {};
 template<> struct fex_gen_config<vkDestroyDebugUtilsMessengerEXT> {};
 template<> struct fex_gen_config<vkSubmitDebugUtilsMessageEXT> {};
 template<> struct fex_gen_config<vkCmdSetSampleLocationsEXT> {};
@@ -427,6 +490,7 @@ template<> struct fex_gen_config<vkCreateValidationCacheEXT> {};
 template<> struct fex_gen_config<vkDestroyValidationCacheEXT> {};
 template<> struct fex_gen_config<vkMergeValidationCachesEXT> {};
 template<> struct fex_gen_config<vkGetValidationCacheDataEXT> {};
+template<> struct fex_gen_param<vkGetValidationCacheDataEXT, 3, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdBindShadingRateImageNV> {};
 template<> struct fex_gen_config<vkCmdSetViewportShadingRatePaletteNV> {};
 template<> struct fex_gen_config<vkCmdSetCoarseSampleOrderNV> {};
@@ -439,11 +503,15 @@ template<> struct fex_gen_config<vkCmdCopyAccelerationStructureNV> {};
 template<> struct fex_gen_config<vkCmdTraceRaysNV> {};
 template<> struct fex_gen_config<vkCreateRayTracingPipelinesNV> {};
 template<> struct fex_gen_config<vkGetRayTracingShaderGroupHandlesKHR> {};
+template<> struct fex_gen_param<vkGetRayTracingShaderGroupHandlesKHR, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkGetRayTracingShaderGroupHandlesNV> {};
+template<> struct fex_gen_param<vkGetRayTracingShaderGroupHandlesNV, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkGetAccelerationStructureHandleNV> {};
+template<> struct fex_gen_param<vkGetAccelerationStructureHandleNV, 3, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdWriteAccelerationStructuresPropertiesNV> {};
 template<> struct fex_gen_config<vkCompileDeferredNV> {};
 template<> struct fex_gen_config<vkGetMemoryHostPointerPropertiesEXT> {};
+template<> struct fex_gen_param<vkGetMemoryHostPointerPropertiesEXT, 2, const void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdWriteBufferMarkerAMD> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceCalibrateableTimeDomainsEXT> {};
 template<> struct fex_gen_config<vkGetCalibratedTimestampsEXT> {};
@@ -453,6 +521,7 @@ template<> struct fex_gen_config<vkCmdDrawMeshTasksIndirectCountNV> {};
 template<> struct fex_gen_config<vkCmdSetExclusiveScissorEnableNV> {};
 template<> struct fex_gen_config<vkCmdSetExclusiveScissorNV> {};
 template<> struct fex_gen_config<vkCmdSetCheckpointNV> {};
+template<> struct fex_gen_param<vkCmdSetCheckpointNV, 1, const void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkGetQueueCheckpointDataNV> {};
 template<> struct fex_gen_config<vkInitializePerformanceApiINTEL> {};
 template<> struct fex_gen_config<vkUninitializePerformanceApiINTEL> {};
@@ -537,6 +606,7 @@ template<> struct fex_gen_config<vkCopyMicromapEXT> {};
 template<> struct fex_gen_config<vkCopyMicromapToMemoryEXT> {};
 template<> struct fex_gen_config<vkCopyMemoryToMicromapEXT> {};
 template<> struct fex_gen_config<vkWriteMicromapsPropertiesEXT> {};
+template<> struct fex_gen_param<vkWriteMicromapsPropertiesEXT, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdCopyMicromapEXT> {};
 template<> struct fex_gen_config<vkCmdCopyMicromapToMemoryEXT> {};
 template<> struct fex_gen_config<vkCmdCopyMemoryToMicromapEXT> {};
@@ -609,6 +679,7 @@ template<> struct fex_gen_config<vkCopyAccelerationStructureKHR> {};
 template<> struct fex_gen_config<vkCopyAccelerationStructureToMemoryKHR> {};
 template<> struct fex_gen_config<vkCopyMemoryToAccelerationStructureKHR> {};
 template<> struct fex_gen_config<vkWriteAccelerationStructuresPropertiesKHR> {};
+template<> struct fex_gen_param<vkWriteAccelerationStructuresPropertiesKHR, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdCopyAccelerationStructureKHR> {};
 template<> struct fex_gen_config<vkCmdCopyAccelerationStructureToMemoryKHR> {};
 template<> struct fex_gen_config<vkCmdCopyMemoryToAccelerationStructureKHR> {};
@@ -619,6 +690,7 @@ template<> struct fex_gen_config<vkGetAccelerationStructureBuildSizesKHR> {};
 template<> struct fex_gen_config<vkCmdTraceRaysKHR> {};
 template<> struct fex_gen_config<vkCreateRayTracingPipelinesKHR> {};
 template<> struct fex_gen_config<vkGetRayTracingCaptureReplayShaderGroupHandlesKHR> {};
+template<> struct fex_gen_param<vkGetRayTracingCaptureReplayShaderGroupHandlesKHR, 5, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<vkCmdTraceRaysIndirectKHR> {};
 template<> struct fex_gen_config<vkGetRayTracingShaderGroupStackSizeKHR> {};
 template<> struct fex_gen_config<vkCmdSetRayTracingPipelineStackSizeKHR> {};

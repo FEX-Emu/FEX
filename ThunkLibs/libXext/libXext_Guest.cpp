@@ -35,6 +35,8 @@ extern "C" {
 #include <X11/extensions/syncconst.h>
 #include <X11/extensions/syncproto.h>
 //#include <X11/extensions/XTest.h>
+#undef min
+#undef max
 
 
 #include "common/Guest.h"

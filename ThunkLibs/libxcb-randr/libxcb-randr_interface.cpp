@@ -1,11 +1,22 @@
 #include <common/GeneratorInterface.h>
 
 #include <xcb/randr.h>
+#include <xcb/xcbext.h>
 
 template<auto>
 struct fex_gen_config {
     unsigned version = 0;
 };
+
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<xcb_connection_t> : fexgen::opaque_type {};
+
+// Union type (includes pointers, so only compatible across 64-bit architectures)
+#ifndef IS_32BIT_THUNK
+template<> struct fex_gen_type<xcb_randr_notify_data_t> : fexgen::assume_compatible_data_layout {};
+#endif
 
 void FEX_xcb_randr_init_extension(xcb_connection_t*, xcb_extension_t*);
 size_t FEX_usable_size(void*);

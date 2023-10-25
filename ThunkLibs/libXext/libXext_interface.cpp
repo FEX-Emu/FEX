@@ -2,6 +2,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
+#include <X11/Xregion.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/dpms.h>
 #include <X11/extensions/XEVI.h>
@@ -16,11 +17,51 @@
 extern "C" {
 #include <X11/extensions/extutil.h>
 }
+#include <X11/Xtrans/Xtransint.h>
 
 template<auto>
 struct fex_gen_config {
     unsigned version = 6;
 };
+
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<_X11XCBPrivate> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XContextDB> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XDisplayAtoms> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XErrorThreadInfo> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XIMFilter> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XkbInfoRec> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XKeytrans> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XLockInfo> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_XrmHashBucketRec> : fexgen::opaque_type {};
+
+#ifndef IS_32BIT_THUNK
+// Union types
+template<> struct fex_gen_type<XEvent> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<xEvent> : fexgen::assume_compatible_data_layout {};
+
+// Linked-list types
+template<> struct fex_gen_type<_XtransConnFd> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XQEvent> : fexgen::assume_compatible_data_layout {};
+
+// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
+template<> struct fex_gen_type<_XConnectionInfo> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+template<> struct fex_gen_type<_XConnWatchInfo> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XDisplay> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XExtDisplayInfo> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<_XExtension> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+template<> struct fex_gen_type<_XInternalAsync> : fexgen::assume_compatible_data_layout {}; // Also contains linked-list pointers
+
+// Contains nontrivial circular pointer relationships
+template<> struct fex_gen_type<Screen> : fexgen::assume_compatible_data_layout {};
+
+// TODO: This contains a nested struct type of function pointer members
+template<> struct fex_gen_type<XImage> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<XExtensionHooks> : fexgen::assume_compatible_data_layout {};
+#endif
 
 template<> struct fex_gen_config<DPMSCapable> {};
 template<> struct fex_gen_config<DPMSDisable> {};

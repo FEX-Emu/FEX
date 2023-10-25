@@ -3,10 +3,98 @@
 #include <alsa/asoundlib.h>
 #include <alsa/version.h>
 
+#include <type_traits>
+
 template<auto>
 struct fex_gen_config {
     unsigned version = 2;
 };
+
+// Function, parameter index, parameter type [optional]
+template<auto, int, typename = void>
+struct fex_gen_param {};
+
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<snd_pcm_status_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_shm_area> : fexgen::opaque_type {};
+
+template<> struct fex_gen_type<snd_async_handler_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<snd_config_iterator_t>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_config_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_config_update_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_card_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_elem_id_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_elem_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_elem_list_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_elem_value_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_event_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_ctl_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_devname_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hctl_elem_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hctl_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hwdep_dsp_image_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hwdep_dsp_status_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hwdep_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_hwdep_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_input_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_midi_event_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_mixer_class_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_mixer_elem_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_mixer_selem_id_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_mixer_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_output_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_access_mask_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_format_mask_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_hook_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_hw_params_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_scope_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_subformat_mask_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_sw_params_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_pcm_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_rawmidi_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_rawmidi_params_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_rawmidi_status_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_rawmidi_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_sctl_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_client_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_client_pool_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_ev_ext_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_port_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_port_subscribe_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_query_subscribe_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_queue_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_queue_status_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_queue_tempo_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_queue_timer_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_remove_events_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_system_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_seq_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_ginfo_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_gparams_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_gstatus_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_id_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_info_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_params_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_query_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_status_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timer_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<snd_timestamp_t> : fexgen::opaque_type {};
+
+template<> struct fex_gen_type<FILE> : fexgen::opaque_type {};
+
+// Union types with compatible data layout
+template<> struct fex_gen_type<snd_pcm_sync_id_t> : fexgen::assume_compatible_data_layout {};
+template<> struct fex_gen_type<snd_seq_timestamp> : fexgen::assume_compatible_data_layout {};
+// Has anonymous union member
+template<> struct fex_gen_type<snd_seq_event> : fexgen::assume_compatible_data_layout {};
+
+#ifndef IS_32BIT_THUNK
+// TODO: Convert vtable
+template<> struct fex_gen_type<snd_pcm_scope_ops_t> : fexgen::assume_compatible_data_layout {};
+#endif
 
 template<> struct fex_gen_config<snd_asoundlib_version> {};
 #if SND_LIB_VERSION < ((1 << 16) | (2 << 8) | (6))
