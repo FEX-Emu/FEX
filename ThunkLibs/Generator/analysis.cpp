@@ -128,9 +128,7 @@ void AnalysisAction::ExecuteAction() {
 
     try {
         ParseInterface(context);
-        if (StrictModeEnabled(context)) {
-            CoverReferencedTypes(context);
-        }
+        CoverReferencedTypes(context);
         OnAnalysisComplete(context);
     } catch (ClangDiagnosticAsException& exception) {
         exception.Report(context.getDiagnostics());
@@ -348,9 +346,6 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                         auto check_struct_type = [&](const clang::Type* type) {
                             if (type->isIncompleteType()) {
-                                if (!StrictModeEnabled(context)) {
-                                    return;
-                                }
                                 throw report_error(type->getAsTagDecl()->getBeginLoc(), "Unannotated pointer with incomplete struct type; consider using an opaque_type annotation")
                                       .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
                                       .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));

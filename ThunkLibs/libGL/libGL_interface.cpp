@@ -11,12 +11,33 @@
 #undef GL_ARB_viewport_array
 #include "glcorearb.h"
 
+#include <type_traits>
+
 template<auto>
 struct fex_gen_config {
     unsigned version = 1;
 };
 
 template<> struct fex_gen_config<glXGetProcAddress> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<std::remove_pointer_t<GLXContext>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<GLXFBConfig>> : fexgen::opaque_type {};
+template<> struct fex_gen_type<std::remove_pointer_t<GLsync>> : fexgen::opaque_type {};
+
+// NOTE: These should be opaque, but actually aren't because the respective libraries aren't thunked
+template<> struct fex_gen_type<_cl_context> : fexgen::opaque_type {};
+template<> struct fex_gen_type<_cl_event> : fexgen::opaque_type {};
+
+// Opaque for the purpose of libGL
+template<> struct fex_gen_type<_XDisplay> : fexgen::opaque_type {};
+
+#ifndef IS_32BIT_THUNK
+// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
+template<> struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
+#endif
 
 // Symbols queryable through glXGetProcAddr
 namespace internal {

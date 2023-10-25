@@ -46,7 +46,7 @@ static void WaylandFinalizeHostTrampolineForGuestListener(void (*callback)()) {
 }
 
 extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy *proxy,
-      guest_layout<void (**)(void)> callback_raw, guest_layout<void*> data) {
+      guest_layout<void (**)(void)> callback_raw, void* data) {
   auto guest_interface = ((wl_proxy_private*)proxy)->interface;
 
   for (int i = 0; i < guest_interface->event_count; ++i) {
@@ -162,7 +162,7 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
   }
 
   // Pass the original function pointer table to the host wayland library. This ensures the table is valid until the listener is unregistered.
-  return fexldr_ptr_libwayland_client_wl_proxy_add_listener(proxy, callback_raw.data, data.data);
+  return fexldr_ptr_libwayland_client_wl_proxy_add_listener(proxy, callback_raw.data, data);
 }
 
 wl_interface* fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(wl_interface* guest_interface, char const* name) {
