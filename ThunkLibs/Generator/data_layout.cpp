@@ -168,9 +168,7 @@ static std::array<uint8_t, 32> GetSha256(const std::string& function_name) {
 };
 
 void AnalyzeDataLayoutAction::OnAnalysisComplete(clang::ASTContext& context) {
-    if (StrictModeEnabled(context)) {
     type_abi = GetStableLayout(context, ComputeDataLayout(context, types));
-    }
 
     // Register functions that must be guest-callable through host function pointers
     for (auto funcptr_type_it = thunked_funcptrs.begin(); funcptr_type_it != thunked_funcptrs.end(); ++funcptr_type_it) {

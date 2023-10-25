@@ -55,13 +55,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     // Compute data layout differences between host and guest
     auto type_compat = [&]() {
         std::unordered_map<const clang::Type*, TypeCompatibility> ret;
-        if (StrictModeEnabled(context)) {
         const auto host_abi = ComputeDataLayout(context, types);
         for (const auto& [type, type_repack_info] : types) {
             if (!type_repack_info.pointers_only) {
                 GetTypeCompatibility(context, type, host_abi, ret);
             }
-        }
         }
         return ret;
     }();
@@ -293,7 +291,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             // Check data layout compatibility of parameter types
             // TODO: Also check non-struct/non-pointer types
             // TODO: Also check return type
-            for (size_t param_idx = 0; StrictModeEnabled(context) && param_idx != thunk.param_types.size(); ++param_idx) {
+            for (size_t param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
                 const auto& param_type = thunk.param_types[param_idx];
                 if (!param_type->isPointerType() || !param_type->getPointeeType()->isStructureType()) {
                     continue;
@@ -336,7 +334,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(" << struct_name << "* args) {\n";
             file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
 
-            for (unsigned param_idx = 0; StrictModeEnabled(context) && param_idx != thunk.param_types.size(); ++param_idx) {
+            for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
                 if (thunk.callbacks.contains(param_idx) && thunk.callbacks.at(param_idx).is_stub) {
                     continue;
                 }

@@ -187,11 +187,3 @@ inline std::string get_type_name(const clang::ASTContext& context, const clang::
     }
     return type_name;
 }
-
-// Analysis can't process interfaces of real libraries, yet. This function
-// defines a "strict mode" to use for tests, only. Real libraries will switch
-// to strict mode once analysis is more feature-complete.
-inline bool StrictModeEnabled(clang::ASTContext& context) {
-    auto filename = context.getSourceManager().getFileEntryForID(context.getSourceManager().getMainFileID())->getName();
-    return filename.endswith("libfex_thunk_test_interface.cpp") || filename.endswith("gen_input.cpp");
-}
