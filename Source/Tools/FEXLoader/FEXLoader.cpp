@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
@@ -431,6 +432,16 @@ int main(int argc, char **argv, char **const envp) {
     } else {
       FEXCore::Allocator::SetupHooks();
       Allocator = FEX::HLE::CreatePassthroughAllocator();
+
+      // Now that the upper 32-bit address space is blocked for future allocations,
+      // exhaust all of jemalloc's remaining internal allocations that it reserved before.
+      // TODO: It's unclear how reliably this exhausts those reserves
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+      void* data;
+      do {
+        data = malloc(0x1);
+      } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
+      free(data);
     }
   }
 
