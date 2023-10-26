@@ -253,12 +253,21 @@ def parse_ops(ops):
                 for i in range(len(OpDef.EmitValidation)):
                     # Patch up all the argument names
                     for Arg in OpDef.Arguments:
-                        if Arg.Temporary:
-                            # Temporary ops just replace all instances no prefix variant
-                            OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, Arg.Name)
+                        if type(OpDef.EmitValidation[i]) is list:
+                            for j in range(len(OpDef.EmitValidation[i])):
+                                if Arg.Temporary:
+                                    # Temporary ops just replace all instances no prefix variant
+                                    OpDef.EmitValidation[i][j] = OpDef.EmitValidation[i][j].replace(Arg.NameWithPrefix, Arg.Name)
+                                else:
+                                    # All other ops replace $ with _ variant for argument passed in
+                                    OpDef.EmitValidation[i][j] = OpDef.EmitValidation[i][j].replace(Arg.NameWithPrefix, "_{}".format(Arg.Name))
                         else:
-                            # All other ops replace $ with _ variant for argument passed in
-                            OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, "_{}".format(Arg.Name))
+                            if Arg.Temporary:
+                                # Temporary ops just replace all instances no prefix variant
+                                OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, Arg.Name)
+                            else:
+                                # All other ops replace $ with _ variant for argument passed in
+                                OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, "_{}".format(Arg.Name))
 
             #OpDef.print()
 
@@ -702,7 +711,10 @@ def print_ir_allocator_helpers():
                 output_file.write("\t\t#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
 
                 for Validation in op.EmitValidation:
-                    output_file.write("\tLOGMAN_THROW_A_FMT({}, \"\");\n".format(Validation))
+                    if type(Validation) is list:
+                        output_file.write("\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation[0], Validation[1]))
+                    else:
+                        output_file.write("\tLOGMAN_THROW_A_FMT({}, \"\");\n".format(Validation))
                 output_file.write("\t\t#endif\n")
 
             output_file.write("\t\treturn Op;\n")

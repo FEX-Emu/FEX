@@ -50,6 +50,7 @@
     "* EmitValidation",
     "  * List of validations to emit for the IR emitter",
     "  * These are validations that can't be automatically inferred and need to be hand-written",
+    "  * If the sub-item is a list then the first element is the check and the second is the assert string",
     ""
   ],
   "Defines": [
@@ -238,7 +239,7 @@
                  "Depending on backend, may only support GPR printing"
                 ],
         "EmitValidation": [
-          "WalkFindRegClass($Value) != GPRPairClass"
+          [ "WalkFindRegClass($Value) != GPRPairClass", "Print doesn't support GPRPair class" ]
         ]
       },
       "GPRPair = RDRAND i1:$GetReseeded": {
@@ -268,7 +269,7 @@
         "HasSideEffects": true,
         "RAOverride": "2",
         "EmitValidation": [
-          "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
+          [ "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)", "Mismatched register classes between Cmp1 and Cmp2" ]
         ]
       },
       "ExitFunction GPR:$NewRIP": {
@@ -326,7 +327,7 @@
         "Desc": ["Extracts a register for the register pair"],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit destination" ]
         ]
       },
 
@@ -338,7 +339,7 @@
         "DestSize": "Size",
         "NumElements": "2",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
+          [ "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit", "Size only supports 64-bit or 128-bit destination" ]
         ]
       }
     },
@@ -771,7 +772,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
 
@@ -783,7 +784,7 @@
         "RAOverride": "0",
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
 
@@ -829,7 +830,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Abs OpSize:#Size, GPR:$Src": {
@@ -840,7 +841,7 @@
         "DestSize": "Size",
         "ImplicitFlagClobber": true,
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Not OpSize:#Size, GPR:$Src": {
@@ -850,7 +851,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Popcount OpSize:#Size, GPR:$Src": {
@@ -918,7 +919,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = AddNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
@@ -951,7 +952,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = SubShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
@@ -960,7 +961,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ],
           "_Shift != ShiftType::ROR"
         ]
       },
@@ -979,7 +980,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Orlshl OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
@@ -987,7 +988,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Orlshr OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
@@ -995,7 +996,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Ornror OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
@@ -1003,7 +1004,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1011,7 +1012,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = And OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1019,14 +1020,14 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = TestNZ u8:$Size, GPR:$Src1": {
@@ -1039,7 +1040,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Lshr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1047,7 +1048,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Ashr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1055,7 +1056,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Ror OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1063,7 +1064,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Mul OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1071,7 +1072,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = UMul OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1079,7 +1080,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Div OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1122,7 +1123,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = UMulH OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1133,7 +1134,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Bfi OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
@@ -1143,7 +1144,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Bfxil OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
@@ -1154,7 +1155,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1164,7 +1165,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Sbfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1174,7 +1175,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = Select OpSize:#ResultSize, OpSize:$CompareSize, CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal": {
@@ -1199,7 +1200,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
       "GPR = PDep OpSize:#Size, GPR:$Input, GPR:$Mask": {
@@ -1209,7 +1210,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
 
@@ -1220,7 +1221,7 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          [ "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit", "Size only supports 32-bit or 64-bit source" ]
         ]
       },
 
