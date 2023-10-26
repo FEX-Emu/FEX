@@ -3720,7 +3720,7 @@ void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
 
   // We now need to transpose the lower 16-bits of each element together
   // Only needing to move the upper element down in this case
-  Src = _VInsElement(Size, 2, 1, 2, Src, Src);
+  Src = _VUnZip(Size, 2, Src, Src);
 
   // Now we need to sign extend the 16bit value to 32-bit
   Src = _VSXTL(Size, 2, Src);
@@ -3741,7 +3741,7 @@ void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
 
   // We now need to transpose the lower 16-bits of each element together
   // Only needing to move the upper element down in this case
-  Src = _VInsElement(Size, 2, 1, 2, Src, Src);
+  Src = _VUnZip(Size, 2, Src, Src);
 
   // Now we need to sign extend the 16bit value to 32-bit
   Src = _VSXTL(Size, 2, Src);
@@ -3760,7 +3760,8 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   // Multiplies 4 16bit values in to 4 32bit values
   Res = _VSMull(Size * 2, 2, Dest, Src);
 
-  OrderedNode *VConstant = _VDupFromGPR(16, 8, _Constant(0x0000'8000'0000'8000ULL));
+  // Load 0x0000_8000 in to each 32-bit element.
+  OrderedNode *VConstant = _VectorImm(16, 4, 0x80, 8);
 
   Res = _VAdd(Size * 2, 4, Res, VConstant);
 
