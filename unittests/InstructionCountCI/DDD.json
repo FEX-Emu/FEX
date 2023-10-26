@@ -16,16 +16,13 @@
   "Instructions": {
     "pi2fw mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Unknown",
+      "Optimal": "Yes",
       "Comment": [
-        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
-        "This instruction implementation might not be correct.",
         "0x0f 0x0f 0x0c"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
-        "mov v2.h[1], v2.h[2]",
+        "uzp1 v2.4h, v2.4h, v2.4h",
         "sxtl v2.4s, v2.4h",
         "scvtf v2.2s, v2.2s",
         "str d2, [x28, #752]"
@@ -33,10 +30,8 @@
     },
     "pi2fd mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
-        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x0f 0x0f 0x0d"
       ],
       "ExpectedArm64ASM": [
@@ -47,27 +42,22 @@
     },
     "pf2iw mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Unknown",
+      "Optimal": "Yes",
       "Comment": [
-        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
-        "This instruction implementation might not be correct.",
         "0x0f 0x0f 0x1c"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "fcvtzs v2.2s, v2.2s",
-        "mov v2.h[1], v2.h[2]",
+        "uzp1 v2.4h, v2.4h, v2.4h",
         "sxtl v2.4s, v2.4h",
         "str d2, [x28, #752]"
       ]
     },
     "pf2id mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "Optimal": "Yes",
       "Comment": [
-        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
-        "This lowers throughput from 1 IPC to 1/2IPC",
         "0x0f 0x0f 0x1d"
       ],
       "ExpectedArm64ASM": [
@@ -306,20 +296,18 @@
       "ExpectedArm64ASM": []
     },
     "db 0x0f, 0x0f, 0xc1, 0xb7": {
-      "ExpectedInstructionCount": 8,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Yes",
       "Comment": [
         "nasm doesn't support emitting this instruction",
         "pmulhrw mm0, mm1",
-        "Might be able to use sqdmulh",
         "0x0f 0x0f 0xb7"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
         "ldr d3, [x28, #768]",
         "smull v2.4s, v2.4h, v3.4h",
-        "mov x20, #0x800000008000",
-        "dup v3.2d, x20",
+        "movi v3.4s, #0x80, lsl #8",
         "add v2.4s, v2.4s, v3.4s",
         "shrn v2.4h, v2.4s, #16",
         "str d2, [x28, #752]"
