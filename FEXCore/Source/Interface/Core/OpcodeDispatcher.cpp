@@ -356,9 +356,14 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   break;
   };
 #undef OPD
+  // Logical ops can tolerate garbage in the upper bits, so don't mask.
+  bool AllowUpperGarbage = IROp == FEXCore::IR::IROps::OP_AND ||
+                           IROp == FEXCore::IR::IROps::OP_XOR ||
+                           IROp == FEXCore::IR::IROps::OP_OR;
+
   // X86 basic ALU ops just do the operation between the destination and a single source
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   uint8_t Size = GetDstSize(Op);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
   OrderedNode *Result{};
   OrderedNode *Dest{};
 
@@ -398,7 +403,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     }
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
     auto ALUOp = _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Dest, Src);
     // Overwrite our IR's op type
     ALUOp.first->Header.Op = IROp;
@@ -5383,7 +5388,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
   // X86 basic ALU ops just do the operation between the destination and a single source
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
-                                {.AllowUpperGarbage = AllowUpperGarbage});
+                                {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5406,7 +5411,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags,
-                      {.AllowUpperGarbage = AllowUpperGarbage});
+                      {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
 
     /* On x86, the canonical way to zero a register is XOR with itself...
      * because modern x86 detects this pattern in hardware. arm64 does not
