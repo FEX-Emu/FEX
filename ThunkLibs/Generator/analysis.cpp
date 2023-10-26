@@ -410,12 +410,14 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
                         } else if (param_type->isPointerType()) {
                             auto pointee_type = param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
-                            if ((types.contains(context.getCanonicalType(pointee_type.getTypePtr())) && LookupType(context, pointee_type.getTypePtr()).assumed_compatible)) {
+                            if (data.param_annotations[param_idx].assume_compatible) {
                                 // Nothing to do
+                            } else if (types.contains(context.getCanonicalType(pointee_type.getTypePtr())) && LookupType(context, pointee_type.getTypePtr()).assumed_compatible) {
+                                // Parameter points to a type that is assumed compatible
                                 data.param_annotations[param_idx].assume_compatible = true;
-                            } else if ( pointee_type->isStructureType() &&
-                                        !(types.contains(context.getCanonicalType(pointee_type.getTypePtr())) &&
-                                          LookupType(context, pointee_type.getTypePtr()).assumed_compatible)) {
+                            } else if (pointee_type->isStructureType()) {
+                                // Unannotated pointer to unannotated structure.
+                                // Append the structure type to the type list for checking data layout compatibility.
                                 check_struct_type(pointee_type.getTypePtr());
                                 types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType { });
                             } else if (data.param_annotations[param_idx].is_passthrough) {
@@ -423,8 +425,6 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                                     throw report_error(param_loc, "Passthrough annotation requires custom host implementation");
                                 }
 
-                                // Nothing to do
-                            } else if (data.param_annotations[param_idx].assume_compatible) {
                                 // Nothing to do
                             } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
                                 throw report_error(param_loc, "Unsupported parameter type")
