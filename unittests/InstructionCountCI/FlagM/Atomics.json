@@ -60,17 +60,16 @@
       ]
     },
     "lock add dword [rax], ecx": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "ldaddal w20, w21, [x4]",
-        "add w22, w21, w20",
-        "eor w23, w21, w20",
-        "strb w23, [x28, #708]",
-        "strb w22, [x28, #706]",
-        "cmn w21, w20",
+        "ldaddal w5, w20, [x4]",
+        "add w21, w20, w5",
+        "eor w22, w20, w5",
+        "strb w22, [x28, #708]",
+        "strb w21, [x28, #706]",
+        "cmn w20, w5",
         "mrs x20, nzcv",
         "str w20, [x28, #728]"
       ]
@@ -388,18 +387,17 @@
       ]
     },
     "lock sub dword [rax], ecx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "0x29",
       "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "neg w1, w20",
-        "ldaddal w1, w21, [x4]",
-        "sub w22, w21, w20",
-        "eor w23, w21, w20",
-        "strb w23, [x28, #708]",
-        "strb w22, [x28, #706]",
-        "cmp w21, w20",
+        "neg w1, w5",
+        "ldaddal w1, w20, [x4]",
+        "sub w21, w20, w5",
+        "eor w22, w20, w5",
+        "strb w22, [x28, #708]",
+        "strb w21, [x28, #706]",
+        "cmp w20, w5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "str w20, [x28, #728]"
