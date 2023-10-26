@@ -836,6 +836,7 @@ DEF_OP(VectorImm) {
   const auto Dst = GetVReg(Node);
 
   if (HostSupportsSVE256 && Is256Bit) {
+    LOGMAN_THROW_A_FMT(Op->ShiftAmount == 0, "SVE VectorImm doesn't support a shift");
     if (ElementSize > 1 && (Op->Immediate & 0x80)) {
       // SVE dup uses sign extension where VectorImm wants zext
       LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Immediate);
@@ -847,11 +848,11 @@ DEF_OP(VectorImm) {
   } else {
     if (ElementSize == 8) {
       // movi with 64bit element size doesn't do what we want here
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Immediate);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->Immediate) << Op->ShiftAmount);
       dup(SubRegSize, Dst.Q(), TMP1.R());
     }
     else {
-      movi(SubRegSize, Dst.Q(), Op->Immediate);
+      movi(SubRegSize, Dst.Q(), Op->Immediate, Op->ShiftAmount);
     }
   }
 }
