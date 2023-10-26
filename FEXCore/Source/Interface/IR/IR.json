@@ -625,7 +625,8 @@
       },
       "AtomicAdd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
-        "Desc": ["Atomic integer add"
+        "Desc": ["Atomic integer add",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -634,7 +635,8 @@
       },
       "AtomicSub OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
-        "Desc": ["Atomic integer sub"
+        "Desc": ["Atomic integer sub",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -643,7 +645,18 @@
       },
       "AtomicAnd OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
-        "Desc": ["Atomic integer and"
+        "Desc": ["Atomic integer and",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "AtomicCLR OpSize:#Size, GPR:$Value, GPR:$Addr": {
+        "HasSideEffects": true,
+        "Desc": ["Atomic integer binary clear",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -652,7 +665,8 @@
       },
       "AtomicOr OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
-        "Desc": ["Atomic integer or"
+        "Desc": ["Atomic integer or",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -661,7 +675,18 @@
       },
       "AtomicXor OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
-        "Desc": ["Atomic integer xor"
+        "Desc": ["Atomic integer xor",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "AtomicNeg OpSize:#Size, GPR:$Addr": {
+        "HasSideEffects": true,
+        "Desc": ["Atomic integer two's complement negate",
+                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -681,7 +706,8 @@
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and add",
                  "Atomically fetches %Addr and adds %value to the memory location",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -692,7 +718,8 @@
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and sub",
                  "Atomically fetches %Addr and subtracts %value to the memory location",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -703,7 +730,8 @@
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary and",
                  "Atomically fetches %Addr and binary ands %value to the memory location",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -716,7 +744,8 @@
                  "Atomically fetches %Addr and binary clears %value to the memory location",
                  "Dest is the value prior to operating on the value in memory",
                  "Matches ARM ldclral semantics",
-                 "eg: Dest[Addr] &= ~Value"
+                 "eg: Dest[Addr] &= ~Value",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -727,7 +756,8 @@
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary or",
                  "Atomically fetches %Addr and binary ors %value to the memory location",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -738,7 +768,8 @@
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and binary exclusive or",
                  "Atomically fetches %Addr and binary exclusive ors %value to the memory location",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
@@ -748,7 +779,8 @@
       "GPR = AtomicFetchNeg OpSize:#Size, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer fetch and two's complement negate",
-                 "Dest is the value prior to operating on the value in memory"
+                 "Dest is the value prior to operating on the value in memory",
+                 "IR layout must match NonFetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
