@@ -123,8 +123,8 @@ namespace FEXCore::Allocator {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void SetupHooks() {
-    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+  void SetupHooks(fextl::vector<MemoryRegion> *MemoryRegion) {
+    Alloc64 = Alloc::OSAllocator::Create64BitAllocator(MemoryRegion);
 #ifdef ENABLE_JEMALLOC
     je___mmap_hook   = FEX_mmap;
     je___munmap_hook = FEX_munmap;

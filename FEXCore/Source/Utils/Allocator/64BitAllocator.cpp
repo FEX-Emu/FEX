@@ -42,7 +42,7 @@ namespace Alloc::OSAllocator {
 
   class OSAllocator_64Bit final : public Alloc::HostAllocator {
     public:
-      OSAllocator_64Bit();
+      OSAllocator_64Bit(fextl::vector<FEXCore::Allocator::MemoryRegion> *MemoryRegion);
       virtual ~OSAllocator_64Bit();
       void *AllocateSlab(size_t Size) override { return nullptr; }
       void DeallocateSlab(void *Ptr, size_t Size) override {}
@@ -572,13 +572,19 @@ void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::
 }
 
 
-OSAllocator_64Bit::OSAllocator_64Bit() {
+OSAllocator_64Bit::OSAllocator_64Bit(fextl::vector<FEXCore::Allocator::MemoryRegion> *MemoryRegion) {
   DetermineVASize();
   auto LowMem = Steal32BitIfOldKernel();
 
-  auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
+  if (MemoryRegion && !MemoryRegion->empty()) {
+    AllocateMemoryRegions(*MemoryRegion);
+    MemoryRegion->clear();
+  }
+  else {
+    auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
 
-  AllocateMemoryRegions(Ranges);
+    AllocateMemoryRegions(Ranges);
+  }
 
   FEXCore::Allocator::ReclaimMemoryRegion(LowMem);
 }
@@ -599,7 +605,7 @@ OSAllocator_64Bit::~OSAllocator_64Bit() {
   }
 }
 
-fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
-  return fextl::make_unique<OSAllocator_64Bit>();
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator(fextl::vector<FEXCore::Allocator::MemoryRegion> *MemoryRegion) {
+  return fextl::make_unique<OSAllocator_64Bit>(MemoryRegion);
 }
 }

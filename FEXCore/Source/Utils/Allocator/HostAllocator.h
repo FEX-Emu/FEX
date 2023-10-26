@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include <FEXCore/Utils/Allocator.h>
+
 #include <FEXCore/fextl/allocator.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -46,5 +50,5 @@ namespace Alloc {
 namespace Alloc::OSAllocator {
 void RegisterTLSData(FEXCore::Core::InternalThreadState *Thread);
 void UninstallTLSData(FEXCore::Core::InternalThreadState *Thread);
-fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator(fextl::vector<FEXCore::Allocator::MemoryRegion> *MemoryRegion = nullptr);
 }

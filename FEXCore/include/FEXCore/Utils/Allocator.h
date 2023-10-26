@@ -9,7 +9,12 @@
 #include <sys/types.h>
 
 namespace FEXCore::Allocator {
-  FEX_DEFAULT_VISIBILITY void SetupHooks();
+  struct MemoryRegion {
+    void *Ptr;
+    size_t Size;
+  };
+
+  FEX_DEFAULT_VISIBILITY void SetupHooks(fextl::vector<MemoryRegion> *MemoryRegion = nullptr);
   FEX_DEFAULT_VISIBILITY void ClearHooks();
 
   FEX_DEFAULT_VISIBILITY size_t DetermineVASize();
@@ -66,11 +71,6 @@ namespace FEXCore::Allocator {
 
   // Allow sbrk again. Pass in the pointer returned by `DisableSBRKAllocations`
   FEX_DEFAULT_VISIBILITY void ReenableSBRKAllocations(void* Ptr);
-
-  struct MemoryRegion {
-    void *Ptr;
-    size_t Size;
-  };
 
   FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End);
   FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const fextl::vector<MemoryRegion> & Regions);

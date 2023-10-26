@@ -474,6 +474,15 @@
         "Desc": [
           "Override for a FEXServer socket path. Only useful for chroots."
         ]
+      },
+      "ForceFEX48BitAlloc": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "When running on a 48-bit VA system, force all FEX allocations in to that upper address space.",
+          "Only works when the host system supports 48-bit virtual address space.",
+          "Debug only feature that may not be entirely stable"
+        ]
       }
     }
   },
