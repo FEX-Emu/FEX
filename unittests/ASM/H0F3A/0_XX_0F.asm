@@ -3,7 +3,8 @@
   "RegData": {
     "MM0": "0x4851525354555657",
     "MM2": "0x0061626364656667",
-    "MM3": "0x0"
+    "MM3": "0x0",
+    "MM4": "0x5152535455565758"
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -37,5 +38,10 @@ movq mm3, [rdx + 8 * 2]
 movq mm4, [rdx + 8 * 3]
 
 palignr mm3, mm4, 16
+
+movq mm4, [rdx + 8]
+movq mm5, [rdx + 8 * 1]
+
+palignr mm4, mm5, 0
 
 hlt
