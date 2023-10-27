@@ -1227,6 +1227,11 @@ DEF_OP(Bfi) {
     // If Dst and SrcDst match then this turns in to a simple BFI instruction.
     bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
   }
+  else if (Dst != Src) {
+    // If the destination isn't the source then we can move the DstSrc and insert directly.
+    mov(EmitSize, Dst, SrcDst);
+    bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
+  }
   else {
     // Destination didn't match the dst source register.
     // TODO: Inefficient until FEX can have RA constraints here.
@@ -1254,6 +1259,11 @@ DEF_OP(Bfxil) {
 
   if (Dst == SrcDst) {
     // If Dst and SrcDst match then this turns in to a single instruction.
+    bfxil(EmitSize, Dst, Src, Op->lsb, Op->Width);
+  }
+  else if (Dst != Src) {
+    // If the destination isn't the source then we can move the DstSrc and insert directly.
+    mov(EmitSize, Dst, SrcDst);
     bfxil(EmitSize, Dst, Src, Op->lsb, Op->Width);
   }
   else {
