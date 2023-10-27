@@ -485,15 +485,12 @@
       ]
     },
     "pblendw xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
-      "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v16.16b, v2.16b"
-      ]
+      "ExpectedArm64ASM": []
     },
     "pblendw xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
@@ -505,23 +502,86 @@
         "mov v16.h[0], v17.h[0]"
       ]
     },
-    "pblendw xmm0, xmm1, 11111111b": {
-      "ExpectedInstructionCount": 10,
-      "Optimal": "No",
+    "pblendw xmm0, xmm1, 11010111b": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.h[0], v17.h[0]",
-        "mov v2.h[1], v17.h[1]",
-        "mov v2.h[2], v17.h[2]",
-        "mov v2.h[3], v17.h[3]",
-        "mov v2.h[4], v17.h[4]",
-        "mov v2.h[5], v17.h[5]",
-        "mov v2.h[6], v17.h[6]",
-        "mov v16.16b, v2.16b",
-        "mov v16.h[7], v17.h[7]"
+        "ldr x0, [x28, #1704]",
+        "ldr q2, [x0, #3440]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
+      ]
+    },
+    "pblendw xmm0, xmm1, 00000011b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.s[0], v17.s[0]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 00001100b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.s[1], v17.s[1]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 00110000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.s[2], v17.s[2]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 11000000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.s[3], v17.s[3]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 00001111b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.d[0], v17.d[0]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 11110000b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.d[1], v17.d[1]"
+      ]
+    },
+    "pblendw xmm0, xmm1, 11111111b": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "0x66 0x0f 0x3a 0x0e"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
       ]
     },
     "palignr xmm0, xmm1, 0": {
