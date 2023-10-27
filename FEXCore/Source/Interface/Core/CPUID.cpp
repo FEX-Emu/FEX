@@ -33,14 +33,19 @@ namespace ProductNames {
   static const char ARM_A76[] = "Cortex-A76";
   static const char ARM_A76AE[] = "Cortex-A76AE";
   static const char ARM_V1[] = "Neoverse V1";
+  static const char ARM_V2[] = "Neoverse V2";
   static const char ARM_A77[] = "Cortex-A77";
   static const char ARM_A78[] = "Cortex-A78";
   static const char ARM_A78AE[] = "Cortex-A78AE";
   static const char ARM_A78C[] = "Cortex-A78C";
   static const char ARM_A710[] = "Cortex-A710";
+  static const char ARM_A715[] = "Cortex-A715";
+  static const char ARM_A720[] = "Cortex-A720";
   static const char ARM_X1[] = "Cortex-X1";
   static const char ARM_X1C[] = "Cortex-X1C";
   static const char ARM_X2[] = "Cortex-X2";
+  static const char ARM_X3[] = "Cortex-X3";
+  static const char ARM_X4[] = "Cortex-X4";
   static const char ARM_N1[] = "Neoverse N1";
   static const char ARM_N2[] = "Neoverse N2";
   static const char ARM_E1[] = "Neoverse E1";
@@ -49,6 +54,7 @@ namespace ProductNames {
   static const char ARM_A55[] = "Cortex-A55";
   static const char ARM_A65[] = "Cortex-A65";
   static const char ARM_A510[] = "Cortex-A510";
+  static const char ARM_A520[] = "Cortex-A520";
 
   static const char ARM_Kryo200[] = "Kryo 2xx";
   static const char ARM_Kryo300[] = "Kryo 3xx";
@@ -138,10 +144,15 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 36> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 42> CPUMIDRs = {{
     // Typically big CPU cores
     {0x61, 0x023, 1, ProductNames::ARM_Firestorm}, // Apple M1 Firestorm
 
+    {0x41, 0xd82, 1, ProductNames::ARM_X4}, // X4
+    {0x41, 0xd81, 1, ProductNames::ARM_A720}, // A720
+    {0x41, 0xd4e, 1, ProductNames::ARM_X3}, // X3
+    {0x41, 0xd4d, 1, ProductNames::ARM_A715}, // A715
+    {0x41, 0xd4f, 1, ProductNames::ARM_V2}, // V2
     {0x41, 0xd49, 1, ProductNames::ARM_N2}, // N2
     {0x41, 0xd4b, 1, ProductNames::ARM_A78C}, // A78C
     {0x41, 0xd4a, 1, ProductNames::ARM_E1}, // E1
@@ -173,6 +184,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
     // Typically Little CPU cores
     {0x61, 0x022, 0, ProductNames::ARM_Icestorm}, // Apple M1 Icestorm
+    {0x41, 0xd80, 0, ProductNames::ARM_A520}, // A520
     {0x41, 0xd46, 0, ProductNames::ARM_A510}, // A510
     {0x41, 0xd06, 0, ProductNames::ARM_A65}, // A65
     {0x41, 0xd05, 0, ProductNames::ARM_A55}, // A55
