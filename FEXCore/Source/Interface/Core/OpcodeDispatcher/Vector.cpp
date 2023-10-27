@@ -4468,10 +4468,50 @@ void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
     }
   }
   else {
-    for (size_t i = 0; i < (16 / ElementSize); ++i) {
-      if (Select & (1 << i)) {
-        // This could be optimized if it becomes costly
-        Dest = _VInsElement(16, ElementSize, i, i, Dest, Src);
+    // TODO: There are some of these swizzles that can be more optimal.
+    // NamedConstant + VTBX1 is quite quick already.
+    // Implement more if it becomes relevant.
+    switch (Select) {
+      case 0b0000'0000:
+        // No-op
+        return;
+      case 0b0000'0001:
+      case 0b0000'0010:
+      case 0b0000'0100:
+      case 0b0000'1000:
+      case 0b0001'0000:
+      case 0b0010'0000:
+      case 0b0100'0000:
+      case 0b1000'0000: {
+        // Single 16-bit element insert.
+        const auto Element = FEXCore::ilog2(Select);
+        Dest = _VInsElement(DstSize, ElementSize, Element, Element, Dest, Src);
+        break;
+      }
+      case 0b0000'0011:
+      case 0b0000'1100:
+      case 0b0011'0000:
+      case 0b1100'0000: {
+        // Single 32-bit element insert.
+        const auto Element = std::countr_zero(Select) / 2;
+        Dest = _VInsElement(DstSize, 4, Element, Element, Dest, Src);
+        break;
+      }
+      case 0b0000'1111:
+      case 0b1111'0000: {
+        // Single 64-bit element insert.
+        const auto Element = std::countr_zero(Select) / 4;
+        Dest = _VInsElement(DstSize, 8, Element, Element, Dest, Src);
+        break;
+      }
+      case 0b1111'1111:
+        // Copy
+        Dest = Src;
+        break;
+      default: {
+        auto ConstantSwizzle = LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW, Select * 16);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
+        break;
       }
     }
   }
