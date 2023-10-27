@@ -3391,18 +3391,27 @@ void OpDispatchBuilder::DefaultAVXState() {
 
 OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                                               const X86Tables::DecodedOperand& Src2,
-                                              const X86Tables::DecodedOperand& Imm) {
+                                              const X86Tables::DecodedOperand& Imm,
+                                              bool IsAVX) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
-
-  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
-
   // For the 256-bit case we handle it as pairs of 128-bit halves.
   const auto DstSize = GetDstSize(Op);
   const auto SanitizedDstSize = std::min(DstSize, uint8_t{16});
 
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Index = Imm.Data.Literal.Value;
+
+  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  if (Index == 0) {
+    if (IsAVX && !Is256Bit) {
+      // 128-bit AVX needs to zero the upper bits.
+      return _VMov(16, Src2Node);
+    }
+    else {
+      return Src2Node;
+    }
+  }
+  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
 
   if (Index >= (SanitizedDstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
@@ -3421,12 +3430,12 @@ OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::Decod
 }
 
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
-  OrderedNode *Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  OrderedNode *Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
-  OrderedNode *Result = PALIGNROpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  OrderedNode *Result = PALIGNROpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], true);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

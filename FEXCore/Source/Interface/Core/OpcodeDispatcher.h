@@ -1002,7 +1002,8 @@ private:
 
   OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2,
-                             const X86Tables::DecodedOperand& Imm);
+                             const X86Tables::DecodedOperand& Imm,
+                             bool IsAVX);
 
   void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
 
