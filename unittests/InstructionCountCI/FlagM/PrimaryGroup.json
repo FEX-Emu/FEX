@@ -2279,7 +2279,7 @@
       ]
     },
     "rcl eax, 1": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "GROUP2 0xd1 /2",
       "ExpectedArm64ASM": [
@@ -2289,9 +2289,8 @@
         "lsr w23, w20, #31",
         "lsl w20, w20, #1",
         "orr w4, w20, w22",
-        "mov w0, w21",
-        "bfi w0, w23, #29, #1",
-        "mov w20, w0",
+        "mov w20, w21",
+        "bfi w20, w23, #29, #1",
         "lsr w21, w4, #31",
         "eor w21, w21, w23",
         "bfi w20, w21, #28, #1",
