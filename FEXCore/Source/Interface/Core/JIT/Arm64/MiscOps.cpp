@@ -143,7 +143,17 @@ DEF_OP(Print) {
     ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue));
   }
 
-  blr(ARMEmitter::Reg::r3);
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    if (IsGPR(Op->Value.ID())) {
+      GenerateIndirectRuntimeCall<void, uint64_t>(ARMEmitter::Reg::r3);
+    }
+    else {
+      GenerateIndirectRuntimeCall<void, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+    }
+  }
+  else {
+    blr(ARMEmitter::Reg::r3);
+  }
 
   FillStaticRegs();
   PopDynamicRegsAndLR();
