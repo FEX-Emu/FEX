@@ -21,85 +21,12 @@ $end_info$
 #include <sys/syscall.h>
 
 #include "common/Guest.h"
-#include "WorkEventData.h"
-#include "common/CrossArchEvent.h"
 
 #include <stdarg.h>
 
 #include "thunkgen_guest_libxcb.inl"
 
-static std::thread CBThread{};
-static std::atomic<bool> CBDone{false};
-static std::mutex CBThreadMutex;
-static uint32_t ScreenRefCount;
-
-static CrossArchEvent WaitForWork{};
-static CrossArchEvent WorkDone{};
-static CBWork CBWorkData{};
-
-void FEX_Helper_GiveEvents() {
-  struct {
-    CrossArchEvent *WaitForWork;
-    CrossArchEvent *WorkDone;
-    CBWork *Work;
-  } args;
-
-  args.WaitForWork = &WaitForWork;
-  args.WorkDone = &WorkDone;
-  args.Work = &CBWorkData;
-
-  fexthunks_libxcb_FEX_GiveEvents(&args);
-}
-
-static void CallbackThreadFunc() {
-  // Set the thread name to make it easy to know what thread this is
-  pthread_setname_np(pthread_self(), "xcb:take_socket");
-
-  // Hand the host our helpers
-  FEX_Helper_GiveEvents();
-  while (!CBDone) {
-    WaitForWorkFunc(&WaitForWork);
-    if (CBDone) {
-      return;
-    }
-    typedef void take_xcb_fn_t (void* a_0);
-    auto callback = reinterpret_cast<take_xcb_fn_t*>(CBWorkData.cb);
-
-    // On shutdown then callback can change to nullptr
-    if (callback) {
-      callback(CBWorkData.argsv);
-    }
-    NotifyWorkFunc(&WorkDone);
-  }
-}
-
 extern "C" {
-  void CreateCallback() {
-    std::unique_lock lk{CBThreadMutex};
-    ++ScreenRefCount;
-
-    // Start a guest side thread that allows us to do callbacks from xcb safely
-    if (!CBThread.joinable()) {
-      CBDone = false;
-      CBThread = std::thread(CallbackThreadFunc);
-    }
-  }
-
-  void RemoveCallback() {
-    std::unique_lock lk{CBThreadMutex};
-    --ScreenRefCount;
-
-    // If the new value is 0 then shutdown the work thread.
-    if (ScreenRefCount == 0) {
-      if (CBThread.joinable()) {
-        CBDone = true;
-        NotifyWorkFunc(&WaitForWork);
-        NotifyWorkFunc(&WorkDone);
-        CBThread.join();
-      }
-    }
-  }
-
   xcb_extension_t xcb_big_requests_id = {
     .name = "BIG-REQUESTS",
     .global_id = 0,
@@ -130,45 +57,23 @@ extern "C" {
 
   xcb_connection_t * xcb_connect_to_fd(int a_0, xcb_auth_info_t * a_1) {
     auto ret = fexfn_pack_xcb_connect_to_fd(a_0, a_1);
-
-    if (xcb_get_file_descriptor(ret) != -1) {
-      // Only create callback on valid xcb connections.
-      // Checking for FD is the easiest way to do this.
-      CreateCallback();
-    }
     InitializeExtensions(ret);
     return ret;
   }
 
   xcb_connection_t * xcb_connect(const char * a_0,int * a_1){
     auto ret = fexfn_pack_xcb_connect(a_0, a_1);
-
-    if (xcb_get_file_descriptor(ret) != -1) {
-      // Only create callback on valid xcb connections.
-      // Checking for FD is the easiest way to do this.
-      CreateCallback();
-    }
     InitializeExtensions(ret);
     return ret;
   }
 
   xcb_connection_t * xcb_connect_to_display_with_auth_info(const char * a_0,xcb_auth_info_t * a_1,int * a_2){
     auto ret = fexfn_pack_xcb_connect_to_display_with_auth_info(a_0, a_1, a_2);
-    if (xcb_get_file_descriptor(ret) != -1) {
-      // Only create callback on valid xcb connections.
-      // Checking for FD is the easiest way to do this.
-      CreateCallback();
-    }
     InitializeExtensions(ret);
     return ret;
   }
 
   void xcb_disconnect(xcb_connection_t * a_0){
-    if (a_0 != nullptr && xcb_get_file_descriptor(a_0) != -1) {
-      // Only decrement callback reference on valid displays.
-      // Checking for FD and nullptr is the easiest way to do this.
-      RemoveCallback();
-    }
     fexfn_pack_xcb_disconnect(a_0);
   }
 
