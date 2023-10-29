@@ -118,7 +118,7 @@ namespace Handler {
       }
       Begin = End + 1;
       End = View.find_first_of(',', Begin);
-      Option = View.substr(Begin, End);
+      Option = View.substr(Begin, End - Begin);
     }
 
     return fextl::fmt::format("{}", EnumMask);
