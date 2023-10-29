@@ -49,6 +49,86 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     return ret;
 };
 
+// Custom sort algorithm that works with partial orders.
+//
+// In contrast, std::sort requires that any two different elements A and B of
+// the input range compare either A<B or B<A. This requirement is violated e.g.
+// for dependency relations: Elements A and B might not depend on each other,
+// but they both might depend on some third element C. BubbleSort then ensures
+// C preceeds both A and B in the sorted range, while leaving the relative
+// order of A and B undetermined. In effect when iterating over the sorted
+// range, each dependency is visited before any of its dependees.
+template<std::forward_iterator It>
+void BubbleSort(It begin, It end,
+                std::relation<std::iter_value_t<It>, std::iter_value_t<It>> auto compare) {
+    bool fixpoint;
+    do {
+        fixpoint = true;
+        for (auto it = begin; it != end; ++it) {
+            for (auto it2 = std::next(it); it2 != end; ++it2) {
+                if (compare(*it2, *it)) {
+                    std::swap(*it, *it2);
+                    fixpoint = false;
+                    it2 = it;
+                }
+            }
+        }
+    } while (!fixpoint);
+}
+
+// Compares such that A < B if B contains A as a member and requires A to be completely defined (i.e. non-pointer/non-reference).
+// This applies recursively to structs contained by B.
+struct compare_by_struct_dependency {
+    clang::ASTContext& context;
+
+    bool operator()(const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& a,
+                    const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& b) const {
+        return (*this)(a.first, b.first);
+    }
+
+    bool operator()(const clang::Type* a, const clang::Type* b) const {
+        if (llvm::isa<clang::ConstantArrayType>(b)) {
+            throw std::runtime_error("Cannot have \"b\" be an array");
+        }
+
+        auto* b_as_struct = b->getAsStructureType();
+        if (!b_as_struct) {
+            // Not a struct => no dependency
+            return false;
+        }
+
+        if (a->isArrayType()) {
+            throw std::runtime_error("Cannot have \"a\" be an array");
+        }
+
+        for (auto* child : b_as_struct->getDecl()->fields()) {
+            auto child_type = child->getType().getTypePtr();
+
+            if (child_type->isPointerType()) {
+                // Pointers don't need the definition to be available
+                continue;
+            }
+
+            // Peel off any array type layers from the member
+            while (auto child_as_array = llvm::dyn_cast<clang::ConstantArrayType>(child_type)) {
+                child_type = child_as_array->getArrayElementTypeNoTypeQual();
+            }
+
+            if (context.hasSameType(a, child_type)) {
+                return true;
+            }
+
+            if ((*this)(a, child_type)) {
+                // Child depends on A => transitive dependency
+                return true;
+            }
+        }
+
+        // No dependency found
+        return false;
+    }
+};
+
 void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     ErrorReporter report_error { context };
 
@@ -239,6 +319,13 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     // Files used host-side
     if (!output_filenames.host.empty()) {
         std::ofstream file(output_filenames.host);
+
+    // TODO: Move to dedicated function
+    {
+        // Sort struct types by dependency so that repacking code is emitted in an order that compiles fine
+        std::vector<std::pair<const clang::Type*, RepackedType>> types { this->types.begin(), this->types.end() };
+        BubbleSort(types.begin(), types.end(), compare_by_struct_dependency { context });
+    }
 
         // Forward declarations for symbols loaded from the native host library
         for (auto& import : thunked_api) {
