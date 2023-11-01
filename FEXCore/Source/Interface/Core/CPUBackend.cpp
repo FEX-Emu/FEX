@@ -230,6 +230,48 @@ constexpr static auto DPPD_MASK {
 }()
 };
 
+constexpr static auto PBLENDW_LUT {
+[]() consteval {
+  struct LUTType {
+    uint16_t Val[8];
+  };
+  // 16-bit words in [127:112], [111:96], [95:80], [79:64], [63:48], [47:32], [31:16], [15:0] are selected using 8-bit swizzle.
+  // Expectation for this LUT is to simulate PBLENDW with ARM's TBX (one register) instruction.
+  // PBLENDW behaviour:
+  // 16-bit words from the source is moved in to the destination based on the bit in the swizzle.
+  // Dest[15:0]    = Swizzle[0] ? Src[15:0] : Dest[15:0]
+  // Dest[31:16]   = Swizzle[1] ? Src[31:16] : Dest[31:16]
+  // Dest[47:32]   = Swizzle[2] ? Src[47:32] : Dest[47:32]
+  // Dest[63:48]   = Swizzle[3] ? Src[63:48] : Dest[63:48]
+  // Dest[79:64]   = Swizzle[4] ? Src[79:64] : Dest[79:64]
+  // Dest[95:80]   = Swizzle[5] ? Src[95:80] : Dest[95:80]
+  // Dest[111:96]  = Swizzle[6] ? Src[111:96] : Dest[111:96]
+  // Dest[127:112] = Swizzle[7] ? Src[127:112] : Dest[127:112]
+
+  std::array<LUTType, 256> TotalLUT{};
+  const uint16_t WordSelectionSrc[8] = {
+    0x01'00,
+    0x03'02,
+    0x05'04,
+    0x07'06,
+    0x09'08,
+    0x0B'0A,
+    0x0D'0C,
+    0x0F'0E,
+  };
+
+  constexpr uint16_t OriginalDest = 0xFF'FF;
+
+  for (size_t i = 0; i < 256; ++i) {
+    auto &LUT = TotalLUT[i];
+    for (size_t j = 0; j < 8; ++j) {
+      LUT.Val[j] = ((i >> j) & 1) ? WordSelectionSrc[j] : OriginalDest;
+    }
+  }
+  return TotalLUT;
+}()
+};
+
 CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
     : ThreadState(ThreadState), InitialCodeSize(InitialCodeSize), MaxCodeSize(MaxCodeSize) {
 
@@ -250,6 +292,7 @@ CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t I
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS] = reinterpret_cast<uint64_t>(SHUFPS_LUT.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK] = reinterpret_cast<uint64_t>(DPPS_MASK.data());
   Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK] = reinterpret_cast<uint64_t>(DPPD_MASK.data());
+  Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW] = reinterpret_cast<uint64_t>(PBLENDW_LUT.data());
 
 #ifndef FEX_DISABLE_TELEMETRY
   // Fill in telemetry values

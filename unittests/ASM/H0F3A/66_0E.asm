@@ -1,6 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
+    "RAX": "0x00000000c3768da8",
     "XMM1": ["0x48510f254d2fa47f", "0x2b5774313a974886"],
     "XMM2": ["0x30b556de1f6d7718", "0x67d29af330ae762c"],
     "XMM3": ["0xb615b953255b4cf4", "0xb76472a37404b890"],
@@ -8,7 +9,8 @@
     "XMM5": ["0x4f1694dfa8fb773c", "0x19a26b823d3ca2a9"],
     "XMM6": ["0x2ef9bb9202e0077f", "0xc97d9d031ed23dfa"],
     "XMM7": ["0x944c0a76f8f69004", "0xb29bfeda8b8db7bc"],
-    "XMM8": ["0x10c41fa17837c17f", "0x099224327e5e296c"]
+    "XMM8": ["0x10c41fa17837c17f", "0x099224327e5e296c"],
+    "XMM9": ["0x48510f254d2fa47f", "0x2b5774313a974886"]
   }
 }
 %endif
@@ -33,6 +35,21 @@ pblendw xmm6, [rdx + 16 * 13], 00011111b
 pblendw xmm7, [rdx + 16 * 14], 00111111b
 pblendw xmm8, [rdx + 16 * 15], 11111111b
 
+; We can't test all 256 swizzles so loop and crc the results.
+; Just loops over the 256-bytes of data, swizzling across all values for the swizzle.
+mov rax, 0
+%assign swizzle 0
+%rep 256
+
+movaps xmm9, [rdx + ((16 * swizzle) % 256)]
+pblendw xmm9, [rdx + ((16 * swizzle + 16) % 256)], swizzle
+movaps [rel .data_temp], xmm9
+crc32 rax, qword [rel .data_temp]
+crc32 rax, qword [rel .data_temp + 8]
+
+%assign swizzle swizzle+1
+%endrep
+
 hlt
 
 align 16
@@ -54,3 +71,6 @@ db 0x3c, 0x77, 0xfb, 0xa8, 0xdf, 0x94, 0x16, 0x4f, 0xc0, 0x78, 0x00, 0x76, 0x03,
 db 0x7f, 0x07, 0xe0, 0x02, 0x92, 0xbb, 0xf9, 0x2e, 0xfa, 0x3d, 0x88, 0xc8, 0x24, 0x27, 0xa6, 0x1e
 db 0x04, 0x90, 0xf6, 0xf8, 0x76, 0x0a, 0x4c, 0x94, 0xbc, 0xb7, 0x8d, 0x8b, 0xf9, 0x65, 0xf5, 0x07
 db 0x7f, 0xc1, 0x37, 0x78, 0xa1, 0x1f, 0xc4, 0x10, 0x6c, 0x29, 0x5e, 0x7e, 0x32, 0x24, 0x92, 0x09
+
+.data_temp:
+dq 0, 0
