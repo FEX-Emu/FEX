@@ -3034,19 +3034,19 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump = _CondJump(BitFlag, {COND_NEQ});
+    auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetTrueJumpTarget(CondJump, StoreBlock);
+    SetTrueJumpTarget(CondJump_, StoreBlock);
     SetCurrentCodeBlock(StoreBlock);
     StartNewBlock();
     {
       fn();
     }
-    auto Jump = _Jump();
+    auto Jump_ = Jump();
     auto NextJumpTarget = CreateNewCodeBlockAfter(StoreBlock);
-    SetJumpTarget(Jump, NextJumpTarget);
-    SetFalseJumpTarget(CondJump, NextJumpTarget);
+    SetJumpTarget(Jump_, NextJumpTarget);
+    SetFalseJumpTarget(CondJump_, NextJumpTarget);
     SetCurrentCodeBlock(NextJumpTarget);
     StartNewBlock();
   };
@@ -3244,26 +3244,26 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // to it's defined initial configuration.
   const auto RestoreIfFlagSetOrDefault = [&](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump = _CondJump(BitFlag, {COND_NEQ});
+    auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetTrueJumpTarget(CondJump, RestoreBlock);
+    SetTrueJumpTarget(CondJump_, RestoreBlock);
     SetCurrentCodeBlock(RestoreBlock);
     StartNewBlock();
     {
       restore_fn();
     }
-    auto RestoreExitJump = _Jump();
+    auto RestoreExitJump = Jump();
     auto DefaultBlock = CreateNewCodeBlockAfter(RestoreBlock);
     auto ExitBlock = CreateNewCodeBlockAfter(DefaultBlock);
     SetJumpTarget(RestoreExitJump, ExitBlock);
-    SetFalseJumpTarget(CondJump, DefaultBlock);
+    SetFalseJumpTarget(CondJump_, DefaultBlock);
     SetCurrentCodeBlock(DefaultBlock);
     StartNewBlock();
     {
       default_fn();
     }
-    auto DefaultExitJump = _Jump();
+    auto DefaultExitJump = Jump();
     SetJumpTarget(DefaultExitJump, ExitBlock);
     SetCurrentCodeBlock(ExitBlock);
     StartNewBlock();

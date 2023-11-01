@@ -181,7 +181,7 @@ public:
         _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {
-        _Jump(it->second.BlockEntry);
+        Jump(it->second.BlockEntry);
         return true;
       }
     }
