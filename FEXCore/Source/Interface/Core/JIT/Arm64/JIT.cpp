@@ -689,8 +689,7 @@ bool Arm64JITCore::IsGPRPair(IR::NodeID Node) const {
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
                                 FEXCore::IR::IRListView const *IR,
                                 FEXCore::Core::DebugData *DebugData,
-                                FEXCore::IR::RegisterAllocationData *RAData,
-                                bool GDBEnabled) {
+                                FEXCore::IR::RegisterAllocationData *RAData) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
@@ -702,7 +701,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   this->IR = IR;
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
+  uint32_t BufferRange = SSACount * 16;
   if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
     CTX->ClearCodeCache(ThreadState);
   }
@@ -746,16 +745,11 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   adr(TMP1, &JITCodeHeaderLabel);
   str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
-#ifdef _WIN32
-  // Trigger a fault if there are any pending interrupts
-  // Used only for suspend on WIN32 at the moment
-  strb(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) -
-                                    offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
-#endif
-
-  if (GDBEnabled) {
-    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(CodeData.BlockEntry, Entry);
-    CursorIncrement(GDBSize);
+  if (CTX->Config.NeedsPendingInterruptFaultCheck) {
+    // Trigger a fault if there are any pending interrupts
+    // Used only for suspend on WIN32 at the moment
+    strb(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) -
+                                      offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
   }
 
   //LOGMAN_THROW_A_FMT(RAData->HasFullRA(), "Arm64 JIT only works with RA");

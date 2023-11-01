@@ -368,6 +368,9 @@ namespace FEXCore::Context {
 
 #ifndef _WIN32
     ThunkHandler = FEXCore::ThunkHandler::Create();
+#else
+    // WIN32 always needs the interrupt fault check to be enabled.
+    Config.NeedsPendingInterruptFaultCheck = true;
 #endif
 
     using namespace FEXCore::Core;
@@ -1084,7 +1087,7 @@ namespace FEXCore::Context {
       // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
       // In the future with code caching getting wired up, we will pass the rest of the data forward.
       // TODO: Pass the data forward when code caching is wired up to this.
-      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData.get(), GetGdbServerStatus()).BlockEntry,
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData.get()).BlockEntry,
       .IRData = IRList,
       .DebugData = DebugData,
       .RAData = std::move(RAData),

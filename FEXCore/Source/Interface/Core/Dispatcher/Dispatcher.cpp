@@ -549,40 +549,6 @@ void Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_
 
 #endif
 
-size_t Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
-  FEXCore::ARMEmitter::Emitter emit{CodeBuffer, MaxGDBPauseCheckSize};
-
-  ARMEmitter::ForwardLabel RunBlock;
-
-  // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-  // This happens when single stepping
-
-  static_assert(sizeof(FEXCore::Context::ContextImpl::Config.RunningMode) == 4, "This is expected to be size of 4");
-  emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Thread));
-  emit.ldr(ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, offsetof(FEXCore::Core::InternalThreadState, CTX)); // Get Context
-  emit.ldr(ARMEmitter::WReg::w0, ARMEmitter::Reg::r0, offsetof(FEXCore::Context::ContextImpl, Config.RunningMode));
-
-  // If the value == 0 then we don't need to stop
-  emit.cbz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, &RunBlock);
-  {
-    ARMEmitter::ForwardLabel l_GuestRIP;
-    // Make sure RIP is syncronized to the context
-    emit.ldr(ARMEmitter::XReg::x0, &l_GuestRIP);
-    emit.str(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, State.rip));
-
-    // Stop the thread
-    emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
-    emit.br(ARMEmitter::Reg::r0);
-    emit.Bind(&l_GuestRIP);
-    emit.dc64(GuestRIP);
-  }
-  emit.Bind(&RunBlock);
-
-  auto UsedBytes = emit.GetCursorOffset();
-  emit.ClearICache(CodeBuffer, UsedBytes);
-  return UsedBytes;
-}
-
 void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {

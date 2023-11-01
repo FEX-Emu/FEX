@@ -44,7 +44,7 @@ public:
   [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,
                                   FEXCore::Core::DebugData *DebugData,
-                                  FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
+                                  FEXCore::IR::RegisterAllocationData *RAData) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
