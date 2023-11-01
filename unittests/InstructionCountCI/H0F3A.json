@@ -329,42 +329,36 @@
       ]
     },
     "blendps xmm0, xmm1, 0101b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[0], v17.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[2], v17.s[2]"
+        "rev64 v2.4s, v17.4s",
+        "trn2 v16.4s, v2.4s, v16.4s"
       ]
     },
     "blendps xmm0, xmm1, 0110b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[1], v17.s[1]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[2], v17.s[2]"
+        "ldr q2, [x28, #2080]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 0111b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.d[0], v17.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[2], v17.s[2]"
+        "ldr q2, [x28, #2096]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 1000b": {
@@ -378,42 +372,36 @@
       ]
     },
     "blendps xmm0, xmm1, 1001b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[0], v17.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v17.s[3]"
+        "ldr q2, [x28, #2112]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 1010b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[1], v17.s[1]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v17.s[3]"
+        "rev64 v2.4s, v16.4s",
+        "trn2 v16.4s, v2.4s, v17.4s"
       ]
     },
     "blendps xmm0, xmm1, 1011b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.d[0], v17.d[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[3], v17.s[3]"
+        "ldr q2, [x28, #2128]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 1100b": {
@@ -427,29 +415,25 @@
       ]
     },
     "blendps xmm0, xmm1, 1101b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[0], v17.s[0]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v17.d[1]"
+        "ldr q2, [x28, #2144]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 1110b": {
-      "ExpectedInstructionCount": 4,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.s[1], v17.s[1]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v17.d[1]"
+        "ldr q2, [x28, #2160]",
+        "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "blendps xmm0, xmm1, 1111b": {
@@ -1738,7 +1722,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2064]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -1752,7 +1736,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2064]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",

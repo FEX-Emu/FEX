@@ -2,7 +2,8 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
-      "SVE256"
+      "SVE256",
+      "SVE128"
     ],
     "DisabledHostFeatures": [
       "AFP"
@@ -3540,15 +3541,14 @@
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11111111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Optimal": "No",
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
         "fmul v2.4s, v17.4s, v18.4s",
-        "faddp v2.4s, v2.4s, v2.4s",
-        "faddp s2, v2.2s",
+        "faddv s2, p6, z2.s",
         "dup v16.4s, v2.s[0]"
       ]
     },
@@ -3798,7 +3798,7 @@
       ],
       "ExpectedArm64ASM": [
         "fmul v2.2d, v17.2d, v18.2d",
-        "faddp d2, v2.2d",
+        "faddv d2, p6, z2.d",
         "dup v16.2d, v2.d[0]"
       ]
     },
@@ -5103,7 +5103,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2064]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -5117,7 +5117,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2064]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
