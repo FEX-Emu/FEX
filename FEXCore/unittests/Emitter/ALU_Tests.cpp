@@ -1709,6 +1709,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Evaluate into flags") {
   TEST_SINGLE(setf8(WReg::w30),  "setf8 w30");
   TEST_SINGLE(setf16(WReg::w30), "setf16 w30");
 }
+TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Carry flag invert") {
+  TEST_SINGLE(cfinv(), "cfinv");
+}
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Conditional compare - register") {
   TEST_SINGLE(ccmn(Size::i32Bit, Reg::r29, Reg::r28, StatusFlags::None, Condition::CC_AL), "ccmn w29, w28, #nzcv, al");
   TEST_SINGLE(ccmn(Size::i32Bit, Reg::r29, Reg::r28, StatusFlags::Flag_N, Condition::CC_AL), "ccmn w29, w28, #Nzcv, al");

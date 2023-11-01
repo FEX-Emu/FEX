@@ -135,6 +135,27 @@ public:
     ClearCachedNamedConstants();
   }
 
+  IRPair<IROp_Jump> Jump() {
+    CalculateDeferredFlags();
+    return _Jump();
+  }
+  IRPair<IROp_Jump> Jump(OrderedNode *_TargetBlock) {
+    CalculateDeferredFlags();
+    return _Jump(_TargetBlock);
+  }
+  IRPair<IROp_CondJump> CondJump(OrderedNode *_Cmp1, OrderedNode *_Cmp2, OrderedNode *_TrueBlock, OrderedNode *_FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
+    CalculateDeferredFlags();
+    return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
+  }
+  IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
+    CalculateDeferredFlags();
+    return _CondJump(ssa0, cond);
+  }
+  IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
+    CalculateDeferredFlags();
+    return _CondJump(ssa0, ssa1, ssa2, cond);
+  }
+
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP
     // Then we need to insert an unconditional jump from the current block to the one we are going to
@@ -160,7 +181,7 @@ public:
         _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {
-        _Jump(it->second.BlockEntry);
+        Jump(it->second.BlockEntry);
         return true;
       }
     }

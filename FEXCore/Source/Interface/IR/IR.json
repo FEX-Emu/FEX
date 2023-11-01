@@ -1380,7 +1380,8 @@
                  "If either source operand is NaN then return the second operand."
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
+        "NumElements": "RegisterSize / ElementSize",
+        "ImplicitFlagClobber": true
       },
       "FPR = VFMaxScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'max' between Vector1 and Vector2.",
@@ -1393,7 +1394,8 @@
                  "If either source operand is NaN then return the second operand."
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
+        "NumElements": "RegisterSize / ElementSize",
+        "ImplicitFlagClobber": true
       },
       "FPR = VFSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'sqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
@@ -1962,7 +1964,8 @@
 
       "FPR = VCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
+        "NumElements": "RegisterSize / ElementSize",
+        "ImplicitFlagClobber": true
       },
 
       "FPR = VCMPGT u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
@@ -1975,7 +1978,6 @@
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VFCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

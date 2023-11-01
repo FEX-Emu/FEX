@@ -75,9 +75,10 @@ DEF_OP(ExitFunction) {
     and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg, LookupCache::L1_ENTRIES_MASK);
     add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x3, ARMEmitter::ShiftType::LSL, 4);
 
+    // Note: sub+cbnz used over cmp+br to preserve flags.
     ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x1, ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, 0);
-    cmp(ARMEmitter::XReg::x0, RipReg.X());
-    b(ARMEmitter::Condition::CC_NE, &FullLookup);
+    sub(TMP1, ARMEmitter::XReg::x0, RipReg.X());
+    cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
     br(ARMEmitter::Reg::r1);
 
     Bind(&FullLookup);
