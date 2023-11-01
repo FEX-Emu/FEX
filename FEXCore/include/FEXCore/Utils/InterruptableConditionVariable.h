@@ -71,6 +71,9 @@ namespace FEXCore {
         DoNotify(INT_MAX);
       }
 
+      void ClearMutex() {
+        Mutex = UNSIGNALED;
+      }
     private:
       std::atomic<uint32_t> Mutex{};
       constexpr static uint32_t SIGNALED = 1;
@@ -136,6 +139,9 @@ namespace FEXCore {
         DoNotify(true);
       }
 
+      void ClearMutex() {
+        Mutex = UNSIGNALED;
+      }
     private:
       std::atomic<uint32_t> Mutex{};
       constexpr static uint32_t SIGNALED = 1;
