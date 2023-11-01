@@ -140,7 +140,7 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
 
 static fextl::string getThreadName(uint32_t ThreadID) {
   const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
-  fextl::string ThreadName {"<No Name>"};
+  fextl::string ThreadName;
   FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
   return ThreadName;
 }
@@ -673,15 +673,18 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
 
       ThreadString.clear();
       fextl::ostringstream ss;
-      ss << "<?xml version=\"1.0\"?>\n";
       ss << "<threads>\n";
       for (auto &Thread : *Threads) {
         // Thread id is in hex without 0x prefix
-        ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
-        ss << "\t</thread>\n";
+        const auto ThreadName = getThreadName(Thread->ThreadManager.GetTID());
+        ss << "<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\"";
+        if (!ThreadName.empty()) {
+          ss << " name=\"" << ThreadName << "\"";
+        }
+        ss << "/>\n";
       }
 
-      ss << "</threads>";
+      ss << "</threads>\n";
       ss << std::flush;
       ThreadString = ss.str();
     }
