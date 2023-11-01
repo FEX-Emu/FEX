@@ -2934,7 +2934,7 @@
         "Map 3 0b01 0x0f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ext v16.16b, v18.16b, v17.16b, #0"
+        "mov v16.16b, v18.16b"
       ]
     },
     "vpalignr xmm0, xmm1, xmm2, 1": {
@@ -2969,24 +2969,13 @@
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 0": {
-      "ExpectedInstructionCount": 12,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": [
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ext v2.16b, v18.16b, v17.16b, #0",
-        "mov z1.q, z17.q[1]",
-        "mov z3.d, z17.d",
-        "mov z3.b, p6/m, z1.b",
-        "mov z1.q, z18.q[1]",
-        "mov z4.d, z18.d",
-        "mov z4.b, p6/m, z1.b",
-        "ext v3.16b, v4.16b, v3.16b, #0",
-        "mov z1.q, q3",
-        "mov z16.d, z2.d",
-        "not p0.b, p7/z, p6.b",
-        "mov z16.b, p0/m, z1.b"
+        "mov z16.d, p7/m, z18.d"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 1": {
