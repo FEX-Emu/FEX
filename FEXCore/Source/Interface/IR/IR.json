@@ -2022,6 +2022,15 @@
                 ],
         "DestSize": "RegisterSize"
       },
+      "FPR = VTBX1 u8:#RegisterSize, FPR:$VectorSrcDst, FPR:$VectorTable, FPR:$VectorIndices": {
+        "Desc": ["Does a vector table lookup from one register in to the destination",
+                 "Lookup is byte sized per byte element.",
+                 "Any index larger than what the registers provide will result in not modifying that element",
+                 "Table is always treated as a 128bit register",
+                 "Indices matches destination size. Either 64bit or 128bit"
+                ],
+        "DestSize": "RegisterSize"
+      },
       "FPR = VBSL u8:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
         "Desc": ["Does a vector bitwise select.",
                  "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",

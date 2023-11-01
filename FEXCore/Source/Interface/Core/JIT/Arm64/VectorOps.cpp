@@ -4903,6 +4903,57 @@ DEF_OP(VTBL2) {
   }
 }
 
+DEF_OP(VTBX1) {
+  const auto Op = IROp->C<IR::IROp_VTBX1>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorSrcDst = GetVReg(Op->VectorSrcDst.ID());
+  const auto VectorIndices = GetVReg(Op->VectorIndices.ID());
+  const auto VectorTable = GetVReg(Op->VectorTable.ID());
+
+  if (Dst != VectorSrcDst) {
+    switch (OpSize) {
+      case 8: {
+        mov(Dst.D(), VectorSrcDst.D());
+        break;
+      }
+      case 16: {
+        mov(Dst.Q(), VectorSrcDst.Q());
+        break;
+      }
+      case 32: {
+        mov(Dst.Z(), VectorSrcDst.Z());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+        break;
+    }
+  }
+
+  switch (OpSize) {
+    case 8: {
+      tbx(Dst.D(), VectorTable.Q(), VectorIndices.D());
+      break;
+    }
+    case 16: {
+      tbx(Dst.Q(), VectorTable.Q(), VectorIndices.Q());
+      break;
+    }
+    case 32: {
+      LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
+                          "Host does not support SVE. Cannot perform 256-bit table lookup");
+
+      tbx(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable.Z(), VectorIndices.Z());
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+      break;
+  }
+}
+
 DEF_OP(VRev32) {
   const auto Op = IROp->C<IR::IROp_VRev32>();
   const auto OpSize = IROp->Size;

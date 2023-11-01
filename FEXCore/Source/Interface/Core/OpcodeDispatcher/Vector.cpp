@@ -4363,67 +4363,83 @@ void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
         // Dest[95:64] = Src[95:64]
         Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
         break;
-      case 0b0101:
-        // Dest[31:0] = Src[31:0]
-        // Dest[95:64] = Src[95:64]
-        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+      case 0b0101: {
+        // Dest[31:0]   = Src[31:0]
+        // Dest[63:32]  = Dest[63:32]
+        // Dest[95:64]  = Src[95:64]
+        // Dest[127:96] = Dest[127:96]
+        // Rotate the elements of the incoming source so they end up in the correct location.
+        // Then trn2 keeps the destination results in the expected location.
+        auto Temp = _VRev64(DstSize, 4, Src);
+        Dest = _VTrn2(DstSize, ElementSize, Temp, Dest);
         break;
-      case 0b0110:
+      }
+      case 0b0110: {
         // Dest[63:32] = Src[63:32]
         // Dest[95:64] = Src[95:64]
-        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0110B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
-      case 0b0111:
+      }
+      case 0b0111: {
         // Dest[31:0]  = Src[31:0]
         // Dest[63:32] = Src[63:32]
         // Dest[95:64] = Src[95:64]
-        Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0111B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
+      }
       case 0b1000:
         // Dest[127:96] = Src[127:96]
         Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
         break;
-      case 0b1001:
+      case 0b1001: {
         // Dest[31:0]   = Src[31:0]
         // Dest[127:96] = Src[127:96]
-        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1001B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
-      case 0b1010:
-        // Dest[63:32] = Src[63:32]
+      }
+      case 0b1010: {
+        // Dest[31:0]   = Dest[31:0]
+        // Dest[63:32]  = Src[63:32]
+        // Dest[95:64]  = Dest[95:64]
         // Dest[127:96] = Src[127:96]
-        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        // Rotate the elements of the incoming destination so they end up in the correct location.
+        // Then trn2 keeps the source results in the expected location.
+        auto Temp = _VRev64(DstSize, 4, Dest);
+        Dest = _VTrn2(DstSize, ElementSize, Temp, Src);
         break;
-      case 0b1011:
+      }
+      case 0b1011: {
         // Dest[31:0]  = Src[31:0]
         // Dest[63:32] = Src[63:32]
         // Dest[95:64] = Src[95:64]
-        Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
-        Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1011B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
+      }
       case 0b1100:
         // Dest[95:64] = Src[95:64]
         // Dest[127:96] = Src[127:96]
         Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
         break;
-      case 0b1101:
+      case 0b1101: {
         // Dest[31:0]  = Src[31:0]
         // Dest[95:64] = Src[95:64]
         // Dest[127:96] = Src[127:96]
-        Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-        Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1101B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
-      case 0b1110:
+      }
+      case 0b1110: {
         // Dest[63:32] = Src[63:32]
         // Dest[95:64] = Src[95:64]
         // Dest[127:96] = Src[127:96]
-        Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
-        Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
+        auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1110B);
+        Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
         break;
+      }
       case 0b1111:
         // Copy
         Dest = Src;
