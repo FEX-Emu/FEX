@@ -1269,6 +1269,41 @@ DEF_OP(VAddP) {
   }
 }
 
+DEF_OP(VFAddV) {
+  const auto Op = IROp->C<IR::IROp_VAddV>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE || OpSize == Core::CPUState::XMM_AVX_REG_SIZE, "Only AVX and SSE size supported");
+  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize = ARMEmitter::ToVectorSizePair(
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Pred = PRED_TMP_32B.Merging();
+    faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
+  }
+  if (HostSupportsSVE128) {
+    const auto Pred = PRED_TMP_16B.Merging();
+    faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
+  } else {
+    // ASIMD doesn't support faddv, need to use multiple faddp to match behaviour.
+    if (ElementSize == 4) {
+      faddp(SubRegSize.Vector, Dst.Q(), Vector.Q(), Vector.Q());
+      faddp(SubRegSize.Scalar, Dst, Vector);
+    }
+    else {
+      faddp(SubRegSize.Scalar, Dst, Vector);
+    }
+  }
+}
+
 DEF_OP(VAddV) {
   const auto Op = IROp->C<IR::IROp_VAddV>();
   const auto OpSize = IROp->Size;
@@ -3750,6 +3785,7 @@ DEF_OP(VDupElement) {
   const auto Index = Op->Index;
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -3764,7 +3800,12 @@ DEF_OP(VDupElement) {
   if (HostSupportsSVE256 && Is256Bit) {
     dup(SubRegSize, Dst.Z(), Vector.Z(), Index);
   } else {
-    dup(SubRegSize, Dst.Q(), Vector.Q(), Index);
+    if (Is128Bit) {
+      dup(SubRegSize, Dst.Q(), Vector.Q(), Index);
+    }
+    else {
+      dup(SubRegSize, Dst.D(), Vector.D(), Index);
+    }
   }
 }
 

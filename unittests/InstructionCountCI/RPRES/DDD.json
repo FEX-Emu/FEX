@@ -43,7 +43,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "frecpe s2, s2",
-        "dup v2.4s, v2.s[0]",
+        "dup v2.2s, v2.s[0]",
         "str d2, [x28, #752]"
       ]
     },
@@ -56,7 +56,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "frsqrte s2, s2",
-        "dup v2.4s, v2.s[0]",
+        "dup v2.2s, v2.s[0]",
         "str d2, [x28, #752]"
       ]
     }

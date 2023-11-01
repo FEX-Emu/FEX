@@ -4670,6 +4670,205 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
                                           const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   const uint8_t Mask = Imm.Data.Literal.Value;
+  const auto SizeMask = [ElementSize]() {
+    if (ElementSize == 4) {
+      return 0b1111;
+    }
+    return 0b11;
+  }();
+
+  const uint8_t SrcMask = (Mask >> 4) & SizeMask;
+  const uint8_t DstMask = Mask & SizeMask;
+
+  const auto NamedIndexMask = [ElementSize]() {
+    if (ElementSize == 4) {
+      return FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK;
+    }
+
+    return FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK;
+  }();
+  const auto DstSize = GetDstSize(Op);
+
+  OrderedNode *ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  if (SrcMask == 0 || DstMask == 0) {
+    // What are you even doing here? Go away.
+    return ZeroVec;
+  }
+
+  OrderedNode *Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  OrderedNode *Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
+
+  // First step is to do an FMUL
+  OrderedNode *Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
+
+  // Now mask results based on IndexMask.
+  if (SrcMask != SizeMask) {
+    auto InputMask = LoadAndCacheIndexedNamedVectorConstant(DstSize, NamedIndexMask, SrcMask * 16);
+    Temp = _VAnd(DstSize, ElementSize, Temp, InputMask);
+  }
+
+  // Now due a float reduction
+  Temp = _VFAddV(DstSize, ElementSize, Temp);
+
+  // Now using the destination mask we choose where the result ends up
+  // It can duplicate and zero results
+  if (ElementSize == 8) {
+    switch (DstMask) {
+      case 0b01:
+        // Dest[63:0] = Result
+        // Dest[127:64] = Zero
+        return _VZip(DstSize, ElementSize, Temp, ZeroVec);
+      case 0b10:
+        // Dest[63:0] = Zero
+        // Dest[127:64] = Result
+        return _VZip(DstSize, ElementSize, ZeroVec, Temp);
+      case 0b11:
+        // Broadcast
+        // Dest[63:0] = Result
+        // Dest[127:64] = Result
+        return _VDupElement(DstSize, ElementSize, Temp, 0);
+      case 0:
+      default:
+        LOGMAN_MSG_A_FMT("Unsupported");
+    }
+  }
+  else {
+    auto BadPath = [&]() {
+      OrderedNode *Result = ZeroVec;
+
+      for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
+        const auto Bit = 1U << (i % 4);
+
+        if ((DstMask & Bit) != 0) {
+          Result = _VInsElement(DstSize, ElementSize, i, 0, Result, Temp);
+        }
+      }
+
+      return Result;
+    };
+    switch (DstMask) {
+      case 0b0001:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Zero
+        return _VZip(DstSize, ElementSize, Temp, ZeroVec);
+      case 0b0010:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Zero
+        return _VZip(DstSize / 2, ElementSize, ZeroVec, Temp);
+      case 0b0011:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Zero
+        return _VDupElement(DstSize / 2, ElementSize, Temp, 0);
+      case 0b0100:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Zero
+        return _VZip(DstSize, 8, ZeroVec, Temp);
+      case 0b0101:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Zero
+        return _VZip(DstSize, 8, Temp, Temp);
+      case 0b0110:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Zero
+        return BadPath();
+      case 0b0111:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Zero
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VInsElement(DstSize, ElementSize, 3, 0, Temp, ZeroVec);
+      case 0b1000:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Result
+        return _VExtr(DstSize, 1, Temp, ZeroVec, 4);
+      case 0b1001:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Result
+        return BadPath();
+      case 0b1010:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Result
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VZip(DstSize, 4, ZeroVec, Temp);
+      case 0b1011:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Result
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VInsElement(DstSize, ElementSize, 2, 0, Temp, ZeroVec);
+      case 0b1100:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Result
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VZip(DstSize, 8, ZeroVec, Temp);
+      case 0b1101:
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Result
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VInsElement(DstSize, ElementSize, 1, 0, Temp, ZeroVec);
+      case 0b1110:
+        // Dest[31:0]   = Zero
+        // Dest[63:32]  = Result
+        // Dest[95:64]  = Result
+        // Dest[127:96] = Result
+        Temp = _VDupElement(DstSize, ElementSize, Temp, 0);
+        return _VInsElement(DstSize, ElementSize, 0, 0, Temp, ZeroVec);
+      case 0b1111:
+        // Broadcast
+        // Dest[31:0]   = Result
+        // Dest[63:32]  = Zero
+        // Dest[95:64]  = Zero
+        // Dest[127:96] = Zero
+        return _VDupElement(DstSize, ElementSize, Temp, 0);
+      case 0:
+      default:
+        LOGMAN_MSG_A_FMT("Unsupported");
+    }
+  }
+  FEX_UNREACHABLE;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::DPPOp(OpcodeArgs) {
+  OrderedNode *Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::DPPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
+
+OrderedNode* OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                         const X86Tables::DecodedOperand& Src2,
+                         const X86Tables::DecodedOperand& Imm) {
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
+  constexpr size_t ElementSize = 4;
+  const uint8_t Mask = Imm.Data.Literal.Value;
   const uint8_t SrcMask = Mask >> 4;
   const uint8_t DstMask = Mask & 0xF;
 
@@ -4716,20 +4915,18 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
   return Result;
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  OrderedNode *Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-template
-void OpDispatchBuilder::DPPOp<4>(OpcodeArgs);
-template
-void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
-
 template <size_t ElementSize>
 void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
-  OrderedNode *Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+  const auto DstSize = GetDstSize(Op);
+
+  OrderedNode *Result{};
+  if (ElementSize == 4 && DstSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+    // 256-bit DPPS isn't handled by the 128-bit solution.
+    Result = VDPPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  }
+  else {
+    Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+  }
 
   // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
   // to construct the results, so the upper lane will always be cleared for the 128-bit version.
