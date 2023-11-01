@@ -71,11 +71,6 @@ public:
 
   void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread);
 
-  // These are across all arches for now
-  static constexpr size_t MaxGDBPauseCheckSize = 128;
-
-  size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP);
-
 #ifdef VIXL_SIMULATOR
   void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) ;
   void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);

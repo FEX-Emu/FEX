@@ -216,6 +216,9 @@ namespace FEXCore::Context {
       // this is for internal use
       bool ValidateIRarser { false };
 
+      // Used if the JIT needs to have its interrupt fault code emitted.
+      bool NeedsPendingInterruptFaultCheck { false };
+
       FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
       FEX_CONFIG_OPT(SingleStepConfig, SINGLESTEP);
       FEX_CONFIG_OPT(GdbServer, GDBSERVER);

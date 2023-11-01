@@ -136,7 +136,7 @@ namespace CPU {
     [[nodiscard]] virtual CompiledCode CompileCode(uint64_t Entry,
                                             FEXCore::IR::IRListView const *IR,
                                             FEXCore::Core::DebugData *DebugData,
-                                            FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) = 0;
+                                            FEXCore::IR::RegisterAllocationData *RAData) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache
