@@ -12,7 +12,6 @@ $end_info$
 #include <memory>
 #include <optional>
 #include "Common/SoftFloat.h"
-#include "Common/StringUtils.h"
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
@@ -28,6 +27,7 @@ $end_info$
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/StringUtils.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>

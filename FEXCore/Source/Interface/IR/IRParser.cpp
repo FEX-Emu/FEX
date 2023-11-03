@@ -6,12 +6,11 @@ tags: ir|parser
 $end_info$
 */
 
-#include "Common/StringUtils.h"
-
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/StringUtils.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>

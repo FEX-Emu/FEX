@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 #include "Common/StringConv.h"
-#include "Common/StringUtils.h"
 #include "FEXCore/Utils/EnumUtils.h"
 
 #include <FEXCore/Config/Config.h>
@@ -8,6 +7,7 @@
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/StringUtils.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/map.h>
