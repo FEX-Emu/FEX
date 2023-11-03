@@ -11,8 +11,6 @@ $end_info$
 #include <iomanip>
 #include <memory>
 #include <optional>
-#include "Common/SoftFloat.h"
-#include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -72,7 +70,9 @@ void GdbServer::WaitForThreadWakeup() {
   ThreadBreakEvent.Wait();
 }
 
-GdbServer::GdbServer(FEXCore::Context::ContextImpl *ctx) : CTX(ctx) {
+GdbServer::GdbServer(FEXCore::Context::Context *ctx, SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
+  : CTX(ctx)
+  , SyscallHandler {SyscallHandler} {
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
@@ -80,18 +80,20 @@ GdbServer::GdbServer(FEXCore::Context::ContextImpl *ctx) : CTX(ctx) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
       this->Break(SIGTRAP);
     }
+
+    if (ExitReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
+      CoreShuttingDown = true;
+    }
   });
 
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
   for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-    ctx->SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+    SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       if (PassSignals[Signal]) {
         // Pass signal to the guest
         return false;
       }
-
-      this->CTX->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
 
       // Let GDB know that we have a signal
       this->Break(Signal);
@@ -247,12 +249,16 @@ void GdbServer::SendACK(std::ostream &stream, bool NACK) {
   }
 }
 
+struct X80Float {
+  uint8_t Data[10];
+};
+
 struct FEX_PACKED GDBContextDefinition {
   uint64_t gregs[Core::CPUState::NUM_GPRS];
   uint64_t rip;
   uint32_t eflags;
   uint32_t cs, ss, ds, es, fs, gs;
-  X80SoftFloat mm[Core::CPUState::NUM_MMS];
+  X80Float mm[Core::CPUState::NUM_MMS];
   uint32_t fctrl;
   uint32_t fstat;
   uint32_t dummies[6];
@@ -265,10 +271,10 @@ fextl::string GdbServer::readRegs() {
   FEXCore::Core::CPUState state{};
 
   auto Threads = CTX->GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { CTX->ParentThread };
+  FEXCore::Core::InternalThreadState *CurrentThread { Threads.ParentThread };
   bool Found = false;
 
-  for (auto &Thread : *Threads) {
+  for (auto &Thread : *Threads.Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
@@ -280,7 +286,7 @@ fextl::string GdbServer::readRegs() {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CTX->ParentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, Threads.ParentThread->CurrentFrame, sizeof(state));
   }
 
   // Encode the GDB context definition
@@ -316,10 +322,10 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   FEXCore::Core::CPUState state{};
 
   auto Threads = CTX->GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { CTX->ParentThread };
+  FEXCore::Core::InternalThreadState *CurrentThread { Threads.ParentThread };
   bool Found = false;
 
-  for (auto &Thread : *Threads) {
+  for (auto &Thread : *Threads.Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
@@ -331,7 +337,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CTX->ParentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, Threads.ParentThread->CurrentFrame, sizeof(state));
   }
 
 
@@ -354,7 +360,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   }
   else if (addr >= offsetof(GDBContextDefinition, mm[0]) &&
            addr < offsetof(GDBContextDefinition, mm[8])) {
-    return {encodeHex((unsigned char *)(&state.mm[(addr - offsetof(GDBContextDefinition, mm[0])) / sizeof(X80SoftFloat)]), sizeof(X80SoftFloat)), HandledPacketType::TYPE_ACK};
+    return {encodeHex((unsigned char *)(&state.mm[(addr - offsetof(GDBContextDefinition, mm[0])) / sizeof(X80Float)]), sizeof(X80Float)), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, fctrl)) {
     // XXX: We don't support this yet
@@ -674,7 +680,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
       ThreadString.clear();
       fextl::ostringstream ss;
       ss << "<threads>\n";
-      for (auto &Thread : *Threads) {
+      for (auto &Thread : *Threads.Threads) {
         // Thread id is in hex without 0x prefix
         const auto ThreadName = getThreadName(Thread->ThreadManager.GetTID());
         ss << "<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\"";
@@ -708,11 +714,11 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
   }
 
   if (object == "auxv") {
-    auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
+    auto CodeLoader = SyscallHandler->GetCodeLoader();
     uint64_t auxv_ptr, auxv_size;
     CodeLoader->GetAuxv(auxv_ptr, auxv_size);
     fextl::string data;
-    if (CTX->Config.Is64BitMode) {
+    if (Is64BitMode()) {
       data.resize(auxv_size);
       memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
     }
@@ -763,7 +769,7 @@ static size_t CheckMemMapping(uint64_t Address, size_t Size) {
 }
 
 GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
-  auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
+  auto CodeLoader = SyscallHandler->GetCodeLoader();
   uint64_t BaseOffset = CodeLoader->GetBaseOffset();
   fextl::string str = fextl::fmt::format("Text={:x};Data={:x};Bss={:x}", BaseOffset, BaseOffset, BaseOffset);
   return {std::move(str), HandledPacketType::TYPE_ACK};
@@ -907,10 +913,10 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
 
     fextl::ostringstream ss;
     ss << "m";
-    for (size_t i = 0; i < Threads->size(); ++i) {
-      auto Thread = Threads->at(i);
+    for (size_t i = 0; i < Threads.Threads->size(); ++i) {
+      auto Thread = Threads.Threads->at(i);
       ss << std::hex << Thread->ThreadManager.TID;
-      if (i != (Threads->size() - 1)) {
+      if (i != (Threads.Threads->size() - 1)) {
         ss << ",";
       }
     }
@@ -931,7 +937,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
   if (match("qC")) {
     // Returns the current Thread ID
     fextl::ostringstream ss;
-    ss << "m" <<  std::hex << CTX->ParentThread->ThreadManager.TID;
+    ss << "m" <<  std::hex << CTX->GetThreads().ParentThread->ThreadManager.TID;
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("QStartNoAckMode")) {
@@ -999,7 +1005,7 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
     }
     case 't':
       // This thread isn't part of the thread pool
-      CTX->Stop(false /* Ignore current thread */);
+      CTX->Stop();
       return {"OK", HandledPacketType::TYPE_ACK};
     default:
       return {"E00", HandledPacketType::TYPE_ACK};
@@ -1186,7 +1192,7 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string &packe
     case 'Z': // Inserts breakpoint or watchpoint
       return handleBreakpoint(packet);
     case 'k': // Kill the process
-      CTX->Stop(false /* Ignore current thread */);
+      CTX->Stop();
       CTX->WaitForIdle(); // Block until exit
       return {"", HandledPacketType::TYPE_NONE};
     default:
@@ -1218,7 +1224,7 @@ void GdbServer::SendPacketPair(const HandledPacketType& response) {
 void GdbServer::GdbServerLoop() {
   OpenListenSocket();
 
-  while (!CTX->CoreShuttingDown.load()) {
+  while (!CoreShuttingDown.load()) {
     CommsStream = OpenSocket();
 
     HandledPacketType response{};

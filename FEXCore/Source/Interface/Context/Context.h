@@ -285,9 +285,9 @@ namespace FEXCore::Context {
     ~ContextImpl();
 
     bool IsPaused() const { return !Running; }
-    void WaitForThreadsToRun();
+    void WaitForThreadsToRun() override;
     void Stop(bool IgnoreCurrentThread);
-    void WaitForIdle();
+    void WaitForIdle() override;
     void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
     bool GetGdbServerStatus() const { return DebugServer != nullptr; }
@@ -353,8 +353,6 @@ namespace FEXCore::Context {
 
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
 
-    fextl::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
-
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
     FEXCore::JITSymbols Symbols;
@@ -401,6 +399,13 @@ namespace FEXCore::Context {
     void EnableExitOnHLT() override { ExitOnHLT = true; }
 
     bool ExitOnHLTEnabled() const { return ExitOnHLT; }
+
+    ThreadsState GetThreads() override  {
+      return ThreadsState {
+        .ParentThread = ParentThread,
+        .Threads = &Threads,
+      };
+    }
 
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
 

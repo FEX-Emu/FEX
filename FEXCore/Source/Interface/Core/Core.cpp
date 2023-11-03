@@ -391,7 +391,7 @@ namespace FEXCore::Context {
   void ContextImpl::StartGdbServer() {
 #ifndef _WIN32
     if (!DebugServer) {
-      DebugServer = fextl::make_unique<GdbServer>(this);
+      DebugServer = fextl::make_unique<GdbServer>(this, SignalDelegation, SyscallHandler);
       StartPaused = true;
     }
 #endif

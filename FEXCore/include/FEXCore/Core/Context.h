@@ -87,6 +87,11 @@ namespace FEXCore::Context {
     void *VDSO_kernel_rt_sigreturn;
   };
 
+  struct ThreadsState {
+    FEXCore::Core::InternalThreadState* ParentThread;
+    fextl::vector<FEXCore::Core::InternalThreadState*>* Threads;
+  };
+
   using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
 
   using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState *Thread)>;
@@ -140,6 +145,18 @@ namespace FEXCore::Context {
        * Blocks until all threads have paused.
        */
       FEX_DEFAULT_VISIBILITY virtual void Pause() = 0;
+
+      /**
+       * @brief Waits for all threads to be idle.
+       *
+       * Idling can happen when the process is shutting down or the debugger has asked for all threads to pause.
+       */
+      FEX_DEFAULT_VISIBILITY virtual void WaitForIdle() = 0;
+
+      /**
+       * @brief When resuming from a paused state, waits for all threads to start executing before returning.
+       */
+      FEX_DEFAULT_VISIBILITY virtual void WaitForThreadsToRun() = 0;
 
       /**
        * @brief Starts (or continues) the CPU core
@@ -318,6 +335,14 @@ namespace FEXCore::Context {
        *
        */
       FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
+
+      /**
+       * @brief Gets the thread data for FEX's internal tracked threads.
+       *
+       * @return struct containing all the thread information.
+       */
+      FEX_DEFAULT_VISIBILITY virtual ThreadsState GetThreads() = 0;
+
     private:
   };
 
