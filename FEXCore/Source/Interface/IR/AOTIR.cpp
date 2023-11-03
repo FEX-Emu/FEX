@@ -363,18 +363,9 @@ namespace FEXCore::IR {
 
       // Insert to caches if we generated IR
       if (GeneratedIR) {
-        if (CTX->GetGdbServerStatus()) {
-          // Add to thread local ir cache
-          Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), std::move(RAData), decltype(Entry.DebugData)(DebugData)};
-
-          std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
-          Thread->DebugStore.insert({GuestRIP, std::move(Entry)});
-        }
-        else {
-          // If the IR doesn't need to be retained then we can just delete it now
-          delete DebugData;
-          if (IRList->IsCopy()) delete IRList;
-        }
+        // If the IR doesn't need to be retained then we can just delete it now
+        delete DebugData;
+        if (IRList->IsCopy()) delete IRList;
       }
     }
 

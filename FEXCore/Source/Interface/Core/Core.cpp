@@ -14,7 +14,6 @@ $end_info$
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
-#include "Interface/Core/GdbServer.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/JIT/JITCore.h"
@@ -359,19 +358,19 @@ namespace FEXCore::Context {
     // Give this configuration to the SignalDelegator.
     SignalDelegation->SetConfig(SignalConfig);
 
-    if (Config.GdbServer) {
-      StartGdbServer();
-    }
-    else {
-      StopGdbServer();
-    }
-
 #ifndef _WIN32
     ThunkHandler = FEXCore::ThunkHandler::Create();
 #else
     // WIN32 always needs the interrupt fault check to be enabled.
     Config.NeedsPendingInterruptFaultCheck = true;
 #endif
+
+    if (Config.GdbServer) {
+      // If gdbserver is enabled then this needs to be enabled.
+      Config.NeedsPendingInterruptFaultCheck = true;
+      // FEX needs to start paused when gdb is enabled.
+      StartPaused = true;
+    }
 
     using namespace FEXCore::Core;
 
@@ -386,21 +385,6 @@ namespace FEXCore::Context {
 
     InitializeThreadData(Thread);
     return Thread;
-  }
-
-  void ContextImpl::StartGdbServer() {
-#ifndef _WIN32
-    if (!DebugServer) {
-      DebugServer = fextl::make_unique<GdbServer>(this, SignalDelegation, SyscallHandler);
-      StartPaused = true;
-    }
-#endif
-  }
-
-  void ContextImpl::StopGdbServer() {
-#ifndef _WIN32
-    DebugServer.reset();
-#endif
   }
 
   void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
@@ -1381,17 +1365,11 @@ namespace FEXCore::Context {
 
   IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const fextl::string &filename) {
     auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
-    if (DebugServer) {
-      DebugServer->AlertLibrariesChanged();
-    }
     return rv;
   }
 
   void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry) {
     IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
-    if (DebugServer) {
-      DebugServer->AlertLibrariesChanged();
-    }
   }
 
   void ContextImpl::AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {

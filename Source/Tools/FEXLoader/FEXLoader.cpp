@@ -12,6 +12,7 @@ $end_info$
 #include "Common/Config.h"
 #include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
+#include "LinuxSyscalls/GdbServer.h"
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/Utils/Threads.h"
@@ -474,6 +475,12 @@ int main(int argc, char **argv, char **const envp) {
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
+
+  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+  fextl::unique_ptr<FEX::GdbServer> DebugServer;
+  if (GdbServer) {
+    DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
+  }
   CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
   // Pass in our VDSO thunks
@@ -552,6 +559,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto ProgramStatus = CTX->GetProgramStatus();
 
+  DebugServer.reset();
   SyscallHandler.reset();
   SignalDelegation.reset();
 
