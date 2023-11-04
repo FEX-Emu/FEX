@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/memory.h>
@@ -20,13 +21,9 @@ $end_info$
 
 namespace FEXCore {
 
-namespace Context {
-  class ContextImpl;
-}
-
 class GdbServer {
 public:
-    GdbServer(FEXCore::Context::ContextImpl *ctx);
+    GdbServer(FEXCore::Context::Context *ctx, SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler);
 
     // Public for threading
     void GdbServerLoop();
@@ -77,7 +74,8 @@ private:
     fextl::string readRegs();
     HandledPacketType readReg(const fextl::string& packet);
 
-    FEXCore::Context::ContextImpl *CTX;
+    FEXCore::Context::Context *CTX;
+    FEXCore::HLE::SyscallHandler *const SyscallHandler;
     fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
     fextl::unique_ptr<std::iostream> CommsStream;
     std::mutex sendMutex;
@@ -88,6 +86,7 @@ private:
     fextl::string OSDataString{};
     void buildLibraryMap();
     std::atomic<bool> LibraryMapChanged = true;
+    std::atomic<bool> CoreShuttingDown{};
     fextl::string LibraryMapString{};
 
     // Used to keep track of which signals to pass to the guest
@@ -95,6 +94,7 @@ private:
     uint32_t CurrentDebuggingThread{};
     int ListenSocket{};
     FEX_CONFIG_OPT(Filename, APP_FILENAME);
+    FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 };
 
 }
