@@ -24,24 +24,48 @@ static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSiz
   size_t FileSize{};
   if (FixedSize == 0) {
     struct stat buf;
-    if (fstat(FD, &buf) != 0) {
-      close(FD);
-      return false;
+    if (fstat(FD, &buf) == 0) {
+      FileSize = buf.st_size;
     }
-
-    FileSize = buf.st_size;
   }
   else {
     FileSize = FixedSize;
   }
 
   ssize_t Read = -1;
-  if (FileSize > 0) {
+  bool LoadedFile{};
+  if (FileSize) {
+    // File size is known upfront
     Data.resize(FileSize);
     Read = pread(FD, &Data.at(0), FileSize, 0);
+
+    LoadedFile = Read == FileSize;
+  }
+  else {
+    // The file is either empty or its size is unknown (e.g. procfs data).
+    // Try reading in chunks instead
+    ssize_t CurrentOffset = 0;
+    constexpr size_t READ_SIZE = 4096;
+    Data.resize(READ_SIZE);
+
+    while ((Read = pread(FD, &Data.at(CurrentOffset), READ_SIZE, CurrentOffset)) == READ_SIZE) {
+      CurrentOffset += Read;
+      Data.resize(CurrentOffset + Read);
+    }
+
+    if (Read == -1) {
+      Data.clear();
+      close(FD);
+      return false;
+    }
+
+    // Final resize to ensure there is no garbage data past the end.
+    Data.resize(CurrentOffset + Read);
+
+    LoadedFile = true;
   }
   close(FD);
-  return Read == FileSize;
+  return LoadedFile;
 }
 
 ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
