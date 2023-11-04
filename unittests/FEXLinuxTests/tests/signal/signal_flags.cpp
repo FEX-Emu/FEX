@@ -12,118 +12,98 @@
 __attribute__((naked))
   static void InvalidINT_SetPF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 0x80
   inc eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_ClearPF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 0
   inc eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_SetCF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   stc
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_ClearCF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   clc
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_SetZF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 1
   dec eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_ClearZF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 2
   dec eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_SetSF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 0
   dec eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_ClearSF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 1
   dec eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_SetOF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 0x7fffffff
   inc eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 
 __attribute__((naked))
   static void InvalidINT_ClearOF() {
   __asm volatile(R"(
-  .intel_syntax noprefix;
   mov eax, 0
   inc eax
   int3;
   ret;
-  .att_syntax prefix
   )");
   }
 

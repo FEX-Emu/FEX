@@ -16,7 +16,7 @@ __attribute__((naked, nocf_check))
 static void InvalidINT() {
   __asm volatile(R"(
   IntInstruction:
-  int $0x2d;
+  int 0x2d;
   ret;
   )");
 }

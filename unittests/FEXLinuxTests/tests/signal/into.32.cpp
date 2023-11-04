@@ -27,8 +27,8 @@ int main() {
   sigaction(SIGSEGV, &act, nullptr);
 
   __asm volatile(R"(
-  mov $0x7f, %%eax;
-  incb %%al;
+  mov eax, 0x7f;
+  inc al;
   into;
   )" ::: "eax");
 
