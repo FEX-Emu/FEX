@@ -663,11 +663,23 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
 }
 
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
+  FEXCore::ARMEmitter::Register TmpReg = FEXCore::ARMEmitter::Reg::r0;
+  LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
+  bool FoundRegister{};
+  for (auto Reg : StaticRegisters) {
+    if (((1U << Reg.Idx()) & GPRFillMask)) {
+      TmpReg = Reg;
+      FoundRegister = true;
+      break;
+    }
+  }
+
+  LOGMAN_THROW_A_FMT(FoundRegister, "Didn't have an SRA register to use as a temporary while spilling!");
+
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Enable AFP features when filling JIT state.
     LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
-    auto TmpReg = StaticRegisters[FindFirstSetBit(GPRFillMask)];
     mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
 
     // Enable FPCR.NEP and FPCR.AH
@@ -710,8 +722,6 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       if (GPRFillMask && FPRFillMask == ~0U) {
         // Optimize the common case where we can fill four registers per instruction.
         // Use one of the filling static registers before we fill it.
-        auto TmpReg = StaticRegisters[FindFirstSetBit(GPRFillMask)];
-
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
         for (size_t i = 0; i < StaticFPRegisters.size(); i += 4) {
