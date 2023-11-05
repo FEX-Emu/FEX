@@ -57,8 +57,7 @@ constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_32B = FEXCore::ARMEmitter::PRe
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {
 protected:
-  Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size);
-  ~Arm64Emitter();
+  Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
   FEXCore::Context::ContextImpl *EmitterCTX;
   vixl::aarch64::CPU CPU;
