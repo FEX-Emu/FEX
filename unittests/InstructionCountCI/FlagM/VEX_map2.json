@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "vtestps xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 28,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0e 128-bit"
@@ -32,21 +32,24 @@
         "umov w21, v2.h[0]",
         "mov w22, #0x0",
         "mov w23, #0x1",
+        "mrs x24, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "lsl x20, x20, #30",
-        "orr w20, w20, w21, lsl #29",
+        "mov w0, w24",
+        "bfi w0, w20, #30, #1",
+        "mov w20, w0",
+        "bfi w20, w21, #29, #1",
         "mov w21, #0x90000000",
         "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vtestps ymm0, ymm1": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 36,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0e 256-bit"
@@ -74,21 +77,24 @@
         "umov w21, v2.h[0]",
         "mov w22, #0x0",
         "mov w23, #0x1",
+        "mrs x24, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "lsl x20, x20, #30",
-        "orr w20, w20, w21, lsl #29",
+        "mov w0, w24",
+        "bfi w0, w20, #30, #1",
+        "mov w20, w0",
+        "bfi w20, w21, #29, #1",
         "mov w21, #0x90000000",
         "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vtestpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 28,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0f 128-bit"
@@ -108,21 +114,24 @@
         "umov w21, v2.h[0]",
         "mov w22, #0x0",
         "mov w23, #0x1",
+        "mrs x24, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "lsl x20, x20, #30",
-        "orr w20, w20, w21, lsl #29",
+        "mov w0, w24",
+        "bfi w0, w20, #30, #1",
+        "mov w20, w0",
+        "bfi w20, w21, #29, #1",
         "mov w21, #0x90000000",
         "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vtestpd ymm0, ymm1": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 36,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0f 256-bit"
@@ -150,17 +159,20 @@
         "umov w21, v2.h[0]",
         "mov w22, #0x0",
         "mov w23, #0x1",
+        "mrs x24, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "lsl x20, x20, #30",
-        "orr w20, w20, w21, lsl #29",
+        "mov w0, w24",
+        "bfi w0, w20, #30, #1",
+        "mov w20, w0",
+        "bfi w20, w21, #29, #1",
         "mov w21, #0x90000000",
         "bic x20, x20, x21",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vptest xmm0, xmm1": {
@@ -188,7 +200,7 @@
         "orr w20, w20, w21, lsl #29",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vptest ymm0, ymm1": {
@@ -224,187 +236,219 @@
         "orr w20, w20, w21, lsl #29",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2c 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p6/z, z17.s, #0",
         "ld1w {z2.s}, p0/z, [x4]",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v2.16b",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2c 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p7/z, z17.s, #0",
-        "ld1w {z16.s}, p0/z, [x4]"
+        "ld1w {z16.s}, p0/z, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p6/z, z17.d, #0",
         "ld1d {z2.d}, p0/z, [x4]",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v2.16b",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2d 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p7/z, z17.d, #0",
-        "ld1d {z16.d}, p0/z, [x4]"
+        "ld1d {z16.d}, p0/z, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps [rax], xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2e 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p6/z, z16.s, #0",
-        "st1w {z17.s}, p0, [x4]"
+        "st1w {z17.s}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps [rax], ymm0, ymm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2e 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p7/z, z16.s, #0",
-        "st1w {z17.s}, p0, [x4]"
+        "st1w {z17.s}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd [rax], xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2f 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p6/z, z16.d, #0",
-        "st1d {z17.d}, p0, [x4]"
+        "st1d {z17.d}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd [rax], ymm0, ymm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2f 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p7/z, z16.d, #0",
-        "st1d {z17.d}, p0, [x4]"
+        "st1d {z17.d}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p6/z, z17.s, #0",
         "ld1w {z2.s}, p0/z, [x4]",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v2.16b",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovd ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p7/z, z17.s, #0",
-        "ld1w {z16.s}, p0/z, [x4]"
+        "ld1w {z16.s}, p0/z, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovq xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p6/z, z17.d, #0",
         "ld1d {z2.d}, p0/z, [x4]",
-        "mov v16.16b, v2.16b"
+        "mov v16.16b, v2.16b",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovq ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p7/z, z17.d, #0",
-        "ld1d {z16.d}, p0/z, [x4]"
+        "ld1d {z16.d}, p0/z, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovd [rax], xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p6/z, z16.s, #0",
-        "st1w {z17.s}, p0, [x4]"
+        "st1w {z17.s}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovd [rax], ymm0, ymm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.s, p7/z, z16.s, #0",
-        "st1w {z17.s}, p0, [x4]"
+        "st1w {z17.s}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovq [rax], xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p6/z, z16.d, #0",
-        "st1d {z17.d}, p0, [x4]"
+        "st1d {z17.d}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "vpmaskmovq [rax], ymm0, ymm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "cmplt p0.d, p7/z, z16.d, #0",
-        "st1d {z17.d}, p0, [x4]"
+        "st1d {z17.d}, p0, [x4]",
+        "msr nzcv, x20"
       ]
     },
     "andn eax, ebx, ecx": {
@@ -420,7 +464,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "andn rax, rbx, rcx": {
@@ -434,7 +478,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "bzhi eax, ebx, ecx": {
@@ -451,17 +495,17 @@
         "movk w22, #0xffff, lsl #16",
         "lsl w22, w22, w21",
         "bic w22, w20, w22",
+        "mrs x23, nzcv",
         "cmp x21, #0x1f (31)",
         "csel w4, w20, w22, hi",
-        "ldr w20, [x28, #728]",
-        "and w20, w20, #0xefffffff",
+        "and w20, w23, #0xefffffff",
         "cmp x4, #0x0 (0)",
         "cset x22, eq",
         "bfi w20, w22, #30, #1",
         "cmp x21, #0x1f (31)",
         "cset x21, hi",
         "bfi w20, w21, #29, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "bzhi rax, rbx, rcx": {
@@ -475,10 +519,10 @@
         "mov x21, #0xffffffffffffffff",
         "lsl x21, x21, x20",
         "bic x21, x7, x21",
+        "mrs x22, nzcv",
         "cmp x20, #0x3f (63)",
         "csel x4, x7, x21, hi",
-        "ldr w21, [x28, #728]",
-        "and w21, w21, #0xefffffff",
+        "and w21, w22, #0xefffffff",
         "cmp x4, #0x0 (0)",
         "cset x22, eq",
         "bfi w21, w22, #30, #1",
@@ -487,11 +531,11 @@
         "mov w0, w21",
         "bfi w0, w20, #29, #1",
         "mov w20, w0",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "pdep eax, ebx, ecx": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 29,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b11 0xf5 32-bit"
@@ -499,8 +543,10 @@
       "ExpectedArm64ASM": [
         "mov w20, w7",
         "mov w21, w5",
-        "cbz w21, #+0x58",
+        "cbz w21, #+0x68",
         "mov w3, wzr",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "str x6, [x28, #24]",
         "mov w4, w20",
@@ -517,6 +563,8 @@
         "orr w6, w6, w0",
         "b.ne #-0x24",
         "mov w3, w6",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "ldp x4, x5, [x28, #8]",
         "ldr x6, [x28, #24]",
         "mov w4, w3",
@@ -525,14 +573,16 @@
       ]
     },
     "pdep rax, rbx, rcx": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b11 0xf5 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "cbz x5, #+0x58",
+        "cbz x5, #+0x68",
         "mov x3, xzr",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "str x6, [x28, #24]",
         "mov x4, x7",
@@ -549,6 +599,8 @@
         "orr x6, x6, x0",
         "b.ne #-0x24",
         "mov x3, x6",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "ldp x4, x5, [x28, #8]",
         "ldr x6, [x28, #24]",
         "mov x4, x3",
@@ -581,7 +633,7 @@
         "cmp x4, #0x0 (0)",
         "cset x20, eq",
         "lsl x20, x20, #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "bextr rax, rbx, rcx": {
@@ -607,7 +659,7 @@
         "cmp x4, #0x0 (0)",
         "cset x20, eq",
         "lsl x20, x20, #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     }
   }

@@ -14,7 +14,7 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 46,
+      "ExpectedInstructionCount": 50,
       "Optimal": "No",
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
@@ -25,6 +25,8 @@
         "st1 {v8.2d, v9.2d, v10.2d, v11.2d}, [x0], #64",
         "st1 {v12.2d, v13.2d, v14.2d, v15.2d}, [x0], #64",
         "str x30, [x0]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -42,6 +44,8 @@
         "ldr x2, [x28, #1112]",
         "mov w1, w5",
         "blr x2",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -67,7 +71,7 @@
       ]
     },
     "rdtscp": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": "0xF 0x01 /7 RM-1",
       "ExpectedArm64ASM": [
@@ -75,6 +79,8 @@
         "mrs x20, S3_3_c14_c0_2",
         "mov w4, w20",
         "lsr x6, x20, #32",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "str x8, [x28, #40]",
         "mov w0, #0x100",
         "str x0, [x28, #1040]",
@@ -85,6 +91,8 @@
         "svc #0x0",
         "ldp w0, w1, [sp]",
         "sub sp, sp, #0x10 (16)",
+        "ldr w8, [x28, #728]",
+        "msr nzcv, x8",
         "ldr x8, [x28, #40]",
         "str xzr, [x28, #1040]",
         "orr x5, x0, x1, lsl #12"

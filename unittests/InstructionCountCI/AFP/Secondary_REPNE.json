@@ -114,13 +114,15 @@
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
-        "fmin d16, d16, d17"
+        "mrs x20, nzcv",
+        "fmin d16, d16, d17",
+        "msr nzcv, x20"
       ]
     },
     "divsd xmm0, xmm1": {
@@ -134,13 +136,15 @@
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
-        "fmax d16, d16, d17"
+        "mrs x20, nzcv",
+        "fmax d16, d16, d17",
+        "msr nzcv, x20"
       ]
     },
     "cmpsd xmm0, xmm1, 0": {

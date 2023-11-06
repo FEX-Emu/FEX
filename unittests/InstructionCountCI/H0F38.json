@@ -442,7 +442,7 @@
         "orr w20, w20, w21, lsl #29",
         "strb w23, [x28, #706]",
         "strb w22, [x28, #708]",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "pabsb mm0, mm1": {
@@ -576,13 +576,15 @@
       ]
     },
     "pcmpgtq xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x38 0x37"
       ],
       "ExpectedArm64ASM": [
-        "cmgt v16.2d, v16.2d, v17.2d"
+        "mrs x20, nzcv",
+        "cmgt v16.2d, v16.2d, v17.2d",
+        "msr nzcv, x20"
       ]
     },
     "pminsb xmm0, xmm1": {
@@ -1101,7 +1103,7 @@
         "0x66 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "mov w22, w7",
         "mov w23, w4",
@@ -1114,7 +1116,7 @@
         "cmp x21, #0x1 (1)",
         "csel x21, x22, x23, eq",
         "bfi w20, w21, #29, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adcx rax, rbx": {
@@ -1124,7 +1126,7 @@
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "add x22, x7, x21",
         "add x4, x4, x22",
@@ -1135,7 +1137,7 @@
         "cmp x21, #0x1 (1)",
         "csel x21, x23, x22, eq",
         "bfi w20, w21, #29, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adox eax, ebx": {
@@ -1145,7 +1147,7 @@
         "0xf3 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #28, #1",
         "mov w22, w7",
         "mov w23, w4",
@@ -1158,7 +1160,7 @@
         "cmp x21, #0x1 (1)",
         "csel x21, x22, x23, eq",
         "bfi w20, w21, #28, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adox rax, rbx": {
@@ -1168,7 +1170,7 @@
         "0xf3 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #28, #1",
         "add x22, x7, x21",
         "add x4, x4, x22",
@@ -1179,7 +1181,7 @@
         "cmp x21, #0x1 (1)",
         "csel x21, x23, x22, eq",
         "bfi w20, w21, #28, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     }
   }

@@ -33,7 +33,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add bx, cx": {
@@ -58,7 +58,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add ebx, ecx": {
@@ -73,7 +73,7 @@
         "strb w7, [x28, #706]",
         "cmn w20, w5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add rbx, rcx": {
@@ -88,7 +88,7 @@
         "strb w7, [x28, #706]",
         "cmn x20, x5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x02, 0xcb": {
@@ -116,7 +116,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x03, 0xcb": {
@@ -144,7 +144,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x03, 0xcb": {
@@ -162,7 +162,7 @@
         "strb w5, [x28, #706]",
         "cmn w20, w7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x03, 0xcb": {
@@ -180,7 +180,7 @@
         "strb w5, [x28, #706]",
         "cmn x20, x7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add al, 1": {
@@ -201,7 +201,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add ax, 1": {
@@ -222,7 +222,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add eax, 1": {
@@ -236,7 +236,7 @@
         "strb w4, [x28, #706]",
         "cmn w20, #0x1 (1)",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add rax, 1": {
@@ -250,7 +250,7 @@
         "strb w4, [x28, #706]",
         "cmn x20, #0x1 (1)",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add al, -1": {
@@ -272,7 +272,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add ax, -1": {
@@ -295,7 +295,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add eax, -1": {
@@ -312,7 +312,7 @@
         "strb w4, [x28, #706]",
         "cmn w21, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "add rax, -1": {
@@ -328,7 +328,7 @@
         "strb w4, [x28, #706]",
         "cmn x21, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or bl, bh": {
@@ -343,7 +343,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or bl, cl": {
@@ -357,7 +357,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or bx, cx": {
@@ -371,7 +371,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or ebx, ecx": {
@@ -383,7 +383,7 @@
         "strb w7, [x28, #706]",
         "tst w7, w7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or rbx, rcx": {
@@ -395,7 +395,7 @@
         "strb w7, [x28, #706]",
         "tst x7, x7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x0A, 0xcb": {
@@ -412,7 +412,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x0B, 0xcb": {
@@ -429,7 +429,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x0B, 0xcb": {
@@ -444,7 +444,7 @@
         "strb w5, [x28, #706]",
         "tst w5, w5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x0B, 0xcb": {
@@ -459,7 +459,7 @@
         "strb w5, [x28, #706]",
         "tst x5, x5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or al, 1": {
@@ -473,7 +473,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or ax, 1": {
@@ -487,7 +487,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or eax, 1": {
@@ -499,7 +499,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or rax, 1": {
@@ -511,7 +511,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or al, -1": {
@@ -525,7 +525,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or ax, -1": {
@@ -539,7 +539,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or eax, -1": {
@@ -553,7 +553,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "or rax, -1": {
@@ -566,7 +566,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc bl, cl": {
@@ -575,7 +575,7 @@
       "Comment": "0x10",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxtb w23, w7",
@@ -600,7 +600,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc bx, cx": {
@@ -609,7 +609,7 @@
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxth w23, w7",
@@ -634,7 +634,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc ebx, ecx": {
@@ -643,7 +643,7 @@
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "mov w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w7",
@@ -654,7 +654,7 @@
         "msr nzcv, x21",
         "adcs wzr, w23, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc rbx, rcx": {
@@ -662,7 +662,7 @@
       "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "add x21, x5, x21",
         "mov x22, x7",
@@ -673,7 +673,7 @@
         "msr nzcv, x20",
         "adcs xzr, x22, x5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x12, 0xcb": {
@@ -685,7 +685,7 @@
       ],
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxtb w23, w5",
@@ -710,7 +710,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x13, 0xcb": {
@@ -722,7 +722,7 @@
       ],
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxth w23, w5",
@@ -747,7 +747,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x13, 0xcb": {
@@ -759,7 +759,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w5",
@@ -770,7 +770,7 @@
         "msr nzcv, x21",
         "adcs wzr, w23, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x13, 0xcb": {
@@ -781,7 +781,7 @@
         "adc rbx, rcx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "add x21, x7, x21",
         "mov x22, x5",
@@ -792,7 +792,7 @@
         "msr nzcv, x20",
         "adcs xzr, x22, x7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc al, 1": {
@@ -801,7 +801,7 @@
       "Comment": "0x14",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxtb w22, w4",
@@ -823,7 +823,7 @@
         "bic w20, w20, w22",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc ax, 1": {
@@ -832,7 +832,7 @@
       "Comment": "0x15",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxth w22, w4",
@@ -854,7 +854,7 @@
         "bic w20, w20, w22",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc eax, 1": {
@@ -863,7 +863,7 @@
       "Comment": "0x15",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w4",
@@ -873,7 +873,7 @@
         "msr nzcv, x21",
         "adcs wzr, w23, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc rax, 1": {
@@ -882,7 +882,7 @@
       "Comment": "0x15",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add x22, x20, x22",
         "mov x23, x4",
@@ -892,7 +892,7 @@
         "msr nzcv, x21",
         "adcs xzr, x23, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc al, -1": {
@@ -901,7 +901,7 @@
       "Comment": "0x14",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxtb w22, w4",
@@ -924,7 +924,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc ax, -1": {
@@ -933,7 +933,7 @@
       "Comment": "0x15",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxth w23, w4",
@@ -956,7 +956,7 @@
         "bic w21, w23, w22",
         "ubfx w21, w21, #15, #1",
         "orr w20, w20, w21, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc eax, -1": {
@@ -966,7 +966,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "movk w20, #0xffff, lsl #16",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w4",
@@ -977,7 +977,7 @@
         "msr nzcv, x21",
         "adcs wzr, w23, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "adc rax, -1": {
@@ -986,7 +986,7 @@
       "Comment": "0x15",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add x22, x20, x22",
         "mov x23, x4",
@@ -997,7 +997,7 @@
         "msr nzcv, x21",
         "adcs xzr, x23, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb bl, cl": {
@@ -1006,7 +1006,7 @@
       "Comment": "0x18",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxtb w23, w7",
@@ -1031,7 +1031,7 @@
         "and w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb bx, cx": {
@@ -1040,7 +1040,7 @@
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxth w23, w7",
@@ -1065,7 +1065,7 @@
         "and w20, w22, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb ebx, ecx": {
@@ -1074,7 +1074,7 @@
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "mov w20, w5",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w7",
@@ -1087,7 +1087,7 @@
         "sbcs wzr, w23, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb rbx, rcx": {
@@ -1095,7 +1095,7 @@
       "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "add x21, x5, x21",
         "mov x22, x7",
@@ -1108,7 +1108,7 @@
         "sbcs xzr, x22, x5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x1A, 0xcb": {
@@ -1120,7 +1120,7 @@
       ],
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxtb w23, w5",
@@ -1145,7 +1145,7 @@
         "and w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x1B, 0xcb": {
@@ -1157,7 +1157,7 @@
       ],
       "ExpectedArm64ASM": [
         "uxth w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w22, w20, w21",
         "uxth w23, w5",
@@ -1182,7 +1182,7 @@
         "and w20, w22, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x1B, 0xcb": {
@@ -1194,7 +1194,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w5",
@@ -1207,7 +1207,7 @@
         "sbcs wzr, w23, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x1B, 0xcb": {
@@ -1218,7 +1218,7 @@
         "sbb rbx, rcx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "add x21, x7, x21",
         "mov x22, x5",
@@ -1231,7 +1231,7 @@
         "sbcs xzr, x22, x7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb al, 1": {
@@ -1240,7 +1240,7 @@
       "Comment": "0x1C",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxtb w22, w4",
@@ -1262,7 +1262,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb ax, 1": {
@@ -1271,7 +1271,7 @@
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxth w22, w4",
@@ -1293,7 +1293,7 @@
         "bic w20, w22, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb eax, 1": {
@@ -1302,7 +1302,7 @@
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w4",
@@ -1314,7 +1314,7 @@
         "sbcs wzr, w23, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb rax, 1": {
@@ -1323,7 +1323,7 @@
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add x22, x20, x22",
         "mov x23, x4",
@@ -1335,7 +1335,7 @@
         "sbcs xzr, x23, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb al, -1": {
@@ -1344,7 +1344,7 @@
       "Comment": "0x1C",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxtb w22, w4",
@@ -1367,7 +1367,7 @@
         "bic w20, w20, w22",
         "ubfx w20, w20, #7, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb ax, -1": {
@@ -1376,7 +1376,7 @@
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #29, #1",
         "add w20, w20, w21",
         "uxth w22, w4",
@@ -1399,7 +1399,7 @@
         "bic w20, w20, w22",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb eax, -1": {
@@ -1409,7 +1409,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "movk w20, #0xffff, lsl #16",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add w22, w20, w22",
         "mov w23, w4",
@@ -1422,7 +1422,7 @@
         "sbcs wzr, w23, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sbb rax, -1": {
@@ -1431,7 +1431,7 @@
       "Comment": "0x1D",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "ubfx w22, w21, #29, #1",
         "add x22, x20, x22",
         "mov x23, x4",
@@ -1444,7 +1444,7 @@
         "sbcs xzr, x23, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and bl, cl": {
@@ -1458,7 +1458,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and bx, cx": {
@@ -1472,7 +1472,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and ebx, ecx": {
@@ -1484,7 +1484,7 @@
         "strb w7, [x28, #706]",
         "tst w7, w7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and rbx, rcx": {
@@ -1496,7 +1496,7 @@
         "strb w7, [x28, #706]",
         "tst x7, x7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x22, 0xcb": {
@@ -1513,7 +1513,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x23, 0xcb": {
@@ -1530,7 +1530,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x23, 0xcb": {
@@ -1545,7 +1545,7 @@
         "strb w5, [x28, #706]",
         "tst w5, w5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x23, 0xcb": {
@@ -1560,7 +1560,7 @@
         "strb w5, [x28, #706]",
         "tst x5, x5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and al, 1": {
@@ -1574,7 +1574,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and ax, 1": {
@@ -1588,7 +1588,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and eax, 1": {
@@ -1600,7 +1600,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and rax, 1": {
@@ -1612,7 +1612,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and al, -1": {
@@ -1626,7 +1626,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and ax, -1": {
@@ -1640,7 +1640,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and eax, -1": {
@@ -1654,7 +1654,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "and rax, -1": {
@@ -1667,7 +1667,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub bl, cl": {
@@ -1692,7 +1692,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub bx, cx": {
@@ -1717,7 +1717,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub ebx, ecx": {
@@ -1733,7 +1733,7 @@
         "cmp w20, w5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub rbx, rcx": {
@@ -1749,7 +1749,7 @@
         "cmp x20, x5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x2A, 0xcb": {
@@ -1777,7 +1777,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x2B, 0xcb": {
@@ -1805,7 +1805,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x2B, 0xcb": {
@@ -1824,7 +1824,7 @@
         "cmp w20, w7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x2B, 0xcb": {
@@ -1843,7 +1843,7 @@
         "cmp x20, x7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub al, 1": {
@@ -1864,7 +1864,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub ax, 1": {
@@ -1885,7 +1885,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub eax, 1": {
@@ -1900,7 +1900,7 @@
         "cmp w20, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub rax, 1": {
@@ -1915,7 +1915,7 @@
         "cmp x20, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub al, -1": {
@@ -1937,7 +1937,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub ax, -1": {
@@ -1960,7 +1960,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub eax, -1": {
@@ -1978,7 +1978,7 @@
         "cmp w21, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "sub rax, -1": {
@@ -1995,7 +1995,7 @@
         "cmp x21, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor bl, cl": {
@@ -2009,7 +2009,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor bx, cx": {
@@ -2023,7 +2023,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor ebx, ecx": {
@@ -2035,7 +2035,7 @@
         "strb w7, [x28, #706]",
         "tst w7, w7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor rbx, rcx": {
@@ -2047,7 +2047,7 @@
         "strb w7, [x28, #706]",
         "tst x7, x7",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x32, 0xcb": {
@@ -2064,7 +2064,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x33, 0xcb": {
@@ -2081,7 +2081,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x33, 0xcb": {
@@ -2096,7 +2096,7 @@
         "strb w5, [x28, #706]",
         "tst w5, w5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x33, 0xcb": {
@@ -2111,7 +2111,7 @@
         "strb w5, [x28, #706]",
         "tst x5, x5",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor al, 1": {
@@ -2125,7 +2125,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor ax, 1": {
@@ -2139,7 +2139,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor eax, 1": {
@@ -2151,7 +2151,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor rax, 1": {
@@ -2163,7 +2163,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp bl, cl": {
@@ -2187,7 +2187,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor al, -1": {
@@ -2201,7 +2201,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor ax, -1": {
@@ -2215,7 +2215,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor eax, -1": {
@@ -2229,7 +2229,7 @@
         "strb w4, [x28, #706]",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "xor rax, -1": {
@@ -2242,7 +2242,7 @@
         "strb w4, [x28, #706]",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp bx, cx": {
@@ -2266,7 +2266,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp ebx, ecx": {
@@ -2283,7 +2283,7 @@
         "cmp w21, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp rbx, rcx": {
@@ -2298,7 +2298,7 @@
         "cmp x7, x5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x3A, 0xcb": {
@@ -2325,7 +2325,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x66, 0x3B, 0xcb": {
@@ -2352,7 +2352,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x3B, 0xcb": {
@@ -2372,7 +2372,7 @@
         "cmp w21, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "db 0x48, 0x3B, 0xcb": {
@@ -2390,7 +2390,7 @@
         "cmp x5, x7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp al, 1": {
@@ -2410,7 +2410,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp ax, 1": {
@@ -2430,7 +2430,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp eax, 1": {
@@ -2445,7 +2445,7 @@
         "cmp w20, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp rax, 1": {
@@ -2459,7 +2459,7 @@
         "cmp x4, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp al, -1": {
@@ -2480,7 +2480,7 @@
         "bic w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp ax, -1": {
@@ -2502,7 +2502,7 @@
         "bic w20, w20, w21",
         "ubfx w20, w20, #15, #1",
         "orr w20, w22, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp eax, -1": {
@@ -2520,7 +2520,7 @@
         "cmp w21, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmp rax, -1": {
@@ -2536,7 +2536,7 @@
         "cmp x4, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul ax, bx, 257": {
@@ -2555,7 +2555,7 @@
         "mov w23, #0x30000000",
         "cmp x21, x20",
         "csel x20, x22, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul eax, ebx, 257": {
@@ -2574,7 +2574,7 @@
         "mov w23, #0x30000000",
         "cmp x21, x20",
         "csel x20, x22, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul rax, rbx, 257": {
@@ -2590,7 +2590,7 @@
         "mov w23, #0x30000000",
         "cmp x20, x22",
         "csel x20, x21, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul ax, bx, 3": {
@@ -2609,7 +2609,7 @@
         "mov w23, #0x30000000",
         "cmp x21, x20",
         "csel x20, x22, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul eax, ebx, 3": {
@@ -2628,7 +2628,7 @@
         "mov w23, #0x30000000",
         "cmp x21, x20",
         "csel x20, x22, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "imul rax, rbx, 3": {
@@ -2644,7 +2644,7 @@
         "mov w23, #0x30000000",
         "cmp x20, x22",
         "csel x20, x21, x23, eq",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test al, bl": {
@@ -2657,7 +2657,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test ax, bx": {
@@ -2670,7 +2670,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test eax, ebx": {
@@ -2682,7 +2682,7 @@
         "strb w20, [x28, #706]",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test rax, rbx": {
@@ -2694,7 +2694,7 @@
         "strb w20, [x28, #706]",
         "tst x20, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "pushf": {
@@ -2702,7 +2702,7 @@
       "Optimal": "No",
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "ldrb w22, [x28, #708]",
         "ldrb w23, [x28, #706]",
@@ -2750,7 +2750,7 @@
       "Optimal": "No",
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "ldrb w22, [x28, #708]",
         "ldrb w23, [x28, #706]",
@@ -2836,7 +2836,7 @@
         "strb w22, [x28, #724]",
         "ubfx w20, w20, #21, #1",
         "strb w20, [x28, #725]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "sahf": {
@@ -2849,7 +2849,7 @@
         "bic x20, x20, x21",
         "orr x20, x20, #0x2",
         "ubfx w21, w20, #0, #1",
-        "ldr w22, [x28, #728]",
+        "mrs x22, nzcv",
         "mov w0, w22",
         "bfi w0, w21, #29, #1",
         "mov w21, w0",
@@ -2863,7 +2863,7 @@
         "mov w0, w21",
         "bfi w0, w20, #31, #1",
         "mov w20, w0",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "lahf": {
@@ -2871,7 +2871,7 @@
       "Optimal": "Yes",
       "Comment": "0x9f",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "ubfx w21, w20, #29, #1",
         "ldrb w22, [x28, #708]",
         "ldrb w23, [x28, #706]",
@@ -2918,7 +2918,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmpsw": {
@@ -2949,7 +2949,7 @@
         "and w20, w21, w20",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmpsd": {
@@ -2973,7 +2973,7 @@
         "cmp w21, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "cmpsq": {
@@ -2997,18 +2997,18 @@
         "cmp x21, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "repz cmpsb": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0xa6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x1",
         "sub x20, x21, x20, lsl #1",
-        "cbz x5, #+0x5c",
+        "cbz x5, #+0x60",
         "ldrb w21, [x11]",
         "ldrb w22, [x10]",
         "sub w23, w22, w21",
@@ -3025,23 +3025,24 @@
         "and w21, w22, w21",
         "ubfx w21, w21, #7, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x58"
+        "cbnz w21, #-0x5c"
       ]
     },
     "repz cmpsw": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x2",
         "sub x20, x21, x20, lsl #2",
-        "cbz x5, #+0x5c",
+        "cbz x5, #+0x60",
         "ldrh w21, [x11]",
         "ldrh w22, [x10]",
         "sub w23, w22, w21",
@@ -3058,23 +3059,24 @@
         "and w21, w22, w21",
         "ubfx w21, w21, #15, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x58"
+        "cbnz w21, #-0x5c"
       ]
     },
     "repz cmpsd": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x4",
         "sub x20, x21, x20, lsl #3",
-        "cbz x5, #+0x40",
+        "cbz x5, #+0x44",
         "ldr w21, [x11]",
         "ldr w22, [x10]",
         "sub w23, w22, w21",
@@ -3084,23 +3086,24 @@
         "cmp w22, w21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x3c"
+        "cbnz w21, #-0x40"
       ]
     },
     "repz cmpsq": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x8",
         "sub x20, x21, x20, lsl #4",
-        "cbz x5, #+0x40",
+        "cbz x5, #+0x44",
         "ldr x21, [x11]",
         "ldr x22, [x10]",
         "sub x23, x22, x21",
@@ -3110,23 +3113,24 @@
         "cmp x22, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x3c"
+        "cbnz w21, #-0x40"
       ]
     },
     "repnz cmpsb": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0xa6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x1",
         "sub x20, x21, x20, lsl #1",
-        "cbz x5, #+0x5c",
+        "cbz x5, #+0x60",
         "ldrb w21, [x11]",
         "ldrb w22, [x10]",
         "sub w23, w22, w21",
@@ -3143,23 +3147,24 @@
         "and w21, w22, w21",
         "ubfx w21, w21, #7, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x58"
+        "cbz w21, #-0x5c"
       ]
     },
     "repnz cmpsw": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 27,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x2",
         "sub x20, x21, x20, lsl #2",
-        "cbz x5, #+0x5c",
+        "cbz x5, #+0x60",
         "ldrh w21, [x11]",
         "ldrh w22, [x10]",
         "sub w23, w22, w21",
@@ -3176,23 +3181,24 @@
         "and w21, w22, w21",
         "ubfx w21, w21, #15, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x58"
+        "cbz w21, #-0x5c"
       ]
     },
     "repnz cmpsd": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x4",
         "sub x20, x21, x20, lsl #3",
-        "cbz x5, #+0x40",
+        "cbz x5, #+0x44",
         "ldr w21, [x11]",
         "ldr w22, [x10]",
         "sub w23, w22, w21",
@@ -3202,23 +3208,24 @@
         "cmp w22, w21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x3c"
+        "cbz w21, #-0x40"
       ]
     },
     "repnz cmpsq": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Optimal": "No",
       "Comment": "0xa7",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x8",
         "sub x20, x21, x20, lsl #4",
-        "cbz x5, #+0x40",
+        "cbz x5, #+0x44",
         "ldr x21, [x11]",
         "ldr x22, [x10]",
         "sub x23, x22, x21",
@@ -3228,12 +3235,13 @@
         "cmp x22, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
         "add x10, x10, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x3c"
+        "cbz w21, #-0x40"
       ]
     },
     "test al, 1": {
@@ -3246,7 +3254,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test ax, 1": {
@@ -3259,7 +3267,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test eax, 1": {
@@ -3271,7 +3279,7 @@
         "strb w20, [x28, #706]",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test rax, 1": {
@@ -3283,7 +3291,7 @@
         "strb w20, [x28, #706]",
         "tst x20, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test al, -1": {
@@ -3296,7 +3304,7 @@
         "lsl w20, w20, #24",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test ax, -1": {
@@ -3309,7 +3317,7 @@
         "lsl w20, w20, #16",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test eax, -1": {
@@ -3323,7 +3331,7 @@
         "strb w20, [x28, #706]",
         "tst w20, w20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "test rax, -1": {
@@ -3336,7 +3344,7 @@
         "strb w20, [x28, #706]",
         "tst x20, x20",
         "mrs x20, nzcv",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "scasb": {
@@ -3364,7 +3372,7 @@
         "and w20, w20, w21",
         "ubfx w20, w20, #7, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "scasw": {
@@ -3392,7 +3400,7 @@
         "and w20, w20, w21",
         "ubfx w20, w20, #15, #1",
         "orr w20, w23, w20, lsl #28",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "scasd": {
@@ -3413,7 +3421,7 @@
         "cmp w20, w21",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "scasq": {
@@ -3433,18 +3441,18 @@
         "cmp x4, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "repz scasb": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0xae",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x1",
         "sub x20, x21, x20, lsl #1",
-        "cbz x5, #+0x58",
+        "cbz x5, #+0x5c",
         "uxtb w21, w4",
         "ldrb w22, [x11]",
         "sub w23, w21, w22",
@@ -3461,22 +3469,23 @@
         "and w21, w21, w22",
         "ubfx w21, w21, #7, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x54"
+        "cbnz w21, #-0x58"
       ]
     },
     "repz scasw": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x2",
         "sub x20, x21, x20, lsl #2",
-        "cbz x5, #+0x58",
+        "cbz x5, #+0x5c",
         "uxth w21, w4",
         "ldrh w22, [x11]",
         "sub w23, w21, w22",
@@ -3493,22 +3502,23 @@
         "and w21, w21, w22",
         "ubfx w21, w21, #15, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x54"
+        "cbnz w21, #-0x58"
       ]
     },
     "repz scasd": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x4",
         "sub x20, x21, x20, lsl #3",
-        "cbz x5, #+0x3c",
+        "cbz x5, #+0x40",
         "mov w21, w4",
         "ldr w22, [x11]",
         "sub w23, w21, w22",
@@ -3518,46 +3528,48 @@
         "cmp w21, w22",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
+        "ubfx w21, w21, #30, #1",
+        "cbnz w21, #-0x3c"
+      ]
+    },
+    "repz scasq": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "0xaf",
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #714]",
+        "mov w21, #0x8",
+        "sub x20, x21, x20, lsl #4",
+        "cbz x5, #+0x3c",
+        "ldr x21, [x11]",
+        "sub x22, x4, x21",
+        "eor x23, x4, x21",
+        "strb w23, [x28, #708]",
+        "strb w22, [x28, #706]",
+        "cmp x4, x21",
+        "mrs x21, nzcv",
+        "eor w21, w21, #0x20000000",
+        "msr nzcv, x21",
+        "sub x5, x5, #0x1 (1)",
+        "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
         "cbnz w21, #-0x38"
       ]
     },
-    "repz scasq": {
-      "ExpectedInstructionCount": 17,
-      "Optimal": "No",
-      "Comment": "0xaf",
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #714]",
-        "mov w21, #0x8",
-        "sub x20, x21, x20, lsl #4",
-        "cbz x5, #+0x38",
-        "ldr x21, [x11]",
-        "sub x22, x4, x21",
-        "eor x23, x4, x21",
-        "strb w23, [x28, #708]",
-        "strb w22, [x28, #706]",
-        "cmp x4, x21",
-        "mrs x21, nzcv",
-        "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
-        "sub x5, x5, #0x1 (1)",
-        "add x11, x11, x20",
-        "ubfx w21, w21, #30, #1",
-        "cbnz w21, #-0x34"
-      ]
-    },
     "repnz scasb": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0xae",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x1",
         "sub x20, x21, x20, lsl #1",
-        "cbz x5, #+0x58",
+        "cbz x5, #+0x5c",
         "uxtb w21, w4",
         "ldrb w22, [x11]",
         "sub w23, w21, w22",
@@ -3574,22 +3586,23 @@
         "and w21, w21, w22",
         "ubfx w21, w21, #7, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x54"
+        "cbz w21, #-0x58"
       ]
     },
     "repnz scasw": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x2",
         "sub x20, x21, x20, lsl #2",
-        "cbz x5, #+0x58",
+        "cbz x5, #+0x5c",
         "uxth w21, w4",
         "ldrh w22, [x11]",
         "sub w23, w21, w22",
@@ -3606,22 +3619,23 @@
         "and w21, w21, w22",
         "ubfx w21, w21, #15, #1",
         "orr w21, w24, w21, lsl #28",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x54"
+        "cbz w21, #-0x58"
       ]
     },
     "repnz scasd": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x4",
         "sub x20, x21, x20, lsl #3",
-        "cbz x5, #+0x3c",
+        "cbz x5, #+0x40",
         "mov w21, w4",
         "ldr w22, [x11]",
         "sub w23, w21, w22",
@@ -3631,22 +3645,23 @@
         "cmp w21, w22",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x38"
+        "cbz w21, #-0x3c"
       ]
     },
     "repnz scasq": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": "0xaf",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
         "mov w21, #0x8",
         "sub x20, x21, x20, lsl #4",
-        "cbz x5, #+0x38",
+        "cbz x5, #+0x3c",
         "ldr x21, [x11]",
         "sub x22, x4, x21",
         "eor x23, x4, x21",
@@ -3655,11 +3670,12 @@
         "cmp x4, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
-        "str w21, [x28, #728]",
+        "msr nzcv, x21",
         "sub x5, x5, #0x1 (1)",
         "add x11, x11, x20",
+        "mrs x21, nzcv",
         "ubfx w21, w21, #30, #1",
-        "cbz w21, #-0x34"
+        "cbz w21, #-0x38"
       ]
     },
     "cmc": {
@@ -3667,9 +3683,9 @@
       "Optimal": "No",
       "Comment": "0xf5",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "clc": {
@@ -3677,9 +3693,9 @@
       "Optimal": "No",
       "Comment": "0xf8",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "and w20, w20, #0xdfffffff",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "stc": {
@@ -3687,9 +3703,9 @@
       "Optimal": "No",
       "Comment": "0xf9",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "orr w20, w20, #0x20000000",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     }
   }

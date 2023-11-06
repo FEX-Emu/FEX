@@ -132,15 +132,17 @@
       ]
     },
     "pfmin mm0, mm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x94",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #752]",
+        "mrs x20, nzcv",
         "fcmgt v0.4s, v3.4s, v2.4s",
         "bif v2.16b, v3.16b, v0.16b",
-        "str d2, [x28, #752]"
+        "str d2, [x28, #752]",
+        "msr nzcv, x20"
       ]
     },
     "pfrcp mm0, mm1": {
@@ -206,15 +208,17 @@
       ]
     },
     "pfmax mm0, mm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa4",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #752]",
+        "mrs x20, nzcv",
         "fcmgt v0.4s, v3.4s, v2.4s",
         "bit v2.16b, v3.16b, v0.16b",
-        "str d2, [x28, #752]"
+        "str d2, [x28, #752]",
+        "msr nzcv, x20"
       ]
     },
     "pfrcpit1 mm0, mm1": {

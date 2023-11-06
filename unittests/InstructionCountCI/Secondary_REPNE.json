@@ -245,15 +245,17 @@
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "fcmp d16, d17",
         "fcsel d0, d16, d17, mi",
-        "mov v16.d[0], v0.d[0]"
+        "mov v16.d[0], v0.d[0]",
+        "msr nzcv, x20"
       ]
     },
     "divsd xmm0, xmm1": {
@@ -268,15 +270,17 @@
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
         "fcmp d16, d17",
         "fcsel d0, d17, d16, mi",
-        "mov v16.d[0], v0.d[0]"
+        "mov v16.d[0], v0.d[0]",
+        "msr nzcv, x20"
       ]
     },
     "pshuflw xmm0, xmm1, 0": {

@@ -31,7 +31,7 @@
         "strb w22, [x28, #706]",
         "strb w21, [x28, #708]",
         "lsl x20, x20, #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "popcnt eax, ebx": {
@@ -51,7 +51,7 @@
         "strb w21, [x28, #706]",
         "strb w20, [x28, #708]",
         "lsl x20, x22, #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "popcnt rax, rbx": {
@@ -70,7 +70,7 @@
         "strb w21, [x28, #706]",
         "strb w20, [x28, #708]",
         "lsl x20, x22, #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "tzcnt ax, bx": {
@@ -88,7 +88,7 @@
         "lsl x21, x21, #29",
         "ubfx w20, w20, #0, #1",
         "orr w20, w21, w20, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "tzcnt eax, ebx": {
@@ -104,7 +104,7 @@
         "lsl x20, x20, #29",
         "ubfx w21, w4, #0, #1",
         "orr w20, w20, w21, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "tzcnt rax, rbx": {
@@ -119,7 +119,7 @@
         "lsl x20, x20, #29",
         "ubfx w21, w4, #0, #1",
         "orr w20, w20, w21, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "lzcnt ax, bx": {
@@ -137,7 +137,7 @@
         "lsl x21, x21, #29",
         "ubfx w20, w20, #15, #1",
         "orr w20, w21, w20, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "lzcnt eax, ebx": {
@@ -152,7 +152,7 @@
         "lsl x21, x21, #29",
         "lsr w20, w20, #31",
         "orr w20, w21, w20, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "lzcnt rax, rbx": {
@@ -166,7 +166,7 @@
         "lsl x20, x20, #29",
         "lsr x21, x7, #63",
         "orr w20, w20, w21, lsl #30",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     }
   }
