@@ -8,6 +8,11 @@ unset(CMAKE_CXX_FLAGS)
 
 set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
 
+# Use intel masm syntax. ATT style asm syntax is archaic and hard to read.
+add_compile_options(-masm=intel)
+# Override a define so catch2 doesn't use ATT style inline asm
+add_definitions(-D"CATCH_BREAK_INTO_DEBUGGER\(\)"="[]{ if\( Catch::isDebuggerActive\(\) \) { __builtin_trap\(\)\; } }\(\)")
+
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS *.cpp)
 if(BITNESS EQUAL 64)
   file(GLOB_RECURSE TESTS_32_ONLY CONFIGURE_DEPENDS *.32.cpp)

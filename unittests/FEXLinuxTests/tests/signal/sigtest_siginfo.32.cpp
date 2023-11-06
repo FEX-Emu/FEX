@@ -16,7 +16,7 @@ __attribute__((naked))
 static void CauseInt() {
   __asm volatile(R"(
   IntInstruction:
-  int $1;
+  int 1;
   ret; # For RIP modification
   )");
 }
