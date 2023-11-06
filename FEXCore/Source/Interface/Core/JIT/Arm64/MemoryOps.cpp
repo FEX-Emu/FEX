@@ -1035,12 +1035,44 @@ DEF_OP(LoadNZCV) {
   auto Dst = GetReg(Node);
 
   mrs(Dst, ARMEmitter::SystemRegister::NZCV);
+
+  /* Do a health check: NZCV should match the computed CPU state */
+  ldr(TMP1.W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + 24);
+
+  ARMEmitter::ForwardLabel Done{};
+  sub(TMP1.W(), TMP1.W(), Dst.W());
+  cbz(ARMEmitter::Size::i32Bit, TMP1, &Done);
+  {
+    /* NZCV differs from expected. Abort! */
+    ResetStack();
+
+    Core::CpuStateFrame::SynchronousFaultDataStruct State = {
+      .FaultToTopAndGeneratedException = 1,
+      .Signal = 1,
+      .TrapNo = 1,
+      .si_code = 1,
+      .err_code = 1,
+    };
+
+    uint64_t Constant{};
+    memcpy(&Constant, &State, sizeof(State));
+
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant);
+    str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
+
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV));
+    br(TMP1);
+  }
+  Bind(&Done);
 }
 
 DEF_OP(StoreNZCV) {
   auto Op = IROp->C<IR::IROp_StoreNZCV>();
 
   msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->Value.ID()));
+
+  /* Also store to CPU state for debugging. */
+  str(GetReg(Op->Value.ID()).W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + 24);
 }
 
 DEF_OP(LoadFlag) {
