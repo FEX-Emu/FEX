@@ -56,10 +56,17 @@ uint64_t Dispatcher::GetCompileBlockPtr() {
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
 Dispatcher::Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
-  : Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
+  : Arm64Emitter(ctx, FEXCore::Allocator::VirtualAlloc(MAX_DISPATCHER_CODE_SIZE, true), MAX_DISPATCHER_CODE_SIZE)
   , CTX {ctx}
   , config {config} {
   EmitDispatcher();
+}
+
+Dispatcher::~Dispatcher() {
+  auto BufferSize = GetBufferSize();
+  if (BufferSize) {
+    FEXCore::Allocator::VirtualFree(GetBufferBase(), BufferSize);
+  }
 }
 
 void Dispatcher::EmitDispatcher() {

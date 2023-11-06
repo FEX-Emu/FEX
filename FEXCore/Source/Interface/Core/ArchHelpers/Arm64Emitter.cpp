@@ -335,8 +335,8 @@ namespace x32 {
 }
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
-Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
-  : Emitter(size ? (uint8_t*)FEXCore::Allocator::VirtualAlloc(size, true) : nullptr, size)
+Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr, size_t size)
+  : Emitter(static_cast<uint8_t*>(EmissionPtr), size)
   , EmitterCTX {ctx}
 #ifdef VIXL_SIMULATOR
   , Simulator {&SimDecoder}
@@ -376,13 +376,6 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;
-  }
-}
-
-Arm64Emitter::~Arm64Emitter() {
-  auto BufferSize = GetBufferSize();
-  if (BufferSize) {
-    FEXCore::Allocator::VirtualFree(GetBufferBase(), BufferSize);
   }
 }
 

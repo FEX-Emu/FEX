@@ -43,7 +43,7 @@ public:
   static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
 
   Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config);
-  ~Dispatcher() = default;
+  ~Dispatcher();
 
   /**
    * @name Dispatch Helper functions
