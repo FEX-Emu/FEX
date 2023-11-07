@@ -334,7 +334,7 @@ friend class FEXCore::IR::PassManager;
       return Ptr;
     }
 
-    virtual void SaveNZCV() {
+    virtual void SaveNZCV(IROps Op) {
       // Overriden by dispatcher, stubbed for IR tests
     }
 
