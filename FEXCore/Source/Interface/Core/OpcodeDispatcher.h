@@ -916,7 +916,25 @@ public:
   }
 
 protected:
-  void SaveNZCV() override {
+  void SaveNZCV(IROps Op) override {
+    /* Some opcodes are conservatively marked as clobbering flags, but in fact
+     * do not clobber flags in certain conditions. Check for that here as an
+     * optimization.
+     */
+    switch (Op) {
+    case OP_VFMINSCALARINSERT:
+    case OP_VFMAXSCALARINSERT:
+      /* On AFP platforms, becomes fmin/fmax and preserves NZCV. Otherwise
+       * becomes fcmp and clobbers.
+       */
+      if (CTX->HostFeatures.SupportsAFP)
+        return;
+
+      break;
+    default:
+      break;
+    }
+
     // Invariant: When executing instructions that clobber NZCV, the flags must
     // be resident in a GPR, which is equivalent to CachedNZCV != nullptr. Get
     // the NZCV which fills the cache if necessary.
@@ -1343,7 +1361,7 @@ private:
   // used instead of raw Op mutation.
 #define DeriveOp(Dest, NewOp, Expr) \
   if (ImplicitFlagClobber(NewOp))   \
-    SaveNZCV();                     \
+    SaveNZCV(NewOp);                \
   auto Dest = (Expr);               \
   Dest.first->Header.Op = (NewOp)
 
