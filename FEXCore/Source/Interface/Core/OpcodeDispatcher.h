@@ -1329,6 +1329,12 @@ private:
     }
   }
 
+#define DeriveOp(Dest, NewOp, Expr) \
+  if (ImplicitFlagClobber(NewOp)) \
+    SaveNZCV(); \
+  auto Dest = Expr; \
+  Dest.first->Header.Op = NewOp
+
   // Named constant cache for the current block.
   // Different arrays for sizes 1,2,4,8,16,32.
   OrderedNode *CachedNamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][6]{};
