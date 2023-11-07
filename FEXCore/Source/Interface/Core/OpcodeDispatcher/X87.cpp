@@ -856,9 +856,7 @@ void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _F80Round(a);
-  // Overwrite the op
-  result.first->Header.Op = IROp;
+  DeriveOp(result, IROp, _F80Round(a));
 
   if constexpr (IROp == IR::OP_F80SIN ||
                 IROp == IR::OP_F80COS) {
@@ -889,9 +887,7 @@ void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
   st1 = _LoadContextIndexed(st1, 16, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _F80Add(a, st1);
-  // Overwrite the op
-  result.first->Header.Op = IROp;
+  DeriveOp(result, IROp, _F80Add(a, st1));
 
   if constexpr (IROp == IR::OP_F80FPREM ||
     IROp == IR::OP_F80FPREM1) {

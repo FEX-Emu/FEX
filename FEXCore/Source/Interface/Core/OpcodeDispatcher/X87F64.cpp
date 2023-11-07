@@ -767,9 +767,7 @@ void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _F64SIN(a);
-  // Overwrite the op
-  result.first->Header.Op = IROp;
+  DeriveOp(result, IROp, _F64SIN(a));
 
   if constexpr (IROp == IR::OP_F64SIN ||
                 IROp == IR::OP_F64COS) {
@@ -799,9 +797,7 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
   st1 = _LoadContextIndexed(st1, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _F64ATAN(a, st1);
-  // Overwrite the op
-  result.first->Header.Op = IROp;
+  DeriveOp(result, IROp, _F64ATAN(a, st1));
 
   if constexpr (IROp == IR::OP_F64FPREM ||
     IROp == IR::OP_F64FPREM1) {

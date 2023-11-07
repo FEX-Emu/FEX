@@ -225,9 +225,7 @@ void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSi
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
-  auto ALUOp = _VAdd(Size, ElementSize, Dest, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Dest, Src));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
@@ -371,9 +369,7 @@ void OpDispatchBuilder::AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t Elemen
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  auto ALUOp = _VAdd(Size, ElementSize, Src1, Src2);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src1, Src2));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
@@ -506,9 +502,7 @@ void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementS
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
-  auto ALUOp = _VAdd(Size, ElementSize, Src, Dest);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src, Dest));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
@@ -540,10 +534,8 @@ OrderedNode* OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IR
                                             {.AllowUpperGarbage = true});
 
   // If OpSize == ElementSize then it only does the lower scalar op
-  auto ALUOp = _VFAddScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
-
+  DeriveOp(ALUOp, IROp,
+           _VFAddScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits));
   return ALUOp;
 }
 
@@ -626,10 +618,7 @@ OrderedNode* OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IRO
                                             {.AllowUpperGarbage = true});
 
   // If OpSize == ElementSize then it only does the lower scalar op
-  auto ALUOp = _VFSqrtScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
-
+  DeriveOp(ALUOp, IROp, _VFSqrtScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits));
   return ALUOp;
 }
 
@@ -940,9 +929,7 @@ void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Element
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VFSqrt(OpSize, ElementSize, Src));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
@@ -979,9 +966,7 @@ void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Elem
 
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  auto ALUOp = _VFSqrt(OpSize, ElementSize, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VFSqrt(OpSize, ElementSize, Src));
 
   // NOTE: We don't need to clear the upper lanes here, since the
   //       IR ops make use of 128-bit AdvSimd for 128-bit cases,
@@ -1017,9 +1002,7 @@ void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto ALUOp = _VFSqrt(ElementSize, ElementSize, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  DeriveOp(ALUOp, IROp, _VFSqrt(ElementSize, ElementSize, Src));
 
   // Duplicate the lower bits
   auto Result = _VDupElement(Size, ElementSize, ALUOp, 0);
@@ -1746,8 +1729,7 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  auto Res = _VFAddP(SrcSize, ElementSize, Src1, Src2);
-  Res.first->Header.Op = IROp;
+  DeriveOp(Res, IROp, _VFAddP(SrcSize, ElementSize, Src1, Src2));
 
   OrderedNode *Dest = Res;
    if (Is256Bit) {
@@ -2439,8 +2421,7 @@ void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   OrderedNode *Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
   OrderedNode *ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags);
 
-  auto Shift = _VUShr(DstSize, SrcSize, Vector, ShiftVector, true);
-  Shift.first->Header.Op = IROp;
+  DeriveOp(Shift, IROp, _VUShr(DstSize, SrcSize, Vector, ShiftVector, true));
 
   StoreResult(FPRClass, Op, Shift, -1);
 }
