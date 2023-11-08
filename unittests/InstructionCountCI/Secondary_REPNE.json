@@ -245,15 +245,27 @@
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 15,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
+        "ldr w0, [x28, #728]",
+        "sub w0, w0, w20",
+        "cbz w0, #+0x1c",
+        "mov x1, #0x101",
+        "movk x1, #0x101, lsl #16",
+        "movk x1, #0x1, lsl #32",
+        "str x1, [x28, #1056]",
+        "ldr x0, [x28, #1912]",
+        "br x0",
         "fcmp d16, d17",
         "fcsel d0, d16, d17, mi",
-        "mov v16.d[0], v0.d[0]"
+        "mov v16.d[0], v0.d[0]",
+        "msr nzcv, x20",
+        "str w20, [x28, #728]"
       ]
     },
     "divsd xmm0, xmm1": {
@@ -268,15 +280,27 @@
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 15,
       "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
+        "ldr w0, [x28, #728]",
+        "sub w0, w0, w20",
+        "cbz w0, #+0x1c",
+        "mov x1, #0x101",
+        "movk x1, #0x101, lsl #16",
+        "movk x1, #0x1, lsl #32",
+        "str x1, [x28, #1056]",
+        "ldr x0, [x28, #1912]",
+        "br x0",
         "fcmp d16, d17",
         "fcsel d0, d17, d16, mi",
-        "mov v16.d[0], v0.d[0]"
+        "mov v16.d[0], v0.d[0]",
+        "msr nzcv, x20",
+        "str w20, [x28, #728]"
       ]
     },
     "pshuflw xmm0, xmm1, 0": {
