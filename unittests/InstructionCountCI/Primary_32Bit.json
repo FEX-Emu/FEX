@@ -296,7 +296,7 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 14,
       "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
@@ -307,8 +307,7 @@
         "strb w21, [x28, #706]",
         "mrs x22, nzcv",
         "ubfx w22, w22, #29, #1",
-        "lsl w23, w21, #16",
-        "tst w23, w23",
+        "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w21, w20",
         "ubfx w20, w20, #15, #1",
@@ -335,7 +334,7 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 14,
       "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
@@ -346,8 +345,7 @@
         "strb w21, [x28, #706]",
         "mrs x22, nzcv",
         "ubfx w22, w22, #29, #1",
-        "lsl w23, w21, #16",
-        "tst w23, w23",
+        "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w20, w21",
         "ubfx w20, w20, #15, #1",
@@ -466,7 +464,7 @@
       ]
     },
     "aam": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
@@ -479,15 +477,12 @@
         "add x20, x21, x20",
         "bfxil w4, w20, #0, #16",
         "uxtb w20, w4",
-        "lsl w21, w20, #24",
-        "tst w21, w21",
-        "mrs x21, nzcv",
-        "strb w20, [x28, #706]",
-        "msr nzcv, x21"
+        "cmn wzr, w20, lsl #24",
+        "strb w20, [x28, #706]"
       ]
     },
     "aad": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "0xd5",
       "ExpectedArm64ASM": [
@@ -500,15 +495,12 @@
         "and x20, x20, #0xff",
         "bfxil w4, w20, #0, #16",
         "uxtb w20, w4",
-        "lsl w21, w20, #24",
-        "tst w21, w21",
-        "mrs x21, nzcv",
-        "strb w20, [x28, #706]",
-        "msr nzcv, x21"
+        "cmn wzr, w20, lsl #24",
+        "strb w20, [x28, #706]"
       ]
     },
     "db 0xd4, 0x40": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "aam with a different immediate byte base",
@@ -524,15 +516,12 @@
         "add x20, x21, x20",
         "bfxil w4, w20, #0, #16",
         "uxtb w20, w4",
-        "lsl w21, w20, #24",
-        "tst w21, w21",
-        "mrs x21, nzcv",
-        "strb w20, [x28, #706]",
-        "msr nzcv, x21"
+        "cmn wzr, w20, lsl #24",
+        "strb w20, [x28, #706]"
       ]
     },
     "db 0xd5, 0x40": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": [
         "aad with a different immediate byte base",
@@ -547,11 +536,8 @@
         "and x20, x20, #0xff",
         "bfxil w4, w20, #0, #16",
         "uxtb w20, w4",
-        "lsl w21, w20, #24",
-        "tst w21, w21",
-        "mrs x21, nzcv",
-        "strb w20, [x28, #706]",
-        "msr nzcv, x21"
+        "cmn wzr, w20, lsl #24",
+        "strb w20, [x28, #706]"
       ]
     },
     "salc": {
