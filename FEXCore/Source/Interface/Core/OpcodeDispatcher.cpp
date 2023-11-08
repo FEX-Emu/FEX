@@ -404,9 +404,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
-    auto ALUOp = _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Dest, Src);
-    // Overwrite our IR's op type
-    ALUOp.first->Header.Op = IROp;
+    DeriveOp(ALUOp, IROp, _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Dest, Src));
 
     Result = ALUOp;
 
@@ -5398,15 +5396,10 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    auto FetchOp = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
-    // Overwrite our atomic op type
-    FetchOp.first->Header.Op = AtomicFetchOp;
+    DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem));
     Dest = FetchOp;
 
-    auto ALUOp = _Add(OpSize, Dest, Src);
-    // Overwrite our IR's op type
-    ALUOp.first->Header.Op = ALUIROp;
-
+    DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
     Result = ALUOp;
   }
   else {
@@ -5425,10 +5418,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
         Result = _Constant(0);
     } else {
-        auto ALUOp = _Add(OpSize, Dest, Src);
-        // Overwrite our IR's op type
-        ALUOp.first->Header.Op = ALUIROp;
-
+        DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
         Result = ALUOp;
     }
 
