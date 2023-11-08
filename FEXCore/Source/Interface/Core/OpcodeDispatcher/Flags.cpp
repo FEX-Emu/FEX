@@ -313,7 +313,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
     if (NZCVDirty && CachedNZCV)
-      _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+      _StoreNZCV(CachedNZCV);
 
     CachedNZCV = nullptr;
     NZCVDirty = false;
@@ -501,7 +501,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
 
   if (NZCVDirty && CachedNZCV)
-    _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+    _StoreNZCV(CachedNZCV);
 
   CachedNZCV = nullptr;
   NZCVDirty = false;

@@ -1243,7 +1243,7 @@ private:
 
   OrderedNode *GetNZCV() {
     if (!CachedNZCV) {
-      CachedNZCV = _LoadFlag(FEXCore::X86State::RFLAG_NZCV_LOC);
+      CachedNZCV = _LoadNZCV();
 
       // We don't know what's set
       PossiblySetNZCVBits = ~0;
