@@ -658,7 +658,7 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
   FEXCore::ARMEmitter::Register TmpReg = FEXCore::ARMEmitter::Reg::r0;
   LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
-  bool FoundRegister{};
+  [[maybe_unused]] bool FoundRegister{};
   for (auto Reg : StaticRegisters) {
     if (((1U << Reg.Idx()) & GPRFillMask)) {
       TmpReg = Reg;
