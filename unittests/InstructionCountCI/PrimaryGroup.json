@@ -3383,6 +3383,16 @@
         "bfxil x7, x20, #0, #8"
       ]
     },
+    "not bh": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /2",
+      "ExpectedArm64ASM": [
+        "ubfx w20, w7, #8, #8",
+        "eor x20, x20, #0xff",
+        "bfi x7, x20, #8, #8"
+      ]
+    },
     "neg bl": {
       "ExpectedInstructionCount": 14,
       "Optimal": "No",
