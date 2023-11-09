@@ -916,7 +916,33 @@ public:
   }
 
 protected:
-  void SaveNZCV() override {
+  void SaveNZCV(IROps Op) override {
+    /* Some opcodes are conservatively marked as clobbering flags, but in fact
+     * do not clobber flags in certain conditions. Check for that here as an
+     * optimization.
+     */
+    switch (Op) {
+    case OP_VFMINSCALARINSERT:
+    case OP_VFMAXSCALARINSERT:
+      /* On AFP platforms, becomes fmin/fmax and preserves NZCV. Otherwise
+       * becomes fcmp and clobbers.
+       */
+      if (CTX->HostFeatures.SupportsAFP)
+        return;
+
+      break;
+    default:
+      break;
+    }
+
+    // Invariant: When executing instructions that clobber NZCV, the flags must
+    // be resident in a GPR, which is equivalent to CachedNZCV != nullptr. Get
+    // the NZCV which fills the cache if necessary.
+    if (CachedNZCV == nullptr)
+      GetNZCV();
+
+    // Assume we'll need a reload.
+    NZCVDirty = true;
   }
 
 private:
@@ -1243,7 +1269,7 @@ private:
 
   OrderedNode *GetNZCV() {
     if (!CachedNZCV) {
-      CachedNZCV = _LoadFlag(FEXCore::X86State::RFLAG_NZCV_LOC);
+      CachedNZCV = _LoadNZCV();
 
       // We don't know what's set
       PossiblySetNZCVBits = ~0;
@@ -1275,37 +1301,67 @@ private:
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
-    CachedNZCV = _TestNZ(SrcSize, Res);
+    _TestNZ(SrcSize, Res);
+    CachedNZCV = _LoadNZCV();
     PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-    NZCVDirty = true;
+    NZCVDirty = false;
   }
 
-  OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
-    unsigned Bit = IndexNZCV(BitOffset);
+  void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
+    signed Bit = IndexNZCV(BitOffset);
 
-    uint32_t SetBits = PossiblySetNZCVBits;
+    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+      // Insert as NZCV.
+      signed RmifBit = Bit - 28;
+      _RmifNZCV(Value, (64 + FlagOffset - RmifBit) % 64, 1u << RmifBit);
+      CachedNZCV = nullptr;
+    } else {
+      // Insert as GPR
+      if (FlagOffset || MustMask)
+        Value = _Bfe(OpSize::i32Bit, 1, FlagOffset, Value);
+
+      if (PossiblySetNZCVBits == 0)
+        SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
+      else if ((PossiblySetNZCVBits & (1u << Bit)) == 0)
+        SetNZCV(_Orlshl(OpSize::i32Bit, GetNZCV(), Value, Bit));
+      else
+        SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, GetNZCV(), Value));
+    }
+
     PossiblySetNZCVBits |= (1u << Bit);
+  }
 
-    if (SetBits == 0)
-      return _Lshl(OpSize::i64Bit, Value, _Constant(Bit));
-    else if ((SetBits & (1u << Bit)) == 0)
-      return _Orlshl(OpSize::i32Bit, NZCV, Value, Bit);
-    else
-      return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
+  void CarryInvert() {
+    unsigned Bit = IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+      // Invert as NZCV.
+      _CarryInvert();
+      CachedNZCV = nullptr;
+    } else {
+      // Invert as a GPR
+      SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(1u << Bit)));
+    }
+
+    PossiblySetNZCVBits |= 1u << Bit;
   }
 
   template<unsigned BitOffset>
-  void SetRFLAG(OrderedNode *Value) {
-    SetRFLAG(Value, BitOffset);
+  void SetRFLAG(OrderedNode *Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    SetRFLAG(Value, BitOffset, ValueOffset, MustMask);
   }
 
-  void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
+  void SetRFLAG(OrderedNode *Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
     flagsOp = SelectionFlag::Nothing;
 
-    if (IsNZCV(BitOffset))
-      SetNZCV(InsertNZCV(PossiblySetNZCVBits ? GetNZCV() : nullptr, BitOffset, Value));
-    else
+    if (IsNZCV(BitOffset)) {
+      InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
+    } else {
+      if (ValueOffset || MustMask)
+        Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
+
       _StoreFlag(Value, BitOffset);
+    }
   }
 
   void SetAF(unsigned Constant) {
@@ -1335,7 +1391,7 @@ private:
   // used instead of raw Op mutation.
 #define DeriveOp(Dest, NewOp, Expr) \
   if (ImplicitFlagClobber(NewOp))   \
-    SaveNZCV();                     \
+    SaveNZCV(NewOp);                \
   auto Dest = (Expr);               \
   Dest.first->Header.Op = (NewOp)
 

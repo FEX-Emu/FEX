@@ -130,8 +130,7 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
       Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
       SetRFLAG(Tmp, FlagOffset);
     } else {
-      auto Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
-      SetRFLAG(Tmp, FlagOffset);
+      SetRFLAG(Src, FlagOffset, FlagOffset, true);
     }
   }
 }
@@ -237,8 +236,7 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNo
       Anded = _Andn(OpSize, XorOp2, XorOp1);
   }
 
-  auto OF = _Bfe(OpSize, 1, SrcSize * 8 - 1, Anded);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(OF);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
 }
 
 OrderedNode *OpDispatchBuilder::LoadPFRaw() {
@@ -313,7 +311,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
     if (NZCVDirty && CachedNZCV)
-      _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+      _StoreNZCV(CachedNZCV);
 
     CachedNZCV = nullptr;
     NZCVDirty = false;
@@ -501,7 +499,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
 
   if (NZCVDirty && CachedNZCV)
-    _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+    _StoreNZCV(CachedNZCV);
 
   CachedNZCV = nullptr;
   NZCVDirty = false;
@@ -516,7 +514,12 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
-    SetNZCV(_AdcNZCV(OpSize, Src1, Src2, GetNZCV()));
+    if (NZCVDirty && CachedNZCV)
+      _StoreNZCV(CachedNZCV);
+    CachedNZCV = nullptr;
+
+    _AdcNZCV(OpSize, Src1, Src2);
+    PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -544,7 +547,18 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
-    SetNZCV(_SbbNZCV(OpSize, Src1, Src2, GetNZCV()));
+    // Rectify input carry
+    CarryInvert();
+
+    if (NZCVDirty && CachedNZCV)
+      _StoreNZCV(CachedNZCV);
+    CachedNZCV = nullptr;
+
+    _SbbNZCV(OpSize, Src1, Src2);
+    PossiblySetNZCVBits = ~0;
+
+    // Rectify output carry
+    CarryInvert();
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -574,8 +588,13 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
+    _SubNZCV(OpSize, Src1, Src2);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
+
     // We only bother inverting CF if we're actually going to update CF.
-    SetNZCV(_SubNZCV(OpSize, Src1, Src2, UpdateCF));
+    if (UpdateCF)
+      CarryInvert();
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -583,8 +602,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
     // CF
     if (UpdateCF) {
       // Grab carry bit from unmasked output.
-      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Bfe);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, true);
@@ -606,7 +624,9 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
-    SetNZCV(_AddNZCV(OpSize, Src1, Src2));
+    _AddNZCV(OpSize, Src1, Src2);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -614,8 +634,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
     // CF
     if (UpdateCF) {
       // Grab carry bit from unmasked output
-      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Bfe);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, false);
@@ -1196,7 +1215,7 @@ void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
 
   // Set flags
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Bfe(OpSize::i32Bit, 1, 0, Src));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, 0, true);
 }
 
 void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) {

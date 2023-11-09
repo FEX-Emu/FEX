@@ -98,9 +98,6 @@ DEF_OP(AddNZCV) {
   } else {
     cmn(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
   }
-
-  // TODO: Optimize this out
-  mrs(GetReg(Node), ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(AdcNZCV) {
@@ -109,15 +106,8 @@ DEF_OP(AdcNZCV) {
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto Dst = GetReg(Node);
-
-  // TODO: Optimize this out
-  msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->NZCV.ID()));
 
   adcs(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
-
-  // TODO: Optimize this out
-  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(SbbNZCV) {
@@ -127,28 +117,7 @@ DEF_OP(SbbNZCV) {
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  const auto Dst = GetReg(Node);
-
-  // Carry-in needs to be inverted for subtractions due to carry versus borrow
-  // distinction between x86 and arm.
-  // See below remarks on cfinv
-  eor(ARMEmitter::Size::i32Bit, TMP1, GetReg(Op->NZCV.ID()), 1u << 29);
-
-  // TODO: Optimize this out
-  msr(ARMEmitter::SystemRegister::NZCV, TMP1);
-
   sbcs(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
-
-  // TODO: Optimize this out
-  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
-
-  // The carry flag produced by arm64 sbcs is inverted compared to the x86 carry
-  // flag. Invert it now.
-  //
-  // TODO: Once we optimize out the mrs, this will become a cfinv operation, but
-  // that's only available with Feat_FlagM. For now the portable way is to flip
-  // bit 29 (carry) manually.
-  eor(ARMEmitter::Size::i32Bit, Dst, Dst, 1u << 29);
 }
 
 DEF_OP(TestNZ) {
@@ -156,20 +125,17 @@ DEF_OP(TestNZ) {
   const uint8_t OpSize = Op->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  const auto Dst = GetReg(Node);
   auto Src = GetReg(Op->Src1.ID());
 
   // Shift the sign bit into place, clearing out the garbage in upper bits.
-  // setf+rmif would avoid the scratch register, but higher latency on M1.
+  // Adding zero does an effective test, setting NZ according to the result and
+  // zeroing CV.
   if (OpSize < 4) {
-    lsl(EmitSize, Dst, Src, 32 - (OpSize * 8));
-    Src = Dst;
+    unsigned Shift = 32 - (OpSize * 8);
+    cmn(EmitSize, ARMEmitter::Reg::zr, Src, ARMEmitter::ShiftType::LSL, Shift);
+  } else {
+    tst(EmitSize, Src, Src);
   }
-
-  tst(EmitSize, Src, Src);
-
-  // TODO: Optimize this out
-  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
 }
 
 DEF_OP(Sub) {
@@ -213,21 +179,18 @@ DEF_OP(SubNZCV) {
   } else {
     cmp(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
   }
+}
 
-  const auto Dst = GetReg(Node);
+DEF_OP(CarryInvert) {
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
+  cfinv();
+}
 
-  // TODO: Optimize this out
-  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
+DEF_OP(RmifNZCV) {
+  auto Op = IROp->C<IR::IROp_RmifNZCV>();
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
 
-  if (Op->InvertCarry) {
-    // The carry flag produced by arm64 subs is inverted compared to the x86 carry
-    // flag. Invert it now.
-    //
-    // TODO: Once we optimize out the mrs, this will become a cfinv operation, but
-    // that's only available with Feat_FlagM. For now the portable way is to flip
-    // bit 29 (carry) manually.
-    eor(ARMEmitter::Size::i32Bit, Dst, Dst, 1u << 29);
-  }
+  rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
 }
 
 DEF_OP(Neg) {

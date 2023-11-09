@@ -447,6 +447,17 @@
         ]
       },
 
+      "GPR = LoadNZCV": {
+        "Desc": ["Loads value of NZCV register"],
+        "DestSize": "4"
+      },
+
+      "StoreNZCV GPR:$Value": {
+        "HasSideEffects": true,
+        "Desc": ["Stores value to NZCV register"],
+        "DestSize": "4"
+      },
+
       "GPR = LoadFlag u32:$Flag": {
         "Desc": ["Loads an x86-64 flag from the context object",
                  "Specialized to allow flexible implementation of flag handling"
@@ -953,26 +964,31 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = AddNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Return NZCV for the sum of two GPRs"],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+      "AddNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the sum of two GPRs"],
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = AdcNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, GPR:$NZCV": {
-        "Desc": ["Return NZCV for the sum of two GPRs and carry-in given as NZCV"],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+      "CarryInvert": {
+        "Desc": ["Invert carry flag in NZCV"],
+        "HasSideEffects": true
+      },
+      "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
+        "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
+        "HasSideEffects": true
+      },
+      "AdcNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the sum of two GPRs and carry-in given as NZCV"],
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = SbbNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, GPR:$NZCV": {
-        "Desc": ["Return NZCV for the sum of two GPRs and carry-in given as NZCV"],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+      "SbbNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the difference of two GPRs and carry-in given as NZCV"],
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -996,12 +1012,11 @@
           "_Shift != ShiftType::ROR"
         ]
       },
-      "GPR = SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2, u8:$InvertCarry": {
-        "Desc": ["Return NZCV for the difference of two GPRs. ",
-                 "If InvertCarry is nonzero, carry flag uses x86 definition, inverted from arm64.",
+      "SubNZCV OpSize:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the difference of two GPRs. ",
+                 "Carry flag uses arm64 definition, inverted x86.",
                  ""],
-        "DestSize": "4",
-        "ImplicitFlagClobber": true,
+        "HasSideEffects": true,
         "EmitValidation": [
           "_Size == FEXCore::IR::OpSize::i32Bit || _Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1061,10 +1076,9 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = TestNZ u8:$Size, GPR:$Src1": {
-        "Desc": ["Return NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
-        "ImplicitFlagClobber": true,
-        "DestSize": "4"
+      "TestNZ u8:$Size, GPR:$Src1": {
+        "Desc": ["Set NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
+        "HasSideEffects": true
       },
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
@@ -1581,7 +1595,6 @@
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VCMPEQZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1590,7 +1603,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1599,7 +1611,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1848,12 +1859,10 @@
       },
 
       "FPR = VFMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VFMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1964,8 +1973,7 @@
 
       "FPR = VCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize",
-        "ImplicitFlagClobber": true
+        "NumElements": "RegisterSize / ElementSize"
       },
 
       "FPR = VCMPGT u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
@@ -1973,7 +1981,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero"
                 ],
 
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

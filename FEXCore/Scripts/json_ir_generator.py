@@ -652,7 +652,7 @@ def print_ir_allocator_helpers():
 
             # Save NZCV if needed before clobbering NZCV
             if op.ImplicitFlagClobber:
-                output_file.write("\t\tSaveNZCV();")
+                output_file.write("\t\tSaveNZCV(IROps::OP_{});".format(op.Name.upper()))
 
             output_file.write("\t\tauto Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 

@@ -194,7 +194,6 @@ public:
 
 private:
   bool HandleConstantPools(IREmitter *IREmit, const IRListView& CurrentIR);
-  void CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& CurrentIR);
   void FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR);
   void LoadMemStoreMemImmediatePooling(IREmitter *IREmit, const IRListView& CurrentIR);
   bool ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& CurrentIR,
@@ -265,69 +264,6 @@ bool ConstProp::HandleConstantPools(IREmitter *IREmit, const IRListView& Current
   }
 
   return Changed;
-}
-
-// Code motion around selects
-// Moves unary ops that depend on a select before the select, if both inputs are constants
-// assumes that unary ops without side effects on constants will be constprop'd
-void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& CurrentIR) {
-  // Code motion around selects
-  // Moves unary ops that depend on a select before the select, if both inputs are constants
-  // assumes that unary ops without side effects on constants will be constprop'd
-  for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-    auto BlockOp = BlockIROp->CW<FEXCore::IR::IROp_CodeBlock>();
-    for (auto [UnaryOpNode, UnaryOpHdr] : CurrentIR.GetCode(BlockNode)) {
-      if (IR::GetArgs(UnaryOpHdr->Op) == 1 && !HasSideEffects(UnaryOpHdr->Op)
-                                           && !ImplicitFlagClobber(UnaryOpHdr->Op)) {
-        // could be moved
-        auto SelectOpNode = IREmit->UnwrapNode(UnaryOpHdr->Args[0]);
-        auto SelectOpHdr = IREmit->GetOpHeader(UnaryOpHdr->Args[0]);
-        auto SelectOp = SelectOpHdr->CW<IR::IROp_Select>();
-
-        // the value isn't used after the select otherwise
-        // make sure the sizes match
-        if (SelectOpHdr->Size == UnaryOpHdr->Size && SelectOpHdr->Op == OP_SELECT && SelectOpNode->NumUses == 1
-            && IREmit->IsValueConstant(SelectOp->TrueVal)
-            && IREmit->IsValueConstant(SelectOp->FalseVal)) {
-
-          IREmit->SetWriteCursor(IREmit->UnwrapNode(SelectOpNode->Header.Previous));
-
-          size_t OpSize = FEXCore::IR::GetSize(UnaryOpHdr->Op);
-
-          /// copy for TrueVal ///
-          auto NewUnaryOp1 = IREmit->AllocateRawOp(OpSize);
-
-          // Copy over the op
-          memcpy(NewUnaryOp1.first, UnaryOpHdr, OpSize);
-
-          for (int i = 0; i < IR::GetArgs(NewUnaryOp1.first->Op); i++) {
-            NewUnaryOp1.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
-          }
-          // Set New Op to operate on the constant
-          IREmit->ReplaceNodeArgument(NewUnaryOp1, 0, IREmit->UnwrapNode(SelectOp->TrueVal));
-          // Make select use the operated constant
-          IREmit->ReplaceNodeArgument(SelectOpNode, 2, NewUnaryOp1);
-
-          /// copy for FalseVal ///
-          auto NewUnaryOp2 = IREmit->AllocateRawOp(OpSize);
-
-          // Copy over the op
-          memcpy(NewUnaryOp2.first, UnaryOpHdr, OpSize);
-
-          for (int i = 0; i < IR::GetArgs(NewUnaryOp2.first->Op); i++) {
-            NewUnaryOp2.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
-          }
-          // Set New Op to operate on the constant
-          IREmit->ReplaceNodeArgument(NewUnaryOp2, 0, IREmit->UnwrapNode(SelectOp->FalseVal));
-          // Make select use the operated constant
-          IREmit->ReplaceNodeArgument(SelectOpNode, 3, NewUnaryOp2);
-
-          // Replace uses of the defuct unary op w/ select
-          IREmit->ReplaceAllUsesWithRange(UnaryOpNode, SelectOpNode, IREmit->GetIterator(IREmit->WrapNode(UnaryOpNode)), IREmit->GetIterator(BlockOp->Last));
-        }
-      }
-    }
-  }
 }
 
 void ConstProp::FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR) {
@@ -733,6 +669,8 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+    /* TODO: restore this when we have rmif or something? */
+#if 0
     case OP_TESTNZ: {
       auto Op = IROp->CW<IR::IROp_TestNZ>();
       uint64_t Constant1{};
@@ -747,6 +685,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+#endif
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
@@ -1005,37 +944,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
       break;
     }
-    case OP_CONDJUMP: {
-      auto Op = IROp->CW<IR::IROp_CondJump>();
-
-      auto Select = IREmit->GetOpHeader(Op->Header.Args[0]);
-
-      uint64_t Constant;
-      // Fold the select into the CondJump if possible. Could handle more complex cases, too.
-      if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
-
-        const auto SelectCmpClass = IREmit->WalkFindRegClass(Select->Args[0]);
-        if (SelectCmpClass == GPRPairClass) {
-          // If the comparison class is a GPRPair then don't fold the select since it isn't free.
-          break;
-        }
-        uint64_t Constant1{};
-        uint64_t Constant2{};
-
-        if (IREmit->IsValueConstant(Select->Args[2], &Constant1) && IREmit->IsValueConstant(Select->Args[3], &Constant2)) {
-          if (Constant1 == 1 && Constant2 == 0) {
-            auto slc = Select->C<IR::IROp_Select>();
-            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(Select->Args[0]));
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(Select->Args[1]));
-            Op->Cond = slc->Cond;
-            Op->CompareSize = slc->CompareSize;
-            Changed = true;
-          }
-        }
-      }
-      break;
-    }
-
     default:
       break;
     }
@@ -1288,7 +1196,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
     Changed = true;
   }
 
-  CodeMotionAroundSelects(IREmit, CurrentIR);
   FCMPOptimization(IREmit, CurrentIR);
   LoadMemStoreMemImmediatePooling(IREmit, CurrentIR);
 

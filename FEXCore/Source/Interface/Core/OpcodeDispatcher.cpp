@@ -6,6 +6,7 @@ desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
 $end_info$
 */
 
+#include "FEXCore/Utils/BitUtils.h"
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -24,6 +25,7 @@ $end_info$
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <tuple>
 
@@ -828,6 +830,22 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 }
 
 OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  uint64_t TrueConst, FalseConst;
+  if (std::has_single_bit(Mask) &&
+      IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
+      IsValueConstant(WrapNode(FalseValue), &FalseConst) &&
+      TrueConst == 1 &&
+      FalseConst == 0) {
+
+      if (!TrueIsNonzero)
+        Cmp = _Not(OpSize::i32Bit, Cmp);
+
+      if (Mask == 1)
+        return _And(ResultSize, Cmp, _Constant(1));
+      else
+        return _Bfe(ResultSize, 1, FindFirstSetBit(Mask) - 1, Cmp);
+  }
+
   return _Select(ResultSize, OpSize::i32Bit,
                  TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
                  Cmp, _Constant(Mask),
@@ -1550,55 +1568,23 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  enum class OpType {
-    Clear,
-    Set,
-  };
-  OpType Type;
-  uint64_t Flag;
   switch (Op->OP) {
-  case 0xF5: {// CMC
-    uint32_t Bit = 1u << IndexNZCV(X86State::RFLAG_CF_RAW_LOC);
-    SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(Bit)));
-    PossiblySetNZCVBits |= Bit;
-    return;
-  }
-
+  case 0xF5: // CMC
+    CarryInvert();
+  break;
   case 0xF8: // CLC
-    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
-    Type = OpType::Clear;
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xF9: // STC
-    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
-    Type = OpType::Set;
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xFC: // CLD
-    Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OpType::Clear;
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_LOC);
   break;
   case 0xFD: // STD
-    Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OpType::Set;
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_LOC);
   break;
   }
-
-  // AF would need special handling here. It doesn't matter.
-  LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_RAW_LOC,
-                      "No AF complement instruction in x86");
-
-  OrderedNode *Result{};
-  switch (Type) {
-  case OpType::Clear: {
-    Result = _Constant(0);
-  break;
-  }
-  case OpType::Set: {
-    Result = _Constant(1);
-  break;
-  }
-  }
-
-  SetRFLAG(Result, Flag);
 }
 
 
