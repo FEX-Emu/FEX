@@ -1308,18 +1308,26 @@ private:
   }
 
   void InsertNZCV(unsigned BitOffset, OrderedNode *Value) {
-    uint32_t SetBits = PossiblySetNZCVBits;
-    OrderedNode *NZCV = SetBits ? GetNZCV() : nullptr;
+    // For now, always insert from bit 0
+    signed FlagOffset = 0;
+    signed Bit = IndexNZCV(BitOffset);
 
-    unsigned Bit = IndexNZCV(BitOffset);
+    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+      // Insert as NZCV.
+      signed RmifBit = Bit - 28;
+      _RmifNZCV(Value, (64 + FlagOffset - RmifBit) % 64, 1u << RmifBit);
+      CachedNZCV = nullptr;
+    } else {
+      // Insert as GPR
+      if (PossiblySetNZCVBits == 0)
+        SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
+      else if ((PossiblySetNZCVBits & (1u << Bit)) == 0)
+        SetNZCV(_Orlshl(OpSize::i32Bit, GetNZCV(), Value, Bit));
+      else
+        SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, GetNZCV(), Value));
+    }
+
     PossiblySetNZCVBits |= (1u << Bit);
-
-    if (SetBits == 0)
-      SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
-    else if ((SetBits & (1u << Bit)) == 0)
-      SetNZCV(_Orlshl(OpSize::i32Bit, NZCV, Value, Bit));
-    else
-      SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value));
   }
 
   void CarryInvert() {
