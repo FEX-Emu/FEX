@@ -3371,13 +3371,11 @@
       ]
     },
     "not bl": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP2 0xf6 /2",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "eor x20, x20, #0xff",
-        "bfxil x7, x20, #0, #8"
+        "eor x7, x7, #0xff"
       ]
     },
     "neg bl": {
