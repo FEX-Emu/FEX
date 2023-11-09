@@ -1550,53 +1550,23 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  enum class OpType {
-    Clear,
-    Set,
-  };
-  OpType Type;
-  uint64_t Flag;
   switch (Op->OP) {
-  case 0xF5: {// CMC
+  case 0xF5: // CMC
     CarryInvert();
-    return;
-  }
-
+  break;
   case 0xF8: // CLC
-    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
-    Type = OpType::Clear;
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xF9: // STC
-    Flag= FEXCore::X86State::RFLAG_CF_RAW_LOC;
-    Type = OpType::Set;
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xFC: // CLD
-    Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OpType::Clear;
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_LOC);
   break;
   case 0xFD: // STD
-    Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OpType::Set;
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_LOC);
   break;
   }
-
-  // AF would need special handling here. It doesn't matter.
-  LOGMAN_THROW_AA_FMT(Flag != FEXCore::X86State::RFLAG_AF_RAW_LOC,
-                      "No AF complement instruction in x86");
-
-  OrderedNode *Result{};
-  switch (Type) {
-  case OpType::Clear: {
-    Result = _Constant(0);
-  break;
-  }
-  case OpType::Set: {
-    Result = _Constant(1);
-  break;
-  }
-  }
-
-  SetRFLAG(Result, Flag);
 }
 
 
