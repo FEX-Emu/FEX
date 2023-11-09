@@ -120,11 +120,7 @@ static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(
   return LDR_PTR(vkCreateDebugUtilsMessengerEXT)(a_0, &overridden_callback, nullptr, a_3);
 }
 
-static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
-  // Just return the host facing function pointer
-  // The guest will handle mapping if this exists
-
-  // Check for functions with stubbed callbacks first
+static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
   if (std::strcmp(a_1, "vkCreateShaderModule") == 0) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
   } else if (std::strcmp(a_1, "vkCreateInstance") == 0) {
@@ -136,20 +132,35 @@ static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const ch
   } else if (std::strcmp(a_1, "vkFreeMemory") == 0) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
   }
+  return nullptr;
+}
 
-  auto ret = LDR_PTR(vkGetDeviceProcAddr)(a_0, a_1);
-  return ret;
+static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
+  // Just return the host facing function pointer
+  // The guest will handle mapping if this exists
+
+  // Check for functions with custom implementations first
+  if (auto ptr = LookupCustomVulkanFunction(a_1)) {
+    return ptr;
+  }
+
+  return LDR_PTR(vkGetDeviceProcAddr)(a_0, a_1);
 }
 
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, const char* a_1) {
+  // Just return the host facing function pointer
+  // The guest will handle mapping if it exists
+
   if (!SetupInstance && a_0) {
     DoSetupWithInstance(a_0);
   }
 
-  // Just return the host facing function pointer
-  // The guest will handle mapping if it exists
-  auto ret = LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
-  return ret;
+  // Check for functions with custom implementations first
+  if (auto ptr = LookupCustomVulkanFunction(a_1)) {
+    return ptr;
+  }
+
+  return LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
 }
 
 EXPORTS(libvulkan)
