@@ -1,6 +1,7 @@
 add_compile_options(-fno-operator-names)
 
 set (SRCS
+  GdbServer.cpp
   EmulatedFiles/EmulatedFiles.cpp
   FileManagement.cpp
   LinuxAllocator.cpp

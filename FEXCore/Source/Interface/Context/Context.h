@@ -37,7 +37,6 @@
 namespace FEXCore {
 class CodeLoader;
 class ThunkHandler;
-class GdbServer;
 
 namespace CodeSerialize {
   class CodeObjectSerializeService;
@@ -290,10 +289,6 @@ namespace FEXCore::Context {
     void WaitForIdle() override;
     void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
-    bool GetGdbServerStatus() const { return DebugServer != nullptr; }
-    void StartGdbServer();
-    void StopGdbServer();
-
     static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker);
 
@@ -450,7 +445,6 @@ namespace FEXCore::Context {
 
     // Entry Cache
     std::mutex ExitMutex;
-    fextl::unique_ptr<GdbServer> DebugServer;
 
     IR::AOTIRCaptureCache IRCaptureCache;
     fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;

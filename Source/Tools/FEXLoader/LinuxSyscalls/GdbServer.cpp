@@ -50,9 +50,9 @@ $end_info$
 #include <unistd.h>
 #include <utility>
 
-#include "GdbServer.h"
+#include "LinuxSyscalls/GdbServer.h"
 
-namespace FEXCore
+namespace FEX
 {
 #ifndef _WIN32
 void GdbServer::Break(int signal) {
@@ -70,7 +70,7 @@ void GdbServer::WaitForThreadWakeup() {
   ThreadBreakEvent.Wait();
 }
 
-GdbServer::GdbServer(FEXCore::Context::Context *ctx, SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
+GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
   : CTX(ctx)
   , SyscallHandler {SyscallHandler} {
   // Pass all signals by default
@@ -88,7 +88,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx, SignalDelegator *SignalDele
 
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+  for (uint32_t Signal = 0; Signal <= FEXCore::SignalDelegator::MAX_SIGNALS; ++Signal) {
     SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       if (PassSignals[Signal]) {
         // Pass signal to the guest
@@ -254,15 +254,15 @@ struct X80Float {
 };
 
 struct FEX_PACKED GDBContextDefinition {
-  uint64_t gregs[Core::CPUState::NUM_GPRS];
+  uint64_t gregs[FEXCore::Core::CPUState::NUM_GPRS];
   uint64_t rip;
   uint32_t eflags;
   uint32_t cs, ss, ds, es, fs, gs;
-  X80Float mm[Core::CPUState::NUM_MMS];
+  X80Float mm[FEXCore::Core::CPUState::NUM_MMS];
   uint32_t fctrl;
   uint32_t fstat;
   uint32_t dummies[6];
-  uint64_t xmm[Core::CPUState::NUM_XMMS][4];
+  uint64_t xmm[FEXCore::Core::CPUState::NUM_XMMS][4];
   uint32_t mxcsr;
 };
 
@@ -295,7 +295,7 @@ fextl::string GdbServer::readRegs() {
 
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread);
 
-  for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
   }
 
@@ -383,9 +383,9 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   }
   else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) &&
            addr < offsetof(GDBContextDefinition, xmm[16][0])) {
-    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / Core::CPUState::XMM_AVX_REG_SIZE;
+    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / FEXCore::Core::CPUState::XMM_AVX_REG_SIZE;
     const auto *Data = (unsigned char *)&state.xmm.avx.data[XmmIndex][0];
-    return {encodeHex(Data, Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
+    return {encodeHex(Data, FEXCore::Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
     uint32_t Empty{};
@@ -427,7 +427,7 @@ fextl::string buildTargetXML() {
       // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
 
       // GPRs
-      for (uint32_t i = 0; i < Core::CPUState::NUM_GPRS; i++) {
+      for (uint32_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; i++) {
         reg(FEXCore::Core::GetGRegName(i), "int64", 64);
       }
 
@@ -484,7 +484,7 @@ fextl::string buildTargetXML() {
         )";
 
       // SSE regs
-      for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
           reg(fextl::fmt::format("xmm{}", i), "vec128", 128);
       }
 
@@ -510,7 +510,7 @@ fextl::string buildTargetXML() {
           <field name="uint128" type="uint128"/>
         </union>
         )";
-    for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
         reg(fmt::format("ymm{}h", i), "vec128", 128);
     }
     xml << "</feature>\n";
@@ -972,7 +972,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     // We now have a semi-colon deliminated list of signals to pass to the guest process
     for (fextl::string tmp; std::getline(ss, tmp, ';'); ) {
       uint32_t Signal = std::stoi(tmp.c_str(), nullptr, 16);
-      if (Signal < SignalDelegator::MAX_SIGNALS) {
+      if (Signal < FEXCore::SignalDelegator::MAX_SIGNALS) {
         PassSignals[Signal] = true;
       }
     }
@@ -1277,7 +1277,7 @@ void GdbServer::GdbServerLoop() {
   close(ListenSocket);
 }
 static void* ThreadHandler(void *Arg) {
-  FEXCore::GdbServer *This = reinterpret_cast<FEXCore::GdbServer*>(Arg);
+  auto This = reinterpret_cast<FEX::GdbServer*>(Arg);
   This->GdbServerLoop();
   return nullptr;
 }
