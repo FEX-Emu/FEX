@@ -1307,9 +1307,7 @@ private:
     NZCVDirty = false;
   }
 
-  void InsertNZCV(unsigned BitOffset, OrderedNode *Value) {
-    // For now, always insert from bit 0
-    signed FlagOffset = 0;
+  void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
     signed Bit = IndexNZCV(BitOffset);
 
     if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
@@ -1319,6 +1317,9 @@ private:
       CachedNZCV = nullptr;
     } else {
       // Insert as GPR
+      if (FlagOffset || MustMask)
+        Value = _Bfe(OpSize::i32Bit, 1, FlagOffset, Value);
+
       if (PossiblySetNZCVBits == 0)
         SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
       else if ((PossiblySetNZCVBits & (1u << Bit)) == 0)
@@ -1346,17 +1347,21 @@ private:
   }
 
   template<unsigned BitOffset>
-  void SetRFLAG(OrderedNode *Value) {
-    SetRFLAG(Value, BitOffset);
+  void SetRFLAG(OrderedNode *Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    SetRFLAG(Value, BitOffset, ValueOffset, MustMask);
   }
 
-  void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
+  void SetRFLAG(OrderedNode *Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
     flagsOp = SelectionFlag::Nothing;
 
-    if (IsNZCV(BitOffset))
-      InsertNZCV(BitOffset, Value);
-    else
+    if (IsNZCV(BitOffset)) {
+      InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
+    } else {
+      if (ValueOffset || MustMask)
+        Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
+
       _StoreFlag(Value, BitOffset);
+    }
   }
 
   void SetAF(unsigned Constant) {
