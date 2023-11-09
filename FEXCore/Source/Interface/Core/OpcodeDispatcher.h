@@ -1307,18 +1307,19 @@ private:
     NZCVDirty = false;
   }
 
-  OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
-    unsigned Bit = IndexNZCV(BitOffset);
-
+  void InsertNZCV(unsigned BitOffset, OrderedNode *Value) {
     uint32_t SetBits = PossiblySetNZCVBits;
+    OrderedNode *NZCV = SetBits ? GetNZCV() : nullptr;
+
+    unsigned Bit = IndexNZCV(BitOffset);
     PossiblySetNZCVBits |= (1u << Bit);
 
     if (SetBits == 0)
-      return _Lshl(OpSize::i64Bit, Value, _Constant(Bit));
+      SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
     else if ((SetBits & (1u << Bit)) == 0)
-      return _Orlshl(OpSize::i32Bit, NZCV, Value, Bit);
+      SetNZCV(_Orlshl(OpSize::i32Bit, NZCV, Value, Bit));
     else
-      return _Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value);
+      SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, NZCV, Value));
   }
 
   void CarryInvert() {
@@ -1345,7 +1346,7 @@ private:
     flagsOp = SelectionFlag::Nothing;
 
     if (IsNZCV(BitOffset))
-      SetNZCV(InsertNZCV(PossiblySetNZCVBits ? GetNZCV() : nullptr, BitOffset, Value));
+      InsertNZCV(BitOffset, Value);
     else
       _StoreFlag(Value, BitOffset);
   }
