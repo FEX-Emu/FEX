@@ -128,13 +128,14 @@ DEF_OP(TestNZ) {
   auto Src = GetReg(Op->Src1.ID());
 
   // Shift the sign bit into place, clearing out the garbage in upper bits.
-  // setf+rmif would avoid the scratch register, but higher latency on M1.
+  // Adding zero does an effective test, setting NZ according to the result and
+  // zeroing CV.
   if (OpSize < 4) {
-    lsl(EmitSize, TMP1, Src, 32 - (OpSize * 8));
-    Src = TMP1;
+    unsigned Shift = 32 - (OpSize * 8);
+    cmn(EmitSize, ARMEmitter::Reg::zr, Src, ARMEmitter::ShiftType::LSL, Shift);
+  } else {
+    tst(EmitSize, Src, Src);
   }
-
-  tst(EmitSize, Src, Src);
 }
 
 DEF_OP(Sub) {
