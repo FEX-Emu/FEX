@@ -6,6 +6,7 @@ desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
 $end_info$
 */
 
+#include "FEXCore/Utils/BitUtils.h"
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -24,6 +25,7 @@ $end_info$
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <tuple>
 
@@ -828,6 +830,22 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 }
 
 OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  uint64_t TrueConst, FalseConst;
+  if (std::has_single_bit(Mask) &&
+      IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
+      IsValueConstant(WrapNode(FalseValue), &FalseConst) &&
+      TrueConst == 1 &&
+      FalseConst == 0) {
+
+      if (!TrueIsNonzero)
+        Cmp = _Not(OpSize::i32Bit, Cmp);
+
+      if (Mask == 1)
+        return _And(ResultSize, Cmp, _Constant(1));
+      else
+        return _Bfe(ResultSize, 1, FindFirstSetBit(Mask) - 1, Cmp);
+  }
+
   return _Select(ResultSize, OpSize::i32Bit,
                  TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
                  Cmp, _Constant(Mask),
