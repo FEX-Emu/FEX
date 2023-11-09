@@ -3357,11 +3357,39 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     _AtomicXor(IR::SizeToOpSize(Size), MaskConst, DestMem);
-  }
-  else {
+  } else if (!Op->Dest.IsGPR()) {
+    // GPR version plays fast and loose with sizes, be safe for memory tho.
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     Src = _Xor(OpSize::i64Bit, Src, MaskConst);
     StoreResult(GPRClass, Op, Src, -1);
+  } else {
+    // Specially handle high bits so we can invert in place with the correct
+    // mask and a larger type.
+    auto Dest = Op->Dest;
+    if (Dest.Data.GPR.HighBits) {
+      LOGMAN_THROW_A_FMT(Size == 1, "Only 8-bit GPRs get high bits");
+      MaskConst = _Constant(0xFF00);
+      Dest.Data.GPR.HighBits = false;
+    }
+
+    // Always load full size, we explicitly want the upper bits to get the
+    // insert behaviour for free/implicitly.
+    const uint8_t GPRSize = CTX->GetGPRSize();
+    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Dest, GPRSize, Op->Flags);
+
+    // For 8/16-bit, use 64-bit invert so we invert in place, while getting
+    // insert behaviour. For 32-bit, use 32-bit invert to zero the upper bits.
+    unsigned EffectiveSize = Size == 4 ? 4 : GPRSize;
+
+    // If we're inverting the whole thing, use Not instead of Xor to save a constant.
+    if (Size >= 4)
+      Src = _Not(IR::SizeToOpSize(EffectiveSize), Src);
+    else
+      Src = _Xor(IR::SizeToOpSize(EffectiveSize), Src, MaskConst);
+
+    // Always store 64-bit, the Not/Xor correctly handle the upper bits and this
+    // way we can delete the store.
+    StoreResult_WithOpSize(GPRClass, Op, Dest, Src, GPRSize, -1);
   }
 }
 
