@@ -686,7 +686,7 @@
         "cmp x20, #0x0 (0)",
         "cset x20, ne",
         "orr w20, w21, w20, lsl #29",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "blsr rax, rbx": {
@@ -703,7 +703,7 @@
         "cmp x7, #0x0 (0)",
         "cset x21, ne",
         "orr w20, w20, w21, lsl #29",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "blsmsk eax, ebx": {
@@ -718,14 +718,14 @@
         "eor x21, x21, x20",
         "mov w4, w21",
         "mov w21, #0x50000000",
-        "ldr w22, [x28, #728]",
+        "mrs x22, nzcv",
         "bic x21, x22, x21",
         "cmp x20, #0x0 (0)",
         "cset x20, ne",
         "mov w0, w21",
         "bfi w0, w20, #29, #1",
         "mov w20, w0",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "blsmsk rax, rbx": {
@@ -738,12 +738,12 @@
         "sub x20, x7, #0x1 (1)",
         "eor x4, x20, x7",
         "mov w20, #0x50000000",
-        "ldr w21, [x28, #728]",
+        "mrs x21, nzcv",
         "bic x20, x21, x20",
         "cmp x7, #0x0 (0)",
         "cset x21, ne",
         "bfi w20, w21, #29, #1",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "blsi eax, ebx": {
@@ -761,7 +761,7 @@
         "cmp x4, #0x0 (0)",
         "cset x21, ne",
         "orr w20, w20, w21, lsl #29",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     },
     "blsi rax, rbx": {
@@ -778,7 +778,7 @@
         "cmp x4, #0x0 (0)",
         "cset x21, ne",
         "orr w20, w20, w21, lsl #29",
-        "str w20, [x28, #728]"
+        "msr nzcv, x20"
       ]
     }
   }

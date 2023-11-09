@@ -49,7 +49,7 @@
       ]
     },
     "fcom dword [rax]": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xd8 !11b /2"
@@ -60,37 +60,7 @@
         "fcvt d2, s2",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcomp dword [rax]": {
-      "ExpectedInstructionCount": 30,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 !11b /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "ldr s2, [x4]",
-        "fcvt d2, s2",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x21, eq",
         "csinc x21, x21, xzr, vc",
@@ -108,14 +78,48 @@
         "strb w22, [x28, #745]",
         "strb w21, [x28, #746]",
         "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcomp dword [rax]": {
+      "ExpectedInstructionCount": 32,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 !11b /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "ldr s2, [x4]",
+        "fcvt d2, s2",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
+        "fcmp d3, d2",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
+        "cset x1, lt",
+        "bfi x22, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fsub dword [rax]": {
@@ -491,7 +495,7 @@
       ]
     },
     "fcom st0, st0": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd0 /2"
@@ -505,270 +509,7 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x22, x20, #1, #1",
-        "ubfx x23, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w22, w22, w20",
-        "orr w23, w23, w20",
-        "strb w22, [x28, #744]",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w23, [x28, #750]"
-      ]
-    },
-    "fcom st0, st1": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd1 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st2": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd2 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st3": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd3 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st4": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd4 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st5": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd5 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st6": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd6 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcom st0, st7": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd7 /2"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcomp st0, st0": {
-      "ExpectedInstructionCount": 32,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xd8 /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "mov w21, #0x0",
-        "add w22, w20, #0x0 (0)",
-        "and w22, w22, #0x7",
-        "add x0, x28, x22, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x22, eq",
         "csinc x22, x22, xzr, vc",
@@ -785,18 +526,299 @@
         "strb w21, [x28, #745]",
         "strb w22, [x28, #746]",
         "strb w24, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st1": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd1 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x1 (1)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st2": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd2 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x2 (2)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st3": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd3 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x3 (3)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st4": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd4 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x4 (4)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st5": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd5 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x5 (5)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st6": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd6 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x6 (6)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcom st0, st7": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd7 /2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x7 (7)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcomp st0, st0": {
+      "ExpectedInstructionCount": 34,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xd8 /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "mov w21, #0x0",
+        "add w22, w20, #0x0 (0)",
+        "and w22, w22, #0x7",
+        "add x0, x28, x22, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
+        "fcmp d3, d2",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
+        "cset x1, lt",
+        "bfi x23, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "strb w21, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
         "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
       ]
     },
     "fcomp st0, st1": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xd9 /3"
@@ -810,6 +832,49 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
+        "fcmp d3, d2",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
+        "cset x1, lt",
+        "bfi x23, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "mov w24, #0x0",
+        "strb w24, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
+        "ldrb w23, [x28, #1010]",
+        "lsl w21, w21, w20",
+        "bic w21, w23, w21",
+        "strb w21, [x28, #1010]",
+        "add w20, w20, #0x1 (1)",
+        "and w20, w20, #0x7",
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
+      ]
+    },
+    "fcomp st0, st2": {
+      "ExpectedInstructionCount": 34,
+      "Optimal": "No",
+      "Comment": [
+        "0xd8 11b 0xda /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x2 (2)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
         "cset x22, eq",
         "csinc x22, x22, xzr, vc",
@@ -828,57 +893,18 @@
         "strb w22, [x28, #746]",
         "strb w24, [x28, #750]",
         "ldrb w22, [x28, #1010]",
-        "lsl w21, w21, w20",
-        "bic w21, w22, w21",
-        "strb w21, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
-      ]
-    },
-    "fcomp st0, st2": {
-      "ExpectedInstructionCount": 32,
-      "Optimal": "No",
-      "Comment": [
-        "0xd8 11b 0xda /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
-        "add w20, w20, #0x1 (1)",
-        "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fcomp st0, st3": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdb /3"
@@ -891,35 +917,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fcomp st0, st4": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdc /3"
@@ -932,35 +960,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fcomp st0, st5": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdd /3"
@@ -973,35 +1003,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fcomp st0, st6": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xde /3"
@@ -1014,35 +1046,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fcomp st0, st7": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xd8 11b 0xdf /3"
@@ -1055,31 +1089,33 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fsub st0, st0": {
@@ -1749,7 +1785,7 @@
       ]
     },
     "fldenv [rax]": {
-      "ExpectedInstructionCount": 54,
+      "ExpectedInstructionCount": 56,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /4"
@@ -1778,37 +1814,39 @@
         "strb w20, [x28, #750]",
         "ldr w20, [x4, #8]",
         "ubfx w21, w20, #0, #2",
+        "mrs x22, nzcv",
         "cmp x21, #0x3 (3)",
         "cset x21, ne",
-        "ubfx w22, w20, #2, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #1",
-        "ubfx w22, w20, #4, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #2",
-        "ubfx w22, w20, #6, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #3",
-        "ubfx w22, w20, #8, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #4",
-        "ubfx w22, w20, #10, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #5",
-        "ubfx w22, w20, #12, #2",
-        "cmp x22, #0x3 (3)",
-        "cset x22, ne",
-        "orr w21, w21, w22, lsl #6",
+        "ubfx w23, w20, #2, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #1",
+        "ubfx w23, w20, #4, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #2",
+        "ubfx w23, w20, #6, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #3",
+        "ubfx w23, w20, #8, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #4",
+        "ubfx w23, w20, #10, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #5",
+        "ubfx w23, w20, #12, #2",
+        "cmp x23, #0x3 (3)",
+        "cset x23, ne",
+        "orr w21, w21, w23, lsl #6",
         "ubfx w20, w20, #14, #2",
         "cmp x20, #0x3 (3)",
         "cset x20, ne",
         "orr w20, w21, w20, lsl #7",
-        "strb w20, [x28, #1010]"
+        "strb w20, [x28, #1010]",
+        "msr nzcv, x22"
       ]
     },
     "fldcw [rax]": {
@@ -1831,7 +1869,7 @@
       ]
     },
     "fnstenv [rax]": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 64,
       "Optimal": "No",
       "Comment": [
         "0xd9 !11b /6"
@@ -1856,39 +1894,40 @@
         "ldrb w21, [x28, #1010]",
         "and w22, w21, #0x1",
         "mov w23, #0x3",
+        "mrs x24, nzcv",
         "cmp x22, #0x0 (0)",
         "csel x22, x23, x20, eq",
         "orr w22, w20, w22",
-        "lsr w24, w21, #1",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #2",
-        "lsr w24, w21, #2",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #4",
-        "lsr w24, w21, #3",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #6",
-        "lsr w24, w21, #4",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #8",
-        "lsr w24, w21, #5",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #10",
-        "lsr w24, w21, #6",
-        "and w24, w24, #0x1",
-        "cmp x24, #0x0 (0)",
-        "csel x24, x23, x20, eq",
-        "orr w22, w22, w24, lsl #12",
+        "lsr w25, w21, #1",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #2",
+        "lsr w25, w21, #2",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #4",
+        "lsr w25, w21, #3",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #6",
+        "lsr w25, w21, #4",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #8",
+        "lsr w25, w21, #5",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #10",
+        "lsr w25, w21, #6",
+        "and w25, w25, #0x1",
+        "cmp x25, #0x0 (0)",
+        "csel x25, x23, x20, eq",
+        "orr w22, w22, w25, lsl #12",
         "lsr w21, w21, #7",
         "and w21, w21, #0x1",
         "cmp x21, #0x0 (0)",
@@ -1898,7 +1937,8 @@
         "str w20, [x4, #12]",
         "str w20, [x4, #16]",
         "str w20, [x4, #20]",
-        "str w20, [x4, #24]"
+        "str w20, [x4, #24]",
+        "msr nzcv, x24"
       ]
     },
     "fnstcw [rax]": {
@@ -2303,7 +2343,7 @@
       ]
     },
     "ftst": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xe4 /4"
@@ -2314,26 +2354,28 @@
         "ldr d2, [x0, #752]",
         "mov w20, #0x0",
         "fmov d3, x20",
+        "mrs x21, nzcv",
         "fcmp d2, d3",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
         "strb w20, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]"
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "msr nzcv, x21"
       ]
     },
     "fxam": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 18,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xe5 /4"
@@ -2350,11 +2392,13 @@
         "mov w21, #0x1",
         "and w20, w20, #0x1",
         "mov w22, #0x0",
+        "mrs x23, nzcv",
         "cmp x20, #0x1 (1)",
         "csel x21, x22, x21, eq",
         "strb w21, [x28, #744]",
         "strb w20, [x28, #746]",
-        "strb w21, [x28, #750]"
+        "strb w21, [x28, #750]",
+        "msr nzcv, x23"
       ]
     },
     "fld1": {
@@ -2527,7 +2571,7 @@
       ]
     },
     "f2xm1": {
-      "ExpectedInstructionCount": 48,
+      "ExpectedInstructionCount": 52,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf0 /6"
@@ -2536,6 +2580,8 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2565,6 +2611,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2584,7 +2632,7 @@
       ]
     },
     "fyl2x": {
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf1 /6"
@@ -2603,6 +2651,8 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2633,6 +2683,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2652,7 +2704,7 @@
       ]
     },
     "fptan": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 66,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf2 /6"
@@ -2669,6 +2721,8 @@
         "strb w22, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2698,6 +2752,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2723,7 +2779,7 @@
       ]
     },
     "fpatan": {
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf3 /6"
@@ -2742,6 +2798,8 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2772,6 +2830,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2823,7 +2883,7 @@
       ]
     },
     "fprem1": {
-      "ExpectedInstructionCount": 55,
+      "ExpectedInstructionCount": 59,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf5 /6"
@@ -2836,6 +2896,8 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2866,6 +2928,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2913,7 +2977,7 @@
       ]
     },
     "fprem": {
-      "ExpectedInstructionCount": 55,
+      "ExpectedInstructionCount": 59,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf8 /7"
@@ -2926,6 +2990,8 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -2956,6 +3022,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -2977,7 +3045,7 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 62,
+      "ExpectedInstructionCount": 66,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xf9 /7"
@@ -2999,6 +3067,8 @@
         "mov x20, #0x3ff0000000000000",
         "fmov d4, x20",
         "fadd d2, d2, d4",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3029,6 +3099,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3063,7 +3135,7 @@
       ]
     },
     "fsincos": {
-      "ExpectedInstructionCount": 103,
+      "ExpectedInstructionCount": 111,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfb /7"
@@ -3080,6 +3152,8 @@
         "strb w22, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3109,6 +3183,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3123,6 +3199,8 @@
         "ldp x16, x17, [x28, #104]",
         "ldp x19, x29, [x28, #120]",
         "mov v3.8b, v0.8b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3152,6 +3230,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3190,7 +3270,7 @@
       ]
     },
     "fscale": {
-      "ExpectedInstructionCount": 53,
+      "ExpectedInstructionCount": 57,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfd /7"
@@ -3203,6 +3283,8 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x21, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3233,6 +3315,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3252,7 +3336,7 @@
       ]
     },
     "fsin": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xfe /7"
@@ -3261,6 +3345,8 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3290,6 +3376,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3311,7 +3399,7 @@
       ]
     },
     "fcos": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 54,
       "Optimal": "No",
       "Comment": [
         "0xd9 11b 0xff /7"
@@ -3320,6 +3408,8 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -3349,6 +3439,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -3404,7 +3496,7 @@
       ]
     },
     "ficom dword [rax]": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": [
         "0xda !11b /2"
@@ -3415,37 +3507,7 @@
         "scvtf d2, w21",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "ficomp dword [rax]": {
-      "ExpectedInstructionCount": 30,
-      "Optimal": "No",
-      "Comment": [
-        "0xda !11b /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "ldr w21, [x4]",
-        "scvtf d2, w21",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x21, eq",
         "csinc x21, x21, xzr, vc",
@@ -3463,14 +3525,48 @@
         "strb w22, [x28, #745]",
         "strb w21, [x28, #746]",
         "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "msr nzcv, x20"
+      ]
+    },
+    "ficomp dword [rax]": {
+      "ExpectedInstructionCount": 32,
+      "Optimal": "No",
+      "Comment": [
+        "0xda !11b /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "ldr w21, [x4]",
+        "scvtf d2, w21",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
+        "fcmp d3, d2",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
+        "cset x1, lt",
+        "bfi x22, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fisub dword [rax]": {
@@ -3542,559 +3638,583 @@
       ]
     },
     "fcmovb st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc0 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc1 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc2 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc3 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc4 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc5 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc6 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovb st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc7 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc8 /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xc9 /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xca /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcb /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcc /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcd /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xce /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmove st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xcf /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd0 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd1 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd2 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd3 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd4 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd5 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd6 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovbe st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd7 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, ne",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, ne",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovu st0, st0": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd8 /1"
@@ -4104,23 +4224,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xd9 /1"
@@ -4130,23 +4252,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st2": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xda /1"
@@ -4156,23 +4280,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st3": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdb /1"
@@ -4182,23 +4308,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st4": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdc /1"
@@ -4208,23 +4336,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st5": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdd /1"
@@ -4234,23 +4364,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st6": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xde /1"
@@ -4260,23 +4392,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovu st0, st7": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xdf /1"
@@ -4286,23 +4420,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, eq",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Optimal": "No",
       "Comment": [
         "0xda 11b 0xe9 /5"
@@ -4316,35 +4452,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
         "fcmp d3, d2",
-        "cset x22, eq",
-        "csinc x22, x22, xzr, vc",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
         "cset x1, lt",
-        "bfi x22, x1, #1, #1",
+        "bfi x23, x1, #1, #1",
         "cset x1, vs",
-        "bfi x22, x1, #2, #1",
-        "ubfx x23, x22, #1, #1",
-        "ubfx x24, x22, #0, #1",
-        "ubfx x22, x22, #2, #1",
-        "orr w23, w23, w22",
-        "orr w24, w24, w22",
-        "strb w23, [x28, #744]",
-        "mov w23, #0x0",
-        "strb w23, [x28, #745]",
-        "strb w22, [x28, #746]",
-        "strb w24, [x28, #750]",
-        "ldrb w22, [x28, #1010]",
-        "lsl w23, w21, w20",
-        "bic w22, w22, w23",
-        "strb w22, [x28, #1010]",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "mov w24, #0x0",
+        "strb w24, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
+        "ldrb w23, [x28, #1010]",
+        "lsl w24, w21, w20",
+        "bic w23, w23, w24",
+        "strb w23, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "lsl w21, w21, w20",
-        "bic w21, w22, w21",
+        "bic w21, w23, w21",
         "strb w21, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
       ]
     },
     "fild dword [rax]": {
@@ -4430,7 +4568,7 @@
       ]
     },
     "fld tword [rax]": {
-      "ExpectedInstructionCount": 56,
+      "ExpectedInstructionCount": 60,
       "Optimal": "No",
       "Comment": [
         "0xdb !11b /5"
@@ -4438,6 +4576,8 @@
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #747]",
         "ldr q2, [x4]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -4468,6 +4608,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -4495,7 +4637,7 @@
       ]
     },
     "fstp tword [rax]": {
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 63,
       "Optimal": "No",
       "Comment": [
         "0xdb !11b /7"
@@ -4504,6 +4646,8 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -4533,6 +4677,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -4563,559 +4709,583 @@
       ]
     },
     "fcmovnb st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc0 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc1 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc2 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc3 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc4 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc5 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc6 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnb st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc7 /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x20000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc8 /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xc9 /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xca /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcb /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcc /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcd /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xce /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovne st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xcf /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x40000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st0": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd0 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd1 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd2 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd3 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd4 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd5 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd6 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnbe st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd7 /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #728]",
+        "mrs x20, nzcv",
         "tst w20, #0x60000000",
-        "csetm x20, eq",
-        "dup v2.2d, x20",
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x20, lsl #4",
-        "ldr q3, [x0, #752]",
+        "csetm x21, eq",
+        "dup v2.2d, x21",
+        "ldrb w21, [x28, #747]",
+        "add w22, w21, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x21, lsl #4",
+        "ldr q3, [x0, #752]",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
-        "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "add x0, x28, x21, lsl #4",
+        "str q2, [x0, #752]",
+        "msr nzcv, x20"
       ]
     },
     "fcmovnu st0, st0": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd8 /3"
@@ -5125,23 +5295,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xd9 /3"
@@ -5151,23 +5323,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x1 (1)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st2": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xda /3"
@@ -5177,23 +5351,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x2 (2)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st3": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdb /3"
@@ -5203,23 +5379,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x3 (3)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st4": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdc /3"
@@ -5229,23 +5407,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x4 (4)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st5": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdd /3"
@@ -5255,23 +5435,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x5 (5)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st6": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xde /3"
@@ -5281,23 +5463,25 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x6 (6)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fcmovnu st0, st7": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Optimal": "No",
       "Comment": [
         "0xdb 11b 0xdf /3"
@@ -5307,19 +5491,21 @@
         "fmov s2, w20",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
+        "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
+        "add w22, w20, #0x7 (7)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #752]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q4, [x0, #752]",
         "bsl v2.16b, v4.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
-        "str q2, [x0, #752]"
+        "str q2, [x0, #752]",
+        "msr nzcv, x21"
       ]
     },
     "fnclex": {
@@ -5385,7 +5571,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st1": {
@@ -5418,7 +5604,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st2": {
@@ -5451,7 +5637,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st3": {
@@ -5484,7 +5670,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st4": {
@@ -5517,7 +5703,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st5": {
@@ -5550,7 +5736,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st6": {
@@ -5583,7 +5769,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fucomi st0, st7": {
@@ -5616,7 +5802,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st0": {
@@ -5649,7 +5835,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st1": {
@@ -5682,7 +5868,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st2": {
@@ -5715,7 +5901,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st3": {
@@ -5748,7 +5934,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st4": {
@@ -5781,7 +5967,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st5": {
@@ -5814,7 +6000,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st6": {
@@ -5847,7 +6033,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fcomi st0, st7": {
@@ -5880,7 +6066,7 @@
         "orr w21, w21, w22, lsl #30",
         "eor w20, w20, #0x1",
         "strb w20, [x28, #706]",
-        "str w21, [x28, #728]"
+        "msr nzcv, x21"
       ]
     },
     "fadd qword [rax]": {
@@ -5916,7 +6102,7 @@
       ]
     },
     "fcom qword [rax]": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": [
         "0xdc !11b /2"
@@ -5926,36 +6112,7 @@
         "ldr d2, [x4]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fcomp qword [rax]": {
-      "ExpectedInstructionCount": 29,
-      "Optimal": "No",
-      "Comment": [
-        "0xdc !11b /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "ldr d2, [x4]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x21, eq",
         "csinc x21, x21, xzr, vc",
@@ -5973,14 +6130,47 @@
         "strb w22, [x28, #745]",
         "strb w21, [x28, #746]",
         "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fcomp qword [rax]": {
+      "ExpectedInstructionCount": 31,
+      "Optimal": "No",
+      "Comment": [
+        "0xdc !11b /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "ldr d2, [x4]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
+        "fcmp d3, d2",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
+        "cset x1, lt",
+        "bfi x22, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fsub qword [rax]": {
@@ -7049,7 +7239,7 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 467,
+      "ExpectedInstructionCount": 501,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /4"
@@ -7080,32 +7270,33 @@
         "strb w20, [x28, #750]",
         "ldr w20, [x4, #8]",
         "ubfx w22, w20, #0, #2",
+        "mrs x23, nzcv",
         "cmp x22, #0x3 (3)",
         "cset x22, ne",
-        "ubfx w23, w20, #2, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #1",
-        "ubfx w23, w20, #4, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #2",
-        "ubfx w23, w20, #6, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #3",
-        "ubfx w23, w20, #8, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #4",
-        "ubfx w23, w20, #10, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #5",
-        "ubfx w23, w20, #12, #2",
-        "cmp x23, #0x3 (3)",
-        "cset x23, ne",
-        "orr w22, w22, w23, lsl #6",
+        "ubfx w24, w20, #2, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #1",
+        "ubfx w24, w20, #4, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #2",
+        "ubfx w24, w20, #6, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #3",
+        "ubfx w24, w20, #8, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #4",
+        "ubfx w24, w20, #10, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #5",
+        "ubfx w24, w20, #12, #2",
+        "cmp x24, #0x3 (3)",
+        "cset x24, ne",
+        "orr w22, w22, w24, lsl #6",
         "ubfx w20, w20, #14, #2",
         "cmp x20, #0x3 (3)",
         "cset x20, ne",
@@ -7113,11 +7304,13 @@
         "strb w20, [x28, #1010]",
         "add x20, x4, #0x1c (28)",
         "mov x22, #0xffffffffffffffff",
-        "mov w23, #0xffff",
+        "mov w24, #0xffff",
         "fmov d2, x22",
-        "mov v2.d[1], x23",
+        "mov v2.d[1], x24",
         "ldur q3, [x4, #28]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7148,6 +7341,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7169,6 +7364,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x20, #10]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7199,6 +7396,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7220,6 +7419,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x22, #10]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7250,6 +7451,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7271,6 +7474,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x20, #10]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7301,6 +7506,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7322,6 +7529,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x22, #10]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7352,6 +7561,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7373,6 +7584,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x20, #10]",
         "and v3.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7403,6 +7616,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7424,6 +7639,8 @@
         "and w21, w21, #0x7",
         "ldur q3, [x22, #10]",
         "and v2.16b, v3.16b, v2.16b",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7454,6 +7671,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7476,6 +7695,8 @@
         "ldur d2, [x20, #10]",
         "ldr h3, [x22, #8]",
         "mov v2.h[4], v3.h[0]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7506,6 +7727,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7521,11 +7744,12 @@
         "ldp x19, x29, [x28, #120]",
         "mov v2.8b, v0.8b",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #752]"
+        "str d2, [x0, #752]",
+        "msr nzcv, x23"
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 477,
+      "ExpectedInstructionCount": 511,
       "Optimal": "No",
       "Comment": [
         "0xdd !11b /6"
@@ -7549,39 +7773,40 @@
         "ldrb w22, [x28, #1010]",
         "and w23, w22, #0x1",
         "mov w24, #0x3",
+        "mrs x25, nzcv",
         "cmp x23, #0x0 (0)",
         "csel x23, x24, x21, eq",
         "orr w23, w21, w23",
-        "lsr w25, w22, #1",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #2",
-        "lsr w25, w22, #2",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #4",
-        "lsr w25, w22, #3",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #6",
-        "lsr w25, w22, #4",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #8",
-        "lsr w25, w22, #5",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #10",
-        "lsr w25, w22, #6",
-        "and w25, w25, #0x1",
-        "cmp x25, #0x0 (0)",
-        "csel x25, x24, x21, eq",
-        "orr w23, w23, w25, lsl #12",
+        "lsr w26, w22, #1",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #2",
+        "lsr w26, w22, #2",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #4",
+        "lsr w26, w22, #3",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #6",
+        "lsr w26, w22, #4",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #8",
+        "lsr w26, w22, #5",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #10",
+        "lsr w26, w22, #6",
+        "and w26, w26, #0x1",
+        "cmp x26, #0x0 (0)",
+        "csel x26, x24, x21, eq",
+        "orr w23, w23, w26, lsl #12",
         "lsr w22, w22, #7",
         "and w22, w22, #0x1",
         "cmp x22, #0x0 (0)",
@@ -7595,6 +7820,8 @@
         "add x22, x4, #0x1c (28)",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7624,6 +7851,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7646,6 +7875,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7675,6 +7906,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7697,6 +7930,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7726,6 +7961,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7748,6 +7985,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7777,6 +8016,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7799,6 +8040,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7828,6 +8071,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7850,6 +8095,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7879,6 +8126,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7901,6 +8150,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7930,6 +8181,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -7952,6 +8205,8 @@
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -7981,6 +8236,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -8007,7 +8264,8 @@
         "strb w21, [x28, #745]",
         "strb w21, [x28, #746]",
         "strb w21, [x28, #750]",
-        "strb w21, [x28, #1010]"
+        "strb w21, [x28, #1010]",
+        "msr nzcv, x25"
       ]
     },
     "fnstsw [rax]": {
@@ -8488,7 +8746,7 @@
       ]
     },
     "fucom st0": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 26,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe0 /4"
@@ -8502,270 +8760,7 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x22, x20, #1, #1",
-        "ubfx x23, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w22, w22, w20",
-        "orr w23, w23, w20",
-        "strb w22, [x28, #744]",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w23, [x28, #750]"
-      ]
-    },
-    "fucom st1": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe1 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x1 (1)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st2": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe2 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st3": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe3 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x3 (3)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st4": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe4 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x4 (4)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st5": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe5 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x5 (5)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st6": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe6 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x6 (6)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucom st7": {
-      "ExpectedInstructionCount": 24,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe7 /4"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x7 (7)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "fucomp st0": {
-      "ExpectedInstructionCount": 32,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xe8 /5"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "mov w21, #0x0",
-        "add w22, w20, #0x0 (0)",
-        "and w22, w22, #0x7",
-        "add x0, x28, x22, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x22, eq",
         "csinc x22, x22, xzr, vc",
@@ -8782,18 +8777,299 @@
         "strb w21, [x28, #745]",
         "strb w22, [x28, #746]",
         "strb w24, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st1": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe1 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x1 (1)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st2": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe2 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x2 (2)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st3": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe3 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x3 (3)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st4": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe4 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x4 (4)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st5": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe5 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x5 (5)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st6": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe6 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x6 (6)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucom st7": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe7 /4"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x7 (7)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
+        "fcmp d3, d2",
+        "cset x21, eq",
+        "csinc x21, x21, xzr, vc",
+        "cset x1, lt",
+        "bfi x21, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x21, x1, #2, #1",
+        "ubfx x22, x21, #1, #1",
+        "ubfx x23, x21, #0, #1",
+        "ubfx x21, x21, #2, #1",
+        "orr w22, w22, w21",
+        "orr w23, w23, w21",
+        "strb w22, [x28, #744]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #745]",
+        "strb w21, [x28, #746]",
+        "strb w23, [x28, #750]",
+        "msr nzcv, x20"
+      ]
+    },
+    "fucomp st0": {
+      "ExpectedInstructionCount": 34,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xe8 /5"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "mov w21, #0x0",
+        "add w22, w20, #0x0 (0)",
+        "and w22, w22, #0x7",
+        "add x0, x28, x22, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
+        "fcmp d3, d2",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
+        "cset x1, lt",
+        "bfi x23, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "strb w21, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
         "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w21, w21, w23",
         "strb w21, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
       ]
     },
     "fucomp st1": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xe9 /5"
@@ -8807,6 +9083,49 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
+        "fcmp d3, d2",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
+        "cset x1, lt",
+        "bfi x23, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "mov w24, #0x0",
+        "strb w24, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
+        "ldrb w23, [x28, #1010]",
+        "lsl w21, w21, w20",
+        "bic w21, w23, w21",
+        "strb w21, [x28, #1010]",
+        "add w20, w20, #0x1 (1)",
+        "and w20, w20, #0x7",
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
+      ]
+    },
+    "fucomp st2": {
+      "ExpectedInstructionCount": 34,
+      "Optimal": "No",
+      "Comment": [
+        "0xdd 11b 0xea /5"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "add w21, w20, #0x2 (2)",
+        "and w21, w21, #0x7",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #752]",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
         "cset x22, eq",
         "csinc x22, x22, xzr, vc",
@@ -8825,57 +9144,18 @@
         "strb w22, [x28, #746]",
         "strb w24, [x28, #750]",
         "ldrb w22, [x28, #1010]",
-        "lsl w21, w21, w20",
-        "bic w21, w22, w21",
-        "strb w21, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
-      ]
-    },
-    "fucomp st2": {
-      "ExpectedInstructionCount": 32,
-      "Optimal": "No",
-      "Comment": [
-        "0xdd 11b 0xea /5"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "add w21, w20, #0x2 (2)",
-        "and w21, w21, #0x7",
-        "add x0, x28, x21, lsl #4",
-        "ldr d2, [x0, #752]",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
-        "add w20, w20, #0x1 (1)",
-        "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fucomp st3": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xeb /5"
@@ -8888,35 +9168,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fucomp st4": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xec /5"
@@ -8929,35 +9211,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fucomp st5": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xed /5"
@@ -8970,35 +9254,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fucomp st6": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xee /5"
@@ -9011,35 +9297,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fucomp st7": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Optimal": "No",
       "Comment": [
         "0xdd 11b 0xef /5"
@@ -9052,31 +9340,33 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
         "fcmp d3, d2",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
         "cset x1, lt",
-        "bfi x21, x1, #1, #1",
+        "bfi x22, x1, #1, #1",
         "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "orr w22, w22, w21",
-        "orr w23, w23, w21",
-        "strb w22, [x28, #744]",
-        "mov w22, #0x0",
-        "strb w22, [x28, #745]",
-        "strb w21, [x28, #746]",
-        "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fiadd word [rax]": {
@@ -9116,7 +9406,7 @@
       ]
     },
     "ficom word [rax]": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": [
         "0xde !11b /2"
@@ -9128,38 +9418,7 @@
         "scvtf d2, w21",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
-        "fcmp d3, d2",
-        "cset x20, eq",
-        "csinc x20, x20, xzr, vc",
-        "cset x1, lt",
-        "bfi x20, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x20, x1, #2, #1",
-        "ubfx x21, x20, #1, #1",
-        "ubfx x22, x20, #0, #1",
-        "ubfx x20, x20, #2, #1",
-        "orr w21, w21, w20",
-        "orr w22, w22, w20",
-        "strb w21, [x28, #744]",
-        "mov w21, #0x0",
-        "strb w21, [x28, #745]",
-        "strb w20, [x28, #746]",
-        "strb w22, [x28, #750]"
-      ]
-    },
-    "ficomp word [rax]": {
-      "ExpectedInstructionCount": 31,
-      "Optimal": "No",
-      "Comment": [
-        "0xde !11b /3"
-      ],
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x28, #747]",
-        "ldrh w21, [x4]",
-        "sxth x21, w21",
-        "scvtf d2, w21",
-        "add x0, x28, x20, lsl #4",
-        "ldr d3, [x0, #752]",
+        "mrs x20, nzcv",
         "fcmp d3, d2",
         "cset x21, eq",
         "csinc x21, x21, xzr, vc",
@@ -9177,14 +9436,49 @@
         "strb w22, [x28, #745]",
         "strb w21, [x28, #746]",
         "strb w23, [x28, #750]",
-        "ldrb w21, [x28, #1010]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
-        "strb w21, [x28, #1010]",
+        "msr nzcv, x20"
+      ]
+    },
+    "ficomp word [rax]": {
+      "ExpectedInstructionCount": 33,
+      "Optimal": "No",
+      "Comment": [
+        "0xde !11b /3"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrb w20, [x28, #747]",
+        "ldrh w21, [x4]",
+        "sxth x21, w21",
+        "scvtf d2, w21",
+        "add x0, x28, x20, lsl #4",
+        "ldr d3, [x0, #752]",
+        "mrs x21, nzcv",
+        "fcmp d3, d2",
+        "cset x22, eq",
+        "csinc x22, x22, xzr, vc",
+        "cset x1, lt",
+        "bfi x22, x1, #1, #1",
+        "cset x1, vs",
+        "bfi x22, x1, #2, #1",
+        "ubfx x23, x22, #1, #1",
+        "ubfx x24, x22, #0, #1",
+        "ubfx x22, x22, #2, #1",
+        "orr w23, w23, w22",
+        "orr w24, w24, w22",
+        "strb w23, [x28, #744]",
+        "mov w23, #0x0",
+        "strb w23, [x28, #745]",
+        "strb w22, [x28, #746]",
+        "strb w24, [x28, #750]",
+        "ldrb w22, [x28, #1010]",
+        "mov w23, #0x1",
+        "lsl w23, w23, w20",
+        "bic w22, w22, w23",
+        "strb w22, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x21"
       ]
     },
     "fisub word [rax]": {
@@ -9692,7 +9986,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Optimal": "No",
       "Comment": [
         "0xde 11b 0xd9 /3"
@@ -9706,35 +10000,37 @@
         "ldr d2, [x0, #752]",
         "add x0, x28, x20, lsl #4",
         "ldr d3, [x0, #752]",
+        "mrs x22, nzcv",
         "fcmp d3, d2",
-        "cset x22, eq",
-        "csinc x22, x22, xzr, vc",
+        "cset x23, eq",
+        "csinc x23, x23, xzr, vc",
         "cset x1, lt",
-        "bfi x22, x1, #1, #1",
+        "bfi x23, x1, #1, #1",
         "cset x1, vs",
-        "bfi x22, x1, #2, #1",
-        "ubfx x23, x22, #1, #1",
-        "ubfx x24, x22, #0, #1",
-        "ubfx x22, x22, #2, #1",
-        "orr w23, w23, w22",
-        "orr w24, w24, w22",
-        "strb w23, [x28, #744]",
-        "mov w23, #0x0",
-        "strb w23, [x28, #745]",
-        "strb w22, [x28, #746]",
-        "strb w24, [x28, #750]",
-        "ldrb w22, [x28, #1010]",
-        "lsl w23, w21, w20",
-        "bic w22, w22, w23",
-        "strb w22, [x28, #1010]",
+        "bfi x23, x1, #2, #1",
+        "ubfx x24, x23, #1, #1",
+        "ubfx x25, x23, #0, #1",
+        "ubfx x23, x23, #2, #1",
+        "orr w24, w24, w23",
+        "orr w25, w25, w23",
+        "strb w24, [x28, #744]",
+        "mov w24, #0x0",
+        "strb w24, [x28, #745]",
+        "strb w23, [x28, #746]",
+        "strb w25, [x28, #750]",
+        "ldrb w23, [x28, #1010]",
+        "lsl w24, w21, w20",
+        "bic w23, w23, w24",
+        "strb w23, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "lsl w21, w21, w20",
-        "bic w21, w22, w21",
+        "bic w21, w23, w21",
         "strb w21, [x28, #1010]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
-        "strb w20, [x28, #747]"
+        "strb w20, [x28, #747]",
+        "msr nzcv, x22"
       ]
     },
     "db 0xde, 0xe0": {
@@ -10693,7 +10989,7 @@
       ]
     },
     "fbld tword [rax]": {
-      "ExpectedInstructionCount": 102,
+      "ExpectedInstructionCount": 110,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /4"
@@ -10709,6 +11005,8 @@
         "strb w21, [x28, #1010]",
         "strb w20, [x28, #747]",
         "ldr q2, [x4]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -10739,6 +11037,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -10755,6 +11055,8 @@
         "eor v2.16b, v2.16b, v2.16b",
         "mov v2.d[0], x0",
         "mov v2.h[4], w1",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -10785,6 +11087,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -10804,7 +11108,7 @@
       ]
     },
     "fbstp tword [rax]": {
-      "ExpectedInstructionCount": 105,
+      "ExpectedInstructionCount": 113,
       "Optimal": "No",
       "Comment": [
         "0xdf !11b /6"
@@ -10813,6 +11117,8 @@
         "ldrb w20, [x28, #747]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #752]",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -10842,6 +11148,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -10858,6 +11166,8 @@
         "eor v2.16b, v2.16b, v2.16b",
         "mov v2.d[0], x0",
         "mov v2.h[4], w1",
+        "mrs x0, nzcv",
+        "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
         "stp x6, x7, [x28, #24]",
         "stp x8, x9, [x28, #40]",
@@ -10888,6 +11198,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
+        "ldr w4, [x28, #728]",
+        "msr nzcv, x4",
         "add x4, x28, #0xc0 (192)",
         "ld1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x4], #64",
         "ld1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x4], #64",
@@ -11080,7 +11392,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st1": {
@@ -11121,7 +11433,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w23, [x28, #728]"
+        "msr nzcv, x23"
       ]
     },
     "fucomip st2": {
@@ -11162,7 +11474,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st3": {
@@ -11203,7 +11515,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st4": {
@@ -11244,7 +11556,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st5": {
@@ -11285,7 +11597,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st6": {
@@ -11326,7 +11638,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fucomip st7": {
@@ -11367,7 +11679,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st0": {
@@ -11408,7 +11720,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st1": {
@@ -11449,7 +11761,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w23, [x28, #728]"
+        "msr nzcv, x23"
       ]
     },
     "fcomip st2": {
@@ -11490,7 +11802,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st3": {
@@ -11531,7 +11843,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st4": {
@@ -11572,7 +11884,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st5": {
@@ -11613,7 +11925,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st6": {
@@ -11654,7 +11966,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     },
     "fcomip st7": {
@@ -11695,7 +12007,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #747]",
-        "str w22, [x28, #728]"
+        "msr nzcv, x22"
       ]
     }
   }
