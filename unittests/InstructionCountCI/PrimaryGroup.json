@@ -3233,13 +3233,19 @@
       ]
     },
     "not bl": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP2 0xf6 /2",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "eor x20, x20, #0xff",
-        "bfxil x7, x20, #0, #8"
+        "eor x7, x7, #0xff"
+      ]
+    },
+    "not bh": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xf6 /2",
+      "ExpectedArm64ASM": [
+        "eor x7, x7, #0xff00"
       ]
     },
     "neg bl": {
@@ -3400,32 +3406,27 @@
       ]
     },
     "not bx": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP2 0xf7 /1",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "eor x20, x20, #0xffff",
-        "bfxil x7, x20, #0, #16"
+        "eor x7, x7, #0xffff"
       ]
     },
     "not ebx": {
-      "ExpectedInstructionCount": 3,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP2 0xf7 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "eor x20, x20, #0xffffffff",
-        "mov w7, w20"
+        "mvn w7, w7"
       ]
     },
     "not rbx": {
-      "ExpectedInstructionCount": 2,
-      "Optimal": "No",
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
       "Comment": "GROUP2 0xf7 /1",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "eor x7, x7, x20"
+        "mvn x7, x7"
       ]
     },
     "neg bx": {
