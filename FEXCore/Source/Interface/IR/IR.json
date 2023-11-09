@@ -1592,7 +1592,6 @@
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VCMPEQZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1601,7 +1600,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1610,7 +1608,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
                 ],
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1859,12 +1856,10 @@
       },
 
       "FPR = VFMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VFMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1983,7 +1978,6 @@
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero"
                 ],
 
-        "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

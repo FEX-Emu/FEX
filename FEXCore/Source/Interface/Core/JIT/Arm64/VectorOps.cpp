@@ -1799,6 +1799,9 @@ DEF_OP(VFMin) {
     }
   } else {
     if (IsScalar) {
+      // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
       switch (ElementSize) {
         case 2: {
           fcmp(Vector1.H(), Vector2.H());
@@ -1818,6 +1821,9 @@ DEF_OP(VFMin) {
         default:
           break;
       }
+
+      // Restore NZCV
+      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
     } else {
       if (Dst == Vector1) {
         // Destination is already Vector1, need to insert Vector2 on false.
@@ -1878,6 +1884,9 @@ DEF_OP(VFMax) {
     }
   } else {
     if (IsScalar) {
+      // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
       switch (ElementSize) {
         case 2: {
           fcmp(Vector1.H(), Vector2.H());
@@ -1897,6 +1906,9 @@ DEF_OP(VFMax) {
         default:
           break;
       }
+
+      // Restore NZCV
+      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
     } else {
       if (Dst == Vector1) {
         // Destination is already Vector1, need to insert Vector2 on true.
@@ -2654,6 +2666,9 @@ DEF_OP(VCMPEQ) {
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
@@ -2664,6 +2679,9 @@ DEF_OP(VCMPEQ) {
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
     movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
     orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } else {
     if (IsScalar) {
       cmeq(SubRegSize.Scalar, Dst, Vector1, Vector2);
@@ -2695,6 +2713,9 @@ DEF_OP(VCMPEQZ) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     // Ensure no junk is in the temp (important for ensuring
     // non-equal entries remain as zero).
     mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
@@ -2705,6 +2726,9 @@ DEF_OP(VCMPEQZ) {
     cmpeq(SubRegSize.Vector, ComparePred, Mask, Vector.Z(), 0);
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector.Z());
     mov(Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } else {
     if (IsScalar) {
       cmeq(SubRegSize.Scalar, Dst, Vector);
@@ -2737,6 +2761,9 @@ DEF_OP(VCMPGT) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     // General idea is to compare for greater-than, bitwise NOT
     // the valid values, then ORR the NOTed values with the original
     // values to form entries that are all 1s.
@@ -2744,6 +2771,9 @@ DEF_OP(VCMPGT) {
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
     movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
     orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } else {
     if (IsScalar) {
       cmgt(SubRegSize.Scalar, Dst, Vector1, Vector2);
@@ -2775,6 +2805,9 @@ DEF_OP(VCMPGTZ) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     // Ensure no junk is in the temp (important for ensuring
     // non greater-than values remain as zero).
     mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
@@ -2782,6 +2815,9 @@ DEF_OP(VCMPGTZ) {
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector.Z());
     orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector.Z());
     mov(Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } else {
     if (IsScalar) {
       cmgt(SubRegSize.Scalar, Dst, Vector);
@@ -2813,6 +2849,9 @@ DEF_OP(VCMPLTZ) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     // Ensure no junk is in the temp (important for ensuring
     // non less-than values remain as zero).
     mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
@@ -2820,6 +2859,9 @@ DEF_OP(VCMPLTZ) {
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector.Z());
     orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector.Z());
     mov(Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } else {
     if (IsScalar) {
       cmlt(SubRegSize.Scalar, Dst, Vector);
