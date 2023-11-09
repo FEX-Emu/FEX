@@ -37,6 +37,7 @@ if (NOT MINGW_BUILD)
         ${PTHREAD_LIB}
         fmt::fmt
     )
+    target_compile_options(${NAME} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
     target_compile_definitions(${NAME} PRIVATE -DFEXLOADER_AS_INTERPRETER=${AsInterpreter})
 
     if (CMAKE_BUILD_TYPE MATCHES "RELEASE")

@@ -362,6 +362,7 @@ function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
 
   target_link_libraries(${Name} FEXCore_Base)
+  target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   AddDefaultOptionsToTarget(${Name})
 
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
@@ -370,6 +371,7 @@ endfunction()
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
   target_link_libraries(${Name} FEXCore_Base)
+  target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
   if (MINGW_BUILD)
     # Mingw build isn't building a linux shared library, so it can't have a SONAME.
