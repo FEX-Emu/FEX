@@ -236,8 +236,7 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNo
       Anded = _Andn(OpSize, XorOp2, XorOp1);
   }
 
-  auto OF = _Bfe(OpSize, 1, SrcSize * 8 - 1, Anded);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(OF);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
 }
 
 OrderedNode *OpDispatchBuilder::LoadPFRaw() {
@@ -603,8 +602,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
     // CF
     if (UpdateCF) {
       // Grab carry bit from unmasked output.
-      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Bfe);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, true);
@@ -636,8 +634,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
     // CF
     if (UpdateCF) {
       // Grab carry bit from unmasked output
-      auto Bfe = _Bfe(OpSize::i32Bit, 1, SrcSize * 8, Res);
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Bfe);
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
 
     CalculateOF(SrcSize, Res, Src1, Src2, false);
@@ -1218,7 +1215,7 @@ void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
 
   // Set flags
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Bfe(OpSize::i32Bit, 1, 0, Src));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, 0, true);
 }
 
 void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) {
