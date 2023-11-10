@@ -96,13 +96,12 @@
       ]
     },
     "lock adc byte [rax], cl": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": "0x10",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w22, w20, w21",
         "ldaddalb w22, w23, [x4]",
         "add w22, w23, w22",
@@ -128,13 +127,12 @@
       ]
     },
     "lock adc word [rax], cx": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 24,
       "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w22, w20, w21",
         "ldaddalh w22, w23, [x4]",
         "add w22, w23, w22",
@@ -160,13 +158,12 @@
       ]
     },
     "lock adc dword [rax], ecx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "mov w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "ldaddal w21, w22, [x4]",
         "add w21, w22, w21",
@@ -177,13 +174,12 @@
       ]
     },
     "lock sbb byte [rax], cl": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": "0x18",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w22, w20, w21",
         "neg w1, w22",
         "ldaddalb w1, w23, [x4]",
@@ -210,13 +206,12 @@
       ]
     },
     "lock sbb word [rax], cx": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 25,
       "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w22, w20, w21",
         "neg w1, w22",
         "ldaddalh w1, w23, [x4]",
@@ -243,13 +238,12 @@
       ]
     },
     "lock sbb dword [rax], ecx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "mov w20, w5",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "neg w1, w21",
         "ldaddal w1, w22, [x4]",
@@ -763,13 +757,12 @@
       ]
     },
     "lock adc byte [rax], 1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "ldaddalb w20, w22, [x4]",
         "add w20, w22, w20",
@@ -792,13 +785,12 @@
       ]
     },
     "lock adc byte [rax], 0xFF": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "ldaddalb w20, w22, [x4]",
         "add w20, w22, w20",
@@ -822,13 +814,12 @@
       ]
     },
     "lock adc word [rax], 0x100": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "ldaddalh w20, w22, [x4]",
         "add w20, w22, w20",
@@ -851,13 +842,12 @@
       ]
     },
     "lock adc word [rax], 0xFFFF": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w22, w20, w21",
         "ldaddalh w22, w23, [x4]",
         "add w22, w23, w22",
@@ -881,13 +871,12 @@
       ]
     },
     "lock adc dword [rax], 0x100": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "ldaddal w21, w22, [x4]",
         "add w21, w22, w21",
@@ -897,14 +886,13 @@
       ]
     },
     "lock adc dword [rax], 0xFFFFFFFF": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "movk w20, #0xffff, lsl #16",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "ldaddal w21, w22, [x4]",
         "add w21, w22, w21",
@@ -915,13 +903,12 @@
       ]
     },
     "lock adc qword [rax], 0x100": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "ldaddal x21, x22, [x4]",
         "add x21, x22, x21",
@@ -931,13 +918,12 @@
       ]
     },
     "lock adc qword [rax], -2147483647": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "ldaddal x21, x22, [x4]",
         "add x21, x22, x21",
@@ -947,13 +933,12 @@
       ]
     },
     "lock adc word [rax], 1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "ldaddalh w20, w22, [x4]",
         "add w20, w22, w20",
@@ -976,13 +961,12 @@
       ]
     },
     "lock adc dword [rax], 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "ldaddal w21, w22, [x4]",
         "add w21, w22, w21",
@@ -992,13 +976,12 @@
       ]
     },
     "lock adc qword [rax], 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "ldaddal x21, x22, [x4]",
         "add x21, x22, x21",
@@ -1008,13 +991,12 @@
       ]
     },
     "lock sbb byte [rax], 1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "neg w1, w20",
         "ldaddalb w1, w22, [x4]",
@@ -1038,13 +1020,12 @@
       ]
     },
     "lock sbb byte [rax], 0xFF": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "neg w1, w20",
         "ldaddalb w1, w22, [x4]",
@@ -1069,13 +1050,12 @@
       ]
     },
     "lock sbb word [rax], 0x100": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "neg w1, w20",
         "ldaddalh w1, w22, [x4]",
@@ -1099,13 +1079,12 @@
       ]
     },
     "lock sbb word [rax], 0xFFFF": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "neg w1, w20",
         "ldaddalh w1, w22, [x4]",
@@ -1130,13 +1109,12 @@
       ]
     },
     "lock sbb dword [rax], 0x100": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "neg w1, w21",
         "ldaddal w1, w22, [x4]",
@@ -1149,14 +1127,13 @@
       ]
     },
     "lock sbb dword [rax], 0xFFFFFFFF": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "movk w20, #0xffff, lsl #16",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "neg w1, w21",
         "ldaddal w1, w22, [x4]",
@@ -1170,13 +1147,12 @@
       ]
     },
     "lock sbb qword [rax], 0x100": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "neg x1, x21",
         "ldaddal x1, x22, [x4]",
@@ -1189,13 +1165,12 @@
       ]
     },
     "lock sbb qword [rax], -2147483647": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "neg x1, x21",
         "ldaddal x1, x22, [x4]",
@@ -1208,13 +1183,12 @@
       ]
     },
     "lock sbb word [rax], 1": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w20, w20, w21",
         "neg w1, w20",
         "ldaddalh w1, w22, [x4]",
@@ -1238,13 +1212,12 @@
       ]
     },
     "lock sbb dword [rax], 1": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add w21, w20, w21",
         "neg w1, w21",
         "ldaddal w1, w22, [x4]",
@@ -1257,13 +1230,12 @@
       ]
     },
     "lock sbb qword [rax], 1": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "add x21, x20, x21",
         "neg x1, x21",
         "ldaddal x1, x22, [x4]",
@@ -1732,7 +1704,7 @@
       ]
     },
     "lock dec byte [rax]": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP3 0xfe /1",
       "ExpectedArm64ASM": [
@@ -1742,8 +1714,7 @@
         "sub w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x22, nzcv",
-        "ubfx w22, w22, #29, #1",
+        "cset w22, hs",
         "cmn wzr, w21, lsl #24",
         "bic w20, w20, w21",
         "rmif x20, #7, #nzcV",
@@ -1860,7 +1831,7 @@
       ]
     },
     "lock dec word [rax]": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
@@ -1870,8 +1841,7 @@
         "sub w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x22, nzcv",
-        "ubfx w22, w22, #29, #1",
+        "cset w22, hs",
         "cmn wzr, w21, lsl #16",
         "bic w20, w20, w21",
         "rmif x20, #15, #nzcV",
@@ -1879,7 +1849,7 @@
       ]
     },
     "lock dec dword [rax]": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
@@ -1889,14 +1859,13 @@
         "sub w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "cmp w20, #0x1 (1)",
         "rmif x21, #63, #nzCv"
       ]
     },
     "lock dec qword [rax]": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
@@ -1906,14 +1875,13 @@
         "sub x21, x20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "cmp x20, #0x1 (1)",
         "rmif x21, #63, #nzCv"
       ]
     },
     "lock inc byte [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
@@ -1922,8 +1890,7 @@
         "add w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x22, nzcv",
-        "ubfx w22, w22, #29, #1",
+        "cset w22, hs",
         "cmn wzr, w21, lsl #24",
         "bic w20, w21, w20",
         "rmif x20, #7, #nzcV",
@@ -1931,7 +1898,7 @@
       ]
     },
     "lock inc word [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Optimal": "No",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
@@ -1940,8 +1907,7 @@
         "add w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x22, nzcv",
-        "ubfx w22, w22, #29, #1",
+        "cset w22, hs",
         "cmn wzr, w21, lsl #16",
         "bic w20, w21, w20",
         "rmif x20, #15, #nzcV",
@@ -1949,7 +1915,7 @@
       ]
     },
     "lock inc dword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
@@ -1958,14 +1924,13 @@
         "add w21, w20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "cmn w20, #0x1 (1)",
         "rmif x21, #63, #nzCv"
       ]
     },
     "lock inc qword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
@@ -1974,8 +1939,7 @@
         "add x21, x20, #0x1 (1)",
         "strb w20, [x28, #708]",
         "strb w21, [x28, #706]",
-        "mrs x21, nzcv",
-        "ubfx w21, w21, #29, #1",
+        "cset w21, hs",
         "cmn x20, #0x1 (1)",
         "rmif x21, #63, #nzCv"
       ]
