@@ -1292,8 +1292,8 @@ ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
   case FEXCore::IR::COND_VS:
   case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI:
-  case FEXCore::IR::COND_PL:
+  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
+  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
   default:
   LOGMAN_MSG_A_FMT("Unsupported compare type");
   return ARMEmitter::Condition::CC_NV;
@@ -1345,6 +1345,39 @@ DEF_OP(Select) {
   } else {
     LOGMAN_MSG_A_FMT("Select: Expected GPR or FPR");
   }
+
+  uint64_t const_true, const_false;
+  bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
+  bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
+
+  uint64_t all_ones = OpSize == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+
+  ARMEmitter::Register Dst = GetReg(Node);
+
+  if (is_const_true || is_const_false) {
+    if (is_const_false != true || is_const_true != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
+      LOGMAN_MSG_A_FMT("Select: Unsupported compare inline parameters");
+    }
+
+    if (const_true == all_ones)
+      csetm(EmitSize, Dst, cc);
+    else
+      cset(EmitSize, Dst, cc);
+  } else {
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
+  }
+}
+
+DEF_OP(NZCVSelect) {
+  auto Op = IROp->C<IR::IROp_NZCVSelect>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  auto cc = MapSelectCC(Op->Cond);
+  bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
+               Op->Cond == FEXCore::IR::COND_ANDNZ;
+
+  LOGMAN_THROW_A_FMT(!tests, "Only NZCV on this code path");
 
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);

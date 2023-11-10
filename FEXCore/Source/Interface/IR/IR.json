@@ -1223,6 +1223,16 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
+        "Desc": ["Select based on value in NZCV flags",
+                 "op:",
+                 "Dest = Cond ? TrueVal : FalseVal"
+                ],
+        "DestSize": "ResultSize",
+        "EmitValidation": [
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = Select OpSize:#ResultSize, OpSize:$CompareSize, CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal": {
         "Desc": ["Ternary selection of GPRs",
                  "op:",
