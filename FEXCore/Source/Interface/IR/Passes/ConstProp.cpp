@@ -1056,17 +1056,23 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
 
+        // We always allow source 1 to be zero, but source 0 can only be a
+        // special 1/~0 constant if source 1 is 0.
         uint64_t Constant0{};
         uint64_t Constant1{};
-        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant0) &&
-            IREmit->IsValueConstant(Op->Header.Args[1], &Constant1) &&
-            (Constant0 == 1 || Constant0 == AllOnes) &&
+        if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1) &&
             Constant1 == 0)
         {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
-
-          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant0));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+
+          if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant0) &&
+              (Constant0 == 1 || Constant0 == AllOnes))
+          {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant0));
+          }
         }
 
         break;

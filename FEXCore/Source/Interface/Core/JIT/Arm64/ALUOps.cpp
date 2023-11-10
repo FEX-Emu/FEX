@@ -1387,15 +1387,18 @@ DEF_OP(NZCVSelect) {
 
   ARMEmitter::Register Dst = GetReg(Node);
 
-  if (is_const_true || is_const_false) {
-    if (is_const_false != true || is_const_true != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
-      LOGMAN_MSG_A_FMT("Select: Unsupported compare inline parameters");
+  if (is_const_true) {
+    if (is_const_false != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
+      LOGMAN_MSG_A_FMT("NZCVSelect: Unsupported constant");
     }
 
     if (const_true == all_ones)
       csetm(EmitSize, Dst, cc);
     else
       cset(EmitSize, Dst, cc);
+  } else if (is_const_false) {
+    LOGMAN_THROW_A_FMT(const_false == 0, "NZCVSelect: unsupported constant");
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), ARMEmitter::Reg::zr, cc);
   } else {
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
   }
