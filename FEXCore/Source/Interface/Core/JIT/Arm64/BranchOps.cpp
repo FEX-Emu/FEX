@@ -135,49 +135,22 @@ DEF_OP(CondJump) {
   } else {
     uint64_t Const;
     const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
-    bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
-                 Op->Cond == FEXCore::IR::COND_ANDNZ;
 
     const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
-    const auto SubSize = ARMEmitter::ToVectorSizePair(Op->CompareSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
 
-    if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
-      LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    LOGMAN_THROW_A_FMT(isConst && Const == 0, "CondJump: Expected 0 source");
+    LOGMAN_THROW_A_FMT(Op->Cond.Val == FEXCore::IR::COND_EQ ||
+                       Op->Cond.Val == FEXCore::IR::COND_NEQ,
+                       "CondJump: Expected simple condition");
+
+    if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
       cbz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
-    } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
-      LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    } else  {
       cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
-    } else {
-      // FIXME: We should split up this op to avoid the NZCV spill/fill dance.
-      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
-
-      if (IsGPR(Op->Cmp1.ID())) {
-        if (tests) {
-          if (isConst) {
-            tst(Size, GetReg(Op->Cmp1.ID()), Const);
-          } else {
-            tst(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
-          }
-        } else {
-          if (isConst) {
-            cmp(Size, GetReg(Op->Cmp1.ID()), Const);
-          } else {
-            cmp(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
-          }
-        }
-      } else if (IsFPR(Op->Cmp1.ID())) {
-        fcmp(SubSize.Scalar, GetVReg(Op->Cmp1.ID()), GetVReg(Op->Cmp2.ID()));
-      } else {
-        LOGMAN_MSG_A_FMT("CondJump: Expected GPR or FPR");
-      }
-
-      // Restore NZCV
-      cset(Size, TMP2, MapBranchCC(Op->Cond));
-      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
-
-      // Non-NZCV using branch so we can keep the guest value
-      cbnz(Size, TMP2, TrueTargetLabel);
     }
+
+    // TODO: Wire up tbz/tbnz
   }
 
   PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
