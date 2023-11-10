@@ -77,6 +77,8 @@
     "constexpr uint8_t COND_FU   = 20 /* float unordred */",
     "constexpr uint8_t COND_FNU  = 21 /* float not unordred */",
 
+    "constexpr uint8_t COND_AL   = 32 /* always */",
+
     "constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
     "constexpr FEXCore::IR::RegisterClassType FPRClass {2}",
@@ -865,9 +867,9 @@
         "DestSize": "8"
       },
 
-      "GPR = Neg OpSize:#Size, GPR:$Src": {
-        "Desc": ["Integer negation",
-                 "Dest = -Src",
+      "GPR = Neg OpSize:#Size, GPR:$Src, CondClass:$Cond{{COND_AL}}": {
+        "Desc": ["Integer negation, with optional predication",
+                 "Dest = Cond ? -Src : Src",
                  "Will truncate to 64 or 32bits"
                 ],
         "DestSize": "Size",

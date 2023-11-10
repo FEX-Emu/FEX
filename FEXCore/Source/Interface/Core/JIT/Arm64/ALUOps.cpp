@@ -193,6 +193,36 @@ DEF_OP(RmifNZCV) {
   rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
 }
 
+ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
+  switch (Cond.Val) {
+  case FEXCore::IR::COND_ANDZ:
+  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_ANDNZ:
+  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
+  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
+  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
+  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
+  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
+  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
+  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
+  case FEXCore::IR::COND_VS:
+  case FEXCore::IR::COND_VC:
+  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
+  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
+  default:
+  LOGMAN_MSG_A_FMT("Unsupported compare type");
+  return ARMEmitter::Condition::CC_NV;
+  }
+}
+
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
   const uint8_t OpSize = IROp->Size;
@@ -200,7 +230,10 @@ DEF_OP(Neg) {
   LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  neg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()));
+  if (Op->Cond == FEXCore::IR::COND_AL)
+    neg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()));
+  else
+    cneg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()), MapSelectCC(Op->Cond));
 }
 
 DEF_OP(Abs) {
@@ -1268,36 +1301,6 @@ DEF_OP(Sbfe) {
   const auto Src = GetReg(Op->Src.ID());
 
   sbfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
-}
-
-ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
-  switch (Cond.Val) {
-  case FEXCore::IR::COND_ANDZ:
-  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_ANDNZ:
-  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
-  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
-  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
-  default:
-  LOGMAN_MSG_A_FMT("Unsupported compare type");
-  return ARMEmitter::Condition::CC_NV;
-  }
 }
 
 DEF_OP(Select) {
