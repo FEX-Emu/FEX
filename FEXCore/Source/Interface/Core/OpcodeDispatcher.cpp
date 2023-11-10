@@ -853,84 +853,64 @@ OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool
 }
 
 OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
-  OrderedNode *SrcCond = nullptr;
-
   switch (OP) {
     case 0x0: { // JO - Jump if OF == 1
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_FU}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_FU}, TrueValue, FalseValue);
     }
     case 0x1:{ // JNO - Jump if OF == 0
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_FNU}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_FNU}, TrueValue, FalseValue);
     }
     case 0x2: { // JC - Jump if CF == 1
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
     }
     case 0x3: { // JNC - Jump if CF == 0
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
     }
     case 0x4: { // JE - Jump if ZF == 1
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_EQ}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_EQ}, TrueValue, FalseValue);
     }
     case 0x5: { // JNE - Jump if ZF == 0
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TrueValue, FalseValue);
     }
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
+      return SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
                                       (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
                            true, ResultSize, TrueValue, FalseValue);
-      break;
     }
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
+      return SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
                                       (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
                            false, ResultSize, TrueValue, FalseValue);
-      break;
     }
     case 0x8: { // JS - Jump if SF == 1
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_MI}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_MI}, TrueValue, FalseValue);
     }
     case 0x9: { // JNS - Jump if SF == 0
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_PL}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_PL}, TrueValue, FalseValue);
     }
     case 0xA: { // JP - Jump if PF == 1
       // Raw value contains inverted PF in bottom bit
-      SrcCond = SelectMask(LoadPFRaw(), 0x1, false, ResultSize, TrueValue, FalseValue);
-      break;
+      return SelectMask(LoadPFRaw(), 0x1, false, ResultSize, TrueValue, FalseValue);
     }
     case 0xB: { // JNP - Jump if PF == 0
-      SrcCond = SelectMask(LoadPFRaw(), 0x1, true, ResultSize, TrueValue, FalseValue);
-      break;
+      return SelectMask(LoadPFRaw(), 0x1, true, ResultSize, TrueValue, FalseValue);
     }
     case 0xC: { // SF <> OF
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_SLT}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_SLT}, TrueValue, FalseValue);
     }
     case 0xD: { // SF = OF
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_SGE}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_SGE}, TrueValue, FalseValue);
     }
     case 0xE: {// ZF = 1 || SF <> OF
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_SLE}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_SLE}, TrueValue, FalseValue);
     }
     case 0xF: {// ZF = 0 && SF = OF
-      SrcCond = _NZCVSelect(ResultSize, CondClassType{COND_SGT}, TrueValue, FalseValue);
-      break;
+      return _NZCVSelect(ResultSize, CondClassType{COND_SGT}, TrueValue, FalseValue);
     }
     default:
       LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP);
       return nullptr;
   }
-
-  return SrcCond;
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
