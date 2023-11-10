@@ -236,26 +236,6 @@ DEF_OP(Neg) {
     cneg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()), MapSelectCC(Op->Cond));
 }
 
-DEF_OP(Abs) {
-  auto Op = IROp->C<IR::IROp_Abs>();
-  const uint8_t OpSize = IROp->Size;
-
-  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-
-  const auto Dst = GetReg(Node);
-  auto Src = GetReg(Op->Src.ID());
-
-  if (CTX->HostFeatures.SupportsCSSC) {
-    // On CSSC supporting processors, this turns in to one instruction and doesn't modify flags.
-    abs(EmitSize, Dst, Src);
-  }
-  else {
-    cmp(EmitSize, Src, 0);
-    cneg(EmitSize, Dst, Src, ARMEmitter::Condition::CC_MI);
-  }
-}
-
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
   const uint8_t OpSize = IROp->Size;

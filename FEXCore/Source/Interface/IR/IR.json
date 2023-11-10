@@ -877,17 +877,6 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = Abs OpSize:#Size, GPR:$Src": {
-        "Desc": ["Integer 2's complement absolute value",
-                 "Dest = std::abs(Src)",
-                 "Will truncate to 64 or 32bits"
-                ],
-        "DestSize": "Size",
-        "ImplicitFlagClobber": true,
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
       "GPR = Not OpSize:#Size, GPR:$Src": {
         "Desc": ["Integer binary not",
                  "op:",
