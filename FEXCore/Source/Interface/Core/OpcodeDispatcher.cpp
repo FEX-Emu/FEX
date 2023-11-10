@@ -1092,6 +1092,12 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   bool CheckZF = Op->OP != 0xE2;
   bool ZFTrue = Op->OP == 0xE1;
 
+  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
+  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
+  OrderedNode *AndCondWith = nullptr;
+  if (CheckZF)
+    AndCondWith = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC, !ZFTrue);
+
   BlockSetRIP = true;
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
@@ -1112,15 +1118,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   SrcCond = _Select(FEXCore::IR::COND_NEQ,
           CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
 
-  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
-  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
-  if (CheckZF) {
-    OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-    if (!ZFTrue) {
-      ZF = _Xor(OpSize::i64Bit, ZF, _Constant(1));
-    }
-    SrcCond = _And(OpSize::i64Bit, SrcCond, ZF);
-  }
+  if (AndCondWith)
+    SrcCond = _And(OpSize::i64Bit, SrcCond, AndCondWith);
 
   CalculateDeferredFlags();
   auto TrueBlock = JumpTargets.find(Target);
