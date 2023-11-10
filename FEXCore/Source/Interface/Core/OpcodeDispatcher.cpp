@@ -829,10 +829,9 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
-OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
   uint64_t TrueConst, FalseConst;
-  if (std::has_single_bit(Mask) &&
-      IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
+  if (IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
       IsValueConstant(WrapNode(FalseValue), &FalseConst) &&
       TrueConst == 1 &&
       FalseConst == 0) {
@@ -840,15 +839,12 @@ OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool
       if (!TrueIsNonzero)
         Cmp = _Not(OpSize::i32Bit, Cmp);
 
-      if (Mask == 1)
-        return _And(ResultSize, Cmp, _Constant(1));
-      else
-        return _Bfe(ResultSize, 1, FindFirstSetBit(Mask) - 1, Cmp);
+      return _And(ResultSize, Cmp, _Constant(1));
   }
 
   return _Select(ResultSize, OpSize::i32Bit,
                  TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
-                 Cmp, _Constant(Mask),
+                 Cmp, _Constant(1),
                  TrueValue, FalseValue);
 }
 
@@ -890,10 +886,10 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
     }
     case 0xA: { // JP - Jump if PF == 1
       // Raw value contains inverted PF in bottom bit
-      return SelectMask(LoadPFRaw(), 0x1, false, ResultSize, TrueValue, FalseValue);
+      return SelectBit(LoadPFRaw(), false, ResultSize, TrueValue, FalseValue);
     }
     case 0xB: { // JNP - Jump if PF == 0
-      return SelectMask(LoadPFRaw(), 0x1, true, ResultSize, TrueValue, FalseValue);
+      return SelectBit(LoadPFRaw(), true, ResultSize, TrueValue, FalseValue);
     }
     case 0xC: { // SF <> OF
       return _NZCVSelect(ResultSize, CondClassType{COND_SLT}, TrueValue, FalseValue);
