@@ -127,6 +127,7 @@ public:
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0U;
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
