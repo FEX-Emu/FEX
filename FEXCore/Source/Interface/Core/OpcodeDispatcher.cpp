@@ -873,14 +873,14 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TrueValue, FalseValue);
     }
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-      return SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
-                           true, ResultSize, TrueValue, FalseValue);
+      // (A || B) ? C : D is equivalent to B ? C : (A ? C : D)
+      auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
+      return _NZCVSelect(ResultSize, CondClassType{COND_EQ}, TrueValue, TMP);
     }
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-      return SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
-                           false, ResultSize, TrueValue, FalseValue);
+      // (A && B) ? C : D is equivalent to B ? (A ? C : D) : D
+      auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
+      return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TMP, FalseValue);
     }
     case 0x8: { // JS - Jump if SF == 1
       return _NZCVSelect(ResultSize, CondClassType{COND_MI}, TrueValue, FalseValue);
