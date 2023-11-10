@@ -146,7 +146,7 @@ public:
   }
   IRPair<IROp_CondJump> CondJump(OrderedNode *_Cmp1, OrderedNode *_Cmp2, OrderedNode *_TrueBlock, OrderedNode *_FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
     CalculateDeferredFlags();
-    return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
+    return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize, false);
   }
   IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
     CalculateDeferredFlags();
@@ -1477,6 +1477,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
+  CondClassType DecodeNZCVCondition(uint8_t OP, bool &Complex);
   OrderedNode *SelectBit(OrderedNode *Cmp, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
