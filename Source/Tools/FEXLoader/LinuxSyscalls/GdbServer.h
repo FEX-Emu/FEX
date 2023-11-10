@@ -93,6 +93,7 @@ private:
     std::array<bool, FEXCore::SignalDelegator::MAX_SIGNALS + 1> PassSignals{};
     uint32_t CurrentDebuggingThread{};
     int ListenSocket{};
+    fextl::string GdbUnixSocketPath{};
     FEX_CONFIG_OPT(Filename, APP_FILENAME);
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 };
