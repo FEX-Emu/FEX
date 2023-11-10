@@ -156,6 +156,14 @@ public:
     CalculateDeferredFlags();
     return _CondJump(ssa0, ssa1, ssa2, cond);
   }
+  IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
+    CalculateDeferredFlags();
+
+    // The jump will ignore the sources, so it doesn't matter what we put here.
+    // Put an inline constant so RA+codegen will ignore altogether.
+    auto Placeholder = _InlineConstant(0);
+    return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
+  }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP

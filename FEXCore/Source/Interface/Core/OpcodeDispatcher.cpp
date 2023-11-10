@@ -960,11 +960,6 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   BlockSetRIP = true;
 
-  auto TakeBranch = _Constant(1);
-  auto DoNotTakeBranch = _Constant(0);
-
-  auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, TakeBranch, DoNotTakeBranch);
-
   // Jump instruction only uses up to 32-bit signed displacement
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
   int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
@@ -992,7 +987,16 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   // Fallback
   {
-    auto CondJump_ = CondJump(SrcCond);
+    IRPair<IR::IROp_CondJump> CondJump_;
+    auto [Complex, SimpleCond] = DecodeNZCVCondition(Op->OP & 0xF);
+    if (Complex) {
+      auto TakeBranch = _Constant(1);
+      auto DoNotTakeBranch = _Constant(0);
+      auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, TakeBranch, DoNotTakeBranch);
+      CondJump_ = CondJump(SrcCond);
+    } else {
+      CondJump_ = CondJumpNZCV(SimpleCond);
+    }
 
     // Taking branch block
     if (TrueBlock != JumpTargets.end()) {
