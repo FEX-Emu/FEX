@@ -848,26 +848,56 @@ OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, bool TrueIsNonzero, 
                  TrueValue, FalseValue);
 }
 
-OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) const {
   switch (OP) {
     case 0x0: { // JO - Jump if OF == 1
-      return _NZCVSelect(ResultSize, CondClassType{COND_FU}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_FU}};
     }
     case 0x1:{ // JNO - Jump if OF == 0
-      return _NZCVSelect(ResultSize, CondClassType{COND_FNU}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_FNU}};
     }
     case 0x2: { // JC - Jump if CF == 1
-      return _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_UGE}};
     }
     case 0x3: { // JNC - Jump if CF == 0
-      return _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_ULT}};
     }
     case 0x4: { // JE - Jump if ZF == 1
-      return _NZCVSelect(ResultSize, CondClassType{COND_EQ}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_EQ}};
     }
     case 0x5: { // JNE - Jump if ZF == 0
-      return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TrueValue, FalseValue);
+      return {false, CondClassType{COND_NEQ}};
     }
+    case 0x8: { // JS - Jump if SF == 1
+      return {false, CondClassType{COND_MI}};
+    }
+    case 0x9: { // JNS - Jump if SF == 0
+      return {false, CondClassType{COND_PL}};
+    }
+    case 0xC: { // SF <> OF
+      return {false, CondClassType{COND_SLT}};
+    }
+    case 0xD: { // SF = OF
+      return {false, CondClassType{COND_SGE}};
+    }
+    case 0xE: {// ZF = 1 || SF <> OF
+      return {false, CondClassType{COND_SLE}};
+    }
+    case 0xF: {// ZF = 0 && SF = OF
+      return {false, CondClassType{COND_SGT}};
+    }
+    default:
+      // Other conditions do not map directly, caller gets to deal with it.
+      return {true, CondClassType{0}};
+  }
+}
+
+OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  auto [Complex, Cond] = DecodeNZCVCondition(OP);
+  if (!Complex)
+      return _NZCVSelect(ResultSize, Cond, TrueValue, FalseValue);
+
+  switch (OP) {
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
       // (A || B) ? C : D is equivalent to B ? C : (A ? C : D)
       auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
@@ -878,30 +908,12 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
       auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
       return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TMP, FalseValue);
     }
-    case 0x8: { // JS - Jump if SF == 1
-      return _NZCVSelect(ResultSize, CondClassType{COND_MI}, TrueValue, FalseValue);
-    }
-    case 0x9: { // JNS - Jump if SF == 0
-      return _NZCVSelect(ResultSize, CondClassType{COND_PL}, TrueValue, FalseValue);
-    }
     case 0xA: { // JP - Jump if PF == 1
       // Raw value contains inverted PF in bottom bit
       return SelectBit(LoadPFRaw(), false, ResultSize, TrueValue, FalseValue);
     }
     case 0xB: { // JNP - Jump if PF == 0
       return SelectBit(LoadPFRaw(), true, ResultSize, TrueValue, FalseValue);
-    }
-    case 0xC: { // SF <> OF
-      return _NZCVSelect(ResultSize, CondClassType{COND_SLT}, TrueValue, FalseValue);
-    }
-    case 0xD: { // SF = OF
-      return _NZCVSelect(ResultSize, CondClassType{COND_SGE}, TrueValue, FalseValue);
-    }
-    case 0xE: {// ZF = 1 || SF <> OF
-      return _NZCVSelect(ResultSize, CondClassType{COND_SLE}, TrueValue, FalseValue);
-    }
-    case 0xF: {// ZF = 0 && SF = OF
-      return _NZCVSelect(ResultSize, CondClassType{COND_SGT}, TrueValue, FalseValue);
     }
     default:
       LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP);

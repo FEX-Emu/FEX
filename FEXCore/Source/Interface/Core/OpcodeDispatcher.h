@@ -1477,6 +1477,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
+  std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP) const;
   OrderedNode *SelectBit(OrderedNode *Cmp, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
