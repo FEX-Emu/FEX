@@ -1375,12 +1375,40 @@ private:
 
   void ZeroMultipleFlags(uint32_t BitMask);
 
-  OrderedNode *GetRFLAG(unsigned BitOffset) {
+  CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
+    switch (BitOffset) {
+    case FEXCore::X86State::RFLAG_SF_RAW_LOC:
+      return Invert ? CondClassType{COND_PL} : CondClassType{COND_MI};
+
+    case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
+      return Invert ? CondClassType{COND_NEQ} : CondClassType{COND_EQ};
+
+    case FEXCore::X86State::RFLAG_CF_RAW_LOC:
+      return Invert ? CondClassType{COND_ULT} : CondClassType{COND_UGE};
+
+    case FEXCore::X86State::RFLAG_OF_RAW_LOC:
+      return Invert ? CondClassType{COND_FNU} : CondClassType{COND_FU};
+
+    default:
+      FEX_UNREACHABLE;
+    }
+  }
+
+  OrderedNode *GetRFLAG(unsigned BitOffset, bool Invert = false) {
     if (IsNZCV(BitOffset)) {
-      if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
-        return _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
-      else
-        return _Constant(0);
+      if (!(PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset)))) {
+        return _Constant(Invert ? 1 : 0);
+      } else if (NZCVDirty) {
+        auto Value = _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
+
+        if (Invert)
+          return _Xor(OpSize::i32Bit, Value, _Constant(1));
+        else
+          return Value;
+      } else {
+        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert),
+                           _Constant(1), _Constant(0));
+      }
     } else {
       return _LoadFlag(BitOffset);
     }
