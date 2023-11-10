@@ -925,7 +925,7 @@ public:
   }
 
 protected:
-  void SaveNZCV(IROps Op) override {
+  void SaveNZCV(IROps Op = OP_DUMMY) override {
     /* Some opcodes are conservatively marked as clobbering flags, but in fact
      * do not clobber flags in certain conditions. Check for that here as an
      * optimization.
