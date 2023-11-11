@@ -12,6 +12,7 @@ $end_info$
 #include <memory>
 #include <optional>
 
+#include <Common/FEXServerClient.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
@@ -32,6 +33,7 @@ $end_info$
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <atomic>
 #include <cstring>
@@ -47,6 +49,7 @@ $end_info$
 #include <stddef.h>
 #include <string_view>
 #include <sys/stat.h>
+#include <sys/un.h>
 #include <unistd.h>
 #include <utility>
 
@@ -1275,6 +1278,7 @@ void GdbServer::GdbServerLoop() {
   }
 
   close(ListenSocket);
+  unlink(GdbUnixSocketPath.c_str());
 }
 static void* ThreadHandler(void *Arg) {
   auto This = reinterpret_cast<FEX::GdbServer*>(Arg);
@@ -1289,38 +1293,37 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OpenListenSocket() {
-  // getaddrinfo allocates memory that can't be removed.
-  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  struct addrinfo hints, *res;
-
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
-
-  if(getaddrinfo(NULL, "8086", &hints, &res) < 0) {
-    perror("getaddrinfo");
+  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetServerMountFolder());
+  if (FHU::Filesystem::CreateDirectory(GdbUnixPath) == FHU::Filesystem::CreateDirectoryResult::ERROR) {
+    LogMan::Msg::EFmt("[GdbServer] Couldn't create gdbserver folder {}", GdbUnixPath);
+    return;
   }
 
-  int on = 1;
+  GdbUnixSocketPath = fextl::fmt::format("{}{}-gdb", GdbUnixPath, ::getpid());
 
-  ListenSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-  if (ListenSocket < 0) {
-    perror("socket");
+  ListenSocket = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (ListenSocket == -1) {
+    LogMan::Msg::EFmt("[GdbServer] Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
+    return;
   }
-  if(setsockopt(ListenSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) < 0) {
-    perror("setsockopt");
+
+  struct sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, GdbUnixSocketPath.data(), sizeof(addr.sun_path));
+  size_t SizeOfAddr = offsetof(sockaddr_un, sun_path) + GdbUnixSocketPath.size();
+
+  // Bind the socket to the path
+  int Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
+  if (Result == -1) {
+    LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
     close(ListenSocket);
-  }
-
-  if (bind(ListenSocket, res->ai_addr, res->ai_addrlen) < 0) {
-    perror("bind");
-    close(ListenSocket);
+    ListenSocket = -1;
+    return;
   }
 
   listen(ListenSocket, 1);
-
-  freeaddrinfo(res);
+  LogMan::Msg::IFmt("[GdbServer] Waiting for connection on {}", GdbUnixSocketPath);
+  LogMan::Msg::IFmt("[GdbServer] gdb-multiarch -ex \"target extended-remote {}\"", GdbUnixSocketPath);
 }
 
 fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
@@ -1328,7 +1331,6 @@ fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   struct sockaddr_storage their_addr{};
   socklen_t addr_size{};
 
-  LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
   int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);
 
   return fextl::make_unique<FEXCore::Utils::NetStream>(new_fd);
