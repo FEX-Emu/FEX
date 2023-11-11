@@ -1281,6 +1281,7 @@ void GdbServer::GdbServerLoop() {
   unlink(GdbUnixSocketPath.c_str());
 }
 static void* ThreadHandler(void *Arg) {
+  FEXCore::Threads::SetThreadName("FEX:gdbserver");
   auto This = reinterpret_cast<FEX::GdbServer*>(Arg);
   This->GdbServerLoop();
   return nullptr;
