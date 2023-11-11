@@ -1067,8 +1067,8 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "TestNZ u8:$Size, GPR:$Src1": {
-        "Desc": ["Set NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
+      "TestNZ u8:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the binary AND of two GPRs, setting N and Z accordingly and zeroing C and V"],
         "HasSideEffects": true
       },
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {

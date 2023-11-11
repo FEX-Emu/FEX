@@ -1010,6 +1010,22 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         break;
       }
+      case OP_TESTNZ:
+      {
+        auto Op = IROp->C<IR::IROp_TestNZ>();
+
+        uint64_t Constant1{};
+        if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+          if (IsImmLogical(Constant1, IROp->Size * 8)) {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+
+            Changed = true;
+          }
+        }
+        break;
+      }
       case OP_SELECT:
       {
         auto Op = IROp->C<IR::IROp_Select>();

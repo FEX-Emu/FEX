@@ -125,16 +125,35 @@ DEF_OP(TestNZ) {
   const uint8_t OpSize = Op->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  auto Src = GetReg(Op->Src1.ID());
+  uint64_t Const;
+  auto Src1 = GetReg(Op->Src1.ID());
 
   // Shift the sign bit into place, clearing out the garbage in upper bits.
   // Adding zero does an effective test, setting NZ according to the result and
   // zeroing CV.
   if (OpSize < 4) {
+    // Cheaper to and+cmn than to lsl+lsl+tst, so do the and ourselves if
+    // needed.
+    if (Op->Src1 != Op->Src2) {
+      if (IsInlineConstant(Op->Src2, &Const)) {
+        and_(EmitSize, TMP1, Src1, Const);
+      } else {
+        auto Src2 = GetReg(Op->Src2.ID());
+        and_(EmitSize, TMP1, Src1, Src2);
+      }
+
+      Src1 = TMP1;
+    }
+
     unsigned Shift = 32 - (OpSize * 8);
-    cmn(EmitSize, ARMEmitter::Reg::zr, Src, ARMEmitter::ShiftType::LSL, Shift);
+    cmn(EmitSize, ARMEmitter::Reg::zr, Src1, ARMEmitter::ShiftType::LSL, Shift);
   } else {
-    tst(EmitSize, Src, Src);
+    if (IsInlineConstant(Op->Src2, &Const)) {
+      tst(EmitSize, Src1, Const);
+    } else {
+      const auto Src2 = GetReg(Op->Src2.ID());
+      tst(EmitSize, Src1, Src2);
+    }
   }
 }
 
