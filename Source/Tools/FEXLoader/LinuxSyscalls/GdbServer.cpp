@@ -44,12 +44,13 @@ $end_info$
 #endif
 #include <errno.h>
 #include <fcntl.h>
-#include <fmt/format.h>
+#include <poll.h>
 #include <signal.h>
 #include <stddef.h>
 #include <string_view>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <utility>
 
@@ -146,6 +147,10 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
     ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
   }
   return ss.str();
+}
+
+static fextl::string encodeHex(const char *str) {
+  return encodeHex(reinterpret_cast<const unsigned char*>(str), strlen(str));
 }
 
 static fextl::string getThreadName(uint32_t ThreadID) {
@@ -823,7 +828,6 @@ GdbServer::HandledPacketType GdbServer::handleMemory(const fextl::string &packet
   }
 }
 
-
 GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet) {
   const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
   const auto MatchStr = [](const fextl::string &Str, const char *str) -> bool { return Str.rfind(str, 0) == 0; };
@@ -875,12 +879,17 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     SupportedFeatures += "QNonStop+;";
 
     SupportedFeatures += "qXfer:osdata:read+;";
+    SupportedFeatures += "QStartNoAckMode+;";
 
-    // Causes GDB to crash?
-    // SupportedFeatures += "QStartNoAckMode+;";
+    // TODO: Support breakpoints
+    // SupportedFeatures += "swbreak+;";
+    // SupportedFeatures += "hwbreak+;";
+    // SupportedFeatures += "BreakpointCommands+;";
+
+    // TODO: If we want to support conditional breakpoints then we need to support single stepping.
+    // SupportedFeatures += "ConditionalBreakpoints+;";
 
     for (auto &Feature : Features) {
-
       if (MatchStr(Feature, "swbreak+")) {
         SupportedFeatures += "swbreak+;";
       }
@@ -986,6 +995,61 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     }
 
     return {"OK", HandledPacketType::TYPE_ACK};
+  }
+
+  // lldb specific queries
+  if (match("qHostInfo")) {
+    // Returns Key:Value pairs separated by ;
+    // eg:
+    // triple:7838365f36342d70632d6c696e75782d676e75;
+    // ptrsize:8;
+    // distribution_id:7562756e7475;
+    // watchpoint_exceptions_received:after;
+    // endian:little;
+    // os_version:6.3.3;
+    // os_build:362e332e332d3036303330332d67656e65726963;
+    // os_kernel:2332303233303531373133333620534d5020505245454d50545f44594e414d494320576564204d61792031372031333a34353a3139205554432032303233;
+    // hostname:7279616e682d545235303030;
+    fextl::string HostFeatures{};
+
+    // 64-bit always returned for the host environment.
+    // qProcessInfo will return i386 or not.
+    HostFeatures += fextl::fmt::format("triple:{};", encodeHex("x86_64-pc-linux-gnu"));
+    HostFeatures += "ptrsize:8;";
+
+    // Always little-endian.
+    HostFeatures += "endian:little;";
+
+    struct utsname buf{};
+    if (uname(&buf) != -1) {
+      uint32_t Major{};
+      uint32_t Minor{};
+      uint32_t Patch{};
+
+      // Parse kernel version in the form of `<Major>.<Minor>.<Patch>[Optional Data]`
+      const auto End = buf.release + sizeof(buf.release);
+      auto Results = std::from_chars(buf.release, End, Major, 10);
+      Results = std::from_chars(Results.ptr + 1, End, Minor, 10);
+      Results = std::from_chars(Results.ptr + 1, End, Patch, 10);
+
+      HostFeatures += fextl::fmt::format("os_version:{}.{}.{};", Major, Minor, Patch);
+
+      // os_build returns the release untouched.
+      HostFeatures += fextl::fmt::format("os_build:{};", encodeHex(buf.release));
+      HostFeatures += fextl::fmt::format("os_kernel:{};", encodeHex(buf.version));
+      HostFeatures += fextl::fmt::format("hostname:{};", encodeHex(buf.nodename));
+    }
+
+    // TODO: distribution_id should be fetched with `lsb_release -i`
+    // TODO: watchpoint_exceptions_received is unsupported
+    return {HostFeatures, HandledPacketType::TYPE_ACK};
+  }
+  if (match("qGetWorkingDir")) {
+    char Tmp[PATH_MAX];
+    if (getcwd(Tmp, PATH_MAX)) {
+      return {encodeHex(Tmp), HandledPacketType::TYPE_ACK};
+    }
+    return {"E00", HandledPacketType::TYPE_ACK};
   }
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
