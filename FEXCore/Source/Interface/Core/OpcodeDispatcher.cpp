@@ -842,9 +842,10 @@ OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, bool TrueIsNonzero, 
       return _And(ResultSize, Cmp, _Constant(1));
   }
 
-  return _Select(ResultSize, OpSize::i32Bit,
-                 TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
-                 Cmp, _Constant(1),
+  SaveNZCV();
+  _TestNZ(OpSize::i32Bit, Cmp, _Constant(1));
+  return _NZCVSelect(ResultSize,
+                 TrueIsNonzero ? CondClassType{COND_NEQ} : CondClassType{COND_EQ},
                  TrueValue, FalseValue);
 }
 
