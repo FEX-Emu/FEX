@@ -1333,7 +1333,7 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OpenListenSocket() {
-  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetServerMountFolder());
+  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetTempFolder());
   if (FHU::Filesystem::CreateDirectory(GdbUnixPath) == FHU::Filesystem::CreateDirectoryResult::ERROR) {
     LogMan::Msg::EFmt("[GdbServer] Couldn't create gdbserver folder {}", GdbUnixPath);
     return;
@@ -1352,13 +1352,21 @@ void GdbServer::OpenListenSocket() {
   strncpy(addr.sun_path, GdbUnixSocketPath.data(), sizeof(addr.sun_path));
   size_t SizeOfAddr = offsetof(sockaddr_un, sun_path) + GdbUnixSocketPath.size();
 
+  auto TryBind = [](int Socket, struct sockaddr_un *addr, size_t Size) -> bool {
+    int Result = bind(Socket, reinterpret_cast<struct sockaddr*>(addr), Size);
+    return Result == 0;
+  };
+
   // Bind the socket to the path
-  int Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
-  if (Result == -1) {
-    LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
-    close(ListenSocket);
-    ListenSocket = -1;
-    return;
+  if (!TryBind(ListenSocket, &addr, SizeOfAddr)) {
+    // This can happen periodically with execve. unlink the path and try again.
+    unlink(GdbUnixSocketPath.c_str());
+    if (!TryBind(ListenSocket, &addr, SizeOfAddr)) {
+      LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
+      close(ListenSocket);
+      ListenSocket = -1;
+      return;
+    }
   }
 
   listen(ListenSocket, 1);
