@@ -73,6 +73,11 @@ void GdbServer::WaitForThreadWakeup() {
   ThreadBreakEvent.Wait();
 }
 
+GdbServer::~GdbServer() {
+  CoreShuttingDown = true;
+  close(ListenSocket);
+}
+
 GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
   : CTX(ctx)
   , SyscallHandler {SyscallHandler} {
@@ -1224,11 +1229,45 @@ void GdbServer::SendPacketPair(const HandledPacketType& response) {
   }
 }
 
+GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
+  while (!CoreShuttingDown.load()) {
+    struct pollfd PollFD {
+      .fd = ListenSocket,
+      .events = POLLIN | POLLPRI | POLLRDHUP,
+      .revents = 0,
+    };
+    int Result = ppoll(&PollFD, 1, nullptr, nullptr);
+    if (Result > 0) {
+      if (PollFD.revents & POLLIN) {
+        CommsStream = OpenSocket();
+        return WaitForConnectionResult::RESULT_CONNECTION;
+      }
+      else if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL)) {
+        // Listen socket error or shutting down
+        LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
+        return WaitForConnectionResult::RESULT_ERROR;
+      }
+    }
+    else if (Result == -1) {
+      LogMan::Msg::EFmt("[GdbServer] poll failure: {}", errno);
+    }
+  }
+
+  LogMan::Msg::EFmt("[GdbServer] Shutting Down");
+  return WaitForConnectionResult::RESULT_ERROR;
+}
+
 void GdbServer::GdbServerLoop() {
   OpenListenSocket();
+  if (ListenSocket == -1) {
+    // Couldn't open socket, just exit.
+    return;
+  }
 
   while (!CoreShuttingDown.load()) {
-    CommsStream = OpenSocket();
+    if (WaitForConnection() == WaitForConnectionResult::RESULT_ERROR) {
+      break;
+    }
 
     HandledPacketType response{};
 

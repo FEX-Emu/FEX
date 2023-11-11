@@ -24,6 +24,7 @@ namespace FEX {
 class GdbServer {
 public:
     GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler);
+    ~GdbServer();
 
     // Public for threading
     void GdbServerLoop();
@@ -36,6 +37,11 @@ private:
     void Break(int signal);
 
     void OpenListenSocket();
+    enum class WaitForConnectionResult {
+      RESULT_CONNECTION,
+      RESULT_ERROR,
+    };
+    WaitForConnectionResult WaitForConnection();
     fextl::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
     fextl::string ReadPacket(std::iostream &stream);
