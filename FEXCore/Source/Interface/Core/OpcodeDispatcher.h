@@ -1319,7 +1319,23 @@ private:
   void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
     signed Bit = IndexNZCV(BitOffset);
 
-    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+    // If NZCV is not dirty, we always want to use rmif, it's 1 instruction to
+    // implement this. But if NZCV is dirty, it might still be cheaper to copy
+    // the GPR flags to NZCV and rmif. This is a heuristic for cases where we
+    // expect that 2 instruction sequence to be a win (versus something like
+    // bfe+mov+bfi+mov which can happen with our RA..). It's not totally
+    // conservative but it's pretty good in practice.
+    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask ||
+                      (PossiblySetNZCVBits & (1u << Bit));
+
+    if (CTX->HostFeatures.SupportsFlagM && PreferRmif) {
+      // Update NZCV
+      if (NZCVDirty && CachedNZCV)
+        _StoreNZCV(CachedNZCV);
+
+      CachedNZCV = nullptr;
+      NZCVDirty = false;
+
       // Insert as NZCV.
       signed RmifBit = Bit - 28;
       _RmifNZCV(Value, (64 + FlagOffset - RmifBit) % 64, 1u << RmifBit);
