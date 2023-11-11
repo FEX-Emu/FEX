@@ -104,6 +104,19 @@ namespace FEXServerClient {
     return GetServerLockFolder() + "RootFS.lock";
   }
 
+  fextl::string GetTempFolder() {
+    fextl::string Folder{};
+    auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
+    if (XDGRuntimeEnv) {
+      // If the XDG runtime directory works then use that.
+      return XDGRuntimeEnv;
+    }
+    // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
+    // Might not be ideal but we don't have much of a choice.
+    Folder = std::filesystem::temp_directory_path().string();
+    return Folder;
+  }
+
   fextl::string GetServerMountFolder() {
     // We need a FEXServer mount directory that has some tricky requirements.
     // - We don't want to use `/tmp/` if possible.
@@ -119,17 +132,7 @@ namespace FEXServerClient {
     //   - If this path doesn't exist then fallback to `/tmp/` as a last resort.
     //   - pressure-vessel explicitly creates an internal XDG_RUNTIME_DIR inside its chroot.
     //     - This is okay since pressure-vessel rbinds the FEX rootfs from the host to `/run/pressure-vessel/interpreter-root`.
-    fextl::string Folder{};
-    auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
-    if (XDGRuntimeEnv) {
-      // If the XDG runtime directory works then use that.
-      Folder = XDGRuntimeEnv;
-    }
-    else {
-      // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
-      // Might not be ideal but we don't have much of a choice.
-      Folder = std::filesystem::temp_directory_path().string();
-    }
+    auto Folder = GetTempFolder();
 
     if (FEXCore::Config::FindContainer() == "pressure-vessel") {
       // In pressure-vessel the mount point changes location.
