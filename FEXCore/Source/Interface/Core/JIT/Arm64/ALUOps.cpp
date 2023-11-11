@@ -214,9 +214,7 @@ DEF_OP(RmifNZCV) {
 
 ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
-  case FEXCore::IR::COND_ANDZ:
   case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_ANDNZ:
   case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
   case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
   case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
@@ -1310,28 +1308,15 @@ DEF_OP(Select) {
 
   uint64_t Const;
   auto cc = MapSelectCC(Op->Cond);
-  bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
-               Op->Cond == FEXCore::IR::COND_ANDNZ;
-
-  LOGMAN_THROW_A_FMT(!tests || IsGPR(Op->Cmp1.ID()), "Only GPRs can be tested");
 
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
 
-    if (tests) {
-      if (IsInlineConstant(Op->Cmp2, &Const))
-        tst(CompareEmitSize, Src1, Const);
-      else {
-        const auto Src2 = GetReg(Op->Cmp2.ID());
-        tst(CompareEmitSize, Src1, Src2);
-      }
-    } else {
-      if (IsInlineConstant(Op->Cmp2, &Const))
-        cmp(CompareEmitSize, Src1, Const);
-      else {
-        const auto Src2 = GetReg(Op->Cmp2.ID());
-        cmp(CompareEmitSize, Src1, Src2);
-      }
+    if (IsInlineConstant(Op->Cmp2, &Const))
+      cmp(CompareEmitSize, Src1, Const);
+    else {
+      const auto Src2 = GetReg(Op->Cmp2.ID());
+      cmp(CompareEmitSize, Src1, Src2);
     }
   }
   else if (IsGPRPair(Op->Cmp1.ID())) {
@@ -1376,10 +1361,6 @@ DEF_OP(NZCVSelect) {
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   auto cc = MapSelectCC(Op->Cond);
-  bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
-               Op->Cond == FEXCore::IR::COND_ANDNZ;
-
-  LOGMAN_THROW_A_FMT(!tests, "Only NZCV on this code path");
 
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);

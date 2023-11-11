@@ -67,8 +67,6 @@
     "constexpr uint8_t COND_SLT  = 11",
     "constexpr uint8_t COND_SGT  = 12",
     "constexpr uint8_t COND_SLE  = 13",
-    "constexpr uint8_t COND_ANDZ  = 14 /* (a & b) == 0 */",
-    "constexpr uint8_t COND_ANDNZ = 15 /* (a & b) != 0 */",
 
     "constexpr uint8_t COND_FLU  = 16 /* float less or unordred */",
     "constexpr uint8_t COND_FGE  = 17 /* float greater or equal */",

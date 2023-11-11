@@ -1030,12 +1030,9 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       {
         auto Op = IROp->C<IR::IROp_Select>();
 
-        bool Bitwise = Op->Cond == COND_ANDZ ||
-                       Op->Cond == COND_ANDNZ;
-
         uint64_t Constant1{};
         if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
-          if (Bitwise ? IsImmLogical(Constant1, IROp->Size * 8) : IsImmAddSub(Constant1)) {
+          if (IsImmAddSub(Constant1)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
             IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));

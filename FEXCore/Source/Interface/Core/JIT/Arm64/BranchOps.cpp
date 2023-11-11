@@ -97,9 +97,7 @@ DEF_OP(Jump) {
 
 static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
-  case FEXCore::IR::COND_ANDZ:
   case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_ANDNZ:
   case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
   case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
   case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
