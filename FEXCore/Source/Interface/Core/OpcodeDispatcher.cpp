@@ -2229,24 +2229,24 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
-  // Mask off the index so we only consider the lower byte.
-  auto MaskedIndex = _And(OpSize::i64Bit, Index, _Constant(0xFF));
-
-  // Now clear the high bits specified by the index.
+  // Clear the high bits specified by the index. A64 only considers bottom bits
+  // of the shift, so we don't need to mask bottom 8-bits ourselves.
+  // Out-of-bounds results ignored after.
   auto NegOne = _Constant(OperandSize, -1);
-  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, MaskedIndex);
+  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, Index);
   auto MaskResult = _Andn(IR::SizeToOpSize(Size), Src, Mask);
 
-  // If the index is above OperandSize, we don't clear anything.
-  auto Bounds = _Constant(OperandSize - 1);
-  _SubNZCV(OpSize::i64Bit, MaskedIndex, Bounds);
-  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), CondClassType{COND_UGT},
+  // If the index is above OperandSize, we don't clear anything. BZHI only
+  // considers the bottom 8-bits, so we really want to know if the bottom 8-bits
+  // have their top bits set. Test exactly that.
+  _TestNZ(OpSize::i64Bit, Index, _Constant(0xFF & ~(OperandSize - 1)));
+  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), CondClassType{COND_NEQ},
                             Src, MaskResult);
   StoreResult(GPRClass, Op, Result, -1);
 
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_UGT}, One, Zero);
+  auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_NEQ}, One, Zero);
   GenerateFlags_BZHI(Op, Result, CF);
 }
 
