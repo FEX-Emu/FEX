@@ -2239,13 +2239,15 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 
   // If the index is above OperandSize, we don't clear anything.
   auto Bounds = _Constant(OperandSize - 1);
-  auto Result = _Select(IR::COND_UGT,
-                        MaskedIndex, Bounds,
-                        Src, MaskResult);
-
+  _SubNZCV(OpSize::i64Bit, MaskedIndex, Bounds);
+  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), CondClassType{COND_UGT},
+                            Src, MaskResult);
   StoreResult(GPRClass, Op, Result, -1);
 
-  GenerateFlags_BZHI(Op, Result, MaskedIndex);
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_UGT}, One, Zero);
+  GenerateFlags_BZHI(Op, Result, CF);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {

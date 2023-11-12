@@ -1174,23 +1174,12 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Src) {
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
-  auto Bounds = _Constant(SrcSize * 8- 1);
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 
   SetNZ_ZeroCV(SrcSize, Result);
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_UGT,
-                        Src, Bounds,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-  }
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 
 void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
