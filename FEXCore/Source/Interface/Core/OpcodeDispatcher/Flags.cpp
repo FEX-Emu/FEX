@@ -1174,26 +1174,15 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Src) {
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
-  // Now for the flags
-
   auto Bounds = _Constant(SrcSize * 8- 1);
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-
-  // OF cleared
-  SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(Zero);
 
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 
-  // ZF
-  {
-    auto ZFOp = _Select(IR::COND_EQ,
-                        Result, Zero,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZFOp);
-  }
+  SetNZ_ZeroCV(SrcSize, Result);
 
   // CF
   {
