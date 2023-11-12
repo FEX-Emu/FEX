@@ -2226,8 +2226,13 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto OperandSize = Size * 8;
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  // In 32-bit mode we only look at bottom 32-bit, no 8 or 16-bit BZHI so no
+  // need to zero-extend sources
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
+                         {.AllowUpperGarbage = true});
+
+  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags,
+                           {.AllowUpperGarbage = true});
 
   // Clear the high bits specified by the index. A64 only considers bottom bits
   // of the shift, so we don't need to mask bottom 8-bits ourselves.
