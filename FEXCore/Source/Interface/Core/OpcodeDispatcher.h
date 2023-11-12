@@ -1343,7 +1343,7 @@ private:
     } else {
       // Insert as GPR
       if (FlagOffset || MustMask)
-        Value = _Bfe(OpSize::i32Bit, 1, FlagOffset, Value);
+        Value = _Bfe(OpSize::i64Bit, 1, FlagOffset, Value);
 
       if (PossiblySetNZCVBits == 0)
         SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
