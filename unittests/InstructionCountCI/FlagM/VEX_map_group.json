@@ -46,7 +46,7 @@
       ]
     },
     "blsmsk eax, ebx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 32-bit"
@@ -61,10 +61,8 @@
         "bic x21, x22, x21",
         "cmp x20, #0x0 (0)",
         "cset x20, ne",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "msr nzcv, x21",
+        "rmif x20, #63, #nzCv"
       ]
     },
     "blsmsk rax, rbx": {
@@ -81,8 +79,8 @@
         "bic x20, x21, x20",
         "cmp x7, #0x0 (0)",
         "cset x21, ne",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsi eax, ebx": {
