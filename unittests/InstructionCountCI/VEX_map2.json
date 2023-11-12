@@ -3596,7 +3596,7 @@
       ]
     },
     "bzhi eax, ebx, ecx": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 17,
       "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf5 32-bit"
@@ -3605,8 +3605,7 @@
         "mov w20, w7",
         "mov w21, w5",
         "and x21, x21, #0xff",
-        "mov w22, #0xffff",
-        "movk w22, #0xffff, lsl #16",
+        "mov w22, #0xffffffff",
         "lsl w22, w22, w21",
         "bic w22, w20, w22",
         "mrs x23, nzcv",
