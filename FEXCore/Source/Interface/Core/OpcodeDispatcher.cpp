@@ -4345,19 +4345,19 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
+  InvalidateDeferredFlags();
+  CachedNZCV = nullptr;
+
   // Find the LSB of this source
   auto Result = _FindLSB(OpSizeFromSrc(Op), Src);
 
-  auto ZeroConst = _Constant(0);
+  // OF, SF, AF, PF, CF all undefined
+  // ZF is set to 1 if the source was zero
+  SetNZ_ZeroCV(GetSrcSize(Op), Src);
 
   // If Src was zero then the destination doesn't get modified
-  auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      Dest, Result);
-
+  auto SelectOp = _NZCVSelect(IR::SizeToOpSize(GPRSize), CondClassType{COND_EQ}, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
-
-  GenerateFlags_BITSELECT(Op, Src);
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
@@ -4366,19 +4366,19 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
+  InvalidateDeferredFlags();
+  CachedNZCV = nullptr;
+
   // Find the MSB of this source
   auto Result = _FindMSB(OpSizeFromSrc(Op), Src);
 
-  auto ZeroConst = _Constant(0);
+  // OF, SF, AF, PF, CF all undefined
+  // ZF is set to 1 if the source was zero
+  SetNZ_ZeroCV(GetSrcSize(Op), Src);
 
   // If Src was zero then the destination doesn't get modified
-  auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      Dest, Result);
-
+  auto SelectOp = _NZCVSelect(IR::SizeToOpSize(GPRSize), CondClassType{COND_EQ}, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
-
-  GenerateFlags_BITSELECT(Op, Src);
 }
 
 void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {

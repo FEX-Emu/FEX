@@ -485,9 +485,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.SrcSize,
         CurrentDeferredFlags.Res);
       break;
-    case FlagsGenerationType::TYPE_BITSELECT:
-      CalculateFlags_BITSELECT(CurrentDeferredFlags.Res);
-      break;
     case FlagsGenerationType::TYPE_RDRAND:
       CalculateFlags_RDRAND(CurrentDeferredFlags.Res);
       break;
@@ -1204,21 +1201,6 @@ void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) 
   // Set flags
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, SrcSize * 8 - 1, true);
-}
-
-void OpDispatchBuilder::CalculateFlags_BITSELECT(OrderedNode *Src) {
-  // OF, SF, AF, PF, CF all undefined
-  ZeroNZCV();
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  // ZF is set to 1 if the source was zero
-  auto ZFSelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      OneConst, ZeroConst);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFSelectOp);
 }
 
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {

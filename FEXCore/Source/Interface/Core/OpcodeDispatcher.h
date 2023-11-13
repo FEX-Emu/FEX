@@ -98,7 +98,6 @@ public:
     TYPE_BZHI,
     TYPE_TZCNT,
     TYPE_LZCNT,
-    TYPE_BITSELECT,
     TYPE_RDRAND,
   };
 
@@ -1535,7 +1534,7 @@ private:
     OrderedNode *Res{};
 
     union {
-      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, BITSELECT, RDRAND
+      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, RDRAND
       struct {
       } NoSource;
 
@@ -1643,7 +1642,6 @@ private:
   void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
   void CalculateFlags_TZCNT(OrderedNode *Src);
   void CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BITSELECT(OrderedNode *Src);
   void CalculateFlags_RDRAND(OrderedNode *Src);
   /**  @} */
 
@@ -2029,14 +2027,6 @@ private:
   void GenerateFlags_LZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LZCNT,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_BITSELECT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BITSELECT,
       .SrcSize = GetSrcSize(Op),
       .Res = Src,
     };
