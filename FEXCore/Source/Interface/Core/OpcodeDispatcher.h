@@ -1606,11 +1606,21 @@ private:
 
   template <typename F>
   void CalculateFlags_ShiftVariable(OrderedNode *Shift, F&& CalculateFlags) {
-    uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
-    auto Zero = _Constant(0);
-
     // We are the ones calculating the deferred flags. Don't recurse!
     InvalidateDeferredFlags();
+
+    // RCR can call this with constants, so handle that without branching.
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(Shift), &Const)) {
+      if (Const)
+        CalculateFlags();
+
+      return;
+    }
+
+    // Otherwise, prepare to branch.
+    uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
+    auto Zero = _Constant(0);
 
     // If the shift is zero, do not touch the flags.
     auto SetBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
