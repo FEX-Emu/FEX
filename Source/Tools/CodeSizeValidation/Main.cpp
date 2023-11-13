@@ -466,6 +466,7 @@ int main(int argc, char **argv, char **const envp) {
     FEATURE_RPRES  = (1U << 7),
     FEATURE_FLAGM  = (1U << 8),
     FEATURE_FLAGM2 = (1U << 9),
+    FEATURE_CRYPTO = (1U << 10),
   };
 
   uint64_t SVEWidth = 0;
@@ -502,11 +503,12 @@ int main(int argc, char **argv, char **const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_FLAGM2) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEFLAGM2);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_CRYPTO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECRYPTO);
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
-  // Always enable crypto extensions.
-  HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECRYPTO);
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE128) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVE);
@@ -537,6 +539,9 @@ int main(int argc, char **argv, char **const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_FLAGM2) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEFLAGM2);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_CRYPTO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECRYPTO);
   }
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
