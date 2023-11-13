@@ -125,16 +125,35 @@ DEF_OP(TestNZ) {
   const uint8_t OpSize = Op->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  auto Src = GetReg(Op->Src1.ID());
+  uint64_t Const;
+  auto Src1 = GetReg(Op->Src1.ID());
 
   // Shift the sign bit into place, clearing out the garbage in upper bits.
   // Adding zero does an effective test, setting NZ according to the result and
   // zeroing CV.
   if (OpSize < 4) {
+    // Cheaper to and+cmn than to lsl+lsl+tst, so do the and ourselves if
+    // needed.
+    if (Op->Src1 != Op->Src2) {
+      if (IsInlineConstant(Op->Src2, &Const)) {
+        and_(EmitSize, TMP1, Src1, Const);
+      } else {
+        auto Src2 = GetReg(Op->Src2.ID());
+        and_(EmitSize, TMP1, Src1, Src2);
+      }
+
+      Src1 = TMP1;
+    }
+
     unsigned Shift = 32 - (OpSize * 8);
-    cmn(EmitSize, ARMEmitter::Reg::zr, Src, ARMEmitter::ShiftType::LSL, Shift);
+    cmn(EmitSize, ARMEmitter::Reg::zr, Src1, ARMEmitter::ShiftType::LSL, Shift);
   } else {
-    tst(EmitSize, Src, Src);
+    if (IsInlineConstant(Op->Src2, &Const)) {
+      tst(EmitSize, Src1, Const);
+    } else {
+      const auto Src2 = GetReg(Op->Src2.ID());
+      tst(EmitSize, Src1, Src2);
+    }
   }
 }
 
@@ -193,6 +212,34 @@ DEF_OP(RmifNZCV) {
   rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
 }
 
+ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
+  switch (Cond.Val) {
+  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
+  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
+  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
+  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
+  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
+  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
+  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
+  case FEXCore::IR::COND_VS:
+  case FEXCore::IR::COND_VC:
+  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
+  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
+  default:
+  LOGMAN_MSG_A_FMT("Unsupported compare type");
+  return ARMEmitter::Condition::CC_NV;
+  }
+}
+
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
   const uint8_t OpSize = IROp->Size;
@@ -200,27 +247,10 @@ DEF_OP(Neg) {
   LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  neg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()));
-}
-
-DEF_OP(Abs) {
-  auto Op = IROp->C<IR::IROp_Abs>();
-  const uint8_t OpSize = IROp->Size;
-
-  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-
-  const auto Dst = GetReg(Node);
-  auto Src = GetReg(Op->Src.ID());
-
-  if (CTX->HostFeatures.SupportsCSSC) {
-    // On CSSC supporting processors, this turns in to one instruction and doesn't modify flags.
-    abs(EmitSize, Dst, Src);
-  }
-  else {
-    cmp(EmitSize, Src, 0);
-    cneg(EmitSize, Dst, Src, ARMEmitter::Condition::CC_MI);
-  }
+  if (Op->Cond == FEXCore::IR::COND_AL)
+    neg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()));
+  else
+    cneg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()), MapSelectCC(Op->Cond));
 }
 
 DEF_OP(Mul) {
@@ -1270,36 +1300,6 @@ DEF_OP(Sbfe) {
   sbfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
 }
 
-ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
-  switch (Cond.Val) {
-  case FEXCore::IR::COND_ANDZ:
-  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_ANDNZ:
-  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
-  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI:
-  case FEXCore::IR::COND_PL:
-  default:
-  LOGMAN_MSG_A_FMT("Unsupported compare type");
-  return ARMEmitter::Condition::CC_NV;
-  }
-}
-
 DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
   const uint8_t OpSize = IROp->Size;
@@ -1308,28 +1308,15 @@ DEF_OP(Select) {
 
   uint64_t Const;
   auto cc = MapSelectCC(Op->Cond);
-  bool tests = Op->Cond == FEXCore::IR::COND_ANDZ ||
-               Op->Cond == FEXCore::IR::COND_ANDNZ;
-
-  LOGMAN_THROW_A_FMT(!tests || IsGPR(Op->Cmp1.ID()), "Only GPRs can be tested");
 
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
 
-    if (tests) {
-      if (IsInlineConstant(Op->Cmp2, &Const))
-        tst(CompareEmitSize, Src1, Const);
-      else {
-        const auto Src2 = GetReg(Op->Cmp2.ID());
-        tst(CompareEmitSize, Src1, Src2);
-      }
-    } else {
-      if (IsInlineConstant(Op->Cmp2, &Const))
-        cmp(CompareEmitSize, Src1, Const);
-      else {
-        const auto Src2 = GetReg(Op->Cmp2.ID());
-        cmp(CompareEmitSize, Src1, Src2);
-      }
+    if (IsInlineConstant(Op->Cmp2, &Const))
+      cmp(CompareEmitSize, Src1, Const);
+    else {
+      const auto Src2 = GetReg(Op->Cmp2.ID());
+      cmp(CompareEmitSize, Src1, Src2);
     }
   }
   else if (IsGPRPair(Op->Cmp1.ID())) {
@@ -1363,6 +1350,38 @@ DEF_OP(Select) {
       csetm(EmitSize, Dst, cc);
     else
       cset(EmitSize, Dst, cc);
+  } else {
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
+  }
+}
+
+DEF_OP(NZCVSelect) {
+  auto Op = IROp->C<IR::IROp_NZCVSelect>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  auto cc = MapSelectCC(Op->Cond);
+
+  uint64_t const_true, const_false;
+  bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
+  bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
+
+  uint64_t all_ones = OpSize == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+
+  ARMEmitter::Register Dst = GetReg(Node);
+
+  if (is_const_true) {
+    if (is_const_false != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
+      LOGMAN_MSG_A_FMT("NZCVSelect: Unsupported constant");
+    }
+
+    if (const_true == all_ones)
+      csetm(EmitSize, Dst, cc);
+    else
+      cset(EmitSize, Dst, cc);
+  } else if (is_const_false) {
+    LOGMAN_THROW_A_FMT(const_false == 0, "NZCVSelect: unsupported constant");
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), ARMEmitter::Reg::zr, cc);
   } else {
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
   }

@@ -399,6 +399,15 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     Segments = 2;
   }
 
+  if (!Is64Bit && ((~Constant) & 0xFFFF0000) == 0) {
+    movn(s, Reg.W(), (~Constant) & 0xFFFF);
+
+    if (NOPPad) {
+      nop(); nop(); nop();
+    }
+    return;
+  }
+
   int RequiredMoveSegments{};
 
   // Count the number of move segments

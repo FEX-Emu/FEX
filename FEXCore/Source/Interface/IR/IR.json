@@ -67,8 +67,6 @@
     "constexpr uint8_t COND_SLT  = 11",
     "constexpr uint8_t COND_SGT  = 12",
     "constexpr uint8_t COND_SLE  = 13",
-    "constexpr uint8_t COND_ANDZ  = 14 /* (a & b) == 0 */",
-    "constexpr uint8_t COND_ANDNZ = 15 /* (a & b) != 0 */",
 
     "constexpr uint8_t COND_FLU  = 16 /* float less or unordred */",
     "constexpr uint8_t COND_FGE  = 17 /* float greater or equal */",
@@ -76,6 +74,8 @@
     "constexpr uint8_t COND_FGT  = 19 /* float greater */",
     "constexpr uint8_t COND_FU   = 20 /* float unordred */",
     "constexpr uint8_t COND_FNU  = 21 /* float not unordred */",
+
+    "constexpr uint8_t COND_AL   = 32 /* always */",
 
     "constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
@@ -264,7 +264,7 @@
         "HasSideEffects": true,
         "RAOverride": "0"
       },
-      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, u8:$CompareSize{0}": {
+      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, u8:$CompareSize{0}, i1:$FromNZCV{false}": {
         "HasSideEffects": true,
         "RAOverride": "2",
         "EmitValidation": [
@@ -865,23 +865,12 @@
         "DestSize": "8"
       },
 
-      "GPR = Neg OpSize:#Size, GPR:$Src": {
-        "Desc": ["Integer negation",
-                 "Dest = -Src",
+      "GPR = Neg OpSize:#Size, GPR:$Src, CondClass:$Cond{{COND_AL}}": {
+        "Desc": ["Integer negation, with optional predication",
+                 "Dest = Cond ? -Src : Src",
                  "Will truncate to 64 or 32bits"
                 ],
         "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = Abs OpSize:#Size, GPR:$Src": {
-        "Desc": ["Integer 2's complement absolute value",
-                 "Dest = std::abs(Src)",
-                 "Will truncate to 64 or 32bits"
-                ],
-        "DestSize": "Size",
-        "ImplicitFlagClobber": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1076,8 +1065,8 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "TestNZ u8:$Size, GPR:$Src1": {
-        "Desc": ["Set NZCV for a GPR, setting N and Z accordingly and zeroing C and V"],
+      "TestNZ u8:$Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the binary AND of two GPRs, setting N and Z accordingly and zeroing C and V"],
         "HasSideEffects": true
       },
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1221,6 +1210,16 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
+        "Desc": ["Select based on value in NZCV flags",
+                 "op:",
+                 "Dest = Cond ? TrueVal : FalseVal"
+                ],
+        "DestSize": "ResultSize",
+        "EmitValidation": [
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Select OpSize:#ResultSize, OpSize:$CompareSize, CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal": {

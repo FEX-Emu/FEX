@@ -1010,16 +1010,29 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         break;
       }
+      case OP_TESTNZ:
+      {
+        auto Op = IROp->C<IR::IROp_TestNZ>();
+
+        uint64_t Constant1{};
+        if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+          if (IsImmLogical(Constant1, IROp->Size * 8)) {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+
+            Changed = true;
+          }
+        }
+        break;
+      }
       case OP_SELECT:
       {
         auto Op = IROp->C<IR::IROp_Select>();
 
-        bool Bitwise = Op->Cond == COND_ANDZ ||
-                       Op->Cond == COND_ANDNZ;
-
         uint64_t Constant1{};
         if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
-          if (Bitwise ? IsImmLogical(Constant1, IROp->Size * 8) : IsImmAddSub(Constant1)) {
+          if (IsImmAddSub(Constant1)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
             IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
@@ -1046,6 +1059,33 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
           IREmit->ReplaceNodeArgument(CodeNode, 2, CreateInlineConstant(IREmit, Constant2));
           IREmit->ReplaceNodeArgument(CodeNode, 3, CreateInlineConstant(IREmit, Constant3));
+        }
+
+        break;
+      }
+      case OP_NZCVSELECT:
+      {
+        auto Op = IROp->C<IR::IROp_NZCVSelect>();
+
+        uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+
+        // We always allow source 1 to be zero, but source 0 can only be a
+        // special 1/~0 constant if source 1 is 0.
+        uint64_t Constant0{};
+        uint64_t Constant1{};
+        if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1) &&
+            Constant1 == 0)
+        {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+
+          if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant0) &&
+              (Constant0 == 1 || Constant0 == AllOnes))
+          {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant0));
+          }
         }
 
         break;

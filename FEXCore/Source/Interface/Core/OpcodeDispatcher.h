@@ -127,6 +127,7 @@ public:
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0U;
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
@@ -154,6 +155,14 @@ public:
   IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
     CalculateDeferredFlags();
     return _CondJump(ssa0, ssa1, ssa2, cond);
+  }
+  IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
+    CalculateDeferredFlags();
+
+    // The jump will ignore the sources, so it doesn't matter what we put here.
+    // Put an inline constant so RA+codegen will ignore altogether.
+    auto Placeholder = _InlineConstant(0);
+    return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -916,7 +925,7 @@ public:
   }
 
 protected:
-  void SaveNZCV(IROps Op) override {
+  void SaveNZCV(IROps Op = OP_DUMMY) override {
     /* Some opcodes are conservatively marked as clobbering flags, but in fact
      * do not clobber flags in certain conditions. Check for that here as an
      * optimization.
@@ -1301,7 +1310,7 @@ private:
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
-    _TestNZ(SrcSize, Res);
+    _TestNZ(SrcSize, Res, Res);
     CachedNZCV = _LoadNZCV();
     PossiblySetNZCVBits = (1u << 31) | (1u << 30);
     NZCVDirty = false;
@@ -1310,7 +1319,23 @@ private:
   void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
     signed Bit = IndexNZCV(BitOffset);
 
-    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+    // If NZCV is not dirty, we always want to use rmif, it's 1 instruction to
+    // implement this. But if NZCV is dirty, it might still be cheaper to copy
+    // the GPR flags to NZCV and rmif. This is a heuristic for cases where we
+    // expect that 2 instruction sequence to be a win (versus something like
+    // bfe+mov+bfi+mov which can happen with our RA..). It's not totally
+    // conservative but it's pretty good in practice.
+    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask ||
+                      (PossiblySetNZCVBits & (1u << Bit));
+
+    if (CTX->HostFeatures.SupportsFlagM && PreferRmif) {
+      // Update NZCV
+      if (NZCVDirty && CachedNZCV)
+        _StoreNZCV(CachedNZCV);
+
+      CachedNZCV = nullptr;
+      NZCVDirty = false;
+
       // Insert as NZCV.
       signed RmifBit = Bit - 28;
       _RmifNZCV(Value, (64 + FlagOffset - RmifBit) % 64, 1u << RmifBit);
@@ -1374,12 +1399,40 @@ private:
 
   void ZeroMultipleFlags(uint32_t BitMask);
 
-  OrderedNode *GetRFLAG(unsigned BitOffset) {
+  CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
+    switch (BitOffset) {
+    case FEXCore::X86State::RFLAG_SF_RAW_LOC:
+      return Invert ? CondClassType{COND_PL} : CondClassType{COND_MI};
+
+    case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
+      return Invert ? CondClassType{COND_NEQ} : CondClassType{COND_EQ};
+
+    case FEXCore::X86State::RFLAG_CF_RAW_LOC:
+      return Invert ? CondClassType{COND_ULT} : CondClassType{COND_UGE};
+
+    case FEXCore::X86State::RFLAG_OF_RAW_LOC:
+      return Invert ? CondClassType{COND_FNU} : CondClassType{COND_FU};
+
+    default:
+      FEX_UNREACHABLE;
+    }
+  }
+
+  OrderedNode *GetRFLAG(unsigned BitOffset, bool Invert = false) {
     if (IsNZCV(BitOffset)) {
-      if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
-        return _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
-      else
-        return _Constant(0);
+      if (!(PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset)))) {
+        return _Constant(Invert ? 1 : 0);
+      } else if (NZCVDirty) {
+        auto Value = _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
+
+        if (Invert)
+          return _Xor(OpSize::i32Bit, Value, _Constant(1));
+        else
+          return Value;
+      } else {
+        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert),
+                           _Constant(1), _Constant(0));
+      }
     } else {
       return _LoadFlag(BitOffset);
     }
@@ -1448,8 +1501,8 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
-  OrderedNode *SelectMask(OrderedNode *Cmp, uint64_t Mask, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
-  OrderedNode *SelectNZCV(unsigned BitOffset, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP) const;
+  OrderedNode *SelectBit(OrderedNode *Cmp, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**

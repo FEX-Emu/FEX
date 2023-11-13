@@ -829,10 +829,9 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
-OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
   uint64_t TrueConst, FalseConst;
-  if (std::has_single_bit(Mask) &&
-      IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
+  if (IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
       IsValueConstant(WrapNode(FalseValue), &FalseConst) &&
       TrueConst == 1 &&
       FalseConst == 0) {
@@ -840,224 +839,87 @@ OrderedNode *OpDispatchBuilder::SelectMask(OrderedNode *Cmp, uint64_t Mask, bool
       if (!TrueIsNonzero)
         Cmp = _Not(OpSize::i32Bit, Cmp);
 
-      if (Mask == 1)
-        return _And(ResultSize, Cmp, _Constant(1));
-      else
-        return _Bfe(ResultSize, 1, FindFirstSetBit(Mask) - 1, Cmp);
+      return _And(ResultSize, Cmp, _Constant(1));
   }
 
-  return _Select(ResultSize, OpSize::i32Bit,
-                 TrueIsNonzero ? CondClassType{COND_ANDNZ} : CondClassType{COND_ANDZ},
-                 Cmp, _Constant(Mask),
+  SaveNZCV();
+  _TestNZ(OpSize::i32Bit, Cmp, _Constant(1));
+  return _NZCVSelect(ResultSize,
+                 TrueIsNonzero ? CondClassType{COND_NEQ} : CondClassType{COND_EQ},
                  TrueValue, FalseValue);
 }
 
-OrderedNode *OpDispatchBuilder::SelectNZCV(unsigned BitOffset, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
-  return SelectMask(GetNZCV(), 1u << IndexNZCV(BitOffset), TrueIsNonzero, ResultSize, TrueValue, FalseValue);
+std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) const {
+  switch (OP) {
+    case 0x0: { // JO - Jump if OF == 1
+      return {false, CondClassType{COND_FU}};
+    }
+    case 0x1:{ // JNO - Jump if OF == 0
+      return {false, CondClassType{COND_FNU}};
+    }
+    case 0x2: { // JC - Jump if CF == 1
+      return {false, CondClassType{COND_UGE}};
+    }
+    case 0x3: { // JNC - Jump if CF == 0
+      return {false, CondClassType{COND_ULT}};
+    }
+    case 0x4: { // JE - Jump if ZF == 1
+      return {false, CondClassType{COND_EQ}};
+    }
+    case 0x5: { // JNE - Jump if ZF == 0
+      return {false, CondClassType{COND_NEQ}};
+    }
+    case 0x8: { // JS - Jump if SF == 1
+      return {false, CondClassType{COND_MI}};
+    }
+    case 0x9: { // JNS - Jump if SF == 0
+      return {false, CondClassType{COND_PL}};
+    }
+    case 0xC: { // SF <> OF
+      return {false, CondClassType{COND_SLT}};
+    }
+    case 0xD: { // SF = OF
+      return {false, CondClassType{COND_SGE}};
+    }
+    case 0xE: {// ZF = 1 || SF <> OF
+      return {false, CondClassType{COND_SLE}};
+    }
+    case 0xF: {// ZF = 0 && SF = OF
+      return {false, CondClassType{COND_SGT}};
+    }
+    default:
+      // Other conditions do not map directly, caller gets to deal with it.
+      return {true, CondClassType{0}};
+  }
 }
 
 OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
-  OrderedNode *SrcCond = nullptr;
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
+  auto [Complex, Cond] = DecodeNZCVCondition(OP);
+  if (!Complex)
+      return _NZCVSelect(ResultSize, Cond, TrueValue, FalseValue);
 
   switch (OP) {
-    case 0x0: { // JO - Jump if OF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x1:{ // JNO - Jump if OF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x2: { // JC - Jump if CF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x3: { // JNC - Jump if CF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x4: { // JE - Jump if ZF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x5: { // JNE - Jump if ZF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
-      break;
-    }
     case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
-                           true, ResultSize, TrueValue, FalseValue);
-      break;
+      // (A || B) ? C : D is equivalent to B ? C : (A ? C : D)
+      auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_UGE}, TrueValue, FalseValue);
+      return _NZCVSelect(ResultSize, CondClassType{COND_EQ}, TrueValue, TMP);
     }
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-      SrcCond = SelectMask(GetNZCV(), (1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                                      (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC)),
-                           false, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x8: { // JS - Jump if SF == 1
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC, true, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0x9: { // JNS - Jump if SF == 0
-      SrcCond = SelectNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC, false, ResultSize, TrueValue, FalseValue);
-      break;
+      // (A && B) ? C : D is equivalent to B ? (A ? C : D) : D
+      auto TMP = _NZCVSelect(ResultSize, CondClassType{COND_ULT}, TrueValue, FalseValue);
+      return _NZCVSelect(ResultSize, CondClassType{COND_NEQ}, TMP, FalseValue);
     }
     case 0xA: { // JP - Jump if PF == 1
       // Raw value contains inverted PF in bottom bit
-      SrcCond = SelectMask(LoadPFRaw(), 0x1, false, ResultSize, TrueValue, FalseValue);
-      break;
+      return SelectBit(LoadPFRaw(), false, ResultSize, TrueValue, FalseValue);
     }
     case 0xB: { // JNP - Jump if PF == 0
-      SrcCond = SelectMask(LoadPFRaw(), 0x1, true, ResultSize, TrueValue, FalseValue);
-      break;
-    }
-    case 0xC: { // SF <> OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag1, Flag2, TrueValue, FalseValue);
-      break;
-    }
-    case 0xD: { // SF = OF
-      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag1, Flag2, TrueValue, FalseValue);
-      break;
-    }
-    case 0xE: {// ZF = 1 || SF <> OF
-      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, true, OpSize::i32Bit,
-          OneConst, ZeroConst);
-
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-      auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_NEQ},
-          Flag2, Flag3, OneConst, ZeroConst);
-
-      auto Check = _Or(OpSize::i32Bit, Select1, Select2);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Check, OneConst, TrueValue, FalseValue);
-      break;
-    }
-    case 0xF: {// ZF = 0 && SF = OF
-      auto Select1 = SelectNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false, OpSize::i32Bit,
-          OneConst, ZeroConst);
-
-      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-      auto Select2 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClassType{COND_EQ},
-          Flag2, Flag3, OneConst, ZeroConst);
-
-      auto Check = _And(OpSize::i32Bit, Select1, Select2);
-      SrcCond = _Select(ResultSize, OpSize::i32Bit, CondClassType{COND_EQ},
-          Check, OneConst, TrueValue, FalseValue);
-      break;
+      return SelectBit(LoadPFRaw(), true, ResultSize, TrueValue, FalseValue);
     }
     default:
       LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP);
       return nullptr;
   }
-
-  // Try folding the flags generation in the select op
-  if (flagsOp == SelectionFlag::CMP) {
-    switch(OP) {
-      // SGT
-      case 0xF: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_SGT}, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue); break;
-      // SLE
-      case 0xE: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_SLE}, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue); break;
-      // SGE
-      case 0xD: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_SGE}, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue); break;
-      // SL
-      case 0xC: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_SLT}, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue); break;
-
-      // not sign
-      //case 0x99: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
-      // sign
-      //case 0x98: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
-
-      // UABove
-      case 0x7: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_UGT}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-      // UBE
-      case 0x6: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_ULE}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-      // NE
-      case 0x5: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_NEQ}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-      // EQ/Zero
-      case 0x4: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_EQ}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-      // UAE
-      case 0x3: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_UGE}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-      // UBelow
-      case 0x2: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_ULT}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue); break;
-
-      //default: printf("Missed Condition %04X OP_CMP\n", OP); break;
-    }
-  }
-  else if (flagsOp == SelectionFlag::AND) {
-    switch(OP) {
-      case 0x4: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_EQ}, flagsOpDest, ZeroConst, TrueValue, FalseValue); break;
-      case 0x5: SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_NEQ}, flagsOpDest, ZeroConst, TrueValue, FalseValue); break;
-      //default: printf("Missed Condition %04X OP_AND\n", OP); break;
-    }
-  } else if (flagsOp == SelectionFlag::FCMP) {
-    /*
-      x86:ZCP
-        unordered { 11 1 }
-        greater   { 00 0 }
-        less      { 01 0 }
-        equal     { 10 0 }
-      aarch64: NZCV
-        unordered { 0 01 1 }
-        greater   { 0 01 0 }
-        less      { 1 00 0 }
-        equal     { 0 11 0 }
-    */
-
-   /*
-      eq = 0,   // Z set            Equal.
-      ne = 1,   // Z clear          Not equal.
-      cs = 2,   // C set            Carry set.
-      cc = 3,   // C clear          Carry clear.
-      mi = 4,   // N set            Negative.
-      pl = 5,   // N clear          Positive or zero.
-      vs = 6,   // V set            Overflow.
-      vc = 7,   // V clear          No overflow.
-      hi = 8,   // C set, Z clear   Unsigned higher.
-      ls = 9,   // C clear or Z set Unsigned lower or same.
-      ge = 10,  // N == V           Greater or equal.
-      lt = 11,  // N != V           Less than.
-      gt = 12,  // Z clear, N == V  Greater than.
-      le = 13,  // Z set or N != V  Less then or equal
-   */
-    switch(OP) {
-      case 0x2: // CF == 1 // less or unordered                      // N==1 OR V==1        // lt
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FLU}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      case 0x3: // CF == 0 // greater or equal (and not unordered)   // N==V                // ge
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FGE}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      case 0x6: // CF == 1 || ZF == 1 // less or equal or unordered  // Z==1 OR N!=V        // le
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FLEU}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      case 0x7: // CF == 0 && ZF == 0 // greater (and not unordered) // C==1 AND V=0        // hi
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FGT}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      case 0xA: // PF = 1 // unordered                               // V==1                // vs
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FU}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      case 0xB: // PF = 0 // not unordered                           // V==0                // vc
-        SrcCond = _Select(ResultSize, IR::SizeToOpSize(flagsOpSize), CondClassType{COND_FNU}, flagsOpDest, flagsOpSrc, TrueValue, FalseValue);
-        break;
-      default:
-        // TODO: Add more optimized cases
-        break;
-    }
-  }
-
-  return SrcCond;
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
@@ -1099,11 +961,6 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   BlockSetRIP = true;
 
-  auto TakeBranch = _Constant(1);
-  auto DoNotTakeBranch = _Constant(0);
-
-  auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, TakeBranch, DoNotTakeBranch);
-
   // Jump instruction only uses up to 32-bit signed displacement
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
   int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
@@ -1131,7 +988,16 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   // Fallback
   {
-    auto CondJump_ = CondJump(SrcCond);
+    IRPair<IR::IROp_CondJump> CondJump_;
+    auto [Complex, SimpleCond] = DecodeNZCVCondition(Op->OP & 0xF);
+    if (Complex) {
+      auto TakeBranch = _Constant(1);
+      auto DoNotTakeBranch = _Constant(0);
+      auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, TakeBranch, DoNotTakeBranch);
+      CondJump_ = CondJump(SrcCond);
+    } else {
+      CondJump_ = CondJumpNZCV(SimpleCond);
+    }
 
     // Taking branch block
     if (TrueBlock != JumpTargets.end()) {
@@ -1243,6 +1109,12 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   bool CheckZF = Op->OP != 0xE2;
   bool ZFTrue = Op->OP == 0xE1;
 
+  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
+  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
+  OrderedNode *AndCondWith = nullptr;
+  if (CheckZF)
+    AndCondWith = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC, !ZFTrue);
+
   BlockSetRIP = true;
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
@@ -1263,15 +1135,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   SrcCond = _Select(FEXCore::IR::COND_NEQ,
           CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
 
-  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
-  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
-  if (CheckZF) {
-    OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-    if (!ZFTrue) {
-      ZF = _Xor(OpSize::i64Bit, ZF, _Constant(1));
-    }
-    SrcCond = _And(OpSize::i64Bit, SrcCond, ZF);
-  }
+  if (AndCondWith)
+    SrcCond = _And(OpSize::i64Bit, SrcCond, AndCondWith);
 
   CalculateDeferredFlags();
   auto TrueBlock = JumpTargets.find(Target);
@@ -2361,26 +2226,33 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto OperandSize = Size * 8;
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  // In 32-bit mode we only look at bottom 32-bit, no 8 or 16-bit BZHI so no
+  // need to zero-extend sources
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
+                         {.AllowUpperGarbage = true});
 
-  // Mask off the index so we only consider the lower byte.
-  auto MaskedIndex = _And(OpSize::i64Bit, Index, _Constant(0xFF));
+  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags,
+                           {.AllowUpperGarbage = true});
 
-  // Now clear the high bits specified by the index.
+  // Clear the high bits specified by the index. A64 only considers bottom bits
+  // of the shift, so we don't need to mask bottom 8-bits ourselves.
+  // Out-of-bounds results ignored after.
   auto NegOne = _Constant(OperandSize, -1);
-  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, MaskedIndex);
+  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, Index);
   auto MaskResult = _Andn(IR::SizeToOpSize(Size), Src, Mask);
 
-  // If the index is above OperandSize, we don't clear anything.
-  auto Bounds = _Constant(OperandSize - 1);
-  auto Result = _Select(IR::COND_UGT,
-                        MaskedIndex, Bounds,
-                        Src, MaskResult);
-
+  // If the index is above OperandSize, we don't clear anything. BZHI only
+  // considers the bottom 8-bits, so we really want to know if the bottom 8-bits
+  // have their top bits set. Test exactly that.
+  _TestNZ(OpSize::i64Bit, Index, _Constant(0xFF & ~(OperandSize - 1)));
+  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), CondClassType{COND_NEQ},
+                            Src, MaskResult);
   StoreResult(GPRClass, Op, Result, -1);
 
-  GenerateFlags_BZHI(Op, Result, MaskedIndex);
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_NEQ}, One, Zero);
+  GenerateFlags_BZHI(Op, Result, CF);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {

@@ -831,8 +831,8 @@
         "cmp x24, x22",
         "ccmp x25, x23, #nzcv, eq",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
         "msr nzcv, x21",
+        "rmif x22, #62, #nZcv",
         "cbnz x22, #+0xc",
         "mov x4, x20",
         "mov x6, x26"
@@ -859,8 +859,8 @@
         "cmp x24, x22",
         "ccmp x25, x23, #nzcv, eq",
         "cset x22, eq",
-        "bfi w21, w22, #30, #1",
         "msr nzcv, x21",
+        "rmif x22, #62, #nZcv",
         "cbnz x22, #+0xc",
         "mov x4, x20",
         "mov x6, x26"

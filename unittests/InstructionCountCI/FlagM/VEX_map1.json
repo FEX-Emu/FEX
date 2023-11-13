@@ -15,7 +15,7 @@
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
@@ -32,19 +32,21 @@
         "ubfx x22, x21, #1, #1",
         "ubfx x23, x21, #0, #1",
         "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "rmif x22, #63, #nzCv",
+        "rmif x23, #62, #nZcv",
+        "eor w20, w21, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w21, #0x90000000",
+        "mrs x22, nzcv",
+        "bic x21, x22, x21",
+        "strb w20, [x28, #708]",
+        "msr nzcv, x21"
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
@@ -61,19 +63,21 @@
         "ubfx x22, x21, #1, #1",
         "ubfx x23, x21, #0, #1",
         "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "rmif x22, #63, #nzCv",
+        "rmif x23, #62, #nZcv",
+        "eor w20, w21, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w21, #0x90000000",
+        "mrs x22, nzcv",
+        "bic x21, x22, x21",
+        "strb w20, [x28, #708]",
+        "msr nzcv, x21"
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
@@ -90,19 +94,21 @@
         "ubfx x22, x21, #1, #1",
         "ubfx x23, x21, #0, #1",
         "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "rmif x22, #63, #nzCv",
+        "rmif x23, #62, #nZcv",
+        "eor w20, w21, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w21, #0x90000000",
+        "mrs x22, nzcv",
+        "bic x21, x22, x21",
+        "strb w20, [x28, #708]",
+        "msr nzcv, x21"
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 22,
       "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
@@ -119,15 +125,17 @@
         "ubfx x22, x21, #1, #1",
         "ubfx x23, x21, #0, #1",
         "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "rmif x22, #63, #nzCv",
+        "rmif x23, #62, #nZcv",
+        "eor w20, w21, #0x1",
+        "strb w20, [x28, #706]",
+        "mov w20, #0x0",
+        "mov w21, #0x90000000",
+        "mrs x22, nzcv",
+        "bic x21, x22, x21",
+        "strb w20, [x28, #708]",
+        "msr nzcv, x21"
       ]
     },
     "vpmovmskb rax, xmm0": {

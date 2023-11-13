@@ -247,10 +247,13 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
     data = _Sbfe(OpSize::i64Bit, read_width * 8, 0, data);
   }
 
-  // Extract sign and make interger absolute
-  auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
+  // We're about to clobber flags to grab the sign, so save NZCV.
+  SaveNZCV();
 
-  auto absolute = _Abs(OpSize::i64Bit, data);
+  // Extract sign and make interger absolute
+  _SubNZCV(OpSize::i64Bit, data, zero);
+  auto sign = _NZCVSelect(OpSize::i64Bit, CondClassType{COND_SLT}, _Constant(0x8000), zero);
+  auto absolute = _Neg(OpSize::i64Bit, data, CondClassType{COND_MI});
 
   // left justify the absolute interger
   auto shift = _Sub(OpSize::i64Bit, _Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));

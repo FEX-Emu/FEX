@@ -46,20 +46,20 @@
         "0x66 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
-        "ubfx w21, w20, #29, #1",
-        "mov w22, w7",
-        "mov w23, w4",
-        "add w24, w22, w21",
-        "add w4, w23, w24",
-        "cmp w4, w22",
+        "cset w20, hs",
+        "mov w21, w7",
+        "mov w22, w4",
+        "add w23, w21, w20",
+        "add w4, w22, w23",
+        "mrs x22, nzcv",
+        "cmp w4, w21",
         "cset x23, lo",
-        "cmp w4, w22",
-        "cset x22, ls",
-        "cmp x21, #0x1 (1)",
-        "csel x21, x22, x23, eq",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "cmp w4, w21",
+        "cset x21, ls",
+        "cmp x20, #0x1 (1)",
+        "csel x20, x21, x23, eq",
+        "msr nzcv, x22",
+        "rmif x20, #63, #nzCv"
       ]
     },
     "adcx rax, rbx": {
@@ -69,18 +69,18 @@
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
-        "ubfx w21, w20, #29, #1",
-        "add x22, x7, x21",
-        "add x4, x4, x22",
+        "cset w20, hs",
+        "add x21, x7, x20",
+        "add x4, x4, x21",
+        "mrs x21, nzcv",
         "cmp x4, x7",
         "cset x22, lo",
         "cmp x4, x7",
         "cset x23, ls",
-        "cmp x21, #0x1 (1)",
-        "csel x21, x23, x22, eq",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "cmp x20, #0x1 (1)",
+        "csel x20, x23, x22, eq",
+        "msr nzcv, x21",
+        "rmif x20, #63, #nzCv"
       ]
     },
     "adox eax, ebx": {
@@ -90,20 +90,20 @@
         "0xf3 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
-        "ubfx w21, w20, #28, #1",
-        "mov w22, w7",
-        "mov w23, w4",
-        "add w24, w22, w21",
-        "add w4, w23, w24",
-        "cmp w4, w22",
+        "cset w20, vs",
+        "mov w21, w7",
+        "mov w22, w4",
+        "add w23, w21, w20",
+        "add w4, w22, w23",
+        "mrs x22, nzcv",
+        "cmp w4, w21",
         "cset x23, lo",
-        "cmp w4, w22",
-        "cset x22, ls",
-        "cmp x21, #0x1 (1)",
-        "csel x21, x22, x23, eq",
-        "bfi w20, w21, #28, #1",
-        "msr nzcv, x20"
+        "cmp w4, w21",
+        "cset x21, ls",
+        "cmp x20, #0x1 (1)",
+        "csel x20, x21, x23, eq",
+        "msr nzcv, x22",
+        "rmif x20, #0, #nzcV"
       ]
     },
     "adox rax, rbx": {
@@ -113,18 +113,18 @@
         "0xf3 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
-        "ubfx w21, w20, #28, #1",
-        "add x22, x7, x21",
-        "add x4, x4, x22",
+        "cset w20, vs",
+        "add x21, x7, x20",
+        "add x4, x4, x21",
+        "mrs x21, nzcv",
         "cmp x4, x7",
         "cset x22, lo",
         "cmp x4, x7",
         "cset x23, ls",
-        "cmp x21, #0x1 (1)",
-        "csel x21, x23, x22, eq",
-        "bfi w20, w21, #28, #1",
-        "msr nzcv, x20"
+        "cmp x20, #0x1 (1)",
+        "csel x20, x23, x22, eq",
+        "msr nzcv, x21",
+        "rmif x20, #0, #nzcV"
       ]
     }
   }
