@@ -26,9 +26,24 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto Tmp = _Ror(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
-  auto Top = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Src, 3), Tmp);
-  auto Result = _VInsGPR(16, 4, 3, Src, Top);
+  OrderedNode *RotatedNode{};
+  if (CTX->HostFeatures.SupportsSHA) {
+    // ARMv8 SHA1 extension provides a `SHA1H` instruction which does a fixed rotate by 30.
+    // This only operates on element 0 rather than element 3. We don't have the luxury of rewriting the x86 SHA algorithm to take advantage of this.
+    // Move the element to zero, rotate, and then move back (Using duplicates).
+    // Saves one instruction versus that path that doesn't support SHA extension.
+    auto Duplicated = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto Sha1HRotated = _VSha1H(Duplicated);
+    RotatedNode = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Sha1HRotated, 0);
+  }
+  else {
+    // SHA1 extension missing, manually rotate.
+    // Emulate rotate.
+    auto ShiftLeft = _VShlI(OpSize::i128Bit, OpSize::i32Bit, Dest, 30);
+    RotatedNode = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeft, Dest, 2);
+  }
+  auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
+  auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -49,23 +64,31 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  // ROR by 31 is equivalent to a ROL by 1
-  auto ThirtyOne = _Constant(32, 31);
+  // This instruction mostly matches ARMv8's SHA1SU1 instruction but one of the elements are flipped in an unexpected way.
+  // Do all the work without it.
 
-  auto W13 = _VExtractToGPR(16, 4, Src, 2);
-  auto W14 = _VExtractToGPR(16, 4, Src, 1);
-  auto W15 = _VExtractToGPR(16, 4, Src, 0);
-  auto W16 = _Ror(OpSize::i32Bit, _Xor(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), W13), ThirtyOne);
-  auto W17 = _Ror(OpSize::i32Bit, _Xor(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 2), W14), ThirtyOne);
-  auto W18 = _Ror(OpSize::i32Bit, _Xor(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 1), W15), ThirtyOne);
-  auto W19 = _Ror(OpSize::i32Bit, _Xor(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 0), W16), ThirtyOne);
+  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(OpSize::i32Bit, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
-  auto D3 = _VInsGPR(16, 4, 3, Dest, W16);
-  auto D2 = _VInsGPR(16, 4, 2, D3, W17);
-  auto D1 = _VInsGPR(16, 4, 1, D2, W18);
-  auto D0 = _VInsGPR(16, 4, 0, D1, W19);
+  // Shift the incoming source left by a 32-bit element, inserting Zeros.
+  // This could be slightly improved to use a VInsGPR with the zero register.
+  auto Src2Shift = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, ZeroRegister, 12);
+  auto Xor1 = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, Src2Shift);
 
-  StoreResult(FPRClass, Op, D0, -1);
+  // Emulate rotate.
+  auto ShiftLeftXor1 = _VShlI(OpSize::i128Bit, OpSize::i32Bit, Xor1, 1);
+  auto RotatedXor1 = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXor1, Xor1, 31);
+
+  // Element0 didn't get XOR'd with anything, so do it now.
+  auto ExtractUpper = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, RotatedXor1, 3);
+  auto XorLower = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, ExtractUpper);
+
+  // Emulate rotate.
+  auto ShiftLeftXorLower = _VShlI(OpSize::i128Bit, OpSize::i32Bit, XorLower, 1);
+  auto RotatedXorLower = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXorLower, XorLower, 31);
+
+  auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 0, RotatedXor1, RotatedXorLower);
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
@@ -151,30 +174,37 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
-  const auto Sigma0 = [this](OrderedNode* W) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
-  };
-
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto W4 = _VExtractToGPR(16, 4, Src, 0);
-  auto W3 = _VExtractToGPR(16, 4, Dest, 3);
-  auto W2 = _VExtractToGPR(16, 4, Dest, 2);
-  auto W1 = _VExtractToGPR(16, 4, Dest, 1);
-  auto W0 = _VExtractToGPR(16, 4, Dest, 0);
+  OrderedNode *Result{};
 
-  auto Sig3 = _Add(OpSize::i32Bit, W3, Sigma0(W4));
-  auto Sig2 = _Add(OpSize::i32Bit, W2, Sigma0(W3));
-  auto Sig1 = _Add(OpSize::i32Bit, W1, Sigma0(W2));
-  auto Sig0 = _Add(OpSize::i32Bit, W0, Sigma0(W1));
+  if (CTX->HostFeatures.SupportsSHA) {
+    Result = _VSha256U0(Dest, Src);
+  }
+  else {
+    const auto Sigma0 = [this](OrderedNode* W) -> OrderedNode* {
+      return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))), _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
+    };
 
-  auto D3 = _VInsGPR(16, 4, 3, Dest, Sig3);
-  auto D2 = _VInsGPR(16, 4, 2, D3, Sig2);
-  auto D1 = _VInsGPR(16, 4, 1, D2, Sig1);
-  auto D0 = _VInsGPR(16, 4, 0, D1, Sig0);
+    auto W4 = _VExtractToGPR(16, 4, Src, 0);
+    auto W3 = _VExtractToGPR(16, 4, Dest, 3);
+    auto W2 = _VExtractToGPR(16, 4, Dest, 2);
+    auto W1 = _VExtractToGPR(16, 4, Dest, 1);
+    auto W0 = _VExtractToGPR(16, 4, Dest, 0);
 
-  StoreResult(FPRClass, Op, D0, -1);
+    auto Sig3 = _Add(OpSize::i32Bit, W3, Sigma0(W4));
+    auto Sig2 = _Add(OpSize::i32Bit, W2, Sigma0(W3));
+    auto Sig1 = _Add(OpSize::i32Bit, W1, Sigma0(W2));
+    auto Sig0 = _Add(OpSize::i32Bit, W0, Sigma0(W1));
+
+    auto D3 = _VInsGPR(16, 4, 3, Dest, Sig3);
+    auto D2 = _VInsGPR(16, 4, 2, D3, Sig2);
+    auto D1 = _VInsGPR(16, 4, 1, D2, Sig1);
+    Result = _VInsGPR(16, 4, 0, D1, Sig0);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
