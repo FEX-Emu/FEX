@@ -552,6 +552,16 @@ DEF_OP(Xor) {
   }
 }
 
+DEF_OP(XorShift) {
+  auto Op = IROp->C<IR::IROp_XorShift>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  eor(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+}
+
 DEF_OP(Lshl) {
   auto Op = IROp->C<IR::IROp_Lshl>();
   const uint8_t OpSize = IROp->Size;
