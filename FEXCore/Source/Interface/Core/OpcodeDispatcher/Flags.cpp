@@ -932,13 +932,12 @@ void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode 
   ZeroCV();
 
   // Extract the last bit shifted in to CF
-  auto NewCF = _Bfe(OpSize, 1, SizeBits - 1, Res);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SizeBits - 1, true);
 
   // OF is set to the XOR of the new CF bit and the most significant bit of the result
   // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-  auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, SizeBits - 2, Res), NewCF);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+  auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, SizeBits - 2, true);
 
   // Now select: if shift == 0, don't update flags
   SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
@@ -961,14 +960,13 @@ void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *
   // Extract the last bit shifted in to CF
   //auto Size = _Constant(GetSrcSize(Res) * 8);
   //auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
-  auto NewCF = _Bfe(OpSize, 1, 0, Res);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, 0, true);
 
   // OF is the LSB and MSB XOR'd together.
   // OF is set to the XOR of the new CF bit and the most significant bit of the result.
   // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-  auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, SizeBits - 1, Res), NewCF);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+  auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, SizeBits - 1);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
 
   // Now select: if shift == 0, don't update flags
   SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
@@ -980,7 +978,6 @@ void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, Ord
 
   const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   auto SizeBits = SrcSize * 8;
-  auto NewCF = _Bfe(OpSize, 1, SizeBits - 1, Res);
 
   // Ends up faster overall if we don't have FlagM, slower if we do...
   // If Shift != 1, OF is undefined so we choose to zero here.
@@ -990,7 +987,7 @@ void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, Ord
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SizeBits - 1, true);
   }
 
   // OF
@@ -998,8 +995,8 @@ void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, Ord
     if (Shift == 1) {
       // OF is the top two MSBs XOR'd together
       // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-      auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, SizeBits - 2, Res), NewCF);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+      auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, SizeBits - 2, 1);
     }
   }
 }
@@ -1010,8 +1007,6 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
   const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   auto SizeBits = SrcSize * 8;
 
-  auto NewCF = _Bfe(OpSize, 1, 0, Res);
-
   // Ends up faster overall if we don't have FlagM, slower if we do...
   // If Shift != 1, OF is undefined so we choose to zero here.
   if (!CTX->HostFeatures.SupportsFlagM)
@@ -1020,7 +1015,7 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, 0, true);
   }
 
   // OF
@@ -1029,9 +1024,9 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
       // OF is the LSB and MSB XOR'd together.
       // OF is set to the XOR of the new CF bit and the most significant bit of the result.
       // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-      auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, SizeBits - 1, Res), NewCF);
+      auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, SizeBits - 1);
 
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
     }
   }
 }
