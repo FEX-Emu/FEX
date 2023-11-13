@@ -953,9 +953,10 @@ void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *
   auto OldNZCV = GetNZCV();
   auto OldSetNZCVBits = PossiblySetNZCVBits;
 
-  // Ends up faster overall.
-  // XXX: can do much better if we have FlagM (with RMIF).
-  ZeroCV();
+  // Ends up faster overall if we don't have FlagM, slower if we do...
+  // If Shift != 1, OF is undefined so we choose to zero here.
+  if (!CTX->HostFeatures.SupportsFlagM)
+    ZeroCV();
 
   // Extract the last bit shifted in to CF
   //auto Size = _Constant(GetSrcSize(Res) * 8);
@@ -981,9 +982,10 @@ void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, Ord
   auto SizeBits = SrcSize * 8;
   auto NewCF = _Bfe(OpSize, 1, SizeBits - 1, Res);
 
-  // Ends up faster overall. If Shift != 1, OF is undefined so we choose to zero here.
-  // XXX: can do much better if we have FlagM (with RMIF).
-  ZeroCV();
+  // Ends up faster overall if we don't have FlagM, slower if we do...
+  // If Shift != 1, OF is undefined so we choose to zero here.
+  if (!CTX->HostFeatures.SupportsFlagM)
+    ZeroCV();
 
   // CF
   {
@@ -1010,9 +1012,10 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
 
   auto NewCF = _Bfe(OpSize, 1, 0, Res);
 
-  // Ends up faster overall. If Shift != 1, OF is undefined so we choose to zero here.
-  // XXX: can do much better if we have FlagM (with RMIF).
-  ZeroCV();
+  // Ends up faster overall if we don't have FlagM, slower if we do...
+  // If Shift != 1, OF is undefined so we choose to zero here.
+  if (!CTX->HostFeatures.SupportsFlagM)
+    ZeroCV();
 
   // CF
   {
