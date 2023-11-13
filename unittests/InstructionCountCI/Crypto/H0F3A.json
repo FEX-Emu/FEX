@@ -1,0 +1,82 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "CRYPTO"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "AFP"
+    ]
+  },
+  "Instructions": {
+    "pclmulqdq xmm0, xmm1, 00000b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0x66 0x0f 0x3a 0x44"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "pclmulqdq xmm0, xmm1, 00001b": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "0x66 0x0f 0x3a 0x44"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v0.2d, v16.d[1]",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "pclmulqdq xmm0, xmm1, 10000b": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "0x66 0x0f 0x3a 0x44"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v0.2d, v17.d[1]",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "pclmulqdq xmm0, xmm1, 10001b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0x66 0x0f 0x3a 0x44"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "aeskeygenassist xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xdf"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2064]",
+        "movi v3.2d, #0x0",
+        "mov v16.16b, v17.16b",
+        "unimplemented (Unimplemented)",
+        "tbl v16.16b, {v16.16b}, v2.16b"
+      ]
+    },
+    "aeskeygenassist xmm0, xmm1, 0xFF": {
+      "ExpectedInstructionCount": 8,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xdf"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2064]",
+        "movi v3.2d, #0x0",
+        "mov v16.16b, v17.16b",
+        "unimplemented (Unimplemented)",
+        "tbl v16.16b, {v16.16b}, v2.16b",
+        "mov x0, #0xff00000000",
+        "dup v1.2d, x0",
+        "eor v16.16b, v16.16b, v1.16b"
+      ]
+    }
+  }
+}

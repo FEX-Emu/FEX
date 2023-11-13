@@ -1,0 +1,138 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "CRYPTO"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "AFP"
+    ]
+  },
+  "Instructions": {
+    "sha1nexte xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0x66 0x0f 0x38 0xc8"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.4s, v16.s[3]",
+        "unimplemented (Unimplemented)",
+        "dup v2.4s, v2.s[0]",
+        "add v2.4s, v17.4s, v2.4s",
+        "mov v16.16b, v17.16b",
+        "mov v16.s[3], v2.s[3]"
+      ]
+    },
+    "sha256msg1 xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0x66 0x0f 0x38 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "unimplemented (Unimplemented)"
+      ]
+    },
+    "aesimc xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0x66 0x0f 0x38 0xdb"
+      ],
+      "ExpectedArm64ASM": [
+        "unimplemented (Unimplemented)"
+      ]
+    },
+    "aesenc xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "0x66 0x0f 0x38 0xdc"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unimplemented (Unimplemented)",
+        "unimplemented (Unimplemented)",
+        "eor v16.16b, v16.16b, v17.16b"
+      ]
+    },
+    "aesenclast xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "0x66 0x0f 0x38 0xdd"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unimplemented (Unimplemented)",
+        "eor v16.16b, v16.16b, v17.16b"
+      ]
+    },
+    "aesdec xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "0x66 0x0f 0x38 0xde"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unimplemented (Unimplemented)",
+        "unimplemented (Unimplemented)",
+        "eor v16.16b, v16.16b, v17.16b"
+      ]
+    },
+    "aesdeclast xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "0x66 0x0f 0x38 0xdf"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unimplemented (Unimplemented)",
+        "eor v16.16b, v16.16b, v17.16b"
+      ]
+    },
+    "crc32 eax, bl": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf0"
+      ],
+      "ExpectedArm64ASM": [
+        "crc32cb w4, w4, w7"
+      ]
+    },
+    "crc32 eax, bx": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf1"
+      ],
+      "ExpectedArm64ASM": [
+        "crc32ch w4, w4, w7"
+      ]
+    },
+    "crc32 eax, ebx": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf1"
+      ],
+      "ExpectedArm64ASM": [
+        "crc32cw w4, w4, w7"
+      ]
+    },
+    "crc32 rax, bl": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf0"
+      ],
+      "ExpectedArm64ASM": [
+        "crc32cb w4, w4, w7"
+      ]
+    },
+    "crc32 rax, rbx": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf1"
+      ],
+      "ExpectedArm64ASM": [
+        "crc32cx w4, w4, x7"
+      ]
+    }
+  }
+}
