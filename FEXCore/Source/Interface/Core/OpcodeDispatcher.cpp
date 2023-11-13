@@ -2604,20 +2604,18 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  // Our new CF will be the top bit of the source
-  auto NewCF = _Bfe(OpSize, 1, Size - 1, Dest);
-
   // Rotate left and insert CF in to lowest bit
   OrderedNode *Res = _Lshl(OpSize, Dest, _Constant(Size, 1));
   Res = _Or(OpSize, Res, CF);
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+  // Our new CF will be the top bit of the source
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Size - 1, true);
 
   // OF is the top two MSBs XOR'd together
   // Top two MSBs is CF and top bit of result
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize, 1, Size - 1, Res), NewCF));
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize, Res, Dest), Size - 1, true);
 }
 
 void OpDispatchBuilder::RCLOp(OpcodeArgs) {
