@@ -2384,10 +2384,8 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Res, -1);
 
-    if (Shift == 1) {
-      // OF is the top two MSBs XOR'd together
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSizeFromSrc(Op), _Bfe(OpSizeFromSrc(Op), 1, Size - 1, Res), _Bfe(OpSizeFromSrc(Op), 1, Size - 2, Res)));
-    }
+    // OF is the top two MSBs XOR'd together
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSizeFromSrc(Op), Res, Res, ShiftType::LSR, 1), Size - 2, true);
   }
   else {
     // Res = Src >> Shift
