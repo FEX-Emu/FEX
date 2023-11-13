@@ -232,14 +232,6 @@ extern "C" {
       return rv;
     }
 
-    static void LockMutexFunction(LockInfoPtr) {
-      fprintf(stderr, "libX11: LockMutex\n");
-    }
-
-    static void UnlockMutexFunction(LockInfoPtr) {
-      fprintf(stderr, "libX11: LockMutex\n");
-    }
-
   int XFree(void* ptr) {
     // This function must be able to handle both guest heap pointers *and* host heap pointers,
     // so it only forwards to the native host library for the latter.
@@ -368,8 +360,8 @@ extern "C" {
     return fexfn_pack_XUnregisterIMInstantiateCallback(dpy, rdb, res_name, res_class, AllocateHostTrampolineForGuestFunction(callback), client_data);
   }
 
-  void (*_XLockMutex_fn)(LockInfoPtr) = LockMutexFunction;
-  void (*_XUnlockMutex_fn)(LockInfoPtr) = UnlockMutexFunction;
+  void (*_XLockMutex_fn)(LockInfoPtr) = nullptr;
+  void (*_XUnlockMutex_fn)(LockInfoPtr) = nullptr;
   LockInfoPtr _Xglobal_lock = (LockInfoPtr)0x4142434445464748ULL;
 }
 
