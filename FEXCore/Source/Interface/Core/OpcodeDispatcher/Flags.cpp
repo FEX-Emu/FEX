@@ -878,7 +878,11 @@ void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode 
   CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res](){
     auto SizeBits = SrcSize * 8;
     const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-    ZeroCV();
+
+    // Ends up faster overall if we don't have FlagM, slower if we do...
+    // If Shift != 1, OF is undefined so we choose to zero here.
+    if (!CTX->HostFeatures.SupportsFlagM)
+      ZeroCV();
 
     // Extract the last bit shifted in to CF
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SizeBits - 1, true);
