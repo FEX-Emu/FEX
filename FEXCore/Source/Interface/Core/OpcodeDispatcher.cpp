@@ -2380,11 +2380,9 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     auto Res = _Extr(OpSizeFromSrc(Op), CF, Dest, Shift);
 
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Bfe(OpSizeFromSrc(Op), 1, Shift - 1, Dest);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
 
     StoreResult(GPRClass, Op, Res, -1);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
     if (Shift == 1) {
       // OF is the top two MSBs XOR'd together
@@ -2402,8 +2400,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
     // CF only changes if we actually shifted
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Bfe(OpSize::i32Bit, 1, Shift - 1, Dest);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
@@ -2422,7 +2419,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   uint32_t Shift = 1;
 
   // Our new CF will be bit (Shift - 1) of the source
-  auto NewCF = _Bfe(OpSize::i32Bit, 1, Shift - 1, Dest);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
 
   // Rotate and insert CF in the upper bit
   OrderedNode *Res = _Bfe(OpSize::i32Bit, 7, 1, Dest);
@@ -2430,7 +2427,6 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
   if (Shift == 1) {
     // OF is the top two MSBs XOR'd together
