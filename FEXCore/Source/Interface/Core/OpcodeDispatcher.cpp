@@ -2633,64 +2633,68 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     RCLSmallerOp(Op);
     return;
   }
-  const auto OpSize = OpSizeFromSrc(Op);
 
   // Calculate flags early.
   CalculateDeferredFlags();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  // Res = Src << Shift
-  OrderedNode *Res = _Lshl(OpSize, Dest, Src);
+  CalculateFlags_ShiftVariable(Src, [this, CF, Op, Size, Src](){
+    // Res = Src << Shift
+    const auto OpSize = OpSizeFromSrc(Op);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    OrderedNode *Res = _Lshl(OpSize, Dest, Src);
 
-  // Res |= (Src << (Size - Shift + 1));
-  OrderedNode *SrcShl = _Sub(OpSize, _Constant(Size, Size + 1), Src);
-  auto TmpHigher = _Lshr(OpSize, Dest, SrcShl);
+    uint64_t Const;
+    if (!IsValueConstant(WrapNode(Src), &Const)) {
+      // Res |= (Src << (Size - Shift + 1));
+      OrderedNode *SrcShl = _Sub(OpSize, _Constant(Size, Size + 1), Src);
+      auto TmpHigher = _Lshr(OpSize, Dest, SrcShl);
 
-  auto One = _Constant(Size, 1);
-  auto Zero = _Constant(Size, 0);
+      auto One = _Constant(Size, 1);
+      auto Zero = _Constant(Size, 0);
 
-  auto CompareResult = _Select(FEXCore::IR::COND_UGT,
-    Src, One,
-    TmpHigher, Zero);
+      auto CompareResult = _Select(FEXCore::IR::COND_UGT, Src, One, TmpHigher, Zero);
+      Res = _Or(OpSize, Res, CompareResult);
 
-  Res = _Or(OpSize, Res, CompareResult);
+      // Our new CF will be bit (Shift - 1) of the source
+      auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, _Constant(Size, Size), Src));
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
 
-  // If Shift != 0 then we can inject the CF
-  OrderedNode *CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
-  auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
+      // Since Shift != 0 we can inject the CF
+      OrderedNode *CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
+      auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
+      Res = _Or(OpSize, Res, TmpCF);
 
-  CompareResult = _Select(FEXCore::IR::COND_UGE,
-    Src, One,
-    TmpCF, Zero);
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      //
+      // Note that NewCF has garbage in the upper bits, but we ignore them here
+      // and mask as part of the set after.
+      auto NewOF = _XorShift(OpSize, Res, NewCF, ShiftType::LSL, Size - 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
+    } else {
+      // Res |= (Src << (Size - Shift + 1));
+      if (Const > 1)
+        Res = _Orlshr(OpSize, Res, Dest, Size + 1 - Const);
 
-  Res = _Or(OpSize, Res, CompareResult);
+      // Our new CF will be bit (Shift - 1) of the source
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Size - Const, true);
 
-  StoreResult(GPRClass, Op, Res, -1);
+      // Since Shift != 0 we can inject the CF
+      Res = _Orlshl(OpSize, Res, CF, Const - 1);
 
-  {
-    // CF only changes if we actually shifted
-    // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Bfe(OpSize, 1, 0, _Lshr(OpSize, Dest, _Sub(OpSize, _Constant(Size, Size), Src)));
-    CompareResult = _Select(FEXCore::IR::COND_UGE,
-      Src, One,
-      NewCF, CF);
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      if (Const == 1) {
+        auto NewOF = _Xor(OpSize, Res, Dest);
+        SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
+      }
+    }
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
-
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    // Only changed if shift isn't zero
-    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-    auto NewOF = _Xor(OpSize, _Bfe(OpSize, 1, Size - 1, Res), NewCF);
-    CompareResult = _Select(FEXCore::IR::COND_EQ,
-      Src, _Constant(0),
-      OF, NewOF);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(CompareResult);
-  }
+    StoreResult(GPRClass, Op, Res, -1);
+  });
 }
 
 void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
