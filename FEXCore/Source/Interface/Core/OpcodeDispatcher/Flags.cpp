@@ -277,16 +277,7 @@ void OpDispatchBuilder::FixupAF() {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
-  // For shifts, we can only update for nonzero shift. If zero, we nop out the flag write by
-  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPFRaw, because
-  // we need the existing /encoded/ value rather than the decoded PF value. In particular,
-  // this does not calculate a popcount.
-  if (condition) {
-    auto OldFlag = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
-    Res = _Select(FEXCore::IR::COND_EQ, condition, _Constant(0), OldFlag, Res);
-  }
-
+void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
   // Calculation is entirely deferred until load, just store the 8-bit result.
   SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Res);
 }
@@ -701,109 +692,70 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res, Src1, Src2](){
+    const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+    SetNZ_ZeroCV(SrcSize, Res);
 
-  auto Zero = _Constant(0);
-
-  auto OldNZCV = GetNZCV();
-  uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
-
-  SetNZ_ZeroCV(SrcSize, Res);
-
-  // CF
-  {
     // Extract the last bit shifted in to CF
     auto Size = _Constant(SrcSize * 8);
     auto ShiftAmt = _Sub(OpSize, Size, Src2);
     auto LastBit = _Lshr(OpSize, Src1, ShiftAmt);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(LastBit, 0, true);
-  }
 
-  CalculatePF(Res, Src2);
+    CalculatePF(Res);
 
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+    // AF
+    // Undefined
+    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 
-  // OF
-  {
     // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
     // When Shift > 1 then OF is undefined
-    auto val = _Xor(OpSize, Src1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(val, SrcSize * 8 - 1, true);
-  }
-
-  // Now select between the two
-  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
-  PossiblySetNZCVBits |= OldSetNZCVBits;
+    auto OFXor = _Xor(OpSize, Src1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(OFXor, SrcSize * 8 - 1, true);
+  });
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res, Src1, Src2](){
+    const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+    SetNZ_ZeroCV(SrcSize, Res);
 
-  auto OldNZCV = GetNZCV();
-  uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
-
-  SetNZ_ZeroCV(SrcSize, Res);
-
-  // CF
-  {
     // Extract the last bit shifted in to CF
-    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, One);
+    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, _Constant(1));
     const auto CFSize = IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize));
     auto LastBit = _Lshr(CFSize, Src1, ShiftAmt);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(LastBit, 0, true);
-  }
 
-  CalculatePF(Res, Src2);
+    CalculatePF(Res);
 
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+    // AF
+    // Undefined
+    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 
-  // OF
-  {
     // Only defined when Shift is 1 else undefined
     // OF flag is set if a sign change occurred
     auto val = _Xor(OpSize, Src1, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(val, SrcSize * 8 - 1, true);
-  }
-
-  // Now select between the two
-  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
-  PossiblySetNZCVBits |= OldSetNZCVBits;
+  });
 }
 
 void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res, Src1, Src2](){
+    // SF/ZF/OF
+    SetNZ_ZeroCV(SrcSize, Res);
 
-  auto OldNZCV = GetNZCV();
-  uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
-
-  // SF/ZF/OF
-  SetNZ_ZeroCV(SrcSize, Res);
-
-  // CF
-  {
     // Extract the last bit shifted in to CF
     const auto CFSize = IR::SizeToOpSize(std::max<uint32_t>(4u, GetOpSize(Src1)));
-    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, One);
+    auto ShiftAmt = _Sub(OpSize::i64Bit, Src2, _Constant(1));
     auto LastBit = _Lshr(CFSize, Src1, ShiftAmt);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(LastBit, 0, true);
-  }
 
-  CalculatePF(Res, Src2);
+    CalculatePF(Res);
 
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-
-  // Now select between the two
-  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
-  PossiblySetNZCVBits |= OldSetNZCVBits;
+    // AF
+    // Undefined
+    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  });
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *UnmaskedRes, OrderedNode *Src1, uint64_t Shift) {
@@ -923,54 +875,42 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
 }
 
 void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto Zero = _Constant(0);
-  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto SizeBits = SrcSize * 8;
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res](){
+    auto SizeBits = SrcSize * 8;
+    const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+    ZeroCV();
 
-  auto OldNZCV = GetNZCV();
-  auto OldSetNZCVBits = PossiblySetNZCVBits;
-  ZeroCV();
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SizeBits - 1, true);
 
-  // Extract the last bit shifted in to CF
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SizeBits - 1, true);
-
-  // OF is set to the XOR of the new CF bit and the most significant bit of the result
-  // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-  auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, SizeBits - 2, true);
-
-  // Now select: if shift == 0, don't update flags
-  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
-  PossiblySetNZCVBits |= OldSetNZCVBits;
+    // OF is set to the XOR of the new CF bit and the most significant bit of the result
+    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+    auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, SizeBits - 2, true);
+  });
 }
 
 void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto Zero = _Constant(0);
-  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  auto SizeBits = SrcSize * 8;
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res](){
+    const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+    auto SizeBits = SrcSize * 8;
 
-  auto OldNZCV = GetNZCV();
-  auto OldSetNZCVBits = PossiblySetNZCVBits;
+    // Ends up faster overall if we don't have FlagM, slower if we do...
+    // If Shift != 1, OF is undefined so we choose to zero here.
+    if (!CTX->HostFeatures.SupportsFlagM)
+      ZeroCV();
 
-  // Ends up faster overall if we don't have FlagM, slower if we do...
-  // If Shift != 1, OF is undefined so we choose to zero here.
-  if (!CTX->HostFeatures.SupportsFlagM)
-    ZeroCV();
+    // Extract the last bit shifted in to CF
+    //auto Size = _Constant(GetSrcSize(Res) * 8);
+    //auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, 0, true);
 
-  // Extract the last bit shifted in to CF
-  //auto Size = _Constant(GetSrcSize(Res) * 8);
-  //auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, 0, true);
-
-  // OF is the LSB and MSB XOR'd together.
-  // OF is set to the XOR of the new CF bit and the most significant bit of the result.
-  // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-  auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, SizeBits - 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
-
-  // Now select: if shift == 0, don't update flags
-  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
-  PossiblySetNZCVBits |= OldSetNZCVBits;
+    // OF is the LSB and MSB XOR'd together.
+    // OF is set to the XOR of the new CF bit and the most significant bit of the result.
+    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+    auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, SizeBits - 1);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
+  });
 }
 
 void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {

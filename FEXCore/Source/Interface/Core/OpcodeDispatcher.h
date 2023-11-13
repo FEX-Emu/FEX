@@ -1604,13 +1604,38 @@ private:
     return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
   }
 
+  template <typename F>
+  void CalculateFlags_ShiftVariable(OrderedNode *Shift, F&& CalculateFlags) {
+    uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
+    auto Zero = _Constant(0);
+
+    // We are the ones calculating the deferred flags. Don't recurse!
+    InvalidateDeferredFlags();
+
+    // If the shift is zero, do not touch the flags.
+    auto SetBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+    auto EndBlock = CreateNewCodeBlockAfter(SetBlock);
+    CondJump(Shift, Zero, EndBlock, SetBlock, {COND_EQ});
+
+    SetCurrentCodeBlock(SetBlock);
+    StartNewBlock();
+    {
+      CalculateFlags();
+      Jump(EndBlock);
+    }
+
+    SetCurrentCodeBlock(EndBlock);
+    StartNewBlock();
+    PossiblySetNZCVBits |= OldSetNZCVBits;
+  }
+
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPFRaw();
   OrderedNode *LoadAF();
   void FixupAF();
-  void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
+  void CalculatePF(OrderedNode *Res);
   void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
