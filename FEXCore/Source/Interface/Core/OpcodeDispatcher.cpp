@@ -1679,10 +1679,6 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Result, -1);
 
-  if (Size < 32) {
-    Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-  }
-
   GenerateFlags_ShiftLeftImmediate(Op, Result, Dest, Shift);
 }
 

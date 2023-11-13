@@ -806,13 +806,13 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
   PossiblySetNZCVBits |= OldSetNZCVBits;
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *UnmaskedRes, OrderedNode *Src1, uint64_t Shift) {
   // No flags changed if shift is zero
   if (Shift == 0) return;
 
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  SetNZ_ZeroCV(SrcSize, Res);
+  SetNZ_ZeroCV(SrcSize, UnmaskedRes);
 
   // CF
   {
@@ -824,7 +824,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, SrcSizeBits - Shift, true);
   }
 
-  CalculatePF(Res);
+  CalculatePF(UnmaskedRes);
 
   // AF
   // Undefined
@@ -833,7 +833,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   // OF
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
   if (Shift == 1) {
-    auto Xor = _Xor(OpSize, Res, Src1);
+    auto Xor = _Xor(OpSize, UnmaskedRes, Src1);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, SrcSize * 8 - 1, true);
   } else {
     // Undefined, we choose to zero as part of SetNZ_ZeroCV
