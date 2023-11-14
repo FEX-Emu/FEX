@@ -10,7 +10,6 @@
   "Instructions": {
     "push fs": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0f 0xa0",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #146]",
@@ -19,7 +18,6 @@
     },
     "pop fs": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x0f 0xa1",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
@@ -33,7 +31,6 @@
     },
     "push gs": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0f 0xa8",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #144]",
@@ -42,7 +39,6 @@
     },
     "pop gs": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x0f 0xa9",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",

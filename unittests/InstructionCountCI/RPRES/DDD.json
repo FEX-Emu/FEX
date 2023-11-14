@@ -12,7 +12,6 @@
   "Instructions": {
     "pfrcpv mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x86"
       ],
@@ -24,7 +23,6 @@
     },
     "pfrsqrtv mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x87"
       ],
@@ -36,7 +34,6 @@
     },
     "pfrcp mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x96"
       ],
@@ -49,7 +46,6 @@
     },
     "pfrsqrt mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x97"
       ],

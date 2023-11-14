@@ -15,7 +15,6 @@
   "Instructions": {
     "xgetbv": {
       "ExpectedInstructionCount": 50,
-      "Optimal": "No",
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0xf0 (240)",
@@ -72,7 +71,6 @@
     },
     "rdtscp": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "0xF 0x01 /7 RM-1",
       "ExpectedArm64ASM": [
         "dmb ld",
@@ -100,7 +98,6 @@
     },
     "clzero rax": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": "0xF 0x01 /7 RM-4",
       "ExpectedArm64ASM": [
         "dc zva, x4"

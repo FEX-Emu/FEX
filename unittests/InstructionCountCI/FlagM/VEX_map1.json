@@ -16,7 +16,6 @@
   "Instructions": {
     "vucomiss xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
       ],
@@ -47,7 +46,6 @@
     },
     "vucomisd xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
       ],
@@ -78,7 +76,6 @@
     },
     "vcomiss xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
       ],
@@ -109,7 +106,6 @@
     },
     "vcomisd xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
       ],
@@ -140,7 +136,6 @@
     },
     "vpmovmskb rax, xmm0": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
       ],
@@ -160,7 +155,6 @@
     },
     "vpmovmskb rax, ymm0": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
       ],
@@ -190,7 +184,6 @@
     },
     "vmaskmovdqu xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b01 0xf7 128-bit"
       ],

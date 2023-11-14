@@ -15,7 +15,6 @@
   "Instructions": {
     "popcnt ax, bx": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
@@ -36,7 +35,6 @@
     },
     "popcnt eax, ebx": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -56,7 +54,6 @@
     },
     "popcnt rax, rbx": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
         "fmov d0, x7",
@@ -75,7 +72,6 @@
     },
     "tzcnt ax, bx": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
@@ -92,7 +88,6 @@
     },
     "tzcnt eax, ebx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -107,7 +102,6 @@
     },
     "tzcnt rax, rbx": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "Yes",
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
         "rbit x4, x7",
@@ -121,7 +115,6 @@
     },
     "lzcnt ax, bx": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
@@ -139,7 +132,6 @@
     },
     "lzcnt eax, ebx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -154,7 +146,6 @@
     },
     "lzcnt rax, rbx": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
         "clz x4, x7",

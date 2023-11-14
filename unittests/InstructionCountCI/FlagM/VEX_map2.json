@@ -13,7 +13,6 @@
   "Instructions": {
     "vtestps xmm0, xmm1": {
       "ExpectedInstructionCount": 28,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0e 128-bit"
       ],
@@ -50,7 +49,6 @@
     },
     "vtestps ymm0, ymm1": {
       "ExpectedInstructionCount": 36,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0e 256-bit"
       ],
@@ -95,7 +93,6 @@
     },
     "vtestpd xmm0, xmm1": {
       "ExpectedInstructionCount": 28,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0f 128-bit"
       ],
@@ -132,7 +129,6 @@
     },
     "vtestpd ymm0, ymm1": {
       "ExpectedInstructionCount": 36,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x0f 256-bit"
       ],
@@ -177,7 +173,6 @@
     },
     "vptest xmm0, xmm1": {
       "ExpectedInstructionCount": 19,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x16 128-bit"
       ],
@@ -205,7 +200,6 @@
     },
     "vptest ymm0, ymm1": {
       "ExpectedInstructionCount": 27,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x16 256-bit"
       ],
@@ -241,7 +235,6 @@
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2c 128-bit"
       ],
@@ -255,7 +248,6 @@
     },
     "vmaskmovps ymm0, ymm1, [rax]": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2c 256-bit"
       ],
@@ -268,7 +260,6 @@
     },
     "vmaskmovpd xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2d 128-bit"
       ],
@@ -282,7 +273,6 @@
     },
     "vmaskmovpd ymm0, ymm1, [rax]": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2d 256-bit"
       ],
@@ -295,7 +285,6 @@
     },
     "vmaskmovps [rax], xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2e 128-bit"
       ],
@@ -308,7 +297,6 @@
     },
     "vmaskmovps [rax], ymm0, ymm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2e 256-bit"
       ],
@@ -321,7 +309,6 @@
     },
     "vmaskmovpd [rax], xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2f 128-bit"
       ],
@@ -334,7 +321,6 @@
     },
     "vmaskmovpd [rax], ymm0, ymm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x2f 256-bit"
       ],
@@ -347,7 +333,6 @@
     },
     "vpmaskmovd xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
@@ -361,7 +346,6 @@
     },
     "vpmaskmovd ymm0, ymm1, [rax]": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 256-bit"
       ],
@@ -374,7 +358,6 @@
     },
     "vpmaskmovq xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
@@ -388,7 +371,6 @@
     },
     "vpmaskmovq ymm0, ymm1, [rax]": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8c 256-bit"
       ],
@@ -401,7 +383,6 @@
     },
     "vpmaskmovd [rax], xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 128-bit"
       ],
@@ -414,7 +395,6 @@
     },
     "vpmaskmovd [rax], ymm0, ymm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 256-bit"
       ],
@@ -427,7 +407,6 @@
     },
     "vpmaskmovq [rax], xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 128-bit"
       ],
@@ -440,7 +419,6 @@
     },
     "vpmaskmovq [rax], ymm0, ymm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b01 0x8e 256-bit"
       ],
@@ -453,7 +431,6 @@
     },
     "andn eax, ebx, ecx": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf2 32-bit"
       ],
@@ -467,7 +444,6 @@
     },
     "andn rax, rbx, rcx": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf2 64-bit"
       ],
@@ -479,7 +455,6 @@
     },
     "bzhi eax, ebx, ecx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf5 32-bit"
       ],
@@ -496,7 +471,6 @@
     },
     "bzhi rax, rbx, rcx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf5 64-bit"
       ],
@@ -513,7 +487,6 @@
     },
     "pdep eax, ebx, ecx": {
       "ExpectedInstructionCount": 29,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b11 0xf5 32-bit"
       ],
@@ -551,7 +524,6 @@
     },
     "pdep rax, rbx, rcx": {
       "ExpectedInstructionCount": 27,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b11 0xf5 64-bit"
       ],
@@ -587,7 +559,6 @@
     },
     "bextr eax, ebx, ecx": {
       "ExpectedInstructionCount": 19,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf7 32-bit"
       ],
@@ -615,7 +586,6 @@
     },
     "bextr rax, rbx, rcx": {
       "ExpectedInstructionCount": 17,
-      "Optimal": "No",
       "Comment": [
         "Map 2 0b00 0xf7 64-bit"
       ],

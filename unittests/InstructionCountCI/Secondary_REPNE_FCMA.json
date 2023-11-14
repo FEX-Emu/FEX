@@ -12,7 +12,6 @@
   "Instructions": {
     "addsubps xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
         "rev64 v2.4s, v17.4s",

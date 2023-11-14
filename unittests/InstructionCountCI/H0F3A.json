@@ -15,7 +15,6 @@
   "Instructions": {
     "palignr mm0, mm1, 0": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
@@ -26,7 +25,6 @@
     },
     "palignr mm0, mm1, 1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
@@ -39,7 +37,6 @@
     },
     "palignr mm0, mm1, 255": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
@@ -50,7 +47,6 @@
     },
     "roundps xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x08"
@@ -61,7 +57,6 @@
     },
     "roundps xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x08"
@@ -72,7 +67,6 @@
     },
     "roundps xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x08"
@@ -83,7 +77,6 @@
     },
     "roundps xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x08"
@@ -94,7 +87,6 @@
     },
     "roundps xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x08"
@@ -105,7 +97,6 @@
     },
     "roundpd xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x09"
@@ -116,7 +107,6 @@
     },
     "roundpd xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x09"
@@ -127,7 +117,6 @@
     },
     "roundpd xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x09"
@@ -138,7 +127,6 @@
     },
     "roundpd xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x09"
@@ -149,7 +137,6 @@
     },
     "roundpd xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x09"
@@ -160,7 +147,6 @@
     },
     "roundss xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -172,7 +158,6 @@
     },
     "roundss xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -184,7 +169,6 @@
     },
     "roundss xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -196,7 +180,6 @@
     },
     "roundss xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -208,7 +191,6 @@
     },
     "roundss xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -220,7 +202,6 @@
     },
     "roundsd xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -232,7 +213,6 @@
     },
     "roundsd xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -244,7 +224,6 @@
     },
     "roundsd xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -256,7 +235,6 @@
     },
     "roundsd xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -268,7 +246,6 @@
     },
     "roundsd xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -280,7 +257,6 @@
     },
     "blendps xmm0, xmm1, 0000b": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -288,7 +264,6 @@
     },
     "blendps xmm0, xmm1, 0001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -298,7 +273,6 @@
     },
     "blendps xmm0, xmm1, 0010b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -308,7 +282,6 @@
     },
     "blendps xmm0, xmm1, 0011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -318,7 +291,6 @@
     },
     "blendps xmm0, xmm1, 0100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -328,7 +300,6 @@
     },
     "blendps xmm0, xmm1, 0101b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -339,7 +310,6 @@
     },
     "blendps xmm0, xmm1, 0110b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -350,7 +320,6 @@
     },
     "blendps xmm0, xmm1, 0111b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -361,7 +330,6 @@
     },
     "blendps xmm0, xmm1, 1000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -371,7 +339,6 @@
     },
     "blendps xmm0, xmm1, 1001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -382,7 +349,6 @@
     },
     "blendps xmm0, xmm1, 1010b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -393,7 +359,6 @@
     },
     "blendps xmm0, xmm1, 1011b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -404,7 +369,6 @@
     },
     "blendps xmm0, xmm1, 1100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -414,7 +378,6 @@
     },
     "blendps xmm0, xmm1, 1101b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -425,7 +388,6 @@
     },
     "blendps xmm0, xmm1, 1110b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -436,7 +398,6 @@
     },
     "blendps xmm0, xmm1, 1111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0c"
       ],
@@ -446,7 +407,6 @@
     },
     "blendpd xmm0, xmm1, 00b": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
@@ -454,7 +414,6 @@
     },
     "blendpd xmm0, xmm1, 01b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
@@ -464,7 +423,6 @@
     },
     "blendpd xmm0, xmm1, 10b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
@@ -474,7 +432,6 @@
     },
     "blendpd xmm0, xmm1, 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0d"
       ],
@@ -484,7 +441,6 @@
     },
     "pblendw xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -492,7 +448,6 @@
     },
     "pblendw xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -502,7 +457,6 @@
     },
     "pblendw xmm0, xmm1, 11010111b": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -514,7 +468,6 @@
     },
     "pblendw xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -524,7 +477,6 @@
     },
     "pblendw xmm0, xmm1, 00001100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -534,7 +486,6 @@
     },
     "pblendw xmm0, xmm1, 00110000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -544,7 +495,6 @@
     },
     "pblendw xmm0, xmm1, 11000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -554,7 +504,6 @@
     },
     "pblendw xmm0, xmm1, 00001111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -564,7 +513,6 @@
     },
     "pblendw xmm0, xmm1, 11110000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -574,7 +522,6 @@
     },
     "pblendw xmm0, xmm1, 11111111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0e"
       ],
@@ -584,7 +531,6 @@
     },
     "palignr xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0f"
       ],
@@ -594,7 +540,6 @@
     },
     "palignr xmm0, xmm1, 1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0f"
       ],
@@ -604,7 +549,6 @@
     },
     "palignr xmm0, xmm1, 255": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x0f"
       ],
@@ -614,7 +558,6 @@
     },
     "pextrb eax, xmm0, 0000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
@@ -624,7 +567,6 @@
     },
     "pextrb eax, xmm0, 1111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
@@ -634,7 +576,6 @@
     },
     "pextrw eax, xmm0, 000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
@@ -644,7 +585,6 @@
     },
     "pextrw eax, xmm0, 111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
@@ -654,7 +594,6 @@
     },
     "pextrd eax, xmm0, 00b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x16"
       ],
@@ -664,7 +603,6 @@
     },
     "pextrd eax, xmm0, 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x16"
       ],
@@ -674,7 +612,6 @@
     },
     "pextrq rax, xmm0, 0b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x16"
       ],
@@ -684,7 +621,6 @@
     },
     "pextrq rax, xmm0, 1b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x16"
       ],
@@ -694,7 +630,6 @@
     },
     "pextrb [rax], xmm0, 0000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
@@ -704,7 +639,6 @@
     },
     "pextrb [rax], xmm0, 1111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x14"
       ],
@@ -714,7 +648,6 @@
     },
     "pextrw [rax], xmm0, 000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
@@ -724,7 +657,6 @@
     },
     "pextrw [rax], xmm0, 111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x15"
       ],
@@ -734,7 +666,6 @@
     },
     "pextrd [rax], xmm0, 00b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x16"
       ],
@@ -744,7 +675,6 @@
     },
     "pextrd [rax], xmm0, 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x16"
       ],
@@ -754,7 +684,6 @@
     },
     "pextrq [rax], xmm0, 0b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x16"
       ],
@@ -764,7 +693,6 @@
     },
     "pextrq [rax], xmm0, 1b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x16"
       ],
@@ -774,7 +702,6 @@
     },
     "extractps eax, xmm0, 00b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x17"
       ],
@@ -784,7 +711,6 @@
     },
     "extractps eax, xmm0, 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x17"
       ],
@@ -794,7 +720,6 @@
     },
     "pinsrb xmm0, eax, 0000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -804,7 +729,6 @@
     },
     "pinsrb xmm0, eax, 0001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -814,7 +738,6 @@
     },
     "pinsrb xmm0, eax, 1111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -824,7 +747,6 @@
     },
     "pinsrb xmm0, [rax], 0000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -834,7 +756,6 @@
     },
     "pinsrb xmm0, [rax], 0001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -844,7 +765,6 @@
     },
     "pinsrb xmm0, [rax], 1111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x20"
       ],
@@ -854,7 +774,6 @@
     },
     "insertps xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x21"
       ],
@@ -864,7 +783,6 @@
     },
     "insertps xmm0, xmm1, 00001111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x21"
       ],
@@ -874,7 +792,6 @@
     },
     "insertps xmm0, xmm1, 00010000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x21"
       ],
@@ -884,7 +801,6 @@
     },
     "pinsrd xmm0, eax, 00b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -894,7 +810,6 @@
     },
     "pinsrd xmm0, eax, 01b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -904,7 +819,6 @@
     },
     "pinsrd xmm0, eax, 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -914,7 +828,6 @@
     },
     "pinsrq xmm0, rax, 0b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
@@ -924,7 +837,6 @@
     },
     "pinsrq xmm0, rax, 1b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
@@ -934,7 +846,6 @@
     },
     "pinsrd xmm0, [rax], 00b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -944,7 +855,6 @@
     },
     "pinsrd xmm0, [rax], 01b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -954,7 +864,6 @@
     },
     "pinsrd xmm0, [rax], 11b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x22"
       ],
@@ -964,7 +873,6 @@
     },
     "pinsrq xmm0, [rax], 0b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
@@ -974,7 +882,6 @@
     },
     "pinsrq xmm0, [rax], 1b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 REX.W 0x0f 0x3a 0x22"
       ],
@@ -984,7 +891,6 @@
     },
     "dpps xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -994,7 +900,6 @@
     },
     "dpps xmm0, xmm1, 00001111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1004,7 +909,6 @@
     },
     "dpps xmm0, xmm1, 11110000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1014,7 +918,6 @@
     },
     "dpps xmm0, xmm1, 11110001b": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1028,7 +931,6 @@
     },
     "dpps xmm0, xmm1, 11110010b": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1042,7 +944,6 @@
     },
     "dpps xmm0, xmm1, 11110011b": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1055,7 +956,6 @@
     },
     "dpps xmm0, xmm1, 11110100b": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1069,7 +969,6 @@
     },
     "dpps xmm0, xmm1, 11110101b": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1082,7 +981,6 @@
     },
     "dpps xmm0, xmm1, 11110110b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1098,7 +996,6 @@
     },
     "dpps xmm0, xmm1, 11110111b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1114,7 +1011,6 @@
     },
     "dpps xmm0, xmm1, 11111000b": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1128,7 +1024,6 @@
     },
     "dpps xmm0, xmm1, 11111001b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1144,7 +1039,6 @@
     },
     "dpps xmm0, xmm1, 11111010b": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1159,7 +1053,6 @@
     },
     "dpps xmm0, xmm1, 11111011b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1175,7 +1068,6 @@
     },
     "dpps xmm0, xmm1, 11111100b": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1190,7 +1082,6 @@
     },
     "dpps xmm0, xmm1, 11111101b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1206,7 +1097,6 @@
     },
     "dpps xmm0, xmm1, 11111110b": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1222,7 +1112,6 @@
     },
     "dpps xmm0, xmm1, 11111111b": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
@@ -1235,7 +1124,6 @@
     },
     "dppd xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
@@ -1245,7 +1133,6 @@
     },
     "dppd xmm0, xmm1, 00001111b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
@@ -1255,7 +1142,6 @@
     },
     "dppd xmm0, xmm1, 11110000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
@@ -1265,7 +1151,6 @@
     },
     "dppd xmm0, xmm1, 11111111b": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
@@ -1277,7 +1162,6 @@
     },
     "mpsadbw xmm0, xmm1, 000b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1300,7 +1184,6 @@
     },
     "mpsadbw xmm0, xmm1, 001b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1323,7 +1206,6 @@
     },
     "mpsadbw xmm0, xmm1, 010b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1346,7 +1228,6 @@
     },
     "mpsadbw xmm0, xmm1, 011b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1369,7 +1250,6 @@
     },
     "mpsadbw xmm0, xmm1, 100b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1392,7 +1272,6 @@
     },
     "mpsadbw xmm0, xmm1, 101b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1415,7 +1294,6 @@
     },
     "mpsadbw xmm0, xmm1, 110b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1438,7 +1316,6 @@
     },
     "mpsadbw xmm0, xmm1, 111b": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x42"
       ],
@@ -1461,7 +1338,6 @@
     },
     "pclmulqdq xmm0, xmm1, 00000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
@@ -1471,7 +1347,6 @@
     },
     "pclmulqdq xmm0, xmm1, 00001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
@@ -1482,7 +1357,6 @@
     },
     "pclmulqdq xmm0, xmm1, 10000b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
@@ -1493,7 +1367,6 @@
     },
     "pclmulqdq xmm0, xmm1, 10001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
@@ -1503,7 +1376,6 @@
     },
     "sha1rnds4 xmm0, xmm1, 00b": {
       "ExpectedInstructionCount": 59,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
       ],
@@ -1571,7 +1443,6 @@
     },
     "sha1rnds4 xmm0, xmm1, 01b": {
       "ExpectedInstructionCount": 55,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
       ],
@@ -1635,7 +1506,6 @@
     },
     "sha1rnds4 xmm0, xmm1, 10b": {
       "ExpectedInstructionCount": 67,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
       ],
@@ -1711,7 +1581,6 @@
     },
     "sha1rnds4 xmm0, xmm1, 11b": {
       "ExpectedInstructionCount": 55,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xcc"
       ],
@@ -1775,7 +1644,6 @@
     },
     "aeskeygenassist xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
@@ -1789,7 +1657,6 @@
     },
     "aeskeygenassist xmm0, xmm1, 0xFF": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],

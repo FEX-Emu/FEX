@@ -14,7 +14,6 @@
   "Instructions": {
     "ucomisd xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": "0x66 0x0f 0x2e",
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
@@ -43,7 +42,6 @@
     },
     "comisd xmm0, xmm1": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": "0x66 0x0f 0x2f",
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
@@ -72,7 +70,6 @@
     },
     "pmovmskb eax, xmm0": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd7",
       "ExpectedArm64ASM": [
         "mov x20, #0x201",
@@ -90,7 +87,6 @@
     },
     "maskmovdqu xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xf7",
       "ExpectedArm64ASM": [
         "cmlt v2.16b, v17.16b, #0",

@@ -14,24 +14,18 @@ logger.setLevel(logging.ERROR)
 @dataclass
 class TestData:
     name: str
-    optimal: int
     expectedinstructioncount: int
     code: bytes
     instructions: list
-    def __init__(self, Name, Optimal, ExpectedInstructionCount, Code, Instructions):
+    def __init__(self, Name, ExpectedInstructionCount, Code, Instructions):
         self.name = Name
         self.expectedinstructioncount = ExpectedInstructionCount
-        self.optimal = Optimal
         self.code = Code
         self.instructions = Instructions
 
     @property
     def Name(self):
         return self.name
-
-    @property
-    def Optimal(self):
-        return self.optimal
 
     @property
     def ExpectedInstructionCount(self):
@@ -112,14 +106,9 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
 
     for key, items in json_data["Instructions"].items():
         ExpectedInstructionCount = 0
-        Optimal = 0
         Instructions = []
         if ("ExpectedInstructionCount" in items):
             ExpectedInstructionCount = int(items["ExpectedInstructionCount"])
-
-        if ("Optimal" in items):
-                if items["Optimal"].upper() == "YES":
-                    Optimal = 1
 
         if ("Skip" in items):
                 if items["Skip"].upper() == "YES":
@@ -163,7 +152,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         with open(tmp_asm_out, "rb") as tmp_asm_out_file:
             binary_hex = tmp_asm_out_file.read()
 
-        TestDataMap[TestName] = TestData(key, Optimal, ExpectedInstructionCount, binary_hex, Instructions)
+        TestDataMap[TestName] = TestData(key, ExpectedInstructionCount, binary_hex, Instructions)
 
         os.remove(tmp_asm)
         os.remove(tmp_asm_out)
@@ -181,7 +170,6 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         # };
         # struct TestInfo {
         #   char InstName[128];
-        #   uint64_t Optimal;
         #   int64_t ExpectedInstructionCount;
         #   uint64_t CodeSize;
         #   uint64_t x86InstCount;
@@ -208,7 +196,6 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
     # Add each test
     for key, item in TestDataMap.items():
         MemData += struct.pack('128s', item.Name.encode("ascii"))
-        MemData += struct.pack('Q', item.Optimal)
         MemData += struct.pack('q', item.ExpectedInstructionCount)
         MemData += struct.pack('Q', len(item.Code))
         MemData += struct.pack('Q', len(item.Instructions))

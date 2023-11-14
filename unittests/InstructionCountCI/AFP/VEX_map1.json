@@ -11,7 +11,6 @@
   "Instructions": {
     "vsqrtss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x51 128-bit"
       ],
@@ -22,7 +21,6 @@
     },
     "vsqrtsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x51 128-bit"
       ],
@@ -33,7 +31,6 @@
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x52 128-bit"
@@ -47,7 +44,6 @@
     },
     "vrcpss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x53 128-bit"
@@ -60,7 +56,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x00": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -71,7 +66,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x01": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -82,7 +76,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x02": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -93,7 +86,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x03": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -108,7 +100,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x04": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -121,7 +112,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x05": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -134,7 +124,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x06": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -147,7 +136,6 @@
     },
     "vcmpss xmm0, xmm1, xmm2, 0x07": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0xC2 128-bit"
       ],
@@ -161,7 +149,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x00": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -172,7 +159,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x01": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -183,7 +169,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x02": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -194,7 +179,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x03": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -209,7 +193,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x04": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -222,7 +205,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x05": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -235,7 +217,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x06": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -248,7 +229,6 @@
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x07": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0xC2 128-bit"
       ],
@@ -262,7 +242,6 @@
     },
     "vcvtsi2ss xmm0, xmm1, eax": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x2A 128-bit"
       ],
@@ -273,7 +252,6 @@
     },
     "vcvtsi2ss xmm0, xmm1, rax": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x2A 128-bit"
       ],
@@ -284,7 +262,6 @@
     },
     "vcvtsi2sd xmm0, xmm1, eax": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x2A 128-bit"
       ],
@@ -295,7 +272,6 @@
     },
     "vcvtsi2sd xmm0, xmm1, rax": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x2A 128-bit"
       ],
@@ -306,7 +282,6 @@
     },
     "vmulss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x59 128-bit"
       ],
@@ -317,7 +292,6 @@
     },
     "vmulsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x59 128-bit"
       ],
@@ -328,7 +302,6 @@
     },
     "vcvtss2sd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x5a 128-bit"
       ],
@@ -339,7 +312,6 @@
     },
     "vcvtsd2ss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x5a 128-bit"
       ],
@@ -350,7 +322,6 @@
     },
     "vsubss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x5c 128-bit"
       ],
@@ -361,7 +332,6 @@
     },
     "vsubsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x5c 128-bit"
       ],
@@ -372,7 +342,6 @@
     },
     "vminss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x5d 128-bit"
       ],
@@ -383,7 +352,6 @@
     },
     "vminsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x5d 128-bit"
       ],
@@ -394,7 +362,6 @@
     },
     "vdivss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x5e 128-bit"
       ],
@@ -405,7 +372,6 @@
     },
     "vdivsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x5e 128-bit"
       ],
@@ -416,7 +382,6 @@
     },
     "vmaxss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b10 0x5f 128-bit"
       ],
@@ -427,7 +392,6 @@
     },
     "vmaxsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b11 0x5f 128-bit"
       ],
@@ -438,7 +402,6 @@
     },
     "vminps xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 128-bit"
       ],
@@ -450,7 +413,6 @@
     },
     "vminps ymm0, ymm1, ymm2": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b00 0x5d 256-bit"
       ],
@@ -464,7 +426,6 @@
     },
     "vminpd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 128-bit"
       ],
@@ -476,7 +437,6 @@
     },
     "vminpd ymm0, ymm1, ymm2": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0x5d 256-bit"
       ],

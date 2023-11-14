@@ -12,7 +12,6 @@
   "Instructions": {
     "push es": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x06",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #136]",
@@ -21,7 +20,6 @@
     },
     "pop es": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x07",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
@@ -35,7 +33,6 @@
     },
     "push cs": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0e",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #138]",
@@ -44,7 +41,6 @@
     },
     "push ss": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x16",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #140]",
@@ -53,7 +49,6 @@
     },
     "pop ss": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x17",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
@@ -67,7 +62,6 @@
     },
     "push ds": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x1e",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #142]",
@@ -76,7 +70,6 @@
     },
     "pop ds": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x1f",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
@@ -90,7 +83,6 @@
     },
     "daa": {
       "ExpectedInstructionCount": 63,
-      "Optimal": "No",
       "Comment": "0x27",
       "ExpectedArm64ASM": [
         "cset w20, hs",
@@ -160,7 +152,6 @@
     },
     "das": {
       "ExpectedInstructionCount": 63,
-      "Optimal": "No",
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
         "cset w20, hs",
@@ -230,7 +221,6 @@
     },
     "aaa": {
       "ExpectedInstructionCount": 28,
-      "Optimal": "No",
       "Comment": "0x37",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #708]",
@@ -265,7 +255,6 @@
     },
     "aas": {
       "ExpectedInstructionCount": 29,
-      "Optimal": "No",
       "Comment": "0x3f",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #708]",
@@ -301,7 +290,6 @@
     },
     "inc ax": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
@@ -321,7 +309,6 @@
     },
     "inc eax": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "mov w20, w4",
@@ -337,7 +324,6 @@
     },
     "dec ax": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
@@ -357,7 +343,6 @@
     },
     "push ax": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": "0x50",
       "ExpectedArm64ASM": [
         "strh w4, [x8, #-2]!"
@@ -365,7 +350,6 @@
     },
     "push eax": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": "0x50",
       "ExpectedArm64ASM": [
         "str w4, [x8, #-4]!"
@@ -373,7 +357,6 @@
     },
     "dec eax": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "mov w20, w4",
@@ -389,7 +372,6 @@
     },
     "pusha": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "Yes",
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
@@ -406,7 +388,6 @@
     },
     "pushad": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "Yes",
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
@@ -423,7 +404,6 @@
     },
     "popa": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "No",
       "Comment": "0x61",
       "ExpectedArm64ASM": [
         "ldr w11, [x8]",
@@ -444,7 +424,6 @@
     },
     "popad": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "No",
       "Comment": "0x61",
       "ExpectedArm64ASM": [
         "ldr w11, [x8]",
@@ -465,7 +444,6 @@
     },
     "aam": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -483,7 +461,6 @@
     },
     "aad": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "0xd5",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -501,7 +478,6 @@
     },
     "db 0xd4, 0x40": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": [
         "aam with a different immediate byte base",
         "0xd4"
@@ -522,7 +498,6 @@
     },
     "db 0xd5, 0x40": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": [
         "aad with a different immediate byte base",
         "0xd5"
@@ -542,7 +517,6 @@
     },
     "salc": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "0xd6",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
