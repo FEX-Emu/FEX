@@ -3057,13 +3057,16 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
-  auto Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+  OrderedNode *Dest{};
   OrderedNode *ResultHigh{};
   if (Size < 8) {
+    Dest = _Mul(OpSize::i64Bit, Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
   }
   else {
+    // Flipped order to save a move
     ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
+    Dest = _Mul(OpSize::i64Bit, Src1, Src2);
   }
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_MUL(Op, Dest, ResultHigh);
@@ -3103,7 +3106,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
-  OrderedNode *Result = _Mul(OpSize::i64Bit, Src1, Src2);
+  // 64-bit special cased to save a move
+  OrderedNode *Result = Size < 8 ? _Mul(OpSize::i64Bit, Src1, Src2) : nullptr;
   OrderedNode *ResultHigh{};
   if (Size == 1) {
     // Result is stored in AX
@@ -3137,6 +3141,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // 64bits stored in RAX
     // 64bits stored in RDX
     ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
+    Result = _Mul(OpSize::i64Bit, Src1, Src2);
     StoreGPRRegister(X86State::REG_RAX, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
