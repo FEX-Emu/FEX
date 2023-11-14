@@ -3946,6 +3946,58 @@ DEF_OP(VUShrI) {
   }
 }
 
+DEF_OP(VUShraI) {
+  const auto Op = IROp->C<IR::IROp_VUShraI>();
+  const auto OpSize = IROp->Size;
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto DestVector = GetVReg(Op->DestVector.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    if (Dst == DestVector) {
+      usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
+    }
+    else {
+      if (Dst != Vector) {
+        mov(Dst.Z(), DestVector.Z());
+        usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
+      }
+      else {
+        mov(VTMP1.Z(), DestVector.Z());
+        usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
+        mov(Dst.Z(), VTMP1.Z());
+      }
+    }
+  } else {
+    if (Dst == DestVector) {
+      usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+    }
+    else {
+      if (Dst != Vector) {
+        mov(Dst.Q(), DestVector.Q());
+        usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+      }
+      else {
+        mov(VTMP1.Q(), DestVector.Q());
+        usra(SubRegSize, VTMP1.Q(), Vector.Q(), BitShift);
+        mov(Dst.Q(), VTMP1.Q());
+      }
+    }
+  }
+}
+
 DEF_OP(VSShrI) {
   const auto Op = IROp->C<IR::IROp_VSShrI>();
   const auto OpSize = IROp->Size;
