@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "vtestps xmm0, xmm1": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "Map 2 0b01 0x0e 128-bit"
       ],
@@ -29,26 +29,24 @@
         "addv h2, v2.8h",
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
-        "mrs x24, nzcv",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
+        "mrs x22, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "msr nzcv, x24",
+        "msr nzcv, x22",
         "rmif x20, #62, #nZcv",
         "rmif x21, #63, #nzCv",
         "mov w20, #0x90000000",
         "mrs x21, nzcv",
         "bic x20, x21, x20",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
     "vtestps ymm0, ymm1": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "Map 2 0b01 0x0e 256-bit"
       ],
@@ -73,26 +71,24 @@
         "add v2.8h, v0.8h, v1.8h",
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
-        "mrs x24, nzcv",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
+        "mrs x22, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "msr nzcv, x24",
+        "msr nzcv, x22",
         "rmif x20, #62, #nZcv",
         "rmif x21, #63, #nzCv",
         "mov w20, #0x90000000",
         "mrs x21, nzcv",
         "bic x20, x21, x20",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
     "vtestpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "Map 2 0b01 0x0f 128-bit"
       ],
@@ -109,26 +105,24 @@
         "addv h2, v2.8h",
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
-        "mrs x24, nzcv",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
+        "mrs x22, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "msr nzcv, x24",
+        "msr nzcv, x22",
         "rmif x20, #62, #nZcv",
         "rmif x21, #63, #nzCv",
         "mov w20, #0x90000000",
         "mrs x21, nzcv",
         "bic x20, x21, x20",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
     "vtestpd ymm0, ymm1": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "Map 2 0b01 0x0f 256-bit"
       ],
@@ -153,26 +147,24 @@
         "add v2.8h, v0.8h, v1.8h",
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
-        "mrs x24, nzcv",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
+        "mrs x22, nzcv",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "msr nzcv, x24",
+        "msr nzcv, x22",
         "rmif x20, #62, #nZcv",
         "rmif x21, #63, #nzCv",
         "mov w20, #0x90000000",
         "mrs x21, nzcv",
         "bic x20, x21, x20",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
     "vptest xmm0, xmm1": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "Map 2 0b01 0x16 128-bit"
       ],
@@ -185,21 +177,19 @@
         "addv h3, v3.8h",
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
         "lsl x20, x20, #30",
         "orr w20, w20, w21, lsl #29",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
     "vptest ymm0, ymm1": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 25,
       "Comment": [
         "Map 2 0b01 0x16 256-bit"
       ],
@@ -220,16 +210,14 @@
         "add v3.8h, v0.8h, v1.8h",
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
-        "mov w22, #0x0",
-        "mov w23, #0x1",
+        "mov w27, #0x0",
+        "mov w26, #0x1",
         "cmp x20, #0x0 (0)",
         "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
         "lsl x20, x20, #30",
         "orr w20, w20, w21, lsl #29",
-        "strb w23, [x28, #706]",
-        "strb w22, [x28, #708]",
         "msr nzcv, x20"
       ]
     },
@@ -438,7 +426,7 @@
         "mov w20, w7",
         "mov w21, w5",
         "bic w4, w21, w20",
-        "strb w4, [x28, #706]",
+        "mov x26, x4",
         "tst w4, w4"
       ]
     },
@@ -449,7 +437,7 @@
       ],
       "ExpectedArm64ASM": [
         "bic x4, x5, x7",
-        "strb w4, [x28, #706]",
+        "mov x26, x4",
         "tst x4, x4"
       ]
     },

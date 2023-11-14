@@ -109,7 +109,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0x2a",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #752]",
+        "ldr d2, [x28, #768]",
         "sxtl v2.2d, v2.2s",
         "scvtf v16.2d, v2.2d"
       ]
@@ -127,7 +127,7 @@
       "ExpectedArm64ASM": [
         "fcvtn v2.2s, v16.2d",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #752]"
+        "str d2, [x28, #768]"
       ]
     },
     "cvtpd2pi mm0, xmm0": {
@@ -137,11 +137,11 @@
         "fcvtn v2.2s, v16.2d",
         "frinti v2.2s, v2.2s",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #752]"
+        "str d2, [x28, #768]"
       ]
     },
     "ucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Comment": "0x66 0x0f 0x2e",
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
@@ -157,17 +157,15 @@
         "ubfx x21, x21, #2, #1",
         "bfi w20, w22, #29, #1",
         "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w21, #0x90000000",
+        "bic x20, x20, x21",
         "msr nzcv, x20"
       ]
     },
     "comisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Comment": "0x66 0x0f 0x2f",
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
@@ -183,12 +181,10 @@
         "ubfx x21, x21, #2, #1",
         "bfi w20, w22, #29, #1",
         "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w21, #0x90000000",
+        "bic x20, x20, x21",
         "msr nzcv, x20"
       ]
     },
@@ -540,7 +536,7 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1672]",
+        "ldr x0, [x28, #1688]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -554,7 +550,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #1672]",
+        "ldr x0, [x28, #1688]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -1032,7 +1028,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2032]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.2d, v16.2d, v2.2d"
       ]

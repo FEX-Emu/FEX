@@ -15,7 +15,7 @@
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
       ],
@@ -34,18 +34,16 @@
         "msr nzcv, x20",
         "rmif x22, #63, #nzCv",
         "rmif x23, #62, #nZcv",
-        "eor w20, w21, #0x1",
-        "strb w20, [x28, #706]",
-        "mov w20, #0x0",
-        "mov w21, #0x90000000",
-        "mrs x22, nzcv",
-        "bic x21, x22, x21",
-        "strb w20, [x28, #708]",
-        "msr nzcv, x21"
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w20, #0x90000000",
+        "mrs x21, nzcv",
+        "bic x20, x21, x20",
+        "msr nzcv, x20"
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
       ],
@@ -64,18 +62,16 @@
         "msr nzcv, x20",
         "rmif x22, #63, #nzCv",
         "rmif x23, #62, #nZcv",
-        "eor w20, w21, #0x1",
-        "strb w20, [x28, #706]",
-        "mov w20, #0x0",
-        "mov w21, #0x90000000",
-        "mrs x22, nzcv",
-        "bic x21, x22, x21",
-        "strb w20, [x28, #708]",
-        "msr nzcv, x21"
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w20, #0x90000000",
+        "mrs x21, nzcv",
+        "bic x20, x21, x20",
+        "msr nzcv, x20"
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
       ],
@@ -94,18 +90,16 @@
         "msr nzcv, x20",
         "rmif x22, #63, #nzCv",
         "rmif x23, #62, #nZcv",
-        "eor w20, w21, #0x1",
-        "strb w20, [x28, #706]",
-        "mov w20, #0x0",
-        "mov w21, #0x90000000",
-        "mrs x22, nzcv",
-        "bic x21, x22, x21",
-        "strb w20, [x28, #708]",
-        "msr nzcv, x21"
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w20, #0x90000000",
+        "mrs x21, nzcv",
+        "bic x20, x21, x20",
+        "msr nzcv, x20"
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
       ],
@@ -124,14 +118,12 @@
         "msr nzcv, x20",
         "rmif x22, #63, #nzCv",
         "rmif x23, #62, #nZcv",
-        "eor w20, w21, #0x1",
-        "strb w20, [x28, #706]",
-        "mov w20, #0x0",
-        "mov w21, #0x90000000",
-        "mrs x22, nzcv",
-        "bic x21, x22, x21",
-        "strb w20, [x28, #708]",
-        "msr nzcv, x21"
+        "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "mov w20, #0x90000000",
+        "mrs x21, nzcv",
+        "bic x20, x21, x20",
+        "msr nzcv, x20"
       ]
     },
     "vpmovmskb rax, xmm0": {
