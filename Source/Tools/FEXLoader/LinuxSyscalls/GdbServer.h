@@ -38,8 +38,8 @@ private:
 
     void OpenListenSocket();
     enum class WaitForConnectionResult {
-      RESULT_CONNECTION,
-      RESULT_ERROR,
+      CONNECTION,
+      ERROR,
     };
     WaitForConnectionResult WaitForConnection();
     fextl::unique_ptr<std::iostream> OpenSocket();

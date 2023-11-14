@@ -105,7 +105,6 @@ namespace FEXServerClient {
   }
 
   fextl::string GetTempFolder() {
-    fextl::string Folder{};
     auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
     if (XDGRuntimeEnv) {
       // If the XDG runtime directory works then use that.
@@ -113,8 +112,7 @@ namespace FEXServerClient {
     }
     // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
     // Might not be ideal but we don't have much of a choice.
-    Folder = std::filesystem::temp_directory_path().string();
-    return Folder;
+    return fextl::string{std::filesystem::temp_directory_path().string()};
   }
 
   fextl::string GetServerMountFolder() {

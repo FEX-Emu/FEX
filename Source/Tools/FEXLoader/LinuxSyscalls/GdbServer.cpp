@@ -149,8 +149,8 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
   return ss.str();
 }
 
-static fextl::string encodeHex(const char *str) {
-  return encodeHex(reinterpret_cast<const unsigned char*>(str), strlen(str));
+static fextl::string encodeHex(std::string_view str) {
+  return encodeHex(reinterpret_cast<const unsigned char*>(str.data()), str.size());
 }
 
 static fextl::string getThreadName(uint32_t ThreadID) {
@@ -1042,7 +1042,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
 
     // TODO: distribution_id should be fetched with `lsb_release -i`
     // TODO: watchpoint_exceptions_received is unsupported
-    return {HostFeatures, HandledPacketType::TYPE_ACK};
+    return {std::move(HostFeatures), HandledPacketType::TYPE_ACK};
   }
   if (match("qGetWorkingDir")) {
     char Tmp[PATH_MAX];
@@ -1304,12 +1304,12 @@ GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
     if (Result > 0) {
       if (PollFD.revents & POLLIN) {
         CommsStream = OpenSocket();
-        return WaitForConnectionResult::RESULT_CONNECTION;
+        return WaitForConnectionResult::CONNECTION;
       }
       else if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL)) {
         // Listen socket error or shutting down
         LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
-        return WaitForConnectionResult::RESULT_ERROR;
+        return WaitForConnectionResult::ERROR;
       }
     }
     else if (Result == -1) {
@@ -1318,7 +1318,7 @@ GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
   }
 
   LogMan::Msg::EFmt("[GdbServer] Shutting Down");
-  return WaitForConnectionResult::RESULT_ERROR;
+  return WaitForConnectionResult::ERROR;
 }
 
 void GdbServer::GdbServerLoop() {
@@ -1329,7 +1329,7 @@ void GdbServer::GdbServerLoop() {
   }
 
   while (!CoreShuttingDown.load()) {
-    if (WaitForConnection() == WaitForConnectionResult::RESULT_ERROR) {
+    if (WaitForConnection() == WaitForConnectionResult::ERROR) {
       break;
     }
 
@@ -1416,21 +1416,24 @@ void GdbServer::OpenListenSocket() {
   strncpy(addr.sun_path, GdbUnixSocketPath.data(), sizeof(addr.sun_path));
   size_t SizeOfAddr = offsetof(sockaddr_un, sun_path) + GdbUnixSocketPath.size();
 
-  auto TryBind = [](int Socket, struct sockaddr_un *addr, size_t Size) -> bool {
-    int Result = bind(Socket, reinterpret_cast<struct sockaddr*>(addr), Size);
-    return Result == 0;
-  };
-
   // Bind the socket to the path
-  if (!TryBind(ListenSocket, &addr, SizeOfAddr)) {
-    // This can happen periodically with execve. unlink the path and try again.
-    unlink(GdbUnixSocketPath.c_str());
-    if (!TryBind(ListenSocket, &addr, SizeOfAddr)) {
-      LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
-      close(ListenSocket);
-      ListenSocket = -1;
-      return;
+  int Result{};
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
+    if (Result == 0) {
+      break;
     }
+
+    // This can happen periodically with execve. unlink the path and try again.
+    // The PID is reused but FEX likely started a gdbserver thread for the PID before execve.
+    unlink(GdbUnixSocketPath.c_str());
+  }
+
+  if (Result != 0) {
+    LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
+    close(ListenSocket);
+    ListenSocket = -1;
+    return;
   }
 
   listen(ListenSocket, 1);
