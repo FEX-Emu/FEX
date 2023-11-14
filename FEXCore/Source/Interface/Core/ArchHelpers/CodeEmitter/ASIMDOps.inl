@@ -60,7 +60,7 @@ public:
   }
   void sha256su1(FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
     constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b100, rd, rn, rm);
+    Crypto3RegSHA(Op, 0b110, rd, rn, rm);
   }
 
   // Cryptographic two-register SHA

@@ -180,11 +180,13 @@ static void OverrideFeatures(HostFeatures *Features) {
   if (EnableCrypto) {
     Features->SupportsAES = true;
     Features->SupportsCRC = true;
+    Features->SupportsSHA = true;
     Features->SupportsPMULL_128Bit = true;
   }
   else if (DisableCrypto) {
     Features->SupportsAES = false;
     Features->SupportsCRC = false;
+    Features->SupportsSHA = false;
     Features->SupportsPMULL_128Bit = false;
   }
   if (EnableRPRES) {
@@ -211,6 +213,8 @@ HostFeatures::HostFeatures() {
 
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
+  SupportsSHA = Features.Has(vixl::CPUFeatures::Feature::kSHA1) &&
+                Features.Has(vixl::CPUFeatures::Feature::kSHA2);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
   SupportsRAND = Features.Has(vixl::CPUFeatures::Feature::kRNG);
 
@@ -238,7 +242,6 @@ HostFeatures::HostFeatures() {
 #endif
   // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
   SupportsAVX2 = false;
-  SupportsSHA = true;
   SupportsBMI1 = true;
   SupportsBMI2 = true;
   SupportsCLWB = true;
@@ -283,6 +286,8 @@ HostFeatures::HostFeatures() {
 #ifdef VIXL_SIMULATOR
   // simulator doesn't support dc(ZVA)
   SupportsCLZERO = false;
+  // Simulator doesn't support SHA
+  SupportsSHA = false;
 #else
   // Check if we can support cacheline clears
   uint32_t DCZID = GetDCZID();

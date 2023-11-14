@@ -179,6 +179,32 @@ DEF_OP(CRC32) {
   }
 }
 
+DEF_OP(VSha1H) {
+  auto Op = IROp->C<IR::IROp_VSha1H>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetVReg(Op->Src.ID());
+
+  sha1h(Dst.S(), Src.S());
+}
+
+DEF_OP(VSha256U0) {
+  auto Op = IROp->C<IR::IROp_VSha256U0>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+
+  if (Dst == Src1) {
+    sha256su0(Dst, Src2);
+  }
+  else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha256su0(VTMP1, Src2);
+    mov(Dst.Q(), Src1.Q());
+  }
+}
+
 DEF_OP(PCLMUL) {
   const auto Op = IROp->C<IR::IROp_PCLMUL>();
   const auto OpSize = IROp->Size;
