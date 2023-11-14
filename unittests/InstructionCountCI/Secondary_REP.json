@@ -467,7 +467,7 @@
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "ubfx w20, w20, #0, #1",
+        "ubfx x20, x20, #0, #1",
         "orr w20, w21, w20, lsl #30",
         "msr nzcv, x20"
       ]
@@ -482,7 +482,7 @@
         "cmp x4, #0x0 (0)",
         "cset x20, eq",
         "lsl x20, x20, #29",
-        "ubfx w21, w4, #0, #1",
+        "ubfx x21, x4, #0, #1",
         "orr w20, w20, w21, lsl #30",
         "msr nzcv, x20"
       ]
@@ -496,7 +496,7 @@
         "cmp x4, #0x0 (0)",
         "cset x20, eq",
         "lsl x20, x20, #29",
-        "ubfx w21, w4, #0, #1",
+        "ubfx x21, x4, #0, #1",
         "orr w20, w20, w21, lsl #30",
         "msr nzcv, x20"
       ]
@@ -513,7 +513,7 @@
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #30",
         "msr nzcv, x20"
       ]
@@ -527,7 +527,7 @@
         "cmp x20, #0x0 (0)",
         "cset x21, eq",
         "lsl x21, x21, #29",
-        "lsr w20, w20, #31",
+        "ubfx x20, x20, #31, #1",
         "orr w20, w21, w20, lsl #30",
         "msr nzcv, x20"
       ]
