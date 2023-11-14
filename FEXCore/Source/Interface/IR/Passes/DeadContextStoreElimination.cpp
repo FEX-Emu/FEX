@@ -277,6 +277,24 @@ namespace {
       });
     }
 
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, pf_raw),
+        sizeof(FEXCore::Core::CPUState::pf_raw),
+      },
+      LastAccessType::NONE,
+      FEXCore::IR::InvalidClass,
+    });
+
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, af_raw),
+        sizeof(FEXCore::Core::CPUState::af_raw),
+      },
+      LastAccessType::NONE,
+      FEXCore::IR::InvalidClass,
+    });
+
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
@@ -418,6 +436,10 @@ namespace {
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
       SetAccess(Offset++, LastAccessType::NONE);
     }
+
+    // PF/AF
+    SetAccess(Offset++, LastAccessType::NONE);
+    SetAccess(Offset++, LastAccessType::NONE);
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       SetAccess(Offset++, LastAccessType::NONE);

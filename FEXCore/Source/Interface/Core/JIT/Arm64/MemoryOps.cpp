@@ -5,6 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "FEXCore/Core/X86Enums.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
@@ -295,7 +296,11 @@ DEF_OP(LoadRegisterSRA) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+    const auto regId =
+      Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ? (StaticRegisters.size() - 2) :
+      Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ? (StaticRegisters.size() - 1) :
+      (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+
     const auto regOffs = Op->Offset & 7;
 
     LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
@@ -473,10 +478,14 @@ DEF_OP(StoreRegisterSRA) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
+    const auto regId =
+      Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ? (StaticRegisters.size() - 2) :
+      Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ? (StaticRegisters.size() - 1) :
+      (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+
+    LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
 
     const auto reg = StaticRegisters[regId];
     const auto Src = GetReg(Op->Value.ID());
@@ -1047,11 +1056,19 @@ DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
   auto Dst = GetReg(Node);
 
+  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC &&
+                     Op->Flag != X86State::RFLAG_AF_RAW_LOC,
+                     "PF/AF must be accessed as registers");
+
   ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
+
+  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC &&
+                     Op->Flag != X86State::RFLAG_AF_RAW_LOC,
+                     "PF/AF must be accessed as registers");
 
   strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }

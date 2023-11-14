@@ -240,12 +240,13 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNo
 }
 
 OrderedNode *OpDispatchBuilder::LoadPFRaw() {
-  // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
-  auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
+  // Read the stored byte. This is the original result (up to 64-bits), it needs
+  // parity calculated.
+  auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
   // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
   // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
-  auto InputFPR = _VCastFromGPR(4, 4, PFByte);
+  auto InputFPR = _VCastFromGPR(4, 4, Result);
 
   // Calculate the popcount.
   auto Count = _VPopcount(1, 1, InputFPR);
@@ -253,14 +254,14 @@ OrderedNode *OpDispatchBuilder::LoadPFRaw() {
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
-  // Read the stored byte. This is the XOR of the arguments.
-  auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
+  // Read the stored value. This is the XOR of the arguments.
+  auto AFWord = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  // Read the result, stored as the PF byte for deferred PF calculation.
-  auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
+  // Read the result, stored for PF.
+  auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
   // What's left is to XOR and extract. This is the deferred part.
-  return _Bfe(OpSize::i32Bit, 1, 4, _Xor(OpSize::i32Bit, AFByte, PFByte));
+  return _Bfe(OpSize::i32Bit, 1, 4, _Xor(OpSize::i32Bit, AFWord, Result));
 }
 
 void OpDispatchBuilder::FixupAF() {
@@ -270,10 +271,10 @@ void OpDispatchBuilder::FixupAF() {
   //
   //  (AF[4] ^ PF[4]) ^ PF[4] = AF[4]
 
-  auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
-  auto AFByte = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
+  auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
+  auto AFRaw = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  OrderedNode *XorRes = _Xor(OpSize::i32Bit, AFByte, PFByte);
+  OrderedNode *XorRes = _Xor(OpSize::i32Bit, AFRaw, PFRaw);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 

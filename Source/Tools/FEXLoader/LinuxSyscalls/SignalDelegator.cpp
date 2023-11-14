@@ -174,6 +174,16 @@ namespace FEX::HLE {
         memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
       }
     }
+
+    // PF/AF internal values are hardcoded to r26/r27, so make sure we spill
+    // for that too when it's time to spill those registers. This is
+    // predicated on IgnoreMask to make sure we aren't spilling these while
+    // already in a syscall which is a spooky weird state. See comment in
+    // HandleDispatcherGuestSignal.
+    if (!(IgnoreMask & (3U << 26))) {
+      Thread->CurrentFrame->State.pf_raw = ArchHelpers::Context::GetArmReg(ucontext, 26);
+      Thread->CurrentFrame->State.af_raw = ArchHelpers::Context::GetArmReg(ucontext, 27);
+    }
 #endif
   }
 

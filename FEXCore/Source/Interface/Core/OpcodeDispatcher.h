@@ -1380,6 +1380,10 @@ private:
 
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
+    } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+    } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       if (ValueOffset || MustMask)
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1432,6 +1436,10 @@ private:
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert),
                            _Constant(1), _Constant(0));
       }
+    } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+    } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       return _LoadFlag(BitOffset);
     }

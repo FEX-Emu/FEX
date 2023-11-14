@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "FEXCore/Core/X86Enums.h"
 #include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
@@ -21,6 +22,10 @@
 #include <tuple>
 #include <utility>
 
+// We pin r26/r27 as PF/AF respectively, this is internal FEX ABI.
+constexpr auto REG_PF = FEXCore::ARMEmitter::Reg::r26;
+constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r27;
+
 namespace FEXCore::CPU {
 // Register x18 is unused in the current configuration.
 // This is due to it being a platform register on wine platforms.
@@ -28,7 +33,7 @@ namespace FEXCore::CPU {
 
 namespace x64 {
   // All but x19 and x29 are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::Register, 16> SRA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 18> SRA = {
     FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
     FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
     FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9,
@@ -36,23 +41,23 @@ namespace x64 {
     FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13,
     FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
     FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
-    FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r29
+    FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r29,
+    // PF/AF must be last.
+    REG_PF, REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 9> RA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 7> RA = {
     // All these callee saved
     FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21,
     FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
     FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25,
-    FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
     FEXCore::ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4> RAPair = {{
+  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
     {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
     {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
     {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
-    {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
   }};
 
   // All are caller saved
@@ -175,19 +180,20 @@ namespace x64 {
 
 namespace x32 {
   // All but x19 and x29 are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::Register, 8> SRA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 10> SRA = {
     FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
     FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
     FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9,
     FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
+    // PF/AF must be last.
+    REG_PF, REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 17> RA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 15> RA = {
     // All these callee saved
     FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21,
     FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
     FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25,
-    FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
 
     // Registers only available on 32-bit
     // All these are caller saved (except for r19).
@@ -199,11 +205,10 @@ namespace x32 {
     FEXCore::ARMEmitter::Reg::r19,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 8> RAPair = {{
+  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 7> RAPair = {{
     {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
     {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
     {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
-    {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
 
     {FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13},
     {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
@@ -368,7 +373,7 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr
     GeneralFPRegisters = x64::RAFPR;
   }
   else {
-    ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 8, 8);
+    ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;
@@ -613,6 +618,11 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
     return;
   }
 
+  // PF/AF are special, remove them from the mask
+  uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
+  unsigned PFAFSpillMask = GPRSpillMask & PFAFMask;
+  GPRSpillMask &= ~PFAFSpillMask;
+
   for (size_t i = 0; i < StaticRegisters.size(); i+=2) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i+1];
@@ -626,6 +636,14 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
     else if (((1U << Reg2.Idx()) & GPRSpillMask)) {
       str(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1]));
     }
+  }
+
+  // Now handle PF/AF
+  if (PFAFSpillMask) {
+    LOGMAN_THROW_A_FMT(PFAFSpillMask == PFAFMask, "PF/AF not spilled together");
+
+    str(REG_PF.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
+    str(REG_AF.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.af_raw));
   }
 
   if (FPRs) {
@@ -770,6 +788,11 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     }
   }
 
+  // PF/AF are special, remove them from the mask
+  uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
+  uint32_t PFAFFillMask = GPRFillMask & PFAFMask;
+  GPRFillMask &= ~PFAFMask;
+
   for (size_t i = 0; i < StaticRegisters.size(); i+=2) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i+1];
@@ -783,6 +806,14 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     else if ((1U << Reg2.Idx()) & GPRFillMask) {
       ldr(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1]));
     }
+  }
+
+  // Now handle PF/AF
+  if (PFAFFillMask) {
+    LOGMAN_THROW_A_FMT(PFAFFillMask == PFAFMask, "PF/AF not filled together");
+
+    ldr(REG_PF.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
+    ldr(REG_AF.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.af_raw));
   }
 }
 

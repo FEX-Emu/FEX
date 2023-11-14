@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include "FEXCore/Core/X86Enums.h"
 #include "Interface/IR/Passes.h"
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
@@ -518,12 +519,21 @@ namespace {
     const auto GetRegAndClassFromOffset = [&, this](uint32_t Offset) {
         const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
         const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
+        const auto pf = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
+        const auto af = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
 
         const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
 
-        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
+        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr) || (Offset == pf) || (Offset == af), "Unexpected Offset {}", Offset);
 
-        if (Offset >= beginGpr && Offset < endGpr) {
+        unsigned FlagOffset =
+          Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount - 2;
+
+        if (Offset == pf) {
+          return PhysicalRegister(GPRFixedClass, FlagOffset);
+        } else if (Offset == af) {
+          return PhysicalRegister(GPRFixedClass, FlagOffset + 1);
+        } else if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return PhysicalRegister(GPRFixedClass, reg);
         } else if (Offset >= beginFpr && Offset < endFpr) {
@@ -544,12 +554,21 @@ namespace {
     const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
         const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
         const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
+        const auto pf = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
+        const auto af = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
 
         const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
 
-        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
+        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr) || (Offset == pf) || (Offset == af), "Unexpected Offset {}", Offset);
 
-        if (Offset >= beginGpr && Offset < endGpr) {
+        unsigned FlagOffset =
+          Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount - 2;
+
+        if (Offset == pf) {
+          return &StaticMaps[FlagOffset];
+        } else if (Offset == af) {
+          return &StaticMaps[FlagOffset + 1];
+        } else if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return &StaticMaps[reg];
         } else if (Offset >= beginFpr && Offset < endFpr) {

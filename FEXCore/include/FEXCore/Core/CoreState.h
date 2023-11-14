@@ -102,6 +102,8 @@ namespace FEXCore::Core {
     uint64_t InlineJITBlockHeader{};
     XMMRegs xmm{};
     uint8_t flags[48]{};
+    uint64_t pf_raw{};
+    uint64_t af_raw{};
     uint64_t mm[8][2]{};
 
     // 32bit x86 state
