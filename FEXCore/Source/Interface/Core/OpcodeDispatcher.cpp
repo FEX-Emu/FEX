@@ -3047,8 +3047,9 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  /* We're just going to sign-extend the non-garbage anyway.. */
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
@@ -3069,8 +3070,8 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   uint8_t Size = GetSrcSize(Op);
   if (Size != 8) {
@@ -3094,7 +3095,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
@@ -3146,7 +3147,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
