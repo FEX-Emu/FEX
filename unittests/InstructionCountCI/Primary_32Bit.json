@@ -301,7 +301,7 @@
         "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"
@@ -335,7 +335,7 @@
         "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"

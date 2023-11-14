@@ -22,12 +22,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #24",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #8, #1",
+        "ubfx x24, x22, #8, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -44,12 +44,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #16",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #16, #1",
+        "ubfx x24, x22, #16, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -121,7 +121,7 @@
         "eor w20, w23, w20",
         "eor w22, w22, w23",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -151,7 +151,7 @@
         "eor w20, w23, w20",
         "eor w22, w22, w23",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -197,7 +197,7 @@
         "eor w20, w23, w20",
         "eor w22, w22, w23",
         "and w20, w22, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -228,7 +228,7 @@
         "eor w20, w23, w20",
         "eor w22, w22, w23",
         "and w20, w22, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -301,12 +301,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #24",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #8, #1",
+        "ubfx x24, x22, #8, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "and w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -324,12 +324,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #16",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #16, #1",
+        "ubfx x24, x22, #16, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "and w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -442,12 +442,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #24",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #8, #1",
+        "ubfx x24, x22, #8, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -465,12 +465,12 @@
         "strb w22, [x28, #706]",
         "cmn wzr, w22, lsl #16",
         "mrs x23, nzcv",
-        "ubfx w24, w22, #16, #1",
+        "ubfx x24, x22, #16, #1",
         "orr w23, w23, w24, lsl #29",
         "eor w20, w21, w20",
         "eor w21, w22, w21",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -512,10 +512,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #24",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #8, #1",
+        "ubfx x23, x21, #8, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -532,10 +532,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #24",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #8, #1",
+        "ubfx x23, x21, #8, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -551,10 +551,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #16, #1",
+        "ubfx x23, x21, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -571,10 +571,10 @@
         "strb w20, [x28, #706]",
         "cmn wzr, w20, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w20, #16, #1",
+        "ubfx x23, x20, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -639,10 +639,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #16, #1",
+        "ubfx x23, x21, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -814,7 +814,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w20, w22",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -842,7 +842,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -869,7 +869,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w20, w22",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -897,7 +897,7 @@
         "csel x20, x20, x25, eq",
         "orr w20, w24, w20, lsl #29",
         "bic w21, w23, w22",
-        "ubfx w21, w21, #15, #1",
+        "ubfx x21, x21, #15, #1",
         "orr w20, w20, w21, lsl #28",
         "msr nzcv, x20"
       ]
@@ -981,7 +981,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w20, w22",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1037,7 +1037,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1066,7 +1066,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w20, w22",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1094,7 +1094,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1123,7 +1123,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w20, w22",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1236,7 +1236,7 @@
         "csel x21, x25, x24, eq",
         "orr w21, w23, w21, lsl #29",
         "bic w20, w22, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w21, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1427,10 +1427,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #24",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #8, #1",
+        "ubfx x23, x21, #8, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1448,10 +1448,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #24",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #8, #1",
+        "ubfx x23, x21, #8, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1468,10 +1468,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #16, #1",
+        "ubfx x23, x21, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1489,10 +1489,10 @@
         "strb w20, [x28, #706]",
         "cmn wzr, w20, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w20, #16, #1",
+        "ubfx x23, x20, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1574,10 +1574,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #16, #1",
+        "ubfx x23, x21, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1749,7 +1749,7 @@
         "cmn wzr, w21, lsl #24",
         "mrs x23, nzcv",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"
@@ -1801,10 +1801,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #24",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #8, #1",
+        "ubfx x23, x21, #8, #1",
         "orr w22, w22, w23, lsl #29",
         "and w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1823,10 +1823,10 @@
         "strb w21, [x28, #706]",
         "cmn wzr, w21, lsl #16",
         "mrs x22, nzcv",
-        "ubfx w23, w21, #16, #1",
+        "ubfx x23, x21, #16, #1",
         "orr w22, w22, w23, lsl #29",
         "and w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w22, w20, lsl #28",
         "msr nzcv, x20"
       ]
@@ -1881,7 +1881,7 @@
         "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w20, w21",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"
@@ -1934,7 +1934,7 @@
         "cmn wzr, w21, lsl #24",
         "mrs x23, nzcv",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #7, #1",
+        "ubfx x20, x20, #7, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"
@@ -1953,7 +1953,7 @@
         "cmn wzr, w21, lsl #16",
         "mrs x23, nzcv",
         "bic w20, w21, w20",
-        "ubfx w20, w20, #15, #1",
+        "ubfx x20, x20, #15, #1",
         "orr w20, w23, w20, lsl #28",
         "orr w20, w20, w22, lsl #29",
         "msr nzcv, x20"

@@ -98,7 +98,6 @@ public:
     TYPE_BZHI,
     TYPE_TZCNT,
     TYPE_LZCNT,
-    TYPE_BITSELECT,
     TYPE_RDRAND,
   };
 
@@ -1343,7 +1342,7 @@ private:
     } else {
       // Insert as GPR
       if (FlagOffset || MustMask)
-        Value = _Bfe(OpSize::i32Bit, 1, FlagOffset, Value);
+        Value = _Bfe(OpSize::i64Bit, 1, FlagOffset, Value);
 
       if (PossiblySetNZCVBits == 0)
         SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
@@ -1535,7 +1534,7 @@ private:
     OrderedNode *Res{};
 
     union {
-      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, BITSELECT, RDRAND
+      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, RDRAND
       struct {
       } NoSource;
 
@@ -1605,13 +1604,48 @@ private:
     return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
   }
 
+  template <typename F>
+  void CalculateFlags_ShiftVariable(OrderedNode *Shift, F&& CalculateFlags) {
+    // We are the ones calculating the deferred flags. Don't recurse!
+    InvalidateDeferredFlags();
+
+    // RCR can call this with constants, so handle that without branching.
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(Shift), &Const)) {
+      if (Const)
+        CalculateFlags();
+
+      return;
+    }
+
+    // Otherwise, prepare to branch.
+    uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
+    auto Zero = _Constant(0);
+
+    // If the shift is zero, do not touch the flags.
+    auto SetBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+    auto EndBlock = CreateNewCodeBlockAfter(SetBlock);
+    CondJump(Shift, Zero, EndBlock, SetBlock, {COND_EQ});
+
+    SetCurrentCodeBlock(SetBlock);
+    StartNewBlock();
+    {
+      CalculateFlags();
+      Jump(EndBlock);
+    }
+
+    SetCurrentCodeBlock(EndBlock);
+    StartNewBlock();
+    PossiblySetNZCVBits |= OldSetNZCVBits;
+  }
+
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   OrderedNode *LoadPFRaw();
   OrderedNode *LoadAF();
   void FixupAF();
-  void CalculatePF(OrderedNode *Res, OrderedNode *condition = nullptr);
+  void CalculatePF(OrderedNode *Res);
   void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
@@ -1643,7 +1677,6 @@ private:
   void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
   void CalculateFlags_TZCNT(OrderedNode *Src);
   void CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BITSELECT(OrderedNode *Src);
   void CalculateFlags_RDRAND(OrderedNode *Src);
   /**  @} */
 
@@ -2029,14 +2062,6 @@ private:
   void GenerateFlags_LZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LZCNT,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_BITSELECT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BITSELECT,
       .SrcSize = GetSrcSize(Op),
       .Res = Src,
     };

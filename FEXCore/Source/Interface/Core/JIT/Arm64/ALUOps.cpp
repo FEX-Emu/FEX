@@ -240,6 +240,26 @@ ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   }
 }
 
+DEF_OP(CondAddNZCV) {
+  auto Op = IROp->C<IR::IROp_CondAddNZCV>();
+  const IR::OpSize OpSize = Op->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  ARMEmitter::StatusFlags Flags = (ARMEmitter::StatusFlags)Op->FalseNZCV;
+  uint64_t Const = 0;
+  auto Src1 = IsInlineConstant(Op->Src1, &Const) ? ARMEmitter::Reg::zr :
+                                                   GetReg(Op->Src1.ID());
+  LOGMAN_THROW_A_FMT(Const == 0, "Unsupported inline constant");
+
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    ccmn(EmitSize, Src1, Const, Flags, MapSelectCC(Op->Cond));
+  } else {
+    ccmn(EmitSize, Src1, GetReg(Op->Src2.ID()), Flags, MapSelectCC(Op->Cond));
+  }
+}
+
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
   const uint8_t OpSize = IROp->Size;
@@ -550,6 +570,16 @@ DEF_OP(Xor) {
     const auto Src2 = GetReg(Op->Src2.ID());
     eor(EmitSize, Dst, Src1, Src2);
   }
+}
+
+DEF_OP(XorShift) {
+  auto Op = IROp->C<IR::IROp_XorShift>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  eor(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
 
 DEF_OP(Lshl) {
