@@ -634,8 +634,6 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
-  auto Zero = _Constant(0);
-
   // PF/AF/ZF/SF
   // Undefined
   {
@@ -647,19 +645,21 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   {
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // If the value can fit then the top bits will be zero
-
     auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
+    _SubNZCV(OpSize::i64Bit, High, SignBit);
 
-    auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                        (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC)));
-
-    // Set CV accordingly and zero NZ regardless
-    SetNZCV(_Select(FEXCore::IR::COND_EQ, High, SignBit, Zero, CV));
+    // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
+    // undefined, this does what we need.
+    auto Zero = _Constant(0);
+    _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
   }
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   auto Zero = _Constant(0);
+  OpSize Size = IR::SizeToOpSize(GetOpSize(High));
 
   // AF/SF/PF/ZF
   // Undefined
@@ -672,11 +672,13 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   {
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // The result register will be all zero if it can't fit due to how multiplication behaves
+    _SubNZCV(Size, High, Zero);
 
-    auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC)) |
-                        (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC)));
-
-    SetNZCV(_Select(FEXCore::IR::COND_EQ, High, Zero, Zero, CV));
+    // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
+    // this does what we need.
+    _CondAddNZCV(Size, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = ~0;
   }
 }
 
