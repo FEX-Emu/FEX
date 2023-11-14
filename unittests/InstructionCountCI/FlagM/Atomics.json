@@ -13,7 +13,6 @@
   "Instructions": {
     "lock add byte [rax], cl": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "0x00",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
@@ -32,7 +31,6 @@
     },
     "lock add word [rax], cx": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
@@ -51,7 +49,6 @@
     },
     "lock add dword [rax], ecx": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal w5, w20, [x4]",
@@ -64,7 +61,6 @@
     },
     "lock or byte [rax], cl": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x08",
       "ExpectedArm64ASM": [
         "ldsetalb w5, w20, [x4]",
@@ -75,7 +71,6 @@
     },
     "lock or word [rax], cx": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x09",
       "ExpectedArm64ASM": [
         "ldsetalh w5, w20, [x4]",
@@ -86,7 +81,6 @@
     },
     "lock or dword [rax], ecx": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x09",
       "ExpectedArm64ASM": [
         "ldsetal w5, w20, [x4]",
@@ -97,7 +91,6 @@
     },
     "lock adc byte [rax], cl": {
       "ExpectedInstructionCount": 23,
-      "Optimal": "No",
       "Comment": "0x10",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
@@ -127,7 +120,6 @@
     },
     "lock adc word [rax], cx": {
       "ExpectedInstructionCount": 23,
-      "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
@@ -157,7 +149,6 @@
     },
     "lock adc dword [rax], ecx": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "mov w20, w5",
@@ -173,7 +164,6 @@
     },
     "lock sbb byte [rax], cl": {
       "ExpectedInstructionCount": 24,
-      "Optimal": "No",
       "Comment": "0x18",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
@@ -204,7 +194,6 @@
     },
     "lock sbb word [rax], cx": {
       "ExpectedInstructionCount": 24,
-      "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
@@ -235,7 +224,6 @@
     },
     "lock sbb dword [rax], ecx": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "0x19",
       "ExpectedArm64ASM": [
         "mov w20, w5",
@@ -254,7 +242,6 @@
     },
     "lock and byte [rax], cl": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "0x20",
       "ExpectedArm64ASM": [
         "mvn w1, w5",
@@ -266,7 +253,6 @@
     },
     "lock and word [rax], cx": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "0x21",
       "ExpectedArm64ASM": [
         "mvn w1, w5",
@@ -278,7 +264,6 @@
     },
     "lock and dword [rax], ecx": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "0x21",
       "ExpectedArm64ASM": [
         "mvn w1, w5",
@@ -290,7 +275,6 @@
     },
     "lock sub byte [rax], cl": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x28",
       "ExpectedArm64ASM": [
         "uxtb w20, w5",
@@ -310,7 +294,6 @@
     },
     "lock sub word [rax], cx": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x28",
       "ExpectedArm64ASM": [
         "uxth w20, w5",
@@ -330,7 +313,6 @@
     },
     "lock sub dword [rax], ecx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "0x29",
       "ExpectedArm64ASM": [
         "neg w1, w5",
@@ -345,7 +327,6 @@
     },
     "lock xor byte [rax], cl": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x30",
       "ExpectedArm64ASM": [
         "ldeoralb w5, w20, [x4]",
@@ -356,7 +337,6 @@
     },
     "lock xor word [rax], cx": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x31",
       "ExpectedArm64ASM": [
         "ldeoralh w5, w20, [x4]",
@@ -367,7 +347,6 @@
     },
     "lock xor dword [rax], ecx": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": "0x31",
       "ExpectedArm64ASM": [
         "ldeoral w5, w20, [x4]",
@@ -378,7 +357,6 @@
     },
     "lock add qword [rax], rcx": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal x5, x20, [x4]",
@@ -391,7 +369,6 @@
     },
     "xadd byte [rax], bl": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x0f 0xc0",
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
@@ -411,7 +388,6 @@
     },
     "xadd word [rax], bx": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "uxth w20, w7",
@@ -431,7 +407,6 @@
     },
     "xadd dword [rax], ebx": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -445,7 +420,6 @@
     },
     "xadd qword [rax], rbx": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "mov x20, x7",
@@ -459,7 +433,6 @@
     },
     "lock add byte [rax], 1": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -475,7 +448,6 @@
     },
     "lock add byte [rax], 0xFF": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -492,7 +464,6 @@
     },
     "lock add word [rax], 0x100": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -508,7 +479,6 @@
     },
     "lock add word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -525,7 +495,6 @@
     },
     "lock add dword [rax], 0x100": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -538,7 +507,6 @@
     },
     "lock add dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -552,7 +520,6 @@
     },
     "lock add qword [rax], 0x100": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -565,7 +532,6 @@
     },
     "lock add qword [rax], -2147483647": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -578,7 +544,6 @@
     },
     "lock add word [rax], 1": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -594,7 +559,6 @@
     },
     "lock add dword [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -607,7 +571,6 @@
     },
     "lock add qword [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -620,7 +583,6 @@
     },
     "lock or byte [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -632,7 +594,6 @@
     },
     "lock or byte [rax], 0xFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -644,7 +605,6 @@
     },
     "lock or word [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -656,7 +616,6 @@
     },
     "lock or word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -668,7 +627,6 @@
     },
     "lock or dword [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -680,7 +638,6 @@
     },
     "lock or dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -692,7 +649,6 @@
     },
     "lock or qword [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -704,7 +660,6 @@
     },
     "lock or qword [rax], -2147483647": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -716,7 +671,6 @@
     },
     "lock or word [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -728,7 +682,6 @@
     },
     "lock or dword [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -740,7 +693,6 @@
     },
     "lock or qword [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -752,7 +704,6 @@
     },
     "lock adc byte [rax], 1": {
       "ExpectedInstructionCount": 20,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -779,7 +730,6 @@
     },
     "lock adc byte [rax], 0xFF": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -807,7 +757,6 @@
     },
     "lock adc word [rax], 0x100": {
       "ExpectedInstructionCount": 20,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -834,7 +783,6 @@
     },
     "lock adc word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -862,7 +810,6 @@
     },
     "lock adc dword [rax], 0x100": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -877,7 +824,6 @@
     },
     "lock adc dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -893,7 +839,6 @@
     },
     "lock adc qword [rax], 0x100": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -908,7 +853,6 @@
     },
     "lock adc qword [rax], -2147483647": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /2",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -923,7 +867,6 @@
     },
     "lock adc word [rax], 1": {
       "ExpectedInstructionCount": 20,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -950,7 +893,6 @@
     },
     "lock adc dword [rax], 1": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -965,7 +907,6 @@
     },
     "lock adc qword [rax], 1": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -980,7 +921,6 @@
     },
     "lock sbb byte [rax], 1": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1008,7 +948,6 @@
     },
     "lock sbb byte [rax], 0xFF": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -1037,7 +976,6 @@
     },
     "lock sbb word [rax], 0x100": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1065,7 +1003,6 @@
     },
     "lock sbb word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 22,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -1094,7 +1031,6 @@
     },
     "lock sbb dword [rax], 0x100": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1112,7 +1048,6 @@
     },
     "lock sbb dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1131,7 +1066,6 @@
     },
     "lock sbb qword [rax], 0x100": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1149,7 +1083,6 @@
     },
     "lock sbb qword [rax], -2147483647": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /3",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -1167,7 +1100,6 @@
     },
     "lock sbb word [rax], 1": {
       "ExpectedInstructionCount": 21,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1195,7 +1127,6 @@
     },
     "lock sbb dword [rax], 1": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1213,7 +1144,6 @@
     },
     "lock sbb qword [rax], 1": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1231,7 +1161,6 @@
     },
     "lock and byte [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1244,7 +1173,6 @@
     },
     "lock and byte [rax], 0xFF": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -1257,7 +1185,6 @@
     },
     "lock and word [rax], 0x100": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1270,7 +1197,6 @@
     },
     "lock and word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -1283,7 +1209,6 @@
     },
     "lock and dword [rax], 0x100": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1296,7 +1221,6 @@
     },
     "lock and dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1309,7 +1233,6 @@
     },
     "lock and qword [rax], 0x100": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1322,7 +1245,6 @@
     },
     "lock and qword [rax], -2147483647": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -1335,7 +1257,6 @@
     },
     "lock and word [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1348,7 +1269,6 @@
     },
     "lock and dword [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1361,7 +1281,6 @@
     },
     "lock and qword [rax], 1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1374,7 +1293,6 @@
     },
     "lock sub byte [rax], 1": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1391,7 +1309,6 @@
     },
     "lock sub byte [rax], 0xFF": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -1409,7 +1326,6 @@
     },
     "lock sub word [rax], 0x100": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1426,7 +1342,6 @@
     },
     "lock sub word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -1444,7 +1359,6 @@
     },
     "lock sub dword [rax], 0x100": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1459,7 +1373,6 @@
     },
     "lock sub dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1475,7 +1388,6 @@
     },
     "lock sub qword [rax], 0x100": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1490,7 +1402,6 @@
     },
     "lock sub qword [rax], -2147483647": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -1505,7 +1416,6 @@
     },
     "lock sub word [rax], 1": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1522,7 +1432,6 @@
     },
     "lock sub dword [rax], 1": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1537,7 +1446,6 @@
     },
     "lock sub qword [rax], 1": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1552,7 +1460,6 @@
     },
     "lock xor byte [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1564,7 +1471,6 @@
     },
     "lock xor byte [rax], 0xFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -1576,7 +1482,6 @@
     },
     "lock xor word [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1588,7 +1493,6 @@
     },
     "lock xor word [rax], 0xFFFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -1600,7 +1504,6 @@
     },
     "lock xor dword [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1612,7 +1515,6 @@
     },
     "lock xor dword [rax], 0xFFFFFFFF": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1624,7 +1526,6 @@
     },
     "lock xor qword [rax], 0x100": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
@@ -1636,7 +1537,6 @@
     },
     "lock xor qword [rax], -2147483647": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
@@ -1648,7 +1548,6 @@
     },
     "lock xor word [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1660,7 +1559,6 @@
     },
     "lock xor dword [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "No",
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1672,7 +1570,6 @@
     },
     "lock xor qword [rax], 1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1684,7 +1581,6 @@
     },
     "lock dec byte [rax]": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP3 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1702,7 +1598,6 @@
     },
     "lock not byte [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf6 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -1711,7 +1606,6 @@
     },
     "lock not word [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
@@ -1720,7 +1614,6 @@
     },
     "lock not dword [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1729,7 +1622,6 @@
     },
     "lock not qword [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
@@ -1738,7 +1630,6 @@
     },
     "lock neg byte [rax]": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf6 /3",
       "ExpectedArm64ASM": [
         "ldaxrb w1, [x4]",
@@ -1757,7 +1648,6 @@
     },
     "lock neg word [rax]": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
         "ldaxrh w1, [x4]",
@@ -1776,7 +1666,6 @@
     },
     "lock neg dword [rax]": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
         "ldaxr w1, [x4]",
@@ -1793,7 +1682,6 @@
     },
     "lock neg qword [rax]": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
         "ldaxr x1, [x4]",
@@ -1810,7 +1698,6 @@
     },
     "lock dec word [rax]": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1828,7 +1715,6 @@
     },
     "lock dec dword [rax]": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1844,7 +1730,6 @@
     },
     "lock dec qword [rax]": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1860,7 +1745,6 @@
     },
     "lock inc byte [rax]": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1877,7 +1761,6 @@
     },
     "lock inc word [rax]": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1894,7 +1777,6 @@
     },
     "lock inc dword [rax]": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1909,7 +1791,6 @@
     },
     "lock inc qword [rax]": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "Yes",
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",

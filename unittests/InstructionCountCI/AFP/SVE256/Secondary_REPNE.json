@@ -11,7 +11,6 @@
   "Instructions": {
     "cvtsi2sd xmm0, eax": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
@@ -21,7 +20,6 @@
     },
     "cvtsi2sd xmm0, dword [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
@@ -32,7 +30,6 @@
     },
     "cvtsi2sd xmm0, rax": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
@@ -42,7 +39,6 @@
     },
     "cvtsi2sd xmm0, qword [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
@@ -53,7 +49,6 @@
     },
     "sqrtsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x51"
       ],
@@ -63,7 +58,6 @@
     },
     "addsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x58"
       ],
@@ -73,7 +67,6 @@
     },
     "mulsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x59"
       ],
@@ -83,7 +76,6 @@
     },
     "cvtsd2ss xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
@@ -93,7 +85,6 @@
     },
     "cvtsd2ss xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
@@ -104,7 +95,6 @@
     },
     "subsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5c"
       ],
@@ -114,7 +104,6 @@
     },
     "minsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
@@ -124,7 +113,6 @@
     },
     "divsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5e"
       ],
@@ -134,7 +122,6 @@
     },
     "maxsd xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
@@ -144,7 +131,6 @@
     },
     "cmpsd xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -154,7 +140,6 @@
     },
     "cmpsd xmm0, xmm1, 1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -164,7 +149,6 @@
     },
     "cmpsd xmm0, xmm1, 2": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -174,7 +158,6 @@
     },
     "cmpsd xmm0, xmm1, 3": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -189,7 +172,6 @@
     },
     "cmpsd xmm0, xmm1, 4": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -202,7 +184,6 @@
     },
     "cmpsd xmm0, xmm1, 5": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -214,7 +195,6 @@
     },
     "cmpsd xmm0, xmm1, 6": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
@@ -226,7 +206,6 @@
     },
     "cmpsd xmm0, xmm1, 7": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],

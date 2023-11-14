@@ -16,7 +16,6 @@
   "Instructions": {
     "pi2fw mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x0c"
       ],
@@ -30,7 +29,6 @@
     },
     "pi2fd mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x0d"
       ],
@@ -42,7 +40,6 @@
     },
     "pf2iw mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x1c"
       ],
@@ -56,7 +53,6 @@
     },
     "pf2id mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x1d"
       ],
@@ -68,7 +64,6 @@
     },
     "pfrcpv mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x86"
       ],
@@ -81,7 +76,6 @@
     },
     "pfrsqrtv mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x87"
       ],
@@ -95,7 +89,6 @@
     },
     "pfnacc mm0, mm1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x8a",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
@@ -108,7 +101,6 @@
     },
     "pfpnacc mm0, mm1": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x8e",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #752]",
@@ -122,7 +114,6 @@
     },
     "pfcmpge mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x90",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -133,7 +124,6 @@
     },
     "pfmin mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x94",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -145,7 +135,6 @@
     },
     "pfrcp mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x96"
       ],
@@ -159,7 +148,6 @@
     },
     "pfrsqrt mm0, mm1": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x0f 0x97"
       ],
@@ -174,7 +162,6 @@
     },
     "pfsub mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x9a",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -185,7 +172,6 @@
     },
     "pfadd mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0x9e",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -196,7 +182,6 @@
     },
     "pfcmpgt mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa0",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -207,7 +192,6 @@
     },
     "pfmax mm0, mm1": {
       "ExpectedInstructionCount": 5,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa4",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -219,7 +203,6 @@
     },
     "pfrcpit1 mm0, mm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa6",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -228,13 +211,11 @@
     },
     "pfrcpit1 mm0, mm0": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa6",
       "ExpectedArm64ASM": []
     },
     "pfrsqit1 mm0, mm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa7",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -243,13 +224,11 @@
     },
     "pfrsqit1 mm0, mm0": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xa7",
       "ExpectedArm64ASM": []
     },
     "pfsubr mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xaa",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -260,7 +239,6 @@
     },
     "pfcmpeq mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xb0",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -271,7 +249,6 @@
     },
     "pfmul mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xb4",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -282,7 +259,6 @@
     },
     "pfrcpit2 mm0, mm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xb6",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -291,13 +267,11 @@
     },
     "pfrcpit2 mm0, mm0": {
       "ExpectedInstructionCount": 0,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xb6",
       "ExpectedArm64ASM": []
     },
     "db 0x0f, 0x0f, 0xc1, 0xb7": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "Yes",
       "Comment": [
         "nasm doesn't support emitting this instruction",
         "pmulhrw mm0, mm1",
@@ -315,7 +289,6 @@
     },
     "pswapd mm0, mm1": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xbb",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
@@ -325,7 +298,6 @@
     },
     "pavgusb mm0, mm1": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "Yes",
       "Comment": "0x0f 0x0f 0xbf",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",

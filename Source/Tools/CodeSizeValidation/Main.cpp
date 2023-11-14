@@ -227,7 +227,6 @@ void AssertHandler(char const *Message) {
 
 struct TestInfo {
   char TestInst[128];
-  uint64_t Optimal;
   int64_t ExpectedInstructionCount;
   uint64_t CodeSize;
   uint64_t x86InstCount;
@@ -276,8 +275,8 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
 
     LogMan::Msg::IFmt("Testing instruction '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
 
-    // Show the code if we know the implementation isn't optimal or if the count of instructions changed to something we didn't expect.
-    bool ShouldShowCode = CurrentTest->Optimal == 0 ||
+    // Show the code if the count of instructions changed to something we didn't expect.
+    bool ShouldShowCode =
       INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount;
 
     if (ShouldShowCode) {

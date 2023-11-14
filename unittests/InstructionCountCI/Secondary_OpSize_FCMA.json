@@ -12,7 +12,6 @@
   "Instructions": {
     "addsubpd xmm0, xmm1": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
         "ext v2.16b, v17.16b, v17.16b, #8",

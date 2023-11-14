@@ -12,7 +12,6 @@
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x2a"
       ],
@@ -23,7 +22,6 @@
     },
     "cvtpi2ps xmm0, mm0": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x2a"
       ],

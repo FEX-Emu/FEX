@@ -12,7 +12,6 @@
   "Instructions": {
     "vpsrlw xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 128-bit"
       ],
@@ -22,7 +21,6 @@
     },
     "vpsrlw xmm0, xmm1, 15": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 128-bit"
       ],
@@ -32,7 +30,6 @@
     },
     "vpsrlw xmm0, xmm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 128-bit"
       ],
@@ -42,7 +39,6 @@
     },
     "vpsrlw ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
@@ -52,7 +48,6 @@
     },
     "vpsrlw ymm0, ymm1, 15": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
@@ -63,7 +58,6 @@
     },
     "vpsrlw ymm0, ymm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
@@ -73,7 +67,6 @@
     },
     "vpsraw xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 128-bit"
       ],
@@ -83,7 +76,6 @@
     },
     "vpsraw xmm0, xmm1, 15": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 128-bit"
       ],
@@ -93,7 +85,6 @@
     },
     "vpsraw xmm0, xmm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 128-bit"
       ],
@@ -103,7 +94,6 @@
     },
     "vpsraw ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
@@ -113,7 +103,6 @@
     },
     "vpsraw ymm0, ymm1, 15": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
@@ -124,7 +113,6 @@
     },
     "vpsraw ymm0, ymm1, 16": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
@@ -135,7 +123,6 @@
     },
     "vpsllw xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 128-bit"
       ],
@@ -145,7 +132,6 @@
     },
     "vpsllw xmm0, xmm1, 15": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 128-bit"
       ],
@@ -155,7 +141,6 @@
     },
     "vpsllw xmm0, xmm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 128-bit"
       ],
@@ -165,7 +150,6 @@
     },
     "vpsllw ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
@@ -175,7 +159,6 @@
     },
     "vpsllw ymm0, ymm1, 15": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
@@ -186,7 +169,6 @@
     },
     "vpsllw ymm0, ymm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
@@ -196,7 +178,6 @@
     },
     "vpsrld xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 128-bit"
       ],
@@ -206,7 +187,6 @@
     },
     "vpsrld xmm0, xmm1, 31": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 128-bit"
       ],
@@ -216,7 +196,6 @@
     },
     "vpsrld xmm0, xmm1, 32": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 128-bit"
       ],
@@ -226,7 +205,6 @@
     },
     "vpsrld ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
@@ -236,7 +214,6 @@
     },
     "vpsrld ymm0, ymm1, 31": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
@@ -247,7 +224,6 @@
     },
     "vpsrld ymm0, ymm1, 32": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
@@ -257,7 +233,6 @@
     },
     "vpsrad xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 128-bit"
       ],
@@ -267,7 +242,6 @@
     },
     "vpsrad xmm0, xmm1, 31": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 128-bit"
       ],
@@ -277,7 +251,6 @@
     },
     "vpsrad xmm0, xmm1, 32": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 128-bit"
       ],
@@ -287,7 +260,6 @@
     },
     "vpsrad ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
@@ -297,7 +269,6 @@
     },
     "vpsrad ymm0, ymm1, 31": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
@@ -308,7 +279,6 @@
     },
     "vpsrad ymm0, ymm1, 32": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
@@ -319,7 +289,6 @@
     },
     "vpslld xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 128-bit"
       ],
@@ -329,7 +298,6 @@
     },
     "vpslld xmm0, xmm1, 31": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 128-bit"
       ],
@@ -339,7 +307,6 @@
     },
     "vpslld xmm0, xmm1, 32": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 128-bit"
       ],
@@ -349,7 +316,6 @@
     },
     "vpslld ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
@@ -359,7 +325,6 @@
     },
     "vpslld ymm0, ymm1, 31": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
@@ -370,7 +335,6 @@
     },
     "vpslld ymm0, ymm1, 32": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
@@ -380,7 +344,6 @@
     },
     "vpsrlq xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 128-bit"
       ],
@@ -390,7 +353,6 @@
     },
     "vpsrlq xmm0, xmm1, 63": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 128-bit"
       ],
@@ -400,7 +362,6 @@
     },
     "vpsrlq xmm0, xmm1, 64": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 128-bit"
       ],
@@ -410,7 +371,6 @@
     },
     "vpsrlq ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
@@ -420,7 +380,6 @@
     },
     "vpsrlq ymm0, ymm1, 63": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
@@ -431,7 +390,6 @@
     },
     "vpsrlq ymm0, ymm1, 64": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
@@ -441,7 +399,6 @@
     },
     "vpsrldq xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b011 128-bit"
       ],
@@ -451,7 +408,6 @@
     },
     "vpsrldq xmm0, xmm1, 15": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b011 128-bit"
       ],
@@ -462,7 +418,6 @@
     },
     "vpsrldq xmm0, xmm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b011 128-bit"
       ],
@@ -472,7 +427,6 @@
     },
     "vpsrldq ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b011 256-bit"
       ],
@@ -482,7 +436,6 @@
     },
     "vpsrldq ymm0, ymm1, 15": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b011 256-bit"
       ],
@@ -500,7 +453,6 @@
     },
     "vpsrldq ymm0, ymm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b011 256-bit"
       ],
@@ -510,7 +462,6 @@
     },
     "vpsllq xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b110 128-bit"
       ],
@@ -520,7 +471,6 @@
     },
     "vpsllq xmm0, xmm1, 63": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b110 128-bit"
       ],
@@ -530,7 +480,6 @@
     },
     "vpsllq xmm0, xmm1, 64": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b110 128-bit"
       ],
@@ -540,7 +489,6 @@
     },
     "vpsllq ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
@@ -550,7 +498,6 @@
     },
     "vpsllq ymm0, ymm1, 63": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
@@ -561,7 +508,6 @@
     },
     "vpsllq ymm0, ymm1, 64": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
@@ -571,7 +517,6 @@
     },
     "vpslldq xmm0, xmm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b111 128-bit"
       ],
@@ -581,7 +526,6 @@
     },
     "vpslldq xmm0, xmm1, 15": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b111 128-bit"
       ],
@@ -592,7 +536,6 @@
     },
     "vpslldq xmm0, xmm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b111 128-bit"
       ],
@@ -602,7 +545,6 @@
     },
     "vpslldq ymm0, ymm1, 0": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b111 256-bit"
       ],
@@ -612,7 +554,6 @@
     },
     "vpslldq ymm0, ymm1, 15": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "Map group 14 0b111 256-bit"
       ],
@@ -628,7 +569,6 @@
     },
     "vpslldq ymm0, ymm1, 16": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map group 14 0b111 256-bit"
       ],
@@ -638,7 +578,6 @@
     },
     "vldmxcsr [rax]": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 15 0b010"
       ],
@@ -656,7 +595,6 @@
     },
     "vstmxcsr [rax]": {
       "ExpectedInstructionCount": 7,
-      "Optimal": "No",
       "Comment": [
         "Map group 15 0b011"
       ],
@@ -672,7 +610,6 @@
     },
     "blsr eax, ebx": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 32-bit"
       ],
@@ -691,7 +628,6 @@
     },
     "blsr rax, rbx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 64-bit"
       ],
@@ -708,7 +644,6 @@
     },
     "blsmsk eax, ebx": {
       "ExpectedInstructionCount": 13,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 32-bit"
       ],
@@ -730,7 +665,6 @@
     },
     "blsmsk rax, rbx": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 64-bit"
       ],
@@ -748,7 +682,6 @@
     },
     "blsi eax, ebx": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 32-bit"
       ],
@@ -766,7 +699,6 @@
     },
     "blsi rax, rbx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 64-bit"
       ],

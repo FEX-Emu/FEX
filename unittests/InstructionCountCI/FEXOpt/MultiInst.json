@@ -15,7 +15,6 @@
   "Instructions": {
     "push ax, bx": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Mergable 16-bit pushes. May or may not be an optimization."
       ],
@@ -30,7 +29,6 @@
     },
     "push rax, rbx": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Mergable 64-bit pushes"
       ],
@@ -45,7 +43,6 @@
     },
     "adds xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Redundant scalar adds that can get eliminated without AFP."
       ],
@@ -62,7 +59,6 @@
     },
     "positive movsb": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -82,7 +78,6 @@
     },
     "positive movsw": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -102,7 +97,6 @@
     },
     "positive movsd": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -122,7 +116,6 @@
     },
     "positive movsq": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -142,7 +135,6 @@
     },
     "negative movsb": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -162,7 +154,6 @@
     },
     "negative movsw": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -182,7 +173,6 @@
     },
     "negative movsd": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -202,7 +192,6 @@
     },
     "negative movsq": {
       "ExpectedInstructionCount": 6,
-      "Optimal": "No",
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"

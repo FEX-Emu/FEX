@@ -13,7 +13,6 @@
   "Instructions": {
     "ptest xmm0, xmm1": {
       "ExpectedInstructionCount": 19,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0x17"
       ],
@@ -41,7 +40,6 @@
     },
     "adcx eax, ebx": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "No",
       "Comment": [
         "0x66 0x0f 0x38 0xf6"
       ],
@@ -64,7 +62,6 @@
     },
     "adcx rax, rbx": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "Unknown",
       "Comment": [
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
@@ -85,7 +82,6 @@
     },
     "adox eax, ebx": {
       "ExpectedInstructionCount": 14,
-      "Optimal": "No",
       "Comment": [
         "0xf3 0x0f 0x38 0xf6"
       ],
@@ -108,7 +104,6 @@
     },
     "adox rax, rbx": {
       "ExpectedInstructionCount": 12,
-      "Optimal": "Unknown",
       "Comment": [
         "0xf3 REX.W 0x0f 0x38 0xf6"
       ],

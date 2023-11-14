@@ -12,7 +12,6 @@
   "Instructions": {
     "vrsqrtps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b00 0x52 128-bit"
       ],
@@ -22,7 +21,6 @@
     },
     "vrsqrtps ymm0, ymm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b00 0x52 256-bit"
       ],
@@ -32,7 +30,6 @@
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "AFP can make this more optimal",
         "Map 1 0b10 0x52 128-bit"
@@ -44,7 +41,6 @@
     },
     "vrcpps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b00 0x53 128-bit"
       ],
@@ -54,7 +50,6 @@
     },
     "vrcpps ymm0, ymm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b00 0x53 256-bit"
       ],
@@ -64,7 +59,6 @@
     },
     "vrcpss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b10 0x53 128-bit"
       ],

@@ -12,7 +12,6 @@
   "Instructions": {
     "rsqrtps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x52"
       ],
@@ -22,7 +21,6 @@
     },
     "rcpps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "0x0f 0x53"
       ],

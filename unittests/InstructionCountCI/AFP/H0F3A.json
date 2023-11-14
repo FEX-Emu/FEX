@@ -12,7 +12,6 @@
   "Instructions": {
     "roundss xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -23,7 +22,6 @@
     },
     "roundss xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -34,7 +32,6 @@
     },
     "roundss xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -45,7 +42,6 @@
     },
     "roundss xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -56,7 +52,6 @@
     },
     "roundss xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0a"
@@ -67,7 +62,6 @@
     },
     "roundsd xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -78,7 +72,6 @@
     },
     "roundsd xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -89,7 +82,6 @@
     },
     "roundsd xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -100,7 +92,6 @@
     },
     "roundsd xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0b"
@@ -111,7 +102,6 @@
     },
     "roundsd xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0b"

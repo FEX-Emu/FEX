@@ -10,7 +10,6 @@
   "Instructions": {
     "pmulhuw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "SVE-256bit changes behaviour slightly",
         "0x66 0x0f 0xe4"
@@ -21,7 +20,6 @@
     },
     "pmulhw xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
-      "Optimal": "Yes",
       "Comment": [
         "SVE-256bit changes behaviour slightly",
         "0x66 0x0f 0xe5"

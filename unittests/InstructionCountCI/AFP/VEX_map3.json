@@ -11,7 +11,6 @@
   "Instructions": {
     "vroundss xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0a 128-bit"
@@ -23,7 +22,6 @@
     },
     "vroundss xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0a 128-bit"
@@ -35,7 +33,6 @@
     },
     "vroundss xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0a 128-bit"
@@ -47,7 +44,6 @@
     },
     "vroundss xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0a 128-bit"
@@ -59,7 +55,6 @@
     },
     "vroundss xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0a 128-bit"
@@ -71,7 +66,6 @@
     },
     "vroundsd xmm0, xmm1, 00000000b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0b 128-bit"
@@ -83,7 +77,6 @@
     },
     "vroundsd xmm0, xmm1, 00000001b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0b 128-bit"
@@ -95,7 +88,6 @@
     },
     "vroundsd xmm0, xmm1, 00000010b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0b 128-bit"
@@ -107,7 +99,6 @@
     },
     "vroundsd xmm0, xmm1, 00000011b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0b 128-bit"
@@ -119,7 +110,6 @@
     },
     "vroundsd xmm0, xmm1, 00000100b": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0b 128-bit"

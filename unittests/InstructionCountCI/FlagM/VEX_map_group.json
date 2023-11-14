@@ -11,7 +11,6 @@
   "Instructions": {
     "blsr eax, ebx": {
       "ExpectedInstructionCount": 10,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 32-bit"
       ],
@@ -30,7 +29,6 @@
     },
     "blsr rax, rbx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b001 64-bit"
       ],
@@ -47,7 +45,6 @@
     },
     "blsmsk eax, ebx": {
       "ExpectedInstructionCount": 11,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 32-bit"
       ],
@@ -67,7 +64,6 @@
     },
     "blsmsk rax, rbx": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b010 64-bit"
       ],
@@ -85,7 +81,6 @@
     },
     "blsi eax, ebx": {
       "ExpectedInstructionCount": 9,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 32-bit"
       ],
@@ -103,7 +98,6 @@
     },
     "blsi rax, rbx": {
       "ExpectedInstructionCount": 8,
-      "Optimal": "No",
       "Comment": [
         "Map group 17 0b011 64-bit"
       ],

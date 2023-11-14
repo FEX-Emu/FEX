@@ -11,7 +11,6 @@
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "Yes",
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
       ],
@@ -22,7 +21,6 @@
     },
     "vaddsubpd ymm0, ymm0, ymm2": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b01 0xd0 256-bit"
@@ -35,7 +33,6 @@
     },
     "vaddsubpd ymm0, ymm1, ymm0": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b01 0xd0 256-bit"
@@ -49,7 +46,6 @@
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
       "ExpectedInstructionCount": 4,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b01 0xd0 256-bit"
       ],
@@ -62,7 +58,6 @@
     },
     "vaddsubps xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
       ],
@@ -73,7 +68,6 @@
     },
     "vaddsubps ymm0, ymm1, ymm0": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b11 0xd0 256-bit"
@@ -86,7 +80,6 @@
     },
     "vaddsubps ymm0, ymm0, ymm2": {
       "ExpectedInstructionCount": 2,
-      "Optimal": "No",
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b11 0xd0 256-bit"
@@ -98,7 +91,6 @@
     },
     "vaddsubps ymm0, ymm1, ymm2": {
       "ExpectedInstructionCount": 3,
-      "Optimal": "No",
       "Comment": [
         "Map 1 0b11 0xd0 256-bit"
       ],
