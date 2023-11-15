@@ -1474,16 +1474,31 @@ private:
     }
   }
 
-  // Set x87 comparison flags based on the result set by Arm FCMP
+  // Set x87 comparison flags based on the result set by Arm FCMP. Clobbers
+  // NZCV on flagm2 platforms.
   void ConvertNZCVToX87() {
-    OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-    OrderedNode *N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
     OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
 
-    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
+    if (CTX->HostFeatures.SupportsFlagM2) {
+      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
+
+      // Convert to x86 flags, saves us from or'ing after.
+      _AXFlag();
+      PossiblySetNZCVBits = ~0;
+
+      // Copy the values. CF is inverted from the axflag result, ZF is as-is.
+      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
+      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
+    } else {
+      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode *N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+
+      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
+      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
+    }
+
     SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
