@@ -1268,14 +1268,6 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto ALUOp = _And(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   GenerateFlags_Logical(Op, ALUOp, Dest, Src);
-
-  flagsOp = SelectionFlag::AND;
-  flagsOpDest = ALUOp;
-  if (Size >= 4) {
-    flagsOpSize = Size;
-  } else {
-    flagsOpSize = 4;  // assuming ZEXT semantics here
-  }
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
@@ -1334,17 +1326,6 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 
   OrderedNode *Result = ALUOp;
   GenerateFlags_SUB(Op, Result, Dest, Src);
-
-  flagsOp = SelectionFlag::CMP;
-  if (Size >= 4) {
-    flagsOpSize = Size;
-    flagsOpDestSigned = flagsOpDest = Dest;
-    flagsOpSrcSigned = flagsOpSrc = Src;
-  } else {
-    flagsOpSize = 4;
-    flagsOpDestSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpDest = Dest);
-    flagsOpSrcSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpSrc = Src);
-  }
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {

@@ -40,7 +40,6 @@ constexpr std::array<uint32_t, 17> FlagOffsets = {
 };
 
 void OpDispatchBuilder::ZeroMultipleFlags(uint32_t FlagsMask) {
-  flagsOp = SelectionFlag::Nothing;
   auto ZeroConst = _Constant(0);
 
   if (ContainsNZCV(FlagsMask)) {

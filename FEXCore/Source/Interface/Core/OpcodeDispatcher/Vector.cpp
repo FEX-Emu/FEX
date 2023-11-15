@@ -3431,11 +3431,6 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
     (1 << FCMP_FLAG_UNORDERED));
 
   GenerateFlags_FCMP(Op, Res, Src1, Src2);
-
-  flagsOp = SelectionFlag::FCMP;
-  flagsOpDest = Src1;
-  flagsOpSrc = Src2;
-  flagsOpSize = GetSrcSize(Op);
 }
 
 template

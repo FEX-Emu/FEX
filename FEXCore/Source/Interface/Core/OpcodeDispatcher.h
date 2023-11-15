@@ -121,8 +121,6 @@ public:
   }
 
   void StartNewBlock() {
-    flagsOp = SelectionFlag::Nothing;
-
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
@@ -954,26 +952,12 @@ protected:
   }
 
 private:
-  enum class SelectionFlag {
-    Nothing,  // must rely on x86 flags
-    CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-    AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-    FCMP,     // flags were set by a ucomis* / comis*
-  };
-
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;
     bool HaveEmitted;
   };
 
   FEXCore::Context::ContextImpl *CTX{};
-
-  SelectionFlag flagsOp{};
-  uint8_t flagsOpSize{};
-  OrderedNode* flagsOpDest{};
-  OrderedNode* flagsOpSrc{};
-  OrderedNode* flagsOpDestSigned{};
-  OrderedNode* flagsOpSrcSigned{};
 
   constexpr static unsigned FullNZCVMask =
     (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
@@ -1376,8 +1360,6 @@ private:
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
-    flagsOp = SelectionFlag::Nothing;
-
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
