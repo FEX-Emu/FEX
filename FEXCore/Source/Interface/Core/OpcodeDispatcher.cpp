@@ -3663,7 +3663,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
   Result = _Add(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
@@ -3694,7 +3694,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
   Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
