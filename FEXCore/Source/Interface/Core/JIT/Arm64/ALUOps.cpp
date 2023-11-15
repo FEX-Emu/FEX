@@ -1531,41 +1531,10 @@ DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
   const auto EmitSubSize = Op->ElementSize == 8 ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit;
 
-  ARMEmitter::Register Dst = GetReg(Node);
   ARMEmitter::VRegister Scalar1 = GetVReg(Op->Scalar1.ID());
   ARMEmitter::VRegister Scalar2 = GetVReg(Op->Scalar2.ID());
 
   fcmp(EmitSubSize, Scalar1, Scalar2);
-  bool set = false;
-
-  if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    LOGMAN_THROW_AA_FMT(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
-    // EQ or unordered
-    cset(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Condition::CC_EQ); // Z = 1
-    csinc(ARMEmitter::Size::i64Bit, Dst, Dst, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_VC); // IF !V ? Z : 1
-    set = true;
-  }
-
-  if (Op->Flags & (1 << IR::FCMP_FLAG_LT)) {
-    // LT or unordered
-    cset(ARMEmitter::Size::i64Bit, TMP2, ARMEmitter::Condition::CC_LT);
-    if (!set) {
-      lsl(ARMEmitter::Size::i64Bit, Dst, TMP2, IR::FCMP_FLAG_LT);
-      set = true;
-    } else {
-      bfi(ARMEmitter::Size::i64Bit, Dst, TMP2, IR::FCMP_FLAG_LT, 1);
-    }
-  }
-
-  if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
-    cset(ARMEmitter::Size::i64Bit, TMP2, ARMEmitter::Condition::CC_VS);
-    if (!set) {
-      lsl(ARMEmitter::Size::i64Bit, Dst, TMP2, IR::FCMP_FLAG_UNORDERED);
-      set = true;
-    } else {
-      bfi(ARMEmitter::Size::i64Bit, Dst, TMP2, IR::FCMP_FLAG_UNORDERED, 1);
-    }
-  }
 }
 
 #undef DEF_OP

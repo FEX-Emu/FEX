@@ -3427,32 +3427,16 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  OrderedNode *Res = _FCmp(ElementSize, Src1, Src2,
-    (1 << FCMP_FLAG_EQ) |
-    (1 << FCMP_FLAG_LT) |
-    (1 << FCMP_FLAG_UNORDERED));
 
-  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  CachedNZCV = nullptr;
+  _FCmp(ElementSize, Src1, Src2);
+  PossiblySetNZCVBits = ~0;
+  ConvertNZCVToSSE();
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(HostFlag_CF);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(HostFlag_ZF);
-
-  // PF is stored inverted, so invert from the host flag.
-  // TODO: This could perhaps be optimized?
-  auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, _Constant(1));
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
-
-  // Zero AF. Note that we set the PF byte to 0/1 above, so PF[4] is 0 so the
-  // XOR with PF will have no effect, so setting the AF byte to zero will indeed
-  // zero AF as intended.
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_SF_RAW_LOC) |
-    (1U << X86State::RFLAG_OF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so PF[4] is
+  // 0 so the XOR with PF will have no effect, so setting the AF byte to zero
+  // will indeed zero AF as intended.
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
 }
 
 template

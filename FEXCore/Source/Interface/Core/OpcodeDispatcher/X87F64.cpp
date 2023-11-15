@@ -601,21 +601,13 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   auto low = _Constant(0);
   OrderedNode *data = _VCastFromGPR(8, 8, low);
 
-  OrderedNode *Res = _FCmp(8, a, data,
-    (1 << FCMP_FLAG_EQ) |
-    (1 << FCMP_FLAG_LT) |
-    (1 << FCMP_FLAG_UNORDERED));
+  // We are going to clobber NZCV, make sure it's in a GPR first.
+  GetNZCV();
 
-  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-  HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
-  HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
-
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
+  // Now we do our comparison.
+  _FCmp(8, a, data);
+  PossiblySetNZCVBits = ~0;
+  ConvertNZCVToX87();
 }
 
 //TODO: This should obey rounding mode
@@ -681,36 +673,22 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  OrderedNode *Res = _FCmp(8, a, b,
-    (1 << FCMP_FLAG_EQ) |
-    (1 << FCMP_FLAG_LT) |
-    (1 << FCMP_FLAG_UNORDERED));
-
-  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-
-  HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
-  HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
-
   if constexpr (whichflags == FCOMIFlags::FLAGS_X87) {
-    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
-    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
+    // We are going to clobber NZCV, make sure it's in a GPR first.
+    GetNZCV();
+
+    _FCmp(8, a, b);
+    PossiblySetNZCVBits = ~0;
+    ConvertNZCVToX87();
   }
   else {
     // Invalidate deferred flags early
     // OF, SF, AF, PF all undefined
     InvalidateDeferredFlags();
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(HostFlag_CF);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(HostFlag_ZF);
-
-    // PF is stored inverted, so invert from the host flag.
-    // TODO: This could perhaps be optimized?
-    auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, _Constant(1));
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
+    _FCmp(8, a, b);
+    PossiblySetNZCVBits = ~0;
+    ConvertNZCVToSSE();
   }
 
   if constexpr (poptwice) {

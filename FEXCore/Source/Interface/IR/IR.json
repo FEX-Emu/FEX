@@ -1347,12 +1347,12 @@
         "DestSize": "DestElementSize"
       },
 
-      "GPR = FCmp u8:$ElementSize, FPR:$Scalar1, FPR:$Scalar2, u32:$Flags": {
-        "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
+      "FCmp u8:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
+        "Desc": ["Does a scalar unordered compare and sets NZCV accordingly.",
+                 "NZCV follows Arm conventions, a separate AXFLAG instruction is required for x86",
                  "Ordering flag result is true if either float input is NaN"
                 ],
-        "ImplicitFlagClobber": true,
-        "DestSize": "4"
+        "HasSideEffects": true
       }
     },
     "VectorScalar": {

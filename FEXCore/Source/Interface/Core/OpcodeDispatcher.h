@@ -1426,6 +1426,39 @@ private:
     }
   }
 
+  // Set SSE comparison flags based on the result set by Arm FCMP. This converts
+  // NZCV from the Arm representation to an eXternal representation that's
+  // totally not a euphemism for x86 or anything, nuh-uh.
+  void ConvertNZCVToSSE() {
+    OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+    OrderedNode *C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
+    OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+
+    // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
+    // this all with shifted-or's on non-flagm platforms.
+    ZeroNZCV();
+
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i32Bit, C_inv, V));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
+
+    // Note that we store PF inverted.
+    // TODO: We could maybe optimize this xor out for non-flagm platforms with
+    // bfi/bfxil?
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+  }
+
+  // Set x87 comparison flags based on the result set by Arm FCMP
+  void ConvertNZCVToX87() {
+    OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+    OrderedNode *N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+    OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+
+    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
+  }
+
   // Helper to derive Dest by a given builder-using Expression with the opcode
   // replaced with NewOp. Useful for generic building code. Not safe in general.
   // but does the right handling of ImplicitFlagClobber at least and must be

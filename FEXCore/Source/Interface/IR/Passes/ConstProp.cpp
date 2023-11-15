@@ -194,7 +194,6 @@ public:
 
 private:
   bool HandleConstantPools(IREmitter *IREmit, const IRListView& CurrentIR);
-  void FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR);
   void LoadMemStoreMemImmediatePooling(IREmitter *IREmit, const IRListView& CurrentIR);
   bool ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& CurrentIR,
       OrderedNode* CodeNode, IROp_Header* IROp);
@@ -264,29 +263,6 @@ bool ConstProp::HandleConstantPools(IREmitter *IREmit, const IRListView& Current
   }
 
   return Changed;
-}
-
-void ConstProp::FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR) {
-  // Make all FCMPs set no flags
-  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
-    if (IROp->Op == OP_FCMP) {
-      auto fcmp = IROp->CW<IR::IROp_FCmp>();
-      fcmp->Flags = 0;
-    }
-  }
-
-  // Set needed flags
-  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
-    if (IROp->Op == OP_GETHOSTFLAG) {
-      auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
-
-      auto fcmp = IREmit->GetOpHeader(ghf->Value)->CW<IR::IROp_FCmp>();
-      LOGMAN_THROW_AA_FMT(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
-      if(fcmp->Header.Op == OP_FCMP) {
-        fcmp->Flags |= 1 << ghf->Flag;
-      }
-    }
-  }
 }
 
 // LoadMem / StoreMem imm pooling
@@ -1261,7 +1237,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
     Changed = true;
   }
 
-  FCMPOptimization(IREmit, CurrentIR);
   LoadMemStoreMemImmediatePooling(IREmit, CurrentIR);
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
