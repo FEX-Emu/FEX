@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 26,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
         "movzx   edx, byte [esi+ecx]",
@@ -36,8 +36,7 @@
         "orr w6, w6, #0xffff0000",
         "mov w20, w6",
         "lsl w6, w20, #8",
-        "mov w21, w10",
-        "add w10, w21, #0x1 (1)",
+        "add w10, w10, #0x1 (1)",
         "tst w6, w6",
         "rmif x20, #23, #nzCv",
         "mov x26, x6",
@@ -50,11 +49,9 @@
         "orr w20, w20, w6",
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
-        "mov w20, w7",
-        "mov w21, w10",
-        "sub w26, w21, w20",
-        "eor w27, w21, w20",
-        "cmp w21, w20",
+        "sub w26, w10, w7",
+        "eor w27, w10, w7",
+        "cmp w10, w7",
         "cfinv"
       ]
     },
@@ -94,9 +91,9 @@
         "add w10, w10, #0x40 (64)",
         "add w11, w11, #0x40 (64)",
         "sub w5, w5, #0x40 (64)",
-        "mov w27, w5",
-        "sub w26, w27, #0x40 (64)",
-        "cmp w27, #0x40 (64)",
+        "sub w26, w5, #0x40 (64)",
+        "mov x27, x5",
+        "cmp w5, #0x40 (64)",
         "cfinv"
       ]
     }

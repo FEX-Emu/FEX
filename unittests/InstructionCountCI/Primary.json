@@ -1801,14 +1801,12 @@
       ]
     },
     "cmp ebx, ecx": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x39",
       "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "mov w21, w7",
-        "sub w26, w21, w20",
-        "eor w27, w21, w20",
-        "cmp w21, w20",
+        "sub w26, w7, w5",
+        "eor w27, w7, w5",
+        "cmp w7, w5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
@@ -1873,17 +1871,15 @@
       ]
     },
     "db 0x3B, 0xcb": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0x3B",
         "cmp ebx, ecx but modrm.rm as source"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w21, w5",
-        "sub w26, w21, w20",
-        "eor w27, w21, w20",
-        "cmp w21, w20",
+        "sub w26, w5, w7",
+        "eor w27, w5, w7",
+        "cmp w5, w7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
@@ -1940,7 +1936,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
-        "mov w27, w4",
+        "mov x27, x4",
         "sub w26, w27, #0x1 (1)",
         "cmp w27, #0x1 (1)",
         "mrs x20, nzcv",
@@ -1996,14 +1992,13 @@
       ]
     },
     "cmp eax, -1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "mov w21, w4",
-        "sub w26, w21, w20",
-        "eor w27, w21, w20",
-        "cmp w21, w20",
+        "sub w26, w4, w20",
+        "eor w27, w4, w20",
+        "cmp w4, w20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
