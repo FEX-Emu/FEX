@@ -1317,10 +1317,9 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
   auto Size = GetDstSize(Op);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = Size >= 4});
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
 
   auto ALUOp = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
