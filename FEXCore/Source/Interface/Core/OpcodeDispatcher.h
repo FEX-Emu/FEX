@@ -89,7 +89,6 @@ public:
     TYPE_RORI,
     TYPE_ROL,
     TYPE_ROLI,
-    TYPE_FCMP,
     TYPE_BEXTR,
     TYPE_BLSI,
     TYPE_BLSMSK,
@@ -1658,7 +1657,6 @@ private:
   void CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_BEXTR(OrderedNode *Src);
   void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BLSMSK(OrderedNode *Src);
@@ -1964,20 +1962,6 @@ private:
         .OneSrcImmediate = {
           .Src1 = Src1,
           .Imm = Shift,
-        },
-      }
-    };
-  }
-
-  void GenerateFlags_FCMP(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_FCMP,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
         },
       }
     };
