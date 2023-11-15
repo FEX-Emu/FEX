@@ -1430,21 +1430,48 @@ private:
   // NZCV from the Arm representation to an eXternal representation that's
   // totally not a euphemism for x86 or anything, nuh-uh.
   void ConvertNZCVToSSE() {
-    OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-    OrderedNode *C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
-    OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+    if (CTX->HostFeatures.SupportsFlagM2) {
+      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
 
-    // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
-    // this all with shifted-or's on non-flagm platforms.
-    ZeroNZCV();
+      // We need to set PF according to the unordered flag. We'd rather do this
+      // after axflag, since some impls fuse fcmp+axflag, so we want to do this
+      // after. We can recover "unordered" after axflag as (Z && !C), but
+      // there's no condition code for this so it would take 2 instructions
+      // instead of one, which seems worse than doing 1 op before and breaking
+      // the fusion.
+      //
+      // We set PF to unordered (V), but our PF representation is inverted so we
+      // actually set to !V. This is one instruction with the VC cond code.
+      OrderedNode *PFInvert =
+        _NZCVSelect(OpSize::i32Bit, CondClassType{COND_FNU}, _Constant(1), _Constant(0));
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i32Bit, C_inv, V));
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
+      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PFInvert);
 
-    // Note that we store PF inverted.
-    // TODO: We could maybe optimize this xor out for non-flagm platforms with
-    // bfi/bfxil?
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+      // For the rest, this one weird a64 instruction maps exactly to what x86
+      // needs. What a coincidence!
+      _AXFlag();
+      PossiblySetNZCVBits = ~0;
+
+      // It does assume we invert CF internally, which is still TODO for us. For
+      // now, add a cfinv to deal. Hopefully we delete this later.
+      CarryInvert();
+    } else {
+      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode *C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
+      OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+
+      // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
+      // this all with shifted-or's on non-flagm platforms.
+      ZeroNZCV();
+
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i32Bit, C_inv, V));
+      SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
+
+      // Note that we store PF inverted.
+      // TODO: We could maybe optimize this xor out for non-flagm platforms with
+      // bfi/bfxil?
+      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+    }
   }
 
   // Set x87 comparison flags based on the result set by Arm FCMP
