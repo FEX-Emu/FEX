@@ -1712,6 +1712,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Evaluate into flags") {
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Carry flag invert") {
   TEST_SINGLE(cfinv(), "cfinv");
 }
+TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Arm to eXternal FLAG") {
+  TEST_SINGLE(axflag(), "axflag");
+}
+TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: eXternal to Arm FLAG") {
+  TEST_SINGLE(xaflag(), "xaflag");
+}
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Conditional compare - register") {
   TEST_SINGLE(ccmn(Size::i32Bit, Reg::r29, Reg::r28, StatusFlags::None, Condition::CC_AL), "ccmn w29, w28, #nzcv, al");
   TEST_SINGLE(ccmn(Size::i32Bit, Reg::r29, Reg::r28, StatusFlags::Flag_N, Condition::CC_AL), "ccmn w29, w28, #Nzcv, al");

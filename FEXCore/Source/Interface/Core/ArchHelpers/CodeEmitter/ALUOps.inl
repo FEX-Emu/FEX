@@ -771,6 +771,16 @@ public:
     dc32(Op);
   }
 
+  void axflag() {
+    constexpr uint32_t Op = 0b1101'0101'0000'0000'0100'0000'0101'1111;
+    dc32(Op);
+  }
+
+  void xaflag() {
+    constexpr uint32_t Op = 0b1101'0101'0000'0000'0100'0000'0011'1111;
+    dc32(Op);
+  }
+
   // Conditional compare - register
   void ccmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
     constexpr uint32_t Op = 0b0011'1010'010 << 21;
