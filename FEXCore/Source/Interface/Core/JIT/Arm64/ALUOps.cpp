@@ -212,6 +212,11 @@ DEF_OP(RmifNZCV) {
   rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
 }
 
+DEF_OP(AXFlag) {
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM2, "Unsupported flagm2 op");
+  axflag();
+}
+
 ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
   case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;

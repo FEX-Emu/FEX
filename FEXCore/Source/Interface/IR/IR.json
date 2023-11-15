@@ -964,6 +964,10 @@
         "Desc": ["Invert carry flag in NZCV"],
         "HasSideEffects": true
       },
+      "AXFlag": {
+        "Desc": ["After an FCmp, converts NZCV flags from the Arm format to a mysterious eXternal format"],
+        "HasSideEffects": true
+      },
       "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
         "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
         "HasSideEffects": true
