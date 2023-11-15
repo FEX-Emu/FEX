@@ -1,0 +1,104 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "Sonic Mania movie player": {
+      "ExpectedInstructionCount": 29,
+      "Comment": "Used to be hottest block in Sonic Mania",
+      "x86Insts": [
+        "movzx   edx, byte [esi+ecx]",
+        "movzx   ecx, byte [esi+edi]",
+        "or      edx, 0xffff0000",
+        "shl     edx, 0x8",
+        "inc     esi",
+        "or      edx, ecx",
+        "mov     ecx, dword [ebp+0xc]",
+        "or      dword [eax], edx",
+        "add     eax, 0x4",
+        "cmp     esi, ebx"
+      ],
+      "ExpectedArm64ASM": [
+        "add x20, x5, x10",
+        "mov w20, w20",
+        "ldrb w6, [x20]",
+        "add x20, x11, x10",
+        "mov w20, w20",
+        "ldrb w5, [x20]",
+        "orr w6, w6, #0xffff0000",
+        "mov w20, w6",
+        "lsl w6, w20, #8",
+        "mov w21, w10",
+        "add w10, w21, #0x1 (1)",
+        "tst w6, w6",
+        "rmif x20, #23, #nzCv",
+        "mov x26, x6",
+        "orr w6, w6, w5",
+        "add x20, x9, #0xc (12)",
+        "mov w20, w20",
+        "ldr w5, [x20]",
+        "mov w20, w4",
+        "ldr w20, [x20]",
+        "orr w20, w20, w6",
+        "str w20, [x4]",
+        "add w4, w4, #0x4 (4)",
+        "mov w20, w7",
+        "mov w21, w10",
+        "sub w26, w21, w20",
+        "eor w27, w21, w20",
+        "cmp w21, w20",
+        "cfinv"
+      ]
+    },
+    "wine mscrt.dll memmove": {
+      "ExpectedInstructionCount": 22,
+      "Comment": "Hot in Sonic Mania",
+      "x86Insts": [
+        "movdqu  xmm0, [esi]",
+        "movdqu  xmm1, [esi+0x10]",
+        "movdqu  xmm2, [esi+0x20]",
+        "movdqu  xmm3, [esi+0x30]",
+        "movdqa  [edi], xmm0",
+        "movdqa  [edi+0x10], xmm1",
+        "movdqa  [edi+0x20], xmm2",
+        "movdqa  [edi+0x30], xmm3",
+        "add     esi, 0x40",
+        "add     edi, 0x40",
+        "sub     ecx, 0x40",
+        "cmp     ecx, 0x40"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, w10",
+        "ldr q16, [x20]",
+        "add x20, x10, #0x10 (16)",
+        "mov w20, w20",
+        "ldr q17, [x20]",
+        "add x20, x10, #0x20 (32)",
+        "mov w20, w20",
+        "ldr q18, [x20]",
+        "add x20, x10, #0x30 (48)",
+        "mov w20, w20",
+        "ldr q19, [x20]",
+        "str q16, [x11]",
+        "str q17, [x11, #16]",
+        "str q18, [x11, #32]",
+        "str q19, [x11, #48]",
+        "add w10, w10, #0x40 (64)",
+        "add w11, w11, #0x40 (64)",
+        "sub w5, w5, #0x40 (64)",
+        "mov w27, w5",
+        "sub w26, w27, #0x40 (64)",
+        "cmp w27, #0x40 (64)",
+        "cfinv"
+      ]
+    }
+  }
+}
