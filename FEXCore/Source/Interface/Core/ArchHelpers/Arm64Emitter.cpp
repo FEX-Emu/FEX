@@ -22,10 +22,6 @@
 #include <tuple>
 #include <utility>
 
-// We pin r26/r27 as PF/AF respectively, this is internal FEX ABI.
-constexpr auto REG_PF = FEXCore::ARMEmitter::Reg::r26;
-constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r27;
-
 namespace FEXCore::CPU {
 // Register x18 is unused in the current configuration.
 // This is due to it being a platform register on wine platforms.

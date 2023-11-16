@@ -11,6 +11,7 @@ $end_info$
 #include <cstdint>
 #include "FEXCore/Utils/DeferredSignalMutex.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/ArchHelpers//Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
@@ -220,7 +221,7 @@ namespace FEXCore::Context {
     return Frame->State.rip;
   }
 
-  uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) {
+  uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, bool WasInJIT, uint64_t *HostGPRs, uint64_t PSTATE) {
     const auto Frame = Thread->CurrentFrame;
     uint32_t EFLAGS{};
 
@@ -242,9 +243,23 @@ namespace FEXCore::Context {
       }
     }
 
-    // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
     uint32_t Packed_NZCV{};
-    memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
+    if (WasInJIT) {
+      // If we were in the JIT then NZCV is in the CPU's PSTATE object.
+      // Packed in to the same bit locations as RFLAG_NZCV_LOC.
+      Packed_NZCV = PSTATE;
+
+      // If we were in the JIT then PF and AF are in registers.
+      // Move them to the CPUState frame now.
+      Frame->State.pf_raw = HostGPRs[CPU::REG_PF.Idx()];
+      Frame->State.af_raw = HostGPRs[CPU::REG_AF.Idx()];
+    }
+    else {
+      // If we were not in the JIT then the NZCV state is stored in the CPUState RFLAG_NZCV_LOC.
+      // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
+      memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
+    }
+
     uint32_t OF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_RAW_LOC)) & 1;
     uint32_t CF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_RAW_LOC)) & 1;
     uint32_t ZF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_RAW_LOC)) & 1;

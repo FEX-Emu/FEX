@@ -174,16 +174,6 @@ namespace FEX::HLE {
         memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
       }
     }
-
-    // PF/AF internal values are hardcoded to r26/r27, so make sure we spill
-    // for that too when it's time to spill those registers. This is
-    // predicated on IgnoreMask to make sure we aren't spilling these while
-    // already in a syscall which is a spooky weird state. See comment in
-    // HandleDispatcherGuestSignal.
-    if (!(IgnoreMask & (3U << 26))) {
-      Thread->CurrentFrame->State.pf_raw = ArchHelpers::Context::GetArmReg(ucontext, 26);
-      Thread->CurrentFrame->State.af_raw = ArchHelpers::Context::GetArmReg(ucontext, 27);
-    }
 #endif
   }
 
@@ -1147,12 +1137,13 @@ namespace FEX::HLE {
     ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
     uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
+    const bool WasInJIT = Thread->CPUBackend->IsAddressInCodeBuffer(OldPC);
 
     // Spill the SRA regardless of signal handler type
     // We are going to be returning to the top of the dispatcher which will fill again
     // Otherwise we might load garbage
     if (Config.StaticRegisterAllocation) {
-      if (Thread->CPUBackend->IsAddressInCodeBuffer(OldPC)) {
+      if (WasInJIT) {
         uint32_t IgnoreMask{};
 #ifdef _M_ARM_64
         if (Frame->InSyscallInfo != 0) {
@@ -1217,7 +1208,7 @@ namespace FEX::HLE {
     // Backup where we think the RIP currently is
     ContextBackup->OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
     // Calculate eflags upfront.
-    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread);
+    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread, WasInJIT, ArchHelpers::Context::GetArmGPRs(ucontext), ArchHelpers::Context::GetArmPState(ucontext));
 
     if (Is64BitMode) {
       NewGuestSP = SetupFrame_x64(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);

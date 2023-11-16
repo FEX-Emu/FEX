@@ -179,7 +179,7 @@ namespace Context {
     Context->Esp = State.gregs[FEXCore::X86State::REG_RSP];
 
     Context->Eip = State.rip;
-    Context->EFlags = CTX->ReconstructCompactedEFLAGS(Thread);
+    Context->EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
 
     Context->SegEs = State.es_idx;
     Context->SegCs = State.cs_idx;

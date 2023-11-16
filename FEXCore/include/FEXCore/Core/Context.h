@@ -270,8 +270,20 @@ namespace FEXCore::Context {
       ///< State reconstruction helpers
       ///< Reconstructs the guest RIP from the passed in thread context and related Host PC.
       FEX_DEFAULT_VISIBILITY virtual uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) = 0;
-      ///< Reconstructs a compacted EFLAGS from FEX's internal EFLAG representation.
-      FEX_DEFAULT_VISIBILITY virtual uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) = 0;
+      /**
+       * @brief Reconstructs a compacted EFLAGS from FEX's internal EFLAG representation.
+       *
+       * @param Thread The thread getting the state reconstructed
+       * @param WasInJIT If the code was in the JIT at the time.
+       * @param HostGPRs The host Arm64 GPRs at the point of state inside the JIT.
+       * @param PSTATE The Arm64 PState value.
+       *
+       * If WasInJIT is false then HostGPRs and PSTATE is ignored, with the assumption that the FEX JIT has already stored all state in to the
+       * ThreadState object.
+       *
+       * @return x86 EFLAGS reconstructed
+       */
+      FEX_DEFAULT_VISIBILITY virtual uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, bool WasInJIT, uint64_t *HostGPRs, uint64_t PSTATE) = 0;
       ///< Sets FEX's internal EFLAGS representation to the passed in compacted form.
       FEX_DEFAULT_VISIBILITY virtual void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) = 0;
 
