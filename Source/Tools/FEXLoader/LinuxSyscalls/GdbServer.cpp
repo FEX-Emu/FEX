@@ -44,12 +44,13 @@ $end_info$
 #endif
 #include <errno.h>
 #include <fcntl.h>
-#include <fmt/format.h>
+#include <poll.h>
 #include <signal.h>
 #include <stddef.h>
 #include <string_view>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <utility>
 
@@ -71,6 +72,11 @@ void GdbServer::Break(int signal) {
 void GdbServer::WaitForThreadWakeup() {
   // Wait for gdbserver to tell us to wake up
   ThreadBreakEvent.Wait();
+}
+
+GdbServer::~GdbServer() {
+  CoreShuttingDown = true;
+  close(ListenSocket);
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
@@ -141,6 +147,10 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
     ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
   }
   return ss.str();
+}
+
+static fextl::string encodeHex(std::string_view str) {
+  return encodeHex(reinterpret_cast<const unsigned char*>(str.data()), str.size());
 }
 
 static fextl::string getThreadName(uint32_t ThreadID) {
@@ -818,7 +828,6 @@ GdbServer::HandledPacketType GdbServer::handleMemory(const fextl::string &packet
   }
 }
 
-
 GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet) {
   const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
   const auto MatchStr = [](const fextl::string &Str, const char *str) -> bool { return Str.rfind(str, 0) == 0; };
@@ -870,12 +879,17 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     SupportedFeatures += "QNonStop+;";
 
     SupportedFeatures += "qXfer:osdata:read+;";
+    SupportedFeatures += "QStartNoAckMode+;";
 
-    // Causes GDB to crash?
-    // SupportedFeatures += "QStartNoAckMode+;";
+    // TODO: Support breakpoints
+    // SupportedFeatures += "swbreak+;";
+    // SupportedFeatures += "hwbreak+;";
+    // SupportedFeatures += "BreakpointCommands+;";
+
+    // TODO: If we want to support conditional breakpoints then we need to support single stepping.
+    // SupportedFeatures += "ConditionalBreakpoints+;";
 
     for (auto &Feature : Features) {
-
       if (MatchStr(Feature, "swbreak+")) {
         SupportedFeatures += "swbreak+;";
       }
@@ -981,6 +995,61 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     }
 
     return {"OK", HandledPacketType::TYPE_ACK};
+  }
+
+  // lldb specific queries
+  if (match("qHostInfo")) {
+    // Returns Key:Value pairs separated by ;
+    // eg:
+    // triple:7838365f36342d70632d6c696e75782d676e75;
+    // ptrsize:8;
+    // distribution_id:7562756e7475;
+    // watchpoint_exceptions_received:after;
+    // endian:little;
+    // os_version:6.3.3;
+    // os_build:362e332e332d3036303330332d67656e65726963;
+    // os_kernel:2332303233303531373133333620534d5020505245454d50545f44594e414d494320576564204d61792031372031333a34353a3139205554432032303233;
+    // hostname:7279616e682d545235303030;
+    fextl::string HostFeatures{};
+
+    // 64-bit always returned for the host environment.
+    // qProcessInfo will return i386 or not.
+    HostFeatures += fextl::fmt::format("triple:{};", encodeHex("x86_64-pc-linux-gnu"));
+    HostFeatures += "ptrsize:8;";
+
+    // Always little-endian.
+    HostFeatures += "endian:little;";
+
+    struct utsname buf{};
+    if (uname(&buf) != -1) {
+      uint32_t Major{};
+      uint32_t Minor{};
+      uint32_t Patch{};
+
+      // Parse kernel version in the form of `<Major>.<Minor>.<Patch>[Optional Data]`
+      const auto End = buf.release + sizeof(buf.release);
+      auto Results = std::from_chars(buf.release, End, Major, 10);
+      Results = std::from_chars(Results.ptr + 1, End, Minor, 10);
+      Results = std::from_chars(Results.ptr + 1, End, Patch, 10);
+
+      HostFeatures += fextl::fmt::format("os_version:{}.{}.{};", Major, Minor, Patch);
+
+      // os_build returns the release untouched.
+      HostFeatures += fextl::fmt::format("os_build:{};", encodeHex(buf.release));
+      HostFeatures += fextl::fmt::format("os_kernel:{};", encodeHex(buf.version));
+      HostFeatures += fextl::fmt::format("hostname:{};", encodeHex(buf.nodename));
+    }
+
+    // TODO: distribution_id should be fetched with `lsb_release -i`
+    // TODO: watchpoint_exceptions_received is unsupported
+    return {std::move(HostFeatures), HandledPacketType::TYPE_ACK};
+  }
+  if (match("qGetWorkingDir")) {
+    char Tmp[PATH_MAX];
+    if (getcwd(Tmp, PATH_MAX)) {
+      return {encodeHex(Tmp), HandledPacketType::TYPE_ACK};
+    }
+    return {"E00", HandledPacketType::TYPE_ACK};
   }
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
@@ -1224,11 +1293,45 @@ void GdbServer::SendPacketPair(const HandledPacketType& response) {
   }
 }
 
+GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
+  while (!CoreShuttingDown.load()) {
+    struct pollfd PollFD {
+      .fd = ListenSocket,
+      .events = POLLIN | POLLPRI | POLLRDHUP,
+      .revents = 0,
+    };
+    int Result = ppoll(&PollFD, 1, nullptr, nullptr);
+    if (Result > 0) {
+      if (PollFD.revents & POLLIN) {
+        CommsStream = OpenSocket();
+        return WaitForConnectionResult::CONNECTION;
+      }
+      else if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL)) {
+        // Listen socket error or shutting down
+        LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
+        return WaitForConnectionResult::ERROR;
+      }
+    }
+    else if (Result == -1) {
+      LogMan::Msg::EFmt("[GdbServer] poll failure: {}", errno);
+    }
+  }
+
+  LogMan::Msg::EFmt("[GdbServer] Shutting Down");
+  return WaitForConnectionResult::ERROR;
+}
+
 void GdbServer::GdbServerLoop() {
   OpenListenSocket();
+  if (ListenSocket == -1) {
+    // Couldn't open socket, just exit.
+    return;
+  }
 
   while (!CoreShuttingDown.load()) {
-    CommsStream = OpenSocket();
+    if (WaitForConnection() == WaitForConnectionResult::ERROR) {
+      break;
+    }
 
     HandledPacketType response{};
 
@@ -1281,6 +1384,7 @@ void GdbServer::GdbServerLoop() {
   unlink(GdbUnixSocketPath.c_str());
 }
 static void* ThreadHandler(void *Arg) {
+  FEXCore::Threads::SetThreadName("FEX:gdbserver");
   auto This = reinterpret_cast<FEX::GdbServer*>(Arg);
   This->GdbServerLoop();
   return nullptr;
@@ -1293,7 +1397,7 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OpenListenSocket() {
-  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetServerMountFolder());
+  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetTempFolder());
   if (FHU::Filesystem::CreateDirectory(GdbUnixPath) == FHU::Filesystem::CreateDirectoryResult::ERROR) {
     LogMan::Msg::EFmt("[GdbServer] Couldn't create gdbserver folder {}", GdbUnixPath);
     return;
@@ -1313,8 +1417,19 @@ void GdbServer::OpenListenSocket() {
   size_t SizeOfAddr = offsetof(sockaddr_un, sun_path) + GdbUnixSocketPath.size();
 
   // Bind the socket to the path
-  int Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
-  if (Result == -1) {
+  int Result{};
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
+    if (Result == 0) {
+      break;
+    }
+
+    // This can happen periodically with execve. unlink the path and try again.
+    // The PID is reused but FEX likely started a gdbserver thread for the PID before execve.
+    unlink(GdbUnixSocketPath.c_str());
+  }
+
+  if (Result != 0) {
     LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
     close(ListenSocket);
     ListenSocket = -1;

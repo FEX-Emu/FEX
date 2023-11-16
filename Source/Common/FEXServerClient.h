@@ -50,6 +50,7 @@ namespace FEXServerClient {
   fextl::string GetServerLockFolder();
   fextl::string GetServerLockFile();
   fextl::string GetServerRootFSLockFile();
+  fextl::string GetTempFolder();
   fextl::string GetServerMountFolder();
   fextl::string GetServerSocketName();
   int GetServerFD();
