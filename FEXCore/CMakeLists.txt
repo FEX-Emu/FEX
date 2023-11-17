@@ -38,7 +38,12 @@ check_cxx_source_compiles(
   HAS_CLANG_PRESERVE_ALL)
 unset(CMAKE_REQUIRED_FLAGS)
 if (HAS_CLANG_PRESERVE_ALL)
-  message(STATUS "Has clang::preserve_all")
+  if (MINGW_BUILD)
+    message(STATUS "Ignoring broken clang::preserve_all support")
+    set(HAS_CLANG_PRESERVE_ALL FALSE)
+  else()
+    message(STATUS "Has clang::preserve_all")
+  endif()
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
