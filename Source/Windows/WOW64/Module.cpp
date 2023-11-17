@@ -460,6 +460,7 @@ public:
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
 
       Context::UnlockJITContext();
+      Wow64ProcessPendingCrossProcessItems();
       ReturnRAX = static_cast<uint64_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX),
                                                              reinterpret_cast<UINT *>(ReturnRSP + 4)));
       Context::LockJITContext();

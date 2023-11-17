@@ -22,12 +22,13 @@ EXPORTS
   Wow64PassExceptionToGuest @16
   Wow64PrepareForDebuggerAttach @17 PRIVATE
   Wow64PrepareForException @18
-  Wow64RaiseException @19
-  Wow64ShallowThunkAllocObjectAttributes32TO64_FNC @20 PRIVATE
-  Wow64ShallowThunkAllocSecurityQualityOfService32TO64_FNC @21 PRIVATE
-  Wow64ShallowThunkSIZE_T32TO64 @22 PRIVATE
-  Wow64ShallowThunkSIZE_T64TO32 @23 PRIVATE
-  Wow64SuspendLocalThread @24
-  Wow64SystemServiceEx @25
-  Wow64ValidateUserCallTarget @26 PRIVATE
-  Wow64ValidateUserCallTargetFilter @27 PRIVATE
+  Wow64ProcessPendingCrossProcessItems @19
+  Wow64RaiseException @20
+  Wow64ShallowThunkAllocObjectAttributes32TO64_FNC @21 PRIVATE
+  Wow64ShallowThunkAllocSecurityQualityOfService32TO64_FNC @22 PRIVATE
+  Wow64ShallowThunkSIZE_T32TO64 @23 PRIVATE
+  Wow64ShallowThunkSIZE_T64TO32 @24 PRIVATE
+  Wow64SuspendLocalThread @25 PRIVATE
+  Wow64SystemServiceEx @26
+  Wow64ValidateUserCallTarget @27 PRIVATE
+  Wow64ValidateUserCallTargetFilter @28 PRIVATE
