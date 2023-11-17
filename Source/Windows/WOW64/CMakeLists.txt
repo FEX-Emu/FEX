@@ -13,7 +13,8 @@ target_link_libraries(wow64fex
   FEXCore
   Common
   CommonTools
-  wow64
+  wow64_ex
+  ntdll_ex
   ntdll
 )
 
