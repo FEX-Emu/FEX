@@ -5,6 +5,7 @@ add_library(wow64fex SHARED
 
 target_include_directories(wow64fex PRIVATE
   "${CMAKE_SOURCE_DIR}/Source/Windows/include/"
+  "${CMAKE_SOURCE_DIR}/Source/Windows/"
   "${CMAKE_SOURCE_DIR}/Source/"
 )
 
@@ -13,6 +14,7 @@ target_link_libraries(wow64fex
   FEXCore
   Common
   CommonTools
+  CommonWindows
   wow64_ex
   ntdll_ex
   ntdll
