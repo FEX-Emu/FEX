@@ -11,6 +11,7 @@ $end_info$
 #include <cstdint>
 #include "FEXCore/Utils/DeferredSignalMutex.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/ArchHelpers//Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
@@ -220,7 +221,7 @@ namespace FEXCore::Context {
     return Frame->State.rip;
   }
 
-  uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) {
+  uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, bool WasInJIT, uint64_t *HostGPRs, uint64_t PSTATE) {
     const auto Frame = Thread->CurrentFrame;
     uint32_t EFLAGS{};
 
@@ -242,9 +243,23 @@ namespace FEXCore::Context {
       }
     }
 
-    // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
     uint32_t Packed_NZCV{};
-    memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
+    if (WasInJIT) {
+      // If we were in the JIT then NZCV is in the CPU's PSTATE object.
+      // Packed in to the same bit locations as RFLAG_NZCV_LOC.
+      Packed_NZCV = PSTATE;
+
+      // If we were in the JIT then PF and AF are in registers.
+      // Move them to the CPUState frame now.
+      Frame->State.pf_raw = HostGPRs[CPU::REG_PF.Idx()];
+      Frame->State.af_raw = HostGPRs[CPU::REG_AF.Idx()];
+    }
+    else {
+      // If we were not in the JIT then the NZCV state is stored in the CPUState RFLAG_NZCV_LOC.
+      // SF/ZF/CF/OF are packed in a 32-bit value in RFLAG_NZCV_LOC.
+      memcpy(&Packed_NZCV, &Frame->State.flags[X86State::RFLAG_NZCV_LOC], sizeof(Packed_NZCV));
+    }
+
     uint32_t OF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_OF_RAW_LOC)) & 1;
     uint32_t CF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_CF_RAW_LOC)) & 1;
     uint32_t ZF = (Packed_NZCV >> IR::OpDispatchBuilder::IndexNZCV(X86State::RFLAG_ZF_RAW_LOC)) & 1;
@@ -258,13 +273,13 @@ namespace FEXCore::Context {
 
     // PF calculation is deferred, calculate it now.
     // Popcount the 8-bit flag and then extract the lower bit.
-    uint32_t PFByte = Frame->State.flags[X86State::RFLAG_PF_RAW_LOC];
+    uint32_t PFByte = Frame->State.pf_raw & 0xff;
     uint32_t PF = std::popcount(PFByte ^ 1) & 1;
     EFLAGS |= PF << X86State::RFLAG_PF_RAW_LOC;
 
     // AF calculation is deferred, calculate it now.
     // XOR with PF byte and extract bit 4.
-    uint32_t AF = ((Frame->State.flags[X86State::RFLAG_AF_RAW_LOC] ^ PFByte) & (1 << 4)) ? 1 : 0;
+    uint32_t AF = ((Frame->State.af_raw ^ PFByte) & (1 << 4)) ? 1 : 0;
     EFLAGS |= AF << X86State::RFLAG_AF_RAW_LOC;
 
     return EFLAGS;
@@ -284,11 +299,11 @@ namespace FEXCore::Context {
           // AF stored in bit 4 in our internal representation. It is also
           // XORed with byte 4 of the PF byte, but we write that as zero here so
           // we don't need any special handling for that.
-          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? (1 << 4) : 0;
+          Frame->State.af_raw = (EFLAGS & (1U << i)) ? (1 << 4) : 0;
           break;
         case X86State::RFLAG_PF_RAW_LOC:
           // PF is inverted in our internal representation.
-          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 0 : 1;
+          Frame->State.pf_raw = (EFLAGS & (1U << i)) ? 0 : 1;
           break;
         default:
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;

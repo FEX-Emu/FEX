@@ -89,7 +89,6 @@ public:
     TYPE_RORI,
     TYPE_ROL,
     TYPE_ROLI,
-    TYPE_FCMP,
     TYPE_BEXTR,
     TYPE_BLSI,
     TYPE_BLSMSK,
@@ -121,8 +120,6 @@ public:
   }
 
   void StartNewBlock() {
-    flagsOp = SelectionFlag::Nothing;
-
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
@@ -954,26 +951,12 @@ protected:
   }
 
 private:
-  enum class SelectionFlag {
-    Nothing,  // must rely on x86 flags
-    CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-    AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-    FCMP,     // flags were set by a ucomis* / comis*
-  };
-
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;
     bool HaveEmitted;
   };
 
   FEXCore::Context::ContextImpl *CTX{};
-
-  SelectionFlag flagsOp{};
-  uint8_t flagsOpSize{};
-  OrderedNode* flagsOpDest{};
-  OrderedNode* flagsOpSrc{};
-  OrderedNode* flagsOpDestSigned{};
-  OrderedNode* flagsOpSrcSigned{};
 
   constexpr static unsigned FullNZCVMask =
     (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
@@ -1376,10 +1359,12 @@ private:
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
-    flagsOp = SelectionFlag::Nothing;
-
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
+    } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+    } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       if (ValueOffset || MustMask)
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1432,9 +1417,88 @@ private:
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert),
                            _Constant(1), _Constant(0));
       }
+    } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+    } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       return _LoadFlag(BitOffset);
     }
+  }
+
+  // Set SSE comparison flags based on the result set by Arm FCMP. This converts
+  // NZCV from the Arm representation to an eXternal representation that's
+  // totally not a euphemism for x86 or anything, nuh-uh.
+  void ConvertNZCVToSSE() {
+    if (CTX->HostFeatures.SupportsFlagM2) {
+      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
+
+      // We need to set PF according to the unordered flag. We'd rather do this
+      // after axflag, since some impls fuse fcmp+axflag, so we want to do this
+      // after. We can recover "unordered" after axflag as (Z && !C), but
+      // there's no condition code for this so it would take 2 instructions
+      // instead of one, which seems worse than doing 1 op before and breaking
+      // the fusion.
+      //
+      // We set PF to unordered (V), but our PF representation is inverted so we
+      // actually set to !V. This is one instruction with the VC cond code.
+      OrderedNode *PFInvert =
+        _NZCVSelect(OpSize::i32Bit, CondClassType{COND_FNU}, _Constant(1), _Constant(0));
+
+      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PFInvert);
+
+      // For the rest, this one weird a64 instruction maps exactly to what x86
+      // needs. What a coincidence!
+      _AXFlag();
+      PossiblySetNZCVBits = ~0;
+
+      // It does assume we invert CF internally, which is still TODO for us. For
+      // now, add a cfinv to deal. Hopefully we delete this later.
+      CarryInvert();
+    } else {
+      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode *C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
+      OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+
+      // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
+      // this all with shifted-or's on non-flagm platforms.
+      ZeroNZCV();
+
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i32Bit, C_inv, V));
+      SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
+
+      // Note that we store PF inverted.
+      // TODO: We could maybe optimize this xor out for non-flagm platforms with
+      // bfi/bfxil?
+      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+    }
+  }
+
+  // Set x87 comparison flags based on the result set by Arm FCMP. Clobbers
+  // NZCV on flagm2 platforms.
+  void ConvertNZCVToX87() {
+    OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+
+    if (CTX->HostFeatures.SupportsFlagM2) {
+      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
+
+      // Convert to x86 flags, saves us from or'ing after.
+      _AXFlag();
+      PossiblySetNZCVBits = ~0;
+
+      // Copy the values. CF is inverted from the axflag result, ZF is as-is.
+      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
+      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
+    } else {
+      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode *N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+
+      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
+      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
+    }
+
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
@@ -1668,7 +1732,6 @@ private:
   void CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_BEXTR(OrderedNode *Src);
   void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BLSMSK(OrderedNode *Src);
@@ -1974,20 +2037,6 @@ private:
         .OneSrcImmediate = {
           .Src1 = Src1,
           .Imm = Shift,
-        },
-      }
-    };
-  }
-
-  void GenerateFlags_FCMP(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_FCMP,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
         },
       }
     };

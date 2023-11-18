@@ -2755,7 +2755,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1680]",
+        "ldr x0, [x28, #1696]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2824,7 +2824,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1680]",
+        "ldr x0, [x28, #1696]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2893,7 +2893,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1680]",
+        "ldr x0, [x28, #1696]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -3307,114 +3307,78 @@
       ]
     },
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
         "fcmp s16, s17",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "mov w27, #0x0",
+        "cset w20, eq",
+        "cset w21, lo",
+        "cset w22, vs",
+        "orr w21, w21, w22",
+        "lsl x21, x21, #29",
+        "orr w20, w20, w22",
+        "orr w20, w21, w20, lsl #30",
+        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
         "fcmp d16, d17",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "mov w27, #0x0",
+        "cset w20, eq",
+        "cset w21, lo",
+        "cset w22, vs",
+        "orr w21, w21, w22",
+        "lsl x21, x21, #29",
+        "orr w20, w20, w22",
+        "orr w20, w21, w20, lsl #30",
+        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
         "fcmp s16, s17",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "mov w27, #0x0",
+        "cset w20, eq",
+        "cset w21, lo",
+        "cset w22, vs",
+        "orr w21, w21, w22",
+        "lsl x21, x21, #29",
+        "orr w20, w20, w22",
+        "orr w20, w21, w20, lsl #30",
+        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mrs x20, nzcv",
         "fcmp d16, d17",
-        "cset x21, eq",
-        "csinc x21, x21, xzr, vc",
-        "cset x1, lt",
-        "bfi x21, x1, #1, #1",
-        "cset x1, vs",
-        "bfi x21, x1, #2, #1",
-        "ubfx x22, x21, #1, #1",
-        "ubfx x23, x21, #0, #1",
-        "ubfx x21, x21, #2, #1",
-        "bfi w20, w22, #29, #1",
-        "bfi w20, w23, #30, #1",
-        "eor w21, w21, #0x1",
-        "strb w21, [x28, #706]",
-        "mov w21, #0x0",
-        "mov w22, #0x90000000",
-        "bic x20, x20, x22",
-        "strb w21, [x28, #708]",
+        "mov w27, #0x0",
+        "cset w20, eq",
+        "cset w21, lo",
+        "cset w22, vs",
+        "orr w21, w21, w22",
+        "lsl x21, x21, #29",
+        "orr w20, w20, w22",
+        "orr w20, w21, w20, lsl #30",
+        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -4374,7 +4338,7 @@
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2016]",
+        "ldr q2, [x28, #2032]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.2d, v17.2d, v2.2d"
       ]
@@ -4385,7 +4349,7 @@
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1576]",
+        "ldr x0, [x28, #1592]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.d, z17.d, z2.d"
@@ -4397,7 +4361,7 @@
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #1984]",
+        "ldr q2, [x28, #2000]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.4s, v17.4s, v2.4s"
       ]
@@ -4408,7 +4372,7 @@
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1560]",
+        "ldr x0, [x28, #1576]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.s, z17.s, z2.s"

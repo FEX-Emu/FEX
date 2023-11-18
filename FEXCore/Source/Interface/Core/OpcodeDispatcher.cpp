@@ -1268,14 +1268,6 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto ALUOp = _And(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   GenerateFlags_Logical(Op, ALUOp, Dest, Src);
-
-  flagsOp = SelectionFlag::AND;
-  flagsOpDest = ALUOp;
-  if (Size >= 4) {
-    flagsOpSize = Size;
-  } else {
-    flagsOpSize = 4;  // assuming ZEXT semantics here
-  }
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
@@ -1325,26 +1317,14 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
   auto Size = GetDstSize(Op);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = Size >= 4});
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
 
   auto ALUOp = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   OrderedNode *Result = ALUOp;
   GenerateFlags_SUB(Op, Result, Dest, Src);
-
-  flagsOp = SelectionFlag::CMP;
-  if (Size >= 4) {
-    flagsOpSize = Size;
-    flagsOpDestSigned = flagsOpDest = Dest;
-    flagsOpSrcSigned = flagsOpSrc = Src;
-  } else {
-    flagsOpSize = 4;
-    flagsOpDestSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpDest = Dest);
-    flagsOpSrcSigned = _Sbfe(OpSize::i64Bit, Size * 8, 0, flagsOpSrc = Src);
-  }
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
@@ -3683,7 +3663,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
   Result = _Add(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
@@ -3714,7 +3694,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
   Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);

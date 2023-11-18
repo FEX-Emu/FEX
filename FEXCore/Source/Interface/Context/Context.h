@@ -107,7 +107,7 @@ namespace FEXCore::Context {
       void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) override;
 
       uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) override;
-      uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread) override;
+      uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, bool WasInJIT, uint64_t *HostGPRs, uint64_t PSTATE) override;
       void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) override;
 
       /**

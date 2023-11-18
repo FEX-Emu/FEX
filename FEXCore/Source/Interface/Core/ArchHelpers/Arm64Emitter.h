@@ -53,6 +53,10 @@ constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v1;
 constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_16B = FEXCore::ARMEmitter::PReg::p6;
 constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_32B = FEXCore::ARMEmitter::PReg::p7;
 
+// We pin r26/r27 as PF/AF respectively, this is internal FEX ABI.
+constexpr auto REG_PF = FEXCore::ARMEmitter::Reg::r26;
+constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r27;
+
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {

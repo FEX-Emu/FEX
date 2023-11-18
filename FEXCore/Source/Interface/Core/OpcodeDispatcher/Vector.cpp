@@ -3422,20 +3422,21 @@ void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
   const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  OrderedNode *Res = _FCmp(ElementSize, Src1, Src2,
-    (1 << FCMP_FLAG_EQ) |
-    (1 << FCMP_FLAG_LT) |
-    (1 << FCMP_FLAG_UNORDERED));
 
-  GenerateFlags_FCMP(Op, Res, Src1, Src2);
+  CachedNZCV = nullptr;
+  _FCmp(ElementSize, Src1, Src2);
+  PossiblySetNZCVBits = ~0;
+  ConvertNZCVToSSE();
 
-  flagsOp = SelectionFlag::FCMP;
-  flagsOpDest = Src1;
-  flagsOpSrc = Src2;
-  flagsOpSize = GetSrcSize(Op);
+  // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so PF[4] is
+  // 0 so the XOR with PF will have no effect, so setting the AF byte to zero
+  // will indeed zero AF as intended.
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
 }
 
 template
