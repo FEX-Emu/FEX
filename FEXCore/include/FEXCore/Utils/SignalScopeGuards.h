@@ -12,6 +12,7 @@
 #include <sys/syscall.h>
 #endif
 #include <unistd.h>
+#include <variant>
 
 namespace FEXCore {
 #ifndef _WIN32
@@ -219,20 +220,23 @@ namespace FEXCore {
   // Like GuardSignalDeferringSection but falls back to masking signals when Thread is nullptr
   template<template<typename> class LockType = std::unique_lock, typename MutexType>
   [[nodiscard]] static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState *Thread, uint64_t Mask = ~0ULL) {
+#ifndef _WIN32
+    using ExtraGuard = std::variant<ScopedSignalMasker, DeferredSignalRefCountGuard>;
+#else
+    using ExtraGuard = std::variant<std::monostate, DeferredSignalRefCountGuard>;
+#endif
+
     struct {
-      std::optional<DeferredSignalRefCountGuard> refcount;
-#ifndef _WIN32
-      std::optional<ScopedSignalMasker> mask;
-#endif
+      ExtraGuard refcount_or_mask;
       LockType<MutexType> lock;
-    } scope_guard;
-    if (Thread) {
-      scope_guard.refcount.emplace(Thread);
-    } else {
+    } scope_guard {
+        Thread ? ExtraGuard { DeferredSignalRefCountGuard { Thread } }
 #ifndef _WIN32
-      scope_guard.mask.emplace(Mask);
+                : ExtraGuard { ScopedSignalMasker { Mask } }
+#else
+                : ExtraGuard { }
 #endif
-    }
+    };
     scope_guard.lock = LockType<MutexType> { mutex };
     return scope_guard;
   }
