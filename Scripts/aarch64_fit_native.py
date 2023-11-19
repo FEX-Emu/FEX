@@ -2,7 +2,7 @@
 import re
 import sys
 import subprocess
-from pkg_resources import parse_version
+import packaging.version
 
 # Order this list from oldest to newest
 # try not to list something newer than our minimum compiler supported version
@@ -84,12 +84,23 @@ with open(sys.argv[1]) as cpuinfo_file:
 largest_big = "cortex-a57"
 largest_little = "cortex-a53"
 
+try:
+    parsed_clang_version = packaging.version.parse(clang_version)
+except packaging.version.InvalidVersion:
+    sys.exit("Invalid clang version: {}".format(clang_version))
+
 for core in cpuinfo:
     if BigCoreIDs.get(core):
         IDList = BigCoreIDs.get(core)
         if type(IDList) is list:
             for ID in IDList:
-                if parse_version(clang_version) >= parse_version(ID[1]):
+                try:
+                    parsed_id = packaging.version.parse(ID[1])
+                except packaging.version.InvalidVersion:
+                    sys.exit("Invalid version ID: {}".format(ID[1]))
+                    exit(1)
+
+                if parsed_clang_version >= parsed_id:
                     largest_big = ID[0]
         else:
             largest_big = BigCoreIDs.get(core)
