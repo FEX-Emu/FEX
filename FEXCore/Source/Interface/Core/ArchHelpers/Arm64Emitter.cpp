@@ -591,6 +591,7 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
     // Disable FPCR.NEP and FPCR.AH
     // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
     // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
+    //         Also interacts with RPRES to change reciprocal/rsqrt precision from 8-bit mantissa to 12-bit.
     //
     // Additional interesting AFP bits:
     // FIZ(0): Flush Inputs to Zero

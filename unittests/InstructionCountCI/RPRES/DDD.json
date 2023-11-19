@@ -2,6 +2,7 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
+      "AFP",
       "RPRES"
     ],
     "DisabledHostFeatures": [
