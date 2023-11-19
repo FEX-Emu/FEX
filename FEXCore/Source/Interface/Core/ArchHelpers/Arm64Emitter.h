@@ -132,21 +132,21 @@ protected:
 
   void SpillForABICall(bool SupportsPreserveAllABI, FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
-      SpillForPreserveAllABICall(TMP1, true);
+      SpillForPreserveAllABICall(TmpReg, FPRs);
     }
     else {
-      SpillStaticRegs(TMP1);
-      PushDynamicRegsAndLR(TMP1);
+      SpillStaticRegs(TmpReg, FPRs);
+      PushDynamicRegsAndLR(TmpReg);
     }
   }
 
   void FillForABICall(bool SupportsPreserveAllABI, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
-      FillForPreserveAllABICall(true);
+      FillForPreserveAllABICall(FPRs);
     }
     else {
       PopDynamicRegsAndLR();
-      FillStaticRegs();
+      FillStaticRegs(FPRs);
     }
   }
 
