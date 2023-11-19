@@ -16,7 +16,7 @@ $end_info$
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/DeferredSignalMutex.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
