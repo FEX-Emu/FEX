@@ -72,7 +72,7 @@ namespace FEXCore::Core {
   static_assert(std::is_trivially_copyable_v<NonAtomicRefCounter<uint64_t>>, "needs to be trivially copyable");
   static_assert(sizeof(NonAtomicRefCounter<uint64_t>) == sizeof(uint64_t), "Needs to be correct size");
 
-  struct FEX_PACKED CPUState {
+  struct CPUState {
     // Allows more efficient handling of the register
     // file in the event AVX is not supported.
     union XMMRegs {
