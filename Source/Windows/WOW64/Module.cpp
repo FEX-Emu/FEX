@@ -518,7 +518,7 @@ void BTCpuProcessInit() {
   CTX->InitializeContext();
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
-  CTX->InitCore(0, 0);
+  CTX->InitCore();
 
   CpuInfo.ProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 
@@ -555,7 +555,7 @@ void BTCpuProcessInit() {
 }
 
 NTSTATUS BTCpuThreadInit() {
-  GetTLS().ThreadState() = CTX->CreateThread(nullptr, 0);
+  GetTLS().ThreadState() = CTX->CreateThread(0, 0);
 
   std::scoped_lock Lock(ThreadSuspendLock);
   InitializedWOWThreads.emplace(GetCurrentThreadId());
