@@ -74,7 +74,7 @@ namespace FEXCore::Context {
       // Context base class implementation.
       bool InitializeContext() override;
 
-      FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) override;
+      bool InitCore() override;
 
       void SetExitHandler(ExitHandler handler) override;
       ExitHandler GetExitHandler() const override;
@@ -84,21 +84,17 @@ namespace FEXCore::Context {
       void Stop() override;
       void Step() override;
 
-      ExitReason RunUntilExit() override;
+      ExitReason RunUntilExit(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) override;
 
       void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) override;
       void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
 
-      int GetProgramStatus() const override;
-
-      ExitReason GetExitReason() override;
-
       bool IsDone() const override;
 
-      void GetCPUState(FEXCore::Core::CPUState *State) const override;
-      void SetCPUState(const FEXCore::Core::CPUState *State) override;
+      void GetCPUState(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CPUState *State) const override;
+      void SetCPUState(FEXCore::Core::InternalThreadState *Thread, const FEXCore::Core::CPUState *State) override;
 
       void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
@@ -256,7 +252,6 @@ namespace FEXCore::Context {
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
-    FEXCore::Core::InternalThreadState* ParentThread{};
     fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
     bool NeedToCheckXID{true};
@@ -403,7 +398,6 @@ namespace FEXCore::Context {
 
     ThreadsState GetThreads() override  {
       return ThreadsState {
-        .ParentThread = ParentThread,
         .Threads = &Threads,
       };
     }

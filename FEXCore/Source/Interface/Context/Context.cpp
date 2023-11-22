@@ -52,20 +52,16 @@ namespace FEXCore::Context {
     CompileBlock(Thread->CurrentFrame, GuestRIP, MaxInst);
   }
 
-  FEXCore::Context::ExitReason FEXCore::Context::ContextImpl::GetExitReason() {
-    return ParentThread->ExitReason;
-  }
-
   bool FEXCore::Context::ContextImpl::IsDone() const {
     return IsPaused();
   }
 
-  void FEXCore::Context::ContextImpl::GetCPUState(FEXCore::Core::CPUState *State) const {
-    memcpy(State, ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
+  void FEXCore::Context::ContextImpl::GetCPUState(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CPUState *State) const {
+    memcpy(State, Thread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
   }
 
-  void FEXCore::Context::ContextImpl::SetCPUState(const FEXCore::Core::CPUState *State) {
-    memcpy(ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
+  void FEXCore::Context::ContextImpl::SetCPUState(FEXCore::Core::InternalThreadState *Thread, const FEXCore::Core::CPUState *State) {
+    memcpy(Thread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
   }
 
   void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {
