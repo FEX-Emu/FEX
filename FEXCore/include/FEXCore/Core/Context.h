@@ -88,7 +88,6 @@ namespace FEXCore::Context {
   };
 
   struct ThreadsState {
-    FEXCore::Core::InternalThreadState* ParentThread;
     fextl::vector<FEXCore::Core::InternalThreadState*>* Threads;
   };
 
@@ -129,12 +128,9 @@ namespace FEXCore::Context {
       /**
        * @brief Allows setting up in memory code and other things prior to launchign code execution
        *
-       * @param CTX The context that we created
-       * @param Loader The loader that will be doing all the code loading
-       *
-       * @return true if we loaded code
+       * @return true if we initialized the core
        */
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual bool InitCore() = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetExitHandler(ExitHandler handler) = 0;
       FEX_DEFAULT_VISIBILITY virtual ExitHandler GetExitHandler() const = 0;
@@ -191,7 +187,7 @@ namespace FEXCore::Context {
        *
        * @return The ExitReason for the parentthread.
        */
-      FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit() = 0;
+      FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit(FEXCore::Core::InternalThreadState *Thread) = 0;
 
       /**
        * @brief Executes the supplied thread context on the current thread until a return is requested
@@ -200,16 +196,6 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) = 0;
       FEX_DEFAULT_VISIBILITY virtual void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
-
-      /**
-       * @brief Gets the program exit status
-       *
-       *
-       * @param CTX The context that we created
-       *
-       * @return The program exit status
-       */
-      FEX_DEFAULT_VISIBILITY virtual int GetProgramStatus() const = 0;
 
       /**
        * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)

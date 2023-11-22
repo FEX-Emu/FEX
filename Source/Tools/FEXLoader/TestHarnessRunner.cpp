@@ -303,7 +303,14 @@ int main(int argc, char **argv, char **const envp) {
     CTX->SetSignalDelegator(SignalDelegation.get());
     CTX->SetSyscallHandler(SyscallHandler.get());
 
-    auto ParentThread = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
+    bool Result1 = CTX->InitCore();
+
+    if (!Result1) {
+      return 1;
+    }
+
+    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    ParentThread->DestroyedByParent = true;
 
     if (!ParentThread) {
       return 1;
@@ -311,13 +318,14 @@ int main(int argc, char **argv, char **const envp) {
 
     int LongJumpVal = setjmp(LongJumpHandler::LongJump);
     if (!LongJumpVal) {
-      CTX->RunUntilExit();
+      CTX->RunUntilExit(ParentThread);
     }
 
     // Just re-use compare state. It also checks against the expected values in config.
     memcpy(&State, &ParentThread->CurrentFrame->State, sizeof(State));
 
     SyscallHandler.reset();
+    CTX->DestroyThread(ParentThread);
   }
 #ifndef _WIN32
   else {

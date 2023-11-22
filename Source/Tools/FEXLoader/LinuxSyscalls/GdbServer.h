@@ -35,7 +35,18 @@ public:
       LibraryMapChanged = true;
     }
 
+    /**
+     * @brief Sets the parent thread object.
+     * TODO: Temporary until the frontend does all the guest thread tracking.
+     *
+     * @param Thread
+     */
+    void SetParentThread(FEXCore::Core::InternalThreadState *Thread) {
+      ParentThread = Thread;
+    }
+
 private:
+    FEXCore::Core::InternalThreadState *ParentThread;
     void Break(int signal);
 
     void OpenListenSocket();

@@ -559,11 +559,17 @@ int main(int argc, char **argv, char **const envp) {
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
-  auto ParentThread = CTX->InitCore(0, 0);
+  if (!CTX->InitCore()) {
+    return -1;
+  }
+  auto ParentThread = CTX->CreateThread(0, 0);
+  ParentThread->DestroyedByParent = true;
 
   // Calculate the base stats for instruction testing.
   CodeSize::Validation.CalculateBaseStats(CTX.get(), ParentThread);
 
   // Test all the instructions.
-  return TestInstructions(CTX.get(), ParentThread, argc >= 2 ? argv[2] : nullptr) ? 0 : 1;
+  auto Result = TestInstructions(CTX.get(), ParentThread, argc >= 2 ? argv[2] : nullptr) ? 0 : 1;
+  CTX->DestroyThread(ParentThread);
+  return Result;
 }

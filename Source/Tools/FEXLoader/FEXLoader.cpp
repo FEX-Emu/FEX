@@ -481,7 +481,16 @@ int main(int argc, char **argv, char **const envp) {
   if (GdbServer) {
     DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
   }
-  CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
+  if (!CTX->InitCore()) {
+    return 1;
+  }
+
+  auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+  ParentThread->DestroyedByParent = true;
+
+  if (GdbServer) {
+    DebugServer->SetParentThread(ParentThread);
+  }
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
@@ -536,7 +545,7 @@ int main(int argc, char **argv, char **const envp) {
       FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
-    CTX->RunUntilExit();
+    CTX->RunUntilExit(ParentThread);
   }
 
   if (AOTEnabled) {
@@ -557,7 +566,9 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto ProgramStatus = CTX->GetProgramStatus();
+  auto ProgramStatus = ParentThread->StatusCode;
+
+  CTX->DestroyThread(ParentThread);
 
   DebugServer.reset();
   SyscallHandler.reset();

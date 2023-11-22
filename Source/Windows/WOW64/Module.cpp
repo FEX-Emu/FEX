@@ -518,7 +518,7 @@ void BTCpuProcessInit() {
   CTX->InitializeContext();
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
-  CTX->InitCore(0, 0);
+  CTX->InitCore();
 
   CpuInfo.ProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 
