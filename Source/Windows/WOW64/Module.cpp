@@ -35,6 +35,7 @@ $end_info$
 #include <atomic>
 #include <mutex>
 #include <utility>
+#include <unordered_set>
 #include <ntstatus.h>
 #include <windef.h>
 #include <winternl.h>
@@ -94,6 +95,7 @@ namespace {
   SYSTEM_CPU_INFORMATION CpuInfo{};
 
   std::mutex ThreadSuspendLock;
+  std::unordered_set<DWORD> InitializedWOWThreads; // Set of TIDs, `ThreadSuspendLock` must be locked when accessing
 
   std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
     THREAD_BASIC_INFORMATION Info;
@@ -460,6 +462,7 @@ public:
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
 
       Context::UnlockJITContext();
+      Wow64ProcessPendingCrossProcessItems();
       ReturnRAX = static_cast<uint64_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX),
                                                              reinterpret_cast<UINT *>(ReturnRSP + 4)));
       Context::LockJITContext();
@@ -554,6 +557,8 @@ void BTCpuProcessInit() {
 NTSTATUS BTCpuThreadInit() {
   GetTLS().ThreadState() = CTX->CreateThread(nullptr, 0);
 
+  std::scoped_lock Lock(ThreadSuspendLock);
+  InitializedWOWThreads.emplace(GetCurrentThreadId());
   return STATUS_SUCCESS;
 }
 
@@ -561,6 +566,17 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
   const auto [Err, TLS] = GetThreadTLS(Thread);
   if (Err) {
     return Err;
+  }
+
+  {
+    THREAD_BASIC_INFORMATION Info;
+    if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+      return Err;
+    }
+
+    const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+    std::scoped_lock Lock(ThreadSuspendLock);
+    InitializedWOWThreads.erase(ThreadTID);
   }
 
   CTX->DestroyThread(TLS.ThreadState());
@@ -665,6 +681,11 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG *Count) {
   }
 
   std::scoped_lock Lock(ThreadSuspendLock);
+
+  // If the thread hasn't yet been initialized, suspend it without special handling as it wont yet have entered the JIT
+  if (!InitializedWOWThreads.contains(ThreadTID))
+    return NtSuspendThread(Thread, Count);
+
   // If CONTROL_IN_JIT is unset at this point, then it can never be set (and thus the JIT cannot be reentered) as
   // CONTROL_PAUSED has been set, as such, while this may redundantly request interrupts in rare cases it will never
   // miss them
