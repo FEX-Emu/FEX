@@ -278,7 +278,19 @@ namespace FEXCore::Context {
       ///< Sets FEX's internal EFLAGS representation to the passed in compacted form.
       FEX_DEFAULT_VISIBILITY virtual void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState *Thread, uint32_t EFLAGS) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) = 0;
+      /**
+       * @brief Create a new thread object that doesn't inherit any state.
+       * Used to create FEX thread objects in preparation for creating a true OS thread.
+       *
+       * @param InitialRIP The starting RIP of this thread
+       * @param StackPointer The starting RSP of this thread
+       * @param NewThreadState The thread state to inherit from if not nullptr.
+       * @param ParentTID The thread ID that the parent is inheriting from
+       *
+       * @return A new InternalThreadState object for using with a new guest thread.
+       */
+      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
+
       FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InitializeThread(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void RunThread(FEXCore::Core::InternalThreadState *Thread) = 0;

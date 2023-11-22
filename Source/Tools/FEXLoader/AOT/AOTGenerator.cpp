@@ -106,8 +106,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
       setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
 
       // Setup thread - Each compilation thread uses its own backing FEX thread
-      FEXCore::Core::CPUState state;
-      auto Thread = CTX->CreateThread(&state, FHU::Syscalls::gettid());
+      auto Thread = CTX->CreateThread(0, 0);
       fextl::set<uint64_t> ExternalBranchesLocal;
       CTX->ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
 

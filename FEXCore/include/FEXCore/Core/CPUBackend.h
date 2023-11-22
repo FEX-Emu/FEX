@@ -156,13 +156,6 @@ namespace CPU {
     [[nodiscard]] virtual void *MapRegion(void *HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
 
     /**
-     * @brief This is post-setup initialization that is called just before code executino
-     *
-     * Guest memory is available at this point and ThreadState is valid
-     */
-    virtual void Initialize() {}
-
-    /**
      * @brief Lets FEXCore know if this CPUBackend needs IR and DebugData for CompileCode
      *
      * This is useful if the FEXCore Frontend hits an x86-64 instruction that isn't understood but can continue regardless
