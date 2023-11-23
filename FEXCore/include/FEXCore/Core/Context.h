@@ -212,15 +212,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual int GetProgramStatus() const = 0;
 
       /**
-       * @brief [[threadsafe]] Returns the ExitReason of the parent thread. Typically used for async result status
-       *
-       * @param CTX The context that we created
-       *
-       * @return The ExitReason for the parentthread
-       */
-      FEX_DEFAULT_VISIBILITY virtual ExitReason GetExitReason() = 0;
-
-      /**
        * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)
        *
        * Use this when the context is async running to determine if it is done
