@@ -488,6 +488,7 @@ int main(int argc, char **argv, char **const envp) {
   auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
   ParentThread->DestroyedByParent = true;
 
+  SyscallHandler->SetParentThread(ParentThread);
   if (GdbServer) {
     DebugServer->SetParentThread(ParentThread);
   }
@@ -567,8 +568,6 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   auto ProgramStatus = ParentThread->StatusCode;
-
-  CTX->DestroyThread(ParentThread);
 
   DebugServer.reset();
   SyscallHandler.reset();

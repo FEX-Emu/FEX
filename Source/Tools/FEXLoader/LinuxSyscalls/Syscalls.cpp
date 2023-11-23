@@ -755,6 +755,8 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::Signal
 
 SyscallHandler::~SyscallHandler() {
   FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace), DataSpaceMaxSize);
+
+  CTX->DestroyThread(ParentThread);
 }
 
 uint32_t SyscallHandler::CalculateHostKernelVersion() {

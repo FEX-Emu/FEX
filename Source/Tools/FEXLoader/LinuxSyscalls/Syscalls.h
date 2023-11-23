@@ -226,6 +226,10 @@ public:
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
 
+  void SetParentThread(FEXCore::Core::InternalThreadState *Thread) {
+    ParentThread = Thread;
+  }
+
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
 
@@ -245,6 +249,9 @@ protected:
   FEXCore::Context::Context *CTX;
 
 private:
+
+  // Thread tracking.
+  FEXCore::Core::InternalThreadState* ParentThread{};
 
   FEX::HLE::SignalDelegator *SignalDelegation;
 
