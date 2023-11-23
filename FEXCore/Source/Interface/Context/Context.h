@@ -97,9 +97,6 @@ namespace FEXCore::Context {
 
       bool IsDone() const override;
 
-      void GetCPUState(FEXCore::Core::CPUState *State) const override;
-      void SetCPUState(const FEXCore::Core::CPUState *State) override;
-
       void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
       HostFeatures GetHostFeatures() const override;
