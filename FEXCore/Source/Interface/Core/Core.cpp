@@ -692,9 +692,13 @@ namespace FEXCore::Context {
       std::lock_guard lk(ThreadCreationMutex);
 
       auto It = std::find(Threads.begin(), Threads.end(), Thread);
-      LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
+      // TODO: Some threads aren't currently tracked in FEXCore.
+      // Re-enable once tracking is in frontend.
+      //LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
 
-      Threads.erase(It);
+      if (It != Threads.end()) {
+        Threads.erase(It);
+      }
     }
 
     if (Thread->ExecutionThread &&
