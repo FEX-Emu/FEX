@@ -113,7 +113,7 @@ public:
 private:
   FEXCore::Context::ContextImpl *CTX;
   bool Hybrid{};
-  FEX_CONFIG_OPT(Cores, THREADS);
+  uint32_t Cores{};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
 
   // XFEATURE_ENABLED_MASK
