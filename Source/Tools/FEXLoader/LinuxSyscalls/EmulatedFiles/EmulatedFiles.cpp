@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
@@ -621,12 +622,13 @@ namespace FEX::EmulatedFile {
   }
 
   EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context *ctx)
-    : CTX {ctx} {
+    : CTX {ctx}
+    , ThreadsConfig { FEXCore::CPUInfo::CalculateNumberOfCPUs() } {
     FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       // Only allow a single thread to initialize the cpu_info.
       // Jit in-case multiple threads try to initialize at once.
       // Check if deferred cpuinfo initialization has occured.
-      std::call_once(cpu_info_initialized, [&]() { cpu_info = GenerateCPUInfo(ctx, ThreadsConfig()); });
+      std::call_once(cpu_info_initialized, [&]() { cpu_info = GenerateCPUInfo(ctx, ThreadsConfig); });
 
       int FD = GenTmpFD();
       write(FD, (void*)&cpu_info.at(0), cpu_info.size());
@@ -702,9 +704,8 @@ namespace FEX::EmulatedFile {
     fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
     FDReadCreators[procCmdLine] = cmdline_handler;
 
-    uint64_t CPUCores = ThreadsConfig();
-    if (CPUCores > 1) {
-      cpus_online = fextl::fmt::format("0-{}", CPUCores - 1);
+    if (ThreadsConfig > 1) {
+      cpus_online = fextl::fmt::format("0-{}", ThreadsConfig - 1);
     }
     else {
       cpus_online = "0";
