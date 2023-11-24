@@ -89,21 +89,8 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_FLAGS(getcpu, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, unsigned *cpu, unsigned *node, struct getcpu_cache *tcache) -> uint64_t {
-      uint32_t LocalCPU{};
-      uint32_t LocalNode{};
       // tcache is ignored
-      uint64_t Result = ::syscall(SYSCALL_DEF(getcpu), cpu ? &LocalCPU : nullptr, node ? &LocalNode : nullptr, nullptr);
-      if (Result == 0) {
-        if (cpu) {
-          // Ensure we don't return a number over our number of emulated cores
-          *cpu = LocalCPU % FEX::HLE::_SyscallHandler->ThreadsConfig();
-        }
-
-        if (node) {
-          // Just claim we are part of node zero
-          *node = 0;
-        }
-      }
+      uint64_t Result = ::syscall(SYSCALL_DEF(getcpu), cpu, node, nullptr);
       SYSCALL_ERRNO();
     });
 

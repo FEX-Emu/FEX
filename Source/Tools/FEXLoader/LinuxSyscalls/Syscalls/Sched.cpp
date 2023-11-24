@@ -80,35 +80,14 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_FLAGS(sched_setaffinity, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NOSIDEEFFECTS,
       [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, size_t cpusetsize, const unsigned long *mask) -> uint64_t {
-      return 0;
+      uint64_t Result = ::syscall(SYSCALL_DEF(sched_setaffinity), pid, cpusetsize, mask);
+      SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_FLAGS(sched_getaffinity, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, size_t cpusetsize, unsigned char *mask) -> uint64_t {
-      uint64_t Cores = FEX::HLE::_SyscallHandler->ThreadsConfig();
-
-      // Bytes need to round up to size of uint64_t
-      uint64_t Bytes = FEXCore::AlignUp(Cores, sizeof(uint64_t));
-
-      // cpusetsize needs to be 8byte aligned
-      if (cpusetsize & (sizeof(uint64_t) - 1)) {
-        return -EINVAL;
-      }
-
-      // If we don't have enough bytes to store the resulting structure
-      // then we need to return -EINVAL
-      if (cpusetsize < Bytes) {
-        return -EINVAL;
-      }
-
-      memset(mask, 0, Bytes);
-
-      for (uint64_t i = 0; i < Cores; ++i) {
-        mask[i / 8] |= (1 << (i % 8));
-      }
-
-      // Returns the number of bytes written in to mask
-      return Bytes;
+      uint64_t Result = ::syscall(SYSCALL_DEF(sched_getaffinity), pid, cpusetsize, mask);
+      SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(sched_setattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
