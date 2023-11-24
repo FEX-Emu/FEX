@@ -17,6 +17,7 @@ $end_info$
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+#include <string_view>
 
 #include <dlfcn.h>
 
@@ -121,15 +122,17 @@ static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(
 }
 
 static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
-  if (std::strcmp(a_1, "vkCreateShaderModule") == 0) {
+  using namespace std::string_view_literals;
+
+  if (a_1 == "vkCreateShaderModule"sv) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
-  } else if (std::strcmp(a_1, "vkCreateInstance") == 0) {
+  } else if (a_1 == "vkCreateInstance"sv) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateInstance;
-  } else if (std::strcmp(a_1, "vkCreateDevice") == 0) {
+  } else if (a_1 == "vkCreateDevice"sv) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateDevice;
-  } else if (std::strcmp(a_1, "vkAllocateMemory") == 0) {
+  } else if (a_1 == "vkAllocateMemory"sv) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
-  } else if (std::strcmp(a_1, "vkFreeMemory") == 0) {
+  } else if (a_1 == "vkFreeMemory"sv) {
       return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
   }
   return nullptr;
