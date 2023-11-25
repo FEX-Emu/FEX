@@ -76,64 +76,6 @@ $end_info$
 #include <utility>
 #include <xxhash.h>
 
-namespace FEXCore::Core {
-struct ThreadLocalData {
-  FEXCore::Core::InternalThreadState* Thread;
-};
-
-constexpr std::array<std::string_view const, 22> FlagNames = {
-  "CF",
-  "",
-  "PF",
-  "",
-  "AF",
-  "",
-  "ZF",
-  "SF",
-  "TF",
-  "IF",
-  "DF",
-  "OF",
-  "IOPL",
-  "",
-  "NT",
-  "",
-  "RF",
-  "VM",
-  "AC",
-  "VIF",
-  "VIP",
-  "ID",
-};
-
-std::string_view const& GetFlagName(unsigned Flag) {
-  return FlagNames[Flag];
-}
-
-constexpr std::array<std::string_view const, 16> RegNames = {
-  "rax",
-  "rbx",
-  "rcx",
-  "rdx",
-  "rsi",
-  "rdi",
-  "rbp",
-  "rsp",
-  "r8",
-  "r9",
-  "r10",
-  "r11",
-  "r12",
-  "r13",
-  "r14",
-  "r15",
-};
-
-std::string_view const& GetGRegName(unsigned Reg) {
-  return RegNames[Reg];
-}
-} // namespace FEXCore::Core
-
 namespace FEXCore::Context {
   ContextImpl::ContextImpl()
   : IRCaptureCache {this} {
