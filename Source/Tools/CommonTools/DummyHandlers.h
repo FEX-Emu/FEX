@@ -34,21 +34,11 @@ class DummySignalDelegator final : public FEXCore::SignalDelegator, public FEXCo
   }
 
   protected:
-    // Called from the thunk handler to handle the signal
-    void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override {}
-
     void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override;
     void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override;
 
-    FEXCore::Core::InternalThreadState *GetTLSThread() override;
-
-    /**
-     * @brief Registers a signal handler for the host to handle a signal
-     *
-     * It's a process level signal handler so one must be careful
-     */
-    void FrontendRegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override {}
-    void FrontendRegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override {}
+  private:
+    FEXCore::Core::InternalThreadState *GetTLSThread();
 };
 
 fextl::unique_ptr<FEXCore::HLE::SyscallHandler> CreateSyscallHandler();

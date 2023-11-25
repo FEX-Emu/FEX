@@ -40,20 +40,36 @@ namespace FEX::HLE {
 
   class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
   public:
+    constexpr static size_t MAX_SIGNALS {64};
+
+    // Use the last signal just so we are less likely to ever conflict with something that the guest application is using
+    // 64 is used internally by Valgrind
+    constexpr static size_t SIGNAL_FOR_PAUSE {63};
+
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
     SignalDelegator(FEXCore::Context::Context *_CTX, const std::string_view ApplicationName);
     ~SignalDelegator() override;
 
+    // Called from the signal trampoline function.
+    void HandleSignal(int Signal, void *Info, void *UContext);
+
     void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override;
     void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+
+    /**
+     * @brief Registers a signal handler for the host to handle a signal
+     *
+     * It's a process level signal handler so one must be careful
+     */
+    void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
     /**
      * @brief Registers a signal handler for the host to handle a signal specifically for guest handling
      *
      * It's a process level signal handler so one must be careful
      */
-    void RegisterHostSignalHandlerForGuest(int Signal, FEX::HLE::HostSignalDelegatorFunctionForGuest Func);
+    void RegisterHostSignalHandlerForGuest(int Signal, HostSignalDelegatorFunctionForGuest Func);
     void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
     /**
@@ -107,21 +123,27 @@ namespace FEX::HLE {
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
 
     void SaveTelemetry();
-  protected:
-    // Called from the thunk handler to handle the signal
-    void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override;
+  private:
+    FEXCore::Core::InternalThreadState *GetTLSThread();
 
-    FEXCore::Core::InternalThreadState *GetTLSThread() override;
+    // Called from the thunk handler to handle the signal
+    void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext);
 
     /**
      * @brief Registers a signal handler for the host to handle a signal
      *
      * It's a process level signal handler so one must be careful
      */
-    void FrontendRegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override;
-    void FrontendRegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override;
+    void FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
+    void FrontendRegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
-  private:
+    void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+      HostHandlers[Signal].Handlers.push_back(std::move(Func));
+    }
+    void SetFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+      HostHandlers[Signal].FrontendHandler = std::move(Func);
+    }
+
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
     FEX_CONFIG_OPT(Core, CORE);
     fextl::string const ApplicationName;
@@ -155,6 +177,10 @@ namespace FEX::HLE {
       FEX::HLE::HostSignalDelegatorFunctionForGuest GuestHandler{};
       GuestSigAction GuestAction{};
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
+
+      // Callbacks
+      fextl::vector<HostSignalDelegatorFunction> Handlers{};
+      HostSignalDelegatorFunction FrontendHandler{};
     };
 
     std::array<SignalHandler, MAX_SIGNALS + 1> HostHandlers{};

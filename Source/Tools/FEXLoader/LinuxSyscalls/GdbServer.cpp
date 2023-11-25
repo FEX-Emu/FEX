@@ -79,7 +79,7 @@ GdbServer::~GdbServer() {
   close(ListenSocket);
 }
 
-GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
+GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
   : CTX(ctx)
   , SyscallHandler {SyscallHandler} {
   // Pass all signals by default
@@ -97,7 +97,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *S
 
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
-  for (uint32_t Signal = 0; Signal <= FEXCore::SignalDelegator::MAX_SIGNALS; ++Signal) {
+  for (uint32_t Signal = 0; Signal <= FEX::HLE::SignalDelegator::MAX_SIGNALS; ++Signal) {
     SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       if (PassSignals[Signal]) {
         // Pass signal to the guest
@@ -989,7 +989,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     // We now have a semi-colon deliminated list of signals to pass to the guest process
     for (fextl::string tmp; std::getline(ss, tmp, ';'); ) {
       uint32_t Signal = std::stoi(tmp.c_str(), nullptr, 16);
-      if (Signal < FEXCore::SignalDelegator::MAX_SIGNALS) {
+      if (Signal < FEX::HLE::SignalDelegator::MAX_SIGNALS) {
         PassSignals[Signal] = true;
       }
     }

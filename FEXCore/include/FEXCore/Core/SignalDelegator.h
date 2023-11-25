@@ -35,8 +35,6 @@ namespace Core {
 #endif
   };
 }
-  using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
-
   class SignalDelegator {
   public:
     virtual ~SignalDelegator() = default;
@@ -50,28 +48,12 @@ namespace Core {
     virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
 
     /**
-     * @brief Registers a signal handler for the host to handle a signal
-     *
-     * It's a process level signal handler so one must be careful
-     */
-    void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
-
-    // Called from the thunk handler to handle the signal
-    void HandleSignal(int Signal, void *Info, void *UContext);
-
-    /**
      * @brief Check to ensure the XID handler is still set to the FEX handler
      *
      * On a new thread GLIBC will set the XID handler underneath us.
      * After the first thread is created check this.
      */
     virtual void CheckXIDHandler() = 0;
-
-    constexpr static size_t MAX_SIGNALS {64};
-
-    // Use the last signal just so we are less likely to ever conflict with something that the guest application is using
-    // 64 is used internally by Valgrind
-    constexpr static size_t SIGNAL_FOR_PAUSE {63};
 
     struct SignalDelegatorConfig {
       bool StaticRegisterAllocation{};
@@ -124,31 +106,5 @@ namespace Core {
 
   protected:
     SignalDelegatorConfig Config;
-
-    virtual FEXCore::Core::InternalThreadState *GetTLSThread() = 0;
-    virtual void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) = 0;
-
-    /**
-     * @brief Registers a signal handler for the host to handle a signal
-     *
-     * It's a process level signal handler so one must be careful
-     */
-    virtual void FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
-    virtual void FrontendRegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
-
-  private:
-    struct HostSignalHandler {
-      fextl::vector<FEXCore::HostSignalDelegatorFunction> Handlers{};
-      FEXCore::HostSignalDelegatorFunction FrontendHandler{};
-    };
-    std::array<HostSignalHandler, MAX_SIGNALS + 1> HostHandlers{};
-
-  protected:
-    void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-      HostHandlers[Signal].Handlers.push_back(std::move(Func));
-    }
-    void SetFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-      HostHandlers[Signal].FrontendHandler = std::move(Func);
-    }
   };
 }
