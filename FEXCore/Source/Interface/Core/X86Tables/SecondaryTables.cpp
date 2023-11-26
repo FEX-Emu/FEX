@@ -29,7 +29,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x08, 1, X86InstInfo{"INVD",       TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
     {0x09, 1, X86InstInfo{"WBINVD",     TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
     {0x0A, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
-    {0x0B, 1, X86InstInfo{"UD2",        TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                    0, nullptr}},
+    {0x0B, 1, X86InstInfo{"UD2",        TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                    0, nullptr}},
     {0x0C, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x0D, 1, X86InstInfo{"",           TYPE_GROUP_P, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x0E, 1, X86InstInfo{"FEMMS",      TYPE_INST, FLAGS_NO_OVERLAY,                                                            0, nullptr}},
@@ -44,7 +44,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x16, 1, X86InstInfo{"MOVLHPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x17, 1, X86InstInfo{"MOVHPS",     TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
     {0x18, 1, X86InstInfo{"",           TYPE_GROUP_16, FLAGS_NO_OVERLAY,                                                                                      0, nullptr}},
-    {0x19, 7, X86InstInfo{"NOP",        TYPE_INST, FLAGS_DEBUG | FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                     0, nullptr}},
+    {0x19, 7, X86InstInfo{"NOP",        TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                     0, nullptr}},
 
     {0x20, 2, X86InstInfo{"MOV",        TYPE_PRIV, GenFlagsSameSize(SIZE_64BIT) | FLAGS_NO_OVERLAY,                                                     0, nullptr}},
     {0x22, 2, X86InstInfo{"MOV",        TYPE_PRIV, GenFlagsSameSize(SIZE_64BIT) | FLAGS_NO_OVERLAY,                                                     0, nullptr}},
@@ -59,7 +59,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x2F, 1, X86InstInfo{"COMISS",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
 
     {0x30, 1, X86InstInfo{"WRMSR",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
-    {0x31, 1, X86InstInfo{"RDTSC",      TYPE_INST, FLAGS_DEBUG | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
+    {0x31, 1, X86InstInfo{"RDTSC",      TYPE_INST, FLAGS_NO_OVERLAY,                                                               0, nullptr}},
     {0x32, 1, X86InstInfo{"RDMSR",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x33, 1, X86InstInfo{"RDPMC",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x34, 1, X86InstInfo{"SYSENTER",   TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
@@ -166,7 +166,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x9E, 1, X86InstInfo{"SETLE",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                        0, nullptr}},
     {0x9F, 1, X86InstInfo{"SETNLE",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                        0, nullptr}},
 
-    {0xA2, 1, X86InstInfo{"CPUID",   TYPE_INST,     FLAGS_DEBUG | FLAGS_SF_SRC_RAX | FLAGS_NO_OVERLAY,                                              0, nullptr}},
+    {0xA2, 1, X86InstInfo{"CPUID",   TYPE_INST,     FLAGS_SF_SRC_RAX | FLAGS_NO_OVERLAY,                                              0, nullptr}},
     {0xA3, 1, X86InstInfo{"BT",      TYPE_INST,     FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                     0, nullptr}},
     {0xA4, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                                              1, nullptr}},
     {0xA5, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_SRC_RCX | FLAGS_NO_OVERLAY,                           0, nullptr}},
@@ -254,7 +254,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xFC, 1, X86InstInfo{"PADDB",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFD, 1, X86InstInfo{"PADDW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFE, 1, X86InstInfo{"PADDD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
-    {0xFF, 1, X86InstInfo{"UD0",      TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END,                                                                                           0, nullptr}},
+    {0xFF, 1, X86InstInfo{"UD0",      TYPE_INST, FLAGS_BLOCK_END,                                                                                           0, nullptr}},
 
     // FEX reserved instructions
     // Unused x86 encoding instruction.

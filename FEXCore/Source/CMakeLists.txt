@@ -102,7 +102,6 @@ set (SRCS
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
-  Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp

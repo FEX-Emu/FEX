@@ -279,7 +279,8 @@ namespace InstFlags {
 using InstFlagType = uint64_t;
 
 constexpr InstFlagType FLAGS_NONE                  = 0;
-constexpr InstFlagType FLAGS_DEBUG                 = (1ULL << 1);
+// x87
+constexpr InstFlagType FLAGS_POP                   = (1ULL << 1);
 constexpr InstFlagType FLAGS_DEBUG_MEM_ACCESS      = (1ULL << 2);
 constexpr InstFlagType FLAGS_SUPPORTS_REP          = (1ULL << 3);
 constexpr InstFlagType FLAGS_BLOCK_END             = (1ULL << 4);
@@ -338,20 +339,17 @@ constexpr InstFlagType FLAGS_NO_OVERLAY           = (1ULL << 20);
 // Ignore OpSize (0x66) in this case
 constexpr InstFlagType FLAGS_NO_OVERLAY66         = (1ULL << 21);
 
-// x87
-constexpr InstFlagType FLAGS_POP                  = (1ULL << 22);
-
 // Only SEXT if the instruction is operating in 64bit operand size
-constexpr InstFlagType FLAGS_SRC_SEXT64BIT        = (1ULL << 23);
+constexpr InstFlagType FLAGS_SRC_SEXT64BIT        = (1ULL << 22);
 
 // Whether or not the instruction has a VEX prefix for the first source operand
-constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 24);
+constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 23);
 // Whether or not the instruction has a VEX prefix for the second source operand
-constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 25);
+constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 24);
 // Whether or not the instruction has a VEX prefix for the destination
-constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 26);
+constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 25);
 // Whether or not the instruction has a VSIB byte
-constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 27);
+constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 26);
 
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
@@ -419,35 +417,12 @@ constexpr uint8_t OpToIndex(uint8_t Op) {
 using DecodedOp = DecodedInst const*;
 using OpDispatchPtr = void (IR::OpDispatchBuilder::*)(DecodedOp);
 
-#ifndef NDEBUG
-namespace X86InstDebugInfo {
-constexpr uint64_t FLAGS_MEM_ALIGN_4    = (1 << 0);
-constexpr uint64_t FLAGS_MEM_ALIGN_8    = (1 << 1);
-constexpr uint64_t FLAGS_MEM_ALIGN_16   = (1 << 2);
-constexpr uint64_t FLAGS_MEM_ALIGN_SIZE = (1 << 3); // If instruction size changes depending on prefixes
-constexpr uint64_t FLAGS_MEM_ACCESS     = (1 << 4);
-constexpr uint64_t FLAGS_DEBUG          = (1 << 5);
-constexpr uint64_t FLAGS_DIVIDE         = (1 << 6);
-
-
-struct Flags {
-  uint64_t DebugFlags;
-};
-void InstallDebugInfo();
-}
-
-#endif
-
 struct X86InstInfo {
   char const *Name;
   InstType Type;
   InstFlags::InstFlagType Flags; ///< Must be larger than InstFlags enum
   uint8_t MoreBytes;
   OpDispatchPtr OpcodeDispatcher;
-#ifndef NDEBUG
-  X86InstDebugInfo::Flags DebugInfo;
-  uint32_t NumUnitTestsGenerated;
-#endif
 
   bool operator==(const X86InstInfo &b) const {
     if (strcmp(Name, b.Name) != 0 ||
@@ -524,12 +499,6 @@ extern std::array<X86InstInfo, MAX_XOP_GROUP_TABLE_SIZE> XOPTableGroupOps;
 // EVEX
 extern std::array<X86InstInfo, MAX_EVEX_TABLE_SIZE> EVEXTableOps;
 
-
-#ifndef NDEBUG
-extern uint64_t Total;
-extern uint64_t NumInsts;
-#endif
-
 template <typename OpcodeType>
 struct X86TablesInfoStruct {
   OpcodeType first;
@@ -548,11 +517,6 @@ static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInfoStruct<Op
     for (uint32_t i = 0; i < Op.second; ++i) {
       LOGMAN_THROW_AA_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       FinalTable[OpNum + i] = Info;
-#ifndef NDEBUG
-      ++Total;
-      if (Info.Type == TYPE_INST)
-        NumInsts++;
-#endif
     }
   }
 };
@@ -570,11 +534,6 @@ static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoS
       }
       else {
         FinalTable[OpNum + i] = Info;
-#ifndef NDEBUG
-        ++Total;
-        if (Info.Type == TYPE_INST)
-          NumInsts++;
-#endif
       }
     }
   }
@@ -602,11 +561,6 @@ static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct
           }
         }
       }
-#ifndef NDEBUG
-        ++Total;
-        if (Info.Type == TYPE_INST)
-          NumInsts++;
-#endif
     }
   }
 };

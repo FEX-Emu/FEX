@@ -169,7 +169,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xC8, 1, X86InstInfo{"ENTER",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS ,                                      3, nullptr}},
     {0xC9, 1, X86InstInfo{"LEAVE",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS ,                                                0, nullptr}},
     {0xCA, 2, X86InstInfo{"RETF",   TYPE_PRIV, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              0, nullptr}},
-    {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_DEBUG,                                                                                      0, nullptr}},
+    {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_NONE,                                                                                      0, nullptr}},
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                  1, nullptr}},
     {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0, nullptr}},
 
@@ -192,8 +192,8 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xEC, 2, X86InstInfo{"IN",     TYPE_INVALID, FLAGS_NONE,             0, nullptr}},
     {0xEE, 2, X86InstInfo{"OUT",    TYPE_INVALID, FLAGS_NONE,             0, nullptr}},
 
-    {0xF1, 1, X86InstInfo{"INT1",   TYPE_INST, FLAGS_DEBUG,               0, nullptr}},
-    {0xF4, 1, X86InstInfo{"HLT",    TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END,               0, nullptr}},
+    {0xF1, 1, X86InstInfo{"INT1",   TYPE_INST, FLAGS_NONE,               0, nullptr}},
+    {0xF4, 1, X86InstInfo{"HLT",    TYPE_INST, FLAGS_BLOCK_END,               0, nullptr}},
     {0xF5, 1, X86InstInfo{"CMC",    TYPE_INST, FLAGS_NONE,                0, nullptr}},
     {0xF8, 1, X86InstInfo{"CLC",    TYPE_INST, FLAGS_NONE,                0, nullptr}},
     {0xF9, 1, X86InstInfo{"STC",    TYPE_INST, FLAGS_NONE,                0, nullptr}},
