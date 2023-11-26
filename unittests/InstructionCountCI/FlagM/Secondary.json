@@ -1033,16 +1033,14 @@
       ]
     },
     "imul eax, ebx": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0xaf",
       "ExpectedArm64ASM": [
-        "sxtw x20, w4",
-        "sxtw x21, w7",
-        "mul x20, x20, x21",
-        "asr x21, x20, #32",
-        "mov w4, w20",
-        "sbfx x20, x20, #31, #1",
-        "cmp x21, x20",
+        "mul x20, x4, x7",
+        "asr x20, x20, #32",
+        "mul w4, w4, w7",
+        "sbfx x21, x4, #31, #1",
+        "cmp x20, x21",
         "ccmn xzr, #0, #nzCV, eq"
       ]
     },

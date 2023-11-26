@@ -3032,22 +3032,34 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   uint8_t Size = GetSrcSize(Op);
-  if (Size != 8) {
-    Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
-    Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
-  }
 
   OrderedNode *Dest{};
   OrderedNode *ResultHigh{};
-  if (Size < 8) {
-    Dest = _Mul(OpSize::i64Bit, Src1, Src2);
-    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
+  switch (Size) {
+    case 1:
+    case 2: {
+      Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
+      Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
+      Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
+      break;
+    }
+    case 4: {
+      ResultHigh = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
+      // Flipped order to save a move
+      Dest = _Mul(OpSize::i32Bit, Src1, Src2);
+      break;
+    }
+    case 8: {
+      ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
+      // Flipped order to save a move
+      Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+      break;
+    }
+    default: FEX_UNREACHABLE;
   }
-  else {
-    // Flipped order to save a move
-    ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
-    Dest = _Mul(OpSize::i64Bit, Src1, Src2);
-  }
+
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_MUL(Op, Dest, ResultHigh);
 }
@@ -3057,18 +3069,33 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   uint8_t Size = GetSrcSize(Op);
-  if (Size != 8) {
-    Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
-    Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
-  }
 
-  auto Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+  OrderedNode *Dest{};
   OrderedNode *ResultHigh{};
-  if (Size < 8) {
-    ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
-  }
-  else {
-    ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
+
+  switch (Size) {
+    case 1:
+    case 2: {
+      Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
+      Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
+      Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
+      break;
+    }
+    case 4: {
+      ResultHigh = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
+      // Flipped order to save a move
+      Dest = _Mul(OpSize::i32Bit, Src1, Src2);
+      break;
+    }
+    case 8: {
+      ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
+      // Flipped order to save a move
+      Dest = _Mul(OpSize::i64Bit, Src1, Src2);
+      break;
+    }
+    default: FEX_UNREACHABLE;
   }
 
   StoreResult(GPRClass, Op, Dest, -1);
