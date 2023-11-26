@@ -279,8 +279,12 @@ namespace InstFlags {
 using InstFlagType = uint64_t;
 
 constexpr InstFlagType FLAGS_NONE                  = 0;
-// x87
-constexpr InstFlagType FLAGS_POP                   = (1ULL << 1);
+// The secondary Opcode Map uses prefix bytes to overlay more instruction
+// But some instructions need to ignore this overlay and consume these prefixes.
+constexpr InstFlagType FLAGS_NO_OVERLAY            = (1ULL << 0);
+// Some instructions partially ignore overlay
+// Ignore OpSize (0x66) in this case
+constexpr InstFlagType FLAGS_NO_OVERLAY66          = (1ULL << 1);
 constexpr InstFlagType FLAGS_DEBUG_MEM_ACCESS      = (1ULL << 2);
 // Only SEXT if the instruction is operating in 64bit operand size
 constexpr InstFlagType FLAGS_SRC_SEXT64BIT         = (1ULL << 3);
@@ -333,21 +337,17 @@ constexpr InstFlagType FLAGS_MODRM                 = (1ULL << 16);
   constexpr InstFlagType FLAGS_SF_MOD_MEM_ONLY       = (1ULL << 18);
   constexpr InstFlagType FLAGS_SF_MOD_REG_ONLY       = (1ULL << 19);
 
-// The secondary Opcode Map uses prefix bytes to overlay more instruction
-// But some instructions need to ignore this overlay and consume these prefixes.
-constexpr InstFlagType FLAGS_NO_OVERLAY           = (1ULL << 20);
-// Some instructions partially ignore overlay
-// Ignore OpSize (0x66) in this case
-constexpr InstFlagType FLAGS_NO_OVERLAY66         = (1ULL << 21);
+// x87
+constexpr InstFlagType FLAGS_POP                  = (1ULL << 20);
 
 // Whether or not the instruction has a VEX prefix for the first source operand
-constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 22);
+constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 21);
 // Whether or not the instruction has a VEX prefix for the second source operand
-constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 23);
+constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 22);
 // Whether or not the instruction has a VEX prefix for the destination
-constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 24);
+constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 23);
 // Whether or not the instruction has a VSIB byte
-constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 25);
+constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 24);
 
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
