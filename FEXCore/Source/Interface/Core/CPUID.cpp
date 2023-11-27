@@ -106,11 +106,10 @@ static uint32_t GetCycleCounterFrequency() {
 }
 
 void CPUIDEmu::SetupHostHybridFlag() {
-  size_t CPUs = FEXCore::CPUInfo::CalculateNumberOfCPUs();
-  PerCPUData.resize(CPUs);
+  PerCPUData.resize(Cores);
 
   uint64_t MIDR{};
-  for (size_t i = 0; i < CPUs; ++i) {
+  for (size_t i = 0; i < Cores; ++i) {
     std::error_code ec{};
     fextl::string MIDRPath = fextl::fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
 
@@ -218,7 +217,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     fextl::vector<const CPUMIDR*> LittleCores;
 
     // Separate CPU cores out to big or little selected
-    for (size_t i = 0; i < CPUs; ++i) {
+    for (size_t i = 0; i < Cores; ++i) {
       uint32_t MIDR = PerCPUData[i].MIDR;
       auto MIDROption = FindDefinedMIDR(MIDR);
       if (MIDROption) {
@@ -334,7 +333,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   }
   else {
     // If we aren't hybrid then just claim everything is big
-    for (size_t i = 0; i < CPUs; ++i) {
+    for (size_t i = 0; i < Cores; ++i) {
       uint32_t MIDR = PerCPUData[i].MIDR;
       auto MIDROption = FindDefinedMIDR(MIDR);
 
@@ -380,7 +379,6 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) const {
 // Processor Info and Features bits
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
-  uint32_t CoreCount = Cores();
 
   // Hypervisor bit is normally set but some applications have issues with it.
   uint32_t Hypervisor = HideHypervisorBit() ? 0 : 1;
@@ -389,7 +387,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
 
   Res.ebx = 0 | // Brand index
     (8 << 8) | // Cache line size in bytes
-    (CoreCount << 16) | // Number of addressable IDs for the logical cores in the physical CPU
+    (Cores << 16) | // Number of addressable IDs for the logical cores in the physical CPU
     (0 << 24); // Local APIC ID
 
   Res.ecx =
@@ -496,7 +494,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
 
   if (Leaf == 0) {
     // Report L1D
-    uint32_t CoreCount = Cores() - 1;
+    uint32_t CoreCount = Cores - 1;
 
     Res.eax = CacheType_Data | // Cache type
       (0b001 << 5) |      // Cache level
@@ -520,7 +518,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   }
   else if (Leaf == 1) {
     // Report L1I
-    uint32_t CoreCount = Cores() - 1;
+    uint32_t CoreCount = Cores - 1;
 
     Res.eax = CacheType_Instruction | // Cache type
       (0b001 << 5) |      // Cache level
@@ -544,7 +542,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   }
   else if (Leaf == 2) {
     // Report L2
-    uint32_t CoreCount = Cores() - 1;
+    uint32_t CoreCount = Cores - 1;
 
     Res.eax = CacheType_Unified | // Cache type
       (0b010 << 5) |      // Cache level
@@ -568,7 +566,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   }
   else if (Leaf == 3) {
     // Report L3
-    uint32_t CoreCount = Cores() - 1;
+    uint32_t CoreCount = Cores - 1;
 
     Res.eax = CacheType_Unified | // Cache type
       (0b011 << 5) |      // Cache level
@@ -1070,7 +1068,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) con
     (0 << 1) | // IRPerf: Instructions retired count support
     (CTX->HostFeatures.SupportsCLZERO << 0);  // CLZERO support
 
-  uint32_t CoreCount = Cores() - 1;
+  uint32_t CoreCount = Cores - 1;
   Res.ecx =
     (0 << 16) |       // PerfTscSize: Performance timestamp count size
     ((uint32_t)std::log2(CoreCount + 1) << 12) |       // ApicIdSize: Number of bits in ApicID
@@ -1168,7 +1166,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_001Dh(uint32_t Leaf) con
   }
   else if (Leaf == 3) {
     // Report L3
-    uint32_t CoreCount = Cores() - 1;
+    uint32_t CoreCount = Cores - 1;
 
     Res.eax = CacheType_Unified | // Cache type
       (0b011 << 5) |      // Cache level
@@ -1209,6 +1207,7 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
 
 void CPUIDEmu::Init(FEXCore::Context::ContextImpl *ctx) {
   CTX = ctx;
+  Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
 
   // Setup some state tracking
   SetupHostHybridFlag();

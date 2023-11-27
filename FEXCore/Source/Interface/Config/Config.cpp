@@ -321,16 +321,6 @@ namespace DefaultValues {
     Meta->Load();
 
     // Do configuration option fix ups after everything is reloaded
-    {
-      // Always fix up the number of threads and create the configuration
-      // Otherwise the application could receive zero as the number of threads
-      FEX_CONFIG_OPT(Cores, THREADS);
-      if (Cores == 0) {
-        // When the number of emulated CPU cores is zero then auto detect
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, fextl::fmt::format("{}", FEXCore::CPUInfo::CalculateNumberOfCPUs()));
-      }
-    }
-
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CORE)) {
       // Sanitize Core option
       FEX_CONFIG_OPT(Core, CORE);

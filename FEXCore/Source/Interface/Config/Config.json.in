@@ -31,15 +31,6 @@
           "Maximum number of instruction to store in a block"
         ]
       },
-      "Threads": {
-        "Type": "uint32",
-        "Default": "0",
-        "ShortArg": "T",
-        "Desc": [
-          "Number of physical hardware threads to tell the process we have.",
-          "0 will auto detect."
-        ]
-      },
       "CacheObjectCodeCompilation": {
         "Type": "uint32",
         "Default": "FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE",
