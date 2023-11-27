@@ -44,11 +44,6 @@ void InitializeVEXTables();
 void InitializeXOPTables();
 void InitializeEVEXTables();
 
-#ifndef NDEBUG
-uint64_t Total{};
-uint64_t NumInsts{};
-#endif
-
 void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeBaseTables(Mode);
   InitializeSecondaryTables(Mode);
@@ -62,10 +57,6 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeVEXTables();
   InitializeXOPTables();
   InitializeEVEXTables();
-
-#ifndef NDEBUG
-  X86InstDebugInfo::InstallDebugInfo();
-#endif
 }
 
 }
