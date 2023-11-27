@@ -14,7 +14,6 @@
     "rsqrtss xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": [
-        "AFP can make this more optimal",
         "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
@@ -24,7 +23,6 @@
     "rcpss xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": [
-        "AFP can make this more optimal",
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [

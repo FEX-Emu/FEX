@@ -248,6 +248,8 @@ HostFeatures::HostFeatures() {
 
   // TODO: AFP is disabled until the scalar usage in the codebase can be audited to be working as expected.
   SupportsAFP = false;
+  // RPRES has a dependency on AFP. Disable it until AFP is enabled.
+  SupportsRPRES = false;
 
   if (!SupportsAtomics) {
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
