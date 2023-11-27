@@ -47,9 +47,22 @@ namespace FEX::EmulatedFile {
    *
    * @return A temporary file that we can use
    */
-  static int GenTmpFD() {
-    int fd = open("/tmp", O_RDWR | O_TMPFILE | O_EXCL, S_IRUSR | S_IWUSR);
-    return fd;
+  static int GenTmpFD(const char *pathname, int flags) {
+    uint32_t memfd_flags {MFD_ALLOW_SEALING};
+    if (flags & O_CLOEXEC) memfd_flags |= MFD_CLOEXEC;
+
+    return memfd_create(pathname, memfd_flags);
+  }
+
+  // Seal the tmpfd features by sealing them all.
+  // Makes the tmpfd read-only.
+  static void SealTmpFD(int fd) {
+    fcntl(fd, F_ADD_SEALS,
+      F_SEAL_SEAL |
+      F_SEAL_SHRINK |
+      F_SEAL_GROW |
+      F_SEAL_WRITE |
+      F_SEAL_FUTURE_WRITE);
   }
 
   fextl::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
@@ -630,14 +643,15 @@ namespace FEX::EmulatedFile {
       // Check if deferred cpuinfo initialization has occured.
       std::call_once(cpu_info_initialized, [&]() { cpu_info = GenerateCPUInfo(ctx, ThreadsConfig); });
 
-      int FD = GenTmpFD();
+      int FD = GenTmpFD(pathname, flags);
       write(FD, (void*)&cpu_info.at(0), cpu_info.size());
       lseek(FD, 0, SEEK_SET);
+      SealTmpFD(FD);
       return FD;
     };
 
     FDReadCreators["/proc/sys/kernel/osrelease"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      int FD = GenTmpFD();
+      int FD = GenTmpFD(pathname, flags);
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
       char Tmp[64]{};
       snprintf(Tmp, sizeof(Tmp), "%d.%d.%d\n",
@@ -647,11 +661,12 @@ namespace FEX::EmulatedFile {
       // + 1 to ensure null at the end
       write(FD, Tmp, strlen(Tmp) + 1);
       lseek(FD, 0, SEEK_SET);
+      SealTmpFD(FD);
       return FD;
     };
 
     FDReadCreators["/proc/version"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      int FD = GenTmpFD();
+      int FD = GenTmpFD(pathname, flags);
       // UTS version NEEDS to be in a format that can pass to `date -d`
       // Format of this is Linux version <Release> (<Compile By>@<Compile Host>) (<Linux Compiler>) #<version> {SMP, PREEMPT, PREEMPT_RT} <UTS version>\n"
       const char kernel_version[] = "Linux version %d.%d.%d (FEX@FEX) (clang) #" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__ "\n";
@@ -664,13 +679,15 @@ namespace FEX::EmulatedFile {
       // + 1 to ensure null at the end
       write(FD, Tmp, strlen(Tmp) + 1);
       lseek(FD, 0, SEEK_SET);
+      SealTmpFD(FD);
       return FD;
     };
 
     auto NumCPUCores = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      int FD = GenTmpFD();
+      int FD = GenTmpFD(pathname, flags);
       write(FD, (void*)&cpus_online.at(0), cpus_online.size());
       lseek(FD, 0, SEEK_SET);
+      SealTmpFD(FD);
       return FD;
     };
 
@@ -683,7 +700,7 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
 
     auto cmdline_handler = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      int FD = GenTmpFD();
+      int FD = GenTmpFD(pathname, flags);
       auto CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
       auto Args = CodeLoader->GetApplicationArguments();
       char NullChar{};
@@ -697,6 +714,7 @@ namespace FEX::EmulatedFile {
 
       // One additional null terminator to finish the list
       lseek(FD, 0, SEEK_SET);
+      SealTmpFD(FD);
       return FD;
     };
 
@@ -722,6 +740,7 @@ namespace FEX::EmulatedFile {
     auto Creator = FDReadCreators.end();
     if (pathname) {
       Creator = FDReadCreators.find(pathname);
+      Path = pathname;
     }
 
     if (Creator == FDReadCreators.end()) {
@@ -789,9 +808,10 @@ namespace FEX::EmulatedFile {
       return -1;
     }
 
-    int FD = GenTmpFD();
+    int FD = GenTmpFD(pathname, flags);
     write(FD, (void*)auxvBase, auxvSize);
     lseek(FD, 0, SEEK_SET);
+    SealTmpFD(FD);
     return FD;
   }
 }
