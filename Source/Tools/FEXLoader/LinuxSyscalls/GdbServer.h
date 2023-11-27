@@ -19,11 +19,13 @@ $end_info$
 #include <mutex>
 #include <stdint.h>
 
+#include "LinuxSyscalls/SignalDelegator.h"
+
 namespace FEX {
 
 class GdbServer {
 public:
-    GdbServer(FEXCore::Context::Context *ctx, FEXCore::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler);
+    GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler);
     ~GdbServer();
 
     // Public for threading
@@ -96,7 +98,7 @@ private:
     fextl::string LibraryMapString{};
 
     // Used to keep track of which signals to pass to the guest
-    std::array<bool, FEXCore::SignalDelegator::MAX_SIGNALS + 1> PassSignals{};
+    std::array<bool, FEX::HLE::SignalDelegator::MAX_SIGNALS + 1> PassSignals{};
     uint32_t CurrentDebuggingThread{};
     int ListenSocket{};
     fextl::string GdbUnixSocketPath{};

@@ -150,6 +150,38 @@ namespace FEX::HLE {
     return SigInfoLayout::LAYOUT_KILL;
   }
 
+  void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
+    // Let the host take first stab at handling the signal
+    auto Thread = GetTLSThread();
+
+    if (!Thread) {
+      LogMan::Msg::AFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
+    }
+    else {
+      SignalHandler &Handler = HostHandlers[Signal];
+      for (auto &HandlerFunc : Handler.Handlers) {
+        if (HandlerFunc(Thread, Signal, Info, UContext)) {
+          // If the host handler handled the fault then we can continue now
+          return;
+        }
+      }
+
+      if (Handler.FrontendHandler &&
+          Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
+        return;
+      }
+
+      // Now let the frontend handle the signal
+      // It's clearly a guest signal and this ends up being an OS specific issue
+      HandleGuestSignal(Thread, Signal, Info, UContext);
+    }
+  }
+
+  void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+    SetHostSignalHandler(Signal, Func, Required);
+    FrontendRegisterHostSignalHandler(Signal, Func, Required);
+  }
+
   void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
 #ifdef _M_ARM_64
     for (size_t i = 0; i < Config.SRAGPRCount; i++) {
@@ -1811,7 +1843,7 @@ namespace FEX::HLE {
     ThreadData.Thread = nullptr;
   }
 
-  void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
+  void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
@@ -1819,7 +1851,7 @@ namespace FEX::HLE {
     InstallHostThunk(Signal);
   }
 
-  void SignalDelegator::FrontendRegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
+  void SignalDelegator::FrontendRegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
