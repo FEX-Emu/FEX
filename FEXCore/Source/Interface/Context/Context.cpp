@@ -52,10 +52,6 @@ namespace FEXCore::Context {
     CompileBlock(Thread->CurrentFrame, GuestRIP, MaxInst);
   }
 
-  FEXCore::Context::ExitReason FEXCore::Context::ContextImpl::GetExitReason() {
-    return ParentThread->ExitReason;
-  }
-
   bool FEXCore::Context::ContextImpl::IsDone() const {
     return IsPaused();
   }

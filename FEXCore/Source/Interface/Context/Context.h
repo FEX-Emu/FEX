@@ -93,8 +93,6 @@ namespace FEXCore::Context {
 
       int GetProgramStatus() const override;
 
-      ExitReason GetExitReason() override;
-
       bool IsDone() const override;
 
       void GetCPUState(FEXCore::Core::CPUState *State) const override;
