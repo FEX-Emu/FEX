@@ -212,6 +212,7 @@ namespace WorkingAppsTester {
 
   // EroFS specific
   static bool Has_EroFSFuse {false};
+  static bool Has_EroFSFsck {false};
 
   void CheckCurl() {
     // Check if curl exists on the host
@@ -295,11 +296,23 @@ namespace WorkingAppsTester {
     Has_EroFSFuse = Result != -1;
   }
 
+  void CheckEroFSFsck() {
+    std::vector<const char*> ExecveArgs = {
+      "fsck.erofs",
+      "-V",
+      nullptr,
+    };
+
+    int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+    Has_EroFSFsck = Result != -1;
+  }
+
   void Init() {
     CheckCurl();
     CheckSquashfuse();
     CheckUnsquashfs();
     CheckEroFSFuse();
+    CheckEroFSFsck();
   }
 }
 
@@ -476,12 +489,9 @@ namespace WebFileFetcher {
   const static std::string DownloadURL = "https://rootfs.fex-emu.gg/RootFS_links.json";
 
   std::string DownloadToString(const std::string &URL) {
-    std::string BigArgs =
-    fmt::format("curl {}", URL);
     std::vector<const char*> ExecveArgs = {
-      "/bin/sh",
-      "-c",
-      BigArgs.c_str(),
+      "curl",
+      URL.c_str(),
       nullptr,
     };
 
@@ -492,12 +502,11 @@ namespace WebFileFetcher {
     auto filename = URL.substr(URL.find_last_of('/') + 1);
     auto PathName = Path + filename;
 
-    std::string BigArgs =
-    fmt::format("curl {} -o {}", URL, PathName);
     std::vector<const char*> ExecveArgs = {
-      "/bin/sh",
-      "-c",
-      BigArgs.c_str(),
+      "curl",
+      URL.c_str(),
+      "-o",
+      PathName.c_str(),
       nullptr,
     };
 
@@ -1091,7 +1100,7 @@ namespace UnSquash {
     bool Extract = true;
     std::error_code ec;
     if (std::filesystem::exists(TargetFolder, ec)) {
-      fextl::string Question = FolderName + " Already exists. Overwrite?";
+      fextl::string Question = "Target folder \"" + FolderName + "\" already exists. Overwrite?";
       if (AskForConfirmation(Question)) {
         if (std::filesystem::remove_all(TargetFolder, ec) != ~0ULL) {
           Extract = true;
@@ -1105,6 +1114,40 @@ namespace UnSquash {
         "-f",
         "-d",
         TargetFolder.c_str(),
+        RootFS.c_str(),
+        nullptr,
+      };
+
+      return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
+    }
+
+    return false;
+  }
+
+  bool ExtractEroFS(const fextl::string &Path, const fextl::string &RootFS, const fextl::string &FolderName) {
+    auto TargetFolder = Path + FolderName;
+
+    bool Extract = true;
+    std::error_code ec;
+    if (std::filesystem::exists(TargetFolder, ec)) {
+      fextl::string Question = "Target folder \"" + FolderName + "\" already exists. Overwrite?";
+      if (AskForConfirmation(Question)) {
+        if (std::filesystem::remove_all(TargetFolder, ec) != ~0ULL) {
+          Extract = true;
+        }
+        if (ec) {
+          ExecWithInfo("Couldn't remove previous directory. Won't extract.");
+        }
+      }
+    }
+
+    if (Extract) {
+      ExecWithInfo("Extracting Erofs. This might take a few minutes.");
+
+      const auto ExtractOption = fmt::format("--extract={}", TargetFolder);
+      const std::vector<const char*> ExecveArgs = {
+        "fsck.erofs",
+        ExtractOption.c_str(),
         RootFS.c_str(),
         nullptr,
       };
@@ -1240,62 +1283,91 @@ int main(int argc, char **argv, char **const envp) {
         }
       }
 
+      struct ExtractStrings {
+        char const *ExtractOrAsIs;
+        char const *AsIsSinceMounterNonFunctional;
+        char const *AsIsSinceExtractorNonFunctional;
+        char const *AsIsSinceNothingWorks;
+      };
+
+      ArgOptions::CompressedImageOption UseImageAs {ArgOptions::CompressedUsageOption};
+      bool HasExtractor{};
+      bool HasMounter{};
+      std::function<bool (const fextl::string &Path, const fextl::string &RootFS, const fextl::string &FolderName)> ExtractHelper;
+      ExtractStrings ExtractingStrings;
+      if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_SQUASHFS) {
+        HasExtractor = WorkingAppsTester::Has_Unsquashfs;
+        HasMounter = WorkingAppsTester::Has_Squashfuse;
+        ExtractHelper = UnSquash::UnsquashRootFS;
+        ExtractingStrings =
+          {
+            "Do you wish to extract the squashfs file or use it as-is?",
+            "Squashfuse doesn't work. Do you wish to extract the squashfs file?",
+            "Unsquashfs doesn't work. Do you want to use the squashfs file as-is?",
+            "Unsquashfs and squashfuse isn't working. Leaving rootfs as-is",
+          };
+      }
+      else if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_EROFS) {
+        HasExtractor = WorkingAppsTester::Has_EroFSFsck;
+        HasMounter = WorkingAppsTester::Has_EroFSFuse;
+        ExtractHelper = UnSquash::ExtractEroFS;
+        ExtractingStrings =
+          {
+            "Do you wish to extract the erofs file or use it as-is?",
+            "erofsfuse doesn't work. Do you wish to extract the erofs file?",
+            "Extracting erofs doesn't work. Do you want to use the erofs file as-is?",
+            "Extracting erofs and erofsfuse isn't working. Leaving rootfs as-is",
+          };
+      }
+
+      int32_t Result{};
       std::vector<fextl::string> Args = {
         "Extract",
         "As-Is",
       };
 
-      ArgOptions::CompressedImageOption UseImageAs {ArgOptions::CompressedUsageOption};
-      if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_SQUASHFS) {
-        int32_t Result{};
-        if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_ASK) {
-          if (WorkingAppsTester::Has_Unsquashfs) {
-            if (WorkingAppsTester::Has_Squashfuse) {
-              Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
-              if (Result == 0) {
-                UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
-              }
-              else if (Result == 1) {
-                UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
-              }
+      if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_ASK) {
+        if (HasExtractor) {
+          if (HasMounter) {
+            Result = AskForConfirmationList(ExtractingStrings.ExtractOrAsIs, Args);
+            if (Result == 0) {
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
             }
-            else {
-              Args.pop_back();
-              Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
-              if (Result == 0) {
-                UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
-              }
-            }
-          }
-          else {
-            if (WorkingAppsTester::Has_Squashfuse) {
-              Args.erase(Args.begin());
-              Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
-              if (Result == 0) {
-                // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
-                UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
-              }
-            }
-            else {
-              Args.erase(Args.begin());
-              ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
+            else if (Result == 1) {
               UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
             }
           }
+          else {
+            Args.pop_back();
+            Result = AskForConfirmationList(ExtractingStrings.AsIsSinceMounterNonFunctional, Args);
+            if (Result == 0) {
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+            }
+          }
         }
-
-        if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_EXTRACT) {
-          auto FolderName = filename.substr(0, filename.find_last_of('.'));
-          if (UnSquash::UnsquashRootFS(RootFS, PathName, FolderName)) {
-            // Remove the .sqsh suffix since we extracted to that
-            filename = FolderName;
+        else {
+          if (HasMounter) {
+            Args.erase(Args.begin());
+            Result = AskForConfirmationList(ExtractingStrings.AsIsSinceExtractorNonFunctional, Args);
+            if (Result == 0) {
+              // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+            }
+          }
+          else {
+            Args.erase(Args.begin());
+            ExecWithInfo(ExtractingStrings.AsIsSinceNothingWorks);
+            UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
           }
         }
       }
-      else if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_EROFS) {
-        // Once erofs tooling is available for easy extraction, offer the same settings to extract as squashfs.
-        // Currently this is unavailable, would need a mount + copy + unmount dance.
-        UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+
+      if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_EXTRACT) {
+        auto FolderName = filename.substr(0, filename.find_last_of('.'));
+        if (ExtractHelper(RootFS, PathName, FolderName)) {
+          // Remove the image file suffix since we extracted to that.
+          filename = FolderName;
+        }
       }
 
       if (AskForConfirmation("Do you wish to set this RootFS as default?")) {
