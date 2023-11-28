@@ -58,6 +58,58 @@ $end_info$
 
 namespace FEX
 {
+
+constexpr std::array<std::string_view const, 22> FlagNames = {
+  "CF",
+  "",
+  "PF",
+  "",
+  "AF",
+  "",
+  "ZF",
+  "SF",
+  "TF",
+  "IF",
+  "DF",
+  "OF",
+  "IOPL",
+  "",
+  "NT",
+  "",
+  "RF",
+  "VM",
+  "AC",
+  "VIF",
+  "VIP",
+  "ID",
+};
+
+static std::string_view const& GetFlagName(unsigned Flag) {
+  return FlagNames[Flag];
+}
+
+static std::string_view const GetGRegName(unsigned Reg) {
+  switch (Reg) {
+    case FEXCore::X86State::REG_RAX: return "rax";
+    case FEXCore::X86State::REG_RBX: return "rbx";
+    case FEXCore::X86State::REG_RCX: return "rcx";
+    case FEXCore::X86State::REG_RDX: return "rdx";
+    case FEXCore::X86State::REG_RSP: return "rsp";
+    case FEXCore::X86State::REG_RBP: return "rbp";
+    case FEXCore::X86State::REG_RSI: return "rsi";
+    case FEXCore::X86State::REG_RDI: return "rdi";
+    case FEXCore::X86State::REG_R8:  return "r8";
+    case FEXCore::X86State::REG_R9:  return "r9";
+    case FEXCore::X86State::REG_R10: return "r10";
+    case FEXCore::X86State::REG_R11: return "r11";
+    case FEXCore::X86State::REG_R12: return "r12";
+    case FEXCore::X86State::REG_R13: return "r13";
+    case FEXCore::X86State::REG_R14: return "r14";
+    case FEXCore::X86State::REG_R15: return "r15";
+    default: FEX_UNREACHABLE;
+  }
+}
+
 #ifndef _WIN32
 void GdbServer::Break(int signal) {
   std::lock_guard lk(sendMutex);
@@ -422,7 +474,7 @@ fextl::string buildTargetXML() {
       xml << "<flags id='fex_eflags' size='4'>\n";
       // flags register
       for(int i = 0; i < 22; i++) {
-          auto name = FEXCore::Core::GetFlagName(i);
+          auto name = GetFlagName(i);
           if (name.empty()) {
             continue;
           }
@@ -441,7 +493,7 @@ fextl::string buildTargetXML() {
 
       // GPRs
       for (uint32_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; i++) {
-        reg(FEXCore::Core::GetGRegName(i), "int64", 64);
+        reg(GetGRegName(i), "int64", 64);
       }
 
       reg("rip", "code_ptr", 64);

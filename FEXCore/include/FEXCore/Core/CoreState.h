@@ -337,7 +337,4 @@ namespace FEXCore::Core {
   static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 8, "This needs to be 8 bytes");
   static_assert(std::alignment_of_v<CpuStateFrame::SynchronousFaultDataStruct> == 8, "This needs to be 8 bytes");
   static_assert(offsetof(CpuStateFrame, SynchronousFaultData) % 8 == 0, "This needs to be aligned");
-
-  FEX_DEFAULT_VISIBILITY std::string_view const& GetFlagName(unsigned Flag);
-  FEX_DEFAULT_VISIBILITY std::string_view const& GetGRegName(unsigned Reg);
 }
