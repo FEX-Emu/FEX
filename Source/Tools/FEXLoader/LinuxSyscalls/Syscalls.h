@@ -225,6 +225,9 @@ public:
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
 
+  bool NeedXIDCheck() const { return NeedToCheckXID; }
+  void DisableXIDCheck() { NeedToCheckXID = false; }
+
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
 
@@ -250,6 +253,7 @@ private:
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
   FEXCore::CodeLoader *LocalLoader{};
+  bool NeedToCheckXID{true};
 
   #ifdef DEBUG_STRACE
     void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);

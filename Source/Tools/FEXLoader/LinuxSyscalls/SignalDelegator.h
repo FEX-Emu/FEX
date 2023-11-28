@@ -89,7 +89,13 @@ namespace FEX::HLE {
       uint64_t GuestSignalFD(int fd, const uint64_t *set, size_t sigsetsize , int flags);
     /**  @} */
 
-      void CheckXIDHandler() override;
+    /**
+     * @brief Check to ensure the XID handler is still set to the FEX handler
+     *
+     * On a new thread GLIBC will set the XID handler underneath us.
+     * After the first thread is created check this.
+     */
+      void CheckXIDHandler();
 
       void UninstallHostHandler(int Signal);
       FEXCore::Context::Context *CTX;
