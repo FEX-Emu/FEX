@@ -489,12 +489,9 @@ namespace WebFileFetcher {
   const static std::string DownloadURL = "https://rootfs.fex-emu.gg/RootFS_links.json";
 
   std::string DownloadToString(const std::string &URL) {
-    std::string BigArgs =
-    fmt::format("curl {}", URL);
     std::vector<const char*> ExecveArgs = {
-      "/bin/sh",
-      "-c",
-      BigArgs.c_str(),
+      "curl",
+      URL.c_str(),
       nullptr,
     };
 
@@ -505,12 +502,11 @@ namespace WebFileFetcher {
     auto filename = URL.substr(URL.find_last_of('/') + 1);
     auto PathName = Path + filename;
 
-    std::string BigArgs =
-    fmt::format("curl {} -o {}", URL, PathName);
     std::vector<const char*> ExecveArgs = {
-      "/bin/sh",
-      "-c",
-      BigArgs.c_str(),
+      "curl",
+      URL.c_str(),
+      "-o",
+      PathName.c_str(),
       nullptr,
     };
 
