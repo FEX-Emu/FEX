@@ -387,18 +387,11 @@ namespace FEXCore::Context {
       StartPaused = true;
     }
 
-    using namespace FEXCore::Core;
-
-    FEXCore::Core::InternalThreadState *Thread = CreateThread(nullptr, 0);
+    FEXCore::Core::InternalThreadState *Thread = CreateThread(InitialRIP, StackPointer, nullptr, 0);
 
     // We are the parent thread
     ParentThread = Thread;
 
-    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
-
-    Thread->CurrentFrame->State.rip = InitialRIP;
-
-    InitializeThreadData(Thread);
     return Thread;
   }
 
@@ -578,10 +571,6 @@ namespace FEXCore::Context {
     return ParentThread->StatusCode;
   }
 
-  void ContextImpl::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
-    Thread->CPUBackend->Initialize();
-  }
-
   struct ExecutionThreadHandler {
     ContextImpl *This;
     FEXCore::Core::InternalThreadState *Thread;
@@ -680,20 +669,22 @@ namespace FEXCore::Context {
     Thread->PassManager->Finalize();
   }
 
-  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
+
+    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
+    Thread->CurrentFrame->State.rip = InitialRIP;
 
     // Copy over the new thread state to the new object
     if (NewThreadState) {
-      memcpy(Thread->CurrentFrame, NewThreadState, sizeof(FEXCore::Core::CPUState));
+      memcpy(&Thread->CurrentFrame->State, NewThreadState, sizeof(FEXCore::Core::CPUState));
     }
-    Thread->CurrentFrame->Thread = Thread;
 
     // Set up the thread manager state
     Thread->ThreadManager.parent_tid = ParentTID;
+    Thread->CurrentFrame->Thread = Thread;
 
     InitializeCompiler(Thread);
-    InitializeThreadData(Thread);
 
     Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
     Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));

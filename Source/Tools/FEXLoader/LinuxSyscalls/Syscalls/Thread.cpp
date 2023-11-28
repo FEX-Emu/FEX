@@ -58,7 +58,7 @@ namespace FEX::HLE {
       NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
     }
 
-    auto NewThread = CTX->CreateThread(&NewThreadState, args->args.parent_tid);
+    auto NewThread = CTX->CreateThread(0, 0, &NewThreadState, args->args.parent_tid);
     CTX->InitializeThread(NewThread);
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
@@ -131,7 +131,7 @@ namespace FEX::HLE {
       }
 
       // Overwrite thread
-      NewThread = CTX->CreateThread(&NewThreadState, GuestArgs->parent_tid);
+      NewThread = CTX->CreateThread(0, 0, &NewThreadState, GuestArgs->parent_tid);
 
       // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
       // Call execution thread directly since we already are on the new thread

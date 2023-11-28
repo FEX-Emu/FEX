@@ -111,25 +111,31 @@ namespace FEXCore::Context {
       /**
        * @brief Used to create FEX thread objects in preparation for creating a true OS thread. Does set a TID or PID.
        *
-       * @param NewThreadState The initial thread state to setup for our state
+       * @param InitialRIP The starting RIP of this thread
+       * @param StackPointer The starting RSP of this thread
+       * @param NewThreadState The initial thread state to setup for our state, if inheriting.
        * @param ParentTID The PID that was the parent thread that created this
        *
        * @return The InternalThreadState object that tracks all of the emulated thread's state
        *
        * Usecases:
+       *  Parent thread Creation:
+       *    - Thread = CreateThread(InitialRIP, InitialStack, nullptr, 0);
+       *    - CTX->RunUntilExit(Thread);
        *  OS thread Creation:
-       *    - Thread = CreateThread(NewState, PPID);
+       *    - Thread = CreateThread(0, 0, NewState, PPID);
        *    - InitializeThread(Thread);
        *  OS fork (New thread created with a clone of thread state):
        *    - clone{2, 3}
-       *    - Thread = CreateThread(CopyOfThreadState, PPID);
+       *    - Thread = CreateThread(0, 0, CopyOfThreadState, PPID);
        *    - ExecutionThread(Thread); // Starts executing without creating another host thread
        *  Thunk callback executing guest code from native host thread
-       *    - Thread = CreateThread(NewState, PPID);
+       *    - Thread = CreateThread(0, 0, NewState, PPID);
        *    - InitializeThreadTLSData(Thread);
        *    - HandleCallback(Thread, RIP);
        */
-      FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
+
+      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
 
       // Public for threading
       void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) override;
@@ -417,15 +423,6 @@ namespace FEXCore::Context {
     }
 
   private:
-    /**
-     * @brief Does some final thread initialization
-     *
-     * @param Thread The internal FEX thread state object
-     *
-     * InitCore and CreateThread both call this to finish up thread object initialization
-     */
-    void InitializeThreadData(FEXCore::Core::InternalThreadState *Thread);
-
     /**
      * @brief Initializes the JIT compilers for the thread
      *

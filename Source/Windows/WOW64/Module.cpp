@@ -555,7 +555,7 @@ void BTCpuProcessInit() {
 }
 
 NTSTATUS BTCpuThreadInit() {
-  GetTLS().ThreadState() = CTX->CreateThread(nullptr, 0);
+  GetTLS().ThreadState() = CTX->CreateThread(0, 0);
 
   std::scoped_lock Lock(ThreadSuspendLock);
   InitializedWOWThreads.emplace(GetCurrentThreadId());
