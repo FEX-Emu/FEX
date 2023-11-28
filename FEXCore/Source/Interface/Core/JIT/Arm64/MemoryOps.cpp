@@ -1863,8 +1863,14 @@ DEF_OP(MemSet) {
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto Value = GetReg(Op->Value.ID());
   const auto Length = GetReg(Op->Length.ID());
-  const auto Direction = GetReg(Op->Direction.ID());
   const auto Dst = GetReg(Node);
+
+  uint64_t DirectionConstant;
+  bool DirectionIsInline = IsInlineConstant(Op->Direction, &DirectionConstant);
+  FEXCore::ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
+  if (!DirectionIsInline) {
+    DirectionReg = GetReg(Op->Direction.ID());
+  }
 
   // If Direction == 0 then:
   //   MemReg is incremented (by size)
@@ -1885,8 +1891,10 @@ DEF_OP(MemSet) {
     add(TMP2, Prefix.X(), MemReg.X());
   }
 
-  // Backward or forwards implementation depends on flag
-  cbnz(ARMEmitter::Size::i64Bit, Direction, &BackwardImpl);
+  if (!DirectionIsInline) {
+    // Backward or forwards implementation depends on flag
+    cbnz(ARMEmitter::Size::i64Bit, DirectionReg, &BackwardImpl);
+  }
 
   auto MemStore = [this](auto Value, uint32_t OpSize, int32_t Size) {
     switch (OpSize) {
@@ -1940,8 +1948,7 @@ DEF_OP(MemSet) {
     }
   };
 
-  // Emit forward direction memset then backward direction memset.
-  for (int32_t Direction :  { 1, -1 }) {
+  auto EmitMemset = [&](int32_t Direction) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
@@ -2001,15 +2008,26 @@ DEF_OP(MemSet) {
           break;
       }
     }
+  };
 
-    if (Direction == 1) {
-      b(&Done);
-      Bind(&BackwardImpl);
-    }
+  if (DirectionIsInline) {
+    // If the direction constant is set then the direction is negative.
+    EmitMemset(DirectionConstant ? -1 : 1);
   }
+  else {
+    // Emit forward direction memset then backward direction memset.
+    for (int32_t Direction :  { 1, -1 }) {
+      EmitMemset(Direction);
 
-  Bind(&Done);
-  // Destination already set to the final pointer.
+      if (Direction == 1) {
+        b(&Done);
+        Bind(&BackwardImpl);
+      }
+    }
+
+    Bind(&Done);
+    // Destination already set to the final pointer.
+  }
 }
 
 DEF_OP(MemCpy) {
@@ -2024,7 +2042,12 @@ DEF_OP(MemCpy) {
   const auto MemRegSrc = GetReg(Op->AddrSrc.ID());
 
   const auto Length = GetReg(Op->Length.ID());
-  const auto Direction = GetReg(Op->Direction.ID());
+  uint64_t DirectionConstant;
+  bool DirectionIsInline = IsInlineConstant(Op->Direction, &DirectionConstant);
+  FEXCore::ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
+  if (!DirectionIsInline) {
+    DirectionReg = GetReg(Op->Direction.ID());
+  }
 
   auto Dst = GetRegPair(Node);
   // If Direction == 0 then:
@@ -2061,8 +2084,10 @@ DEF_OP(MemCpy) {
   // TMP3 = Src
   // TMP4 = load+store temp value
 
-  // Backward or forwards implementation depends on flag
-  cbnz(ARMEmitter::Size::i64Bit, Direction, &BackwardImpl);
+  if (!DirectionIsInline) {
+    // Backward or forwards implementation depends on flag
+    cbnz(ARMEmitter::Size::i64Bit, DirectionReg, &BackwardImpl);
+  }
 
   auto MemCpy = [this](uint32_t OpSize, int32_t Size) {
     switch (OpSize) {
@@ -2184,8 +2209,7 @@ DEF_OP(MemCpy) {
     }
   };
 
-  // Emit forward direction memset then backward direction memset.
-  for (int32_t Direction :  { 1, -1 }) {
+  auto EmitMemcpy = [&](int32_t Direction) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
@@ -2258,15 +2282,24 @@ DEF_OP(MemCpy) {
           break;
       }
     }
+  };
 
-    if (Direction == 1) {
-      b(&Done);
-      Bind(&BackwardImpl);
-    }
+  if (DirectionIsInline) {
+    // If the direction constant is set then the direction is negative.
+    EmitMemcpy(DirectionConstant ? -1 : 1);
   }
-
-  Bind(&Done);
-  // Destination already set to the final pointer.
+  else {
+    // Emit forward direction memset then backward direction memset.
+    for (int32_t Direction :  { 1, -1 }) {
+      EmitMemcpy(Direction);
+      if (Direction == 1) {
+        b(&Done);
+        Bind(&BackwardImpl);
+      }
+    }
+    Bind(&Done);
+    // Destination already set to the final pointer.
+  }
 }
 
 DEF_OP(ParanoidLoadMemTSO) {

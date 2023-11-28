@@ -1218,6 +1218,35 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
+      case OP_MEMCPY:
+      {
+        auto Op = IROp->CW<IR::IROp_MemCpy>();
+
+        uint64_t Constant{};
+        if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
+
+          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant & 1));
+
+          Changed = true;
+        }
+        break;
+      }
+      case OP_MEMSET:
+      {
+        auto Op = IROp->CW<IR::IROp_MemSet>();
+
+        uint64_t Constant{};
+        if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
+
+          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant & 1));
+
+          Changed = true;
+        }
+        break;
+      }
+
       default:
         break;
     }
