@@ -309,8 +309,6 @@ namespace FEXCore::Context {
 
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
 
-    uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
-
     FEXCore::JITSymbols Symbols;
 
     void GetVDSOSigReturn(VDSOSigReturn *VDSOPointers) override {

@@ -544,7 +544,7 @@ namespace FEXCore::Context {
 
       bool HadDispatchError {false};
 
-      Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
+      Thread->FrontendDecoder->DecodeInstructionsAtEntry(Thread, GuestCode, GuestRIP, MaxInst, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
           static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
         }
@@ -553,9 +553,9 @@ namespace FEXCore::Context {
       auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
       auto CodeBlocks = &BlockInfo->Blocks;
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
+      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode);
 
-      const uint8_t GPRSize = GetGPRSize();
+      const uint8_t GPRSize = Thread->OpDispatcher->GetGPRSize();
 
       for (size_t j = 0; j < CodeBlocks->size(); ++j) {
         FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
@@ -640,8 +640,6 @@ namespace FEXCore::Context {
           }
 
           if (NeedsBlockEnd) {
-            const uint8_t GPRSize = GetGPRSize();
-
             // We had some instructions. Early exit
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
             break;
