@@ -1006,6 +1006,16 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = SubWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": [ "Integer Sub",
+                  "Will truncate to 64 or 32bits"
+                ],
+        "DestSize": "Size",
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = SubShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer Sub with shifted register",
                   "Will truncate to 64 or 32bits"

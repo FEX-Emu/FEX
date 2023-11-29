@@ -172,6 +172,21 @@ DEF_OP(Sub) {
   }
 }
 
+DEF_OP(SubWithFlags) {
+  auto Op = IROp->C<IR::IROp_SubWithFlags>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    subs(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), Const);
+  } else {
+    subs(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+  }
+}
+
 DEF_OP(SubShift) {
   auto Op = IROp->C<IR::IROp_SubShift>();
   const uint8_t OpSize = IROp->Size;
