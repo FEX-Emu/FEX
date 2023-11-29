@@ -2731,9 +2731,10 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTOp(OpcodeArgs) {
-  OrderedNode *Result;
+  OrderedNode *Value;
   OrderedNode *Src{};
-  bool AlreadyMasked{};
+  bool IsNonconstant = Op->Src[SrcIndex].IsGPR();
+  uint8_t ConstantShift = 0;
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
@@ -2741,32 +2742,27 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   // Deferred flags are invalidated now
   InvalidateDeferredFlags();
 
-  if (Op->Src[SrcIndex].IsGPR()) {
-    // Because we mask explicitly with an AND after, we can allow garbage here.
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
+  if (IsNonconstant) {
+    // Because we mask explicitly with And/Bfe/Sbfe after, we can allow garbage here.
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags,
+                     {.AllowUpperGarbage = true });
   } else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
-    AlreadyMasked = true;
+    ConstantShift = Op->Src[SrcIndex].Data.Literal.Value & Mask;
+    Src = _Constant(ConstantShift);
   }
 
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
+    Value = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
-    OrderedNode *BitSelect{};
-    if (AlreadyMasked) {
-      BitSelect = Src;
-    } else {
-      OrderedNode *SizeMask = _Constant(Mask);
-
+    if (IsNonconstant) {
       // Get the bit selection from the src
-      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
+      auto BitSelect = _And(OpSize::i64Bit, Src, _Constant(Mask));
+      Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
     }
-
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
   } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
@@ -2783,14 +2779,15 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
-    Result = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+    Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
+    Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
+    ConstantShift = 0;
   }
 
   // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, 0, true);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
 }
 
 template<uint32_t SrcIndex>
