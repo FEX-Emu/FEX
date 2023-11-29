@@ -1089,6 +1089,15 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = AndWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Integer binary and"
+                ],
+        "DestSize": "Size",
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
         "DestSize": "Size",

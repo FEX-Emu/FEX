@@ -563,6 +563,23 @@ DEF_OP(And) {
   }
 }
 
+DEF_OP(AndWithFlags) {
+  auto Op = IROp->C<IR::IROp_AndWithFlags>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  const auto Dst = GetReg(Node);
+  const auto Src1 = GetReg(Op->Src1.ID());
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    ands(EmitSize, Dst, Src1, Const);
+  } else {
+    const auto Src2 = GetReg(Op->Src2.ID());
+    ands(EmitSize, Dst, Src1, Src2);
+  }
+}
+
 DEF_OP(Andn) {
   auto Op = IROp->C<IR::IROp_Andn>();
   const uint8_t OpSize = IROp->Size;
