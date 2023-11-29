@@ -38,6 +38,13 @@ enum class MemoryAccessType {
   STREAM,
 };
 
+enum class BTAction {
+  BTNone,
+  BTClear,
+  BTSet,
+  BTComplement,
+};
+
 struct LoadSourceOptions {
   // Alignment of the load in bytes. -1 signifies unaligned
   int8_t Align = -1;
@@ -329,14 +336,10 @@ public:
   void RCLOp1Bit(OpcodeArgs);
   void RCLOp(OpcodeArgs);
   void RCLSmallerOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
+
+  template<uint32_t SrcIndex, enum BTAction Action>
   void BTOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void BTROp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void BTSOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void BTCOp(OpcodeArgs);
+
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);
   void IMULOp(OpcodeArgs);
