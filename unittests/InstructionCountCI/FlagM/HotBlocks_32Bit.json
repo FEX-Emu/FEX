@@ -1,6 +1,6 @@
 {
   "Features": {
-    "Bitness": 64,
+    "Bitness": 32,
     "EnabledHostFeatures": [
       "FLAGM",
       "FLAGM2"
@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 22,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
         "movzx   edx, byte [esi+ecx]",
@@ -27,25 +27,21 @@
         "cmp     esi, ebx"
       ],
       "ExpectedArm64ASM": [
-        "add x20, x5, x10",
-        "mov w20, w20",
+        "add w20, w5, w10",
         "ldrb w6, [x20]",
-        "add x20, x11, x10",
-        "mov w20, w20",
+        "add w20, w11, w10",
         "ldrb w5, [x20]",
-        "orr w6, w6, #0xffff0000",
-        "mov w20, w6",
+        "orr w20, w6, #0xffff0000",
+        "mov w6, w20",
         "lsl w6, w20, #8",
         "add w10, w10, #0x1 (1)",
         "tst w6, w6",
         "rmif x20, #23, #nzCv",
-        "mov x26, x6",
+        "mov w26, w6",
         "orr w6, w6, w5",
-        "add x20, x9, #0xc (12)",
-        "mov w20, w20",
+        "add w20, w9, #0xc (12)",
         "ldr w5, [x20]",
-        "mov w20, w4",
-        "ldr w20, [x20]",
+        "ldr w20, [x4]",
         "orr w20, w20, w6",
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
@@ -56,7 +52,7 @@
       ]
     },
     "wine mscrt.dll memmove": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "Comment": "Hot in Sonic Mania",
       "x86Insts": [
         "movdqu  xmm0, [esi]",
@@ -73,26 +69,25 @@
         "cmp     ecx, 0x40"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w10",
-        "ldr q16, [x20]",
-        "add x20, x10, #0x10 (16)",
-        "mov w20, w20",
+        "ldr q16, [x10]",
+        "add w20, w10, #0x10 (16)",
         "ldr q17, [x20]",
-        "add x20, x10, #0x20 (32)",
-        "mov w20, w20",
+        "add w20, w10, #0x20 (32)",
         "ldr q18, [x20]",
-        "add x20, x10, #0x30 (48)",
-        "mov w20, w20",
+        "add w20, w10, #0x30 (48)",
         "ldr q19, [x20]",
         "str q16, [x11]",
-        "str q17, [x11, #16]",
-        "str q18, [x11, #32]",
-        "str q19, [x11, #48]",
+        "add w20, w11, #0x10 (16)",
+        "str q17, [x20]",
+        "add w20, w11, #0x20 (32)",
+        "str q18, [x20]",
+        "add w20, w11, #0x30 (48)",
+        "str q19, [x20]",
         "add w10, w10, #0x40 (64)",
         "add w11, w11, #0x40 (64)",
         "sub w5, w5, #0x40 (64)",
         "sub w26, w5, #0x40 (64)",
-        "mov x27, x5",
+        "mov w27, w5",
         "cmp w5, #0x40 (64)",
         "cfinv"
       ]
