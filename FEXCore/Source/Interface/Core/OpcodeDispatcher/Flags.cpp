@@ -681,6 +681,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  OrderedNode *SavedCursor = PushWriteCursor(Res);
+
   // AF
   // Undefined
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
@@ -688,7 +690,19 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
   CalculatePF(Res);
 
   // SF/ZF/CF/OF
-  SetNZ_ZeroCV(SrcSize, Res);
+  // Try to fold in the flag calculation
+  IROp_Header *Producer = Res->Op(DualListData.DataBegin());
+  if (Producer->Op == OP_AND && SrcSize == Producer->Size) {
+    Producer->Op = OP_ANDWITHFLAGS;
+  } else {
+    SetNZ_ZeroCV(SrcSize, Res);
+  }
+
+  CachedNZCV = nullptr;
+  PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+  NZCVDirty = false;
+
+  PopWriteCursor(SavedCursor);
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {

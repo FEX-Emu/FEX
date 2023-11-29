@@ -1870,6 +1870,11 @@ private:
   }
 
   void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Overwritten via backpatching, needed for correctness with backpatching.
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+    NZCVDirty = false;
+
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LOGICAL,
       .SrcSize = GetSrcSize(Op),
