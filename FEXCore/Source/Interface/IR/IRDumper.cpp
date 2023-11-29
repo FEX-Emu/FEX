@@ -44,6 +44,11 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
 }
 
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, CondClassType Arg) {
+  if (Arg == COND_AL) {
+    *out << "ALWAYS";
+    return;
+  }
+
   static constexpr std::array<std::string_view, 22> CondNames = {
     "EQ",
     "NEQ",
