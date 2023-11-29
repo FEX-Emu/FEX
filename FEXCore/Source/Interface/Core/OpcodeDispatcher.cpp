@@ -2768,6 +2768,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
       Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
     }
 
+    // OF/SF/ZF/AF/PF undefined.
+    // Set CF before the action to save a move.
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+
     switch (Action) {
     case BTAction::BTNone: {
       /* Nothing to do */
@@ -2869,10 +2873,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Now shift in to the correct bit location
     Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-  }
 
-  // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+    // OF/SF/ZF/AF/PF undefined.
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+  }
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
