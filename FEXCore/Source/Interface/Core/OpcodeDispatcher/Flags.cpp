@@ -534,6 +534,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     if (NZCVDirty && CachedNZCV)
       _StoreNZCV(CachedNZCV);
     CachedNZCV = nullptr;
+    NZCVDirty = false;
 
     _SbbNZCV(OpSize, Src1, Src2);
     PossiblySetNZCVBits = ~0;
@@ -571,6 +572,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   if (SrcSize >= 4) {
     _SubNZCV(OpSize, Src1, Src2);
     CachedNZCV = nullptr;
+    NZCVDirty = false;
     PossiblySetNZCVBits = ~0;
 
     // We only bother inverting CF if we're actually going to update CF.
@@ -607,6 +609,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   if (SrcSize >= 4) {
     _AddNZCV(OpSize, Src1, Src2);
     CachedNZCV = nullptr;
+    NZCVDirty = false;
     PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
@@ -646,6 +649,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
     auto Zero = _Constant(0);
     _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
     CachedNZCV = nullptr;
+    NZCVDirty = false;
     PossiblySetNZCVBits = ~0;
   }
 }
@@ -671,6 +675,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
     // this does what we need.
     _CondAddNZCV(Size, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
     CachedNZCV = nullptr;
+    NZCVDirty = false;
     PossiblySetNZCVBits = ~0;
   }
 }
