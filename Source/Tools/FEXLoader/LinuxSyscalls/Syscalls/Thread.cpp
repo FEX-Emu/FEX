@@ -40,6 +40,21 @@ $end_info$
 ARG_TO_STR(idtype_t, "%u")
 
 namespace FEX::HLE {
+
+  struct ExecutionThreadHandler {
+    FEXCore::Context::Context *CTX;
+    FEXCore::Core::InternalThreadState *Thread;
+  };
+
+  static void *ThreadHandler(void* Data) {
+    ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
+    auto CTX = Handler->CTX;
+    auto Thread = Handler->Thread;
+    FEXCore::Allocator::free(Handler);
+    CTX->ExecutionThread(Thread);
+    return nullptr;
+  }
+
   FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
     uint64_t flags = args->args.flags;
     FEXCore::Core::CPUState NewThreadState{};
@@ -59,18 +74,6 @@ namespace FEX::HLE {
     }
 
     auto NewThread = CTX->CreateThread(0, 0, &NewThreadState, args->args.parent_tid);
-    bool NeedsXIDCheck = FEX::HLE::_SyscallHandler->NeedXIDCheck();
-    NewThread->StartPaused = NeedsXIDCheck;
-    CTX->InitializeThread(NewThread);
-
-    if (NeedsXIDCheck) {
-      // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
-      // FEX needs to capture all signals and defer them to the guest.
-      // Once FEX creates its first guest thread, overwrite the GLIBC SETXID handler *again* to ensure
-      // FEX maintains control of the signal handler on this signal.
-      FEX::HLE::_SyscallHandler->GetSignalDelegator()->CheckXIDHandler();
-      FEX::HLE::_SyscallHandler->DisableXIDCheck();
-    }
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
@@ -84,6 +87,27 @@ namespace FEX::HLE {
         x32::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(args->args.tls));
       }
       x32::AdjustRipForNewThread(NewThread->CurrentFrame);
+    }
+
+    // We need to do some post-thread creation setup.
+    NewThread->StartPaused = true;
+
+    // Initialize a new thread for execution.
+    ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
+    Arg->CTX = CTX;
+    Arg->Thread = NewThread;
+    NewThread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
+
+    // Wait for the thread to have started.
+    NewThread->ThreadWaiting.Wait();
+
+    if (FEX::HLE::_SyscallHandler->NeedXIDCheck()) {
+      // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
+      // FEX needs to capture all signals and defer them to the guest.
+      // Once FEX creates its first guest thread, overwrite the GLIBC SETXID handler *again* to ensure
+      // FEX maintains control of the signal handler on this signal.
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->CheckXIDHandler();
+      FEX::HLE::_SyscallHandler->DisableXIDCheck();
     }
 
     // Return the new threads TID

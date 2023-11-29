@@ -511,28 +511,6 @@ namespace FEXCore::Context {
     Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
   }
 
-  struct ExecutionThreadHandler {
-    ContextImpl *This;
-    FEXCore::Core::InternalThreadState *Thread;
-  };
-
-  static void *ThreadHandler(void* Data) {
-    ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
-    Handler->This->ExecutionThread(Handler->Thread);
-    FEXCore::Allocator::free(Handler);
-    return nullptr;
-  }
-
-  void ContextImpl::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
-    // This will create the execution thread but it won't actually start executing
-    ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
-    Arg->This = this;
-    Arg->Thread = Thread;
-    Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
-
-    // Wait for the thread to have started
-    Thread->ThreadWaiting.Wait();
-  }
 
   void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
     // Let's do some initial bookkeeping here
@@ -550,6 +528,9 @@ namespace FEXCore::Context {
     if (ThunkHandler) {
       ThunkHandler->RegisterTLSState(Thread);
     }
+#ifndef _WIN32
+    Alloc::OSAllocator::RegisterTLSData(Thread);
+#endif
   }
 
   void ContextImpl::RunThread(FEXCore::Core::InternalThreadState *Thread) {
@@ -1131,10 +1112,6 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
-#ifndef _WIN32
-    Alloc::OSAllocator::RegisterTLSData(Thread);
-#endif
-
     ++IdleWaitRefCount;
 
     // Now notify the thread that we are initialized
