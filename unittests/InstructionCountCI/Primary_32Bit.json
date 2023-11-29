@@ -19,15 +19,19 @@
       ]
     },
     "pop es": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x07",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
         "strh w20, [x28, #136]",
         "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
+        "add x0, x28, x20, lsl #3",
+        "ldr x20, [x0, #896]",
+        "lsr x21, x20, #32",
+        "and w22, w21, #0xff000000",
+        "orr w20, w22, w20, lsr #16",
+        "bfi w20, w21, #16, #8",
         "str w20, [x28, #152]"
       ]
     },
@@ -48,15 +52,19 @@
       ]
     },
     "pop ss": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x17",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
         "strh w20, [x28, #140]",
         "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
+        "add x0, x28, x20, lsl #3",
+        "ldr x20, [x0, #896]",
+        "lsr x21, x20, #32",
+        "and w22, w21, #0xff000000",
+        "orr w20, w22, w20, lsr #16",
+        "bfi w20, w21, #16, #8",
         "str w20, [x28, #160]"
       ]
     },
@@ -69,15 +77,19 @@
       ]
     },
     "pop ds": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x1f",
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
         "strh w20, [x28, #142]",
         "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
+        "add x0, x28, x20, lsl #3",
+        "ldr x20, [x0, #896]",
+        "lsr x21, x20, #32",
+        "and w22, w21, #0xff000000",
+        "orr w20, w22, w20, lsr #16",
+        "bfi w20, w21, #16, #8",
         "str w20, [x28, #164]"
       ]
     },
