@@ -179,7 +179,7 @@ int main(int argc, char **argv, char **const envp)
 
   if (Loader.LoadIR(CTX.get()))
   {
-    CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
+    auto ParentThread = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
@@ -211,10 +211,7 @@ int main(int argc, char **argv, char **const envp)
     LogMan::Msg::DFmt("Reason we left VM: {}", FEXCore::ToUnderlying(ShutdownReason));
 
     // Just re-use compare state. It also checks against the expected values in config.
-    FEXCore::Core::CPUState State;
-    CTX->GetCPUState(&State);
-
-    const bool Passed = Loader.CompareStates(&State, SupportsAVX);
+    const bool Passed = Loader.CompareStates(&ParentThread->CurrentFrame->State, SupportsAVX);
 
     LogMan::Msg::IFmt("Passed? {}\n", Passed ? "Yes" : "No");
 

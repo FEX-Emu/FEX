@@ -223,22 +223,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual bool IsDone() const = 0;
 
       /**
-       * @brief Gets a copy the CPUState of the parent thread
-       *
-       * @param CTX The context that we created
-       * @param State The state object to populate
-       */
-      FEX_DEFAULT_VISIBILITY virtual void GetCPUState(FEXCore::Core::CPUState *State) const = 0;
-
-      /**
-       * @brief Copies the CPUState provided to the parent thread
-       *
-       * @param CTX The context that we created
-       * @param State The satate object to copy from
-       */
-      FEX_DEFAULT_VISIBILITY virtual void SetCPUState(const FEXCore::Core::CPUState *State) = 0;
-
-      /**
        * @brief Allows the frontend to pass in a custom CPUBackend creation factory
        *
        * This allows the frontend to have its own frontend. Typically for debugging

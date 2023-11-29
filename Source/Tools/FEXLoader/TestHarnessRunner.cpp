@@ -303,9 +303,9 @@ int main(int argc, char **argv, char **const envp) {
     CTX->SetSignalDelegator(SignalDelegation.get());
     CTX->SetSyscallHandler(SyscallHandler.get());
 
-    bool Result1 = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
+    auto ParentThread = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
-    if (!Result1) {
+    if (!ParentThread) {
       return 1;
     }
 
@@ -315,7 +315,7 @@ int main(int argc, char **argv, char **const envp) {
     }
 
     // Just re-use compare state. It also checks against the expected values in config.
-    CTX->GetCPUState(&State);
+    memcpy(&State, &ParentThread->CurrentFrame->State, sizeof(State));
 
     SyscallHandler.reset();
   }

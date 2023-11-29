@@ -56,14 +56,6 @@ namespace FEXCore::Context {
     return IsPaused();
   }
 
-  void FEXCore::Context::ContextImpl::GetCPUState(FEXCore::Core::CPUState *State) const {
-    memcpy(State, ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
-  }
-
-  void FEXCore::Context::ContextImpl::SetCPUState(const FEXCore::Core::CPUState *State) {
-    memcpy(ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
-  }
-
   void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {
     CustomCPUFactory = std::move(Factory);
   }
