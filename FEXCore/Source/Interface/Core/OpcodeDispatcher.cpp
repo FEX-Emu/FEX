@@ -2790,7 +2790,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   }
 
   // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, 0, true);
 }
 
 template<uint32_t SrcIndex>
