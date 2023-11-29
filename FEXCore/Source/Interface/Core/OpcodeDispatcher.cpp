@@ -4842,6 +4842,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
+  /* If we do 32-bit arithmetic for a loadable, we will know the upper 32-bits
+   * are zero and can avoid an explicit zeroing. We track that situation
+   * opportunistically.
+   */
+  bool LoadableUpperZeroed = false;
+
   if (Operand.IsLiteral()) {
     uint64_t constant = Operand.Data.Literal.Value;
     uint64_t width = Operand.Data.Literal.Size * 8;
@@ -4889,9 +4895,10 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
 
     auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
-    Src = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
+    Src = _Add(IR::SizeToOpSize(AddrSize), GPR, Constant);
 
     LoadableType = true;
+    LoadableUpperZeroed = AddrSize >= 4;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
@@ -4925,7 +4932,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-        Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
+        Tmp = _Mul(IR::SizeToOpSize(AddrSize), Tmp, Constant);
+        LoadableUpperZeroed = AddrSize >= 4;
       }
       if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
         AccessType = MemoryAccessType::NONTSO;
@@ -4936,7 +4944,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
       auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
 
       if (Tmp != nullptr) {
-        Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
+        Tmp = _Add(IR::SizeToOpSize(AddrSize), Tmp, GPR);
+        LoadableUpperZeroed = AddrSize >= 4;
       }
       else {
         Tmp = GPR;
@@ -4949,7 +4958,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
 
     if (Operand.Data.SIB.Offset) {
       if (Tmp != nullptr) {
-        Src = _Add(IR::SizeToOpSize(GPRSize), Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
+        Src = _Add(IR::SizeToOpSize(AddrSize), Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
+        LoadableUpperZeroed = AddrSize >= 4;
       }
       else {
         Src = _Constant(GPRSize * 8, Operand.Data.SIB.Offset);
@@ -4970,11 +4980,13 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
 
-  if (LoadableType && AddrSize < GPRSize) {
+  if (LoadableType && AddrSize < (LoadableUpperZeroed ? 4 : GPRSize)) {
     // For 64-bit AddrSize can be 32-bit or 64-bit
     // For 32-bit AddrSize can be 32-bit or 16-bit
     //
     // If the AddrSize is not the GPRSize then we need to clear the upper bits.
+    // However we have 32-bit addresses on the Arm side even for 64-bit so we
+    // can skip the move there, if we know it's zeroed.
     Src = _Bfe(IR::SizeToOpSize(GPRSize), AddrSize * 8, 0, Src);
   }
 
