@@ -2761,7 +2761,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     if (IsNonconstant) {
       // Get the bit selection from the src
       auto BitSelect = _And(OpSize::i64Bit, Src, _Constant(Mask));
-      Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
+      Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, Size / 8)), Value, BitSelect);
     }
   } else {
     // Load the address to the memory location
