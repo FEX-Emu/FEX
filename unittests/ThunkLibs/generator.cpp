@@ -2,6 +2,7 @@
 
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Tooling/Tooling.h>
 
@@ -312,6 +313,15 @@ Fixture::GenOutput Fixture::run_thunkgen(std::string_view prelude, std::string_v
              run_thunkgen_host(prelude, code, GuestABI::X86_64, silent) };
 }
 
+#if CLANG_VERSION_MAJOR <= 15
+// Old clang versions require an explicit "struct" prefix
+#define CLANG_STRUCT_PREFIX "struct "
+#define asStructString(name) asString(CLANG_STRUCT_PREFIX name)
+#else
+#define CLANG_STRUCT_PREFIX
+#define asStructString(name) asString(name)
+#endif
+
 TEST_CASE_METHOD(Fixture, "Trivial") {
     const auto output = run_thunkgen("",
         "#include <thunks_common.h>\n"
@@ -333,7 +343,7 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(initListExpr(hasInit(0, expr()),
                                         hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
             // TODO: check null termination
@@ -383,7 +393,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
@@ -421,7 +431,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(3))),
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction")))))))
             )));
 }
@@ -448,7 +458,7 @@ TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
     // Host-side implementation only sees an opaque type that it can't call
     CHECK_THAT(output.host,
         matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
-                         hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
+                         hasArgument(0, hasType(asStructString("fex_guest_function_ptr")))
             )));
 }
 
@@ -472,14 +482,14 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             hasParameter(0, hasType(asString("int"))),
             hasParameter(1, hasType(asString("char"))),
             hasParameter(2, hasType(asString("unsigned long"))),
-            hasParameter(3, hasType(asString("struct TestStruct")))
+            hasParameter(3, hasType(asStructString("TestStruct")))
         )));
 
     // Host code
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(initListExpr(hasInit(0, expr()),
                                         hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
             // TODO: check null termination
@@ -490,13 +500,13 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             hasName("fexfn_unpack_libtest_func"),
             // Packed argument struct should contain all parameters
             parameterCountIs(1),
-            hasParameter(0, hasType(pointerType(pointee(
+            hasParameter(0, hasType(pointerType(pointee(hasUnqualifiedDesugaredType(
                 recordType(hasDeclaration(decl(
                     has(fieldDecl(hasType(asString("guest_layout<int>")))),
                     has(fieldDecl(hasType(asString("guest_layout<char>")))),
                     has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
-                    )))))))
+                    has(fieldDecl(hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "TestStruct>"))))
+                    ))))))))
             )));
 }
 
