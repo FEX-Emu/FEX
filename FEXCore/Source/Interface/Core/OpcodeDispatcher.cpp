@@ -2780,21 +2780,21 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     case BTAction::BTClear: {
       OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Andn(OpSize::i64Bit, Dest, BitMask);
+      Dest = _Andn(IR::SizeToOpSize(LshrSize), Dest, BitMask);
       StoreResult(GPRClass, Op, Dest, -1);
       break;
     }
 
     case BTAction::BTSet: {
       OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Or(OpSize::i64Bit, Dest, BitMask);
+      Dest = _Or(IR::SizeToOpSize(LshrSize), Dest, BitMask);
       StoreResult(GPRClass, Op, Dest, -1);
       break;
     }
 
     case BTAction::BTComplement: {
       OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Xor(OpSize::i64Bit, Dest, BitMask);
+      Dest = _Xor(IR::SizeToOpSize(LshrSize), Dest, BitMask);
       StoreResult(GPRClass, Op, Dest, -1);
       break;
     }
