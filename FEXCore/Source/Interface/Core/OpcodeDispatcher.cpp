@@ -2742,7 +2742,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
+    // Because we mask explicitly with an AND after, we can allow garbage here.
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   } else {
     // Can only be an immediate
     // Masked by operand size
