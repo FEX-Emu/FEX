@@ -26,12 +26,6 @@ namespace FEXCore::Context {
     return fextl::make_unique<FEXCore::Context::ContextImpl>();
   }
 
-  bool FEXCore::Context::ContextImpl::InitializeContext() {
-    // This should be used for generating things that are shared between threads
-    CPUID.Init(this);
-    return true;
-  }
-
   void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {
     CustomExitHandler = std::move(handler);
   }

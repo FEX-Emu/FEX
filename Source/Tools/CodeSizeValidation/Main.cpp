@@ -553,7 +553,6 @@ int main(int argc, char **argv, char **const envp) {
   // Create FEXCore context.
   auto CTX = FEXCore::Context::Context::CreateNewContext();
 
-  CTX->InitializeContext();
   auto SignalDelegation = FEX::DummyHandlers::CreateSignalDelegator();
   auto SyscallHandler = FEX::DummyHandlers::CreateSyscallHandler();
 

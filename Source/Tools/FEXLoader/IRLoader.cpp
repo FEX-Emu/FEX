@@ -160,7 +160,6 @@ int main(int argc, char **argv, char **const envp)
 
   FEXCore::Context::InitializeStaticTables();
   auto CTX = FEXCore::Context::Context::CreateNewContext();
-  CTX->InitializeContext();
 
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {});
 

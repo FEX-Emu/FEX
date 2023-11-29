@@ -444,7 +444,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
   auto CTX = FEXCore::Context::Context::CreateNewContext();
-  CTX->InitializeContext();
 
   // Setup TSO hardware emulation immediately after initializing the context.
   FEX::TSO::SetupTSOEmulation(CTX.get());

@@ -117,16 +117,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY static fextl::unique_ptr<FEXCore::Context::Context> CreateNewContext();
 
       /**
-       * @brief Post creation context initialization
-       * Once configurations have been set, do the post-creation initialization with that configuration
-       *
-       * @param CTX The context that we created
-       *
-       * @return true if we managed to initialize correctly
-       */
-      FEX_DEFAULT_VISIBILITY virtual bool InitializeContext() = 0;
-
-      /**
        * @brief Allows setting up in memory code and other things prior to launchign code execution
        *
        * @param CTX The context that we created
