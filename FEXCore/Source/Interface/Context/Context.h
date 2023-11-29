@@ -91,8 +91,6 @@ namespace FEXCore::Context {
       void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) override;
       void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
 
-      int GetProgramStatus() const override;
-
       bool IsDone() const override;
 
       void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
