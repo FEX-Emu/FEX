@@ -1112,7 +1112,7 @@
       ]
     },
     "cmpxchg eax, ebx": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 15,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -1129,13 +1129,11 @@
         "sub x26, x23, x24",
         "eor w27, w23, w24",
         "cmp w23, w24",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cfinv"
       ]
     },
     "cmpxchg [rax], ebx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -1148,13 +1146,11 @@
         "sub w26, w21, w20",
         "eor w27, w21, w20",
         "cmp w21, w20",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cfinv"
       ]
     },
     "cmpxchg rax, rbx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov x20, x4",
@@ -1167,13 +1163,11 @@
         "sub x26, x20, x21",
         "eor x27, x20, x21",
         "cmp x20, x21",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cfinv"
       ]
     },
     "cmpxchg [rax], rbx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov x20, x4",
@@ -1183,9 +1177,7 @@
         "sub x26, x20, x4",
         "eor x27, x20, x4",
         "cmp x20, x4",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cfinv"
       ]
     },
     "btr ax, bx": {
