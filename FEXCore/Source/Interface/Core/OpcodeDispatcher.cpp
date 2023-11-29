@@ -2084,8 +2084,8 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
-  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
