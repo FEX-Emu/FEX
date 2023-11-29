@@ -1811,6 +1811,11 @@ private:
   }
 
   void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *RestoreCF = nullptr) {
+    // Overwritten via backpatching, needed for correctness with backpatching.
+    CachedNZCV = nullptr;
+    NZCVDirty = false;
+    PossiblySetNZCVBits = ~0;
+
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_SUB,
       .SrcSize = GetSrcSize(Op),
