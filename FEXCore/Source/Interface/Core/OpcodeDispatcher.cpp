@@ -2829,7 +2829,6 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        // We don't current support this IR op though
         Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, MemoryLocation);
       } else {
         Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
