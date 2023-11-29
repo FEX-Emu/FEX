@@ -2759,9 +2759,11 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     Value = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
 
     if (IsNonconstant) {
-      // Get the bit selection from the src
-      auto BitSelect = _And(OpSize::i64Bit, Src, _Constant(Mask));
-      Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, Size / 8)), Value, BitSelect);
+      // Get the bit selection from the src. We need to mask for 8/16-bit, but
+      // rely on the implicit masking of Lshr for native sizes.
+      unsigned LshrSize = std::max<uint8_t>(4u, Size / 8);
+      auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
+      Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
     }
   } else {
     // Load the address to the memory location
