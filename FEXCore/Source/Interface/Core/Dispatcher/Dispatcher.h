@@ -85,7 +85,9 @@ public:
 #endif
 
   uint16_t GetSRAGPRCount() const {
-    return StaticRegisters.size();
+    // PF/AF are the final two SRA registers.
+    // Only return the SRA for GPRs.
+    return StaticRegisters.size() - 2;
   }
 
   uint16_t GetSRAFPRCount() const {
@@ -93,7 +95,7 @@ public:
   }
 
   void GetSRAGPRMapping(uint8_t Mapping[16]) const {
-    for (size_t i = 0; i < StaticRegisters.size(); ++i) {
+    for (size_t i = 0; i < StaticRegisters.size() - 2; ++i) {
       Mapping[i] = StaticRegisters[i].Idx();
     }
   }
