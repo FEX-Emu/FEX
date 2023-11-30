@@ -2729,11 +2729,12 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   }
 }
 
-template<uint32_t SrcIndex>
+template<uint32_t SrcIndex, BTAction Action>
 void OpDispatchBuilder::BTOp(OpcodeArgs) {
-  OrderedNode *Result;
+  OrderedNode *Value;
   OrderedNode *Src{};
-  bool AlreadyMasked{};
+  bool IsNonconstant = Op->Src[SrcIndex].IsGPR();
+  uint8_t ConstantShift = 0;
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
@@ -2741,31 +2742,63 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   // Deferred flags are invalidated now
   InvalidateDeferredFlags();
 
-  if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
+  if (IsNonconstant) {
+    // Because we mask explicitly with And/Bfe/Sbfe after, we can allow garbage here.
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags,
+                     {.AllowUpperGarbage = true });
   } else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
-    AlreadyMasked = true;
+    ConstantShift = Op->Src[SrcIndex].Data.Literal.Value & Mask;
+    Src = _Constant(ConstantShift);
   }
 
   if (Op->Dest.IsGPR()) {
     // When the destination is a GPR, we don't care about garbage in the upper bits.
     // Load the full register.
     auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
+    Value = Dest;
 
-    OrderedNode *BitSelect{};
-    if (AlreadyMasked) {
-      BitSelect = Src;
-    } else {
-      OrderedNode *SizeMask = _Constant(Mask);
+    // Get the bit selection from the src. We need to mask for 8/16-bit, but
+    // rely on the implicit masking of Lshr for native sizes.
+    unsigned LshrSize = std::max<uint8_t>(4u, Size / 8);
+    auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
 
-      // Get the bit selection from the src
-      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
+    if (IsNonconstant) {
+      Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
     }
 
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
+    // OF/SF/ZF/AF/PF undefined.
+    // Set CF before the action to save a move.
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+
+    switch (Action) {
+    case BTAction::BTNone: {
+      /* Nothing to do */
+      break;
+    }
+
+    case BTAction::BTClear: {
+      OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
+      Dest = _Andn(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      StoreResult(GPRClass, Op, Dest, -1);
+      break;
+    }
+
+    case BTAction::BTSet: {
+      OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
+      Dest = _Or(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      StoreResult(GPRClass, Op, Dest, -1);
+      break;
+    }
+
+    case BTAction::BTComplement: {
+      OrderedNode *BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
+      Dest = _Xor(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      StoreResult(GPRClass, Op, Dest, -1);
+      break;
+    }
+    }
   } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
@@ -2782,248 +2815,67 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
-    Result = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+    ConstantShift = 0;
+
+    switch (Action) {
+    case BTAction::BTNone: {
+      Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+      break;
+    }
+
+    case BTAction::BTClear: {
+      OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+
+      if (DestIsLockedMem(Op)) {
+        HandledLock = true;
+        Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, MemoryLocation);
+      } else {
+        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+        auto Modified = _Andn(OpSize::i64Bit, Value, BitMask);
+        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+      }
+      break;
+    }
+
+    case BTAction::BTSet: {
+      OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+
+      if (DestIsLockedMem(Op)) {
+        HandledLock = true;
+        Value = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
+      } else {
+        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+        auto Modified = _Or(OpSize::i64Bit, Value, BitMask);
+        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+      }
+      break;
+    }
+
+    case BTAction::BTComplement: {
+      OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+
+      if (DestIsLockedMem(Op)) {
+        HandledLock = true;
+        Value = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
+      } else {
+        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+        auto Modified = _Xor(OpSize::i64Bit, Value, BitMask);
+        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+      }
+      break;
+    }
+    }
 
     // Now shift in to the correct bit location
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
+    Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
+
+    // OF/SF/ZF/AF/PF undefined.
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
   }
-
-  // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
-}
-
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::BTROp(OpcodeArgs) {
-  OrderedNode *Result;
-  OrderedNode *Src{};
-  bool AlreadyMasked{};
-
-  const uint32_t Size = GetDstBitSize(Op);
-  const uint32_t Mask = Size - 1;
-
-  // Deferred flags are invalidated now
-  InvalidateDeferredFlags();
-
-  if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
-  } else {
-    // Can only be an immediate
-    // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
-    AlreadyMasked = true;
-  }
-
-  if (Op->Dest.IsGPR()) {
-    // When the destination is a GPR, we don't care about garbage in the upper bits.
-    // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
-
-    OrderedNode *BitSelect{};
-    if (AlreadyMasked) {
-      BitSelect = Src;
-    } else {
-      OrderedNode *SizeMask = _Constant(Mask);
-
-      // Get the bit selection from the src
-      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
-    }
-
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
-
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Andn(OpSize::i64Bit, Dest, BitMask);
-    StoreResult(GPRClass, Op, Dest, -1);
-  } else {
-    // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    Dest = AppendSegmentOffset(Dest, Op->Flags);
-
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
-
-    // Address is provided as bits we want BYTE offsets
-    // Extract Signed offset
-    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
-
-    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
-    // Then use that to index in to the memory location by size of op
-
-    // Now add the addresses together and load the memory
-    OrderedNode *MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-
-    if (DestIsLockedMem(Op)) {
-      HandledLock = true;
-      // We don't current support this IR op though
-      Result = _AtomicFetchCLR(OpSize::i8Bit, BitMask, MemoryLocation);
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
-    } else {
-      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Andn(OpSize::i64Bit, Value, BitMask);
-      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
-    }
-  }
-
-  // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
-}
-
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::BTSOp(OpcodeArgs) {
-  OrderedNode *Result;
-  OrderedNode *Src{};
-  bool AlreadyMasked{};
-
-  const uint32_t Size = GetDstBitSize(Op);
-  const uint32_t Mask = Size - 1;
-
-  // Deferred flags are invalidated now
-  InvalidateDeferredFlags();
-
-  if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
-  } else {
-    // Can only be an immediate
-    // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
-    AlreadyMasked = true;
-  }
-
-  if (Op->Dest.IsGPR()) {
-    // When the destination is a GPR, we don't care about garbage in the upper bits.
-    // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
-
-    OrderedNode *BitSelect{};
-    if (AlreadyMasked) {
-      BitSelect = Src;
-    } else {
-      OrderedNode *SizeMask = _Constant(Mask);
-
-      // Get the bit selection from the src
-      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
-    }
-
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
-
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Or(OpSize::i64Bit, Dest, BitMask);
-    StoreResult(GPRClass, Op, Dest, -1);
-  } else {
-    // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    Dest = AppendSegmentOffset(Dest, Op->Flags);
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
-
-    // Address is provided as bits we want BYTE offsets
-    // Extract Signed offset
-    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
-
-    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
-    // Then use that to index in to the memory location by size of op
-
-    // Now add the addresses together and load the memory
-    OrderedNode *MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-
-    if (DestIsLockedMem(Op)) {
-      HandledLock = true;
-      Result = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
-    } else {
-      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Or(OpSize::i64Bit, Value, BitMask);
-      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
-    }
-  }
-
-  // OF/SF/ZF/AF/PF undefined.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
-}
-
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::BTCOp(OpcodeArgs) {
-  OrderedNode *Result;
-  OrderedNode *Src{};
-  bool AlreadyMasked{};
-
-  const uint32_t Size = GetDstBitSize(Op);
-  const uint32_t Mask = Size - 1;
-
-  // Deferred flags are invalidated now
-  InvalidateDeferredFlags();
-
-  if (Op->Src[SrcIndex].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
-  } else {
-    // Can only be an immediate
-    // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
-    AlreadyMasked = true;
-  }
-
-  if (Op->Dest.IsGPR()) {
-    // When the destination is a GPR, we don't care about garbage in the upper bits.
-    // Load the full register.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
-
-    OrderedNode *BitSelect{};
-    if (AlreadyMasked) {
-      BitSelect = Src;
-    } else {
-      OrderedNode *SizeMask = _Constant(Mask);
-
-      // Get the bit selection from the src
-      BitSelect = _And(OpSize::i64Bit, Src, SizeMask);
-    }
-
-    Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Dest))), Dest, BitSelect);
-
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-    Dest = _Xor(OpSize::i64Bit, Dest, BitMask);
-    StoreResult(GPRClass, Op, Dest, -1);
-  } else {
-    // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    Dest = AppendSegmentOffset(Dest, Op->Flags);
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
-
-    // Address is provided as bits we want BYTE offsets
-    // Extract Signed offset
-    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
-
-    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
-    // Then use that to index in to the memory location by size of op
-
-    // Now add the addresses together and load the memory
-    OrderedNode *MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
-    OrderedNode *BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
-
-    if (DestIsLockedMem(Op)) {
-      HandledLock = true;
-      Result = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Result))), Result, BitSelect);
-    } else {
-      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-      // Now shift in to the correct bit location
-      Result = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
-      Value = _Xor(OpSize::i64Bit, Value, BitMask);
-      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
-    }
-  }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Bfe(IR::SizeToOpSize(GetOpSize(Result)), 1, 0, Result));
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
@@ -6242,19 +6094,19 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xA0, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
     {0xA1, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
     {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
-    {0xA3, 1, &OpDispatchBuilder::BTOp<0>}, // BT
+    {0xA3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTNone>}, // BT
     {0xA4, 1, &OpDispatchBuilder::SHLDImmediateOp},
     {0xA5, 1, &OpDispatchBuilder::SHLDOp},
     {0xA8, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
     {0xA9, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-    {0xAB, 1, &OpDispatchBuilder::BTSOp<0>},
+    {0xAB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTSet>}, // BTS
     {0xAC, 1, &OpDispatchBuilder::SHRDImmediateOp},
     {0xAD, 1, &OpDispatchBuilder::SHRDOp},
     {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp},
     {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp}, // CMPXCHG
-    {0xB3, 1, &OpDispatchBuilder::BTROp<0>},
+    {0xB3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTClear>}, // BTR
     {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
-    {0xBB, 1, &OpDispatchBuilder::BTCOp<0>},
+    {0xBB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTComplement>}, // BTC
     {0xBC, 1, &OpDispatchBuilder::BSFOp}, // BSF
     {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
     {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
@@ -6674,25 +6526,25 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
 
     // GROUP 8
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::BTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::BTOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::BTSOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::BTSOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::BTSOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::BTSOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::BTROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTROp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::BTCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTCOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
 
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
