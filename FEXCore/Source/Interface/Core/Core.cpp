@@ -99,6 +99,8 @@ namespace FEXCore::Context {
 
     // Track atomic TSO emulation configuration.
     UpdateAtomicTSOEmulationConfig();
+
+    CPUID.Init(this);
   }
 
   ContextImpl::~ContextImpl() {

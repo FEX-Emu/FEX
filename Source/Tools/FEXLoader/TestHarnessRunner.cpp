@@ -245,8 +245,6 @@ int main(int argc, char **argv, char **const envp) {
 
   auto CTX = FEXCore::Context::Context::CreateNewContext();
 
-  CTX->InitializeContext();
-
 #ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {});
 #else
