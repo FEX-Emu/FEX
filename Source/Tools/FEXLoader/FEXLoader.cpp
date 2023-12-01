@@ -480,7 +480,8 @@ int main(int argc, char **argv, char **const envp) {
   if (GdbServer) {
     DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
   }
-  CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
+
+  auto ParentThread = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
@@ -556,7 +557,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto ProgramStatus = CTX->GetProgramStatus();
+  auto ProgramStatus = ParentThread->StatusCode;
 
   DebugServer.reset();
   SyscallHandler.reset();

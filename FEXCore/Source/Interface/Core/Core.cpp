@@ -511,10 +511,6 @@ namespace FEXCore::Context {
     Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
   }
 
-  int ContextImpl::GetProgramStatus() const {
-    return ParentThread->StatusCode;
-  }
-
   struct ExecutionThreadHandler {
     ContextImpl *This;
     FEXCore::Core::InternalThreadState *Thread;

@@ -192,16 +192,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
 
       /**
-       * @brief Gets the program exit status
-       *
-       *
-       * @param CTX The context that we created
-       *
-       * @return The program exit status
-       */
-      FEX_DEFAULT_VISIBILITY virtual int GetProgramStatus() const = 0;
-
-      /**
        * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)
        *
        * Use this when the context is async running to determine if it is done
