@@ -122,7 +122,7 @@ DEF_OP(SbbNZCV) {
 
 DEF_OP(TestNZ) {
   auto Op = IROp->C<IR::IROp_TestNZ>();
-  const uint8_t OpSize = Op->Size;
+  const uint8_t OpSize = IROp->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
