@@ -131,8 +131,8 @@ DEF_OP(CondJump) {
   if (Op->FromNZCV) {
     b(MapBranchCC(Op->Cond), TrueTargetLabel);
   } else {
-    uint64_t Const;
-    const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+    [[maybe_unused]] uint64_t Const;
+    [[maybe_unused]] const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
     const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
 
