@@ -1,4 +1,4 @@
-# FEX-2311
+# FEX-2312
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -76,10 +76,6 @@ Logic that binds various parts together
 #### driver
 Emulation mainloop related glue logic
 - [Core.cpp](../FEXCore/Source/Interface/Core/Core.cpp): Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
-
-#### gdbserver
-- [GdbServer.cpp](../FEXCore/Source/Interface/Core/GdbServer.cpp): Provides a gdb interface to the guest state
-- [GdbServer.h](../FEXCore/Source/Interface/Core/GdbServer.h)
 
 #### log-manager
 - [LogManager.cpp](../FEXCore/Source/Utils/LogManager.cpp)
