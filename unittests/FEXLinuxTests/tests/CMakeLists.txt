@@ -45,8 +45,6 @@ target_link_libraries(smc-shared-1.${BITNESS} PRIVATE rt pthread)
 
 target_link_libraries(smc-shared-2.${BITNESS} PRIVATE rt pthread)
 
-if(BITNESS EQUAL 64)
-  target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
-endif()
+target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
 
 target_link_libraries(timer-sigev-thread.${BITNESS} PRIVATE rt pthread)
