@@ -87,7 +87,7 @@ DEF_OP(Add) {
 
 DEF_OP(AddNZCV) {
   auto Op = IROp->C<IR::IROp_AddNZCV>();
-  const IR::OpSize OpSize = Op->Size;
+  const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
@@ -102,7 +102,7 @@ DEF_OP(AddNZCV) {
 
 DEF_OP(AdcNZCV) {
   auto Op = IROp->C<IR::IROp_AdcNZCV>();
-  const IR::OpSize OpSize = Op->Size;
+  const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
@@ -112,7 +112,7 @@ DEF_OP(AdcNZCV) {
 
 DEF_OP(SbbNZCV) {
   auto Op = IROp->C<IR::IROp_SbbNZCV>();
-  const IR::OpSize OpSize = Op->Size;
+  const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
@@ -184,7 +184,7 @@ DEF_OP(SubShift) {
 
 DEF_OP(SubNZCV) {
   auto Op = IROp->C<IR::IROp_SubNZCV>();
-  const IR::OpSize OpSize = Op->Size;
+  const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
@@ -247,7 +247,7 @@ ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
 
 DEF_OP(CondAddNZCV) {
   auto Op = IROp->C<IR::IROp_CondAddNZCV>();
-  const IR::OpSize OpSize = Op->Size;
+  const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
