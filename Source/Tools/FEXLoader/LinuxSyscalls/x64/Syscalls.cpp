@@ -108,7 +108,7 @@ namespace FEX::HLE::x64 {
 #if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {
       if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
-        LogMan::Msg::DFmt("Unimplemented syscall: %s", Syscall.second);
+        LogMan::Msg::DFmt("Unimplemented syscall: {}", Syscall.second);
       }
     }
 #endif
