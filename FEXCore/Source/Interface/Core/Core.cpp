@@ -831,9 +831,9 @@ namespace FEXCore::Context {
           if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
             auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
-            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
+            auto CodeChanged = Thread->OpDispatcher->ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
 
-            auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
+            auto InvalidateCodeCond = Thread->OpDispatcher->CondJump(CodeChanged);
 
             auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
             auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
