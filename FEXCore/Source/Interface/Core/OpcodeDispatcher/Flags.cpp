@@ -332,7 +332,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2,
-        CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
+        CurrentDeferredFlags.Sources.TwoSrcImmediate.RestoreCF);
       break;
     case FlagsGenerationType::TYPE_ADD:
       CalculateFlags_ADD(
@@ -340,7 +340,7 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2,
-        CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
+        CurrentDeferredFlags.Sources.TwoSrcImmediate.RestoreCF);
       break;
     case FlagsGenerationType::TYPE_MUL:
       CalculateFlags_MUL(
@@ -559,14 +559,11 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *RestoreCF) {
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
-
-  // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
@@ -576,14 +573,14 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
     PossiblySetNZCVBits = ~0;
 
     // We only bother inverting CF if we're actually going to update CF.
-    if (UpdateCF)
+    if (!RestoreCF)
       CarryInvert();
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
 
     // CF
-    if (UpdateCF) {
+    if (!RestoreCF) {
       // Grab carry bit from unmasked output.
       SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
@@ -592,18 +589,15 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   }
 
   // We stomped over CF while calculation flags, restore it.
-  if (!UpdateCF)
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+  if (RestoreCF)
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(RestoreCF);
 }
 
-void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *RestoreCF) {
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(OpSize, Res, Src1, Src2);
   CalculatePF(Res);
-
-  // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
@@ -616,7 +610,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
     SetNZ_ZeroCV(SrcSize, Res);
 
     // CF
-    if (UpdateCF) {
+    if (!RestoreCF) {
       // Grab carry bit from unmasked output
       SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
     }
@@ -625,8 +619,8 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   }
 
   // We stomped over CF while calculation flags, restore it.
-  if (!UpdateCF)
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+  if (RestoreCF)
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(RestoreCF);
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {

@@ -3545,12 +3545,16 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
+  // Get CF first, since the Add can be backpatched to generate flags.
+  CalculateDeferredFlags();
+  OrderedNode *CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
   Result = _Add(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  GenerateFlags_ADD(Op, Result, Dest, OneConst, false);
+  GenerateFlags_ADD(Op, Result, Dest, OneConst, CF);
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
@@ -3576,12 +3580,16 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
+  // Get CF first, since the Sub can be backpatched to generate flags.
+  CalculateDeferredFlags();
+  OrderedNode *CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
   Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  GenerateFlags_SUB(Op, Result, Dest, OneConst, false);
+  GenerateFlags_SUB(Op, Result, Dest, OneConst, CF);
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
