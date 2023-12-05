@@ -957,6 +957,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         break;
       }
       case OP_ADD:
+      case OP_ADDWITHFLAGS:
       case OP_SUB:
       case OP_SUBWITHFLAGS:
       case OP_ADDNZCV:
