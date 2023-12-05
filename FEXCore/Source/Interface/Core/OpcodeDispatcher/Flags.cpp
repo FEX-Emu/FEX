@@ -600,6 +600,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *RestoreCF) {
+  OrderedNode *SavedCursor = PushWriteCursor(Res);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(OpSize, Res, Src1, Src2);
@@ -607,7 +608,14 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
   // TODO: Could do this path for small sources if we have FEAT_FlagM
   if (SrcSize >= 4) {
-    _AddNZCV(OpSize, Src1, Src2);
+    // Try to fold in the flag calculation
+    IROp_Header *Producer = Res->Op(DualListData.DataBegin());
+    if (Producer->Op == OP_ADD) {
+      Producer->Op = OP_ADDWITHFLAGS;
+    } else {
+      _AddNZCV(OpSize, Src1, Src2);
+    }
+
     CachedNZCV = nullptr;
     NZCVDirty = false;
     PossiblySetNZCVBits = ~0;
@@ -627,6 +635,8 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   // We stomped over CF while calculation flags, restore it.
   if (RestoreCF)
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(RestoreCF);
+
+  PopWriteCursor(SavedCursor);
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
