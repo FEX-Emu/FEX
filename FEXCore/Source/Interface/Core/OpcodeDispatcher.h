@@ -168,6 +168,16 @@ public:
     return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
   }
 
+  // While _ValidateCode is not a jump, it needs the same treatment as it
+  // clobbers flags and is used immediately before a jump. Since that jump would
+  // flush flags anyway, we just want to flush before ValidateCode to avoid an
+  // NZCV spill/fill dance.
+  IRPair<IROp_ValidateCode> ValidateCode(uint64_t _CodeOriginalLow, uint64_t _CodeOriginalhigh, int64_t _Offset, uint8_t _CodeLength) {
+    CalculateDeferredFlags();
+
+    return _ValidateCode(_CodeOriginalLow, _CodeOriginalhigh, _Offset, _CodeLength);
+  }
+
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP
     // Then we need to insert an unconditional jump from the current block to the one we are going to
