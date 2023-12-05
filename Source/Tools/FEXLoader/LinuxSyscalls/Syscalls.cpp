@@ -525,6 +525,14 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
 uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
   uint64_t flags = args->args.flags;
 
+  if (flags & CLONE_CLEAR_SIGHAND) {
+    // CLONE_CLEAR_SIGHAND was added in kernel 5.5. FEX doesn't properly support this.
+    // glibc started using this flag in 2.38 as an optimization for posix_spawn.
+    // If clone returns EINVAL or ENOSYS then it will fallback to the non-optimized path.
+    LogMan::Msg::IFmt("CLONE_CLEAR_SIGHAND passed to clone3. Returning EINVAL.");
+    return -EINVAL;
+  }
+
   auto HasUnhandledFlags = [](FEX::HLE::clone3_args *args) -> bool {
     constexpr uint64_t UNHANDLED_FLAGS =
       CLONE_NEWNS |
