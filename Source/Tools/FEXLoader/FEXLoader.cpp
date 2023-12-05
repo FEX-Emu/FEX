@@ -421,21 +421,15 @@ int main(int argc, char **argv, char **const envp) {
     // Destroy the 48th bit if it exists
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
   } else {
-    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
-    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      Use32BitAllocator = true;
-    }
-
     // Setup our userspace allocator
-    if (!Use32BitAllocator &&
-        KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      FEXCore::Allocator::SetupHooks();
-    }
 
-    if (Use32BitAllocator) {
+    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
+    const bool is_legacy_kernel = (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
+
+    if (Use32BitAllocator || is_legacy_kernel) {
       Allocator = FEX::HLE::Create32BitAllocator();
-    }
-    else {
+    } else {
+      FEXCore::Allocator::SetupHooks();
       Allocator = FEX::HLE::CreatePassthroughAllocator();
     }
   }
