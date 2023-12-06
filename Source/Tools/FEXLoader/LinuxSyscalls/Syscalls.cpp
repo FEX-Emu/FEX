@@ -385,7 +385,6 @@ struct StackFrameData {
   FEXCore::Context::Context *CTX{};
   FEXCore::Core::CpuStateFrame NewFrame{};
   FEX::HLE::clone3_args GuestArgs{};
-  void *NewStack;
   size_t StackSize;
 };
 
@@ -399,7 +398,7 @@ struct StackFramePlusRet {
 static void Clone3HandlerRet() {
   StackFrameData *Data = (StackFrameData*)alloca(0);
   uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->NewStack);
+  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->GuestArgs.NewStack);
   // To behave like a real clone, we now just need to call exit here
   exit(Result);
   FEX_UNREACHABLE;
@@ -408,7 +407,7 @@ static void Clone3HandlerRet() {
 static int Clone2HandlerRet(void *arg) {
   StackFrameData *Data = (StackFrameData*)arg;
   uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->NewStack);
+  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->GuestArgs.NewStack);
   FEXCore::Allocator::free(arg);
   return Result;
 }
@@ -461,10 +460,6 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   Data->CTX = Frame->Thread->CTX;
   Data->GuestArgs = *args;
 
-  // In the case of thread, we need a new stack
-  Data->StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
-  Data->NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
-
   // Create a copy of the parent frame
   memcpy(&Data->NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
 
@@ -474,7 +469,7 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   uint64_t Flags = args->args.flags & ~INVALID_FOR_HOST;
   uint64_t Result = ::clone(
     Clone2HandlerRet, // To be called function
-    (void*)((uint64_t)Data->NewStack + Data->StackSize), // Stack
+    (void*)((uint64_t)args->NewStack + Data->StackSize), // Stack
     Flags, //Flags
     Data, //Argument
     (pid_t*)args->args.parent_tid, // parent_tid
@@ -486,19 +481,12 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
 }
 
 static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
-  // In the case of thread, we need a new stack
-  const uint64_t StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
-  void *NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
-
   constexpr size_t Offset = sizeof(StackFramePlusRet);
-  StackFramePlusRet *Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(NewStack) + StackSize - Offset);
+  StackFramePlusRet *Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(args->NewStack) + args->StackSize - Offset);
   Data->Ret = (uint64_t)Clone3HandlerRet;
   Data->Data.Thread = Frame->Thread;
   Data->Data.CTX = Frame->Thread->CTX;
   Data->Data.GuestArgs = *args;
-
-  Data->Data.StackSize = StackSize;
-  Data->Data.NewStack = NewStack;
 
   FEX::HLE::kernel_clone3_args HostArgs{};
   HostArgs.flags       = args->args.flags;
@@ -507,8 +495,8 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   HostArgs.parent_tid  = args->args.parent_tid;
   HostArgs.exit_signal = args->args.exit_signal;
   // Host stack is always created
-  HostArgs.stack       = reinterpret_cast<uint64_t>(NewStack);
-  HostArgs.stack_size  = StackSize - Offset; // Needs to be 16 byte aligned
+  HostArgs.stack       = reinterpret_cast<uint64_t>(args->NewStack);
+  HostArgs.stack_size  = args->StackSize - Offset; // Needs to be 16 byte aligned
   HostArgs.tls         = 0; // XXX: What is correct for this?
   HostArgs.set_tid     = args->args.set_tid;
   HostArgs.set_tid_size= args->args.set_tid_size;
@@ -597,6 +585,12 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
       args->SignalMask = ~0ULL;
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, &args->SignalMask, sizeof(args->SignalMask));
+
+      // Need to create a stack for the host thread.
+      // LockBeforeFork grabs the allocator mutex to block allocations temporarily, so this must be allocated before
+      args->StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
+      args->NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
+
       Thread->CTX->LockBeforeFork(Frame->Thread);
 
       FEX::HLE::_SyscallHandler->LockBeforeFork();
