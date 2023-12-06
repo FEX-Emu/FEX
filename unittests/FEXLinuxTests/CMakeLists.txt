@@ -93,6 +93,7 @@ AddTests("${TESTS_32_ONLY}" "FEXLinuxTests_32" 32)
 
 if(TEST thunk_testlib.64.jit.flt)
   # Ensure libfex_thunk_test is found even when using an uncommon install prefix
+  set_property(TEST "thunk_testlib.32.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
   set_property(TEST "thunk_testlib.64.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 

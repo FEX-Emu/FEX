@@ -30,6 +30,8 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
   CHECK(GetDoubledValue(10) == 20);
 }
 
+// Passing pointers across architecture boundaries is not yet supported on 32-bit
+#if __SIZEOF_POINTER__ != 4
 TEST_CASE_METHOD(Fixture, "Opaque data types") {
   {
     auto data = MakeOpaqueType(0x1234);
@@ -42,3 +44,4 @@ TEST_CASE_METHOD(Fixture, "Opaque data types") {
     CHECK(GetUnionTypeA(&data) == 0x04030201);
   }
 }
+#endif
