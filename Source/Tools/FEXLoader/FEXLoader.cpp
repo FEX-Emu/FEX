@@ -461,7 +461,7 @@ int main(int argc, char **argv, char **const envp) {
 
     if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
-      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;
     }
   }
