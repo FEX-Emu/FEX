@@ -44,13 +44,12 @@
       ]
     },
     "lock add dword [rax], ecx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal w5, w20, [x4]",
-        "add w26, w20, w5",
-        "eor w27, w20, w5",
-        "cmn w20, w5"
+        "adds w26, w20, w5",
+        "eor w27, w20, w5"
       ]
     },
     "lock or byte [rax], cl": {
@@ -240,13 +239,12 @@
       ]
     },
     "lock and dword [rax], ecx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x21",
       "ExpectedArm64ASM": [
         "mvn w1, w5",
         "ldclral w1, w20, [x4]",
-        "and w26, w20, w5",
-        "tst w26, w26"
+        "ands w26, w20, w5"
       ]
     },
     "lock sub byte [rax], cl": {
@@ -284,14 +282,13 @@
       ]
     },
     "lock sub dword [rax], ecx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x29",
       "ExpectedArm64ASM": [
         "neg w1, w5",
         "ldaddal w1, w20, [x4]",
-        "sub w26, w20, w5",
+        "subs w26, w20, w5",
         "eor w27, w20, w5",
-        "cmp w20, w5",
         "cfinv"
       ]
     },
@@ -323,13 +320,12 @@
       ]
     },
     "lock add qword [rax], rcx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal x5, x20, [x4]",
-        "add x26, x20, x5",
-        "eor x27, x20, x5",
-        "cmn x20, x5"
+        "adds x26, x20, x5",
+        "eor x27, x20, x5"
       ]
     },
     "xadd byte [rax], bl": {
@@ -367,25 +363,23 @@
       ]
     },
     "xadd dword [rax], ebx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
         "ldaddal w20, w7, [x4]",
-        "add w26, w7, w20",
-        "eor w27, w7, w20",
-        "cmn w7, w20"
+        "adds w26, w7, w20",
+        "eor w27, w7, w20"
       ]
     },
     "xadd qword [rax], rbx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "mov x20, x7",
         "ldaddal x20, x7, [x4]",
-        "add x26, x7, x20",
-        "eor x27, x7, x20",
-        "cmn x7, x20"
+        "adds x26, x7, x20",
+        "eor x27, x7, x20"
       ]
     },
     "lock add byte [rax], 1": {
@@ -443,44 +437,40 @@
       ]
     },
     "lock add dword [rax], 0x100": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldaddal w20, w27, [x4]",
-        "add w26, w27, #0x100 (256)",
-        "cmn w27, #0x100 (256)"
+        "adds w26, w27, #0x100 (256)"
       ]
     },
     "lock add dword [rax], 0xFFFFFFFF": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldaddal w20, w21, [x4]",
-        "add w26, w21, w20",
-        "eor w27, w21, w20",
-        "cmn w21, w20"
+        "adds w26, w21, w20",
+        "eor w27, w21, w20"
       ]
     },
     "lock add qword [rax], 0x100": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldaddal x20, x27, [x4]",
-        "add x26, x27, #0x100 (256)",
-        "cmn x27, #0x100 (256)"
+        "adds x26, x27, #0x100 (256)"
       ]
     },
     "lock add qword [rax], -2147483647": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "ldaddal x20, x27, [x4]",
-        "add x26, x27, x20",
-        "cmn x27, x20"
+        "adds x26, x27, x20"
       ]
     },
     "lock add word [rax], 1": {
@@ -497,23 +487,21 @@
       ]
     },
     "lock add dword [rax], 1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal w20, w27, [x4]",
-        "add w26, w27, #0x1 (1)",
-        "cmn w27, #0x1 (1)"
+        "adds w26, w27, #0x1 (1)"
       ]
     },
     "lock add qword [rax], 1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal x20, x27, [x4]",
-        "add x26, x27, #0x1 (1)",
-        "cmn x27, #0x1 (1)"
+        "adds x26, x27, #0x1 (1)"
       ]
     },
     "lock or byte [rax], 1": {
@@ -1084,47 +1072,43 @@
       ]
     },
     "lock and dword [rax], 0x100": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "mvn w1, w20",
         "ldclral w1, w20, [x4]",
-        "and w26, w20, #0x100",
-        "tst w26, w26"
+        "ands w26, w20, #0x100"
       ]
     },
     "lock and dword [rax], 0xFFFFFFFF": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "mvn w1, w20",
         "ldclral w1, w21, [x4]",
-        "and w26, w21, w20",
-        "tst w26, w26"
+        "ands w26, w21, w20"
       ]
     },
     "lock and qword [rax], 0x100": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "mvn x1, x20",
         "ldclral x1, x20, [x4]",
-        "and x26, x20, #0x100",
-        "tst x26, x26"
+        "ands x26, x20, #0x100"
       ]
     },
     "lock and qword [rax], -2147483647": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /4",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "mvn x1, x20",
         "ldclral x1, x20, [x4]",
-        "and x26, x20, #0xffffffff80000001",
-        "tst x26, x26"
+        "ands x26, x20, #0xffffffff80000001"
       ]
     },
     "lock and word [rax], 1": {
@@ -1139,25 +1123,23 @@
       ]
     },
     "lock and dword [rax], 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn w1, w20",
         "ldclral w1, w20, [x4]",
-        "and w26, w20, #0x1",
-        "tst w26, w26"
+        "ands w26, w20, #0x1"
       ]
     },
     "lock and qword [rax], 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x83 /4",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn x1, x20",
         "ldclral x1, x20, [x4]",
-        "and x26, x20, #0x1",
-        "tst x26, x26"
+        "ands x26, x20, #0x1"
       ]
     },
     "lock sub byte [rax], 1": {
@@ -1219,51 +1201,47 @@
       ]
     },
     "lock sub dword [rax], 0x100": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "neg w1, w20",
         "ldaddal w1, w27, [x4]",
-        "sub w26, w27, #0x100 (256)",
-        "cmp w27, #0x100 (256)",
+        "subs w26, w27, #0x100 (256)",
         "cfinv"
       ]
     },
     "lock sub dword [rax], 0xFFFFFFFF": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "neg w1, w20",
         "ldaddal w1, w21, [x4]",
-        "sub w26, w21, w20",
+        "subs w26, w21, w20",
         "eor w27, w21, w20",
-        "cmp w21, w20",
         "cfinv"
       ]
     },
     "lock sub qword [rax], 0x100": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "neg x1, x20",
         "ldaddal x1, x27, [x4]",
-        "sub x26, x27, #0x100 (256)",
-        "cmp x27, #0x100 (256)",
+        "subs x26, x27, #0x100 (256)",
         "cfinv"
       ]
     },
     "lock sub qword [rax], -2147483647": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "neg x1, x20",
         "ldaddal x1, x27, [x4]",
-        "sub x26, x27, x20",
-        "cmp x27, x20",
+        "subs x26, x27, x20",
         "cfinv"
       ]
     },
@@ -1282,26 +1260,24 @@
       ]
     },
     "lock sub dword [rax], 1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "neg w1, w20",
         "ldaddal w1, w27, [x4]",
-        "sub w26, w27, #0x1 (1)",
-        "cmp w27, #0x1 (1)",
+        "subs w26, w27, #0x1 (1)",
         "cfinv"
       ]
     },
     "lock sub qword [rax], 1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "neg x1, x20",
         "ldaddal x1, x27, [x4]",
-        "sub x26, x27, #0x1 (1)",
-        "cmp x27, #0x1 (1)",
+        "subs x26, x27, #0x1 (1)",
         "cfinv"
       ]
     },
@@ -1422,8 +1398,8 @@
         "mov w20, #0x1",
         "neg w1, w20",
         "ldaddalb w1, w27, [x4]",
-        "sub w26, w27, #0x1 (1)",
         "cset w20, hs",
+        "sub w26, w27, #0x1 (1)",
         "cmn wzr, w26, lsl #24",
         "bic w21, w27, w26",
         "rmif x21, #7, #nzcV",
@@ -1529,8 +1505,8 @@
         "mov w20, #0x1",
         "neg w1, w20",
         "ldaddalh w1, w27, [x4]",
-        "sub w26, w27, #0x1 (1)",
         "cset w20, hs",
+        "sub w26, w27, #0x1 (1)",
         "cmn wzr, w26, lsl #16",
         "bic w21, w27, w26",
         "rmif x21, #15, #nzcV",
@@ -1538,28 +1514,26 @@
       ]
     },
     "lock dec dword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "neg w1, w20",
         "ldaddal w1, w27, [x4]",
-        "sub w26, w27, #0x1 (1)",
         "cset w20, hs",
-        "cmp w27, #0x1 (1)",
+        "subs w26, w27, #0x1 (1)",
         "rmif x20, #63, #nzCv"
       ]
     },
     "lock dec qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "neg x1, x20",
         "ldaddal x1, x27, [x4]",
-        "sub x26, x27, #0x1 (1)",
         "cset w20, hs",
-        "cmp x27, #0x1 (1)",
+        "subs x26, x27, #0x1 (1)",
         "rmif x20, #63, #nzCv"
       ]
     },
@@ -1569,8 +1543,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddalb w20, w27, [x4]",
-        "add w26, w27, #0x1 (1)",
         "cset w20, hs",
+        "add w26, w27, #0x1 (1)",
         "cmn wzr, w26, lsl #24",
         "bic w21, w26, w27",
         "rmif x21, #7, #nzcV",
@@ -1583,8 +1557,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddalh w20, w27, [x4]",
-        "add w26, w27, #0x1 (1)",
         "cset w20, hs",
+        "add w26, w27, #0x1 (1)",
         "cmn wzr, w26, lsl #16",
         "bic w21, w26, w27",
         "rmif x21, #15, #nzcV",
@@ -1592,26 +1566,24 @@
       ]
     },
     "lock inc dword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal w20, w27, [x4]",
-        "add w26, w27, #0x1 (1)",
         "cset w20, hs",
-        "cmn w27, #0x1 (1)",
+        "adds w26, w27, #0x1 (1)",
         "rmif x20, #63, #nzCv"
       ]
     },
     "lock inc qword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal x20, x27, [x4]",
-        "add x26, x27, #0x1 (1)",
         "cset w20, hs",
-        "cmn x27, #0x1 (1)",
+        "adds x26, x27, #0x1 (1)",
         "rmif x20, #63, #nzCv"
       ]
     }

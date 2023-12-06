@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
         "movzx   edx, byte [esi+ecx]",
@@ -34,10 +34,10 @@
         "orr w20, w6, #0xffff0000",
         "mov w6, w20",
         "lsl w6, w20, #8",
-        "add w10, w10, #0x1 (1)",
         "tst w6, w6",
         "rmif x20, #23, #nzCv",
         "mov w26, w6",
+        "add w10, w10, #0x1 (1)",
         "orr w6, w6, w5",
         "add w20, w9, #0xc (12)",
         "ldr w5, [x20]",
@@ -45,14 +45,13 @@
         "orr w20, w20, w6",
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
-        "sub w26, w10, w7",
+        "subs w26, w10, w7",
         "eor w27, w10, w7",
-        "cmp w10, w7",
         "cfinv"
       ]
     },
     "wine mscrt.dll memmove": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 20,
       "Comment": "Hot in Sonic Mania",
       "x86Insts": [
         "movdqu  xmm0, [esi]",
@@ -86,9 +85,8 @@
         "add w10, w10, #0x40 (64)",
         "add w11, w11, #0x40 (64)",
         "sub w5, w5, #0x40 (64)",
-        "sub w26, w5, #0x40 (64)",
+        "subs w26, w5, #0x40 (64)",
         "mov w27, w5",
-        "cmp w5, #0x40 (64)",
         "cfinv"
       ]
     }
