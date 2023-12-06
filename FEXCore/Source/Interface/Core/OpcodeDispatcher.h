@@ -1757,6 +1757,25 @@ private:
   /**  @} */
 
   /**
+   * Helpers for backpatching
+   */
+  OrderedNode *PushWriteCursor(OrderedNode *NewCursor) {
+    OrderedNode *SavedCursor = GetWriteCursor();
+
+    if (SavedCursor == NewCursor) {
+      return nullptr;
+    } else {
+      SetWriteCursor(NewCursor);
+      return SavedCursor;
+    }
+  }
+
+  void PopWriteCursor(OrderedNode *SavedCursor) {
+    if (SavedCursor)
+      SetWriteCursor(SavedCursor);
+  }
+
+  /**
    * @name These functions generated deferred RFLAGs tracking.
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
