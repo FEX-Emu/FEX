@@ -17,6 +17,7 @@ $end_info$
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+#include <string_view>
 
 #include <dlfcn.h>
 
@@ -120,36 +121,49 @@ static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(
   return LDR_PTR(vkCreateDebugUtilsMessengerEXT)(a_0, &overridden_callback, nullptr, a_3);
 }
 
+static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
+  using namespace std::string_view_literals;
+
+  if (a_1 == "vkCreateShaderModule"sv) {
+      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
+  } else if (a_1 == "vkCreateInstance"sv) {
+      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateInstance;
+  } else if (a_1 == "vkCreateDevice"sv) {
+      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateDevice;
+  } else if (a_1 == "vkAllocateMemory"sv) {
+      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
+  } else if (a_1 == "vkFreeMemory"sv) {
+      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
+  }
+  return nullptr;
+}
+
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
   // Just return the host facing function pointer
   // The guest will handle mapping if this exists
 
-  // Check for functions with stubbed callbacks first
-  if (std::strcmp(a_1, "vkCreateShaderModule") == 0) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
-  } else if (std::strcmp(a_1, "vkCreateInstance") == 0) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateInstance;
-  } else if (std::strcmp(a_1, "vkCreateDevice") == 0) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateDevice;
-  } else if (std::strcmp(a_1, "vkAllocateMemory") == 0) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
-  } else if (std::strcmp(a_1, "vkFreeMemory") == 0) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
+  // Check for functions with custom implementations first
+  if (auto ptr = LookupCustomVulkanFunction(a_1)) {
+    return ptr;
   }
 
-  auto ret = LDR_PTR(vkGetDeviceProcAddr)(a_0, a_1);
-  return ret;
+  return LDR_PTR(vkGetDeviceProcAddr)(a_0, a_1);
 }
 
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, const char* a_1) {
+  // Just return the host facing function pointer
+  // The guest will handle mapping if it exists
+
   if (!SetupInstance && a_0) {
     DoSetupWithInstance(a_0);
   }
 
-  // Just return the host facing function pointer
-  // The guest will handle mapping if it exists
-  auto ret = LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
-  return ret;
+  // Check for functions with custom implementations first
+  if (auto ptr = LookupCustomVulkanFunction(a_1)) {
+    return ptr;
+  }
+
+  return LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
 }
 
 EXPORTS(libvulkan)
