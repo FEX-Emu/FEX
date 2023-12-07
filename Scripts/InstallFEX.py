@@ -306,19 +306,19 @@ def GetRootFSPath():
     return _RootFSPath
 
 def CheckRootFSInstallStatus():
-    # Matches what is available on https://rootfs.fex-emu.gg/RootFS_links.json
-    UbuntuVersionToRootFS = {
-        "20.04": "Ubuntu_20_04.sqsh",
-        "20.04": "Ubuntu_20_04.ero",
-        "22.04": "Ubuntu_22_04.sqsh",
-        "22.04": "Ubuntu_22_04.ero",
-        "22.10": "Ubuntu_22_10.sqsh",
-        "22.10": "Ubuntu_22_10.ero",
-        "23.04": "Ubuntu_23_04.sqsh",
-        "23.04": "Ubuntu_23_04.ero",
-    }
+    Distro = GetDistro()[1] # Extract Ubuntu version number, e.g. "23.10"
 
-    return os.path.exists(GetRootFSPath() + UbuntuVersionToRootFS[GetDistro()[1]])
+    DistroUnderscore = Distro.replace(".", "_")
+    Filename = "Ubuntu_{}.ero".format(DistroUnderscore)
+    if os.path.exists(GetRootFSPath() + Filename):
+            return True
+
+    Filename = "Ubuntu_{}.sqsh".format(DistroUnderscore)
+    if os.path.exists(GetRootFSPath() + Filename):
+            return True
+
+    # Couldn't find. Either no rootfs installed or unsupported distro.
+    return False
 
 def TryInstallRootFS():
     DidInstall = False
