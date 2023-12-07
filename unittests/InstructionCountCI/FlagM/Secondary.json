@@ -1006,7 +1006,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0xaf",
       "ExpectedArm64ASM": [
-        "mul x20, x4, x7",
+        "smull x20, w4, w7",
         "asr x20, x20, #32",
         "mul w4, w4, w7",
         "sbfx x21, x4, #31, #1",
