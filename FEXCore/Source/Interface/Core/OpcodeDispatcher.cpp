@@ -2897,7 +2897,7 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
       break;
     }
     case 4: {
-      ResultHigh = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _SMull(Src1, Src2);
       ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
       // Flipped order to save a move
       Dest = _Mul(OpSize::i32Bit, Src1, Src2);
@@ -2935,7 +2935,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
       break;
     }
     case 4: {
-      ResultHigh = _Mul(OpSize::i64Bit, Src1, Src2);
+      ResultHigh = _SMull(Src1, Src2);
       ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
       // Flipped order to save a move
       Dest = _Mul(OpSize::i32Bit, Src1, Src2);
