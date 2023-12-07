@@ -250,7 +250,6 @@ namespace FEXCore::Context {
     FEXCore::Core::InternalThreadState* ParentThread{};
     fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
-    bool NeedToCheckXID{true};
 
     std::mutex IdleWaitMutex;
     std::condition_variable IdleWaitCV;

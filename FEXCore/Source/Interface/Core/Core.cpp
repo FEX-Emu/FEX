@@ -528,21 +528,10 @@ namespace FEXCore::Context {
     ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
     Arg->This = this;
     Arg->Thread = Thread;
-    Thread->StartPaused = NeedToCheckXID;
     Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
 
     // Wait for the thread to have started
     Thread->ThreadWaiting.Wait();
-
-    if (NeedToCheckXID) {
-      // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
-      // FEX needs to capture all signals and defer them to the guest.
-      // Once FEX creates its first guest thread, overwrite the GLIBC SETXID handler *again* to ensure
-      // FEX maintains control of the signal handler on this signal.
-      NeedToCheckXID = false;
-      SignalDelegation->CheckXIDHandler();
-      Thread->StartRunning.NotifyAll();
-    }
   }
 
   void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {

@@ -47,14 +47,6 @@ namespace Core {
     virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
     virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
 
-    /**
-     * @brief Check to ensure the XID handler is still set to the FEX handler
-     *
-     * On a new thread GLIBC will set the XID handler underneath us.
-     * After the first thread is created check this.
-     */
-    virtual void CheckXIDHandler() = 0;
-
     struct SignalDelegatorConfig {
       bool StaticRegisterAllocation{};
       bool SupportsAVX{};

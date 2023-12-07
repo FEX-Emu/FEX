@@ -59,7 +59,18 @@ namespace FEX::HLE {
     }
 
     auto NewThread = CTX->CreateThread(0, 0, &NewThreadState, args->args.parent_tid);
+    bool NeedsXIDCheck = FEX::HLE::_SyscallHandler->NeedXIDCheck();
+    NewThread->StartPaused = NeedsXIDCheck;
     CTX->InitializeThread(NewThread);
+
+    if (NeedsXIDCheck) {
+      // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
+      // FEX needs to capture all signals and defer them to the guest.
+      // Once FEX creates its first guest thread, overwrite the GLIBC SETXID handler *again* to ensure
+      // FEX maintains control of the signal handler on this signal.
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->CheckXIDHandler();
+      FEX::HLE::_SyscallHandler->DisableXIDCheck();
+    }
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
