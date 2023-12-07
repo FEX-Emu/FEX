@@ -1141,6 +1141,18 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = UMull GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Integer unsigned multiplication long",
+                 "Multiplies two 32-bit numbers, returning a 64-bit destination register."
+                ],
+        "DestSize": "FEXCore::IR::OpSize::i64Bit"
+      },
+      "GPR = SMull GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Integer signed multiplication long",
+                 "Multiplies two 32-bit numbers, returning a 64-bit destination register."
+                ],
+        "DestSize": "FEXCore::IR::OpSize::i64Bit"
+      },
       "GPR = Div OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer signed division"
                 ],

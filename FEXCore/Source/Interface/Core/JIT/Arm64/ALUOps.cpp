@@ -298,6 +298,16 @@ DEF_OP(UMul) {
   mul(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
 }
 
+DEF_OP(UMull) {
+  auto Op = IROp->C<IR::IROp_UMull>();
+  umull(GetReg(Node).X(), GetReg(Op->Src1.ID()).W(), GetReg(Op->Src2.ID()).W());
+}
+
+DEF_OP(SMull) {
+  auto Op = IROp->C<IR::IROp_SMull>();
+  smull(GetReg(Node).X(), GetReg(Op->Src1.ID()).W(), GetReg(Op->Src2.ID()).W());
+}
+
 DEF_OP(Div) {
   auto Op = IROp->C<IR::IROp_Div>();
 
