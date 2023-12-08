@@ -14,8 +14,10 @@ $end_info$
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-void InitializeBaseTables(Context::OperatingMode Mode) {
-  static constexpr U8U8InfoStruct BaseOpTable[] = {
+std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
+  std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> Table{};
+
+  constexpr U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
     // Operand size overide
     {0x66, 1, X86InstInfo{"",      TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
@@ -233,6 +235,12 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
   };
 
+  GenerateTable(&Table.at(0), BaseOpTable, std::size(BaseOpTable));
+
+  return Table;
+}();
+
+void InitializeBaseTables(Context::OperatingMode Mode) {
   static constexpr U8U8InfoStruct BaseOpTable_64[] = {
     {0x06, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
     {0x0E, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
@@ -290,8 +298,6 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xD6, 1, X86InstInfo{"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0, nullptr}},
     {0xEA, 1, X86InstInfo{"JMPF",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
   };
-
-  GenerateTable(&BaseOps.at(0), BaseOpTable, std::size(BaseOpTable));
 
   if (Mode == Context::MODE_64BIT) {
     GenerateTable(&BaseOps.at(0), BaseOpTable_64, std::size(BaseOpTable_64));

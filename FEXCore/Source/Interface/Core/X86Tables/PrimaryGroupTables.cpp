@@ -13,10 +13,10 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-
-void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
+std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps = []() consteval {
+  std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> Table{};
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  const U16U8InfoStruct PrimaryGroupOpTable[] = {
+  constexpr U16U8InfoStruct PrimaryGroupOpTable[] = {
     // GROUP_1 | 0x80 | reg
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 0), 1, X86InstInfo{"ADD",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      1, nullptr}},
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 1), 1, X86InstInfo{"OR",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      1, nullptr}},
@@ -141,9 +141,13 @@ void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                                   4, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 5, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 7), 1, X86InstInfo{"XBEGIN", TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_SETS_RIP | FLAGS_DISPLACE_SIZE_DIV_2,                                                       4, nullptr}},
-
   };
 
+  GenerateTable(&Table.at(0), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
+  return Table;
+}();
+
+void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
   const U16U8InfoStruct PrimaryGroupOpTable_64[] = {
     // Invalid in 64bit mode
     {OPD(TYPE_GROUP_1, OpToIndex(0x82), 0), 8, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                        0, nullptr}},
@@ -163,7 +167,6 @@ void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
 
 #undef OPD
 
-  GenerateTable(&PrimaryInstGroupOps.at(0), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
   if (Mode == Context::MODE_64BIT) {
     GenerateTable(&PrimaryInstGroupOps.at(0), PrimaryGroupOpTable_64, std::size(PrimaryGroupOpTable_64));
   }

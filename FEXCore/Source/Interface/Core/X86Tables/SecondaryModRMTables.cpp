@@ -11,9 +11,9 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-
-void InitializeSecondaryModRMTables() {
-  static constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
+std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() consteval {
+  std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> Table{};
+  constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
     // REG /1
     {((0 << 3) | 0), 1, X86InstInfo{"MONITOR",  TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 1), 1, X86InstInfo{"MWAIT",    TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
@@ -55,6 +55,8 @@ void InitializeSecondaryModRMTables() {
     {((3 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
   };
 
-  GenerateTable(&SecondModRMTableOps.at(0), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
-}
+  GenerateTable(&Table.at(0), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
+  return Table;
+}();
+
 }

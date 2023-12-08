@@ -12,8 +12,9 @@ $end_info$
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-void InitializeDDDTables() {
-  static constexpr U8U8InfoStruct DDDNowOpTable[] = {
+std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() consteval {
+  std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> Table{};
+  constexpr U8U8InfoStruct DDDNowOpTable[] = {
     {0x0C, 1, X86InstInfo{"PI2FW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
     {0x0D, 1, X86InstInfo{"PI2FD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
     {0x1C, 1, X86InstInfo{"PF2IW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
@@ -52,6 +53,8 @@ void InitializeDDDTables() {
     {0xBF, 1, X86InstInfo{"PAVGUSB",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
   };
 
-  GenerateTable(&DDDNowOps.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
-}
+  GenerateTable(&Table.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
+  return Table;
+}();
+
 }
