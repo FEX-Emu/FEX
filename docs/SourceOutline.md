@@ -1,4 +1,4 @@
-# FEX-2312
+# FEX-2312.1
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -64,6 +64,10 @@ Metadata that drives the frontend x86/64 decoding
 - [X87.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
 - [X87F64.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_BACKUP_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_BACKUP_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_BASE_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_BASE_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_LOCAL_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_LOCAL_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_REMOTE_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_REMOTE_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 
 
@@ -139,6 +143,10 @@ Text -> IR
 - [X87.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
 - [X87F64.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_BACKUP_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_BACKUP_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_BASE_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_BASE_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_LOCAL_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_LOCAL_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
+- [OpcodeDispatcher_REMOTE_124790.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher_REMOTE_124790.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 ## ThunkLibs
 See [ThunkLibs/README.md](../ThunkLibs/README.md) for more details
