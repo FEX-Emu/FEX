@@ -117,7 +117,8 @@ namespace FEXCore::Context {
        *    - CTX->RunUntilExit(Thread);
        *  OS thread Creation:
        *    - Thread = CreateThread(0, 0, NewState, PPID);
-       *    - InitializeThread(Thread);
+       *    - Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
+       *    - ThreadHandler calls `CTX->ExecutionThread(Thread)`
        *  OS fork (New thread created with a clone of thread state):
        *    - clone{2, 3}
        *    - Thread = CreateThread(0, 0, CopyOfThreadState, PPID);
@@ -132,14 +133,6 @@ namespace FEXCore::Context {
 
       // Public for threading
       void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) override;
-      /**
-       * @brief Initializes the OS thread object and prepares to start executing on that new OS thread
-       *
-       * @param Thread The internal FEX thread state object
-       *
-       * The OS thread will wait until RunThread is executed
-       */
-      void InitializeThread(FEXCore::Core::InternalThreadState *Thread) override;
       /**
        * @brief Starts the OS thread object to start executing guest code
        *
