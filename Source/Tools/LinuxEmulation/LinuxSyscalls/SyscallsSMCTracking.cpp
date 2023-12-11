@@ -187,7 +187,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
-    CTX->MarkMemoryShared();
+    CTX->MarkMemoryShared(Thread);
   }
 
   {
@@ -322,7 +322,7 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uin
 }
 
 void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int shmid, uintptr_t Base, int shmflg) {
-  CTX->MarkMemoryShared();
+  CTX->MarkMemoryShared(Thread);
 
   shmid_ds stat;
 

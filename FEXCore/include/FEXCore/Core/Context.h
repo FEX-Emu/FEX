@@ -124,7 +124,7 @@ namespace FEXCore::Context {
        *
        * @return true if we loaded code
        */
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual bool InitCore() = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetExitHandler(ExitHandler handler) = 0;
       FEX_DEFAULT_VISIBILITY virtual ExitHandler GetExitHandler() const = 0;
@@ -181,7 +181,7 @@ namespace FEXCore::Context {
        *
        * @return The ExitReason for the parentthread.
        */
-      FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit() = 0;
+      FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit(FEXCore::Core::InternalThreadState *Thread) = 0;
 
       /**
        * @brief Executes the supplied thread context on the current thread until a return is requested
@@ -248,17 +248,24 @@ namespace FEXCore::Context {
        *
        * @param InitialRIP The starting RIP of this thread
        * @param StackPointer The starting RSP of this thread
+       * @param WhoManages The flag to determine what manages ownership of the InternalThreadState object
        * @param NewThreadState The thread state to inherit from if not nullptr.
        * @param ParentTID The thread ID that the parent is inheriting from
        *
        * @return A new InternalThreadState object for using with a new guest thread.
        */
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
+
+      // TODO: This is a temporary construct and will be removed once the frontend has full ownership of InternalThreadState objects.
+      enum class [[deprecated]] ManagedBy {
+        CORE,
+        FRONTEND,
+      };
+      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void RunThread(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void StopThread(FEXCore::Core::InternalThreadState *Thread) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void DestroyThread(FEXCore::Core::InternalThreadState *Thread) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void DestroyThread(FEXCore::Core::InternalThreadState *Thread, bool NeedsTLSUninstall = false) = 0;
 #ifndef _WIN32
       FEX_DEFAULT_VISIBILITY virtual void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {}
       FEX_DEFAULT_VISIBILITY virtual void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) {}
@@ -281,7 +288,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;
+      FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
       FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
