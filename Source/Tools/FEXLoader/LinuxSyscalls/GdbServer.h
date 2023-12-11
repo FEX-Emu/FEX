@@ -39,6 +39,7 @@ private:
     void Break(int signal);
 
     void OpenListenSocket();
+    void CloseListenSocket();
     enum class WaitForConnectionResult {
       CONNECTION,
       ERROR,

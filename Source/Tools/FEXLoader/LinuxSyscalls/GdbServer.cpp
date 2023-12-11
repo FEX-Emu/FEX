@@ -127,8 +127,12 @@ void GdbServer::WaitForThreadWakeup() {
 }
 
 GdbServer::~GdbServer() {
+  CloseListenSocket();
   CoreShuttingDown = true;
-  close(ListenSocket);
+
+  if (gdbServerThread->joinable()) {
+    gdbServerThread->join(nullptr);
+  }
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
@@ -1432,8 +1436,7 @@ void GdbServer::GdbServerLoop() {
     }
   }
 
-  close(ListenSocket);
-  unlink(GdbUnixSocketPath.c_str());
+  CloseListenSocket();
 }
 static void* ThreadHandler(void *Arg) {
   FEXCore::Threads::SetThreadName("FEX:gdbserver");
@@ -1491,6 +1494,14 @@ void GdbServer::OpenListenSocket() {
   listen(ListenSocket, 1);
   LogMan::Msg::IFmt("[GdbServer] Waiting for connection on {}", GdbUnixSocketPath);
   LogMan::Msg::IFmt("[GdbServer] gdb-multiarch -ex \"target extended-remote {}\"", GdbUnixSocketPath);
+}
+
+void GdbServer::CloseListenSocket() {
+  if (ListenSocket != -1) {
+    close(ListenSocket);
+    ListenSocket = -1;
+  }
+  unlink(GdbUnixSocketPath.c_str());
 }
 
 fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
