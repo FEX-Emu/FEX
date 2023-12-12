@@ -130,48 +130,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual ExitHandler GetExitHandler() const = 0;
 
       /**
-       * @brief Pauses execution on the CPU core
-       *
-       * Blocks until all threads have paused.
-       */
-      FEX_DEFAULT_VISIBILITY virtual void Pause() = 0;
-
-      /**
-       * @brief Waits for all threads to be idle.
-       *
-       * Idling can happen when the process is shutting down or the debugger has asked for all threads to pause.
-       */
-      FEX_DEFAULT_VISIBILITY virtual void WaitForIdle() = 0;
-
-      /**
-       * @brief When resuming from a paused state, waits for all threads to start executing before returning.
-       */
-      FEX_DEFAULT_VISIBILITY virtual void WaitForThreadsToRun() = 0;
-
-      /**
-       * @brief Starts (or continues) the CPU core
-       *
-       * This function is async and returns immediately.
-       * Use RunUntilExit() for synchonous executions
-       *
-       */
-      FEX_DEFAULT_VISIBILITY virtual void Run() = 0;
-
-      /**
-       * @brief Tells the core to shutdown
-       *
-       * Blocks until shutdown
-       */
-      FEX_DEFAULT_VISIBILITY virtual void Stop() = 0;
-
-      /**
-       * @brief Executes one instruction
-       *
-       * Returns once execution is complete.
-       */
-      FEX_DEFAULT_VISIBILITY virtual void Step() = 0;
-
-      /**
        * @brief Runs the CPU core until it exits
        *
        * If an Exit handler has been registered, this function won't return until the core
@@ -190,17 +148,6 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) = 0;
       FEX_DEFAULT_VISIBILITY virtual void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
-
-      /**
-       * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)
-       *
-       * Use this when the context is async running to determine if it is done
-       *
-       * @param CTX the context that we created
-       *
-       * @return true if the core is done or paused
-       */
-      FEX_DEFAULT_VISIBILITY virtual bool IsDone() const = 0;
 
       /**
        * @brief Allows the frontend to pass in a custom CPUBackend creation factory
@@ -248,23 +195,15 @@ namespace FEXCore::Context {
        *
        * @param InitialRIP The starting RIP of this thread
        * @param StackPointer The starting RSP of this thread
-       * @param WhoManages The flag to determine what manages ownership of the InternalThreadState object
        * @param NewThreadState The thread state to inherit from if not nullptr.
        * @param ParentTID The thread ID that the parent is inheriting from
        *
        * @return A new InternalThreadState object for using with a new guest thread.
        */
 
-      // TODO: This is a temporary construct and will be removed once the frontend has full ownership of InternalThreadState objects.
-      enum class [[deprecated]] ManagedBy {
-        CORE,
-        FRONTEND,
-      };
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
+      FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void RunThread(FEXCore::Core::InternalThreadState *Thread) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void StopThread(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void DestroyThread(FEXCore::Core::InternalThreadState *Thread, bool NeedsTLSUninstall = false) = 0;
 #ifndef _WIN32
       FEX_DEFAULT_VISIBILITY virtual void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {}
@@ -286,6 +225,8 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
       FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
+
+      FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) = 0;
@@ -303,8 +244,6 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void GetVDSOSigReturn(VDSOSigReturn *VDSOPointers) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void IncrementIdleRefCount() = 0;
-
       /**
        * @brief Informs the context if hardware TSO is supported.
        * Once hardware TSO is enabled, then TSO emulation through atomics is disabled and relies on the hardware.
@@ -320,13 +259,6 @@ namespace FEXCore::Context {
        *
        */
       FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
-
-      /**
-       * @brief Gets the thread data for FEX's internal tracked threads.
-       *
-       * @return struct containing all the thread information.
-       */
-      FEX_DEFAULT_VISIBILITY virtual ThreadsState GetThreads() = 0;
 
     private:
   };

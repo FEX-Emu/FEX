@@ -606,10 +606,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       if (Result != 0) {
         // Parent
         // Unlock the mutexes on both sides of the fork
-        FEX::HLE::_SyscallHandler->UnlockAfterFork(false);
-
-        // Clear all the other threads that are being tracked
-        Thread->CTX->UnlockAfterFork(Frame->Thread, false);
+        FEX::HLE::_SyscallHandler->UnlockAfterFork(Frame->Thread, false);
 
         ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, nullptr, sizeof(args->SignalMask));
       }
@@ -648,12 +645,8 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     // Return the new threads TID
     uint64_t Result = NewThread->ThreadManager.GetTID();
 
-    if (flags & CLONE_VFORK) {
-      NewThread->DestroyedByParent = true;
-    }
-
     // Actually start the thread
-    Thread->CTX->RunThread(NewThread);
+    FEX::HLE::_SyscallHandler->TM.RunThread(NewThread);
 
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
@@ -744,7 +737,8 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation)
-  : FM {_CTX}
+  : TM {_CTX, _SignalDelegation}
+  , FM {_CTX}
   , CTX {_CTX}
   , SignalDelegation {_SignalDelegation} {
   FEX::HLE::_SyscallHandler = this;
@@ -840,13 +834,16 @@ void SyscallHandler::LockBeforeFork() {
   VMATracking.Mutex.lock();
 }
 
-void SyscallHandler::UnlockAfterFork(bool Child) {
+void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
   if (Child) {
     VMATracking.Mutex.StealAndDropActiveLocks();
   }
   else {
     VMATracking.Mutex.unlock();
   }
+
+  // Clear all the other threads that are being tracked
+  TM.UnlockAfterFork(LiveThread, Child);
 }
 
 static bool isHEX(char c) {

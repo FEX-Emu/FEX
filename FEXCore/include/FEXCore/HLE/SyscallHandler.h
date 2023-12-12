@@ -79,6 +79,9 @@ namespace FEXCore::HLE {
     virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) = 0;
 
     virtual SourcecodeResolver *GetSourcecodeResolver() { return nullptr; }
+
+    virtual void SleepThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame) {}
+
   protected:
     SyscallOSABI OSABI;
   };

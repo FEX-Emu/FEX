@@ -48,8 +48,6 @@ auto SyscallHandler::VMAFlags::fromFlags(int Flags) -> VMAFlags {
 
 // SMC interactions
 bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-  auto CTX = Thread->CTX;
-
   const auto FaultAddress = (uintptr_t)((siginfo_t *)info)->si_addr;
 
   {
@@ -82,17 +80,17 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
 
           if (VMA->Prot.Writable) {
-            CTX->InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
               auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
-            CTX->InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
+            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
           }
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      CTX->InvalidateGuestCodeRange(Thread, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
         auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
         LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
@@ -234,7 +232,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     // VMATracking.Mutex can't be held while executing this, otherwise it hangs if the JIT is in the process of looking up code in the AOT JIT.
-    CTX->InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
+    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
 }
 
@@ -251,7 +249,7 @@ void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uin
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
+    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
 }
 
@@ -265,7 +263,7 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, u
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange(Thread, Base, Size);
+    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Size);
   }
 }
 
@@ -310,12 +308,12 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uin
     if (OldAddress != NewAddress) {
       if (OldSize != 0) {
         // This also handles the MREMAP_DONTUNMAP case
-        CTX->InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
+        _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
       }
     } else {
       // If mapping shrunk, flush the unmapped region
       if (OldSize > NewSize) {
-        CTX->InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
+        _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
       }
     }
   }
@@ -347,7 +345,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int 
     );
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange(Thread, Base, Length);
+    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
   }
 }
 
@@ -361,7 +359,7 @@ void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uint
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     // This might over flush if the shm has holes in it
-    CTX->InvalidateGuestCodeRange(Thread, Base, Length);
+    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
   }
 }
 

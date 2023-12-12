@@ -490,7 +490,7 @@ int main(int argc, char **argv, char **const envp) {
     return 1;
   }
 
-  auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer(), FEXCore::Context::Context::ManagedBy::FRONTEND);
+  auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
@@ -503,7 +503,7 @@ int main(int argc, char **argv, char **const envp) {
     CTX->SetExitHandler([&](uint64_t thread, FEXCore::Context::ExitReason reason) {
       if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
         ShutdownReason = reason;
-        CTX->Stop();
+        SyscallHandler->TM.Stop();
       }
     });
   }

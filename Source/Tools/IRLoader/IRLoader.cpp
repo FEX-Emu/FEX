@@ -181,7 +181,7 @@ int main(int argc, char **argv, char **const envp)
     if (!CTX->InitCore()) {
       return -1;
     }
-    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer(), FEXCore::Context::Context::ManagedBy::FRONTEND);
+    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
@@ -192,7 +192,6 @@ int main(int argc, char **argv, char **const envp)
         if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG)
         {
           ShutdownReason = reason;
-          CTX->Stop();
         }
       });
     }
