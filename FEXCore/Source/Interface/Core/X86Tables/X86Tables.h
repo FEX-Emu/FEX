@@ -507,26 +507,30 @@ using U8U8InfoStruct = X86TablesInfoStruct<uint8_t>;
 using U16U8InfoStruct = X86TablesInfoStruct<uint16_t>;
 
 template<typename OpcodeType>
-static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
+constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_AA_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
+        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      }
       FinalTable[OpNum + i] = Info;
     }
   }
 };
 
 template<typename OpcodeType>
-static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
+constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_AA_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
+        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      }
       if (Info.Type == TYPE_COPY_OTHER) {
         FinalTable[OpNum + i] = OtherLocal[OpNum + i];
       }
@@ -538,13 +542,30 @@ static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoS
 };
 
 template<typename OpcodeType>
-static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
+static inline void LateInitCopyTable(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *OtherLocal, size_t OtherTableSize) {
+  for (size_t j = 0; j < OtherTableSize; ++j) {
+    X86TablesInfoStruct<OpcodeType> const &OtherOp = OtherLocal[j];
+    auto OtherOpNum = OtherOp.first;
+    X86InstInfo const &OtherInfo = OtherOp.Info;
+    for (uint32_t i = 0; i < OtherOp.second; ++i) {
+      X86InstInfo &FinalOp = FinalTable[OtherOpNum + i];
+      if (FinalOp.Type == TYPE_COPY_OTHER) {
+        FinalOp = OtherInfo;
+      }
+    }
+  }
+}
+
+template<typename OpcodeType>
+constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_AA_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
+        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      }
       if ((OpNum & 0b11'000'000) == 0b11'000'000) {
         // If the mod field is 0b11 then it is a regular op
         FinalTable[OpNum + i] = Info;
@@ -552,7 +573,9 @@ static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct
       else {
         // If the mod field is !0b11 then this instruction is duplicated through the whole mod [0b00, 0b10] range
         // and the modrm.rm space because that is used part of the instruction encoding
-        LOGMAN_THROW_AA_FMT((OpNum & 0b11'000'000) == 0, "Only support mod field of zero in this path");
+        if ((OpNum & 0b11'000'000) != 0) {
+          ERROR_AND_DIE_FMT("Only support mod field of zero in this path");
+        }
         for (uint16_t mod = 0b00'000'000; mod < 0b11'000'000; mod += 0b01'000'000) {
           for (uint16_t rm = 0b000; rm < 0b1'000; ++rm) {
             FinalTable[(OpNum | mod | rm) + i] = Info;

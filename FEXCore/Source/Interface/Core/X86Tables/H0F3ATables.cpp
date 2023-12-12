@@ -14,13 +14,13 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-
-void InitializeH0F3ATables(Context::OperatingMode Mode) {
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
-  constexpr uint16_t PF_3A_NONE = 0;
-  constexpr uint16_t PF_3A_66   = 1;
+constexpr uint16_t PF_3A_NONE = 0;
+constexpr uint16_t PF_3A_66   = 1;
 
-  static constexpr U16U8InfoStruct H0F3ATable[] = {
+std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps = []() consteval {
+  std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> Table{};
+  constexpr U16U8InfoStruct H0F3ATable[] = {
     {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(0, PF_3A_66,   0x08), 1, X86InstInfo{"ROUNDPS",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(0, PF_3A_66,   0x09), 1, X86InstInfo{"ROUNDPD",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
@@ -54,6 +54,11 @@ void InitializeH0F3ATables(Context::OperatingMode Mode) {
     {OPD(0, PF_3A_66,   0xDF), 1, X86InstInfo{"AESKEYGENASSIST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
   };
 
+  GenerateTable(&Table.at(0), H0F3ATable, std::size(H0F3ATable));
+  return Table;
+}();
+
+void InitializeH0F3ATables(Context::OperatingMode Mode) {
   static constexpr U16U8InfoStruct H0F3ATable_64[] = {
     {OPD(1, PF_3A_66,   0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(1, PF_3A_66,   0x16), 1, X86InstInfo{"PEXTRQ",          TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS, 1, nullptr}},
@@ -61,8 +66,6 @@ void InitializeH0F3ATables(Context::OperatingMode Mode) {
   };
 
 #undef OPD
-
-  GenerateTable(&H0F3ATableOps.at(0), H0F3ATable, std::size(H0F3ATable));
 
   if (Mode == Context::MODE_64BIT) {
     GenerateTable(&H0F3ATableOps.at(0), H0F3ATable_64, std::size(H0F3ATable_64));

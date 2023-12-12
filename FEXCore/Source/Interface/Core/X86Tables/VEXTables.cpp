@@ -11,10 +11,10 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-
-void InitializeVEXTables() {
+std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
+  std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> Table{};
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  static constexpr U16U8InfoStruct VEXTable[] = {
+  constexpr U16U8InfoStruct VEXTable[] = {
     // Map 0 (Reserved)
     // VEX Map 1
     {OPD(1, 0b00, 0x10), 1, X86InstInfo{"VMOVUPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -488,8 +488,15 @@ void InitializeVEXTables() {
   };
 #undef OPD
 
+  GenerateTable(&Table.at(0), VEXTable, std::size(VEXTable));
+  return Table;
+}();
+
+std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = []() consteval {
+  std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> Table{};
+
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-  static constexpr U8U8InfoStruct VEXGroupTable[] = {
+  constexpr U8U8InfoStruct VEXGroupTable[] = {
     {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_DST | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_DST | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_DST | FLAGS_XMM_FLAGS, 1, nullptr}},
@@ -512,7 +519,8 @@ void InitializeVEXTables() {
   };
 #undef OPD
 
-  GenerateTable(&VEXTableOps.at(0), VEXTable, std::size(VEXTable));
-  GenerateTable(&VEXTableGroupOps.at(0), VEXGroupTable, std::size(VEXGroupTable));
-}
+  GenerateTable(&Table.at(0), VEXGroupTable, std::size(VEXGroupTable));
+
+  return Table;
+}();
 }
