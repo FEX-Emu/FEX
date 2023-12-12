@@ -29,8 +29,6 @@ namespace FEXCore::IR {
 class PassManager;
 class IREmitter;
 
-using ShouldExitHandler = std::function<void(void)>;
-
 class Pass {
 public:
   virtual ~Pass() = default;
@@ -62,10 +60,6 @@ public:
 
   bool Run(IREmitter *IREmit);
 
-  void RegisterExitHandler(ShouldExitHandler Handler) {
-    ExitHandler = std::move(Handler);
-  }
-
   bool HasPass(fextl::string Name) const {
     return NameToPassMaping.contains(Name);
   }
@@ -86,7 +80,6 @@ public:
   void Finalize();
 
 protected:
-  ShouldExitHandler ExitHandler;
   FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:

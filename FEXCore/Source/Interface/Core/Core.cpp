@@ -544,9 +544,6 @@ namespace FEXCore::Context {
     Thread->LookupCache = fextl::make_unique<FEXCore::LookupCache>(this);
     Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(this);
     Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>();
-    Thread->PassManager->RegisterExitHandler([this]() {
-        Stop(false /* Ignore current thread */);
-    });
 
     Thread->CurrentFrame->Pointers.Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
     Thread->CurrentFrame->Pointers.Common.L2Pointer = Thread->LookupCache->GetPagePointer();
