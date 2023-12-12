@@ -324,9 +324,6 @@ namespace FEXCore::Context {
     [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP, uint64_t MaxInst = 0);
 
-    // same as CompileBlock, but aborts on failure
-    void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
-
     // Used for thread creation from syscalls
     /**
      * @brief Initializes TID, PID and TLS data for a thread

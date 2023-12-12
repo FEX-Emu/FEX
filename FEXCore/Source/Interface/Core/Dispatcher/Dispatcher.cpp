@@ -42,14 +42,14 @@ void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::
 }
 
 uint64_t Dispatcher::GetCompileBlockPtr() {
-  using ClassPtrType = void (FEXCore::Context::ContextImpl::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
+  using ClassPtrType = uintptr_t (FEXCore::Context::ContextImpl::*)(FEXCore::Core::CpuStateFrame *, uint64_t, uint64_t);
   union PtrCast {
     ClassPtrType ClassPtr;
     uintptr_t Data;
   };
 
   PtrCast CompileBlockPtr;
-  CompileBlockPtr.ClassPtr = &FEXCore::Context::ContextImpl::CompileBlockJit;
+  CompileBlockPtr.ClassPtr = &FEXCore::Context::ContextImpl::CompileBlock;
   return CompileBlockPtr.Data;
 }
 
@@ -255,14 +255,15 @@ void Dispatcher::EmitDispatcher() {
 
     ldr(ARMEmitter::XReg::x0, &l_CTX);
     mov(ARMEmitter::XReg::x1, STATE);
-    ldr(ARMEmitter::XReg::x3, &l_CompileBlock);
+    // x2 contains guest RIP
+    mov(ARMEmitter::XReg::x3, 0);
+    ldr(ARMEmitter::XReg::x4, &l_CompileBlock);
 
-    // X2 contains our guest RIP
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(ARMEmitter::Reg::r3);
+      GenerateIndirectRuntimeCall<uintptr_t, void *, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
     }
     else {
-      blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
+      blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
     }
 
     if (config.StaticRegisterAllocation)
