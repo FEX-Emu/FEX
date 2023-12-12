@@ -1003,12 +1003,6 @@ namespace FEXCore::Context {
     });
   }
 
-  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
-    uint64_t Result{};
-    Result = Handler->HandleSyscall(Frame, Args);
-    return Result;
-  }
-
   IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const fextl::string &filename) {
     auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
     return rv;

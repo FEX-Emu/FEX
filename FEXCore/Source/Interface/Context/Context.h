@@ -392,6 +392,4 @@ namespace FEXCore::Context {
     fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
-
-  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);
 }
