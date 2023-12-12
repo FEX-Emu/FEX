@@ -436,6 +436,10 @@ enum TypeOfClone {
 struct clone3_args {
   TypeOfClone Type;
   uint64_t SignalMask;
+
+  uint64_t StackSize;
+  void *NewStack;
+
   kernel_clone3_args args;
 };
 
