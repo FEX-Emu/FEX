@@ -174,7 +174,7 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             // Disallow use of layout wrappers for this type by specializing without a definition
             fmt::print(file, "template<>\nstruct guest_layout<{}>;\n", struct_name);
             fmt::print(file, "template<>\nstruct host_layout<{}>;\n", struct_name);
-            fmt::print(file, "guest_layout<{}> to_guest(const host_layout<{}>&) = delete;\n", struct_name, struct_name);
+            fmt::print(file, "guest_layout<{}>& to_guest(const host_layout<{}>&) = delete;\n", struct_name, struct_name);
             continue;
         }
 
