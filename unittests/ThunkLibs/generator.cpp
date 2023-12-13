@@ -293,7 +293,9 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  host_layout(const guest_layout<T>& from);\n"
         "};\n"
         "\n"
-        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
+        "template<typename T> guest_layout<T> to_guest(const host_layout<T>& from);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "template<typename T> const host_layout<T>& to_host_layout(const T& t);\n";
 
     auto& filename = output_filenames.host;
     {
@@ -554,6 +556,17 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
             return !decl->isCompleteDefinition();
         });
     };
+    const auto guest_converter_defined =
+          matches(functionDecl(hasName("to_guest"),
+                // Parameter is a host_layout<A> (ignoring qualifiers and references)
+                hasParameter(0, hasType(references(classTemplateSpecializationDecl(hasName("host_layout"), hasAnyTemplateArgument(refersToType(asString("struct A"))))))),
+                // Return value is a guest_layout<A>
+                returns(asString("guest_layout<" CLANG_STRUCT_PREFIX "A>"))));
+    const auto guest_converter_undefined =
+          matches(functionDecl(hasName("to_guest"),
+                // Parameter is a host_layout<A> (ignoring qualifiers and references)
+                hasParameter(0, hasType(references(classTemplateSpecializationDecl(hasName("host_layout"), hasAnyTemplateArgument(refersToType(asString("struct A"))))))),
+                isDeleted()));
 
     const std::string code =
         "template<typename> struct fex_gen_type {};\n"
@@ -570,6 +583,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                   hasAnyTemplateArgument(refersToType(asString("struct A"))),
                   has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))
             )));
+        CHECK_THAT(output, guest_converter_defined);
 
         CHECK_THAT(output, host_layout_is_trivial);
     }
@@ -594,6 +608,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                       has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
                       ))))))
             )));
+        CHECK_THAT(output, guest_converter_defined);
 
         CHECK_THAT(output, host_layout_is_trivial);
     }
@@ -608,6 +623,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
             "#endif\n";
         const auto output = run_thunkgen_host(struct_def, code, guest_abi);
         CHECK_THAT(output, layout_undefined("guest_layout"));
+        CHECK_THAT(output, guest_converter_undefined);
         CHECK_THAT(output, layout_undefined("host_layout"));
     }
 
@@ -639,6 +655,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                       has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
                       ))))))
             )));
+        CHECK_THAT(output, guest_converter_defined);
 
         CHECK_THAT(output, host_layout_is_trivial);
     }

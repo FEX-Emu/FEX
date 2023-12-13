@@ -174,6 +174,7 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             // Disallow use of layout wrappers for this type by specializing without a definition
             fmt::print(file, "template<>\nstruct guest_layout<{}>;\n", struct_name);
             fmt::print(file, "template<>\nstruct host_layout<{}>;\n", struct_name);
+            fmt::print(file, "guest_layout<{}> to_guest(const host_layout<{}>&) = delete;\n", struct_name, struct_name);
             continue;
         }
 
@@ -234,6 +235,41 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         }
         fmt::print(file, "  }}\n");
         fmt::print(file, "}};\n\n");
+
+        // Guest->host layout conversion
+        fmt::print(file, "inline guest_layout<{}> to_guest(const host_layout<{}>& from) {{\n", struct_name, struct_name);
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "  guest_layout<{}> ret;\n", struct_name);
+            fmt::print(file, "  static_assert(sizeof(from) == sizeof(ret));\n");
+            fmt::print(file, "  memcpy(&ret, &from, sizeof(from));\n");
+        } else {
+            // Conversion needs struct repacking.
+            // Wrapping each member in `to_guest(to_host_layout(...))` ensures this is done recursively.
+            fmt::print(file, "  guest_layout<{}> ret {{ .data {{\n", struct_name);
+            auto map_field2 = [&file](const StructInfo::MemberInfo& member, bool skip_arrays) {
+                auto& decl_name = member.member_name;
+                auto& array_size = member.array_size;
+                if (!array_size && skip_arrays) {
+                    fmt::print(file, "    .{} = to_guest(to_host_layout(from.data.{})),\n", decl_name, decl_name);
+                } else if (array_size && !skip_arrays) {
+                    // Copy element-wise below
+                    fmt::print(file, "    for (size_t i = 0; i < {}; ++i) {{\n", array_size.value());
+                    fmt::print(file, "      ret.data.{}.data[i] = to_guest(to_host_layout(from.data.{}[i]));\n", decl_name, decl_name);
+                    fmt::print(file, "    }}\n");
+                }
+            };
+
+            // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                map_field2(member, true);
+            }
+            fmt::print(file, "  }} }};\n");
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                map_field2(member, false);
+            }
+        }
+        fmt::print(file, "  return ret;\n");
+        fmt::print(file, "}}\n\n");
     }
 }
 
@@ -501,7 +537,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
                 }
                 if (!thunk.return_type->isVoidType()) {
-                    file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
+                    fmt::print(file, "  guest_layout<{}> rv;\n", get_type_name(context, thunk.return_type.getTypePtr()));
                 } else if (thunk.param_types.size() == 0) {
                     // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                     file << "    char force_nonempty;\n";
@@ -552,7 +588,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 }
             }
 
-            file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
+            if (!thunk.return_type->isVoidType()) {
+                fmt::print(file, "  args->rv = to_guest(to_host_layout<{}>(", thunk.return_type.getAsString());
+            }
+            fmt::print(file, "{}(", function_to_call);
             {
                 auto format_param = [&](std::size_t idx) {
                     std::string raw_arg = fmt::format("a_{}.data", idx);
@@ -574,7 +613,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
                 file << format_function_args(thunk, format_param);
             }
-            file << ");\n";
+            if (!thunk.return_type->isVoidType()) {
+                fmt::print(file, "))");
+            }
+            fmt::print(file, ");\n");
+
             file << "}\n";
         }
         file << "}\n";

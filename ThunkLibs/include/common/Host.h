@@ -125,6 +125,24 @@ struct host_layout {
   }
 };
 
+// Explicitly turn a host type into its corresponding host_layout
+template<typename T>
+const host_layout<T>& to_host_layout(const T& t) {
+  static_assert(std::is_same_v<decltype(host_layout<T>::data), T>);
+  return reinterpret_cast<const host_layout<T>&>(t);
+}
+
+template<typename T>
+inline guest_layout<T> to_guest(const host_layout<T>& from) {
+  if constexpr (std::is_enum_v<T>) {
+    // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
+    return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+  } else {
+    guest_layout<T> ret { .data = from.data };
+    return ret;
+  }
+}
+
 template<typename>
 struct CallbackUnpack;
 
