@@ -535,6 +535,115 @@ TEST_CASE_METHOD(Fixture, "VariadicFunctionsWithoutAnnotation") {
         "template<> struct fex_gen_config<func> {};\n", true));
 }
 
+// Tests generation of guest_layout/host_layout wrappers and related helpers
+TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
+    auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
+    INFO(guest_abi);
+
+    const auto host_layout_is_trivial =
+        matches(classTemplateSpecializationDecl(
+            hasName("host_layout"),
+            hasAnyTemplateArgument(refersToType(asString("struct A"))),
+            has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))
+        ));
+    const auto layout_undefined = [](const char* type) {
+        return matches(classTemplateSpecializationDecl(
+              hasName(type),
+              hasAnyTemplateArgument(refersToType(asString("struct A")))
+        ).bind("layout")).check_binding("layout", +[](const clang::ClassTemplateSpecializationDecl* decl) {
+            return !decl->isCompleteDefinition();
+        });
+    };
+
+    const std::string code =
+        "template<typename> struct fex_gen_type {};\n"
+        "template<> struct fex_gen_type<A> {};\n";
+
+    // For fully compatible types, both guest_layout and host_layout directly
+    // reference the original struct
+    SECTION("Fully compatible type") {
+        const char* struct_def = "struct A { int a; int b; };\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(asString("struct A"))),
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))
+            )));
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
+
+    // For repackable types, guest_layout explicitly lists its members
+    SECTION("Repackable type") {
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct A { int a; int b; };\n"
+            "#else\n"
+            "struct A { int b; int a; };\n"
+            "#endif\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(asString("struct A"))),
+                  // The member "data" exists and is defined to a struct...
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
+                      // ... the members of which also use guest_layout
+                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<int>")))),
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      ))))))
+            )));
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
+
+    // For incompatible types, use of guest_layout nor host_layout should be prohibited
+    SECTION("Incompatible type, unannotated") {
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct A { int a; int b; };\n"
+            "#else\n"
+            "struct A { int c; int d; };\n"
+            "#endif\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output, layout_undefined("guest_layout"));
+        CHECK_THAT(output, layout_undefined("host_layout"));
+    }
+
+    // Layout wrappers can be enabled even for incompatible types using the emit_layout_wrappers annotation
+    SECTION("Incompatible type, annotated") {
+        // A slightly different setup is used here in order to construct a type which...
+        // - has incompatible data layout (for both 32-bit and 64-bit guests)
+        // - has consistently named members in struct A (which is required to emit layout wrappers)
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct B { int a; };\n"
+            "#else\n"
+            "struct B { int b; };\n"
+            "#endif\n"
+            "struct A { B* a; int b; };\n";
+        const std::string code =
+            "#include <thunks_common.h>\n"
+            "template<typename> struct fex_gen_type {};\n"
+            "template<> struct fex_gen_type<A> : fexgen::emit_layout_wrappers {};\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(recordType(hasDeclaration(recordDecl(hasName("A")))))),
+                  // The member "data" exists and is defined to a struct...
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
+                      // ... the members of which also use guest_layout
+                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "B *>")))),
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      ))))))
+            )));
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
+}
+
 TEST_CASE_METHOD(Fixture, "StructRepacking") {
     auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
     INFO(guest_abi);

@@ -150,10 +150,6 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             type_compat[type] = TypeCompatibility::Full;
         }
 
-        if (type_compat.at(type) == TypeCompatibility::None) {
-            continue;
-        }
-
         // These must be handled later since they are not canonicalized and hence must be de-duplicated first
         if (type->isBuiltinType()) {
             continue;
@@ -174,9 +170,25 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             continue;
         }
 
+        if (type_compat.at(type) == TypeCompatibility::None && !type_repack_info.emit_layout_wrappers) {
+            // Disallow use of layout wrappers for this type by specializing without a definition
+            fmt::print(file, "template<>\nstruct guest_layout<{}>;\n", struct_name);
+            fmt::print(file, "template<>\nstruct host_layout<{}>;\n", struct_name);
+            continue;
+        }
+
         // Guest layout definition
         fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
-        fmt::print(file, "  using type = {};\n", struct_name);
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "  using type = {};\n", struct_name);
+        } else {
+            fmt::print(file, "  struct type {{\n");
+            // TODO: Insert any required padding bytes
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                fmt::print(file, "    guest_layout<{}> {};\n", member.type_name, member.member_name);
+            }
+            fmt::print(file, "  }};\n");
+        }
         fmt::print(file, "  type data;\n");
         fmt::print(file, "}};\n");
 
@@ -192,7 +204,34 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         fmt::print(file, "\n");
         // Host->guest layout conversion
         fmt::print(file, "  host_layout(const guest_layout<{}>& from) :\n", struct_name);
-        fmt::print(file, "    data {{ from.data }} {{\n");
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "    data {{ from.data }} {{\n");
+        } else {
+            // Conversion needs struct repacking.
+            // Wrapping each member in `host_layout<>` ensures this is done recursively.
+            fmt::print(file, "    data {{\n");
+            auto map_field = [&file](clang::FieldDecl* member, bool skip_arrays) {
+                auto decl_name = member->getNameAsString();
+                auto type_name = member->getType().getAsString();
+                auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(member->getType());
+                if (!array_type && skip_arrays) {
+                    fmt::print(file, "      .{} = host_layout<{}> {{ from.data.{} }}.data,\n", decl_name, type_name, decl_name);
+                } else if (array_type && !skip_arrays) {
+                    // Copy element-wise below
+                    fmt::print(file, "      for (size_t i = 0; i < {}; ++i) {{\n", array_type->getSize().getZExtValue());
+                    fmt::print(file, "        data.{}[i] = host_layout<{}> {{ from.data.{} }}.data[i];\n", decl_name, type_name, decl_name);
+                    fmt::print(file, "      }}\n");
+                }
+            };
+            // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
+            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                map_field(member, true);
+            }
+            fmt::print(file, "    }} {{\n");
+            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                map_field(member, false);
+            }
+        }
         fmt::print(file, "  }}\n");
         fmt::print(file, "}};\n\n");
     }

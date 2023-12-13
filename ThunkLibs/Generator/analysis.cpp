@@ -150,6 +150,7 @@ FindClassTemplateDeclByName(clang::DeclContext& decl_context, std::string_view s
 struct TypeAnnotations {
     bool is_opaque = false;
     bool assumed_compatible = false;
+    bool emit_layout_wrappers = false;
 };
 
 static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
@@ -166,6 +167,8 @@ static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXX
             ret.is_opaque = true;
         } else if (annotation == "fexgen::assume_compatible_data_layout") {
             ret.assumed_compatible = true;
+        } else if (annotation == "fexgen::emit_layout_wrappers") {
+            ret.emit_layout_wrappers = true;
         } else {
             throw report_error(base.getSourceRange().getBegin(), "Unknown type annotation");
         }
@@ -214,13 +217,17 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             clang::QualType type = context.getCanonicalType(template_args[0].getAsType());
             type = type->getLocallyUnqualifiedSingleStepDesugaredType();
 
+            const auto annotations = GetTypeAnnotations(context, decl);
             if (type->isFunctionPointerType() || type->isFunctionType()) {
+                if (decl->getNumBases()) {
+                    throw report_error(decl->getBeginLoc(), "Function pointer types cannot be annotated");
+                }
                 thunked_funcptrs[type.getAsString()] = std::pair { type.getTypePtr(), no_param_annotations };
             } else {
-                const auto annotations = GetTypeAnnotations(context, decl);
                 RepackedType repack_info = {
                     .assumed_compatible = annotations.is_opaque || annotations.assumed_compatible,
                     .pointers_only = annotations.is_opaque && !annotations.assumed_compatible,
+                    .emit_layout_wrappers = annotations.emit_layout_wrappers
                 };
                 [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), repack_info);
                 assert(inserted);
