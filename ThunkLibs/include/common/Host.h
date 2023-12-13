@@ -97,8 +97,63 @@ struct guest_layout {
   static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
   static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
 
-  using type = T;
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
   type data;
+
+  guest_layout& operator=(const T from) {
+    data = from;
+    return *this;
+  }
+};
+
+template<typename T>
+struct guest_layout<T*> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // Allow implicit conversion for function pointers, since they disallow use of host_layout
+  guest_layout& operator=(const T* from) requires (std::is_function_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct guest_layout<T* const> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // Allow implicit conversion for function pointers, since they disallow use of host_layout
+  guest_layout& operator=(const T* from) requires (std::is_function_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
 };
 
 template<typename T>
@@ -133,7 +188,32 @@ const host_layout<T>& to_host_layout(const T& t) {
 }
 
 template<typename T>
-inline guest_layout<T> to_guest(const host_layout<T>& from) {
+struct host_layout<T*> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  explicit host_layout(const guest_layout<T*>& from) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // TODO: Make this explicit?
+  host_layout() = default;
+};
+
+template<typename T>
+struct host_layout<T* const> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  explicit host_layout(const guest_layout<T* const>& from) : data { (T*)(uintptr_t)from.data } {
+  }
+};
+
+template<typename T>
+inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
   if constexpr (std::is_enum_v<T>) {
     // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
     return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
@@ -141,6 +221,14 @@ inline guest_layout<T> to_guest(const host_layout<T>& from) {
     guest_layout<T> ret { .data = from.data };
     return ret;
   }
+}
+
+template<typename T>
+inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
+  // TODO: Assert upper 32 bits are zero
+  guest_layout<T*> ret;
+  ret.data = reinterpret_cast<uintptr_t>(from.data);
+  return ret;
 }
 
 template<typename>
@@ -251,6 +339,13 @@ template<typename F>
 void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFunction) {
   FEXCore::FinalizeHostTrampolineForGuestFunction(
       (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
+      (void*)&CallbackUnpack<F>::CallGuestPtr);
+}
+
+template<typename F>
+void FinalizeHostTrampolineForGuestFunction(guest_layout<F*> PreallocatedTrampolineForGuestFunction) {
+  FEXCore::FinalizeHostTrampolineForGuestFunction(
+      (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction.data,
       (void*)&CallbackUnpack<F>::CallGuestPtr);
 }
 

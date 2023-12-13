@@ -85,6 +85,7 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
                 .type_name = get_type_name(context, field_type),
                 .member_name = field->getNameAsString(),
                 .array_size = array_size,
+                .is_function_pointer = field_type->isFunctionPointerType(),
             };
 
             // TODO: Process types in dependency-order. Currently we skip this

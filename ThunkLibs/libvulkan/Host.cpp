@@ -77,11 +77,21 @@ static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, co
     }
   }
 
-  return LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, a_2.data);
+  VkInstance out;
+  auto ret = LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, &out);
+  if (ret == VK_SUCCESS) {
+    *a_2.get_pointer() = to_guest(to_host_layout(out));
+  }
+  return ret;
 }
 
 static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, guest_layout<VkDevice*> a_3){
-  return LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, a_3.data);
+  VkDevice out;
+  auto ret = LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, &out);
+  if (ret == VK_SUCCESS) {
+    *a_3.get_pointer() = to_guest(to_host_layout(out));
+  }
+  return ret;
 }
 
 static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3){
@@ -95,7 +105,7 @@ static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkA
 }
 
 static VkResult FEXFN_IMPL(vkCreateDebugReportCallbackEXT)(VkInstance a_0, guest_layout<const VkDebugReportCallbackCreateInfoEXT*> a_1, const VkAllocationCallbacks* a_2, VkDebugReportCallbackEXT* a_3) {
-  VkDebugReportCallbackCreateInfoEXT overridden_callback = *a_1.data;
+  auto overridden_callback = host_layout<VkDebugReportCallbackCreateInfoEXT> { *a_1.get_pointer() }.data;
   overridden_callback.pfnCallback = DummyVkDebugReportCallback;
   (void*&)LDR_PTR(vkCreateDebugReportCallbackEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkCreateDebugReportCallbackEXT");
   return LDR_PTR(vkCreateDebugReportCallbackEXT)(a_0, &overridden_callback, nullptr, a_3);
@@ -115,7 +125,7 @@ extern "C" VkBool32 DummyVkDebugUtilsMessengerCallback(
 static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(
     VkInstance_T* a_0, guest_layout<const VkDebugUtilsMessengerCreateInfoEXT*> a_1,
     const VkAllocationCallbacks* a_2, VkDebugUtilsMessengerEXT* a_3) {
-  VkDebugUtilsMessengerCreateInfoEXT overridden_callback = *a_1.data;
+  auto overridden_callback = host_layout<VkDebugUtilsMessengerCreateInfoEXT> { *a_1.get_pointer() }.data;
   overridden_callback.pfnUserCallback = DummyVkDebugUtilsMessengerCallback;
   (void*&)LDR_PTR(vkCreateDebugUtilsMessengerEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkCreateDebugUtilsMessengerEXT");
   return LDR_PTR(vkCreateDebugUtilsMessengerEXT)(a_0, &overridden_callback, nullptr, a_3);

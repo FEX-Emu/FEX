@@ -28,13 +28,15 @@ struct StructInfo : SimpleTypeInfo {
         std::string type_name;
         std::string member_name;
         std::optional<uint64_t> array_size;
+        bool is_function_pointer;
 
         bool operator==(const MemberInfo& other) const {
             return  size_bits == other.size_bits &&
                     offset_bits == other.offset_bits &&
                     type_name == other.type_name &&
                     member_name == other.member_name &&
-                    array_size == other.array_size;
+                    array_size == other.array_size &&
+                    is_function_pointer == other.is_function_pointer;
         }
     };
 

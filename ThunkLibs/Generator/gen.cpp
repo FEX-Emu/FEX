@@ -216,7 +216,12 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
                 auto type_name = member->getType().getAsString();
                 auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(member->getType());
                 if (!array_type && skip_arrays) {
-                    fmt::print(file, "      .{} = host_layout<{}> {{ from.data.{} }}.data,\n", decl_name, type_name, decl_name);
+                    if (member->getType()->isFunctionPointerType()) {
+                        // Function pointers must be handled manually, so zero them out by default
+                        fmt::print(file, "      .{} {{ }},\n", decl_name);
+                    } else {
+                        fmt::print(file, "      .{} = host_layout<{}> {{ from.data.{} }}.data,\n", decl_name, type_name, decl_name);
+                    }
                 } else if (array_type && !skip_arrays) {
                     // Copy element-wise below
                     fmt::print(file, "      for (size_t i = 0; i < {}; ++i) {{\n", array_type->getSize().getZExtValue());
@@ -250,7 +255,12 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
                 auto& decl_name = member.member_name;
                 auto& array_size = member.array_size;
                 if (!array_size && skip_arrays) {
-                    fmt::print(file, "    .{} = to_guest(to_host_layout(from.data.{})),\n", decl_name, decl_name);
+                    if (member.is_function_pointer) {
+                        // Function pointers must be handled manually, so zero them out by default
+                        fmt::print(file, "    .{} {{ }},\n", decl_name);
+                    } else {
+                        fmt::print(file, "    .{} = to_guest(to_host_layout(from.data.{})),\n", decl_name, decl_name);
+                    }
                 } else if (array_size && !skip_arrays) {
                     // Copy element-wise below
                     fmt::print(file, "    for (size_t i = 0; i < {}; ++i) {{\n", array_size.value());
@@ -589,7 +599,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             }
 
             if (!thunk.return_type->isVoidType()) {
-                fmt::print(file, "  args->rv = to_guest(to_host_layout<{}>(", thunk.return_type.getAsString());
+                fmt::print(file, "  args->rv = ");
+                if (!thunk.return_type->isFunctionPointerType()) {
+                    fmt::print(file, "to_guest(to_host_layout<{}>(", thunk.return_type.getAsString());
+                }
             }
             fmt::print(file, "{}(", function_to_call);
             {
@@ -600,9 +613,14 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = fmt::format("args->a_{}.data", idx);
+                        auto arg_name = fmt::format("args->a_{}", idx); // Use parameter directly
                         // Use comma operator to inject a function call before returning the argument
-                        return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
+                        // TODO: Avoid casting away the guest_layout
+                        if (thunk.custom_host_impl) {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), {})", arg_name, arg_name);
+                        } else {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), ({})(uint64_t {{ {}.data }}))", arg_name, get_type_name(context, thunk.param_types[idx].getTypePtr()), arg_name);
+                        }
                     } else if (thunk.param_annotations[idx].is_passthrough) {
                         // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
@@ -611,9 +629,9 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     }
                 };
 
-                file << format_function_args(thunk, format_param);
+                fmt::print(file, "{}", format_function_args(thunk, format_param));
             }
-            if (!thunk.return_type->isVoidType()) {
+            if (!thunk.return_type->isVoidType() && !thunk.return_type->isFunctionPointerType()) {
                 fmt::print(file, "))");
             }
             fmt::print(file, ");\n");
