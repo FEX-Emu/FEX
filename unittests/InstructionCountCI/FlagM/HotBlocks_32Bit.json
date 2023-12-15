@@ -27,9 +27,9 @@
         "cmp     esi, ebx"
       ],
       "ExpectedArm64ASM": [
-        "add w20, w5, w10",
+        "add w20, w10, w5",
         "ldrb w6, [x20]",
-        "add w20, w11, w10",
+        "add w20, w10, w11",
         "ldrb w5, [x20]",
         "orr w20, w6, #0xffff0000",
         "mov w6, w20",
