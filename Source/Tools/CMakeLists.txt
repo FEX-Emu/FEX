@@ -18,6 +18,11 @@ if (NOT MINGW_BUILD)
   add_subdirectory(FEXServer/)
   add_subdirectory(FEXBash/)
   add_subdirectory(CodeSizeValidation/)
+  add_subdirectory(LinuxEmulation/)
+
+  if (BUILD_TESTS)
+    add_subdirectory(IRLoader/)
+  endif()
 endif()
 
 add_subdirectory(FEXLoader/)

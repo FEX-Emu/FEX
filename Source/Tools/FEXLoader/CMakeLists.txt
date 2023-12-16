@@ -6,8 +6,6 @@ if (ENABLE_VIXL_SIMULATOR)
 endif()
 
 if (NOT MINGW_BUILD)
-  add_subdirectory(LinuxSyscalls)
-
   if (TERMUX_BUILD)
     # Termux needs android-shmem to get the shm emulation library.
     list(APPEND LIBS android-shmem)
@@ -16,7 +14,6 @@ if (NOT MINGW_BUILD)
   function(GenerateInterpreter NAME AsInterpreter)
     add_executable(${NAME}
       FEXLoader.cpp
-      VDSO_Emulation.cpp
       AOT/AOTGenerator.cpp)
 
     target_compile_definitions(${NAME} PRIVATE ${DEFINES})
@@ -181,24 +178,4 @@ if (BUILD_TESTS)
       ${LIBS}
       ${PTHREAD_LIB}
   )
-
-  if (NOT MINGW_BUILD)
-    add_executable(IRLoader
-      IRLoader.cpp
-    )
-    target_compile_definitions(IRLoader PRIVATE ${DEFINES})
-
-    target_include_directories(IRLoader
-      PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-        ${CMAKE_BINARY_DIR}/generated
-    )
-    target_link_libraries(IRLoader
-      PRIVATE
-        ${LIBS}
-        LinuxEmulation
-        ${PTHREAD_LIB}
-        fmt::fmt
-    )
-  endif()
 endif()
