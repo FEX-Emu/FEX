@@ -157,25 +157,3 @@ if (NOT MINGW_BUILD)
     )
   endif()
 endif()
-
-if (BUILD_TESTS)
-  set (SRCS TestHarnessRunner.cpp)
-  if (NOT MINGW_BUILD)
-    list(APPEND SRCS TestHarnessRunner/HostRunner.cpp)
-    list(APPEND LIBS LinuxEmulation CommonTools)
-  endif()
-
-  add_executable(TestHarnessRunner ${SRCS})
-  target_compile_definitions(TestHarnessRunner PRIVATE ${DEFINES})
-
-  target_include_directories(TestHarnessRunner
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-      ${CMAKE_BINARY_DIR}/generated
-  )
-  target_link_libraries(TestHarnessRunner
-    PRIVATE
-      ${LIBS}
-      ${PTHREAD_LIB}
-  )
-endif()

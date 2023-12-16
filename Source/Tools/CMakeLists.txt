@@ -26,3 +26,7 @@ if (NOT MINGW_BUILD)
 endif()
 
 add_subdirectory(FEXLoader/)
+
+if (BUILD_TESTS)
+  add_subdirectory(TestHarnessRunner/)
+endif()
