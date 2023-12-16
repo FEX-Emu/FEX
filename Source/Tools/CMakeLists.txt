@@ -23,9 +23,9 @@ if (NOT MINGW_BUILD)
   if (BUILD_TESTS)
     add_subdirectory(IRLoader/)
   endif()
-endif()
 
-add_subdirectory(FEXLoader/)
+  add_subdirectory(FEXLoader/)
+endif()
 
 if (BUILD_TESTS)
   add_subdirectory(TestHarnessRunner/)
