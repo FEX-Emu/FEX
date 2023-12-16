@@ -1205,8 +1205,8 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
   return Res;
 }
 
-void CPUIDEmu::Init(FEXCore::Context::ContextImpl *ctx) {
-  CTX = ctx;
+CPUIDEmu::CPUIDEmu(FEXCore::Context::ContextImpl const *ctx)
+  : CTX {ctx} {
   Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
 
   // Setup some state tracking

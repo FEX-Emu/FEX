@@ -28,11 +28,11 @@ private:
   constexpr static uint32_t CPUID_VENDOR_AMD3 = 0x444D4163; // "cAMD"
 
 public:
+  CPUIDEmu(FEXCore::Context::ContextImpl const *ctx);
+
   // X86 cacheline size effectively has to be hardcoded to 64
   // if we report anything differently then applications are likely to break
   constexpr static uint64_t CACHELINE_SIZE = 64;
-
-  void Init(FEXCore::Context::ContextImpl *ctx);
 
   FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) const {
     if (Function < Primary.size()) {
@@ -111,7 +111,7 @@ public:
   }
 
 private:
-  FEXCore::Context::ContextImpl *CTX;
+  FEXCore::Context::ContextImpl const *CTX;
   bool Hybrid{};
   uint32_t Cores{};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);

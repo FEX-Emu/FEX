@@ -78,7 +78,8 @@ $end_info$
 
 namespace FEXCore::Context {
   ContextImpl::ContextImpl()
-  : IRCaptureCache {this} {
+  : CPUID {this}
+  , IRCaptureCache {this} {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
@@ -99,8 +100,6 @@ namespace FEXCore::Context {
 
     // Track atomic TSO emulation configuration.
     UpdateAtomicTSOEmulationConfig();
-
-    CPUID.Init(this);
   }
 
   ContextImpl::~ContextImpl() {
