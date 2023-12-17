@@ -5,6 +5,7 @@ set (FEXCORE_BASE_SRCS
   Utils/Allocator.cpp
   Utils/CPUInfo.cpp
   Utils/FileLoading.cpp
+  Utils/FutexSpinWait.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
   )
