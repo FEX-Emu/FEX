@@ -480,9 +480,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 }
 
 
-static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ContextImpl::ExitFunctionLinkData *Record) {
   auto Thread = Frame->Thread;
-  auto GuestRip = record[1];
+  auto GuestRip = Record->GuestRIP;
 
   auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
@@ -491,7 +491,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     return Frame->Pointers.Common.DispatcherLoopTop;
   }
 
-  uintptr_t branch = (uintptr_t)(record) - 8;
+  uintptr_t branch = (uintptr_t)(Record) - 8;
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
 
   auto offset = HostCode/4 - branch/4;
@@ -503,7 +503,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 24);
 
     // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)Record, [branch, LinkerAddress]{
       FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 24);
       FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
       emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
@@ -514,11 +514,11 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     });
   } else {
     // fallback case - do a soft-er link by patching the pointer
-    record[0] = HostCode;
+    Record->HostBranch = HostCode;
 
     // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
-      record[0] = LinkerAddress;
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)Record, [Record, LinkerAddress]{
+      Record->HostBranch = LinkerAddress;
     });
   }
 
