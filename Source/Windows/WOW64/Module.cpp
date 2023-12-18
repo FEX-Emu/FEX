@@ -269,7 +269,7 @@ namespace Context {
     }
 
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(ParanoidTSO(), Context->Pc, &Context->X0);
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GetTLS().ThreadState(), ParanoidTSO(), Context->Pc, &Context->X0);
     if (!Result.first) {
       return false;
     }

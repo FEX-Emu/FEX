@@ -1764,7 +1764,7 @@ namespace FEX::HLE {
         return false;
       }
 
-      const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GlobalDelegator->ParanoidTSO(), PC, ArchHelpers::Context::GetArmGPRs(ucontext));
+      const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, GlobalDelegator->ParanoidTSO(), PC, ArchHelpers::Context::GetArmGPRs(ucontext));
       ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
       return Result.first;
     };

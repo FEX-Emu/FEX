@@ -2025,7 +2025,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
   return NumInstructionsToSkip * 4;
 }
 
-[[nodiscard]] std::pair<bool, int32_t> HandleUnalignedAccess(bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs) {
+[[nodiscard]] std::pair<bool, int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState *Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
