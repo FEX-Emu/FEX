@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: MIT
+
+#include "Utils/FutexSpinWait.h"
+
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
@@ -2033,6 +2037,29 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 #endif
 
   constexpr auto NotHandled = std::make_pair(false, 0);
+
+  const auto Frame = Thread->CurrentFrame;
+  const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
+  auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader *>(BlockBegin);
+  auto InlineTail = reinterpret_cast<CPU::CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+
+  class UniqueSpinMutex final {
+    public:
+      UniqueSpinMutex(uint32_t *Futex)
+        : Futex {Futex} {
+        FEXCore::Utils::FutexSpinWait::lock(Futex);
+      }
+
+      ~UniqueSpinMutex() {
+        FEXCore::Utils::FutexSpinWait::unlock(Futex);
+      }
+    private:
+      uint32_t *Futex;
+  };
+
+  // Currently doesn't guarantee any safety because code isn't shared between threads.
+  // Will be later.
+  UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
 
   if constexpr (is_arm64) {
     uint32_t *PC = (uint32_t*)ProgramCounter;
