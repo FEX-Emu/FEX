@@ -237,8 +237,6 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     } Config;
 
-    FEXCore::HostFeatures HostFeatures;
-
     std::mutex ThreadCreationMutex;
     FEXCore::Core::InternalThreadState* ParentThread{};
     fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
@@ -253,6 +251,8 @@ namespace FEXCore::Context {
 
     FEXCore::ForkableSharedMutex CodeInvalidationMutex;
 
+    FEXCore::HostFeatures HostFeatures;
+    // CPUID depends on HostFeatures so needs to be initialized after that.
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     FEXCore::HLE::SourcecodeResolver *SourcecodeResolver{};
