@@ -374,21 +374,32 @@ namespace FEX::VDSO {
       return;
     }
 
-    auto SymbolPtr = dlsym(vdso, "__vdso_time");
+    auto SymbolPtr = dlsym(vdso, "__kernel_time");
+    if (!SymbolPtr) {
+      SymbolPtr = dlsym(vdso, "__vdso_time");
+    }
     if (SymbolPtr) {
       VDSOHandlers::TimePtr = reinterpret_cast<VDSOHandlers::TimeType>(SymbolPtr);
       x64::Handler_time = x64::VDSO::time;
       x32::Handler_time = x32::VDSO::time;
     }
 
-    SymbolPtr = dlsym(vdso, "__vdso_gettimeofday");
+    SymbolPtr = dlsym(vdso, "__kernel_gettimeofday");
+    if (!SymbolPtr) {
+      SymbolPtr = dlsym(vdso, "__vdso_gettimeofday");
+    }
+
     if (SymbolPtr) {
       VDSOHandlers::GetTimeOfDayPtr = reinterpret_cast<VDSOHandlers::GetTimeOfDayType>(SymbolPtr);
       x64::Handler_gettimeofday = x64::VDSO::gettimeofday;
       x32::Handler_gettimeofday = x32::VDSO::gettimeofday;
     }
 
-    SymbolPtr = dlsym(vdso, "__vdso_clock_gettime");
+    SymbolPtr = dlsym(vdso, "__kernel_clock_gettime");
+    if (!SymbolPtr) {
+      SymbolPtr = dlsym(vdso, "__vdso_clock_gettime");
+    }
+
     if (SymbolPtr) {
       VDSOHandlers::ClockGetTimePtr = reinterpret_cast<VDSOHandlers::ClockGetTimeType>(SymbolPtr);
       x64::Handler_clock_gettime = x64::VDSO::clock_gettime;
@@ -396,14 +407,22 @@ namespace FEX::VDSO {
       x32::Handler_clock_gettime64 = x32::VDSO::clock_gettime64;
     }
 
-    SymbolPtr = dlsym(vdso, "__vdso_clock_getres");
+    SymbolPtr = dlsym(vdso, "__kernel_clock_getres");
+    if (!SymbolPtr) {
+      SymbolPtr = dlsym(vdso, "__vdso_clock_getres");
+    }
+
     if (SymbolPtr) {
       VDSOHandlers::ClockGetResPtr = reinterpret_cast<VDSOHandlers::ClockGetResType>(SymbolPtr);
       x64::Handler_clock_getres = x64::VDSO::clock_getres;
       x32::Handler_clock_getres = x32::VDSO::clock_getres;
     }
 
-    SymbolPtr = dlsym(vdso, "__vdso_getcpu");
+    SymbolPtr = dlsym(vdso, "__kernel_getcpu");
+    if (!SymbolPtr) {
+      SymbolPtr = dlsym(vdso, "__vdso_getcpu");
+    }
+
     if (SymbolPtr) {
       VDSOHandlers::GetCPUPtr = reinterpret_cast<VDSOHandlers::GetCPUType>(SymbolPtr);
       x64::Handler_getcpu = x64::VDSO::getcpu;
