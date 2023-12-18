@@ -44,7 +44,6 @@ namespace CodeSerialize {
 
 namespace CPU {
   class Arm64JITCore;
-  class X86JITCore;
   class Dispatcher;
 }
 namespace HLE {
@@ -191,9 +190,6 @@ namespace FEXCore::Context {
     friend class FEXCore::HLE::SyscallHandler;
   #ifdef JIT_ARM64
     friend class FEXCore::CPU::Arm64JITCore;
-  #endif
-  #ifdef JIT_X86_64
-    friend class FEXCore::CPU::X86JITCore;
   #endif
 
     friend class FEXCore::IR::Validation::IRValidation;
