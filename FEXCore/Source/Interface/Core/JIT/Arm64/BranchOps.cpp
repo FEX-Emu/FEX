@@ -11,9 +11,9 @@ $end_info$
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
-#include "Interface/Core/InternalThreadState.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <Interface/HLE/Thunks/Thunks.h>

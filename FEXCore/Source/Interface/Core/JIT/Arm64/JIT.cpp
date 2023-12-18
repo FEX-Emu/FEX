@@ -18,13 +18,13 @@ $end_info$
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
-#include "Interface/Core/InternalThreadState.h"
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include "Utils/MemberFunctionToPointer.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
