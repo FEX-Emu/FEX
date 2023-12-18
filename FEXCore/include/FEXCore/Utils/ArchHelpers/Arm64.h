@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <utility>
 
+namespace FEXCore::Core {
+  struct InternalThreadState;
+}
+
 namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t CASPAL_MASK = 0xBF'E0'FC'00;
   constexpr uint32_t CASPAL_INST = 0x08'60'FC'00;
@@ -121,5 +125,5 @@ namespace FEXCore::ArchHelpers::Arm64 {
    */
   [[nodiscard]]
   FEX_DEFAULT_VISIBILITY
-  std::pair<bool, int32_t> HandleUnalignedAccess(bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs);
+  std::pair<bool, int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState *Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs);
 }
