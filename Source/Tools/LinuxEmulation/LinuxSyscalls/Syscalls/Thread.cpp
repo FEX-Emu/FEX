@@ -62,8 +62,6 @@ namespace FEX::HLE {
     memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
 
     NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
-    NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
-    NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
     if (args->Type == TYPE_CLONE3) {
       // stack pointer points to the lowest address to the stack
       // set RSP to stack + size
@@ -156,8 +154,6 @@ namespace FEX::HLE {
       memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
 
       NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
-      NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
-      NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
       if (GuestArgs->stack == 0) {
         // Copies in the original thread's stack
       }
@@ -185,8 +181,6 @@ namespace FEX::HLE {
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &CloneArgs->SignalMask, nullptr, sizeof(CloneArgs->SignalMask));
 
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
-      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = 0;
-      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBP] = 0;
       if (GuestArgs->stack == 0) {
         // Copies in the original thread's stack
       }
