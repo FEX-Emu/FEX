@@ -314,11 +314,8 @@ friend class FEXCore::IR::PassManager;
       OrderedNode *Node = new (Ptr) OrderedNode();
       Node->Header.Value.SetOffset(DualListData.DataBegin(), reinterpret_cast<uintptr_t>(Op));
 
-      if (CurrentWriteCursor) {
-        CurrentWriteCursor->append(ListBegin, Node);
-      }
-      CurrentWriteCursor = Node;
-      return Node;
+      CurrentWriteCursor = CurrentWriteCursor->append(ListBegin, Node);
+      return CurrentWriteCursor;
     }
 
     OrderedNode *GetNode(uint32_t SSANode) {

@@ -100,7 +100,7 @@ void IREmitter::ResetWorkingList() {
   CodeBlocks.clear();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
-  InvalidNode = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(sizeof(OrderedNode)));
+  CurrentWriteCursor = InvalidNode = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(sizeof(OrderedNode)));
   memset(InvalidNode, 0, sizeof(OrderedNode));
   CurrentCodeBlock = nullptr;
 }
