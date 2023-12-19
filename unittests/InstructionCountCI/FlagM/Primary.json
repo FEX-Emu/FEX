@@ -1861,7 +1861,7 @@
       "Comment": "0x69",
       "ExpectedArm64ASM": [
         "mov w20, #0x101",
-        "mul x21, x7, x20",
+        "smull x21, w7, w20",
         "asr x21, x21, #32",
         "mul w4, w7, w20",
         "sbfx x20, x4, #31, #1",
@@ -1900,7 +1900,7 @@
       "Comment": "0x6b",
       "ExpectedArm64ASM": [
         "mov w20, #0x3",
-        "mul x21, x7, x20",
+        "smull x21, w7, w20",
         "asr x21, x21, #32",
         "mul w4, w7, w20",
         "sbfx x20, x4, #31, #1",
