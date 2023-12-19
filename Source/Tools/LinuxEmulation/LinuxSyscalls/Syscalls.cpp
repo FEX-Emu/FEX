@@ -385,7 +385,6 @@ struct StackFrameData {
   FEXCore::Context::Context *CTX{};
   FEXCore::Core::CpuStateFrame NewFrame{};
   FEX::HLE::clone3_args GuestArgs{};
-  size_t StackSize;
 };
 
 struct StackFramePlusRet {
@@ -469,7 +468,7 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   uint64_t Flags = args->args.flags & ~INVALID_FOR_HOST;
   uint64_t Result = ::clone(
     Clone2HandlerRet, // To be called function
-    (void*)((uint64_t)args->NewStack + Data->StackSize), // Stack
+    (void*)((uint64_t)args->NewStack + args->StackSize), // Stack
     Flags, //Flags
     Data, //Argument
     (pid_t*)args->args.parent_tid, // parent_tid
