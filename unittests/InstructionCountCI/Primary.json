@@ -2476,7 +2476,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "add x20, x5, x7",
+        "add x20, x7, x5",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2484,7 +2484,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "add x20, x5, x7",
+        "add x20, x7, x5",
         "mov x20, x20",
         "mov w4, w20"
       ]
@@ -2493,88 +2493,179 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "add x4, x5, x7"
+        "add x4, x7, x5"
       ]
     },
     "lea ax, [rbx+rcx*2 + 0]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #1",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #1",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "lea eax, [rbx+rcx*2 + 0]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #1",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #1",
         "mov x20, x20",
         "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*2 + 0]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #1",
-        "add x4, x20, x7"
+        "add x4, x7, x5, lsl #1"
       ]
     },
     "lea ax, [rbx+rcx*4 + 0]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #2",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #2",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "lea eax, [rbx+rcx*4 + 0]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #2",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #2",
         "mov x20, x20",
         "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*4 + 0]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #2",
-        "add x4, x20, x7"
+        "add x4, x7, x5, lsl #2"
       ]
     },
     "lea ax, [rbx+rcx*8 + 0]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #3",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #3",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "lea eax, [rbx+rcx*8 + 0]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #3",
-        "add x20, x20, x7",
+        "add x20, x7, x5, lsl #3",
         "mov x20, x20",
         "mov w4, w20"
       ]
     },
     "lea rax, [rbx+rcx*8 + 0]": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x4, x7, x5, lsl #3"
+      ]
+    },
+    "lea ax, [ebx+ecx*1 + 0]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5",
+        "mov w20, w20",
+        "bfxil x4, x20, #0, #16"
+      ]
+    },
+    "lea eax, [ebx+ecx*1 + 0]": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x8d",
       "ExpectedArm64ASM": [
-        "lsl x20, x5, #3",
-        "add x4, x20, x7"
+        "add x20, x7, x5",
+        "mov w4, w20"
+      ]
+    },
+    "lea rax, [ebx+ecx*1 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5",
+        "mov w4, w20"
+      ]
+    },
+    "lea ax, [ebx+ecx*2 + 0]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #1",
+        "mov w20, w20",
+        "bfxil x4, x20, #0, #16"
+      ]
+    },
+    "lea eax, [ebx+ecx*2 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #1",
+        "mov w4, w20"
+      ]
+    },
+    "lea rax, [ebx+ecx*2 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #1",
+        "mov w4, w20"
+      ]
+    },
+    "lea ax, [ebx+ecx*4 + 0]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #2",
+        "mov w20, w20",
+        "bfxil x4, x20, #0, #16"
+      ]
+    },
+    "lea eax, [ebx+ecx*4 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #2",
+        "mov w4, w20"
+      ]
+    },
+    "lea rax, [ebx+ecx*4 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #2",
+        "mov w4, w20"
+      ]
+    },
+    "lea ax, [ebx+ecx*8 + 0]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #3",
+        "mov w20, w20",
+        "bfxil x4, x20, #0, #16"
+      ]
+    },
+    "lea eax, [ebx+ecx*8 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #3",
+        "mov w4, w20"
+      ]
+    },
+    "lea rax, [ebx+ecx*8 + 0]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x8d",
+      "ExpectedArm64ASM": [
+        "add x20, x7, x5, lsl #3",
+        "mov w4, w20"
       ]
     },
     "mov cs, ax": {

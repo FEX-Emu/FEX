@@ -953,6 +953,16 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = AddShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
+        "Desc": [ "Integer Add with shifted register",
+                  "Will truncate to 64 or 32bits"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "_Shift != ShiftType::ROR"
+        ]
+      },
       "AddNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the sum of two GPRs"],
         "HasSideEffects": true,

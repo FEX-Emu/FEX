@@ -4763,39 +4763,46 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
     const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
     OrderedNode *Tmp{};
 
-    // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
-    //       since the index in this case is a vector. So, we can't just apply the scale
-    //       to it, since this needs to be applied to each element in the index register
-    //       after said element has been sign extended. So, we pass this through for the
-    //       instruction implementation to handle.
-    //
-    //       What we do handle though, is the applying the displacement value to
-    //       the base register (if a base register is provided), since this is a
-    //       part of the address calculation that can be done ahead of time.
-    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && !IsVSIB) {
-      Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-
-      if (Operand.Data.SIB.Scale != 1) {
-        auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-        Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
-      }
-      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-        AccessType = MemoryAccessType::NONTSO;
-      }
+    if (!IsVSIB && Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
+      auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
+      Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
     }
+    else {
+      // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
+      //       since the index in this case is a vector. So, we can't just apply the scale
+      //       to it, since this needs to be applied to each element in the index register
+      //       after said element has been sign extended. So, we pass this through for the
+      //       instruction implementation to handle.
+      //
+      //       What we do handle though, is the applying the displacement value to
+      //       the base register (if a base register is provided), since this is a
+      //       part of the address calculation that can be done ahead of time.
+      if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && !IsVSIB) {
+        Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
-    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-
-      if (Tmp != nullptr) {
-        Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
+        if (Operand.Data.SIB.Scale != 1) {
+          auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
+          Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
+        }
+        if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+          AccessType = MemoryAccessType::NONTSO;
+        }
       }
-      else {
-        Tmp = GPR;
-      }
 
-      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-        AccessType = MemoryAccessType::NONTSO;
+      if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+        auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
+
+        if (Tmp != nullptr) {
+          Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
+        }
+        else {
+          Tmp = GPR;
+        }
+
+        if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
+          AccessType = MemoryAccessType::NONTSO;
+        }
       }
     }
 
@@ -5009,23 +5016,31 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
   else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
-    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
-      if (Operand.Data.SIB.Scale != 1) {
-        auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-        Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
-      }
+    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
+      auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
+      Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
     }
+    else {
+      if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+        Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
-    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-
-      if (Tmp != nullptr) {
-        Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
+        if (Operand.Data.SIB.Scale != 1) {
+          auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
+          Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
+        }
       }
-      else {
-        Tmp = GPR;
+
+      if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+        auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
+
+        if (Tmp != nullptr) {
+          Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
+        }
+        else {
+          Tmp = GPR;
+        }
       }
     }
 
