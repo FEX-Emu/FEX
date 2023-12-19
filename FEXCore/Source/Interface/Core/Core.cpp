@@ -993,17 +993,6 @@ namespace FEXCore::Context {
     };
   }
 
-  void ContextImpl::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
-    auto NewBlock = CompileBlock(Frame, GuestRIP);
-
-    if (NewBlock == 0) {
-      LogMan::Msg::EFmt("CompileBlockJit: Failed to compile code {:X} - aborting process", GuestRIP);
-      // Return similar behaviour of SIGILL abort
-      Frame->Thread->StatusCode = 128 + SIGILL;
-      Stop(false /* Ignore current thread */);
-    }
-  }
-
   uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP, uint64_t MaxInst) {
     FEXCORE_PROFILE_SCOPED("CompileBlock");
     auto Thread = Frame->Thread;
