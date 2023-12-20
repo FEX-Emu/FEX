@@ -5,6 +5,7 @@
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/X86HelperGen.h"
+#include "Utils/MemberFunctionToPointer.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
@@ -39,18 +40,6 @@ void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::
   Thread->RunningEvents.ThreadSleeping = false;
 
   ctx->IdleWaitCV.notify_all();
-}
-
-uint64_t Dispatcher::GetCompileBlockPtr() {
-  using ClassPtrType = uintptr_t (FEXCore::Context::ContextImpl::*)(FEXCore::Core::CpuStateFrame *, uint64_t, uint64_t);
-  union PtrCast {
-    ClassPtrType ClassPtr;
-    uintptr_t Data;
-  };
-
-  PtrCast CompileBlockPtr;
-  CompileBlockPtr.ClassPtr = &FEXCore::Context::ContextImpl::CompileBlock;
-  return CompileBlockPtr.Data;
 }
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
@@ -517,7 +506,8 @@ void Dispatcher::EmitDispatcher() {
   Bind(&l_Sleep);
   dc64(reinterpret_cast<uint64_t>(SleepThread));
   Bind(&l_CompileBlock);
-  dc64(GetCompileBlockPtr());
+  FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::ContextImpl::CompileBlock);
+  dc64(PMF.GetConvertedPointer());
 
   Start = reinterpret_cast<uint64_t>(DispatchPtr);
   End = GetCursorAddress<uint64_t>();
