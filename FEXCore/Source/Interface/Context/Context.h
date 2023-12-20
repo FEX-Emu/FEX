@@ -71,7 +71,7 @@ namespace FEXCore::Context {
   class ContextImpl final : public FEXCore::Context::Context {
     public:
       // Context base class implementation.
-      FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) override;
+      bool InitCore() override;
 
       void SetExitHandler(ExitHandler handler) override;
       ExitHandler GetExitHandler() const override;
@@ -81,7 +81,7 @@ namespace FEXCore::Context {
       void Stop() override;
       void Step() override;
 
-      ExitReason RunUntilExit() override;
+      ExitReason RunUntilExit(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) override;
 
@@ -128,7 +128,7 @@ namespace FEXCore::Context {
        *    - HandleCallback(Thread, RIP);
        */
 
-      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
+      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
 
       // Public for threading
       void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) override;
@@ -144,7 +144,7 @@ namespace FEXCore::Context {
        *
        * @param Thread The internal FEX thread state object
        */
-      void DestroyThread(FEXCore::Core::InternalThreadState *Thread) override;
+      void DestroyThread(FEXCore::Core::InternalThreadState *Thread, bool NeedsTLSUninstall) override;
 
 #ifndef _WIN32
       void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) override;
@@ -178,7 +178,7 @@ namespace FEXCore::Context {
       }
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) override;
-      void MarkMemoryShared() override;
+      void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
       // returns false if a handler was already registered

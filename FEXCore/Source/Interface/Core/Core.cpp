@@ -103,10 +103,6 @@ namespace FEXCore::Context {
   }
 
   ContextImpl::~ContextImpl() {
-    if (ParentThread) {
-      DestroyThread(ParentThread);
-    }
-
     {
       if (CodeObjectCacheService) {
         CodeObjectCacheService->Shutdown();
@@ -268,7 +264,7 @@ namespace FEXCore::Context {
     Frame->State.flags[X86State::RFLAG_IF_LOC] = 1;
   }
 
-  FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
+  bool ContextImpl::InitCore() {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
     case FEXCore::Config::CONFIG_IRJIT:
@@ -278,8 +274,8 @@ namespace FEXCore::Context {
       // Do nothing
       break;
     default:
-      ERROR_AND_DIE_FMT("Unknown core configuration");
-      break;
+      LogMan::Msg::EFmt("Unknown core configuration");
+      return false;
     }
 
     DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
@@ -330,12 +326,7 @@ namespace FEXCore::Context {
       StartPaused = true;
     }
 
-    FEXCore::Core::InternalThreadState *Thread = CreateThread(InitialRIP, StackPointer, nullptr, 0);
-
-    // We are the parent thread
-    ParentThread = Thread;
-
-    return Thread;
+    return true;
   }
 
   void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
@@ -485,7 +476,7 @@ namespace FEXCore::Context {
     }
   }
 
-  FEXCore::Context::ExitReason ContextImpl::RunUntilExit() {
+  FEXCore::Context::ExitReason ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState *Thread) {
     if(!StartPaused) {
       // We will only have one thread at this point, but just in case run notify everything
       std::lock_guard lk(ThreadCreationMutex);
@@ -494,10 +485,10 @@ namespace FEXCore::Context {
       }
     }
 
-    ExecutionThread(ParentThread);
+    ExecutionThread(Thread);
     while(true) {
       this->WaitForIdle();
-      auto reason = ParentThread->ExitReason;
+      auto reason = Thread->ExitReason;
 
       // Don't return if a custom exit handling the exit
       if (!CustomExitHandler || reason == ExitReason::EXIT_SHUTDOWN) {
@@ -575,7 +566,7 @@ namespace FEXCore::Context {
     Thread->PassManager->Finalize();
   }
 
-  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
@@ -594,9 +585,10 @@ namespace FEXCore::Context {
 
     Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
     Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
+    Thread->DestroyedByParent = WhoManages == ManagedBy::FRONTEND;
 
     // Insert after the Thread object has been fully initialized
-    {
+    if (WhoManages == ManagedBy::CORE) {
       std::lock_guard lk(ThreadCreationMutex);
       Threads.push_back(Thread);
     }
@@ -604,21 +596,33 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState *Thread, bool NeedsTLSUninstall) {
     // remove new thread object
     {
       std::lock_guard lk(ThreadCreationMutex);
 
       auto It = std::find(Threads.begin(), Threads.end(), Thread);
-      LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
+      // TODO: Some threads aren't currently tracked in FEXCore.
+      // Re-enable once tracking is in frontend.
+      // LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
 
-      Threads.erase(It);
+      if (It != Threads.end()) {
+        Threads.erase(It);
+      }
     }
 
     if (Thread->ExecutionThread &&
         Thread->ExecutionThread->IsSelf()) {
       // To be able to delete a thread from itself, we need to detached the std::thread object
       Thread->ExecutionThread->detach();
+    }
+
+    // TODO: This is temporary until the frontend has full ownership of threads.
+    if (NeedsTLSUninstall) {
+#ifndef _WIN32
+      Alloc::OSAllocator::UninstallTLSData(Thread);
+#endif
+      SignalDelegation->UninstallTLSState(Thread);
     }
 
     FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096);
@@ -1102,7 +1106,7 @@ namespace FEXCore::Context {
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
 
-    if (Thread != static_cast<ContextImpl*>(Thread->CTX)->ParentThread || StartPaused || Thread->StartPaused) {
+    if (StartPaused || Thread->StartPaused) {
       // Parent thread doesn't need to wait to run
       Thread->StartRunning.Wait();
     }
@@ -1146,7 +1150,7 @@ namespace FEXCore::Context {
     SignalDelegation->UninstallTLSState(Thread);
 
     // If the parent thread is waiting to join, then we can't destroy our thread object
-    if (!Thread->DestroyedByParent && Thread != static_cast<ContextImpl*>(Thread->CTX)->ParentThread) {
+    if (!Thread->DestroyedByParent) {
       Thread->CTX->DestroyThread(Thread);
     }
   }
@@ -1165,11 +1169,20 @@ namespace FEXCore::Context {
     }
   }
 
-  static void InvalidateGuestCodeRangeInternal(ContextImpl *CTX, uint64_t Start, uint64_t Length) {
+  static void InvalidateGuestCodeRangeInternal(FEXCore::Core::InternalThreadState *CallingThread, ContextImpl *CTX, uint64_t Start, uint64_t Length) {
     std::lock_guard lk(static_cast<ContextImpl*>(CTX)->ThreadCreationMutex);
 
     for (auto &Thread : static_cast<ContextImpl*>(CTX)->Threads) {
+
+      // TODO: Skip calling thread.
+      // Remove once frontend has thread ownership.
+      if (CallingThread == Thread) continue;
       InvalidateGuestThreadCodeRange(Thread, Start, Length);
+    }
+
+    // Now invalidate calling thread's code.
+    if (CallingThread) {
+      InvalidateGuestThreadCodeRange(CallingThread, Start, Length);
     }
   }
 
@@ -1179,7 +1192,7 @@ namespace FEXCore::Context {
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
-    InvalidateGuestCodeRangeInternal(this, Start, Length);
+    InvalidateGuestCodeRangeInternal(Thread, this, Start, Length);
   }
 
   void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn CallAfter) {
@@ -1188,20 +1201,17 @@ namespace FEXCore::Context {
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
-    InvalidateGuestCodeRangeInternal(this, Start, Length);
+    InvalidateGuestCodeRangeInternal(Thread, this, Start, Length);
     CallAfter(Start, Length);
   }
 
-  void ContextImpl::MarkMemoryShared() {
+  void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) {
     if (!IsMemoryShared) {
       IsMemoryShared = true;
       UpdateAtomicTSOEmulationConfig();
 
       if (Config.TSOAutoMigration) {
         std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
-        LogMan::Throw::AFmt(Threads.size() == 1, "First MarkMemoryShared called must be before creating any threads");
-
-        auto Thread = Threads[0];
 
         // Only the lookup cache is cleared here, so that old code can keep running until next compilation
         std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
