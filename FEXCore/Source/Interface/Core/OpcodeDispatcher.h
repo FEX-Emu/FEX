@@ -261,6 +261,7 @@ public:
   template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
+  template<bool IsSyscallInst>
   void SyscallOp(OpcodeArgs);
   void ThunkOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
