@@ -9,14 +9,6 @@
 
 #ifdef _M_X86_64
 #define XBYAK64
-#define XBYAK_CUSTOM_ALLOC
-#define XBYAK_CUSTOM_MALLOC FEXCore::Allocator::malloc
-#define XBYAK_CUSTOM_FREE FEXCore::Allocator::free
-#define XBYAK_CUSTOM_SETS
-#define XBYAK_STD_UNORDERED_SET fextl::unordered_set
-#define XBYAK_STD_UNORDERED_MAP fextl::unordered_map
-#define XBYAK_STD_UNORDERED_MULTIMAP fextl::unordered_multimap
-#define XBYAK_STD_LIST fextl::list
 #define XBYAK_NO_EXCEPTION
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/unordered_map.h>

@@ -15,19 +15,19 @@
 	path = External/tiny-json
 	url = https://github.com/Sonicadvance1/tiny-json.git
 [submodule "External/xbyak"]
-        shallow = true
+  shallow = true
 	path = External/xbyak
-	url = https://github.com/FEX-Emu/xbyak.git
+	url = https://github.com/herumi/xbyak.git
 [submodule "External/fex-posixtest-bins"]
-        shallow = true
+  shallow = true
 	path = External/fex-posixtest-bins
 	url = https://github.com/FEX-Emu/fex-posixtest-bins.git
 [submodule "External/fex-gvisor-tests-bins"]
-        shallow = true
+  shallow = true
 	path = External/fex-gvisor-tests-bins
 	url = https://github.com/FEX-Emu/fex-gvisor-tests-bins.git
 [submodule "External/fex-gcc-target-tests-bins"]
-        shallow = true
+  shallow = true
 	path = External/fex-gcc-target-tests-bins
 	url = https://github.com/FEX-Emu/fex-gcc-target-tests-bins.git
 [submodule "External/jemalloc"]
