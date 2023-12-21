@@ -254,16 +254,6 @@
           "Set to false to disable Static Register Allocation"
         ]
       },
-      "Force32BitAllocator": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Forces use of the 32-bit allocator on 32-bit applications",
-          "Used to work around ulimit problems of CI runner",
-          "Potentially useful for debugging memory problems",
-          "32-bit allocator is always used if your host kernel is older than 4.17"
-        ]
-      },
       "GlobalJITNaming": {
         "Type": "bool",
         "Default": "false",
