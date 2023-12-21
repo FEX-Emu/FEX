@@ -114,6 +114,6 @@ public:
 
     FuncPtrInfo LookupGuestFuncPtrInfo(const char* funcptr_id);
 
-private:
+protected:
     const ABI& guest_abi;
 };

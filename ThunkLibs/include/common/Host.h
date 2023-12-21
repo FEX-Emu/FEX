@@ -5,9 +5,11 @@ $end_info$
 */
 
 #pragma once
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <dlfcn.h>
 
 #include "PackedArguments.h"
@@ -90,7 +92,37 @@ struct ParameterAnnotations {
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
 struct guest_layout {
+  static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
+  static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
+
+  using type = T;
+  type data;
+};
+
+template<typename T>
+struct host_layout;
+
+template<typename T>
+struct host_layout {
+  static_assert(!std::is_class_v<T>, "No host_layout specialization generated for struct/class type");
+  static_assert(!std::is_union_v<T>, "No host_layout specialization generated for union type");
+  static_assert(!std::is_void_v<T>, "Attempted to get host layout of void. Missing annotation for void pointer?");
+
+  // TODO: This generic implementation shouldn't be needed. Instead, auto-specialize host_layout for all types used as members.
+
   T data;
+
+  explicit host_layout(const guest_layout<T>& from) requires (!std::is_enum_v<T>) : data { from.data } {
+    // NOTE: This is not strictly neccessary since differently sized types may
+    //       be used across architectures. It's important that the host type
+    //       can represent all guest values without loss, however.
+    static_assert(sizeof(data) == sizeof(from));
+  }
+
+  explicit host_layout(const guest_layout<T>& from) requires (std::is_enum_v<T>) : data { static_cast<T>(from.data) } {
+  }
 };
 
 template<typename>
@@ -117,7 +149,7 @@ auto Projection(guest_layout<T>& data) {
   if constexpr (Annotation.is_passthrough) {
     return data;
   } else {
-    return data.data;
+    return host_layout<T> { data }.data;
   }
 }
 

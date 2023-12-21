@@ -251,6 +251,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
     std::string result =
         "#include <array>\n"
         "#include <cstdint>\n"
+        "#include <cstring>\n"
         "#include <dlfcn.h>\n"
         "#include <type_traits>\n"
         "template<typename Fn>\n"
@@ -283,6 +284,13 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "template<typename T>\n"
         "struct guest_layout {\n"
         "  T data;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout {\n"
+        "  T data;\n"
+        "\n"
+        "  host_layout(const guest_layout<T>& from);\n"
         "};\n"
         "\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
