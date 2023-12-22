@@ -223,17 +223,8 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator
-    uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-    if (KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      FEXCore::Allocator::SetupHooks();
-    }
-
-    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      Allocator = FEX::HLE::Create32BitAllocator();
-    }
-    else {
-      Allocator = FEX::HLE::CreatePassthroughAllocator();
-    }
+    FEXCore::Allocator::SetupHooks();
+    Allocator = FEX::HLE::CreatePassthroughAllocator();
   }
 #endif
 

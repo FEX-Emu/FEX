@@ -423,26 +423,18 @@ int main(int argc, char **argv, char **const envp) {
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
   } else {
     // Setup our userspace allocator
+    FEXCore::Allocator::SetupHooks();
+    Allocator = FEX::HLE::CreatePassthroughAllocator();
 
-    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
-    const bool is_legacy_kernel = (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
-
-    if (Use32BitAllocator || is_legacy_kernel) {
-      Allocator = FEX::HLE::Create32BitAllocator();
-    } else {
-      FEXCore::Allocator::SetupHooks();
-      Allocator = FEX::HLE::CreatePassthroughAllocator();
-
-      // Now that the upper 32-bit address space is blocked for future allocations,
-      // exhaust all of jemalloc's remaining internal allocations that it reserved before.
-      // TODO: It's unclear how reliably this exhausts those reserves
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-      void* data;
-      do {
-        data = malloc(0x1);
-      } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
-      free(data);
-    }
+    // Now that the upper 32-bit address space is blocked for future allocations,
+    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
+    // TODO: It's unclear how reliably this exhausts those reserves
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+    void* data;
+    do {
+      data = malloc(0x1);
+    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
+    free(data);
   }
 
   // System allocator is now system allocator or FEX
