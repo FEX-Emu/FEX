@@ -37,7 +37,6 @@ If applicable, add screenshots and video to help explain your problem.
 
 **Additional context**
  - Is this an x86 or x86-64 game: [x86/x86-64/Both]
- - Does this reproduce on x86-64 host with FEX: [Yes/No/Untested]
  - Does this reproduce on AArch64 with Radeon/Intel/Nvidia: [Yes/No/Untested]
  - Is this a Vulkan game: [Yes/No/Unknown]
    - If Yes, What is your Vulkan driver:
