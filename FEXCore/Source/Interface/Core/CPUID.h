@@ -136,6 +136,15 @@ private:
   constexpr static uint64_t XCR0_SSE = 1ULL << 1;
   constexpr static uint64_t XCR0_AVX = 1ULL << 2;
 
+  struct FeaturesConfig {
+    uint64_t SHA  : 1;
+    uint64_t _pad : 63;
+  };
+
+  FeaturesConfig Features {
+    .SHA = 1,
+  };
+
   uint64_t XCR0 {
     XCR0_X87 |
     XCR0_SSE
@@ -189,6 +198,7 @@ private:
   FEXCore::CPUID::XCRResults XCRFunction_0h() const;
 
   void SetupHostHybridFlag();
+  void SetupFeatures();
   static constexpr size_t PRIMARY_FUNCTION_COUNT = 27;
   static constexpr size_t HYPERVISOR_FUNCTION_COUNT = 2;
   static constexpr size_t EXTENDED_FUNCTION_COUNT = 32;

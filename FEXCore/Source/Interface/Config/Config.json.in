@@ -99,6 +99,19 @@
           "\t{enable,disable}crypto: Will force enable or disable crypto extensions even if the host doesn't support it",
           "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it"
         ]
+      },
+      "CPUID": {
+        "Type": "strenum",
+        "Default": "FEXCore::Config::CPUID::OFF",
+        "Enums": {
+          "ENABLESHA": "enablesha",
+          "DISABLESHA": "disablesha"
+        },
+        "Desc": [
+          "Allows controlling of the CPU features are exposed in CPUID.",
+          "\toff: Default CPU features queried from CPU features",
+          "\t{enable,disable}sha: Will force enable or disable sha even if the host doesn't support it"
+        ]
       }
     },
     "Emulation": {

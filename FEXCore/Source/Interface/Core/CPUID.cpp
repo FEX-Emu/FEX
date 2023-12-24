@@ -358,6 +358,34 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
 #endif
 
+
+void CPUIDEmu::SetupFeatures() {
+  // TODO: Enable once AVX is supported.
+  if (false && CTX->HostFeatures.SupportsAVX) {
+    XCR0 |= XCR0_AVX;
+  }
+
+  // Override features if the user has specifically called for it.
+  FEX_CONFIG_OPT(CPUIDFeatures, CPUID);
+  if (!CPUIDFeatures()) {
+    // Early exit if no features are overriden.
+    return;
+  }
+
+#define ENABLE_DISABLE_OPTION(name, enum_name) \
+    const bool Disable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::DISABLE##enum_name) != 0; \
+    const bool Enable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::ENABLE##enum_name) != 0;   \
+    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPUID feature (" #name ") is mutually exclusive");
+
+  ENABLE_DISABLE_OPTION(SHA, SHA);
+  if (EnableSHA) {
+    Features.SHA = true;
+  }
+  else if (DisableSHA) {
+    Features.SHA = false;
+  }
+}
+
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res{};
 
@@ -639,7 +667,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
       (0 << 26) | // Reserved
       (0 << 27) | // Reserved
       (0 << 28) | // Reserved
-      (1 << 29) | // SHA instructions
+      (Features.SHA << 29) | // SHA instructions
       (0 << 30) | // Reserved
       (0 << 31);  // Reserved
 
@@ -1212,10 +1240,7 @@ CPUIDEmu::CPUIDEmu(FEXCore::Context::ContextImpl const *ctx)
   // Setup some state tracking
   SetupHostHybridFlag();
 
-  // TODO: Enable once AVX is supported.
-  if (false && CTX->HostFeatures.SupportsAVX) {
-    XCR0 |= XCR0_AVX;
-  }
+  SetupFeatures();
 }
 }
 
