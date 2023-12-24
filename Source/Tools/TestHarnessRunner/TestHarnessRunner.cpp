@@ -295,7 +295,7 @@ int main(int argc, char **argv, char **const envp) {
     if (!CTX->InitCore()) {
       return 1;
     }
-    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer(), FEXCore::Context::Context::ManagedBy::FRONTEND);
 
     if (!ParentThread) {
       return 1;

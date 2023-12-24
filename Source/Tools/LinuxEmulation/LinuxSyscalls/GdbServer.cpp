@@ -135,7 +135,7 @@ GdbServer::~GdbServer() {
   }
 }
 
-GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEX::HLE::SyscallHandler *const SyscallHandler)
+GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler)
   : CTX(ctx)
   , SyscallHandler {SyscallHandler} {
   // Pass all signals by default
@@ -339,11 +339,11 @@ fextl::string GdbServer::readRegs() {
   GDBContextDefinition GDB{};
   FEXCore::Core::CPUState state{};
 
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { Threads->at(0) };
+  auto Threads = CTX->GetThreads();
+  FEXCore::Core::InternalThreadState *CurrentThread { Threads.ParentThread };
   bool Found = false;
 
-  for (auto &Thread : *Threads) {
+  for (auto &Thread : *Threads.Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
@@ -355,7 +355,7 @@ fextl::string GdbServer::readRegs() {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, Threads.ParentThread->CurrentFrame, sizeof(state));
   }
 
   // Encode the GDB context definition
@@ -390,11 +390,11 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
 
   FEXCore::Core::CPUState state{};
 
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { Threads->at(0) };
+  auto Threads = CTX->GetThreads();
+  FEXCore::Core::InternalThreadState *CurrentThread { Threads.ParentThread };
   bool Found = false;
 
-  for (auto &Thread : *Threads) {
+  for (auto &Thread : *Threads.Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
@@ -406,7 +406,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, Threads.ParentThread->CurrentFrame, sizeof(state));
   }
 
 
@@ -744,12 +744,12 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
 
   if (object == "threads") {
     if (offset == 0) {
-      auto Threads = SyscallHandler->TM.GetThreads();
+      auto Threads = CTX->GetThreads();
 
       ThreadString.clear();
       fextl::ostringstream ss;
       ss << "<threads>\n";
-      for (auto &Thread : *Threads) {
+      for (auto &Thread : *Threads.Threads) {
         // Thread id is in hex without 0x prefix
         const auto ThreadName = getThreadName(Thread->ThreadManager.GetTID());
         ss << "<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\"";
@@ -982,14 +982,14 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     return {"", HandledPacketType::TYPE_ACK};
   }
   if (match("qfThreadInfo")) {
-    auto Threads = SyscallHandler->TM.GetThreads();
+    auto Threads = CTX->GetThreads();
 
     fextl::ostringstream ss;
     ss << "m";
-    for (size_t i = 0; i < Threads->size(); ++i) {
-      auto Thread = Threads->at(i);
+    for (size_t i = 0; i < Threads.Threads->size(); ++i) {
+      auto Thread = Threads.Threads->at(i);
       ss << std::hex << Thread->ThreadManager.TID;
-      if (i != (Threads->size() - 1)) {
+      if (i != (Threads.Threads->size() - 1)) {
         ss << ",";
       }
     }
@@ -1009,9 +1009,8 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
   }
   if (match("qC")) {
     // Returns the current Thread ID
-    auto Threads = SyscallHandler->TM.GetThreads();
     fextl::ostringstream ss;
-    ss << "m" <<  std::hex << Threads->at(0)->ThreadManager.TID;
+    ss << "m" <<  std::hex << CTX->GetThreads().ParentThread->ThreadManager.TID;
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("QStartNoAckMode")) {
@@ -1115,13 +1114,13 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
 GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
   switch (action) {
     case 'c': {
-      SyscallHandler->TM.Run();
+      CTX->Run();
       ThreadBreakEvent.NotifyAll();
-      SyscallHandler->TM.WaitForThreadsToRun();
+      CTX->WaitForThreadsToRun();
       return {"", HandledPacketType::TYPE_ONLYACK};
     }
     case 's': {
-      SyscallHandler->TM.Step();
+      CTX->Step();
       SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
       fextl::string str = fextl::fmt::format("T05thread:{:02x};", getpid());
       if (LibraryMapChanged) {
@@ -1134,7 +1133,7 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
     }
     case 't':
       // This thread isn't part of the thread pool
-      SyscallHandler->TM.Stop();
+      CTX->Stop();
       return {"OK", HandledPacketType::TYPE_ACK};
     default:
       return {"E00", HandledPacketType::TYPE_ACK};
@@ -1242,7 +1241,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string &pack
     ss.seekg(fextl::string("Hc").size());
     ss >> std::hex >> CurrentDebuggingThread;
 
-    SyscallHandler->TM.Pause();
+    CTX->Pause();
     return {"OK", HandledPacketType::TYPE_ACK};
   }
 
@@ -1253,7 +1252,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string &pack
     ss >> std::hex >> CurrentDebuggingThread;
 
     // This must return quick otherwise IDA complains
-    SyscallHandler->TM.Pause();
+    CTX->Pause();
     return {"OK", HandledPacketType::TYPE_ACK};
   }
 
@@ -1273,7 +1272,7 @@ GdbServer::HandledPacketType GdbServer::handleBreakpoint(const fextl::string &pa
   ss.get(); // discard comma
   ss >> std::hex >> Type;
 
-  SyscallHandler->TM.Pause();
+  CTX->Pause();
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
@@ -1292,13 +1291,13 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string &packe
     case 'D':
       // Detach
       // Ensure the threads are back in running state on detach
-      SyscallHandler->TM.Run();
-      SyscallHandler->TM.WaitForThreadsToRun();
+      CTX->Run();
+      CTX->WaitForThreadsToRun();
       return {"OK", HandledPacketType::TYPE_ACK};
     case 'g':
       // We might be running while we try reading
       // Pause up front
-      SyscallHandler->TM.Pause();
+      CTX->Pause();
       return {readRegs(), HandledPacketType::TYPE_ACK};
     case 'p':
       return readReg(packet);
@@ -1321,8 +1320,8 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string &packe
     case 'Z': // Inserts breakpoint or watchpoint
       return handleBreakpoint(packet);
     case 'k': // Kill the process
-      SyscallHandler->TM.Stop();
-      SyscallHandler->TM.WaitForIdle(); // Block until exit
+      CTX->Stop();
+      CTX->WaitForIdle(); // Block until exit
       return {"", HandledPacketType::TYPE_NONE};
     default:
       return {"", HandledPacketType::TYPE_UNKNOWN};
@@ -1417,7 +1416,7 @@ void GdbServer::GdbServerLoop() {
             }
             break;
         case '\x03': { // ASCII EOT
-            SyscallHandler->TM.Pause();
+            CTX->Pause();
             fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
             if (LibraryMapChanged) {
               // If libraries have changed then let gdb know

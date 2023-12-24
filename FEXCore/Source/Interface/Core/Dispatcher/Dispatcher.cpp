@@ -12,7 +12,6 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -25,8 +24,22 @@
 
 namespace FEXCore::CPU {
 
-static void SleepThread(FEXCore::Context::ContextImpl *CTX, FEXCore::Core::CpuStateFrame *Frame) {
-  CTX->SyscallHandler->SleepThread(CTX, Frame);
+void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::CpuStateFrame *Frame) {
+  auto Thread = Frame->Thread;
+
+  --ctx->IdleWaitRefCount;
+  ctx->IdleWaitCV.notify_all();
+
+  Thread->RunningEvents.ThreadSleeping = true;
+
+  // Go to sleep
+  Thread->StartRunning.Wait();
+
+  Thread->RunningEvents.Running = true;
+  ++ctx->IdleWaitRefCount;
+  Thread->RunningEvents.ThreadSleeping = false;
+
+  ctx->IdleWaitCV.notify_all();
 }
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;

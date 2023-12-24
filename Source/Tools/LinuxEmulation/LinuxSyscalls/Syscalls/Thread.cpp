@@ -71,7 +71,7 @@ namespace FEX::HLE {
       NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
     }
 
-    auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, args->args.parent_tid);
+    auto NewThread = CTX->CreateThread(0, 0, FEXCore::Context::Context::ManagedBy::CORE, &NewThreadState, args->args.parent_tid);
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
@@ -162,7 +162,7 @@ namespace FEX::HLE {
       }
 
       // Overwrite thread
-      NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, GuestArgs->parent_tid);
+      NewThread = CTX->CreateThread(0, 0, FEXCore::Context::Context::ManagedBy::CORE, &NewThreadState, GuestArgs->parent_tid);
 
       // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
       // Call execution thread directly since we already are on the new thread
@@ -173,7 +173,10 @@ namespace FEX::HLE {
       // Clear all the other threads that are being tracked
       // Frame->Thread is /ONLY/ safe to access when CLONE_THREAD flag is not set
       // Unlock the mutexes on both sides of the fork
-      FEX::HLE::_SyscallHandler->UnlockAfterFork(Frame->Thread, true);
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(true);
+
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, true);
 
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &CloneArgs->SignalMask, nullptr, sizeof(CloneArgs->SignalMask));
 
@@ -257,7 +260,10 @@ namespace FEX::HLE {
 
     if (IsChild) {
       // Unlock the mutexes on both sides of the fork
-      FEX::HLE::_SyscallHandler->UnlockAfterFork(Frame->Thread, IsChild);
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(IsChild);
+
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, IsChild);
 
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, sizeof(Mask));
 
@@ -314,7 +320,10 @@ namespace FEX::HLE {
       }
 
       // Unlock the mutexes on both sides of the fork
-      FEX::HLE::_SyscallHandler->UnlockAfterFork(Frame->Thread, IsChild);
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(IsChild);
+
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, IsChild);
 
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, sizeof(Mask));
 
@@ -389,7 +398,7 @@ namespace FEX::HLE {
       }
 
       Thread->StatusCode = status;
-      FEX::HLE::_SyscallHandler->TM.StopThread(Thread);
+      Thread->CTX->StopThread(Thread);
 
       return 0;
     });

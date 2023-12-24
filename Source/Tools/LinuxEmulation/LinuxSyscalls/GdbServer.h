@@ -25,7 +25,7 @@ namespace FEX {
 
 class GdbServer {
 public:
-    GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEX::HLE::SyscallHandler *const SyscallHandler);
+    GdbServer(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *SignalDelegation, FEXCore::HLE::SyscallHandler *const SyscallHandler);
     ~GdbServer();
 
     // Public for threading
@@ -84,7 +84,7 @@ private:
     HandledPacketType readReg(const fextl::string& packet);
 
     FEXCore::Context::Context *CTX;
-    FEX::HLE::SyscallHandler *const SyscallHandler;
+    FEXCore::HLE::SyscallHandler *const SyscallHandler;
     fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
     fextl::unique_ptr<std::iostream> CommsStream;
     std::mutex sendMutex;

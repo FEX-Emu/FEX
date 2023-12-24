@@ -34,12 +34,20 @@ namespace FEXCore::Context {
     return CustomExitHandler;
   }
 
+  void FEXCore::Context::ContextImpl::Stop() {
+    Stop(false);
+  }
+
   void FEXCore::Context::ContextImpl::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     CompileBlock(Thread->CurrentFrame, GuestRIP);
   }
 
   void FEXCore::Context::ContextImpl::CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) {
     CompileBlock(Thread->CurrentFrame, GuestRIP, MaxInst);
+  }
+
+  bool FEXCore::Context::ContextImpl::IsDone() const {
+    return IsPaused();
   }
 
   void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {

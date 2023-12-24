@@ -108,6 +108,17 @@ namespace FEXCore::Context {
       if (CodeObjectCacheService) {
         CodeObjectCacheService->Shutdown();
       }
+
+      for (auto &Thread : Threads) {
+        if (Thread->ExecutionThread->joinable()) {
+          Thread->ExecutionThread->join(nullptr);
+        }
+      }
+
+      for (auto &Thread : Threads) {
+        delete Thread;
+      }
+      Threads.clear();
     }
   }
 
@@ -323,9 +334,161 @@ namespace FEXCore::Context {
     static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
   }
 
+  void ContextImpl::WaitForIdle() {
+    std::unique_lock<std::mutex> lk(IdleWaitMutex);
+    IdleWaitCV.wait(lk, [this] {
+      return IdleWaitRefCount.load() == 0;
+    });
+
+    Running = false;
+  }
+
+  void ContextImpl::WaitForIdleWithTimeout() {
+    std::unique_lock<std::mutex> lk(IdleWaitMutex);
+    bool WaitResult = IdleWaitCV.wait_for(lk, std::chrono::milliseconds(1500),
+      [this] {
+        return IdleWaitRefCount.load() == 0;
+    });
+
+    if (!WaitResult) {
+      // The wait failed, this will occur if we stepped in to a syscall
+      // That's okay, we just need to pause the threads manually
+      NotifyPause();
+    }
+
+    // We have sent every thread a pause signal
+    // Now wait again because they /will/ be going to sleep
+    WaitForIdle();
+  }
+
+  void ContextImpl::NotifyPause() {
+
+    // Tell all the threads that they should pause
+    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+    for (auto &Thread : Threads) {
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    }
+  }
+
+  void ContextImpl::Pause() {
+    // If we aren't running, WaitForIdle will never compete.
+    if (Running) {
+      NotifyPause();
+
+      WaitForIdle();
+    }
+  }
+
+  void ContextImpl::Run() {
+    // Spin up all the threads
+    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+    for (auto &Thread : Threads) {
+      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
+    }
+
+    for (auto &Thread : Threads) {
+      Thread->StartRunning.NotifyAll();
+    }
+  }
+
+  void ContextImpl::WaitForThreadsToRun() {
+    size_t NumThreads{};
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      NumThreads = Threads.size();
+    }
+
+    // Spin while waiting for the threads to start up
+    std::unique_lock<std::mutex> lk(IdleWaitMutex);
+    IdleWaitCV.wait(lk, [this, NumThreads] {
+      return IdleWaitRefCount.load() >= NumThreads;
+    });
+
+    Running = true;
+  }
+
+  void ContextImpl::Step() {
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      // Walk the threads and tell them to clear their caches
+      // Useful when our block size is set to a large number and we need to step a single instruction
+      for (auto &Thread : Threads) {
+        ClearCodeCache(Thread);
+      }
+    }
+    CoreRunningMode PreviousRunningMode = this->Config.RunningMode;
+    int64_t PreviousMaxIntPerBlock = this->Config.MaxInstPerBlock;
+    this->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
+    this->Config.MaxInstPerBlock = 1;
+    Run();
+    WaitForThreadsToRun();
+    WaitForIdle();
+    this->Config.RunningMode = PreviousRunningMode;
+    this->Config.MaxInstPerBlock = PreviousMaxIntPerBlock;
+  }
+
+  void ContextImpl::Stop(bool IgnoreCurrentThread) {
+    pid_t tid = FHU::Syscalls::gettid();
+    FEXCore::Core::InternalThreadState* CurrentThread{};
+
+    // Tell all the threads that they should stop
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      for (auto &Thread : Threads) {
+        if (IgnoreCurrentThread &&
+            Thread->ThreadManager.TID == tid) {
+          // If we are callign stop from the current thread then we can ignore sending signals to this thread
+          // This means that this thread is already gone
+          continue;
+        }
+        else if (Thread->ThreadManager.TID == tid) {
+          // We need to save the current thread for last to ensure all threads receive their stop signals
+          CurrentThread = Thread;
+          continue;
+        }
+        if (Thread->RunningEvents.Running.load()) {
+          StopThread(Thread);
+        }
+
+        // If the thread is waiting to start but immediately killed then there can be a hang
+        // This occurs in the case of gdb attach with immediate kill
+        if (Thread->RunningEvents.WaitingToStart.load()) {
+          Thread->RunningEvents.EarlyExit = true;
+          Thread->StartRunning.NotifyAll();
+        }
+      }
+    }
+
+    // Stop the current thread now if we aren't ignoring it
+    if (CurrentThread) {
+      StopThread(CurrentThread);
+    }
+  }
+
+  void ContextImpl::StopThread(FEXCore::Core::InternalThreadState *Thread) {
+    if (Thread->RunningEvents.Running.exchange(false)) {
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Stop);
+    }
+  }
+
+  void ContextImpl::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
+    if (Thread->RunningEvents.Running.load()) {
+      SignalDelegation->SignalThread(Thread, Event);
+    }
+  }
+
   FEXCore::Context::ExitReason ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState *Thread) {
+    if(!StartPaused) {
+      // We will only have one thread at this point, but just in case run notify everything
+      std::lock_guard lk(ThreadCreationMutex);
+      for (auto &Thread : Threads) {
+        Thread->StartRunning.NotifyAll();
+      }
+    }
+
     ExecutionThread(Thread);
     while(true) {
+      this->WaitForIdle();
       auto reason = Thread->ExitReason;
 
       // Don't return if a custom exit handling the exit
@@ -359,6 +522,11 @@ namespace FEXCore::Context {
 #ifndef _WIN32
     Alloc::OSAllocator::RegisterTLSData(Thread);
 #endif
+  }
+
+  void ContextImpl::RunThread(FEXCore::Core::InternalThreadState *Thread) {
+    // Tell the thread to start executing
+    Thread->StartRunning.NotifyAll();
   }
 
   void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
@@ -399,7 +567,7 @@ namespace FEXCore::Context {
     Thread->PassManager->Finalize();
   }
 
-  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
@@ -418,11 +586,39 @@ namespace FEXCore::Context {
 
     Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
     Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
+    Thread->DestroyedByParent = WhoManages == ManagedBy::FRONTEND;
+
+    // Insert after the Thread object has been fully initialized
+    if (WhoManages == ManagedBy::CORE) {
+      std::lock_guard lk(ThreadCreationMutex);
+      Threads.push_back(Thread);
+    }
 
     return Thread;
   }
 
   void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState *Thread, bool NeedsTLSUninstall) {
+    // remove new thread object
+    {
+      std::lock_guard lk(ThreadCreationMutex);
+
+      auto It = std::find(Threads.begin(), Threads.end(), Thread);
+      // TODO: Some threads aren't currently tracked in FEXCore.
+      // Re-enable once tracking is in frontend.
+      // LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
+
+      if (It != Threads.end()) {
+        Threads.erase(It);
+      }
+    }
+
+    if (Thread->ExecutionThread &&
+        Thread->ExecutionThread->IsSelf()) {
+      // To be able to delete a thread from itself, we need to detached the std::thread object
+      Thread->ExecutionThread->detach();
+    }
+
+    // TODO: This is temporary until the frontend has full ownership of threads.
     if (NeedsTLSUninstall) {
 #ifndef _WIN32
       Alloc::OSAllocator::UninstallTLSData(Thread);
@@ -445,6 +641,43 @@ namespace FEXCore::Context {
       CodeInvalidationMutex.unlock();
       return;
     }
+
+    // This function is called after fork
+    // We need to cleanup some of the thread data that is dead
+    for (auto &DeadThread : Threads) {
+      if (DeadThread == LiveThread) {
+        continue;
+      }
+
+      // Setting running to false ensures that when they are shutdown we won't send signals to kill them
+      DeadThread->RunningEvents.Running = false;
+
+      // Despite what google searches may susgest, glibc actually has special code to handle forks
+      // with multiple active threads.
+      // It cleans up the stacks of dead threads and marks them as terminated.
+      // It also cleans up a bunch of internal mutexes.
+
+      // FIXME: TLS is probally still alive. Investigate
+
+      // Deconstructing the Interneal thread state should clean up most of the state.
+      // But if anything on the now deleted stack is holding a refrence to the heap, it will be leaked
+      delete DeadThread;
+
+      // FIXME: Make sure sure nothing gets leaked via the heap. Ideas:
+      //         * Make sure nothing is allocated on the heap without ref in InternalThreadState
+      //         * Surround any code that heap allocates with a per-thread mutex.
+      //           Before forking, the the forking thread can lock all thread mutexes.
+    }
+
+    // Remove all threads but the live thread from Threads
+    Threads.clear();
+    Threads.push_back(LiveThread);
+
+    // We now only have one thread
+    IdleWaitRefCount = 1;
+
+    // Clean up dead stacks
+    FEXCore::Threads::Thread::CleanupAfterFork();
   }
 
   void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {
@@ -872,6 +1105,7 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
+    ++IdleWaitRefCount;
 
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
@@ -911,10 +1145,18 @@ namespace FEXCore::Context {
       }
     }
 
+    --IdleWaitRefCount;
+    IdleWaitCV.notify_all();
+
 #ifndef _WIN32
     Alloc::OSAllocator::UninstallTLSData(Thread);
 #endif
     SignalDelegation->UninstallTLSState(Thread);
+
+    // If the parent thread is waiting to join, then we can't destroy our thread object
+    if (!Thread->DestroyedByParent) {
+      Thread->CTX->DestroyThread(Thread);
+    }
   }
 
   static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
@@ -931,13 +1173,30 @@ namespace FEXCore::Context {
     }
   }
 
+  static void InvalidateGuestCodeRangeInternal(FEXCore::Core::InternalThreadState *CallingThread, ContextImpl *CTX, uint64_t Start, uint64_t Length) {
+    std::lock_guard lk(static_cast<ContextImpl*>(CTX)->ThreadCreationMutex);
+
+    for (auto &Thread : static_cast<ContextImpl*>(CTX)->Threads) {
+
+      // TODO: Skip calling thread.
+      // Remove once frontend has thread ownership.
+      if (CallingThread == Thread) continue;
+      InvalidateGuestThreadCodeRange(Thread, Start, Length);
+    }
+
+    // Now invalidate calling thread's code.
+    if (CallingThread) {
+      InvalidateGuestThreadCodeRange(CallingThread, Start, Length);
+    }
+  }
+
   void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
-    InvalidateGuestThreadCodeRange(Thread, Start, Length);
+    InvalidateGuestCodeRangeInternal(Thread, this, Start, Length);
   }
 
   void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn CallAfter) {
@@ -946,7 +1205,7 @@ namespace FEXCore::Context {
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
-    InvalidateGuestThreadCodeRange(Thread, Start, Length);
+    InvalidateGuestCodeRangeInternal(Thread, this, Start, Length);
     CallAfter(Start, Length);
   }
 
@@ -956,6 +1215,8 @@ namespace FEXCore::Context {
       UpdateAtomicTSOEmulationConfig();
 
       if (Config.TSOAutoMigration) {
+        std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
+
         // Only the lookup cache is cleared here, so that old code can keep running until next compilation
         std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
         Thread->LookupCache->ClearCache();

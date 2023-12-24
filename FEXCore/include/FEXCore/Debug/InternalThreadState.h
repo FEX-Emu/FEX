@@ -127,6 +127,7 @@ namespace FEXCore::Core {
     std::shared_ptr<FEXCore::CompileService> CompileService;
 
     std::shared_mutex ObjectCacheRefCounter{};
+    bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
     struct DeferredSignalState {
 #ifndef _WIN32
