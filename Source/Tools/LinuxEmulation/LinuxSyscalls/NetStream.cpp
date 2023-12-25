@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
+#include "LinuxSyscalls/NetStream.h"
+
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/NetStream.h>
 
 #include <array>
 #include <cstring>
