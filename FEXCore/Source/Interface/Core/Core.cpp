@@ -513,17 +513,20 @@ namespace FEXCore::Context {
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
 
+    bool HasCustomIR{};
 
-    std::shared_lock lk(CustomIRMutex);
+    if (HasCustomIRHandlers.load(std::memory_order_relaxed)) {
+      std::shared_lock lk(CustomIRMutex);
+      auto Handler = CustomIRHandlers.find(GuestRIP);
+      if (Handler != CustomIRHandlers.end()) {
+        TotalInstructions = 1;
+        TotalInstructionsLength = 1;
+        std::get<0>(Handler->second)(GuestRIP, Thread->OpDispatcher.get());
+        HasCustomIR = true;
+      }
+    }
 
-    auto Handler = CustomIRHandlers.find(GuestRIP);
-    if (Handler != CustomIRHandlers.end()) {
-      TotalInstructions = 1;
-      TotalInstructionsLength = 1;
-      std::get<0>(Handler->second)(GuestRIP, Thread->OpDispatcher.get());
-      lk.unlock();
-    } else {
-      lk.unlock();
+    if (!HasCustomIR) {
       uint8_t const *GuestCode{};
       GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
@@ -984,6 +987,7 @@ namespace FEXCore::Context {
     std::unique_lock lk(CustomIRMutex);
 
     auto InsertedIterator = CustomIRHandlers.emplace(Entrypoint, std::tuple(Handler, Creator, Data));
+    HasCustomIRHandlers = true;
 
     if (!InsertedIterator.second) {
       const auto &[fn, Creator, Data] = InsertedIterator.first->second;
@@ -1002,6 +1006,8 @@ namespace FEXCore::Context {
     InvalidateGuestCodeRange(nullptr, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
       CustomIRHandlers.erase(Entrypoint);
     });
+
+    HasCustomIRHandlers = !CustomIRHandlers.empty();
   }
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
