@@ -33,7 +33,6 @@ namespace FEXCore::CPU {
 
 namespace FEXCore::HLE {
   struct SyscallArguments;
-  class SyscallVisitor;
   class SyscallHandler;
 }
 
