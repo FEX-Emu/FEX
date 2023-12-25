@@ -1099,7 +1099,7 @@ FEX_ANNOTATE("fex-match")
 FEX_PACKED
 fex_drm_msm_wait_fence {
 	uint32_t fence;
-	uint32_t pad;
+	uint32_t flags;
 	struct fex_drm_msm_timespec timeout;
 	uint32_t queueid;
 
@@ -1108,7 +1108,7 @@ fex_drm_msm_wait_fence {
   operator drm_msm_wait_fence() const {
     drm_msm_wait_fence val{};
     val.fence = fence;
-    val.pad = pad;
+    val.flags = flags;
     val.timeout = timeout;
     val.queueid = queueid;
     return val;
@@ -1117,7 +1117,7 @@ fex_drm_msm_wait_fence {
   fex_drm_msm_wait_fence(struct drm_msm_wait_fence val)
     : timeout {val.timeout} {
     fence = val.fence;
-    pad = val.pad;
+    flags = val.flags;
     queueid = val.queueid;
   }
 };

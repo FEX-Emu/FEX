@@ -338,6 +338,7 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_futex_waitv = 449,
   SYSCALL_Arm64_set_mempolicy_home_node = 450,
   SYSCALL_Arm64_cachestat = 451,
+  SYSCALL_Arm64_fchmodat2 = 452,
   SYSCALL_Arm64_MAX = 512,
 
   // Unsupported syscalls on this host
@@ -465,5 +466,6 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_epoll_ctl_old = ~0,
   SYSCALL_Arm64_epoll_wait_old = ~0,
   SYSCALL_Arm64_newfstatat = ~0,
+  SYSCALL_Arm64_map_shadow_stack = ~0,
 };
 }

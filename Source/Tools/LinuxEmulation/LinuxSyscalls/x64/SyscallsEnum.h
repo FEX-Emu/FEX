@@ -386,6 +386,8 @@ enum Syscalls_x64 {
   SYSCALL_x64_futex_waitv = 449,
   SYSCALL_x64_set_mempolicy_home_node = 450,
   SYSCALL_x64_cachestat = 451,
+  SYSCALL_x64_fchmodat2 = 452,
+  SYSCALL_x64_map_shadow_stack = 453,
   SYSCALL_x64_MAX = 512,
 
   // Unsupported syscalls on this host

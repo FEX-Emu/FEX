@@ -772,8 +772,8 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
 }
 
 uint32_t SyscallHandler::CalculateGuestKernelVersion() {
-  // We currently only emulate a kernel between the ranges of Kernel 5.0.0 and 6.5.0
-  return std::max(KernelVersion(5, 0), std::min(KernelVersion(6, 5), GetHostKernelVersion()));
+  // We currently only emulate a kernel between the ranges of Kernel 5.0.0 and 6.6.0
+  return std::max(KernelVersion(5, 0), std::min(KernelVersion(6, 6), GetHostKernelVersion()));
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
