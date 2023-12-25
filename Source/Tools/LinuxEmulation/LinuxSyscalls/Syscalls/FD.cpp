@@ -411,5 +411,16 @@ namespace FEX::HLE {
     else {
       REGISTER_SYSCALL_IMPL(process_mrelease, UnimplementedSyscallSafe);
     }
+
+    if (Handler->IsHostKernelVersionAtLeast(6, 5, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(cachestat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+        [](FEXCore::Core::CpuStateFrame *Frame, int fd, void* cstat_range, void* cstat, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(cachestat), fd, cstat_range, cstat, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(cachestat, UnimplementedSyscallSafe);
+    }
   }
 }
