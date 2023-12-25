@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/IR/IREmitter.h>
 
 #include <stddef.h>
 #include <stdint.h>

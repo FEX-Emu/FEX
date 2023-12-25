@@ -21,6 +21,7 @@ $end_info$
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/IR.h"
+#include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
@@ -39,7 +40,6 @@ $end_info$
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>

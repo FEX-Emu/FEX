@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/FPState.h>
-#include <FEXCore/IR/IREmitter.h>
 
 #include <stddef.h>
 #include <stdint.h>

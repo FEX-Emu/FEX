@@ -6,12 +6,12 @@ desc: Transforms ContextLoad/Store to temporaries, similar to mem2reg
 $end_info$
 */
 
+#include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/LogManager.h>

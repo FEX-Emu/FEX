@@ -5,10 +5,10 @@ tags: ir|opts
 $end_info$
 */
 
+#include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/Profiler.h>
 

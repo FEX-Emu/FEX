@@ -7,12 +7,12 @@ $end_info$
 */
 
 #include "Interface/IR/IR.h"
+#include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes/IRValidation.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/LogManager.h>
