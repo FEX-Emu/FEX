@@ -9,9 +9,10 @@
 #include "Interface/HLE/Thunks/Thunks.h"
 
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+
+#include <FEXHeaderUtils/BitUtils.h>
 
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
