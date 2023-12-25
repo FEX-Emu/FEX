@@ -372,18 +372,18 @@ void CPUIDEmu::SetupFeatures() {
     return;
   }
 
-#define ENABLE_DISABLE_OPTION(name, enum_name) \
+#define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name) \
+    do { \
     const bool Disable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::DISABLE##enum_name) != 0; \
     const bool Enable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::ENABLE##enum_name) != 0;   \
-    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPUID feature (" #name ") is mutually exclusive");
+      LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
+      const bool AlreadyEnabled = Features.FeatureName; \
+      const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name; \
+      Features.FeatureName = Result; \
+    } while (0)
 
-  ENABLE_DISABLE_OPTION(SHA, SHA);
-  if (EnableSHA) {
-    Features.SHA = true;
-  }
-  else if (DisableSHA) {
-    Features.SHA = false;
-  }
+  ENABLE_DISABLE_OPTION(SHA, SHA, SHA);
+#undef ENABLE_DISABLE_OPTION
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) const {
