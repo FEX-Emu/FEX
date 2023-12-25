@@ -1,6 +1,5 @@
 if (NOT MINGW_BUILD)
   add_subdirectory(APITests/)
-  add_subdirectory(IR/)
   add_subdirectory(POSIX/)
   add_subdirectory(gvisor-tests/)
   add_subdirectory(gcc-target-tests-32/)

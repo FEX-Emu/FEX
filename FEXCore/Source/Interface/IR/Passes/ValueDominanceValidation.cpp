@@ -6,6 +6,7 @@ desc: Sanity Checking
 $end_info$
 */
 
+#include "Interface/IR/IR.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/IR/IR.h>

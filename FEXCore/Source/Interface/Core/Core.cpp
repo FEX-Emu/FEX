@@ -20,6 +20,7 @@ $end_info$
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/HLE/Thunks/Thunks.h"
+#include "Interface/IR/IR.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"

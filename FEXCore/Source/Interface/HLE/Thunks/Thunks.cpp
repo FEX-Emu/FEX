@@ -231,7 +231,7 @@ namespace FEXCore {
             LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}",
                               args->original_callee, args->target_addr);
 
-            auto Result = Thread->CTX->AddCustomIREntrypoint(
+            auto Result = CTX->AddCustomIREntrypoint(
                     args->original_callee,
                     [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
                         auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);
