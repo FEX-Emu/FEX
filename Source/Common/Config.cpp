@@ -165,7 +165,11 @@ namespace JSON {
   void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {
     auto it = ConfigLookup.find(ConfigName);
     if (it != ConfigLookup.end()) {
-      Set(it->second, ConfigString);
+      const auto KeyOption = it->second;
+      const auto KeyName = std::string_view(ConfigName);
+      const auto Value_View = std::string_view(ConfigString);
+#define JSONLOADER
+#include <FEXCore/Config/ConfigOptions.inl>
     }
   }
 

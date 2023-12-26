@@ -441,6 +441,30 @@ def print_parse_envloader_options(options):
                 output_argloader.write("}\n")
     output_argloader.write("#endif\n")
 
+def print_parse_jsonloader_options(options):
+    output_argloader.write("#ifdef JSONLOADER\n")
+    output_argloader.write("#undef JSONLOADER\n")
+    output_argloader.write("if (false) {}\n")
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            value_type = op_vals["Type"]
+            if (value_type == "strenum"):
+                output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
+                output_argloader.write("Set(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key, op_key))
+                output_argloader.write("}\n")
+
+            if ("ArgumentHandler" in op_vals):
+                conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
+                output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
+                output_argloader.write("Set(KeyOption, {0}(Value_View));\n".format(conversion_func))
+                output_argloader.write("}\n")
+
+    output_argloader.write("else {{\n".format(op_key))
+    output_argloader.write("Set(KeyOption, ConfigString);\n")
+    output_argloader.write("}\n")
+
+    output_argloader.write("#endif\n")
+
 def print_parse_enum_options(options):
     output_argloader.write("#ifdef ENUMDEFINES\n")
     output_argloader.write("#undef ENUMDEFINES\n")
@@ -555,6 +579,9 @@ print_parse_argloader_options(options);
 
 # Generate environment loader code
 print_parse_envloader_options(options);
+
+# Generate json loader code
+print_parse_jsonloader_options(options);
 
 # Generate enum variable options
 print_parse_enum_options(options);
