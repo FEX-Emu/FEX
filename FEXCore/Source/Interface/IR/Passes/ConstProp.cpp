@@ -13,10 +13,10 @@ $end_info$
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
 
+#include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>

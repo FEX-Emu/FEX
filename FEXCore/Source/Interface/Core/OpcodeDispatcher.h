@@ -4,13 +4,13 @@
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/Context/Context.h"
+#include "Interface/IR/IREmitter.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>

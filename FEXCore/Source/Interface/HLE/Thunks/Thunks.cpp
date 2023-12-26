@@ -6,12 +6,13 @@ tags: glue|thunks
 $end_info$
 */
 
+#include "Interface/IR/IREmitter.h"
+
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
@@ -231,7 +232,7 @@ namespace FEXCore {
             LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}",
                               args->original_callee, args->target_addr);
 
-            auto Result = Thread->CTX->AddCustomIREntrypoint(
+            auto Result = CTX->AddCustomIREntrypoint(
                     args->original_callee,
                     [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
                         auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);

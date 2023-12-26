@@ -20,10 +20,6 @@ if (NOT MINGW_BUILD)
   add_subdirectory(CodeSizeValidation/)
   add_subdirectory(LinuxEmulation/)
 
-  if (BUILD_TESTS)
-    add_subdirectory(IRLoader/)
-  endif()
-
   add_subdirectory(FEXLoader/)
 endif()
 

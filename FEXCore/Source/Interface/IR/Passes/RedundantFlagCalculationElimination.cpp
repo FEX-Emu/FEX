@@ -6,8 +6,9 @@ desc: This is not used right now, possibly broken
 $end_info$
 */
 
+#include "Interface/IR/IREmitter.h"
+
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/Profiler.h>
 

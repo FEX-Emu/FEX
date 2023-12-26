@@ -6,8 +6,9 @@ tags: ir|emitter
 $end_info$
 */
 
+#include "Interface/IR/IREmitter.h"
+
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
