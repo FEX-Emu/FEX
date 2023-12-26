@@ -18,7 +18,6 @@ struct ThunkedCallback : FunctionParams {
     clang::QualType return_type;
 
     bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
-    bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
 };
 
@@ -120,6 +119,9 @@ public:
     struct RepackedType {
         bool assumed_compatible = false;         // opaque_type or assume_compatible_data_layout
         bool pointers_only = assumed_compatible; // if true, only pointers to this type may be used
+
+        // If true, emit guest_layout/host_layout definitions even if the type is non-repackable
+        bool emit_layout_wrappers = false;
     };
 
 protected:

@@ -24,6 +24,9 @@ private:
     // Generate helper code for thunk libraries and write them to the output file
     void OnAnalysisComplete(clang::ASTContext&) override;
 
+    // Emit guest_layout/host_layout wrappers for types passed across architecture boundaries
+    void EmitLayoutWrappers(clang::ASTContext&, std::ofstream&, std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat);
+
     const std::string& libfilename;
     std::string libname; // sanitized filename, usable as part of emitted function names
     const OutputFilenames& output_filenames;
@@ -48,6 +51,237 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
     return ret;
 };
+
+// Custom sort algorithm that works with partial orders.
+//
+// In contrast, std::sort requires that any two different elements A and B of
+// the input range compare either A<B or B<A. This requirement is violated e.g.
+// for dependency relations: Elements A and B might not depend on each other,
+// but they both might depend on some third element C. BubbleSort then ensures
+// C preceeds both A and B in the sorted range, while leaving the relative
+// order of A and B undetermined. In effect when iterating over the sorted
+// range, each dependency is visited before any of its dependees.
+template<std::forward_iterator It>
+void BubbleSort(It begin, It end,
+                std::relation<std::iter_value_t<It>, std::iter_value_t<It>> auto compare) {
+    bool fixpoint;
+    do {
+        fixpoint = true;
+        for (auto it = begin; it != end; ++it) {
+            for (auto it2 = std::next(it); it2 != end; ++it2) {
+                if (compare(*it2, *it)) {
+                    std::swap(*it, *it2);
+                    fixpoint = false;
+                    it2 = it;
+                }
+            }
+        }
+    } while (!fixpoint);
+}
+
+// Compares such that A < B if B contains A as a member and requires A to be completely defined (i.e. non-pointer/non-reference).
+// This applies recursively to structs contained by B.
+struct compare_by_struct_dependency {
+    clang::ASTContext& context;
+
+    bool operator()(const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& a,
+                    const std::pair<const clang::Type*, GenerateThunkLibsAction::RepackedType>& b) const {
+        return (*this)(a.first, b.first);
+    }
+
+    bool operator()(const clang::Type* a, const clang::Type* b) const {
+        if (llvm::isa<clang::ConstantArrayType>(b)) {
+            throw std::runtime_error("Cannot have \"b\" be an array");
+        }
+
+        auto* b_as_struct = b->getAsStructureType();
+        if (!b_as_struct) {
+            // Not a struct => no dependency
+            return false;
+        }
+
+        if (a->isArrayType()) {
+            throw std::runtime_error("Cannot have \"a\" be an array");
+        }
+
+        for (auto* child : b_as_struct->getDecl()->fields()) {
+            auto child_type = child->getType().getTypePtr();
+
+            if (child_type->isPointerType()) {
+                // Pointers don't need the definition to be available
+                continue;
+            }
+
+            // Peel off any array type layers from the member
+            while (auto child_as_array = llvm::dyn_cast<clang::ConstantArrayType>(child_type)) {
+                child_type = child_as_array->getArrayElementTypeNoTypeQual();
+            }
+
+            if (context.hasSameType(a, child_type)) {
+                return true;
+            }
+
+            if ((*this)(a, child_type)) {
+                // Child depends on A => transitive dependency
+                return true;
+            }
+        }
+
+        // No dependency found
+        return false;
+    }
+};
+
+void GenerateThunkLibsAction::EmitLayoutWrappers(
+        clang::ASTContext& context, std::ofstream& file,
+        std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat) {
+    // Sort struct types by dependency so that repacking code is emitted in an order that compiles fine
+    std::vector<std::pair<const clang::Type*, RepackedType>> types { this->types.begin(), this->types.end() };
+    BubbleSort(types.begin(), types.end(), compare_by_struct_dependency { context });
+
+    for (const auto& [type, type_repack_info] : types) {
+        auto struct_name = get_type_name(context, type);
+
+        // Opaque types don't need layout definitions
+        if (type_repack_info.assumed_compatible && type_repack_info.pointers_only) {
+            continue;
+        } else if (type_repack_info.assumed_compatible) {
+            // TODO: Handle more cleanly
+            type_compat[type] = TypeCompatibility::Full;
+        }
+
+        // These must be handled later since they are not canonicalized and hence must be de-duplicated first
+        if (type->isBuiltinType()) {
+            continue;
+        }
+
+        // TODO: Instead, map these names back to *some* type that's named?
+        if (struct_name.starts_with("unnamed_")) {
+            continue;
+        }
+
+        if (type->isEnumeralType()) {
+            fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+            fmt::print(file, "  using type = {}int{}_t;\n",
+                       type->isUnsignedIntegerOrEnumerationType() ? "u" : "",
+                       guest_abi.at(struct_name).get_if_simple_or_struct()->size_bits);
+            fmt::print(file, "  type data;\n");
+            fmt::print(file, "}};\n");
+            continue;
+        }
+
+        if (type_compat.at(type) == TypeCompatibility::None && !type_repack_info.emit_layout_wrappers) {
+            // Disallow use of layout wrappers for this type by specializing without a definition
+            fmt::print(file, "template<>\nstruct guest_layout<{}>;\n", struct_name);
+            fmt::print(file, "template<>\nstruct host_layout<{}>;\n", struct_name);
+            fmt::print(file, "guest_layout<{}>& to_guest(const host_layout<{}>&) = delete;\n", struct_name, struct_name);
+            continue;
+        }
+
+        // Guest layout definition
+        fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "  using type = {};\n", struct_name);
+        } else {
+            fmt::print(file, "  struct type {{\n");
+            // TODO: Insert any required padding bytes
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                fmt::print(file, "    guest_layout<{}> {};\n", member.type_name, member.member_name);
+            }
+            fmt::print(file, "  }};\n");
+        }
+        fmt::print(file, "  type data;\n");
+        fmt::print(file, "}};\n");
+
+        fmt::print(file, "template<>\nstruct guest_layout<const {}> : guest_layout<{}> {{\n", struct_name, struct_name);
+        fmt::print(file, "  guest_layout& operator=(const guest_layout<{}>& other) {{ memcpy(this, &other, sizeof(other)); return *this; }}\n", struct_name);
+        fmt::print(file, "}};\n");
+
+        // Host layout definition
+        fmt::print(file, "template<>\n");
+        fmt::print(file, "struct host_layout<{}> {{\n", struct_name);
+        fmt::print(file, "  using type = {};\n", struct_name);
+        fmt::print(file, "  type data;\n");
+        fmt::print(file, "\n");
+        // Host->guest layout conversion
+        fmt::print(file, "  host_layout(const guest_layout<{}>& from) :\n", struct_name);
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "    data {{ from.data }} {{\n");
+        } else {
+            // Conversion needs struct repacking.
+            // Wrapping each member in `host_layout<>` ensures this is done recursively.
+            fmt::print(file, "    data {{\n");
+            auto map_field = [&file](clang::FieldDecl* member, bool skip_arrays) {
+                auto decl_name = member->getNameAsString();
+                auto type_name = member->getType().getAsString();
+                auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(member->getType());
+                if (!array_type && skip_arrays) {
+                    if (member->getType()->isFunctionPointerType()) {
+                        // Function pointers must be handled manually, so zero them out by default
+                        fmt::print(file, "      .{} {{ }},\n", decl_name);
+                    } else {
+                        fmt::print(file, "      .{} = host_layout<{}> {{ from.data.{} }}.data,\n", decl_name, type_name, decl_name);
+                    }
+                } else if (array_type && !skip_arrays) {
+                    // Copy element-wise below
+                    fmt::print(file, "      for (size_t i = 0; i < {}; ++i) {{\n", array_type->getSize().getZExtValue());
+                    fmt::print(file, "        data.{}[i] = host_layout<{}> {{ from.data.{} }}.data[i];\n", decl_name, type_name, decl_name);
+                    fmt::print(file, "      }}\n");
+                }
+            };
+            // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
+            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                map_field(member, true);
+            }
+            fmt::print(file, "    }} {{\n");
+            for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
+                map_field(member, false);
+            }
+        }
+        fmt::print(file, "  }}\n");
+        fmt::print(file, "}};\n\n");
+
+        // Guest->host layout conversion
+        fmt::print(file, "inline guest_layout<{}> to_guest(const host_layout<{}>& from) {{\n", struct_name, struct_name);
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "  guest_layout<{}> ret;\n", struct_name);
+            fmt::print(file, "  static_assert(sizeof(from) == sizeof(ret));\n");
+            fmt::print(file, "  memcpy(&ret, &from, sizeof(from));\n");
+        } else {
+            // Conversion needs struct repacking.
+            // Wrapping each member in `to_guest(to_host_layout(...))` ensures this is done recursively.
+            fmt::print(file, "  guest_layout<{}> ret {{ .data {{\n", struct_name);
+            auto map_field2 = [&file](const StructInfo::MemberInfo& member, bool skip_arrays) {
+                auto& decl_name = member.member_name;
+                auto& array_size = member.array_size;
+                if (!array_size && skip_arrays) {
+                    if (member.is_function_pointer) {
+                        // Function pointers must be handled manually, so zero them out by default
+                        fmt::print(file, "    .{} {{ }},\n", decl_name);
+                    } else {
+                        fmt::print(file, "    .{} = to_guest(to_host_layout(from.data.{})),\n", decl_name, decl_name);
+                    }
+                } else if (array_size && !skip_arrays) {
+                    // Copy element-wise below
+                    fmt::print(file, "    for (size_t i = 0; i < {}; ++i) {{\n", array_size.value());
+                    fmt::print(file, "      ret.data.{}.data[i] = to_guest(to_host_layout(from.data.{}[i]));\n", decl_name, decl_name);
+                    fmt::print(file, "    }}\n");
+                }
+            };
+
+            // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                map_field2(member, true);
+            }
+            fmt::print(file, "  }} }};\n");
+            for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
+                map_field2(member, false);
+            }
+        }
+        fmt::print(file, "  return ret;\n");
+        fmt::print(file, "}}\n\n");
+    }
+}
 
 void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     ErrorReporter report_error { context };
@@ -190,7 +424,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 auto cb = data.callbacks.find(idx);
 
                 file << "  args.a_" << idx << " = ";
-                if (cb == data.callbacks.end() || cb->second.is_stub || cb->second.is_guest) {
+                if (cb == data.callbacks.end() || cb->second.is_stub) {
                     file << "a_" << idx << ";\n";
                 } else {
                     // Before passing guest function pointers to the host, wrap them in a host-callable trampoline
@@ -240,6 +474,8 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     if (!output_filenames.host.empty()) {
         std::ofstream file(output_filenames.host);
 
+        EmitLayoutWrappers(context, file, type_compat);
+
         // Forward declarations for symbols loaded from the native host library
         for (auto& import : thunked_api) {
             const auto& function_name = import.function_name;
@@ -270,15 +506,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             if (thunk.custom_host_impl) {
                 file << "static auto fexfn_impl_" << libname << "_" << function_name << "(";
                 for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
-                    // TODO: fex_guest_function_ptr for guest callbacks?
                     auto& type = thunk.param_types[idx];
 
                     file << (idx == 0 ? "" : ", ");
 
-                    auto cb = thunk.callbacks.find(idx);
-                    if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        file << "fex_guest_function_ptr a_" << idx;
-                    } else if (thunk.param_annotations[idx].is_passthrough) {
+                    if (thunk.param_annotations[idx].is_passthrough) {
                         fmt::print(file, "guest_layout<{}> a_{}", type.getAsString(), idx);
                     } else {
                         file << format_decl(type, fmt::format("a_{}", idx));
@@ -315,7 +547,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
                 }
                 if (!thunk.return_type->isVoidType()) {
-                    file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
+                    fmt::print(file, "  guest_layout<{}> rv;\n", get_type_name(context, thunk.return_type.getTypePtr()));
                 } else if (thunk.param_types.size() == 0) {
                     // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                     file << "    char force_nonempty;\n";
@@ -332,7 +564,6 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             }
 
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(" << struct_name << "* args) {\n";
-            file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
 
             for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
                 if (thunk.callbacks.contains(param_idx) && thunk.callbacks.at(param_idx).is_stub) {
@@ -359,6 +590,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 if (!param_type->isPointerType() || (is_assumed_compatible || pointee_compat == TypeCompatibility::Full) ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible
+                    fmt::print(file, "  host_layout<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
                     throw report_error(thunk.decl->getLocation(), "Pointer parameter %1 of function %0 requires automatic repacking, which is not implemented yet").AddString(function_name).AddTaggedVal(param_type);
                 } else {
@@ -366,19 +598,29 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 }
             }
 
+            if (!thunk.return_type->isVoidType()) {
+                fmt::print(file, "  args->rv = ");
+                if (!thunk.return_type->isFunctionPointerType()) {
+                    fmt::print(file, "to_guest(to_host_layout<{}>(", thunk.return_type.getAsString());
+                }
+            }
+            fmt::print(file, "{}(", function_to_call);
             {
                 auto format_param = [&](std::size_t idx) {
-                    std::string raw_arg = fmt::format("args->a_{}.data", idx);
+                    std::string raw_arg = fmt::format("a_{}.data", idx);
 
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
-                    } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return fmt::format("fex_guest_function_ptr {{ {} }}", raw_arg);
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = fmt::format("args->a_{}.data", idx);
+                        auto arg_name = fmt::format("args->a_{}", idx); // Use parameter directly
                         // Use comma operator to inject a function call before returning the argument
-                        return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
+                        // TODO: Avoid casting away the guest_layout
+                        if (thunk.custom_host_impl) {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), {})", arg_name, arg_name);
+                        } else {
+                            return fmt::format("(FinalizeHostTrampolineForGuestFunction({}), ({})(uint64_t {{ {}.data }}))", arg_name, get_type_name(context, thunk.param_types[idx].getTypePtr()), arg_name);
+                        }
                     } else if (thunk.param_annotations[idx].is_passthrough) {
                         // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
@@ -387,9 +629,13 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     }
                 };
 
-                file << format_function_args(thunk, format_param);
+                fmt::print(file, "{}", format_function_args(thunk, format_param));
             }
-            file << ");\n";
+            if (!thunk.return_type->isVoidType() && !thunk.return_type->isFunctionPointerType()) {
+                fmt::print(file, "))");
+            }
+            fmt::print(file, ");\n");
+
             file << "}\n";
         }
         file << "}\n";

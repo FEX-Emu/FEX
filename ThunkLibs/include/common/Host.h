@@ -5,9 +5,11 @@ $end_info$
 */
 
 #pragma once
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <dlfcn.h>
 
 #include "PackedArguments.h"
@@ -47,27 +49,6 @@ fexfn_type_erased_unpack(void* argsv) {
 struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
-
-/**
- * Opaque wrapper around a guest function pointer.
- *
- * This prevents accidental calls to foreign function pointers while still
- * allowing us to label function pointers as such.
- */
-struct fex_guest_function_ptr {
-private:
-    void* value = nullptr;
-
-public:
-    fex_guest_function_ptr() = default;
-
-    template<typename Ret, typename... Args>
-    fex_guest_function_ptr(Ret (*ptr)(Args...)) : value(reinterpret_cast<void*>(ptr)) {}
-
-    inline operator bool() const {
-      return value != nullptr;
-    }
-};
 
 #define EXPORTS(name) \
   extern "C" { \
@@ -111,8 +92,144 @@ struct ParameterAnnotations {
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
 struct guest_layout {
-  T data;
+  static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
+  static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
+  static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
+
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
+  type data;
+
+  guest_layout& operator=(const T from) {
+    data = from;
+    return *this;
+  }
 };
+
+template<typename T>
+struct guest_layout<T*> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // Allow implicit conversion for function pointers, since they disallow use of host_layout
+  guest_layout& operator=(const T* from) requires (std::is_function_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct guest_layout<T* const> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  // Allow implicit conversion for function pointers, since they disallow use of host_layout
+  guest_layout& operator=(const T* from) requires (std::is_function_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    data = reinterpret_cast<uintptr_t>(from);
+    return *this;
+  }
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct host_layout;
+
+template<typename T>
+struct host_layout {
+  static_assert(!std::is_class_v<T>, "No host_layout specialization generated for struct/class type");
+  static_assert(!std::is_union_v<T>, "No host_layout specialization generated for union type");
+  static_assert(!std::is_void_v<T>, "Attempted to get host layout of void. Missing annotation for void pointer?");
+
+  // TODO: This generic implementation shouldn't be needed. Instead, auto-specialize host_layout for all types used as members.
+
+  T data;
+
+  explicit host_layout(const guest_layout<T>& from) requires (!std::is_enum_v<T>) : data { from.data } {
+    // NOTE: This is not strictly neccessary since differently sized types may
+    //       be used across architectures. It's important that the host type
+    //       can represent all guest values without loss, however.
+    static_assert(sizeof(data) == sizeof(from));
+  }
+
+  explicit host_layout(const guest_layout<T>& from) requires (std::is_enum_v<T>) : data { static_cast<T>(from.data) } {
+  }
+};
+
+// Explicitly turn a host type into its corresponding host_layout
+template<typename T>
+const host_layout<T>& to_host_layout(const T& t) {
+  static_assert(std::is_same_v<decltype(host_layout<T>::data), T>);
+  return reinterpret_cast<const host_layout<T>&>(t);
+}
+
+template<typename T>
+struct host_layout<T*> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  explicit host_layout(const guest_layout<T*>& from) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // TODO: Make this explicit?
+  host_layout() = default;
+};
+
+template<typename T>
+struct host_layout<T* const> {
+  T* data;
+
+  static_assert(!std::is_function_v<T>, "Function types must be handled separately");
+
+  // Assume underlying data is compatible and just convert the guest-sized pointer to 64-bit
+  explicit host_layout(const guest_layout<T* const>& from) : data { (T*)(uintptr_t)from.data } {
+  }
+};
+
+template<typename T>
+inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
+  if constexpr (std::is_enum_v<T>) {
+    // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
+    return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+  } else {
+    guest_layout<T> ret { .data = from.data };
+    return ret;
+  }
+}
+
+template<typename T>
+inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
+  // TODO: Assert upper 32 bits are zero
+  guest_layout<T*> ret;
+  ret.data = reinterpret_cast<uintptr_t>(from.data);
+  return ret;
+}
 
 template<typename>
 struct CallbackUnpack;
@@ -138,7 +255,7 @@ auto Projection(guest_layout<T>& data) {
   if constexpr (Annotation.is_passthrough) {
     return data;
   } else {
-    return data.data;
+    return host_layout<T> { data }.data;
   }
 }
 
@@ -222,6 +339,13 @@ template<typename F>
 void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFunction) {
   FEXCore::FinalizeHostTrampolineForGuestFunction(
       (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
+      (void*)&CallbackUnpack<F>::CallGuestPtr);
+}
+
+template<typename F>
+void FinalizeHostTrampolineForGuestFunction(guest_layout<F*> PreallocatedTrampolineForGuestFunction) {
+  FEXCore::FinalizeHostTrampolineForGuestFunction(
+      (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction.data,
       (void*)&CallbackUnpack<F>::CallGuestPtr);
 }
 

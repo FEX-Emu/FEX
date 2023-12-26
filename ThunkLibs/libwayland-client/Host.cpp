@@ -60,7 +60,7 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
     // ? just indicates that the argument may be null, so it doesn't change the signature
     signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
 
-    auto callback = callback_raw.data[i];
+    auto callback = reinterpret_cast<void(*)()>(uintptr_t { callback_raw.get_pointer()[i].data });
 
     if (signature == "") {
       // E.g. xdg_toplevel::close
@@ -162,7 +162,9 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
   }
 
   // Pass the original function pointer table to the host wayland library. This ensures the table is valid until the listener is unregistered.
-  return fexldr_ptr_libwayland_client_wl_proxy_add_listener(proxy, callback_raw.data, data);
+  return fexldr_ptr_libwayland_client_wl_proxy_add_listener(proxy,
+                                                            reinterpret_cast<void(**)(void)>(callback_raw.get_pointer()),
+                                                            data);
 }
 
 wl_interface* fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(wl_interface* guest_interface, char const* name) {

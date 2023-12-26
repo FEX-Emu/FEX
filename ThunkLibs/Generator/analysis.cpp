@@ -62,7 +62,6 @@ static NamespaceAnnotations GetNamespaceAnnotations(clang::ASTContext& context, 
 enum class CallbackStrategy {
     Default,
     Stub,
-    Guest,
 };
 
 struct Annotations {
@@ -88,8 +87,6 @@ static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDe
             ret.custom_host_impl = true;
         } else if (annotation == "fexgen::callback_stub") {
             ret.callback_strategy = CallbackStrategy::Stub;
-        } else if (annotation == "fexgen::callback_guest") {
-            ret.callback_strategy = CallbackStrategy::Guest;
         } else if (annotation == "fexgen::custom_guest_entrypoint") {
             ret.custom_guest_entrypoint = true;
         } else {
@@ -153,6 +150,7 @@ FindClassTemplateDeclByName(clang::DeclContext& decl_context, std::string_view s
 struct TypeAnnotations {
     bool is_opaque = false;
     bool assumed_compatible = false;
+    bool emit_layout_wrappers = false;
 };
 
 static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
@@ -169,6 +167,8 @@ static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXX
             ret.is_opaque = true;
         } else if (annotation == "fexgen::assume_compatible_data_layout") {
             ret.assumed_compatible = true;
+        } else if (annotation == "fexgen::emit_layout_wrappers") {
+            ret.emit_layout_wrappers = true;
         } else {
             throw report_error(base.getSourceRange().getBegin(), "Unknown type annotation");
         }
@@ -217,13 +217,17 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             clang::QualType type = context.getCanonicalType(template_args[0].getAsType());
             type = type->getLocallyUnqualifiedSingleStepDesugaredType();
 
+            const auto annotations = GetTypeAnnotations(context, decl);
             if (type->isFunctionPointerType() || type->isFunctionType()) {
+                if (decl->getNumBases()) {
+                    throw report_error(decl->getBeginLoc(), "Function pointer types cannot be annotated");
+                }
                 thunked_funcptrs[type.getAsString()] = std::pair { type.getTypePtr(), no_param_annotations };
             } else {
-                const auto annotations = GetTypeAnnotations(context, decl);
                 RepackedType repack_info = {
                     .assumed_compatible = annotations.is_opaque || annotations.assumed_compatible,
                     .pointers_only = annotations.is_opaque && !annotations.assumed_compatible,
+                    .emit_layout_wrappers = annotations.emit_layout_wrappers
                 };
                 [[maybe_unused]] auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), repack_info);
                 assert(inserted);
@@ -376,15 +380,10 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                                 callback.param_types.push_back(cb_param);
                             }
                             callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
-                            callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
                             callback.is_variadic = funcptr->isVariadic();
 
-                            if (callback.is_guest && !data.custom_host_impl) {
-                                throw report_error(template_arg_loc, "callback_guest can only be used with custom_host_impl");
-                            }
-
                             data.callbacks.emplace(param_idx, callback);
-                            if (!callback.is_stub && !callback.is_guest && !data.custom_host_impl) {
+                            if (!callback.is_stub && !data.custom_host_impl) {
                                 thunked_funcptrs[emitted_function->getNameAsString() + "_cb" + std::to_string(param_idx)] = std::pair { context.getCanonicalType(funcptr), no_param_annotations };
                             }
 

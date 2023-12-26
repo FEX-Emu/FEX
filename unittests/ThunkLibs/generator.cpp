@@ -2,6 +2,7 @@
 
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Tooling/Tooling.h>
 
@@ -250,6 +251,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
     std::string result =
         "#include <array>\n"
         "#include <cstdint>\n"
+        "#include <cstring>\n"
         "#include <dlfcn.h>\n"
         "#include <type_traits>\n"
         "template<typename Fn>\n"
@@ -284,7 +286,28 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  T data;\n"
         "};\n"
         "\n"
-        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n";
+        "template<typename T>\n"
+        "struct guest_layout<T*> {\n"
+        "#ifdef IS_32BIT_THUNK\n"
+        "  using type = uint32_t;\n"
+        "#else\n"
+        "  using type = uint64_t;\n"
+        "#endif\n"
+        "  type data;\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout {\n"
+        "  T data;\n"
+        "\n"
+        "  host_layout(const guest_layout<T>& from);\n"
+        "};\n"
+        "\n"
+        "template<typename T> guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>);\n"
+        "template<typename T> guest_layout<T*> to_guest(const host_layout<T*>& from);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "template<typename F> void FinalizeHostTrampolineForGuestFunction(guest_layout<F*>);\n"
+        "template<typename T> const host_layout<T>& to_host_layout(const T& t);\n";
 
     auto& filename = output_filenames.host;
     {
@@ -312,6 +335,15 @@ Fixture::GenOutput Fixture::run_thunkgen(std::string_view prelude, std::string_v
              run_thunkgen_host(prelude, code, GuestABI::X86_64, silent) };
 }
 
+#if CLANG_VERSION_MAJOR <= 15
+// Old clang versions require an explicit "struct" prefix
+#define CLANG_STRUCT_PREFIX "struct "
+#define asStructString(name) asString(CLANG_STRUCT_PREFIX name)
+#else
+#define CLANG_STRUCT_PREFIX
+#define asStructString(name) asString(name)
+#endif
+
 TEST_CASE_METHOD(Fixture, "Trivial") {
     const auto output = run_thunkgen("",
         "#include <thunks_common.h>\n"
@@ -333,7 +365,7 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(initListExpr(hasInit(0, expr()),
                                         hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
             // TODO: check null termination
@@ -383,7 +415,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
@@ -414,41 +446,15 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             hasDescendant(callExpr(callee(functionDecl(hasName("FinalizeHostTrampolineForGuestFunction"))), hasArgument(0, expr().bind("funcptr"))))
         )).check_binding("funcptr", +[](const clang::Expr* funcptr) {
             // Check that the argument type matches the function pointer
-            return funcptr->getType().getAsString() == "int (*)(char, char)";
+            return funcptr->getType().getAsString() == "guest_layout<int (*)(char, char)>";
         }));
 
     // Host should export the unpacking function for function pointer arguments
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(3))),
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction")))))))
-            )));
-}
-
-// Parameter is a guest function pointer
-TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
-    const std::string prelude =
-        "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
-        "static void fexfn_impl_libtest_func(fex_guest_function_ptr) {}\n";
-    const auto output = run_thunkgen(prelude,
-        "#include <thunks_common.h>\n"
-        "void func(int (*funcptr)(char, char));\n"
-        "template<auto> struct fex_gen_config {};\n"
-        "template<> struct fex_gen_config<func> : fexgen::callback_guest, fexgen::custom_host_impl {};\n");
-
-    CHECK_THAT(output.guest,
-        matches(functionDecl(
-            hasName("fexfn_pack_func"),
-            returns(asString("void")),
-            parameterCountIs(1),
-            hasParameter(0, hasType(asString("int (*)(char, char)")))
-        )));
-
-    // Host-side implementation only sees an opaque type that it can't call
-    CHECK_THAT(output.host,
-        matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
-                         hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
             )));
 }
 
@@ -472,14 +478,14 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             hasParameter(0, hasType(asString("int"))),
             hasParameter(1, hasType(asString("char"))),
             hasParameter(2, hasType(asString("unsigned long"))),
-            hasParameter(3, hasType(asString("struct TestStruct")))
+            hasParameter(3, hasType(asStructString("TestStruct")))
         )));
 
     // Host code
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasType(constantArrayType(hasElementType(asStructString("ExportEntry")), hasSize(2))),
             hasInitializer(initListExpr(hasInit(0, expr()),
                                         hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
             // TODO: check null termination
@@ -490,13 +496,13 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             hasName("fexfn_unpack_libtest_func"),
             // Packed argument struct should contain all parameters
             parameterCountIs(1),
-            hasParameter(0, hasType(pointerType(pointee(
+            hasParameter(0, hasType(pointerType(pointee(hasUnqualifiedDesugaredType(
                 recordType(hasDeclaration(decl(
                     has(fieldDecl(hasType(asString("guest_layout<int>")))),
                     has(fieldDecl(hasType(asString("guest_layout<char>")))),
                     has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<struct TestStruct>"))))
-                    )))))))
+                    has(fieldDecl(hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "TestStruct>"))))
+                    ))))))))
             )));
 }
 
@@ -541,6 +547,130 @@ TEST_CASE_METHOD(Fixture, "VariadicFunctionsWithoutAnnotation") {
     REQUIRE_THROWS(run_thunkgen_guest("void func(int arg, ...);\n",
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
+}
+
+// Tests generation of guest_layout/host_layout wrappers and related helpers
+TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
+    auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
+    INFO(guest_abi);
+
+    const auto host_layout_is_trivial =
+        matches(classTemplateSpecializationDecl(
+            hasName("host_layout"),
+            hasAnyTemplateArgument(refersToType(asString("struct A"))),
+            has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))
+        ));
+    const auto layout_undefined = [](const char* type) {
+        return matches(classTemplateSpecializationDecl(
+              hasName(type),
+              hasAnyTemplateArgument(refersToType(asString("struct A")))
+        ).bind("layout")).check_binding("layout", +[](const clang::ClassTemplateSpecializationDecl* decl) {
+            return !decl->isCompleteDefinition();
+        });
+    };
+    const auto guest_converter_defined =
+          matches(functionDecl(hasName("to_guest"),
+                // Parameter is a host_layout<A> (ignoring qualifiers and references)
+                hasParameter(0, hasType(references(classTemplateSpecializationDecl(hasName("host_layout"), hasAnyTemplateArgument(refersToType(asString("struct A"))))))),
+                // Return value is a guest_layout<A>
+                returns(asString("guest_layout<" CLANG_STRUCT_PREFIX "A>"))));
+    const auto guest_converter_undefined =
+          matches(functionDecl(hasName("to_guest"),
+                // Parameter is a host_layout<A> (ignoring qualifiers and references)
+                hasParameter(0, hasType(references(classTemplateSpecializationDecl(hasName("host_layout"), hasAnyTemplateArgument(refersToType(asString("struct A"))))))),
+                isDeleted()));
+
+    const std::string code =
+        "template<typename> struct fex_gen_type {};\n"
+        "template<> struct fex_gen_type<A> {};\n";
+
+    // For fully compatible types, both guest_layout and host_layout directly
+    // reference the original struct
+    SECTION("Fully compatible type") {
+        const char* struct_def = "struct A { int a; int b; };\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(asString("struct A"))),
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))
+            )));
+        CHECK_THAT(output, guest_converter_defined);
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
+
+    // For repackable types, guest_layout explicitly lists its members
+    SECTION("Repackable type") {
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct A { int a; int b; };\n"
+            "#else\n"
+            "struct A { int b; int a; };\n"
+            "#endif\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(asString("struct A"))),
+                  // The member "data" exists and is defined to a struct...
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
+                      // ... the members of which also use guest_layout
+                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<int>")))),
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      ))))))
+            )));
+        CHECK_THAT(output, guest_converter_defined);
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
+
+    // For incompatible types, use of guest_layout nor host_layout should be prohibited
+    SECTION("Incompatible type, unannotated") {
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct A { int a; int b; };\n"
+            "#else\n"
+            "struct A { int c; int d; };\n"
+            "#endif\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output, layout_undefined("guest_layout"));
+        CHECK_THAT(output, guest_converter_undefined);
+        CHECK_THAT(output, layout_undefined("host_layout"));
+    }
+
+    // Layout wrappers can be enabled even for incompatible types using the emit_layout_wrappers annotation
+    SECTION("Incompatible type, annotated") {
+        // A slightly different setup is used here in order to construct a type which...
+        // - has incompatible data layout (for both 32-bit and 64-bit guests)
+        // - has consistently named members in struct A (which is required to emit layout wrappers)
+        const char* struct_def =
+            "#ifdef HOST\n"
+            "struct B { int a; };\n"
+            "#else\n"
+            "struct B { int b; };\n"
+            "#endif\n"
+            "struct A { B* a; int b; };\n";
+        const std::string code =
+            "#include <thunks_common.h>\n"
+            "template<typename> struct fex_gen_type {};\n"
+            "template<> struct fex_gen_type<A> : fexgen::emit_layout_wrappers {};\n";
+        const auto output = run_thunkgen_host(struct_def, code, guest_abi);
+        CHECK_THAT(output,
+            matches(classTemplateSpecializationDecl(
+                  hasName("guest_layout"),
+                  hasAnyTemplateArgument(refersToType(recordType(hasDeclaration(recordDecl(hasName("A")))))),
+                  // The member "data" exists and is defined to a struct...
+                  has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
+                      // ... the members of which also use guest_layout
+                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "B *>")))),
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      ))))))
+            )));
+        CHECK_THAT(output, guest_converter_defined);
+
+        CHECK_THAT(output, host_layout_is_trivial);
+    }
 }
 
 TEST_CASE_METHOD(Fixture, "StructRepacking") {
