@@ -69,114 +69,41 @@ static void OverrideFeatures(HostFeatures *Features) {
     return;
   }
 
-#define ENABLE_DISABLE_OPTION(name, enum_name) \
+#define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name) \
+    do { \
+      const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
+      const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
+      LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
+      const bool AlreadyEnabled = Features->FeatureName; \
+      const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name; \
+      Features->FeatureName = Result; \
+    } while (0)
+
+#define GET_SINGLE_OPTION(name, enum_name) \
     const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
     const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
     LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
-  ENABLE_DISABLE_OPTION(AVX, AVX);
-  ENABLE_DISABLE_OPTION(AVX2, AVX2);
-  ENABLE_DISABLE_OPTION(SVE, SVE);
-  ENABLE_DISABLE_OPTION(AFP, AFP);
-  ENABLE_DISABLE_OPTION(LRCPC, LRCPC);
-  ENABLE_DISABLE_OPTION(LRCPC2, LRCPC2);
-  ENABLE_DISABLE_OPTION(CSSC, CSSC);
-  ENABLE_DISABLE_OPTION(PMULL128, PMULL128);
-  ENABLE_DISABLE_OPTION(RNG, RNG);
-  ENABLE_DISABLE_OPTION(CLZERO, CLZERO);
-  ENABLE_DISABLE_OPTION(Atomics, ATOMICS);
-  ENABLE_DISABLE_OPTION(FCMA, FCMA);
-  ENABLE_DISABLE_OPTION(FlagM, FLAGM);
-  ENABLE_DISABLE_OPTION(FlagM2, FLAGM2);
-  ENABLE_DISABLE_OPTION(Crypto, CRYPTO);
-  ENABLE_DISABLE_OPTION(RPRES, RPRES);
+  ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);
+  ENABLE_DISABLE_OPTION(SupportsAVX2, AVX2, AVX2);
+  ENABLE_DISABLE_OPTION(SupportsSVE, SVE, SVE);
+  ENABLE_DISABLE_OPTION(SupportsAFP, AFP, AFP);
+  ENABLE_DISABLE_OPTION(SupportsRCPC, LRCPC, LRCPC);
+  ENABLE_DISABLE_OPTION(SupportsTSOImm9, LRCPC2, LRCPC2);
+  ENABLE_DISABLE_OPTION(SupportsCSSC, CSSC, CSSC);
+  ENABLE_DISABLE_OPTION(SupportsPMULL_128Bit, PMULL128, PMULL128);
+  ENABLE_DISABLE_OPTION(SupportsRAND, RNG, RNG);
+  ENABLE_DISABLE_OPTION(SupportsCLZERO, CLZERO, CLZERO);
+  ENABLE_DISABLE_OPTION(SupportsAtomics, Atomics, ATOMICS);
+  ENABLE_DISABLE_OPTION(SupportsFCMA, FCMA, FCMA);
+  ENABLE_DISABLE_OPTION(SupportsFlagM, FlagM, FLAGM);
+  ENABLE_DISABLE_OPTION(SupportsFlagM2, FlagM2, FLAGM2);
+  ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
+  GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
+#undef GET_SINGLE_OPTION
 
-  if (EnableAVX) {
-    Features->SupportsAVX = true;
-  }
-  else if (DisableAVX) {
-    Features->SupportsAVX = false;
-  }
-  if (EnableAVX2) {
-    Features->SupportsAVX2 = true;
-  }
-  else if (DisableAVX2) {
-    Features->SupportsAVX2 = false;
-  }
-  if (EnableSVE) {
-    Features->SupportsSVE = true;
-  }
-  else if (DisableSVE) {
-    Features->SupportsSVE = false;
-  }
-  if (EnableAFP) {
-    Features->SupportsAFP = true;
-  }
-  else if (DisableAFP) {
-    Features->SupportsAFP = false;
-  }
-  if (EnableLRCPC) {
-    Features->SupportsRCPC = true;
-  }
-  else if (DisableLRCPC) {
-    Features->SupportsRCPC = false;
-  }
-  if (EnableLRCPC2) {
-    Features->SupportsTSOImm9 = true;
-  }
-  else if (DisableLRCPC2) {
-    Features->SupportsTSOImm9 = false;
-  }
-  if (EnableCSSC) {
-    Features->SupportsCSSC = true;
-  }
-  else if (DisableCSSC) {
-    Features->SupportsCSSC = false;
-  }
-  if (EnablePMULL128) {
-    Features->SupportsPMULL_128Bit = true;
-  }
-  else if (DisablePMULL128) {
-    Features->SupportsPMULL_128Bit = false;
-  }
-  if (EnableRNG) {
-    Features->SupportsRAND = true;
-  }
-  else if (DisableRNG) {
-    Features->SupportsRAND = false;
-  }
-  if (EnableCLZERO) {
-    Features->SupportsCLZERO = true;
-  }
-  else if (DisableCLZERO) {
-    Features->SupportsCLZERO = false;
-  }
-  if (EnableAtomics) {
-    Features->SupportsAtomics = true;
-  }
-  else if (DisableAtomics) {
-    Features->SupportsAtomics = false;
-  }
-  if (EnableFCMA) {
-    Features->SupportsFCMA = true;
-  }
-  else if (DisableFCMA) {
-    Features->SupportsFCMA = false;
-  }
-  if (EnableFlagM) {
-    Features->SupportsFlagM = true;
-  }
-  else if (DisableFlagM) {
-    Features->SupportsFlagM = false;
-  }
-  if (EnableFlagM2) {
-    Features->SupportsFlagM2 = true;
-  }
-  else if (DisableFlagM2) {
-    Features->SupportsFlagM2 = false;
-  }
   if (EnableCrypto) {
     Features->SupportsAES = true;
     Features->SupportsCRC = true;
@@ -188,12 +115,6 @@ static void OverrideFeatures(HostFeatures *Features) {
     Features->SupportsCRC = false;
     Features->SupportsSHA = false;
     Features->SupportsPMULL_128Bit = false;
-  }
-  if (EnableRPRES) {
-    Features->SupportsRPRES = true;
-  }
-  else if (DisableRPRES) {
-    Features->SupportsRPRES = false;
   }
 }
 
