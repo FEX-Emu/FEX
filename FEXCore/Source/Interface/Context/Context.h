@@ -389,6 +389,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
+    std::atomic<bool> HasCustomIRHandlers{};
     fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
