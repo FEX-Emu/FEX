@@ -354,8 +354,10 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr
   // Only setup the disassembler if enabled.
   // vixl's decoder is expensive to setup.
   if (Disassemble()) {
+    DisasmBuffer = static_cast<char*>(FEXCore::Allocator::malloc(DISASM_BUFFER_SIZE));
+    Disasm = fextl::make_unique<vixl::aarch64::Disassembler>(DisasmBuffer, DISASM_BUFFER_SIZE);
     DisasmDecoder = fextl::make_unique<vixl::aarch64::Decoder>();
-    DisasmDecoder->AppendVisitor(&Disasm);
+    DisasmDecoder->AppendVisitor(Disasm.get());
   }
 #endif
 

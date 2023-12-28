@@ -876,7 +876,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
     LogMan::Msg::IFmt("Disassemble Begin");
     for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
       DisasmDecoder->Decode(PCToDecode);
-      auto Output = Disasm.GetOutput();
+      auto Output = Disasm->GetOutput();
       LogMan::Msg::IFmt("{}", Output);
     }
     LogMan::Msg::IFmt("Disassemble End");

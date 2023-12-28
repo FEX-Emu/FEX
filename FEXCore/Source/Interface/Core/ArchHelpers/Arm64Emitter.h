@@ -63,6 +63,14 @@ class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {
 protected:
   Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
+  virtual ~Arm64Emitter() {
+#ifdef VIXL_DISASSEMBLER
+    if (DisasmBuffer) {
+      FEXCore::Allocator::free(DisasmBuffer);
+    }
+#endif
+  }
+
   FEXCore::Context::ContextImpl *EmitterCTX;
   vixl::aarch64::CPU CPU;
 
@@ -233,7 +241,9 @@ protected:
 #endif
 
 #ifdef VIXL_DISASSEMBLER
-  vixl::aarch64::Disassembler Disasm;
+  char *DisasmBuffer{};
+  constexpr static int DISASM_BUFFER_SIZE {256};
+  fextl::unique_ptr<vixl::aarch64::Disassembler> Disasm;
   fextl::unique_ptr<vixl::aarch64::Decoder> DisasmDecoder;
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
