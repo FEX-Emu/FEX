@@ -40,6 +40,7 @@ namespace FEX::HLE::x32 {
   void RegisterThread(FEX::HLE::SyscallHandler *Handler);
   void RegisterTime(FEX::HLE::SyscallHandler *Handler);
   void RegisterTimer(FEX::HLE::SyscallHandler *Handler);
+  void RegisterGenerated(FEX::HLE::SyscallHandler *Handler);
 
   x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, fextl::unique_ptr<MemAllocator> Allocator)
     : SyscallHandler{ctx, _SignalDelegation}, AllocHandler{std::move(Allocator)} {
@@ -67,21 +68,13 @@ namespace FEX::HLE::x32 {
     FEX::HLE::RegisterFS(this);
     FEX::HLE::RegisterInfo(this);
     FEX::HLE::RegisterIO(this);
-    FEX::HLE::RegisterIOUring(this);
-    FEX::HLE::RegisterKey(this);
     FEX::HLE::RegisterMemory(this);
-    FEX::HLE::RegisterMsg(this);
-    FEX::HLE::RegisterNamespace(this);
-    FEX::HLE::RegisterSched(this);
-    FEX::HLE::RegisterSemaphore(this);
-    FEX::HLE::RegisterSHM(this);
     FEX::HLE::RegisterSignals(this);
-    FEX::HLE::RegisterSocket(this);
     FEX::HLE::RegisterThread(this);
-    FEX::HLE::RegisterTime(this);
     FEX::HLE::RegisterTimer(this);
     FEX::HLE::RegisterNotImplemented(this);
     FEX::HLE::RegisterStubs(this);
+    FEX::HLE::RegisterGenerated(this);
 
     // 32bit specific
     FEX::HLE::x32::RegisterEpoll(this);
@@ -100,6 +93,7 @@ namespace FEX::HLE::x32 {
     FEX::HLE::x32::RegisterThread(this);
     FEX::HLE::x32::RegisterTime(this);
     FEX::HLE::x32::RegisterTimer(this);
+    FEX::HLE::x32::RegisterGenerated(this);
 
     FEX::HLE::x32::InitializeStaticIoctlHandlers();
 

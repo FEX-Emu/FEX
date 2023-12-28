@@ -5,7 +5,6 @@ meta: LinuxSyscalls|syscalls-shared ~ Syscall implementations shared between x86
 tags: LinuxSyscalls|syscalls-shared
 $end_info$
 */
-
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
@@ -19,15 +18,9 @@ namespace FEX::HLE {
   void RegisterEpoll(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(epoll_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_FLAGS(epoll_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int size) -> uint64_t {
       uint64_t Result = epoll_create(size);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(epoll_create1, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
-      uint64_t Result = epoll_create1(flags);
       SYSCALL_ERRNO();
     });
   }

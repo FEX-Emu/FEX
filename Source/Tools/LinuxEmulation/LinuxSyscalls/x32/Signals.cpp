@@ -213,7 +213,7 @@ namespace FEX::HLE::x32 {
       REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, UnimplementedSyscallSafe);
     }
 
-    REGISTER_SYSCALL_IMPL_X32_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
       siginfo_t info64{};
       siginfo_t *info64_p{};
 
@@ -225,7 +225,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
       siginfo_t info64{};
       siginfo_t *info64_p{};
 

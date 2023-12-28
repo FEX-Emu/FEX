@@ -32,41 +32,40 @@ set (SRCS
   LinuxSyscalls/x32/IoctlEmulation.cpp
   LinuxSyscalls/x64/EPoll.cpp
   LinuxSyscalls/x64/FD.cpp
-  LinuxSyscalls/x64/IO.cpp
-  LinuxSyscalls/x64/Ioctl.cpp
   LinuxSyscalls/x64/Info.cpp
   LinuxSyscalls/x64/Memory.cpp
-  LinuxSyscalls/x64/Msg.cpp
   LinuxSyscalls/x64/NotImplemented.cpp
   LinuxSyscalls/x64/Semaphore.cpp
-  LinuxSyscalls/x64/Sched.cpp
   LinuxSyscalls/x64/Signals.cpp
-  LinuxSyscalls/x64/Socket.cpp
   LinuxSyscalls/x64/Thread.cpp
   LinuxSyscalls/x64/Syscalls.cpp
   LinuxSyscalls/x64/Time.cpp
   LinuxSyscalls/Syscalls/EPoll.cpp
   LinuxSyscalls/Syscalls/FD.cpp
   LinuxSyscalls/Syscalls/FS.cpp
+  LinuxSyscalls/Syscalls/Generated.cpp
   LinuxSyscalls/Syscalls/Info.cpp
   LinuxSyscalls/Syscalls/IO.cpp
-  LinuxSyscalls/Syscalls/IOUring.cpp
-  LinuxSyscalls/Syscalls/Key.cpp
   LinuxSyscalls/Syscalls/Memory.cpp
-  LinuxSyscalls/Syscalls/Msg.cpp
-  LinuxSyscalls/Syscalls/Namespace.cpp
-  LinuxSyscalls/Syscalls/Sched.cpp
-  LinuxSyscalls/Syscalls/Semaphore.cpp
-  LinuxSyscalls/Syscalls/SHM.cpp
   LinuxSyscalls/Syscalls/Signals.cpp
-  LinuxSyscalls/Syscalls/Socket.cpp
   LinuxSyscalls/Syscalls/Thread.cpp
-  LinuxSyscalls/Syscalls/Time.cpp
   LinuxSyscalls/Syscalls/Timer.cpp
   LinuxSyscalls/Syscalls/NotImplemented.cpp
   LinuxSyscalls/Syscalls/Stubs.cpp)
 
+set(OUTPUT_LINUXSYSCALLS_FOLDER "${CMAKE_CURRENT_BINARY_DIR}/")
+
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/GeneratedSyscallHandlers.inl"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/SyscallDescription.json"
+  DEPENDS "${PROJECT_SOURCE_DIR}/Scripts/GenerateSyscallHandlers.py"
+  COMMAND "python3" ARGS "${PROJECT_SOURCE_DIR}/Scripts/GenerateSyscallHandlers.py"
+  "${CMAKE_CURRENT_SOURCE_DIR}/SyscallDescription.json"
+  "${CMAKE_CURRENT_BINARY_DIR}/GeneratedSyscallHandlers.inl")
+
+add_custom_target(GeneratedSyscallHandlers DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratedSyscallHandlers.inl")
+
 add_library(LinuxEmulation STATIC ${SRCS})
+add_dependencies(LinuxEmulation GeneratedSyscallHandlers)
 
 target_compile_options(LinuxEmulation
 PRIVATE
@@ -82,6 +81,7 @@ PRIVATE
 target_include_directories(LinuxEmulation
 PRIVATE
   ${CMAKE_BINARY_DIR}/generated
+  ${CMAKE_CURRENT_BINARY_DIR}/
   ${CMAKE_CURRENT_SOURCE_DIR}/
   ${PROJECT_SOURCE_DIR}/External/drm-headers/include/
 )

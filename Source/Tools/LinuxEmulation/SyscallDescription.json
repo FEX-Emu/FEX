@@ -1,0 +1,2263 @@
+{
+  "Common": {
+    "read": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "write": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "open": {
+      "CustomHandler": true
+    },
+    "close": {
+      "CustomHandler": true
+    },
+    "stat": {
+      "ArchSpecific": true
+    },
+    "fstat": {
+      "ArchSpecific": true
+    },
+    "lstat": {
+      "ArchSpecific": true
+    },
+    "poll": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "lseek": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mmap": {
+      "CustomHandler": true
+    },
+    "mprotect": {
+      "CustomHandler": true
+    },
+    "munmap": {
+      "CustomHandler": true
+    },
+    "brk": {
+      "CustomHandler": true
+    },
+    "rt_sigaction": {
+      "CustomHandler": true
+    },
+    "rt_sigprocmask": {
+      "CustomHandler": true
+    },
+    "rt_sigreturn": {
+      "CustomHandler": true
+    },
+    "ioctl": {
+      "ArchSpecific": true
+    },
+    "pread_64": {
+      "ArchSpecific": true
+    },
+    "pwrite_64": {
+      "ArchSpecific": true
+    },
+    "readv": {
+      "ArchSpecific": true
+    },
+    "writev": {
+      "ArchSpecific": true
+    },
+    "access": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "pipe": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "select": {
+      "ArchSpecific": true
+    },
+    "sched_yield": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mremap": {
+      "CustomHandler": true
+    },
+    "msync": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mincore": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "madvise": {
+      "CustomHandler": true
+    },
+    "_shmget": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "_shmat": {
+      "ArchSpecific": true
+    },
+    "_shmctl": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "dup": {
+      "ArchSpecific": true
+    },
+    "dup2": {
+      "ArchSpecific": true
+    },
+    "pause": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "nanosleep": {
+      "ArchSpecific": true
+    },
+    "getitimer": {
+      "ArchSpecific": true
+    },
+    "alarm": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "setitimer": {
+      "ArchSpecific": true
+    },
+    "getpid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendfile": {
+      "ArchSpecific": true
+    },
+    "socket": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "connect": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "accept": {
+      "ArchSpecific": true
+    },
+    "sendto": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "recvfrom": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendmsg": {
+      "ArchSpecific": true
+    },
+    "recvmsg": {
+      "ArchSpecific": true
+    },
+    "shutdown": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "bind": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "listen": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getsockname": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getpeername": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "socketpair": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setsockopt": {
+      "ArchSpecific": true
+    },
+    "getsockopt": {
+      "ArchSpecific": true
+    },
+    "clone": {
+      "CustomHandler": true
+    },
+    "fork": {
+      "CustomHandler": true
+    },
+    "vfork": {
+      "CustomHandler": true
+    },
+    "execve": {
+      "CustomHandler": true
+    },
+    "exit": {
+      "CustomHandler": true
+    },
+    "wait4": {
+      "ArchSpecific": true
+    },
+    "kill": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::DEFAULT",
+      "Comment": [
+        "Needs default flags to ensure state synchronization.",
+        "Can cause thread to signal itself and want to ensure everything is synchronized."
+      ]
+    },
+    "uname": {
+      "CustomHandler": true
+    },
+    "semget": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "semop": {
+      "ArchSpecific": true
+    },
+    "semctl": {
+      "ArchSpecific": true
+    },
+    "_shmdt": {
+      "ArchSpecific": true
+    },
+    "msgget": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "msgsnd": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "msgrcv": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "msgctl": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "A quirk of this syscall",
+        "On 32-bit this syscall ONLY supports IPC_64 msqid_ds encoding",
+        "If an application want to use the old style encoding then it needs to use the ipc syscall with MSGCTL command",
+        "ipc syscall supports both IPC_64 and old encoding"
+      ]
+    },
+    "fcntl": {
+      "ArchSpecific": true
+    },
+    "flock": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "fsync": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "fdatasync": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "truncate": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "ftruncate": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getdents": {
+      "ArchSpecific": true
+    },
+    "getcwd": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "chdir": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "fchdir": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "rename": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "mkdir": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "rmdir": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "creat": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "link": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "unlink": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "symlink": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "readlink": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "chmod": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "fchmod": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "chown": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "fchown": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "lchown": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "umask": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "gettimeofday": {
+      "ArchSpecific": true
+    },
+    "getrlimit": {
+      "ArchSpecific": true
+    },
+    "getrusage": {
+      "ArchSpecific": true
+    },
+    "sysinfo": {
+      "ArchSpecific": true
+    },
+    "times": {
+      "ArchSpecific": true
+    },
+    "ptrace": {
+      "CustomHandler": true
+    },
+    "getuid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "syslog": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getgid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setuid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setgid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "geteuid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getegid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setpgid": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getppid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getpgrp": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "setsid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setreuid": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setregid": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getgroups": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setgroups": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setresuid": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getresuid": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setresgid": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getresgid": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getpgid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setfsuid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setfsgid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getsid": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "capget": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "capset": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "rt_sigpending": {
+      "CustomHandler": true
+    },
+    "rt_sigtimedwait": {
+      "CustomHandler": true
+    },
+    "rt_sigqueueinfo": {
+      "ArchSpecific": true
+    },
+    "rt_sigsuspend": {
+      "CustomHandler": true
+    },
+    "sigaltstack": {
+      "CustomHandler": true
+    },
+    "utime": {
+      "ArchSpecific": true
+    },
+    "mknod": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "uselib": {
+      "CustomHandler": true
+    },
+    "personality": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "ustat": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Doesn't exist on AArch64, will return -ENOSYS",
+        "Since version 2.28 of GLIBC it has stopped providing a wrapper for this syscall"
+      ]
+    },
+    "statfs": {
+      "CustomHandler": true
+    },
+    "fstatfs": {
+      "ArchSpecific": true
+    },
+    "sysfs": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Doesn't exist on AArch64, will return -ENOSYS"
+      ]
+    },
+    "getpriority": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setpriority": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_setparam": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_getparam": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_setscheduler": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_getscheduler": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_get_priority_max": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_get_priority_min": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_rr_get_interval": {
+      "ArchSpecific": true
+    },
+    "mlock": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "munlock": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mlockall": {
+      "ArchSpecific": true
+    },
+    "munlockall": {
+      "ArchSpecific": true
+    },
+    "vhangup": {
+      "CustomHandler": true
+    },
+    "modify_ldt": {
+      "CustomHandler": true
+    },
+    "pivot_root": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "_sysctl": {
+      "CustomHandler": true
+    },
+    "prctl": {
+      "CustomHandler": true
+    },
+    "arch_prctl": {
+      "CustomHandler": true
+    },
+    "adjtimex": {
+      "ArchSpecific": true
+    },
+    "setrlimit": {
+      "ArchSpecific": true
+    },
+    "chroot": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sync": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "acct": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "settimeofday": {
+      "ArchSpecific": true
+    },
+    "mount": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "umount2": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "swapon": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "swapoff": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "reboot": {
+      "CustomHandler": true
+    },
+    "sethostname": {
+      "CustomHandler": true
+    },
+    "setdomainname": {
+      "CustomHandler": true
+    },
+    "iopl": {
+      "CustomHandler": true
+    },
+    "ioperm": {
+      "CustomHandler": true
+    },
+    "create_module": {
+      "CustomHandler": true
+    },
+    "init_module": {
+      "CustomHandler": true
+    },
+    "delete_module": {
+      "CustomHandler": true
+    },
+    "get_kernel_syms": {
+      "CustomHandler": true
+    },
+    "query_module": {
+      "CustomHandler": true
+    },
+    "quotactl": {
+      "CustomHandler": true
+    },
+    "nfsservctl": {
+      "CustomHandler": true
+    },
+    "getpmsg": {
+      "CustomHandler": true
+    },
+    "putpmsg": {
+      "CustomHandler": true
+    },
+    "afs_syscall": {
+      "CustomHandler": true
+    },
+    "tuxcall": {
+      "CustomHandler": true
+    },
+    "security": {
+      "CustomHandler": true
+    },
+    "gettid": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "readahead": {
+      "ArchSpecific": true
+    },
+    "setxattr": {
+      "CustomHandler": true
+    },
+    "lsetxattr": {
+      "CustomHandler": true
+    },
+    "fsetxattr": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getxattr": {
+      "CustomHandler": true
+    },
+    "lgetxattr": {
+      "CustomHandler": true
+    },
+    "fgetxattr": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "listxattr": {
+      "CustomHandler": true
+    },
+    "llistxattr": {
+      "CustomHandler": true
+    },
+    "flistxattr": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "removexattr": {
+      "CustomHandler": true
+    },
+    "lremovexattr": {
+      "CustomHandler": true
+    },
+    "fremovexattr": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "tkill": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::DEFAULT",
+      "Comment": [
+        "Needs default flags to ensure state synchronization.",
+        "Can cause thread to signal itself and want to ensure everything is synchronized."
+      ]
+    },
+    "time": {
+      "ArchSpecific": true
+    },
+    "futex": {
+      "ArchSpecific": true
+    },
+    "sched_setaffinity": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_getaffinity": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "set_thread_area": {
+      "ArchSpecific": true
+    },
+    "io_setup": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "io_destroy": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "io_getevents": {
+      "ArchSpecific": true
+    },
+    "io_submit": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "io_cancel": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "get_thread_area": {
+      "ArchSpecific": true
+    },
+    "lookup_dcookie": {
+      "CustomHandler": true
+    },
+    "epoll_create": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "epoll_ctl_old": {
+      "CustomHandler": true
+    },
+    "epoll_wait_old": {
+      "CustomHandler": true
+    },
+    "remap_file_pages": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getdents64": {
+      "ArchSpecific": true
+    },
+    "set_tid_address": {
+      "CustomHandler": true
+    },
+    "restart_syscall": {
+      "CustomHandler": true
+    },
+    "semtimedop": {
+      "ArchSpecific": true
+    },
+    "fadvise64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timer_create": {
+      "ArchSpecific": true
+    },
+    "timer_settime": {
+      "ArchSpecific": true
+    },
+    "timer_gettime": {
+      "ArchSpecific": true
+    },
+    "timer_getoverrun": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timer_delete": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_settime": {
+      "ArchSpecific": true
+    },
+    "clock_gettime": {
+      "ArchSpecific": true
+    },
+    "clock_getres": {
+      "ArchSpecific": true
+    },
+    "clock_nanosleep": {
+      "ArchSpecific": true
+    },
+    "exit_group": {
+      "CustomHandler": true
+    },
+    "epoll_wait": {
+      "ArchSpecific": true
+    },
+    "epoll_ctl": {
+      "ArchSpecific": true
+    },
+    "tgkill": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::DEFAULT",
+      "Comment": [
+        "Needs default flags to ensure state synchronization.",
+        "Can cause thread to signal itself and want to ensure everything is synchronized."
+      ]
+    },
+    "utimes": {
+      "ArchSpecific": true
+    },
+    "vserver": {
+      "CustomHandler": true
+    },
+    "mbind": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "set_mempolicy": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "get_mempolicy": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_open": {
+      "ArchSpecific": true
+    },
+    "mq_unlink": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_timedsend": {
+      "ArchSpecific": true
+    },
+    "mq_timedreceive": {
+      "ArchSpecific": true
+    },
+    "mq_notify": {
+      "ArchSpecific": true
+    },
+    "mq_getsetattr": {
+      "ArchSpecific": true
+    },
+    "kexec_load": {
+      "CustomHandler": true
+    },
+    "waitid": {
+      "ArchSpecific": true
+    },
+    "add_key": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "request_key": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "keyctl": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "ioprio_set": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "ioprio_get": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "inotify_init": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "inotify_add_watch": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "inotify_rm_watch": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "migrate_pages": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "openat": {
+      "CustomHandler": true
+    },
+    "mkdirat": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mknodat": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "fchownat": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "futimesat": {
+      "ArchSpecific": true
+    },
+    "newfstatat": {
+      "ArchSpecific": true
+    },
+    "unlinkat": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "renameat": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "linkat": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "symlinkat": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "readlinkat": {
+      "CustomHandler": true
+    },
+    "fchmodat": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "faccessat": {
+      "CustomHandler": true
+    },
+    "pselect6": {
+      "ArchSpecific": true
+    },
+    "ppoll": {
+      "ArchSpecific": true
+    },
+    "unshare": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "set_robust_list": {
+      "ArchSpecific": true
+    },
+    "get_robust_list": {
+      "ArchSpecific": true
+    },
+    "splice": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "tee": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "sync_file_range": {
+      "ArchSpecific": true
+    },
+    "vmsplice": {
+      "ArchSpecific": true
+    },
+    "move_pages": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "utimensat": {
+      "ArchSpecific": true
+    },
+    "epoll_pwait": {
+      "ArchSpecific": true
+    },
+    "signalfd": {
+      "CustomHandler": true
+    },
+    "timerfd_create": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "eventfd": {
+      "CustomHandler": true
+    },
+    "fallocate": {
+      "ArchSpecific": true
+    },
+    "timerfd_settime": {
+      "ArchSpecific": true
+    },
+    "timerfd_gettime": {
+      "ArchSpecific": true
+    },
+    "accept4": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "signalfd4": {
+      "CustomHandler": true
+    },
+    "eventfd2": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "epoll_create1": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "dup3": {
+      "CustomHandler": true
+    },
+    "pipe2": {
+      "CustomHandler": true
+    },
+    "inotify_init1": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "preadv": {
+      "ArchSpecific": true
+    },
+    "pwritev": {
+      "ArchSpecific": true
+    },
+    "rt_tgsigqueueinfo": {
+      "ArchSpecific": true
+    },
+    "perf_event_open": {
+      "CustomHandler": true
+    },
+    "recvmmsg": {
+      "ArchSpecific": true
+    },
+    "fanotify_init": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "fanotify_mark": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "prlimit_64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "name_to_handle_at": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "open_by_handle_at": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "clock_adjtime": {
+      "ArchSpecific": true
+    },
+    "syncfs": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendmmsg": {
+      "ArchSpecific": true
+    },
+    "setns": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getcpu": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Technically used to take three arguments",
+        "Third argument is now ignored."
+      ]
+    },
+    "process_vm_readv": {
+      "ArchSpecific": true
+    },
+    "process_vm_writev": {
+      "ArchSpecific": true
+    },
+    "kcmp": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "finit_module": {
+      "CustomHandler": true
+    },
+    "sched_setattr": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_getattr": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "renameat2": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "seccomp": {
+      "CustomHandler": true
+    },
+    "getrandom": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "memfd_create": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "kexec_file_load": {
+      "CustomHandler": true
+    },
+    "bpf": {
+      "CustomHandler": true
+    },
+    "execveat": {
+      "CustomHandler": true
+    },
+    "userfaultfd": {
+      "CustomHandler": true
+    },
+    "membarrier": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mlock2": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "copy_file_range": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "preadv2": {
+      "ArchSpecific": true
+    },
+    "pwritev2": {
+      "ArchSpecific": true
+    },
+    "pkey_mprotect": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pkey_alloc": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pkey_free": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "statx": {
+      "CustomHandler": true
+    },
+    "io_pgetevents": {
+      "ArchSpecific": true
+    },
+    "rseq": {
+      "CustomHandler": true
+    },
+    "pidfd_send_signal": {
+      "ArchSpecific": true
+    },
+    "io_uring_setup": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "io_uring_enter": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "io_uring_register": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "open_tree": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "move_mount": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "fsopen": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "fsconfig": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "fsmount": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "fspick": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "pidfd_open": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.3.0"
+    },
+    "clone3": {
+      "CustomHandler": true
+    },
+    "close_range": {
+      "CustomHandler": true
+    },
+    "openat2": {
+      "CustomHandler": true
+    },
+    "pidfd_getfd": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.8.0"
+    },
+    "faccessat2": {
+      "CustomHandler": true
+    },
+    "process_madvise": {
+      "ArchSpecific": true
+    },
+    "epoll_pwait2": {
+      "ArchSpecific": true
+    },
+    "mount_setattr": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.12.0"
+    },
+    "quotactl_fd": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.14.0"
+    },
+    "landlock_create_ruleset": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.13.0"
+    },
+    "landlock_add_rule": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.13.0"
+    },
+    "landlock_restrict_self": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.13.0"
+    },
+    "memfd_secret": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.14.0"
+    },
+    "process_mrelease": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.15.0"
+    },
+    "futex_waitv": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.16.0"
+    },
+    "set_mempolicy_home_node": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.17.0"
+    }
+  },
+  "x64": {
+    "stat": {
+      "CustomHandler": true
+    },
+    "fstat": {
+      "CustomHandler": true
+    },
+    "lstat": {
+      "CustomHandler": true
+    },
+    "ioctl": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pread_64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pwrite_64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "readv": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "writev": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "select": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "_shmat": {
+      "CustomHandler": true
+    },
+    "dup": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "dup2": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "nanosleep": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getitimer": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setitimer": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendfile": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "accept": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendmsg": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "recvmsg": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setsockopt": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getsockopt": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "wait4": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "semop": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "semctl": {
+      "CustomHandler": true
+    },
+    "_shmdt": {
+      "CustomHandler": true
+    },
+    "fcntl": {
+      "CustomHandler": true
+    },
+    "getdents": {
+      "CustomHandler": true
+    },
+    "gettimeofday": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getrlimit": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "getrusage": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sysinfo": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "times": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "rt_sigqueueinfo": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "utime": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "fstatfs": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sched_rr_get_interval": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mlockall": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "munlockall": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "adjtimex": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "setrlimit": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "settimeofday": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "readahead": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "time": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "futex": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "set_thread_area": {
+      "CustomHandler": true
+    },
+    "io_getevents": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "get_thread_area": {
+      "CustomHandler": true
+    },
+    "getdents64": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "semtimedop": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timer_create": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timer_settime": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timer_gettime": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_settime": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_gettime": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_getres": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_nanosleep": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "epoll_wait": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "epoll_ctl": {
+      "CustomHandler": true
+    },
+    "utimes": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "mq_open": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_timedsend": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_timedreceive": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_notify": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "mq_getsetattr": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "waitid": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "futimesat": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "newfstatat": {
+      "CustomHandler": true
+    },
+    "pselect6": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "ppoll": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "set_robust_list": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "get_robust_list": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sync_file_range": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "vmsplice": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "utimensat": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "epoll_pwait": {
+      "CustomHandler": true
+    },
+    "fallocate": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "timerfd_settime": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "Comment": [
+        "Flags don't need remapped"
+      ]
+    },
+    "timerfd_gettime": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "preadv": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pwritev": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "rt_tgsigqueueinfo": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "recvmmsg": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "clock_adjtime": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "sendmmsg": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "process_vm_readv": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "process_vm_writev": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "preadv2": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pwritev2": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "io_pgetevents": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY"
+    },
+    "pidfd_send_signal": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.1.0"
+    },
+    "process_madvise": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "5.10.0"
+    },
+    "epoll_pwait2": {
+      "CustomHandler": true
+    },
+    "cachestat": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "6.5.0"
+    },
+    "fchmodat2": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "MinimumKernel": "6.6.0"
+    },
+    "map_shadow_stack": {
+      "CustomHandler": true
+    }
+  },
+  "x32": {
+    "lchown32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "lchown"
+    },
+    "getuid32": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getuid"
+    },
+    "getgid32": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getgid"
+    },
+    "geteuid32": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "geteuid"
+    },
+    "getegid32": {
+      "ArgCount": 0,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getegid"
+    },
+    "setreuid32": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setreuid"
+    },
+    "setregid32": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setregid"
+    },
+    "getgroups32": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getgroups"
+    },
+    "setgroups32": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setgroups"
+    },
+    "fchown32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "fchown"
+    },
+    "setresuid32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setresuid"
+    },
+    "getresuid32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getresuid"
+    },
+    "setresgid32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setresgid"
+    },
+    "getresgid32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "getresgid"
+    },
+    "chown32": {
+      "ArgCount": 3,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "chown"
+    },
+    "setuid32": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setuid"
+    },
+    "setgid32": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setgid"
+    },
+    "setfsuid32": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setfsuid"
+    },
+    "setfsgid32": {
+      "ArgCount": 1,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "setfsgid"
+    },
+    "sendfile64":{
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "sendfile",
+      "Comment": [
+        "Linux definition for this is a bit confusing",
+        "Defines offset as compat_loff_t* but loads loff_t worth of data",
+        "count is defined as compat_size_t still"
+      ]
+    },
+    "clock_gettime64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "clock_gettime"
+    },
+    "clock_settime64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "clock_settime"
+    },
+    "clock_adjtime64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "clock_adjtime"
+    },
+    "clock_getres_time64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "clock_getres"
+    },
+    "clock_nanosleep_time64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "clock_nanosleep"
+    },
+    "timer_gettime64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "timer_gettime"
+    },
+    "timer_settime64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "timer_settime"
+    },
+    "timerfd_gettime64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "timerfd_gettime"
+    },
+    "timerfd_settime64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "timerfd_settime"
+    },
+    "utimensat_time64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "utimensat"
+    },
+    "pselect6_time64": {
+      "CustomHandler": true
+    },
+    "ppoll_time64": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "ppoll"
+    },
+    "io_pgetevents_time64": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "io_pgetevents"
+    },
+    "recvmmsg_time64": {
+      "CustomHandler": true
+    },
+    "mq_timedsend_time64": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "mq_timedsend"
+    },
+    "mq_timedreceive_time64": {
+      "ArgCount": 5,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "mq_timedreceive"
+    },
+    "getdents64": {
+      "CustomHandler": true
+    },
+
+    "semtimedop_time64": {
+      "ArgCount": 4,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "semtimedop"
+    },
+    "rt_sigtimedwait_time64": {
+      "CustomHandler": true
+    },
+    "futex_time64": {
+      "ArgCount": 6,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "futex"
+    },
+    "sched_rr_get_interval_time64": {
+      "ArgCount": 2,
+      "Flags": "SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY",
+      "SyscallRedirect": "sched_rr_get_interval"
+    },
+    "stat": {
+      "CustomHandler": true
+    },
+    "fstat": {
+      "CustomHandler": true
+    },
+    "lstat": {
+      "CustomHandler": true
+    },
+    "ioctl": {
+      "CustomHandler": true
+    },
+    "pread_64": {
+      "CustomHandler": true
+    },
+    "pwrite_64": {
+      "CustomHandler": true
+    },
+    "readv": {
+      "CustomHandler": true
+    },
+    "writev": {
+      "CustomHandler": true
+    },
+    "select": {
+      "CustomHandler": true
+    },
+    "_shmat": {
+      "CustomHandler": true
+    },
+    "dup": {
+      "CustomHandler": true
+    },
+    "dup2": {
+      "CustomHandler": true
+    },
+    "nanosleep": {
+      "CustomHandler": true
+    },
+    "getitimer": {
+      "CustomHandler": true
+    },
+    "setitimer": {
+      "CustomHandler": true
+    },
+    "sendfile": {
+      "CustomHandler": true
+    },
+    "sendmsg": {
+      "CustomHandler": true
+    },
+    "recvmsg": {
+      "CustomHandler": true
+    },
+    "setsockopt": {
+      "CustomHandler": true
+    },
+    "getsockopt": {
+      "CustomHandler": true
+    },
+    "wait4": {
+      "CustomHandler": true
+    },
+    "semctl": {
+      "CustomHandler": true
+    },
+    "_shmdt": {
+      "CustomHandler": true
+    },
+    "fcntl": {
+      "CustomHandler": true
+    },
+    "getdents": {
+      "CustomHandler": true
+    },
+    "gettimeofday": {
+      "CustomHandler": true
+    },
+    "getrlimit": {
+      "CustomHandler": true
+    },
+    "getrusage": {
+      "CustomHandler": true
+    },
+    "sysinfo": {
+      "CustomHandler": true
+    },
+    "times": {
+      "CustomHandler": true
+    },
+    "rt_sigqueueinfo": {
+      "CustomHandler": true
+    },
+    "utime": {
+      "CustomHandler": true
+    },
+    "fstatfs": {
+      "CustomHandler": true
+    },
+    "sched_rr_get_interval": {
+      "CustomHandler": true
+    },
+    "mlockall": {
+      "CustomHandler": true
+    },
+    "munlockall": {
+      "CustomHandler": true
+    },
+    "adjtimex": {
+      "CustomHandler": true
+    },
+    "setrlimit": {
+      "CustomHandler": true
+    },
+    "settimeofday": {
+      "CustomHandler": true
+    },
+    "readahead": {
+      "CustomHandler": true
+    },
+    "time": {
+      "CustomHandler": true,
+      "Comment": [
+        "Doesn't exist on AArch64"
+      ]
+    },
+    "futex": {
+      "CustomHandler": true
+    },
+    "set_thread_area": {
+      "CustomHandler": true
+    },
+    "io_getevents": {
+      "CustomHandler": true
+    },
+    "get_thread_area": {
+      "CustomHandler": true
+    },
+    "timer_create": {
+      "CustomHandler": true
+    },
+    "timer_settime": {
+      "CustomHandler": true
+    },
+    "timer_gettime": {
+      "CustomHandler": true
+    },
+    "clock_settime": {
+      "CustomHandler": true
+    },
+    "clock_gettime": {
+      "CustomHandler": true
+    },
+    "clock_getres": {
+      "CustomHandler": true
+    },
+    "clock_nanosleep": {
+      "CustomHandler": true
+    },
+    "epoll_wait": {
+      "CustomHandler": true
+    },
+    "epoll_ctl": {
+      "CustomHandler": true
+    },
+    "utimes": {
+      "CustomHandler": true
+    },
+    "mq_open": {
+      "CustomHandler": true
+    },
+    "mq_timedsend": {
+      "CustomHandler": true
+    },
+    "mq_timedreceive": {
+      "CustomHandler": true
+    },
+    "mq_notify": {
+      "CustomHandler": true
+    },
+    "mq_getsetattr": {
+      "CustomHandler": true
+    },
+    "waitid": {
+      "CustomHandler": true
+    },
+    "futimesat": {
+      "CustomHandler": true
+    },
+    "pselect6": {
+      "CustomHandler": true
+    },
+    "ppoll": {
+      "CustomHandler": true
+    },
+    "set_robust_list": {
+      "CustomHandler": true
+    },
+    "get_robust_list": {
+      "CustomHandler": true
+    },
+    "sync_file_range": {
+      "CustomHandler": true
+    },
+    "vmsplice": {
+      "CustomHandler": true
+    },
+    "utimensat": {
+      "CustomHandler": true
+    },
+    "epoll_pwait": {
+      "CustomHandler": true
+    },
+    "fallocate": {
+      "CustomHandler": true
+    },
+    "timerfd_settime": {
+      "CustomHandler": true
+    },
+    "timerfd_gettime": {
+      "CustomHandler": true
+    },
+    "preadv": {
+      "CustomHandler": true
+    },
+    "pwritev": {
+      "CustomHandler": true
+    },
+    "rt_tgsigqueueinfo": {
+      "CustomHandler": true
+    },
+    "recvmmsg": {
+      "CustomHandler": true
+    },
+    "clock_adjtime": {
+      "CustomHandler": true
+    },
+    "sendmmsg": {
+      "CustomHandler": true
+    },
+    "process_vm_readv": {
+      "CustomHandler": true
+    },
+    "process_vm_writev": {
+      "CustomHandler": true
+    },
+    "preadv2": {
+      "CustomHandler": true
+    },
+    "pwritev2": {
+      "CustomHandler": true
+    },
+    "io_pgetevents": {
+      "CustomHandler": true
+    },
+    "pidfd_send_signal": {
+      "CustomHandler": true
+    },
+    "process_madvise": {
+      "CustomHandler": true
+    },
+    "epoll_pwait2": {
+      "CustomHandler": true
+    }
+  }
+}
