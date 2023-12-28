@@ -513,7 +513,7 @@ void Dispatcher::EmitDispatcher() {
     const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
     for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
       DisasmDecoder->Decode(PCToDecode);
-      auto Output = Disasm.GetOutput();
+      auto Output = Disasm->GetOutput();
       LogMan::Msg::IFmt("{}", Output);
     }
   }

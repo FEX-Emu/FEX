@@ -362,7 +362,9 @@ namespace FEX::VDSO {
   }
 
   void LoadHostVDSO() {
-
+    // dlopen does allocations that FEX can't track.
+    // Ensure we don't run afoul of the glibc fault allocator.
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     void *vdso = dlopen("linux-vdso.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
     if (!vdso) {
       vdso = dlopen("linux-gate.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
