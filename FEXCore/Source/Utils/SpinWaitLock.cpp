@@ -1,6 +1,6 @@
-#include "Utils/FutexSpinWait.h"
+#include "Utils/SpinWaitLock.h"
 
-namespace FEXCore::Utils::FutexSpinWait {
+namespace FEXCore::Utils::SpinWaitLock {
 #ifdef _M_ARM_64
   constexpr uint64_t NanosecondsInSecond = 1'000'000'000ULL;
 

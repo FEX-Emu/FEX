@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-#include "Utils/FutexSpinWait.h"
+#include "Utils/SpinWaitLock.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/EnumUtils.h>
@@ -2105,7 +2105,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     // Lock code mutex during any SIGBUS handling that potentially changes code.
     // Need to be careful to not read any code part-way through modification.
-    FEXCore::Utils::FutexSpinWait::UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
+    FEXCore::Utils::SpinWaitLock::UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
 
     if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*

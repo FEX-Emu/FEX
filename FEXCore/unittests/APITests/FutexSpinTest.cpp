@@ -1,4 +1,4 @@
-#include "Utils/FutexSpinWait.h"
+#include "Utils/SpinWaitLock.h"
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <thread>
@@ -9,7 +9,7 @@ TEST_CASE("FutexSpin-Timed-8bit") {
   uint8_t Test{};
 
   auto now = std::chrono::high_resolution_clock::now();
-  FEXCore::Utils::FutexSpinWait::Wait(&Test, 1, SleepAmount);
+  FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
   auto end = std::chrono::high_resolution_clock::now();
   auto diff = end - now;
 
@@ -27,7 +27,7 @@ TEST_CASE("FutexSpin-Sleep-8bit") {
   std::thread t([&Test, &SleptAmount, &ActualSpinLoop]() {
     auto now = std::chrono::high_resolution_clock::now();
     ActualSpinLoop.store(1);
-    FEXCore::Utils::FutexSpinWait::Wait(&Test, 1);
+    FEXCore::Utils::SpinWaitLock::Wait(&Test, 1);
     auto end = std::chrono::high_resolution_clock::now();
     SleptAmount = end - now;
   });
@@ -39,7 +39,7 @@ TEST_CASE("FutexSpin-Sleep-8bit") {
   std::this_thread::sleep_for(SleepAmount);
 
   // Set the futex
-  FEXCore::Utils::FutexSpinWait::lock(&Test);
+  FEXCore::Utils::SpinWaitLock::lock(&Test);
 
   // Wait for the thread to get done.
   t.join();
@@ -52,7 +52,7 @@ TEST_CASE("FutexSpin-Timed-16bit") {
   uint16_t Test{};
 
   auto now = std::chrono::high_resolution_clock::now();
-  FEXCore::Utils::FutexSpinWait::Wait(&Test, 1, SleepAmount);
+  FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
   auto end = std::chrono::high_resolution_clock::now();
   auto diff = end - now;
 
@@ -64,7 +64,7 @@ TEST_CASE("FutexSpin-Timed-32bit") {
   uint32_t Test{};
 
   auto now = std::chrono::high_resolution_clock::now();
-  FEXCore::Utils::FutexSpinWait::Wait(&Test, 1, SleepAmount);
+  FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
   auto end = std::chrono::high_resolution_clock::now();
   auto diff = end - now;
 
@@ -76,7 +76,7 @@ TEST_CASE("FutexSpin-Timed-64bit") {
   uint64_t Test{};
 
   auto now = std::chrono::high_resolution_clock::now();
-  FEXCore::Utils::FutexSpinWait::Wait(&Test, 1, SleepAmount);
+  FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
   auto end = std::chrono::high_resolution_clock::now();
   auto diff = end - now;
 

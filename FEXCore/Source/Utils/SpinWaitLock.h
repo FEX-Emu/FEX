@@ -3,7 +3,7 @@
 #include <mutex>
 #include <type_traits>
 
-namespace FEXCore::Utils::FutexSpinWait {
+namespace FEXCore::Utils::SpinWaitLock {
   /**
    * @brief This provides routines to implement implement an "efficient spin-loop" using ARM's WFE and exclusive monitor interfaces.
    *
@@ -268,11 +268,11 @@ namespace FEXCore::Utils::FutexSpinWait {
     public:
       UniqueSpinMutex(T *Futex)
         : Futex {Futex} {
-          FEXCore::Utils::FutexSpinWait::lock(Futex);
+          FEXCore::Utils::SpinWaitLock::lock(Futex);
         }
 
       ~UniqueSpinMutex() {
-        FEXCore::Utils::FutexSpinWait::unlock(Futex);
+        FEXCore::Utils::SpinWaitLock::unlock(Futex);
       }
     private:
       T *Futex;
