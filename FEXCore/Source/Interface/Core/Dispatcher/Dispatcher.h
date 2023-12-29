@@ -31,18 +31,14 @@ class ContextImpl;
 
 namespace FEXCore::CPU {
 
-struct DispatcherConfig {
-  bool StaticRegisterAllocation = false;
-};
-
 #define STATE_PTR(STATE_TYPE, FIELD) \
   STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
 
 class Dispatcher final : public Arm64Emitter {
 public:
-  static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
+  static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl *CTX);
 
-  Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config);
+  Dispatcher(FEXCore::Context::ContextImpl *ctx);
   ~Dispatcher();
 
   /**
@@ -106,11 +102,8 @@ public:
     }
   }
 
-  const DispatcherConfig& GetConfig() const { return config; }
-
 protected:
   FEXCore::Context::ContextImpl *CTX;
-  DispatcherConfig config;
 
   using AsmDispatch = void(*)(FEXCore::Core::CpuStateFrame *Frame);
   using JITCallback = void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);

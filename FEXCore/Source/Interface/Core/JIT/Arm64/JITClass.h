@@ -226,9 +226,6 @@ private:
   void VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarUnaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> Vector2);
 
   // Runtime selection;
-  // Load and store register style.
-  OpType RT_LoadRegister;
-  OpType RT_StoreRegister;
   // Load and store TSO memory style
   OpType RT_LoadMemTSO;
   OpType RT_StoreMemTSO;
@@ -236,9 +233,6 @@ private:
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
   // Dynamic Dispatcher supporting operations
-  DEF_OP(LoadRegisterSRA);
-  DEF_OP(StoreRegisterSRA);
-
   DEF_OP(ParanoidLoadMemTSO);
   DEF_OP(ParanoidStoreMemTSO);
 

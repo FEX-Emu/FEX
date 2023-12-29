@@ -48,7 +48,6 @@ namespace Core {
     virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
 
     struct SignalDelegatorConfig {
-      bool StaticRegisterAllocation{};
       bool SupportsAVX{};
 
       // Dispatcher information

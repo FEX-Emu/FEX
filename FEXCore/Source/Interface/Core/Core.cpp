@@ -268,12 +268,10 @@ namespace FEXCore::Context {
       return false;
     }
 
-    DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
-    Dispatcher = FEXCore::CPU::Dispatcher::Create(this, DispatcherConfig);
+    Dispatcher = FEXCore::CPU::Dispatcher::Create(this);
 
     // Set up the SignalDelegator config since core is initialized.
     FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {
-      .StaticRegisterAllocation = DispatcherConfig.StaticRegisterAllocation,
       .SupportsAVX = HostFeatures.SupportsAVX,
 
       .DispatcherBegin = Dispatcher->Start,
@@ -375,9 +373,7 @@ namespace FEXCore::Context {
 
     Thread->CTX = this;
 
-    bool DoSRA = DispatcherConfig.StaticRegisterAllocation;
-
-    Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
+    Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT);
     Thread->PassManager->AddDefaultValidationPasses();
 
     Thread->PassManager->RegisterSyscallHandler(SyscallHandler);
@@ -385,7 +381,7 @@ namespace FEXCore::Context {
     // Create CPU backend
     switch (Config.Core) {
     case FEXCore::Config::CONFIG_IRJIT:
-      Thread->PassManager->InsertRegisterAllocationPass(DoSRA, HostFeatures.SupportsAVX);
+      Thread->PassManager->InsertRegisterAllocationPass(HostFeatures.SupportsAVX);
       Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
       break;
     case FEXCore::Config::CONFIG_CUSTOM:

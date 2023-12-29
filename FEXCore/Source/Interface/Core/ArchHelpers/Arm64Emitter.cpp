@@ -611,10 +611,6 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
   mrs(TmpReg, ARMEmitter::SystemRegister::NZCV);
   str(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
 
-  if (!StaticRegisterAllocation()) {
-    return;
-  }
-
   // PF/AF are special, remove them from the mask
   uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
   unsigned PFAFSpillMask = GPRSpillMask & PFAFMask;
@@ -727,10 +723,6 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   // omit this? Might help x87 perf? Future idea.
   ldr(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
   msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
-
-  if (!StaticRegisterAllocation()) {
-    return;
-  }
 
   if (FPRs) {
     // Set up predicate registers.

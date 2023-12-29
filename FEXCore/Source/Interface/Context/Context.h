@@ -210,7 +210,6 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
       FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
       FEX_CONFIG_OPT(ThunkConfigFile, THUNKCONFIG);
-      FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
       FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
       FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
@@ -391,7 +390,6 @@ namespace FEXCore::Context {
     std::shared_mutex CustomIRMutex;
     std::atomic<bool> HasCustomIRHandlers{};
     fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
-    FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

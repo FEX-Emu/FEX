@@ -347,8 +347,7 @@
         "Desc": ["Loads a value from the static-ra context with offset",
                  "Dest = Ctx[Offset]"
                 ],
-        "DestSize": "Size",
-        "DynamicDispatch": true
+        "DestSize": "Size"
       },
 
       "StoreRegister SSA:$Value, i1:$IsPrewrite, u32:$Offset, RegisterClass:$Class, RegisterClass:$StaticClass, u8:#Size": {
@@ -359,7 +358,6 @@
                  "Truncates if value's type is too large"
                 ],
         "DestSize": "Size",
-        "DynamicDispatch": true,
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
         ]
