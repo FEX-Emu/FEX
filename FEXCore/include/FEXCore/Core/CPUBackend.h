@@ -98,6 +98,11 @@ namespace CPU {
 
       // Offset after this block to the start of the RIP entries.
       uint32_t OffsetToRIPEntries;
+
+      // Shared-code modification spin-loop futex.
+      uint32_t SpinLockFutex;
+
+      uint32_t _Pad;
     };
 
     // Entries that live after the JITCodeTail.
