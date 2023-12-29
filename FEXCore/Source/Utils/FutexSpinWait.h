@@ -263,4 +263,18 @@ namespace FEXCore::Utils::FutexSpinWait {
 #undef SPINLOOP_16BIT
 #undef SPINLOOP_32BIT
 #undef SPINLOOP_64BIT
+  template<typename T>
+  class UniqueSpinMutex final {
+    public:
+      UniqueSpinMutex(T *Futex)
+        : Futex {Futex} {
+          FEXCore::Utils::FutexSpinWait::lock(Futex);
+        }
+
+      ~UniqueSpinMutex() {
+        FEXCore::Utils::FutexSpinWait::unlock(Futex);
+      }
+    private:
+      T *Futex;
+  };
 }
