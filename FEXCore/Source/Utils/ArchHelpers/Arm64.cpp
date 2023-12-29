@@ -2044,9 +2044,11 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     uint32_t Size = (Instr & 0xC000'0000) >> 30;
     uint32_t AddrReg = (Instr >> 5) & 0x1F;
     uint32_t DataReg = Instr & 0x1F;
-    if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
-        (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
-      if (ParanoidTSO) {
+
+    // ParanoidTSO path doesn't modify any code.
+    if (ParanoidTSO) [[unlikely]] {
+      if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
+          (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
@@ -2056,20 +2058,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
           return NotHandled;
         }
       }
-      else {
-        uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
-        LDR |= Size << 30;
-        LDR |= AddrReg << 5;
-        LDR |= DataReg;
-        PC[0] = LDR;
-        PC[1] = DMB_LD; // Back-patch the half-barrier.
-        ClearICache(&PC[-1], 16);
-        // With the instruction modified, now execute again.
-        return std::make_pair(true, 0);
-      }
-    }
-    else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
-      if (ParanoidTSO) {
+      else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
         if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
@@ -2079,22 +2068,9 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
           return NotHandled;
         }
       }
-      else {
-        uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
-        STR |= Size << 30;
-        STR |= AddrReg << 5;
-        STR |= DataReg;
-        PC[-1] = DMB; // Back-patch the half-barrier.
-        PC[0] = STR;
-        ClearICache(&PC[-1], 16);
-        // Back up one instruction and have another go
-        return std::make_pair(true, -4);
-      }
-    }
-    else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
-      // Extract the 9-bit offset from the instruction
-      int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
-      if (ParanoidTSO) {
+      else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
+        // Extract the 9-bit offset from the instruction
+        int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, Offset)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
@@ -2104,23 +2080,9 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
           return NotHandled;
         }
       }
-      else {
-        uint32_t LDUR = 0b0011'1000'0100'0000'0000'0000'0000'0000;
-        LDUR |= Size << 30;
-        LDUR |= AddrReg << 5;
-        LDUR |= DataReg;
-        LDUR |= Instr & (0b1'1111'1111 << 9);
-        PC[0] = LDUR;
-        PC[1] = DMB_LD; // Back-patch the half-barrier.
-        ClearICache(&PC[-1], 16);
-        // With the instruction modified, now execute again.
-        return std::make_pair(true, 0);
-      }
-    }
-    else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
-      // Extract the 9-bit offset from the instruction
-      int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
-      if (ParanoidTSO) {
+      else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
+        // Extract the 9-bit offset from the instruction
+        int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
         if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
@@ -2130,18 +2092,55 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
           return NotHandled;
         }
       }
-      else {
-        uint32_t STUR = 0b0011'1000'0000'0000'0000'0000'0000'0000;
-        STUR |= Size << 30;
-        STUR |= AddrReg << 5;
-        STUR |= DataReg;
-        STUR |= Instr & (0b1'1111'1111 << 9);
-        PC[-1] = DMB;  // Back-patch the half-barrier.
-        PC[0] = STUR;
-        ClearICache(&PC[-1], 16);
-        // Back up one instruction and have another go
-        return std::make_pair(true, -4);
-      }
+    }
+
+    if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
+        (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
+      uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+      LDR |= Size << 30;
+      LDR |= AddrReg << 5;
+      LDR |= DataReg;
+      PC[0] = LDR;
+      PC[1] = DMB_LD; // Back-patch the half-barrier.
+      ClearICache(&PC[-1], 16);
+      // With the instruction modified, now execute again.
+      return std::make_pair(true, 0);
+    }
+    else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
+      uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+      STR |= Size << 30;
+      STR |= AddrReg << 5;
+      STR |= DataReg;
+      PC[-1] = DMB; // Back-patch the half-barrier.
+      PC[0] = STR;
+      ClearICache(&PC[-1], 16);
+      // Back up one instruction and have another go
+      return std::make_pair(true, -4);
+    }
+    else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
+      // Extract the 9-bit offset from the instruction
+      uint32_t LDUR = 0b0011'1000'0100'0000'0000'0000'0000'0000;
+      LDUR |= Size << 30;
+      LDUR |= AddrReg << 5;
+      LDUR |= DataReg;
+      LDUR |= Instr & (0b1'1111'1111 << 9);
+      PC[0] = LDUR;
+      PC[1] = DMB_LD; // Back-patch the half-barrier.
+      ClearICache(&PC[-1], 16);
+      // With the instruction modified, now execute again.
+      return std::make_pair(true, 0);
+    }
+    else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
+      uint32_t STUR = 0b0011'1000'0000'0000'0000'0000'0000'0000;
+      STUR |= Size << 30;
+      STUR |= AddrReg << 5;
+      STUR |= DataReg;
+      STUR |= Instr & (0b1'1111'1111 << 9);
+      PC[-1] = DMB;  // Back-patch the half-barrier.
+      PC[0] = STUR;
+      ClearICache(&PC[-1], 16);
+      // Back up one instruction and have another go
+      return std::make_pair(true, -4);
     }
     else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
       //Should be compare and swap pair only. LDAXP not used elsewhere
