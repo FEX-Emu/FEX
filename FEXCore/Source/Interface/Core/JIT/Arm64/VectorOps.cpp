@@ -5009,42 +5009,50 @@ DEF_OP(VTBX1) {
   if (Dst != VectorSrcDst) {
     switch (OpSize) {
       case 8: {
-        mov(Dst.D(), VectorSrcDst.D());
+        mov(VTMP1.D(), VectorSrcDst.D());
+        tbx(VTMP1.D(), VectorTable.Q(), VectorIndices.D());
+        mov(Dst.D(), VTMP1.D());
         break;
       }
       case 16: {
-        mov(Dst.Q(), VectorSrcDst.Q());
+        mov(VTMP1.Q(), VectorSrcDst.Q());
+        tbx(VTMP1.Q(), VectorTable.Q(), VectorIndices.Q());
+        mov(Dst.Q(), VTMP1.Q());
         break;
       }
       case 32: {
-        mov(Dst.Z(), VectorSrcDst.Z());
+        LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
+                            "Host does not support SVE. Cannot perform 256-bit table lookup");
+        mov(VTMP1.Z(), VectorSrcDst.Z());
+        tbx(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), VectorTable.Z(), VectorIndices.Z());
+        mov(Dst.Z(), VTMP1.Z());
         break;
       }
       default:
         LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
         break;
     }
-  }
+  } else {
+    switch (OpSize) {
+      case 8: {
+        tbx(VectorSrcDst.D(), VectorTable.Q(), VectorIndices.D());
+        break;
+      }
+      case 16: {
+        tbx(VectorSrcDst.Q(), VectorTable.Q(), VectorIndices.Q());
+        break;
+      }
+      case 32: {
+        LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
+                            "Host does not support SVE. Cannot perform 256-bit table lookup");
 
-  switch (OpSize) {
-    case 8: {
-      tbx(Dst.D(), VectorTable.Q(), VectorIndices.D());
-      break;
+        tbx(ARMEmitter::SubRegSize::i8Bit, VectorSrcDst.Z(), VectorTable.Z(), VectorIndices.Z());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+        break;
     }
-    case 16: {
-      tbx(Dst.Q(), VectorTable.Q(), VectorIndices.Q());
-      break;
-    }
-    case 32: {
-      LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                          "Host does not support SVE. Cannot perform 256-bit table lookup");
-
-      tbx(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable.Z(), VectorIndices.Z());
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
-      break;
   }
 }
 
