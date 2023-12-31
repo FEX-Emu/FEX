@@ -71,32 +71,32 @@ namespace FEXCore::Utils::SpinWaitLock {
         __asm volatile(SPINLOOP_8BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 2) {
         __asm volatile(SPINLOOP_16BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 4) {
         __asm volatile(SPINLOOP_32BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 8) {
         __asm volatile(SPINLOOP_64BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else {
@@ -132,32 +132,32 @@ namespace FEXCore::Utils::SpinWaitLock {
         __asm volatile(SPINLOOP_8BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 2) {
         __asm volatile(SPINLOOP_16BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 4) {
         __asm volatile(SPINLOOP_32BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else if constexpr (sizeof(T) == 8) {
         __asm volatile(SPINLOOP_64BIT
           : [Result] "=r" (Result)
           , [Tmp] "=r" (Tmp)
-          : [Futex] "r" (Futex)
-          , [ExpectedValue] "r" (ExpectedValue)
+          , [Futex] "+r" (Futex)
+          : [ExpectedValue] "r" (ExpectedValue)
           : "memory");
       }
       else {
