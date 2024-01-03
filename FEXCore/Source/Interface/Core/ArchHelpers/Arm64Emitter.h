@@ -238,7 +238,6 @@ protected:
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
-  FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };
 
 }

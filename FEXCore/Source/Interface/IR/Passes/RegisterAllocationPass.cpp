@@ -223,7 +223,7 @@ namespace {
 
   class ConstrainedRAPass final : public RegisterAllocationPass {
     public:
-      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool OptimizeSRA, bool SupportsAVX);
+      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool SupportsAVX);
       ~ConstrainedRAPass();
       bool Run(IREmitter *IREmit) override;
 
@@ -248,7 +248,6 @@ namespace {
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
-      bool OptimizeSRA;
       bool SupportsAVX;
 
       fextl::vector<LiveRange> LiveRanges;
@@ -297,8 +296,8 @@ namespace {
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
 
-  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _OptimizeSRA, bool _SupportsAVX)
-    : CompactionPass {_CompactionPass}, OptimizeSRA(_OptimizeSRA), SupportsAVX{_SupportsAVX} {
+  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _SupportsAVX)
+    : CompactionPass {_CompactionPass}, SupportsAVX{_SupportsAVX} {
   }
 
   ConstrainedRAPass::~ConstrainedRAPass() {
@@ -1402,8 +1401,7 @@ namespace {
     ResetRegisterGraph(Graph, SSACount);
     FindNodeClasses(Graph, &IR);
     CalculateLiveRange(&IR);
-    if (OptimizeSRA)
-      OptimizeStaticRegisters(&IR);
+    OptimizeStaticRegisters(&IR);
 
     // Linear forward scan based interference calculation is faster for smaller blocks
     // Smarter block based interference calculation is faster for larger blocks
@@ -1470,7 +1468,7 @@ namespace {
     return Changed;
   }
 
-  fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
-    return fextl::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
+  fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool SupportsAVX) {
+    return fextl::make_unique<ConstrainedRAPass>(CompactionPass, SupportsAVX);
   }
 }

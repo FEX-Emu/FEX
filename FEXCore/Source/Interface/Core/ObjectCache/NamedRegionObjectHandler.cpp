@@ -18,7 +18,6 @@ namespace FEXCore::CodeSerialize {
     DefaultSerializationConfig.MultiBlock = ctx->Config.Multiblock;
     DefaultSerializationConfig.TSOEnabled = ctx->Config.TSOEnabled;
     DefaultSerializationConfig.ABILocalFlags = ctx->Config.ABILocalFlags;
-    DefaultSerializationConfig.SRA = ctx->Config.StaticRegisterAllocation;
     DefaultSerializationConfig.ParanoidTSO = ctx->Config.ParanoidTSO;
     DefaultSerializationConfig.Is64BitMode = ctx->Config.Is64BitMode;
     DefaultSerializationConfig.SMCChecks = ctx->Config.SMCChecks;

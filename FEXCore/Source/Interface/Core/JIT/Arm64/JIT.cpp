@@ -594,15 +594,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
   ClearCache();
 
   // Setup dynamic dispatch.
-  if (CTX->Dispatcher->GetConfig().StaticRegisterAllocation) {
-    RT_LoadRegister = &Arm64JITCore::Op_LoadRegisterSRA;
-    RT_StoreRegister = &Arm64JITCore::Op_StoreRegisterSRA;
-  }
-  else {
-    RT_LoadRegister = &Arm64JITCore::Op_LoadRegister;
-    RT_StoreRegister = &Arm64JITCore::Op_StoreRegister;
-  }
-
   if (ParanoidTSO()) {
     RT_LoadMemTSO = &Arm64JITCore::Op_ParanoidLoadMemTSO;
     RT_StoreMemTSO = &Arm64JITCore::Op_ParanoidStoreMemTSO;
@@ -920,7 +911,6 @@ fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *
 
 CPUBackendFeatures GetArm64JITBackendFeatures() {
   return CPUBackendFeatures {
-    .SupportsStaticRegisterAllocation = true,
     .SupportsFlags = true,
     .SupportsSaturatingRoundingShifts = true,
     .SupportsVTBL2 = true,

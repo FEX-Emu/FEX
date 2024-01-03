@@ -24,7 +24,6 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX
 fextl::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass,
-                                                                                  bool OptimizeSRA,
                                                                                   bool SupportsAVX);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 

@@ -66,7 +66,7 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation) {
+void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
@@ -101,8 +101,8 @@ void PassManager::AddDefaultValidationPasses() {
 #endif
 }
 
-void PassManager::InsertRegisterAllocationPass(bool OptimizeSRA, bool SupportsAVX) {
-  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), OptimizeSRA, SupportsAVX), "RA");
+void PassManager::InsertRegisterAllocationPass(bool SupportsAVX) {
+  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), SupportsAVX), "RA");
 }
 
 bool PassManager::Run(IREmitter *IREmit) {

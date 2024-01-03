@@ -31,10 +31,9 @@ static void SleepThread(FEXCore::Context::ContextImpl *CTX, FEXCore::Core::CpuSt
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
-Dispatcher::Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
+Dispatcher::Dispatcher(FEXCore::Context::ContextImpl *ctx)
   : Arm64Emitter(ctx, FEXCore::Allocator::VirtualAlloc(MAX_DISPATCHER_CODE_SIZE, true), MAX_DISPATCHER_CODE_SIZE)
-  , CTX {ctx}
-  , config {config} {
+  , CTX {ctx} {
   EmitDispatcher();
 }
 
@@ -79,9 +78,7 @@ void Dispatcher::EmitDispatcher() {
 
   AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
-  if (config.StaticRegisterAllocation) {
-    FillStaticRegs();
-  }
+  FillStaticRegs();
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
@@ -172,8 +169,7 @@ void Dispatcher::EmitDispatcher() {
 
   {
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     ThreadStopHandlerAddress = GetCursorAddress<uint64_t>();
 
@@ -186,8 +182,7 @@ void Dispatcher::EmitDispatcher() {
 
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
     add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
@@ -204,8 +199,7 @@ void Dispatcher::EmitDispatcher() {
       blr(ARMEmitter::Reg::r2);
     }
 
-    if (config.StaticRegisterAllocation)
-      FillStaticRegs();
+    FillStaticRegs();
 
     ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
     sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
@@ -222,8 +216,7 @@ void Dispatcher::EmitDispatcher() {
   {
     Bind(&NoBlock);
 
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
     add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
@@ -242,8 +235,7 @@ void Dispatcher::EmitDispatcher() {
       blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
     }
 
-    if (config.StaticRegisterAllocation)
-      FillStaticRegs();
+    FillStaticRegs();
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
     sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
@@ -277,8 +269,7 @@ void Dispatcher::EmitDispatcher() {
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
 
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     hlt(0);
   }
@@ -288,8 +279,7 @@ void Dispatcher::EmitDispatcher() {
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGTRAP  = GetCursorAddress<uint64_t>();
 
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     brk(0);
   }
@@ -299,8 +289,7 @@ void Dispatcher::EmitDispatcher() {
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
 
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
@@ -320,8 +309,7 @@ void Dispatcher::EmitDispatcher() {
 
   {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs(TMP1);
+    SpillStaticRegs(TMP1);
 
     ThreadPauseHandlerAddress = GetCursorAddress<uint64_t>();
     // We are pausing, this means the frontend should be waiting for this thread to idle
@@ -388,8 +376,7 @@ void Dispatcher::EmitDispatcher() {
     str(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, State.rip));
 
     // load static regs
-    if (config.StaticRegisterAllocation)
-      FillStaticRegs();
+    FillStaticRegs();
 
     // Now go back to the regular dispatcher loop
     b(&LoopTop);
@@ -558,8 +545,8 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) 
   }
 }
 
-fextl::unique_ptr<Dispatcher> Dispatcher::Create(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
-  return fextl::make_unique<Dispatcher>(CTX, Config);
+fextl::unique_ptr<Dispatcher> Dispatcher::Create(FEXCore::Context::ContextImpl *CTX) {
+  return fextl::make_unique<Dispatcher>(CTX);
 }
 
 }

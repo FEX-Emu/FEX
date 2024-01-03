@@ -1175,41 +1175,39 @@ namespace FEX::HLE {
     // Spill the SRA regardless of signal handler type
     // We are going to be returning to the top of the dispatcher which will fill again
     // Otherwise we might load garbage
-    if (Config.StaticRegisterAllocation) {
-      if (WasInJIT) {
-        uint32_t IgnoreMask{};
+    if (WasInJIT) {
+      uint32_t IgnoreMask{};
 #ifdef _M_ARM_64
-        if (Frame->InSyscallInfo != 0) {
-          // We are in a syscall, this means we are in a weird register state
-          // We need to spill SRA but only some of it, since some values have already been spilled
-          // Lower 16 bits tells us which registers are already spilled to the context
-          // So we ignore spilling those ones
-          IgnoreMask = Frame->InSyscallInfo & 0xFFFF;
-        }
-        else {
-          // We must spill everything
-          IgnoreMask = 0;
-        }
+      if (Frame->InSyscallInfo != 0) {
+        // We are in a syscall, this means we are in a weird register state
+        // We need to spill SRA but only some of it, since some values have already been spilled
+        // Lower 16 bits tells us which registers are already spilled to the context
+        // So we ignore spilling those ones
+        IgnoreMask = Frame->InSyscallInfo & 0xFFFF;
+      }
+      else {
+        // We must spill everything
+        IgnoreMask = 0;
+      }
 #endif
 
-        // We are in jit, SRA must be spilled
-        SpillSRA(Thread, ucontext, IgnoreMask);
+      // We are in jit, SRA must be spilled
+      SpillSRA(Thread, ucontext, IgnoreMask);
 
-        ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
+      ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
 
-        // We are leaving the syscall information behind. Make sure to store the previous state.
-        ContextBackup->InSyscallInfo = Thread->CurrentFrame->InSyscallInfo;
-        Thread->CurrentFrame->InSyscallInfo = 0;
-      } else {
-        if (!IsAddressInDispatcher(OldPC)) {
-          // This is likely to cause issues but in some cases it isn't fatal
-          // This can also happen if we have put a signal on hold, then we just reenabled the signal
-          // So we are in the syscall handler
-          // Only throw a log message in this case
-          if constexpr (false) {
-            // XXX: Messages in the signal handler can cause us to crash
-            LogMan::Msg::EFmt("Signals in dispatcher have unsynchronized context");
-          }
+      // We are leaving the syscall information behind. Make sure to store the previous state.
+      ContextBackup->InSyscallInfo = Thread->CurrentFrame->InSyscallInfo;
+      Thread->CurrentFrame->InSyscallInfo = 0;
+    } else {
+      if (!IsAddressInDispatcher(OldPC)) {
+        // This is likely to cause issues but in some cases it isn't fatal
+        // This can also happen if we have put a signal on hold, then we just reenabled the signal
+        // So we are in the syscall handler
+        // Only throw a log message in this case
+        if constexpr (false) {
+          // XXX: Messages in the signal handler can cause us to crash
+          LogMan::Msg::EFmt("Signals in dispatcher have unsynchronized context");
         }
       }
     }
@@ -1314,15 +1312,13 @@ namespace FEX::HLE {
       // Store our thread state so we can come back to this
       StoreThreadState(Thread, Signal, ucontext);
 
-      if (Config.StaticRegisterAllocation && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+      if (Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
         // We are in jit, SRA must be spilled
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadPauseHandlerAddressSpillSRA);
       } else {
-        if (Config.StaticRegisterAllocation) {
-          // We are in non-jit, SRA is already spilled
-          LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
-                             "Signals in dispatcher have unsynchronized context");
-        }
+        // We are in non-jit, SRA is already spilled
+        LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
+                           "Signals in dispatcher have unsynchronized context");
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadPauseHandlerAddress);
       }
 
@@ -1347,15 +1343,13 @@ namespace FEX::HLE {
       Thread->CurrentFrame->SignalHandlerRefCounter = 0;
 
       // Set the new PC
-      if (Config.StaticRegisterAllocation && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+      if (Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
         // We are in jit, SRA must be spilled
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadStopHandlerAddressSpillSRA);
       } else {
-        if (Config.StaticRegisterAllocation) {
-          // We are in non-jit, SRA is already spilled
-          LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
-                             "Signals in dispatcher have unsynchronized context");
-        }
+        // We are in non-jit, SRA is already spilled
+        LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
+                           "Signals in dispatcher have unsynchronized context");
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadStopHandlerAddress);
       }
 

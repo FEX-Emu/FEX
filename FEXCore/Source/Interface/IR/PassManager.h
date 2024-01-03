@@ -45,7 +45,7 @@ protected:
 class PassManager final {
   friend class InlineCallOptimization;
 public:
-  void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
+  void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants);
   void AddDefaultValidationPasses();
   Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
     auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
@@ -56,7 +56,7 @@ public:
     return PassPtr;
   }
 
-  void InsertRegisterAllocationPass(bool OptimizeSRA, bool SupportsAVX);
+  void InsertRegisterAllocationPass(bool SupportsAVX);
 
   bool Run(IREmitter *IREmit);
 

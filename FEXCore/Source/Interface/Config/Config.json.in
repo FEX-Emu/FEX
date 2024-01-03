@@ -260,13 +260,6 @@
           "Disables optimizations passes for debugging."
         ]
       },
-      "SRA": {
-        "Type": "bool",
-        "Default": "true",
-        "Desc": [
-          "Set to false to disable Static Register Allocation"
-        ]
-      },
       "GlobalJITNaming": {
         "Type": "bool",
         "Default": "false",
