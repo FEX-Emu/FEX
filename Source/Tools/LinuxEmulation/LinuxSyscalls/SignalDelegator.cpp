@@ -7,7 +7,6 @@ $end_info$
 */
 
 #include "LinuxSyscalls/SignalDelegator.h"
-#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -1359,7 +1358,7 @@ namespace FEX::HLE {
       if (Thread->RunningEvents.ThreadSleeping) {
         // If the thread was sleeping then its idle counter was decremented
         // Reincrement it here to not break logic
-        FEX::HLE::_SyscallHandler->TM.IncrementIdleRefCount();
+        CTX->IncrementIdleRefCount();
       }
 
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);

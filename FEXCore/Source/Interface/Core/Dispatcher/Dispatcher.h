@@ -105,6 +105,8 @@ public:
 protected:
   FEXCore::Context::ContextImpl *CTX;
 
+  static void SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::CpuStateFrame *Frame);
+
   using AsmDispatch = void(*)(FEXCore::Core::CpuStateFrame *Frame);
   using JITCallback = void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 

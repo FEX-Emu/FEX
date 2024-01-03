@@ -96,77 +96,8 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
-class ThreadManager final {
-  public:
-    ThreadManager(FEXCore::Context::Context *CTX, FEX::HLE::SignalDelegator *SignalDelegation)
-      : CTX {CTX}
-      , SignalDelegation {SignalDelegation} {}
-
-    ~ThreadManager();
-
-    FEXCore::Core::InternalThreadState *CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0);
-
-    void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
-    void StopThread(FEXCore::Core::InternalThreadState *Thread);
-    void RunThread(FEXCore::Core::InternalThreadState *Thread);
-
-    void Pause();
-    void Run();
-    void Step();
-    void Stop(bool IgnoreCurrentThread = false);
-
-    void WaitForIdle();
-    void WaitForIdleWithTimeout();
-    void WaitForThreadsToRun();
-
-    void SleepThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame);
-
-    void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child);
-
-    void IncrementIdleRefCount() {
-      ++IdleWaitRefCount;
-    }
-
-    void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *CallingThread, uint64_t Start, uint64_t Length) {
-      std::lock_guard lk(ThreadCreationMutex);
-
-      for (auto &Thread : Threads) {
-        CTX->InvalidateGuestCodeRange(Thread, Start, Length);
-      }
-    }
-
-    void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *CallingThread, uint64_t Start, uint64_t Length, FEXCore::Context::CodeRangeInvalidationFn callback) {
-      std::lock_guard lk(ThreadCreationMutex);
-
-      for (auto &Thread : Threads) {
-        CTX->InvalidateGuestCodeRange(Thread, Start, Length, callback);
-      }
-    }
-
-    fextl::vector<FEXCore::Core::InternalThreadState *> const *GetThreads() const {
-      return &Threads;
-    }
-
-  private:
-    FEXCore::Context::Context *CTX;
-    FEX::HLE::SignalDelegator *SignalDelegation;
-
-    std::mutex ThreadCreationMutex;
-    fextl::vector<FEXCore::Core::InternalThreadState *> Threads;
-
-    // Thread idling support.
-    bool Running{};
-    std::mutex IdleWaitMutex;
-    std::condition_variable IdleWaitCV;
-    std::atomic<uint32_t> IdleWaitRefCount{};
-
-    void HandleThreadDeletion(FEXCore::Core::InternalThreadState *Thread);
-    void NotifyPause();
-};
-
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  ThreadManager TM;
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
@@ -290,13 +221,9 @@ public:
 
   ///// FORK tracking /////
   void LockBeforeFork();
-  void UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child);
+  void UnlockAfterFork(bool Child);
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
-
-  void SleepThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame) override {
-    TM.SleepThread(CTX, Frame);
-  }
 
   bool NeedXIDCheck() const { return NeedToCheckXID; }
   void DisableXIDCheck() { NeedToCheckXID = false; }
