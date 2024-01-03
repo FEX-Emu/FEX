@@ -84,10 +84,10 @@ namespace FEX::HLE::x32 {
 #define SO_DETACH_REUSEPORT_BPF 68
 #endif
 #ifndef SO_PREFER_BUSY_POLL
-#define SO_PREFER_BUSY_POLL	69
+#define SO_PREFER_BUSY_POLL 69
 #endif
 #ifndef SO_BUSY_POLL_BUDGET
-#define SO_BUSY_POLL_BUDGET	70
+#define SO_BUSY_POLL_BUDGET 70
 #endif
 #ifndef SO_NETNS_COOKIE
 #define SO_NETNS_COOKIE 71
@@ -97,6 +97,18 @@ namespace FEX::HLE::x32 {
 #endif
 #ifndef SO_RESERVE_MEM
 #define SO_RESERVE_MEM 73
+#endif
+#ifndef SO_TXREHASH
+#define SO_TXREHASH 74
+#endif
+#ifndef SO_RCVMARK
+#define SO_RCVMARK 75
+#endif
+#ifndef SO_PASSPIDFD
+#define SO_PASSPIDFD 76
+#endif
+#ifndef SO_PEERPIDFD
+#define SO_PEERPIDFD 77
 #endif
 
   enum SockOp {
@@ -536,6 +548,10 @@ namespace FEX::HLE::x32 {
         case SO_NETNS_COOKIE: // Cookie always returns 64-bit even on 32-bit
         case SO_BUF_LOCK:
         case SO_RESERVE_MEM:
+        case SO_TXREHASH:
+        case SO_RCVMARK:
+        case SO_PASSPIDFD:
+        case SO_PEERPIDFD:
         default:
           Result = ::syscall(SYSCALL_DEF(setsockopt),
             sockfd,

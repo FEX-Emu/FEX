@@ -466,6 +466,8 @@ enum Syscalls_x86 {
   SYSCALL_x86_process_mrelease = 448,
   SYSCALL_x86_futex_waitv = 449,
   SYSCALL_x86_set_mempolicy_home_node = 450,
+  SYSCALL_x86_cachestat = 451,
+  SYSCALL_x86_fchmodat2 = 452,
   SYSCALL_x86_MAX = 512,
 };
 

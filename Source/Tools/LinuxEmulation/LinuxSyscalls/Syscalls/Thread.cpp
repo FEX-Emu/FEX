@@ -15,6 +15,7 @@ $end_info$
 #include "LinuxSyscalls/x32/Thread.h"
 
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
@@ -530,12 +531,33 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL_FLAGS(prctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) -> uint64_t {
       uint64_t Result{};
+#ifndef PR_GET_AUXV
+#define PR_GET_AUXV 0x41555856
+#endif
       switch (option) {
       case PR_SET_SECCOMP:
       case PR_GET_SECCOMP:
         // FEX doesn't support seccomp
         return -EINVAL;
         break;
+      case PR_GET_AUXV: {
+        if (arg4 || arg5) {
+          return -EINVAL;
+        }
+
+        void* addr = reinterpret_cast<void*>(arg2);
+        size_t UserSize = reinterpret_cast<size_t>(arg3);
+
+        uint64_t auxvBase=0;
+        uint64_t auxvSize=0;
+        FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
+        size_t MinSize = std::min(auxvSize, UserSize);
+
+        memcpy(addr, reinterpret_cast<void*>(auxvBase), MinSize);
+
+        // Returns the size of auxv without truncation.
+        return auxvSize;
+      }
       default:
         Result = ::prctl(option, arg2, arg3, arg4, arg5);
       break;
