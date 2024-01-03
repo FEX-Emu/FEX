@@ -6,6 +6,7 @@ set (SRCS
   LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp
   LinuxSyscalls/FileManagement.cpp
   LinuxSyscalls/LinuxAllocator.cpp
+  LinuxSyscalls/NetStream.cpp
   LinuxSyscalls/SignalDelegator.cpp
   LinuxSyscalls/Syscalls.cpp
   LinuxSyscalls/SyscallsSMCTracking.cpp

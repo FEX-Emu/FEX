@@ -12,10 +12,6 @@
 #include <string.h>
 #include <utility>
 
-namespace FEXCore::HLE {
-  class SyscallVisitor;
-}
-
 namespace FEXCore::Context {
   void InitializeStaticTables(OperatingMode Mode) {
     X86Tables::InitializeInfoTables(Mode);

@@ -5,6 +5,8 @@ tags: ir|opts
 $end_info$
 */
 
+#include "Utils/BucketList.h"
+
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "FEXCore/Core/X86Enums.h"
 #include "Interface/IR/IREmitter.h"
@@ -13,8 +15,6 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
-#include <FEXCore/Utils/BitUtils.h>
-#include <FEXCore/Utils/BucketList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
@@ -24,6 +24,7 @@ $end_info$
 #include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <FEXHeaderUtils/BitUtils.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>

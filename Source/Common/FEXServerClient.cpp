@@ -5,7 +5,6 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>

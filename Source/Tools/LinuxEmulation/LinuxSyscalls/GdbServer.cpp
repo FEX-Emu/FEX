@@ -6,6 +6,8 @@ desc: Provides a gdb interface to the guest state
 $end_info$
 */
 
+#include "LinuxSyscalls/NetStream.h"
+
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>
@@ -24,7 +26,6 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/FileLoading.h>
-#include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/StringUtils.h>
 #include <FEXCore/Utils/Threads.h>

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/BitUtils.h>
 
 #include <cmath>
 #include <cstring>

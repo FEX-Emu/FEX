@@ -6,7 +6,6 @@ desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
 $end_info$
 */
 
-#include "FEXCore/Utils/BitUtils.h"
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -22,6 +21,8 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+
+#include <FEXHeaderUtils/BitUtils.h>
 
 #include <algorithm>
 #include <array>
