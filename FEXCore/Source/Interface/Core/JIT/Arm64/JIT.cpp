@@ -29,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
@@ -574,8 +575,11 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
       Common.XCRFunction = PMF.GetConvertedPointer();
     }
 
-    Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::HLE::SyscallHandler::HandleSyscall);
+      Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+      Common.SyscallHandlerFunc = PMF.GetVTableEntry(CTX->SyscallHandler);
+    }
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
 
     // Fill in the fallback handlers
