@@ -29,12 +29,13 @@ public:
 
   struct DecodedBlockInformation final {
     uint64_t TotalInstructionCount;
+    bool Is64BitMode{};
     fextl::vector<DecodedBlocks> Blocks;
   };
 
   Decoder(FEXCore::Context::ContextImpl *ctx);
   ~Decoder();
-  void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, uint64_t MaxInst, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+  void DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thread, uint8_t const* InstStream, uint64_t PC, uint64_t MaxInst, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
   DecodedBlockInformation const *GetDecodedBlockInfo() const {
     return &BlockInfo;
@@ -81,6 +82,7 @@ private:
   size_t DecodedSize {};
 
   uint8_t const *InstStream;
+  uint8_t GetGPRSize() const { return BlockInfo.Is64BitMode ? 8 : 4; }
 
   static constexpr size_t MAX_INST_SIZE = 15;
   uint8_t InstructionSize;
