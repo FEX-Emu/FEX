@@ -1237,7 +1237,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+  void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData *HostLink, const FEXCore::Context::BlockDelinkerFunc &delinker) {
     auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
     Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
@@ -1249,7 +1249,7 @@ namespace FEXCore::Context {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     Thread->DebugStore.erase(GuestRIP);
-    Thread->LookupCache->Erase(GuestRIP);
+    Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
   }
 
   CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator, void *Data) {

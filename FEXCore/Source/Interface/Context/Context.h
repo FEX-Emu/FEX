@@ -68,6 +68,13 @@ namespace FEXCore::Context {
     MODE_SINGLESTEP = 1,
   };
 
+  struct ExitFunctionLinkData {
+    uint64_t HostBranch;
+    uint64_t GuestRIP;
+  };
+
+  using BlockDelinkerFunc = void(*)(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ExitFunctionLinkData *Record);
+
   class ContextImpl final : public FEXCore::Context::Context {
     public:
       // Context base class implementation.
@@ -274,12 +281,7 @@ namespace FEXCore::Context {
     void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
     static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker);
-
-    struct ExitFunctionLinkData {
-      uint64_t HostBranch;
-      uint64_t GuestRIP;
-    };
+    static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData *HostLink, const BlockDelinkerFunc &delinker);
 
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, ExitFunctionLinkData *Record) {
