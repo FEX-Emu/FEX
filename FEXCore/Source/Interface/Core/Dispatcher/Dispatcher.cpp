@@ -103,80 +103,80 @@ void Dispatcher::EmitDispatcher() {
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
-  // Don't modify x2 since it contains our RIP once the block doesn't exist
+  // Don't modify TMP3 since it contains our RIP once the block doesn't exist
 
-  auto RipReg = ARMEmitter::XReg::x2;
+  auto RipReg = TMP3;
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
   // L1 Cache
-  ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
-  and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::r0, ARMEmitter::Reg::r3, ARMEmitter::ShiftType::LSL , 4);
-  ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, 0);
-  sub(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, RipReg);
-  cbnz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, &FullLookup);
+  and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL , 4);
+  ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP1, TMP1, 0);
+  sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, RipReg);
+  cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
 
-  br(ARMEmitter::Reg::r3);
+  br(TMP4);
 
   // L1C check failed, do a full lookup
   Bind(&FullLookup);
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
-  ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
 
   // Mask the address by the virtual address size so we can check for aliases
   uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
   if (std::popcount(VirtualMemorySize) == 1) {
-    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), VirtualMemorySize - 1);
+    and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
   }
   else {
-    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, VirtualMemorySize);
-    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), ARMEmitter::Reg::r3);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
+    and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
   }
 
   ARMEmitter::ForwardLabel NoBlock;
 
   {
     // Offset the address and add to our page pointer
-    lsr(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::r3, 12);
+    lsr(ARMEmitter::Size::i64Bit, TMP2, TMP4, 12);
 
     // Load the pointer from the offset
-    ldr(ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ExtendedType::LSL_64, 3);
+    ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
 
     // If page pointer is zero then we have no block
-    cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, &NoBlock);
+    cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
 
     // Steal the page offset
-    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::r3, 0x0FFF);
+    and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
 
     // Shift the offset by the size of the block cache entry
-    add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
+    add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 
     // The the full LookupCacheEntry with a single LDP.
     // Check the guest address first to ensure it maps to the address we are currently at.
     // This fixes aliasing problems
-    ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x1, ARMEmitter::Reg::r0, 0);
+    ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP2, TMP1, 0);
 
     // If the guest address doesn't match, Compile the block.
-    sub(ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, RipReg);
-    cbnz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, &NoBlock);
+    sub(TMP2, TMP2, RipReg);
+    cbnz(ARMEmitter::Size::i64Bit, TMP2, &NoBlock);
 
     // Check the host address to see if it matches, else compile the block.
-    cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, &NoBlock);
+    cbz(ARMEmitter::Size::i64Bit, TMP4, &NoBlock);
 
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
-      and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-      add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::ShiftType::LSL, 4);
-      stp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x2, ARMEmitter::Reg::r0);
+      and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
+      add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, 4);
+      stp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP3, TMP1);
 
       // Jump to the block
-      br(ARMEmitter::Reg::r3);
+      br(TMP4);
     }
   }
 
@@ -212,17 +212,21 @@ void Dispatcher::EmitDispatcher() {
       blr(ARMEmitter::Reg::r2);
     }
 
+    if (!TMP_ABIARGS) {
+      mov(TMP1, ARMEmitter::XReg::x0);
+    }
+
     FillStaticRegs();
 
-    ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
-    str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
+    str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
-    ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
-    str(ARMEmitter::XReg::zr, ARMEmitter::XReg::x1, 0);
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
+    str(ARMEmitter::XReg::zr, TMP2, 0);
 
-    br(ARMEmitter::Reg::r0);
+    br(TMP1);
   }
 
   // Need to create the block
@@ -230,6 +234,10 @@ void Dispatcher::EmitDispatcher() {
     Bind(&NoBlock);
 
     SpillStaticRegs(TMP1);
+
+    if (!TMP_ABIARGS) {
+      mov(ARMEmitter::XReg::x2, TMP3);
+    }
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
     add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
@@ -250,9 +258,9 @@ void Dispatcher::EmitDispatcher() {
 
     FillStaticRegs();
 
-    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
-    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
+    str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
@@ -395,98 +403,45 @@ void Dispatcher::EmitDispatcher() {
     b(&LoopTop);
   }
 
-  {
-    LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
+  auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
+    auto Address = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs(ARMEmitter::Reg::r3);
+    PushDynamicRegsAndLR(TMP4);
+    SpillStaticRegs(TMP4);
 
-    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
+    if (!TMP_ABIARGS) {
+      mov(ARMEmitter::XReg::x0, TMP1);
+      mov(ARMEmitter::XReg::x1, TMP2);
+      mov(ARMEmitter::XReg::x2, TMP3);
+    }
+
+    ldr(ARMEmitter::XReg::x3, R, Offset);
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
       GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
     }
     else {
       blr(ARMEmitter::Reg::r3);
     }
+    // Result is now in x0
+
+    if (!TMP_ABIARGS) {
+      mov(TMP1, ARMEmitter::XReg::x0);
+    }
+
     FillStaticRegs();
 
-    // Result is now in x0
     // Fix the stack and any values that were stepped on
     PopDynamicRegsAndLR();
 
     // Go back to our code block
     ret();
-  }
+    return Address;
+  };
 
-  {
-    LDIVHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs(ARMEmitter::Reg::r3);
-
-    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-    }
-    else {
-      blr(ARMEmitter::Reg::r3);
-    }
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  {
-    LUREMHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs(ARMEmitter::Reg::r3);
-
-    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-    }
-    else {
-      blr(ARMEmitter::Reg::r3);
-    }
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  {
-    LREMHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs(ARMEmitter::Reg::r3);
-
-    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
-
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-    }
-    else {
-      blr(ARMEmitter::Reg::r3);
-    }
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
+  LUDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
+  LDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
+  LUREMHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
+  LREMHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 
   Bind(&l_CTX);
   dc64(reinterpret_cast<uintptr_t>(CTX));
