@@ -53,20 +53,17 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    ARMEmitter::ForwardLabel l_BranchHost;
-    ARMEmitter::ForwardLabel l_BranchGuest;
+    ARMEmitter::SingleUseForwardLabel l_BranchHost;
 
     ldr(ARMEmitter::XReg::x0, &l_BranchHost);
     blr(ARMEmitter::Reg::r0);
 
     Bind(&l_BranchHost);
     dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
-    Bind(&l_BranchGuest);
     dc64(NewRIP);
-
   } else {
 
-    ARMEmitter::ForwardLabel FullLookup;
+    ARMEmitter::SingleUseForwardLabel FullLookup;
     auto RipReg = GetReg(Op->NewRIP.ID());
 
     // L1 Cache

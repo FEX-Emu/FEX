@@ -731,9 +731,9 @@ DEF_OP(PDep) {
                          1U << MaskReg.Idx() |
                          1U << DestReg.Idx();
 
-  ARMEmitter::ForwardLabel EarlyExit;
+  ARMEmitter::SingleUseForwardLabel EarlyExit;
   ARMEmitter::BackwardLabel NextBit;
-  ARMEmitter::ForwardLabel Done;
+  ARMEmitter::SingleUseForwardLabel Done;
   cbz(EmitSize, Mask, &EarlyExit);
   mov(EmitSize, IndexReg, ZeroReg);
 
@@ -792,9 +792,9 @@ DEF_OP(PExt) {
   const auto BitReg   = TMP2;
   const auto ValueReg = TMP3;
 
-  ARMEmitter::ForwardLabel EarlyExit;
+  ARMEmitter::SingleUseForwardLabel EarlyExit;
   ARMEmitter::BackwardLabel NextBit;
-  ARMEmitter::ForwardLabel Done;
+  ARMEmitter::SingleUseForwardLabel Done;
 
   cbz(EmitSize, Mask, &EarlyExit);
   mov(EmitSize, MaskReg, Mask);
@@ -848,8 +848,8 @@ DEF_OP(LDiv) {
     break;
     }
     case 8: {
-      ARMEmitter::ForwardLabel Only64Bit{};
-      ARMEmitter::ForwardLabel LongDIVRet{};
+      ARMEmitter::SingleUseForwardLabel Only64Bit{};
+      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
       // Check if the upper bits match the top bit of the lower 64-bits
       // Sign extend the top bit of lower bits
@@ -920,8 +920,8 @@ DEF_OP(LUDiv) {
     break;
     }
     case 8: {
-      ARMEmitter::ForwardLabel Only64Bit{};
-      ARMEmitter::ForwardLabel LongDIVRet{};
+      ARMEmitter::SingleUseForwardLabel Only64Bit{};
+      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
       // Check the upper bits for zero
       // If the upper bits are zero then we can do a 64-bit divide
@@ -992,8 +992,8 @@ DEF_OP(LRem) {
     break;
     }
     case 8: {
-      ARMEmitter::ForwardLabel Only64Bit{};
-      ARMEmitter::ForwardLabel LongDIVRet{};
+      ARMEmitter::SingleUseForwardLabel Only64Bit{};
+      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
       // Check if the upper bits match the top bit of the lower 64-bits
       // Sign extend the top bit of lower bits
@@ -1066,8 +1066,8 @@ DEF_OP(LURem) {
     break;
     }
     case 8: {
-      ARMEmitter::ForwardLabel Only64Bit{};
-      ARMEmitter::ForwardLabel LongDIVRet{};
+      ARMEmitter::SingleUseForwardLabel Only64Bit{};
+      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
       // Check the upper bits for zero
       // If the upper bits are zero then we can do a 64-bit divide
