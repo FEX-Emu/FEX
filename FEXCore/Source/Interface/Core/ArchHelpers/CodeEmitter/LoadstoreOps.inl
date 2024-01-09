@@ -2121,38 +2121,58 @@ public:
     LoadStoreLiteral(Op, prfop, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
 
-  void ldr(FEXCore::ARMEmitter::WRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldr(FEXCore::ARMEmitter::WRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldr(FEXCore::ARMEmitter::SRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldr(FEXCore::ARMEmitter::XRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldr(FEXCore::ARMEmitter::DRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldrsw(FEXCore::ARMEmitter::XRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void ldr(FEXCore::ARMEmitter::QRegister rt, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::RELATIVE_LOAD });
+
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void prfm(FEXCore::ARMEmitter::Prefetch prfop, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, 0);
   }
