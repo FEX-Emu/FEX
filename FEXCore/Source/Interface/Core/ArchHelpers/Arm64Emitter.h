@@ -21,6 +21,7 @@
 #endif
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <cstddef>
@@ -233,7 +234,9 @@ protected:
 #endif
 
 #ifdef VIXL_DISASSEMBLER
-  vixl::aarch64::Disassembler Disasm;
+  fextl::vector<char> DisasmBuffer;
+  constexpr static int DISASM_BUFFER_SIZE {256};
+  fextl::unique_ptr<vixl::aarch64::Disassembler> Disasm;
   fextl::unique_ptr<vixl::aarch64::Decoder> DisasmDecoder;
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
