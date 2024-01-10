@@ -1,3 +1,5 @@
+#define GUEST_THUNK_LIBRARY
+
 #include <dlfcn.h>
 
 #include <stdexcept>

@@ -51,7 +51,6 @@ function(generate NAME SOURCE_FILE)
   # Interface target for the user to add include directories
   add_library(${NAME}-guest-deps INTERFACE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-  target_compile_definitions(${NAME}-guest-deps INTERFACE GUEST_THUNK_LIBRARY)
   if (BITNESS EQUAL 32)
     target_compile_definitions(${NAME}-guest-deps INTERFACE IS_32BIT_THUNK)
   endif ()
