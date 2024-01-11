@@ -100,15 +100,15 @@ public:
     L1Entry.HostCode = (uintptr_t)HostCode;
   }
 
-  void Erase(uint64_t Address) {
+  void Erase(FEXCore::Core::CpuStateFrame *Frame, uint64_t Address) {
 
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Sever any links to this block
-    auto lower = BlockLinks->lower_bound({Address, 0});
-    auto upper = BlockLinks->upper_bound({Address, UINTPTR_MAX});
+    auto lower = BlockLinks->lower_bound({Address, nullptr});
+    auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData *>(UINTPTR_MAX)});
     for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
-      it->second();
+      it->second(Frame, it->first.HostLink);
     }
 
     // Remove from BlockList
@@ -141,8 +141,7 @@ public:
     BlockPointers[PageOffset].HostCode = 0;
   }
 
-
-  void AddBlockLink(uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+  void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData * HostLink, const FEXCore::Context::BlockDelinkerFunc &delinker) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     BlockLinks->insert({{GuestDestination, HostLink}, delinker});
@@ -224,7 +223,7 @@ private:
 
   struct BlockLinkTag {
     uint64_t GuestDestination;
-    uintptr_t HostLink;
+    FEXCore::Context::ExitFunctionLinkData *HostLink;
 
     bool operator <(const BlockLinkTag& other) const {
       if (GuestDestination < other.GuestDestination)
@@ -243,7 +242,7 @@ private:
   //
   // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
   std::pmr::monotonic_buffer_resource BlockLinks_mbr;
-  using BlockLinksMapType = std::pmr::map<BlockLinkTag, std::function<void()>>;
+  using BlockLinksMapType = std::pmr::map<BlockLinkTag, FEXCore::Context::BlockDelinkerFunc>;
   fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
   BlockLinksMapType *BlockLinks;
 

@@ -481,7 +481,24 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 }
 
 
-static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ContextImpl::ExitFunctionLinkData *Record) {
+static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ExitFunctionLinkData *Record) {
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
+  uintptr_t branch = (uintptr_t)(Record) - 8;
+  FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
+  FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
+  emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
+  emit.blr(FEXCore::ARMEmitter::Reg::r0);
+  emit.Bind(&l_BranchHost);
+  emit.dc64(LinkerAddress);
+  FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 8);
+}
+
+static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ExitFunctionLinkData *Record) {
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
+  Record->HostBranch = LinkerAddress;
+}
+
+static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ExitFunctionLinkData *Record) {
   auto Thread = Frame->Thread;
   auto GuestRip = Record->GuestRIP;
 
@@ -493,34 +510,23 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
   }
 
   uintptr_t branch = (uintptr_t)(Record) - 8;
-  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
 
   auto offset = HostCode/4 - branch/4;
   if (vixl::IsInt26(offset)) {
     // optimal case - can branch directly
     // patch the code
-    FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 24);
+    FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
     emit.b(offset);
-    FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 24);
+    FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 4);
 
     // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)Record, [branch, LinkerAddress]{
-      FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 24);
-      FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
-      emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
-      emit.blr(FEXCore::ARMEmitter::Reg::r0);
-      emit.Bind(&l_BranchHost);
-      emit.dc64(LinkerAddress);
-      FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 24);
-    });
+    Thread->LookupCache->AddBlockLink(GuestRip, Record, DirectBlockDelinker);
   } else {
     // fallback case - do a soft-er link by patching the pointer
     Record->HostBranch = HostCode;
 
     // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)Record, [Record, LinkerAddress]{
-      Record->HostBranch = LinkerAddress;
-    });
+    Thread->LookupCache->AddBlockLink(GuestRip, Record, IndirectBlockDelinker);
   }
 
   return HostCode;
