@@ -265,6 +265,20 @@ struct repack_wrapper {
     }
   }
 
+  ~repack_wrapper() {
+    // TODO: Properly detect opaque types
+    if constexpr (requires(guest_layout<T> t, decltype(data) h) { t.get_pointer(); (bool)h; *data; }) {
+      if constexpr (!std::is_const_v<std::remove_pointer_t<T>>) { // Skip exit-repacking for const pointees
+        if (data) {
+          constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+          if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+            *orig_arg.get_pointer() = to_guest(*data); // TODO: Only if annotated as out-parameter
+          }
+        }
+      }
+    }
+  }
+
   operator PointeeT*() {
     static_assert(sizeof(PointeeT) == sizeof(host_layout<PointeeT>));
     static_assert(alignof(PointeeT) == alignof(host_layout<PointeeT>));
