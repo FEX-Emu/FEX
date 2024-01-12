@@ -32,8 +32,8 @@ DEF_OP(CASPair) {
   }
   else {
     ARMEmitter::BackwardLabel LoopTop;
-    ARMEmitter::ForwardLabel LoopNotExpected;
-    ARMEmitter::ForwardLabel LoopExpected;
+    ARMEmitter::SingleUseForwardLabel LoopNotExpected;
+    ARMEmitter::SingleUseForwardLabel LoopExpected;
     Bind(&LoopTop);
 
     ldaxp(EmitSize, TMP2, TMP3, MemSrc);
@@ -82,8 +82,8 @@ DEF_OP(CAS) {
   }
   else {
     ARMEmitter::BackwardLabel LoopTop;
-    ARMEmitter::ForwardLabel LoopNotExpected;
-    ARMEmitter::ForwardLabel LoopExpected;
+    ARMEmitter::SingleUseForwardLabel LoopNotExpected;
+    ARMEmitter::SingleUseForwardLabel LoopExpected;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     if (OpSize == 1) {

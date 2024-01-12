@@ -73,8 +73,8 @@ void Dispatcher::EmitDispatcher() {
   // }
 
   ARMEmitter::ForwardLabel l_CTX;
-  ARMEmitter::ForwardLabel l_Sleep;
-  ARMEmitter::ForwardLabel l_CompileBlock;
+  ARMEmitter::SingleUseForwardLabel l_Sleep;
+  ARMEmitter::SingleUseForwardLabel l_CompileBlock;
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();

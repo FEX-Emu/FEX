@@ -485,7 +485,7 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Co
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
   uintptr_t branch = (uintptr_t)(Record) - 8;
   FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
-  FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
+  FEXCore::ARMEmitter::SingleUseForwardLabel l_BranchHost;
   emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
   emit.blr(FEXCore::ARMEmitter::Reg::r0);
   emit.Bind(&l_BranchHost);

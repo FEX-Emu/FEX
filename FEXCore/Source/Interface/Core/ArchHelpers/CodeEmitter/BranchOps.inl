@@ -18,8 +18,10 @@ public:
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, Imm >> 2);
     }
-    void b(FEXCore::ARMEmitter::Condition Cond, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::BC });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void b(FEXCore::ARMEmitter::Condition Cond, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, 0);
     }
@@ -45,8 +47,10 @@ public:
       Branch_Conditional(Op, 0, 1, Cond, Imm >> 2);
     }
 
-    void bc(FEXCore::ARMEmitter::Condition Cond, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::BC });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void bc(FEXCore::ARMEmitter::Condition Cond, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 1, Cond, 0);
     }
@@ -102,8 +106,10 @@ public:
 
       UnconditionalBranch(Op, Imm >> 2);
     }
-    void b(ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::B });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void b(LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::B });
       constexpr uint32_t Op = 0b0001'01 << 26;
 
       UnconditionalBranch(Op, 0);
@@ -131,8 +137,10 @@ public:
 
       UnconditionalBranch(Op, Imm >> 2);
     }
-    void bl(ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::B });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void bl(LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::B });
       constexpr uint32_t Op = 0b1001'01 << 26;
 
       UnconditionalBranch(Op, 0);
@@ -163,8 +171,10 @@ public:
       CompareAndBranch(Op, s, rt, Imm >> 2);
     }
 
-    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::BC });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
 
       constexpr uint32_t Op = 0b0011'0100 << 24;
 
@@ -195,8 +205,10 @@ public:
       CompareAndBranch(Op, s, rt, Imm >> 2);
     }
 
-    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::BC });
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
 
       constexpr uint32_t Op = 0b0011'0101 << 24;
 
@@ -226,8 +238,11 @@ public:
 
       TestAndBranch(Op, rt, Bit, Imm >> 2);
     }
-    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::TEST_BRANCH });
+
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH });
 
       constexpr uint32_t Op = 0b0011'0110 << 24;
 
@@ -256,8 +271,11 @@ public:
 
       TestAndBranch(Op, rt, Bit, Imm >> 2);
     }
-    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, ForwardLabel *Label) {
-      Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::TEST_BRANCH });
+
+    template<typename LabelType>
+    requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
+      AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH });
       constexpr uint32_t Op = 0b0011'0111 << 24;
 
       TestAndBranch(Op, rt, Bit, 0);

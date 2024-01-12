@@ -175,7 +175,7 @@ DEF_OP(LoadRegister) {
     if (HostSupportsSVE256) {
       const auto regOffs = Op->Offset & 31;
 
-      ARMEmitter::ForwardLabel DataLocation;
+      ARMEmitter::SingleUseForwardLabel DataLocation;
       const auto LoadPredicate = [this, &DataLocation] {
         const auto Predicate = ARMEmitter::PReg::p0;
         adr(TMP1, &DataLocation);
@@ -184,7 +184,7 @@ DEF_OP(LoadRegister) {
       };
 
       const auto EmitData = [this, &DataLocation](uint32_t Value) {
-        ARMEmitter::ForwardLabel PastConstant;
+        ARMEmitter::SingleUseForwardLabel PastConstant;
         b(&PastConstant);
         Bind(&DataLocation);
         dc32(Value);
@@ -364,7 +364,7 @@ DEF_OP(StoreRegister) {
       const auto regOffs = Op->Offset & 31;
 
       // Compartmentalized setting up of the predicate for the cases that need it.
-      ARMEmitter::ForwardLabel DataLocation;
+      ARMEmitter::SingleUseForwardLabel DataLocation;
       const auto LoadPredicate = [this, &DataLocation] {
         const auto Predicate = ARMEmitter::PReg::p0;
         adr(TMP1, &DataLocation);
@@ -377,7 +377,7 @@ DEF_OP(StoreRegister) {
       // It's helpful to treat LoadPredicate and EmitData as a prologue and epilogue
       // respectfully.
       const auto EmitData = [this, &DataLocation](uint32_t Data) {
-        ARMEmitter::ForwardLabel PastConstant;
+        ARMEmitter::SingleUseForwardLabel PastConstant;
         b(&PastConstant);
         Bind(&DataLocation);
         dc32(Data);
@@ -1715,8 +1715,8 @@ DEF_OP(MemSet) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::ForwardLabel BackwardImpl{};
-  ARMEmitter::ForwardLabel Done{};
+  ARMEmitter::SingleUseForwardLabel BackwardImpl{};
+  ARMEmitter::SingleUseForwardLabel Done{};
 
   mov(TMP1, Length.X());
   if (Op->Prefix.IsInvalid()) {
@@ -1789,7 +1789,7 @@ DEF_OP(MemSet) {
     const int32_t SizeDirection = Size * Direction;
 
     ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::ForwardLabel DoneInternal{};
+    ARMEmitter::SingleUseForwardLabel DoneInternal{};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
@@ -1895,8 +1895,8 @@ DEF_OP(MemCpy) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::ForwardLabel BackwardImpl{};
-  ARMEmitter::ForwardLabel Done{};
+  ARMEmitter::SingleUseForwardLabel BackwardImpl{};
+  ARMEmitter::SingleUseForwardLabel Done{};
 
   mov(TMP1, Length.X());
   if (Op->PrefixDest.IsInvalid()) {
@@ -2050,7 +2050,7 @@ DEF_OP(MemCpy) {
     const int32_t SizeDirection = Size * Direction;
 
     ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::ForwardLabel DoneInternal{};
+    ARMEmitter::SingleUseForwardLabel DoneInternal{};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);

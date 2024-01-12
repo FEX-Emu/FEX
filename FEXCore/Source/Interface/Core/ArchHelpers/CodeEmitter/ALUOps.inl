@@ -35,8 +35,10 @@ public:
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
-  void adr(FEXCore::ARMEmitter::Register rd, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::ADR });
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void adr(FEXCore::ARMEmitter::Register rd, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADR });
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
@@ -62,8 +64,10 @@ public:
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
-  void adrp(FEXCore::ARMEmitter::Register rd, ForwardLabel *Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::ADRP });
+  template<typename LabelType>
+  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
+  void adrp(FEXCore::ARMEmitter::Register rd, LabelType *Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADRP });
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
@@ -105,7 +109,7 @@ public:
     }
   }
   void LongAddressGen(FEXCore::ARMEmitter::Register rd, ForwardLabel* Label) {
-    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::LONG_ADDRESS_GEN });
+    Label->Insts.emplace_back(SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN });
     // Emit a register index and a nop. These will be backpatched.
     dc32(rd.Idx());
     nop();
