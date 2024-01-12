@@ -144,6 +144,9 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
 
         // Opaque types don't need layout definitions
         if (type_repack_info.assumed_compatible && type_repack_info.pointers_only) {
+            if (guest_abi.pointer_size != 4) {
+                fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}*> = true;\n", struct_name);
+            }
             continue;
         } else if (type_repack_info.assumed_compatible) {
             // TODO: Handle more cleanly
@@ -280,6 +283,10 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         }
         fmt::print(file, "  return ret;\n");
         fmt::print(file, "}}\n\n");
+
+        if (type_compat.at(type) == TypeCompatibility::Full) {
+            fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}> = true;\n", struct_name);
+        }
     }
 }
 

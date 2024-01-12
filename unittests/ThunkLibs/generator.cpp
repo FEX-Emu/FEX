@@ -281,6 +281,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "};\n"
         "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
         "void *dlsym_default(void* handle, const char* symbol);\n"
+        "template<typename T> inline constexpr bool has_compatible_data_layout = std::is_integral_v<T> || std::is_enum_v<T>;\n"
         "template<typename T>\n"
         "struct guest_layout {\n"
         "  T data;\n"

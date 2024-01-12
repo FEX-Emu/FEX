@@ -89,6 +89,35 @@ struct ParameterAnnotations {
     bool assume_compatible = false;
 };
 
+// Generator emits specializations for this for each type that has compatible layout
+template<typename T>
+inline constexpr bool has_compatible_data_layout =
+  std::is_integral_v<T> || std::is_enum_v<T> || std::is_floating_point_v<T>
+#ifndef IS_32BIT_THUNK
+  // If none of the previous predicates matched, the thunk generator did *not* emit a specialization for T.
+  // This should not happen on 64-bit with the currently thunked libraries, since their types
+  // * either have fully consistent data layout across 64-bit architectures.
+  // * or use custom repacking, in which case has_compatible_data_layout isn't used
+  //
+  // Throwing a fake exception here will trigger a build failure.
+  || (throw "Instantiated on a type that was expected to be compatible", true)
+#endif
+;
+
+#ifndef IS_32BIT_THUNK
+// Pointers have the same size, hence data layout compatibility only depends on the pointee type
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T*> = has_compatible_data_layout<std::remove_cv_t<T>>;
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T* const> = has_compatible_data_layout<std::remove_cv_t<T>*>;
+
+// void* and void** are assumed to be compatible to simplify handling of libraries that use them ubiquitously
+template<> inline constexpr bool has_compatible_data_layout<void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<void**> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void**> = true;
+#endif
+
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
 struct guest_layout {
@@ -96,6 +125,8 @@ struct guest_layout {
   static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
   static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
   static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
+
+  static_assert(std::is_fundamental_v<T> || has_compatible_data_layout<T>, "Default guest_layout may not be used for non-compatible data");
 
   using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
   type data;
