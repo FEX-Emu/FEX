@@ -4265,6 +4265,13 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   // 0x80064000
 
   if (Op->Dest.IsGPR()) {
+    // If the destination is also the accumulator, we get some algebraic
+    // simplifications. Not sure if this is actually hit but it's in
+    // InstCountCI.
+    bool Trivial = Op->Dest.Data.GPR.GPR == X86State::REG_RAX &&
+                   !Op->Dest.IsGPRDirect() &&
+                   !Op->Dest.Data.GPR.HighBits;
+
     OrderedNode *Src1{};
     OrderedNode *Src1Lower{};
 
@@ -4293,23 +4300,25 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     GenerateFlags_SUB(Op, Result, Src3Lower, Src1Lower);
     CalculateDeferredFlags();
 
-    if (GPRSize == 8 && Size == 4) {
-      // This allows us to only hit the ZEXT case on failure
-      OrderedNode *RAXResult = _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ},
-                                           Src3, Src1Lower);
+    if (!Trivial) {
+      if (GPRSize == 8 && Size == 4) {
+        // This allows us to only hit the ZEXT case on failure
+        OrderedNode *RAXResult = _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ},
+                                             Src3, Src1Lower);
 
-      // When the size is 4 we need to make sure not zext the GPR when the comparison fails
-      StoreGPRRegister(X86State::REG_RAX, RAXResult);
-    }
-    else {
-      StoreGPRRegister(X86State::REG_RAX, Src1Lower, Size);
+        // When the size is 4 we need to make sure not zext the GPR when the comparison fails
+        StoreGPRRegister(X86State::REG_RAX, RAXResult);
+      }
+      else {
+        StoreGPRRegister(X86State::REG_RAX, Src1Lower, Size);
+      }
     }
 
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
-    OrderedNode *DestResult = _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ},
-                                          Src2, Src1);
+    OrderedNode *DestResult =
+      Trivial ? Src2 : _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ}, Src2, Src1);
 
     // Store in to GPR Dest
     if (GPRSize == 8 && Size == 4) {
