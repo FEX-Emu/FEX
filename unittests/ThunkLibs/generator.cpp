@@ -713,6 +713,11 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
         }
     }
 
+    SECTION("Pointer to struct with pointer member of consistent data layout") {
+        std::string type = GENERATE("char", "short", "int", "float");
+        REQUIRE_NOTHROW(run_thunkgen_host("struct A { " + type + "* a; };\n", code, guest_abi));
+    }
+
     SECTION("Pointer to struct with pointer member of opaque type") {
         const auto prelude =
             "struct B;\n"
@@ -720,6 +725,10 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
 
         // Unannotated
         REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Contains("incomplete type"));
+
+        // Annotated as opaque_type
+        CHECK_NOTHROW(run_thunkgen_host(prelude,
+              code + "template<> struct fex_gen_type<B> : fexgen::opaque_type {};\n", guest_abi));
     }
 }
 
