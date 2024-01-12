@@ -11,6 +11,7 @@ $end_info$
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <optional>
 
 #include "PackedArguments.h"
 
@@ -243,6 +244,49 @@ struct host_layout<T* const> {
   }
 };
 
+// Wrapper around host_layout that repacks from a guest_layout on construction
+// and exit-repacks on scope exit (if needed). The wrapper manages the storage
+// needed for repacked data itself.
+// This also implicitly converts to a pointer of the wrapped host type, since
+// this conversion is required at all call sites anyway
+template<typename T, typename GuestT>
+struct repack_wrapper {
+  static_assert(std::is_pointer_v<T>);
+
+  // Strip "const" from pointee type in host_layout storage
+  using PointeeT = std::remove_cv_t<std::remove_pointer_t<T>>;
+
+  std::optional<host_layout<PointeeT>> data;
+  guest_layout<GuestT>& orig_arg;
+
+  repack_wrapper(guest_layout<GuestT>& orig_arg_) : orig_arg(orig_arg_) {
+    if (orig_arg.get_pointer()) {
+      data = { *orig_arg_.get_pointer() };
+    }
+  }
+
+  operator PointeeT*() {
+    static_assert(sizeof(PointeeT) == sizeof(host_layout<PointeeT>));
+    static_assert(alignof(PointeeT) == alignof(host_layout<PointeeT>));
+    return data ? &data.value().data : nullptr;
+  }
+};
+
+template<typename T, typename GuestT>
+static repack_wrapper<T, GuestT> make_repack_wrapper(guest_layout<GuestT>& orig_arg) {
+  return { orig_arg };
+}
+
+template<typename T>
+T& unwrap_host(host_layout<T>& val) {
+  return val.data;
+}
+
+template<typename T, typename T2>
+T* unwrap_host(repack_wrapper<T*, T2>& val) {
+  return val;
+}
+
 template<typename T>
 inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
   if constexpr (std::is_enum_v<T>) {
@@ -265,6 +309,34 @@ inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
 template<typename>
 struct CallbackUnpack;
 
+template<typename T, ParameterAnnotations Annotation>
+constexpr bool IsCompatible() {
+  if constexpr (Annotation.assume_compatible) {
+    return true;
+  } else if constexpr (has_compatible_data_layout<T>) {
+    return true;
+  } else {
+    if constexpr (std::is_pointer_v<T>) {
+      return has_compatible_data_layout<std::remove_cv_t<std::remove_pointer_t<T>>>;
+    } else {
+      return false;
+    }
+  }
+}
+
+template<ParameterAnnotations Annotation, typename HostT, typename T>
+auto Projection(guest_layout<T>& data) {
+  if constexpr (Annotation.is_passthrough) {
+    return data;
+  } else if constexpr ((IsCompatible<T, Annotation>() && std::is_same_v<T, HostT>) || !std::is_pointer_v<T>) {
+    return host_layout<HostT> { data }.data;
+  } else {
+    // This argument requires temporary storage for repacked data
+    // *and* it needs to call custom repack functions (if any)
+    return make_repack_wrapper<HostT>(data);
+  }
+}
+
 template<typename Result, typename... Args>
 struct CallbackUnpack<Result(Args...)> {
   static Result CallGuestPtr(Args... args) {
@@ -280,15 +352,6 @@ struct CallbackUnpack<Result(Args...)> {
     }
   }
 };
-
-template<ParameterAnnotations Annotation, typename T>
-auto Projection(guest_layout<T>& data) {
-  if constexpr (Annotation.is_passthrough) {
-    return data;
-  } else {
-    return host_layout<T> { data }.data;
-  }
-}
 
 template<typename>
 struct GuestWrapperForHostFunction;
