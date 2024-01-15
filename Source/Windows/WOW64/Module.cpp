@@ -26,9 +26,10 @@ $end_info$
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include "Common/Config.h"
+#include "Common/InvalidationTracker.h"
+#include "Common/CPUFeatures.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
-#include "IntervalList.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -92,7 +93,8 @@ namespace {
   fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
   fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
 
-  SYSTEM_CPU_INFORMATION CpuInfo{};
+  FEX::Windows::InvalidationTracker InvalidationTracker;
+  std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 
   std::mutex ThreadSuspendLock;
   std::unordered_set<DWORD> InitializedWOWThreads; // Set of TIDs, `ThreadSuspendLock` must be locked when accessing
@@ -326,99 +328,6 @@ namespace Context {
   }
 }
 
-namespace Invalidation {
-  static IntervalList<uint64_t> RWXIntervals;
-  static std::mutex RWXIntervalsLock;
-
-  void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot) {
-    const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
-    const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
-
-    if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
-      CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
-    }
-
-    if (Prot & PAGE_EXECUTE_READWRITE) {
-      LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
-      std::scoped_lock Lock(RWXIntervalsLock);
-      RWXIntervals.Insert({AlignedBase, AlignedBase + AlignedSize});
-    } else {
-      std::scoped_lock Lock(RWXIntervalsLock);
-      RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
-    }
-  }
-
-  void InvalidateContainingSection(uint64_t Address, bool Free) {
-    MEMORY_BASIC_INFORMATION Info;
-    if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void *>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr))
-      return;
-
-    const auto SectionBase = reinterpret_cast<uint64_t>(Info.AllocationBase);
-    const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize
-                             - reinterpret_cast<uint64_t>(Info.AllocationBase);
-    CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), SectionBase, SectionSize);
-
-    if (Free) {
-      std::scoped_lock Lock(RWXIntervalsLock);
-      RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
-    }
-  }
-
-  void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
-    const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
-    const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
-    CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
-
-    if (Free) {
-      std::scoped_lock Lock(RWXIntervalsLock);
-      RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
-    }
-  }
-
-  void ReprotectRWXIntervals(uint64_t Address, uint64_t Size) {
-    const auto End = Address + Size;
-    std::scoped_lock Lock(RWXIntervalsLock);
-
-    do {
-      const auto Query = RWXIntervals.Query(Address);
-      if (Query.Enclosed) {
-        void *TmpAddress = reinterpret_cast<void *>(Address);
-        SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
-        ULONG TmpProt;
-        NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READ, &TmpProt);
-      } else if (!Query.Size) {
-        // No more regions past `Address` in the interval list
-        break;
-      }
-
-      Address += Query.Size;
-    } while (Address < End);
-  }
-
-  bool HandleRWXAccessViolation(uint64_t FaultAddress) {
-    const bool NeedsInvalidate = [](uint64_t Address) {
-      std::unique_lock Lock(RWXIntervalsLock);
-      const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
-      // Invalidate just the single faulting page
-      if (!Enclosed)
-        return false;
-
-      ULONG TmpProt;
-      void *TmpAddress = reinterpret_cast<void *>(Address);
-      SIZE_T TmpSize = 1;
-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
-      return true;
-    }(FaultAddress);
-
-    if (NeedsInvalidate) {
-      // RWXIntervalsLock cannot be held during invalidation
-      CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), FaultAddress & FHU::FEX_PAGE_MASK, FHU::FEX_PAGE_SIZE);
-      return true;
-    }
-    return false;
-  }
-}
-
 namespace Logging {
   void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     const auto Output = fextl::fmt::format("[{}][{:X}] {}\n", LogMan::DebugLevelStr(Level), GetCurrentThreadId(), Message);
@@ -490,7 +399,7 @@ public:
   }
 
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override {
-    Invalidation::ReprotectRWXIntervals(Start, Length);
+    InvalidationTracker.ReprotectRWXIntervals(Start, Length);
   }
 };
 
@@ -519,39 +428,7 @@ void BTCpuProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
-
-  CpuInfo.ProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
-
-  // Baseline FEX feature-set
-  CpuInfo.ProcessorFeatureBits = CPU_FEATURE_VME | CPU_FEATURE_TSC | CPU_FEATURE_CMOV | CPU_FEATURE_PGE |
-                                 CPU_FEATURE_PSE | CPU_FEATURE_MTRR | CPU_FEATURE_CX8 | CPU_FEATURE_MMX |
-                                 CPU_FEATURE_X86 | CPU_FEATURE_PAT | CPU_FEATURE_FXSR | CPU_FEATURE_SEP |
-                                 CPU_FEATURE_SSE | CPU_FEATURE_3DNOW | CPU_FEATURE_SSE2 | CPU_FEATURE_SSE3 |
-                                 CPU_FEATURE_CX128 | CPU_FEATURE_NX | CPU_FEATURE_SSSE3 | CPU_FEATURE_SSE41 |
-                                 CPU_FEATURE_PAE | CPU_FEATURE_DAZ;
-
-  // Features that require specific host CPU support
-  const auto CPUIDResult01 = CTX->RunCPUIDFunction(0x01, 0);
-  if (CPUIDResult01.ecx & (1 << 20)) {
-    CpuInfo.ProcessorFeatureBits |= CPU_FEATURE_SSE42;
-  }
-  if (CPUIDResult01.ecx & (1 << 27)) {
-    CpuInfo.ProcessorFeatureBits |= CPU_FEATURE_XSAVE;
-  }
-  if (CPUIDResult01.ecx & (1 << 28)) {
-    CpuInfo.ProcessorFeatureBits |= CPU_FEATURE_AVX;
-  }
-
-  const auto CPUIDResult07 = CTX->RunCPUIDFunction(0x07, 0);
-  if (CPUIDResult07.ebx & (1 << 5)) {
-    CpuInfo.ProcessorFeatureBits |= CPU_FEATURE_AVX2;
-  }
-
-  const auto FamilyIdentifier = CPUIDResult01.eax;
-  CpuInfo.ProcessorLevel = ((FamilyIdentifier >> 8) & 0xf) + ((FamilyIdentifier >> 20) & 0xff); // Family
-  CpuInfo.ProcessorRevision = (FamilyIdentifier & 0xf0000) >> 4; // Extended Model
-  CpuInfo.ProcessorRevision |= (FamilyIdentifier & 0xf0) << 4; // Model
-  CpuInfo.ProcessorRevision |= FamilyIdentifier & 0xf; // Stepping
+  CPUFeatures.emplace(*CTX);
 }
 
 NTSTATUS BTCpuThreadInit() {
@@ -743,7 +620,7 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
-    if (Invalidation::HandleRWXAccessViolation(FaultAddress)) {
+    if (InvalidationTracker.HandleRWXAccessViolation(GetTLS().ThreadState(), FaultAddress)) {
       LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
       NtContinue(Context, FALSE);
     }
@@ -773,89 +650,36 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
 }
 
 void BTCpuFlushInstructionCache2(const void *Address, SIZE_T Size) {
-  Invalidation::InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+  InvalidationTracker.InvalidateAlignedInterval(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
 void BTCpuNotifyMemoryAlloc(void *Address, SIZE_T Size, ULONG Type, ULONG Prot) {
-  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
+  InvalidationTracker.HandleMemoryProtectionNotification(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
                                                    Prot);
 }
 
 void BTCpuNotifyMemoryProtect(void *Address, SIZE_T Size, ULONG NewProt) {
-  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
+  InvalidationTracker.HandleMemoryProtectionNotification(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
                                                    NewProt);
 }
 
 void BTCpuNotifyMemoryFree(void *Address, SIZE_T Size, ULONG FreeType) {
   if (!Size) {
-    Invalidation::InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    InvalidationTracker.InvalidateContainingSection(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), true);
   } else if (FreeType & MEM_DECOMMIT) {
-    Invalidation::InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+    InvalidationTracker.InvalidateAlignedInterval(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
   }
 }
 
 void BTCpuNotifyUnmapViewOfSection(void *Address, ULONG Flags) {
-  Invalidation::InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  InvalidationTracker.InvalidateContainingSection(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), true);
 }
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
-  switch (Feature) {
-    case PF_FLOATING_POINT_PRECISION_ERRATA:
-      return FALSE;
-    case PF_FLOATING_POINT_EMULATED:
-      return FALSE;
-    case PF_COMPARE_EXCHANGE_DOUBLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_CX8);
-    case PF_MMX_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_MMX);
-     case PF_XMMI_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE);
-    case PF_3DNOW_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_3DNOW);
-    case PF_RDTSC_INSTRUCTION_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_TSC);
-    case PF_PAE_ENABLED:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_PAE);
-    case PF_XMMI64_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE2);
-    case PF_SSE3_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE3);
-    case PF_SSSE3_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSSE3);
-    case PF_XSAVE_ENABLED:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_XSAVE);
-    case PF_COMPARE_EXCHANGE128:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_CX128);
-    case PF_SSE_DAZ_MODE_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_DAZ);
-    case PF_NX_ENABLED:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_NX);
-    case PF_SECOND_LEVEL_ADDRESS_TRANSLATION:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_2NDLEV);
-    case PF_VIRT_FIRMWARE_ENABLED:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_VIRT);
-    case PF_RDWRFSGSBASE_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_RDFS);
-    case PF_FASTFAIL_AVAILABLE:
-      return TRUE;
-    case PF_SSE4_1_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE41);
-    case PF_SSE4_2_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE42);
-    case PF_AVX_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_AVX);
-    case PF_AVX2_INSTRUCTIONS_AVAILABLE:
-      return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_AVX2);
-    default:
-      LogMan::Msg::DFmt("Unknown CPU feature: {:X}", Feature);
-      return FALSE;
-  }
+  return CPUFeatures->IsFeaturePresent(Feature) ? TRUE : FALSE;
 }
 
 BOOLEAN BTCpuUpdateProcessorInformation(SYSTEM_CPU_INFORMATION *Info) {
-  Info->ProcessorArchitecture = CpuInfo.ProcessorArchitecture;
-  Info->ProcessorLevel = CpuInfo.ProcessorLevel;
-  Info->ProcessorRevision = CpuInfo.ProcessorRevision;
-  Info->ProcessorFeatureBits = CpuInfo.ProcessorFeatureBits;
+  CPUFeatures->UpdateInformation(Info);
   return TRUE;
 }
