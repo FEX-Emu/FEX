@@ -27,6 +27,7 @@ struct Fixture {
 
   GET_SYMBOL(MakeReorderingType);
   GET_SYMBOL(GetReorderingTypeMember);
+  GET_SYMBOL(GetReorderingTypeMemberWithoutRepacking);
   GET_SYMBOL(ModifyReorderingTypeMembers);
   GET_SYMBOL(QueryOffsetOf);
 
@@ -64,6 +65,10 @@ TEST_CASE_METHOD(Fixture, "Automatic struct repacking") {
     // Test repacking of input pointers
     CHECK(GetReorderingTypeMember(&test_struct, 0) == 0x1234);
     CHECK(GetReorderingTypeMember(&test_struct, 1) == 0x5678);
+
+    // Test that we can force reinterpreting the data in guest layout as host layout
+    CHECK(GetReorderingTypeMemberWithoutRepacking(&test_struct, 0) == 0x5678);
+    CHECK(GetReorderingTypeMemberWithoutRepacking(&test_struct, 1) == 0x1234);
 
     // Test repacking of output pointers
     ModifyReorderingTypeMembers(&test_struct);
