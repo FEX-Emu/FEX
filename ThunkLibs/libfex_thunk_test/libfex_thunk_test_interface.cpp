@@ -28,3 +28,6 @@ template<> struct fex_gen_config<ModifyReorderingTypeMembers> {};
 
 template<> struct fex_gen_config<QueryOffsetOf> : fexgen::custom_host_impl {};
 template<> struct fex_gen_param<QueryOffsetOf, 0, ReorderingType*> : fexgen::ptr_passthrough {};
+
+template<> struct fex_gen_config<&CustomRepackedType::data> : fexgen::custom_repack {};
+template<> struct fex_gen_config<RanCustomRepack> {};
