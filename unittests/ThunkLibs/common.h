@@ -90,6 +90,7 @@ struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
 
+struct custom_repack {};
 struct emit_layout_wrappers {};
 
 struct opaque_type {};

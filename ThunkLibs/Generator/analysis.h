@@ -122,6 +122,16 @@ public:
 
         // If true, emit guest_layout/host_layout definitions even if the type is non-repackable
         bool emit_layout_wrappers = false;
+
+        // Set of members (identified by their field name) with custom repacking
+        std::unordered_set<std::string> custom_repacked_members;
+
+        bool UsesCustomRepackFor(const clang::FieldDecl* member) const {
+            return custom_repacked_members.contains(member->getNameAsString());
+        }
+        bool UsesCustomRepackFor(const std::string& member_name) const {
+            return custom_repacked_members.contains(member_name);
+        }
     };
 
 protected:

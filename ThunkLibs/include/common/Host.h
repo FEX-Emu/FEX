@@ -262,17 +262,31 @@ struct repack_wrapper {
   repack_wrapper(guest_layout<GuestT>& orig_arg_) : orig_arg(orig_arg_) {
     if (orig_arg.get_pointer()) {
       data = { *orig_arg_.get_pointer() };
+
+      if constexpr (!std::is_enum_v<T>) {
+        constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+        if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+          fex_apply_custom_repacking_entry(*data, *orig_arg_.get_pointer());
+        }
+      }
     }
   }
 
   ~repack_wrapper() {
     // TODO: Properly detect opaque types
     if constexpr (requires(guest_layout<T> t, decltype(data) h) { t.get_pointer(); (bool)h; *data; }) {
-      if constexpr (!std::is_const_v<std::remove_pointer_t<T>>) { // Skip exit-repacking for const pointees
-        if (data) {
-          constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
-          if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
-            *orig_arg.get_pointer() = to_guest(*data); // TODO: Only if annotated as out-parameter
+      // NOTE: It's assumed that the native host library didn't modify any
+      //       const-pointees, so we skip automatic exit repacking for them.
+      //       However, *custom* repacking must still be applied since it might
+      //       have unrelated side effects (such as deallocation of memory
+      //       reserved on entry)
+      if (!fex_apply_custom_repacking_exit(*orig_arg.get_pointer(), *data)) {
+        if constexpr (!std::is_const_v<std::remove_pointer_t<T>>) { // Skip exit-repacking for const pointees
+          if (data) {
+            constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+            if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+              *orig_arg.get_pointer() = to_guest(*data); // TODO: Only if annotated as out-parameter
+            }
           }
         }
       }

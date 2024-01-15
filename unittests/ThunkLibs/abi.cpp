@@ -596,6 +596,31 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
             CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::None);
             CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::None);
         }
+
+        SECTION("Innermost struct is incompatible but the pointer member is annotated") {
+            auto action = compute_data_layout(
+                "#include <thunks_common.h>\n"
+                "#include <cstdint>\n",
+                "#ifdef HOST\n"
+                "struct C { int32_t a; int32_t b; };\n"
+                "#else\n"
+                "struct C { int32_t b; int32_t a; };\n"
+                "#endif\n"
+                "struct B { C* a; int16_t b; };\n"
+                "struct A { int32_t a; B b; };\n"
+                "template<> struct fex_gen_config<&B::a> : fexgen::custom_repack {};\n"
+                "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+            INFO(FormatDataLayout(action->host_layout));
+
+            REQUIRE(action->guest_layout->contains("A"));
+            REQUIRE(action->guest_layout->contains("B"));
+            REQUIRE(action->guest_layout->contains("C"));
+
+            CHECK(action->GetTypeCompatibility("struct C") == TypeCompatibility::Repackable);
+            CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::Repackable);
+            CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
+        }
     }
 
     SECTION("Unannotated pointer to union type") {
@@ -623,6 +648,21 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
         CHECK(action->GetTypeCompatibility("struct A") == compat_full64_repackable32);
     }
 
+    SECTION("Pointer to union type with custom_repack annotation") {
+        auto action = compute_data_layout(
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n",
+            "union B { int32_t a; uint32_t b; };\n"
+            "struct A { B* a; };\n"
+            "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
+            "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+        INFO(FormatDataLayout(action->host_layout));
+
+        REQUIRE(action->guest_layout->contains("A"));
+        CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
+    }
+
     SECTION("Pointer to opaque type") {
         auto action = compute_data_layout(
             "#include <thunks_common.h>\n"
@@ -636,6 +676,52 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
 
         REQUIRE(action->guest_layout->contains("A"));
         CHECK(action->GetTypeCompatibility("struct A") == compat_full64_repackable32);
+    }
+
+    SECTION("Pointer member with custom repacking code") {
+        // Data layout analysis only needs to know about the custom_repack
+        // annotation. The actual custom repacking code isn't needed for the
+        // test.
+
+        auto action = compute_data_layout(
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n",
+            "#ifdef HOST\n"
+            "struct B { int32_t a; };\n"
+            "#else\n"
+            "struct B { int32_t b; };\n"
+            "#endif\n"
+            "struct A { B* a; };\n"
+            "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
+            "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+        INFO(FormatDataLayout(action->host_layout));
+
+        REQUIRE(action->guest_layout->contains("A"));
+        REQUIRE(action->guest_layout->contains("B"));
+        CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
+        CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::None);
+    }
+
+    SECTION("Custom repacking induces repacking requirement") {
+        // Data layout analysis only needs to know about the custom_repack
+        // annotation. The actual custom repacking code isn't needed for the
+        // test.
+
+        auto action = compute_data_layout(
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n",
+            "struct B {};\n"
+            "struct A { B* a; };\n"
+            "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
+            "template<> struct fex_gen_type<A> {};\n", guest_abi);
+
+        INFO(FormatDataLayout(action->host_layout));
+
+        REQUIRE(action->guest_layout->contains("A"));
+        REQUIRE(action->guest_layout->contains("B"));
+        CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::Full);
+        CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
     }
 
     SECTION("Self-referencing struct (like VkBaseOutStructure)") {
