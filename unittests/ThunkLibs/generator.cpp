@@ -281,6 +281,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "};\n"
         "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
         "void *dlsym_default(void* handle, const char* symbol);\n"
+        "template<typename T> inline constexpr bool has_compatible_data_layout = std::is_integral_v<T> || std::is_enum_v<T>;\n"
         "template<typename T>\n"
         "struct guest_layout {\n"
         "  T data;\n"
@@ -303,10 +304,16 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  host_layout(const guest_layout<T>& from);\n"
         "};\n"
         "\n"
+        "template<typename T, typename GuestT>\n"
+        "struct repack_wrapper {};\n"
+        "template<typename T, typename GuestT>\n"
+        "repack_wrapper<T, GuestT> make_repack_wrapper(guest_layout<GuestT>& orig_arg);\n"
         "template<typename T> guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>);\n"
         "template<typename T> guest_layout<T*> to_guest(const host_layout<T*>& from);\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(guest_layout<F*>);\n"
+        "template<typename T> T& unwrap_host(host_layout<T>&);\n"
+        "template<typename T, typename GuestT> T* unwrap_host(repack_wrapper<T*, GuestT>&);\n"
         "template<typename T> const host_layout<T>& to_host_layout(const T& t);\n";
 
     auto& filename = output_filenames.host;
@@ -706,6 +713,11 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
         }
     }
 
+    SECTION("Pointer to struct with pointer member of consistent data layout") {
+        std::string type = GENERATE("char", "short", "int", "float");
+        REQUIRE_NOTHROW(run_thunkgen_host("struct A { " + type + "* a; };\n", code, guest_abi));
+    }
+
     SECTION("Pointer to struct with pointer member of opaque type") {
         const auto prelude =
             "struct B;\n"
@@ -713,6 +725,10 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
 
         // Unannotated
         REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Contains("incomplete type"));
+
+        // Annotated as opaque_type
+        CHECK_NOTHROW(run_thunkgen_host(prelude,
+              code + "template<> struct fex_gen_type<B> : fexgen::opaque_type {};\n", guest_abi));
     }
 }
 

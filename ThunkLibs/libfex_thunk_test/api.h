@@ -28,4 +28,25 @@ union UnionType {
 UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 uint32_t GetUnionTypeA(UnionType*);
 
+
+/// Interfaces used to test automatic struct repacking
+
+// A simple struct with data layout that differs between guest and host.
+// The thunk generator should emit code that swaps the member data into
+// correct position.
+struct ReorderingType {
+#if !defined(GUEST_THUNK_LIBRARY)
+    uint32_t a;
+    uint32_t b;
+#else
+    uint32_t b;
+    uint32_t a;
+#endif
+};
+
+ReorderingType MakeReorderingType(uint32_t a, uint32_t b);
+uint32_t GetReorderingTypeMember(ReorderingType*, int index);
+void ModifyReorderingTypeMembers(ReorderingType* data);
+uint32_t QueryOffsetOf(ReorderingType*, int index);
+
 }

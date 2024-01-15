@@ -144,6 +144,9 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
 
         // Opaque types don't need layout definitions
         if (type_repack_info.assumed_compatible && type_repack_info.pointers_only) {
+            if (guest_abi.pointer_size != 4) {
+                fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}*> = true;\n", struct_name);
+            }
             continue;
         } else if (type_repack_info.assumed_compatible) {
             // TODO: Handle more cleanly
@@ -280,6 +283,9 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         }
         fmt::print(file, "  return ret;\n");
         fmt::print(file, "}}\n\n");
+
+        fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}> = {};\n",
+                   struct_name, (type_compat.at(type) == TypeCompatibility::Full));
     }
 }
 
@@ -563,6 +569,16 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 function_to_call = "fexfn_impl_" + libname + "_" + function_name;
             }
 
+            auto get_type_name_with_nonconst_pointee = [&](clang::QualType type) {
+                type = type.getLocalUnqualifiedType();
+                if (type->isPointerType()) {
+                    // Strip away "const" from pointee type
+                    type = context.getPointerType(type->getPointeeType().getLocalUnqualifiedType());
+                }
+                return get_type_name(context, type.getTypePtr());
+            };
+
+
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(" << struct_name << "* args) {\n";
 
             for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
@@ -592,7 +608,8 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     // Fully compatible
                     fmt::print(file, "  host_layout<{}> a_{} {{ args->a_{} }};\n", get_type_name(context, param_type.getTypePtr()), param_idx, param_idx);
                 } else if (pointee_compat == TypeCompatibility::Repackable) {
-                    throw report_error(thunk.decl->getLocation(), "Pointer parameter %1 of function %0 requires automatic repacking, which is not implemented yet").AddString(function_name).AddTaggedVal(param_type);
+                    // TODO: Require opt-in for this to be emitted since it's single-element only; otherwise, pointers-to-arrays arguments will cause stack trampling
+                    fmt::print(file, "  auto a_{} = make_repack_wrapper<{}>(args->a_{});\n", param_idx, get_type_name_with_nonconst_pointee(param_type), param_idx);
                 } else {
                     throw report_error(thunk.decl->getLocation(), "Cannot generate unpacking function for function %0 with unannotated pointer parameter %1").AddString(function_name).AddTaggedVal(param_type);
                 }
@@ -607,8 +624,6 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             fmt::print(file, "{}(", function_to_call);
             {
                 auto format_param = [&](std::size_t idx) {
-                    std::string raw_arg = fmt::format("a_{}.data", idx);
-
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
@@ -625,7 +640,8 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                         // Pass raw guest_layout<T*>
                         return fmt::format("args->a_{}", idx);
                     } else {
-                        return raw_arg;
+                        // Unwrap host_layout/repack_wrapper layer
+                        return fmt::format("unwrap_host(a_{})", idx);
                     }
                 };
 

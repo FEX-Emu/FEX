@@ -11,6 +11,7 @@ $end_info$
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <optional>
 
 #include "PackedArguments.h"
 
@@ -89,6 +90,35 @@ struct ParameterAnnotations {
     bool assume_compatible = false;
 };
 
+// Generator emits specializations for this for each type that has compatible layout
+template<typename T>
+inline constexpr bool has_compatible_data_layout =
+  std::is_integral_v<T> || std::is_enum_v<T> || std::is_floating_point_v<T>
+#ifndef IS_32BIT_THUNK
+  // If none of the previous predicates matched, the thunk generator did *not* emit a specialization for T.
+  // This should not happen on 64-bit with the currently thunked libraries, since their types
+  // * either have fully consistent data layout across 64-bit architectures.
+  // * or use custom repacking, in which case has_compatible_data_layout isn't used
+  //
+  // Throwing a fake exception here will trigger a build failure.
+  || (throw "Instantiated on a type that was expected to be compatible", true)
+#endif
+;
+
+#ifndef IS_32BIT_THUNK
+// Pointers have the same size, hence data layout compatibility only depends on the pointee type
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T*> = has_compatible_data_layout<std::remove_cv_t<T>>;
+template<typename T>
+inline constexpr bool has_compatible_data_layout<T* const> = has_compatible_data_layout<std::remove_cv_t<T>*>;
+
+// void* and void** are assumed to be compatible to simplify handling of libraries that use them ubiquitously
+template<> inline constexpr bool has_compatible_data_layout<void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void*> = true;
+template<> inline constexpr bool has_compatible_data_layout<void**> = true;
+template<> inline constexpr bool has_compatible_data_layout<const void**> = true;
+#endif
+
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
 struct guest_layout {
@@ -96,6 +126,8 @@ struct guest_layout {
   static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
   static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
   static_assert(!std::is_void_v<T>, "Attempted to get guest layout of void. Missing annotation for void pointer?");
+
+  static_assert(std::is_fundamental_v<T> || has_compatible_data_layout<T>, "Default guest_layout may not be used for non-compatible data");
 
   using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
   type data;
@@ -212,6 +244,63 @@ struct host_layout<T* const> {
   }
 };
 
+// Wrapper around host_layout that repacks from a guest_layout on construction
+// and exit-repacks on scope exit (if needed). The wrapper manages the storage
+// needed for repacked data itself.
+// This also implicitly converts to a pointer of the wrapped host type, since
+// this conversion is required at all call sites anyway
+template<typename T, typename GuestT>
+struct repack_wrapper {
+  static_assert(std::is_pointer_v<T>);
+
+  // Strip "const" from pointee type in host_layout storage
+  using PointeeT = std::remove_cv_t<std::remove_pointer_t<T>>;
+
+  std::optional<host_layout<PointeeT>> data;
+  guest_layout<GuestT>& orig_arg;
+
+  repack_wrapper(guest_layout<GuestT>& orig_arg_) : orig_arg(orig_arg_) {
+    if (orig_arg.get_pointer()) {
+      data = { *orig_arg_.get_pointer() };
+    }
+  }
+
+  ~repack_wrapper() {
+    // TODO: Properly detect opaque types
+    if constexpr (requires(guest_layout<T> t, decltype(data) h) { t.get_pointer(); (bool)h; *data; }) {
+      if constexpr (!std::is_const_v<std::remove_pointer_t<T>>) { // Skip exit-repacking for const pointees
+        if (data) {
+          constexpr bool is_compatible = has_compatible_data_layout<T> && std::is_same_v<T, GuestT>;
+          if constexpr (!is_compatible && std::is_class_v<std::remove_pointer_t<T>>) {
+            *orig_arg.get_pointer() = to_guest(*data); // TODO: Only if annotated as out-parameter
+          }
+        }
+      }
+    }
+  }
+
+  operator PointeeT*() {
+    static_assert(sizeof(PointeeT) == sizeof(host_layout<PointeeT>));
+    static_assert(alignof(PointeeT) == alignof(host_layout<PointeeT>));
+    return data ? &data.value().data : nullptr;
+  }
+};
+
+template<typename T, typename GuestT>
+static repack_wrapper<T, GuestT> make_repack_wrapper(guest_layout<GuestT>& orig_arg) {
+  return { orig_arg };
+}
+
+template<typename T>
+T& unwrap_host(host_layout<T>& val) {
+  return val.data;
+}
+
+template<typename T, typename T2>
+T* unwrap_host(repack_wrapper<T*, T2>& val) {
+  return val;
+}
+
 template<typename T>
 inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
   if constexpr (std::is_enum_v<T>) {
@@ -234,6 +323,34 @@ inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
 template<typename>
 struct CallbackUnpack;
 
+template<typename T, ParameterAnnotations Annotation>
+constexpr bool IsCompatible() {
+  if constexpr (Annotation.assume_compatible) {
+    return true;
+  } else if constexpr (has_compatible_data_layout<T>) {
+    return true;
+  } else {
+    if constexpr (std::is_pointer_v<T>) {
+      return has_compatible_data_layout<std::remove_cv_t<std::remove_pointer_t<T>>>;
+    } else {
+      return false;
+    }
+  }
+}
+
+template<ParameterAnnotations Annotation, typename HostT, typename T>
+auto Projection(guest_layout<T>& data) {
+  if constexpr (Annotation.is_passthrough) {
+    return data;
+  } else if constexpr ((IsCompatible<T, Annotation>() && std::is_same_v<T, HostT>) || !std::is_pointer_v<T>) {
+    return host_layout<HostT> { data }.data;
+  } else {
+    // This argument requires temporary storage for repacked data
+    // *and* it needs to call custom repack functions (if any)
+    return make_repack_wrapper<HostT>(data);
+  }
+}
+
 template<typename Result, typename... Args>
 struct CallbackUnpack<Result(Args...)> {
   static Result CallGuestPtr(Args... args) {
@@ -249,15 +366,6 @@ struct CallbackUnpack<Result(Args...)> {
     }
   }
 };
-
-template<ParameterAnnotations Annotation, typename T>
-auto Projection(guest_layout<T>& data) {
-  if constexpr (Annotation.is_passthrough) {
-    return data;
-  } else {
-    return host_layout<T> { data }.data;
-  }
-}
 
 template<typename>
 struct GuestWrapperForHostFunction;
