@@ -4265,6 +4265,13 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   // 0x80064000
 
   if (Op->Dest.IsGPR()) {
+    // If the destination is also the accumulator, we get some algebraic
+    // simplifications. Not sure if this is actually hit but it's in
+    // InstCountCI.
+    bool Trivial = Op->Dest.Data.GPR.GPR == X86State::REG_RAX &&
+                   !Op->Dest.IsGPRDirect() &&
+                   !Op->Dest.Data.GPR.HighBits;
+
     OrderedNode *Src1{};
     OrderedNode *Src1Lower{};
 
@@ -4288,40 +4295,37 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       Src3Lower = Src3;
     }
 
-    // If our destination is a GPR then this behaves differently
-    // RAX = RAX == Op1 ? RAX : Op1
-    // AKA if they match then don't touch RAX value
-    // Otherwise set it to the rm operand
-    OrderedNode *CASResult = _Select(FEXCore::IR::COND_EQ,
-      Src1Lower, Src3Lower,
-      Src3Lower, Src1Lower);
+    // Compare RAX with the destination, setting flags accordingly.
+    OrderedNode *Result = _Sub(IR::SizeToOpSize(GPRSize), Src3Lower, Src1Lower);
+    GenerateFlags_SUB(Op, Result, Src3Lower, Src1Lower);
+    CalculateDeferredFlags();
+
+    if (!Trivial) {
+      if (GPRSize == 8 && Size == 4) {
+        // This allows us to only hit the ZEXT case on failure
+        OrderedNode *RAXResult = _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ},
+                                             Src3, Src1Lower);
+
+        // When the size is 4 we need to make sure not zext the GPR when the comparison fails
+        StoreGPRRegister(X86State::REG_RAX, RAXResult);
+      }
+      else {
+        StoreGPRRegister(X86State::REG_RAX, Src1Lower, Size);
+      }
+    }
 
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
-    OrderedNode *DestResult = _Select(FEXCore::IR::COND_EQ,
-        Src1Lower, Src3Lower,
-        Src2, Src1);
+    OrderedNode *DestResult =
+      Trivial ? Src2 : _NZCVSelect(IR::i64Bit, CondClassType{COND_EQ}, Src2, Src1);
 
     // Store in to GPR Dest
-    // Have to make sure this is after the result store in RAX for when Dest == RAX
     if (GPRSize == 8 && Size == 4) {
-      // This allows us to only hit the ZEXT case on failure
-      OrderedNode *RAXResult = _Select(FEXCore::IR::COND_EQ,
-        CASResult, Src3Lower,
-        Src3, Src1Lower);
-
-      // When the size is 4 we need to make sure not zext the GPR when the comparison fails
-      StoreGPRRegister(X86State::REG_RAX, RAXResult);
       StoreResult_WithOpSize(GPRClass, Op, Op->Dest, DestResult, GPRSize, -1);
-    }
-    else {
-      StoreGPRRegister(X86State::REG_RAX, CASResult, Size);
+    } else {
       StoreResult(GPRClass, Op, DestResult, -1);
     }
-
-    OrderedNode *Result = _Sub(IR::SizeToOpSize(GPRSize), Src3Lower, CASResult);
-    GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
   else {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
