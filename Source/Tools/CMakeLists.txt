@@ -21,6 +21,7 @@ if (NOT MINGW_BUILD)
   add_subdirectory(LinuxEmulation/)
 
   add_subdirectory(FEXLoader/)
+  add_subdirectory(pidof/)
 endif()
 
 if (BUILD_TESTS)
