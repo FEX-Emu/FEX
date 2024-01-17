@@ -127,7 +127,7 @@ timespec32 {
   int32_t tv_sec;
   int32_t tv_nsec;
 
-  timespec32() = delete;
+  timespec32() = default;
 
   operator timespec() const {
     timespec spec{};
