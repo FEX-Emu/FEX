@@ -22,18 +22,25 @@ namespace FEXCore::Utils::SpinWaitLock {
    */
 #ifdef _M_ARM_64
 
-#define SPINLOOP_BODY(LoadExclusiveOp, LoadAtomicOp, RegSize) \
+#define LOADEXCLUSIVE(LoadExclusiveOp, RegSize) \
   /* Prime the exclusive monitor with the passed in address. */ \
-  #LoadExclusiveOp " %" #RegSize "[Tmp], [%[Futex]]; \
-  /* WFE will wait for either the memory to change or spurious wake-up. */ \
-  wfe; \
-  /* Load with acquire to get the result of memory. */ \
-  " #LoadAtomicOp " %" #RegSize "[Result], [%[Futex]]; "
+  #LoadExclusiveOp  " %" #RegSize "[Result], [%[Futex]];"
 
-#define SPINLOOP_8BIT  SPINLOOP_BODY(ldaxrb, ldarb, w)
-#define SPINLOOP_16BIT SPINLOOP_BODY(ldaxrh, ldarh, w)
-#define SPINLOOP_32BIT SPINLOOP_BODY(ldaxr,  ldar,  w)
-#define SPINLOOP_64BIT SPINLOOP_BODY(ldaxr,  ldar,  x)
+#define SPINLOOP_BODY(LoadAtomicOp, RegSize) \
+  /* WFE will wait for either the memory to change or spurious wake-up. */ \
+  "wfe;" \
+  /* Load with acquire to get the result of memory. */ \
+  #LoadAtomicOp " %" #RegSize "[Result], [%[Futex]]; "
+
+#define SPINLOOP_WFE_LDX_8BIT  LOADEXCLUSIVE(ldaxrb, w)
+#define SPINLOOP_WFE_LDX_16BIT LOADEXCLUSIVE(ldaxrh, w)
+#define SPINLOOP_WFE_LDX_32BIT LOADEXCLUSIVE(ldaxr,  w)
+#define SPINLOOP_WFE_LDX_64BIT LOADEXCLUSIVE(ldaxr,  x)
+
+#define SPINLOOP_8BIT  SPINLOOP_BODY(ldarb, w)
+#define SPINLOOP_16BIT SPINLOOP_BODY(ldarh, w)
+#define SPINLOOP_32BIT SPINLOOP_BODY(ldar,  w)
+#define SPINLOOP_64BIT SPINLOOP_BODY(ldar,  x)
 
   extern uint32_t CycleCounterFrequency;
   extern uint64_t CyclesPerNanosecond;
@@ -57,51 +64,98 @@ namespace FEXCore::Utils::SpinWaitLock {
     return NanosecondCount / CyclesPerNanosecond;
   }
 
+  static inline uint8_t LoadExclusive(uint8_t *Futex) {
+    uint8_t Result{};
+    __asm volatile(SPINLOOP_WFE_LDX_8BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint16_t LoadExclusive(uint16_t *Futex) {
+    uint16_t Result{};
+    __asm volatile(SPINLOOP_WFE_LDX_16BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint32_t LoadExclusive(uint32_t *Futex) {
+    uint32_t Result{};
+    __asm volatile(SPINLOOP_WFE_LDX_32BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint64_t LoadExclusive(uint64_t *Futex) {
+    uint64_t Result{};
+    __asm volatile(SPINLOOP_WFE_LDX_64BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint8_t WFELoadAtomic(uint8_t *Futex) {
+    uint8_t Result{};
+    __asm volatile(SPINLOOP_8BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint16_t WFELoadAtomic(uint16_t *Futex) {
+    uint16_t Result{};
+    __asm volatile(SPINLOOP_16BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint32_t WFELoadAtomic(uint32_t *Futex) {
+    uint32_t Result{};
+    __asm volatile(SPINLOOP_32BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
+  static inline uint64_t WFELoadAtomic(uint64_t *Futex) {
+    uint64_t Result{};
+    __asm volatile(SPINLOOP_64BIT
+        : [Result] "=r" (Result)
+        , [Futex] "+r" (Futex)
+        :: "memory");
+
+    return Result;
+  }
+
   template<typename T, typename TT = T>
   static inline void Wait(T *Futex, TT ExpectedValue) {
     std::atomic<T> *AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
-    T Tmp{};
     T Result = AtomicFutex->load();
 
     // Early exit if possible.
     if (Result == ExpectedValue) return;
 
     do {
-      if constexpr (sizeof(T) == 1) {
-        __asm volatile(SPINLOOP_8BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 2) {
-        __asm volatile(SPINLOOP_16BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 4) {
-        __asm volatile(SPINLOOP_32BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 8) {
-        __asm volatile(SPINLOOP_64BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else {
-        static_assert(!std::is_same_v<T, T>, "Invalid");
-      }
+      Result = LoadExclusive(Futex);
+      if (Result == ExpectedValue) return;
+      Result = WFELoadAtomic(Futex);
     } while (Result != ExpectedValue);
   }
 
@@ -118,7 +172,6 @@ namespace FEXCore::Utils::SpinWaitLock {
   static inline bool Wait(T *Futex, TT ExpectedValue, std::chrono::nanoseconds const &Timeout) {
     std::atomic<T> *AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
 
-    T Tmp{};
     T Result = AtomicFutex->load();
 
     // Early exit if possible.
@@ -128,41 +181,9 @@ namespace FEXCore::Utils::SpinWaitLock {
     const auto Begin = GetCycleCounter();
 
     do {
-      if constexpr (sizeof(T) == 1) {
-        __asm volatile(SPINLOOP_8BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 2) {
-        __asm volatile(SPINLOOP_16BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 4) {
-        __asm volatile(SPINLOOP_32BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else if constexpr (sizeof(T) == 8) {
-        __asm volatile(SPINLOOP_64BIT
-          : [Result] "=r" (Result)
-          , [Tmp] "=r" (Tmp)
-          , [Futex] "+r" (Futex)
-          : [ExpectedValue] "r" (ExpectedValue)
-          : "memory");
-      }
-      else {
-        static_assert(!std::is_same_v<T, T>, "Invalid");
-      }
+      Result = LoadExclusive(Futex);
+      if (Result == ExpectedValue) return true;
+      Result = WFELoadAtomic(Futex);
 
       const auto CurrentCycleCounter = GetCycleCounter();
       if ((CurrentCycleCounter - Begin) >= TimeoutCycles) {
