@@ -4,6 +4,7 @@ set (SRCS
   VDSO_Emulation.cpp
   LinuxSyscalls/GdbServer.cpp
   LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp
+  LinuxSyscalls/FaultSafeMemcpy.cpp
   LinuxSyscalls/FileManagement.cpp
   LinuxSyscalls/LinuxAllocator.cpp
   LinuxSyscalls/NetStream.cpp

@@ -531,6 +531,16 @@ static bool HasSyscallError(const void* Result) {
 
 template<bool IncrementOffset, typename T>
 uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count);
+
+namespace FaultSafeMemcpy {
+// These are little helper functions for cases when FEX needs to copy data to or from the application in a robust fashion.
+// CopyFromUser and CopyToUser are memcpy routines that expect to safely SIGSEGV when reading or writing application memory respectively.
+// Returns zero if the memcpy completed, or crashes with SIGABRT and a log message if it faults.
+[[nodiscard]] size_t CopyFromUser(void *Dest, const void* Src, size_t Size);
+[[nodiscard]] size_t CopyToUser(void *Dest, const void* Src, size_t Size);
+bool IsFaultLocation(uint64_t PC);
+}
+
 }
 
 // Registers syscall for both 32bit and 64bit

@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -1466,6 +1467,14 @@ namespace FEX::HLE {
           ERROR_AND_DIE_FMT("X86 shouldn't hit this DeferredSignalFaultAddress");
 #endif
         }
+      }
+      else if (Signal == SIGSEGV &&
+               SigInfo.si_code == SEGV_ACCERR &&
+               FaultSafeMemcpy::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
+        // Return from the subroutine, returning EFAULT.
+        ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
+        ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
+        return;
       }
       else {
         if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
