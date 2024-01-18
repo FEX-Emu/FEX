@@ -1471,10 +1471,17 @@ namespace FEX::HLE {
       else if (Signal == SIGSEGV &&
                SigInfo.si_code == SEGV_ACCERR &&
                FaultSafeMemcpy::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
-        // Return from the subroutine, returning EFAULT.
-        ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
-        ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
-        return;
+        // If you want to emulate EFAULT behaviour then enable this if-statement.
+        // Do this once we find an application that depends on this.
+        if constexpr (false) {
+          // Return from the subroutine, returning EFAULT.
+          ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
+          ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
+          return;
+        }
+        else {
+          LogMan::Msg::AFmt("Received invalid data to syscall. Crashing now!");
+        }
       }
       else {
         if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
