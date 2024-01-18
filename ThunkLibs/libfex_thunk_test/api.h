@@ -49,4 +49,17 @@ uint32_t GetReorderingTypeMember(ReorderingType*, int index);
 void ModifyReorderingTypeMembers(ReorderingType* data);
 uint32_t QueryOffsetOf(ReorderingType*, int index);
 
+
+/// Interfaces used to test assisted struct repacking
+
+// We enable custom repacking on the "data" member, with repacking code that
+// sets the first bit of "custom_repack_invoked" to 1 on entry.
+struct CustomRepackedType {
+    ReorderingType* data;
+    int custom_repack_invoked;
+};
+
+// Should return true if the custom repacker set "custom_repack_invoked" to true
+int RanCustomRepack(CustomRepackedType*);
+
 }

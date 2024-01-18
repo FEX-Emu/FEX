@@ -47,4 +47,8 @@ void ModifyReorderingTypeMembers(ReorderingType* data) {
   data->b += 2;
 }
 
+int RanCustomRepack(CustomRepackedType* data) {
+  return data->custom_repack_invoked;
+}
+
 } // extern "C"

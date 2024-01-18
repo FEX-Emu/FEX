@@ -29,6 +29,8 @@ struct Fixture {
   GET_SYMBOL(GetReorderingTypeMember);
   GET_SYMBOL(ModifyReorderingTypeMembers);
   GET_SYMBOL(QueryOffsetOf);
+
+  GET_SYMBOL(RanCustomRepack);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
@@ -68,4 +70,9 @@ TEST_CASE_METHOD(Fixture, "Automatic struct repacking") {
     CHECK(GetReorderingTypeMember(&test_struct, 0) == 0x1235);
     CHECK(GetReorderingTypeMember(&test_struct, 1) == 0x567a);
   };
+}
+
+TEST_CASE_METHOD(Fixture, "Assisted struct repacking") {
+  CustomRepackedType data {};
+  CHECK(RanCustomRepack(&data) == 1);
 }

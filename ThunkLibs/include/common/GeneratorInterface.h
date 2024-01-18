@@ -12,6 +12,22 @@ struct callback_annotation_base {
 };
 struct callback_stub : callback_annotation_base {};
 
+// Member annotation to mark members handled by custom repacking. This enables
+// automatic struct repacking of structs with non-trivial members (pointers,
+// unions, ...). Repacking logic is auto-generated as usual, with the
+// difference that an external function is called to manually repack the
+// annotated members.
+//
+// Two functions must be implemented for the parent struct type:
+// * fex_custom_repack_entry, called after automatic repacking of the other members
+// * fex_custom_repack_exit, called on exit but before automatic exit-repacking
+//     of the other members. Non-trivial implementations must perform host->guest
+//     repacking manually and return the boolean value true.
+//
+// If multiple members of the same struct are annotated as custom_repack,
+// they must be handled in the same fex_custom_repack_entry/exit functions.
+struct custom_repack {};
+
 // Type annotation to indicate that guest_layout/host_layout definitions should
 // be emitted even if the type is non-repackable. Pointer members will be
 // copied (or zero-extended) without regard for the referred data.

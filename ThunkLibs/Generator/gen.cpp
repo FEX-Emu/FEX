@@ -234,11 +234,19 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             };
             // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
             for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
-                map_field(member, true);
+                if (!type_repack_info.UsesCustomRepackFor(member)) {
+                    map_field(member, true);
+                } else {
+                  // Leave field uninitialized
+                }
             }
             fmt::print(file, "    }} {{\n");
             for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
-                map_field(member, false);
+                if (!type_repack_info.UsesCustomRepackFor(member)) {
+                    map_field(member, false);
+                } else {
+                  // Leave field uninitialized
+                }
             }
         }
         fmt::print(file, "  }}\n");
@@ -274,15 +282,45 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
 
             // Prefer initialization via the constructor's initializer list if possible (to detect unintended narrowing), otherwise initialize in the body
             for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
-                map_field2(member, true);
+                if (!type_repack_info.UsesCustomRepackFor(member.member_name)) {
+                    map_field2(member, true);
+                } else {
+                  // Leave field uninitialized
+                }
             }
             fmt::print(file, "  }} }};\n");
             for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
-                map_field2(member, false);
+                if (!type_repack_info.UsesCustomRepackFor(member.member_name)) {
+                    map_field2(member, false);
+                } else {
+                  // Leave field uninitialized
+                }
             }
         }
         fmt::print(file, "  return ret;\n");
         fmt::print(file, "}}\n\n");
+
+        // Forward-declare user-provided repacking functions
+        if (type_repack_info.custom_repacked_members.empty()) {
+            fmt::print(file, "void fex_apply_custom_repacking_entry(host_layout<{}>& source, const guest_layout<{}>& from) {{\n", struct_name, struct_name);
+            fmt::print(file, "}}\n");
+            fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, host_layout<{}>& from) {{\n", struct_name, struct_name);
+            fmt::print(file, "  return false;\n");
+            fmt::print(file, "}}\n");
+        } else {
+            fmt::print(file, "void fex_custom_repack_entry(host_layout<{}>& into, const guest_layout<{}>& from);\n",
+                       struct_name, struct_name);
+            fmt::print(file, "bool fex_custom_repack_exit(guest_layout<{}>& into, const host_layout<{}>& from);\n\n",
+                       struct_name, struct_name);
+
+            fmt::print(file, "void fex_apply_custom_repacking_entry(host_layout<{}>& source, const guest_layout<{}>& from) {{\n", struct_name, struct_name);
+            fmt::print(file, "  fex_custom_repack_entry(source, from);\n");
+            fmt::print(file, "}}\n");
+
+            fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, host_layout<{}>& from) {{\n", struct_name, struct_name);
+            fmt::print(file, "  return fex_custom_repack_exit(into, from);\n");
+            fmt::print(file, "}}\n");
+        }
 
         fmt::print(file, "template<> inline constexpr bool has_compatible_data_layout<{}> = {};\n",
                    struct_name, (type_compat.at(type) == TypeCompatibility::Full));
@@ -603,6 +641,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     continue;
                 }
 
+                // Layout repacking happens here
                 if (!param_type->isPointerType() || (is_assumed_compatible || pointee_compat == TypeCompatibility::Full) ||
                     param_type->getPointeeType()->isBuiltinType() /* TODO: handle size_t. Actually, properly check for data layout compatibility */) {
                     // Fully compatible

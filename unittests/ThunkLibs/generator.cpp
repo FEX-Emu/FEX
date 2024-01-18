@@ -711,6 +711,11 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
         SECTION("Parameter annotated as ptr_passthrough") {
             CHECK_NOTHROW(run_thunkgen_host(prelude, code + "template<> struct fex_gen_param<func, 0, A*> : fexgen::ptr_passthrough {};\n", guest_abi));
         }
+
+        SECTION("Struct member annotated as custom_repack") {
+            CHECK_NOTHROW(run_thunkgen_host("struct A { void* a; };\n",
+                  code + "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n", guest_abi));
+        }
     }
 
     SECTION("Pointer to struct with pointer member of consistent data layout") {
@@ -780,5 +785,16 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
         } else {
             CHECK_NOTHROW(run_thunkgen_host(prelude, code, guest_abi));
         }
+    }
+
+    SECTION("Custom repack in struct") {
+        const char* prelude =
+            "struct A { void* a; };\n";
+        const char* code =
+            "#include <thunks_common.h>\n"
+            "void func(A*);\n"
+            "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        CHECK_NOTHROW(run_thunkgen_host(prelude, code, guest_abi));
     }
 }
