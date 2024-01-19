@@ -3,11 +3,12 @@ FROM ubuntu:20.04 as builder
 
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt install -y cmake \
-clang-10 llvm-10 nasm ninja-build \
-libcap-dev libglfw3-dev libepoxy-dev python3-dev \
-python3 linux-headers-generic
+clang-10 llvm-10 nasm ninja-build pkg-config \
+libcap-dev libglfw3-dev libepoxy-dev python3-dev libsdl2-dev \
+python3 linux-headers-generic \
+git
 
-COPY . /opt/FEX
+RUN git clone --recurse-submodules https://github.com/FEX-Emu/FEX.git
 
 CMD [ "mkdir /opt/FEX/build" ]
 
