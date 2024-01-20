@@ -24,6 +24,8 @@ template<> struct fex_gen_config<GetUnionTypeA> {};
 
 template<> struct fex_gen_config<MakeReorderingType> {};
 template<> struct fex_gen_config<GetReorderingTypeMember> {};
+template<> struct fex_gen_config<GetReorderingTypeMemberWithoutRepacking> {};
+template<> struct fex_gen_param<GetReorderingTypeMemberWithoutRepacking, 0, const ReorderingType*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<ModifyReorderingTypeMembers> {};
 
 template<> struct fex_gen_config<QueryOffsetOf> : fexgen::custom_host_impl {};

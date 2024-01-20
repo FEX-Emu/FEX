@@ -45,10 +45,12 @@ struct ReorderingType {
 };
 
 ReorderingType MakeReorderingType(uint32_t a, uint32_t b);
-uint32_t GetReorderingTypeMember(ReorderingType*, int index);
+uint32_t GetReorderingTypeMember(const ReorderingType*, int index);
 void ModifyReorderingTypeMembers(ReorderingType* data);
 uint32_t QueryOffsetOf(ReorderingType*, int index);
 
+// Uses assume_compatible_data_layout to skip repacking
+uint32_t GetReorderingTypeMemberWithoutRepacking(const ReorderingType*, int index);
 
 /// Interfaces used to test assisted struct repacking
 

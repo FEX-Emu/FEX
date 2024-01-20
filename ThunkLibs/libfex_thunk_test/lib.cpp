@@ -34,12 +34,16 @@ ReorderingType MakeReorderingType(uint32_t a, uint32_t b) {
   return ReorderingType { .a = a, .b = b };
 }
 
-uint32_t GetReorderingTypeMember(ReorderingType* data, int index) {
+uint32_t GetReorderingTypeMember(const ReorderingType* data, int index) {
   if (index == 0) {
     return data->a;
   } else {
     return data->b;
   }
+}
+
+uint32_t GetReorderingTypeMemberWithoutRepacking(const ReorderingType* data, int index) {
+  return GetReorderingTypeMember(data, index);
 }
 
 void ModifyReorderingTypeMembers(ReorderingType* data) {

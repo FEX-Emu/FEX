@@ -77,6 +77,7 @@ int main(int argc, char* const argv[]) {
             AdjustedArgs.push_back(std::string { "--target=" } + platform + "-linux-unknown");
             AdjustedArgs.push_back("-isystem");
             AdjustedArgs.push_back(std::string { "/usr/" } + platform + "-linux-gnu/include/");
+            AdjustedArgs.push_back("-DGUEST_THUNK_LIBRARY");
             return AdjustedArgs;
         };
         GuestTool.appendArgumentsAdjuster(append_guest_args);
