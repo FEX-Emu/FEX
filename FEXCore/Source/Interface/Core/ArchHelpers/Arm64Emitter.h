@@ -43,6 +43,7 @@ constexpr auto TMP1 = FEXCore::ARMEmitter::XReg::x0;
 constexpr auto TMP2 = FEXCore::ARMEmitter::XReg::x1;
 constexpr auto TMP3 = FEXCore::ARMEmitter::XReg::x2;
 constexpr auto TMP4 = FEXCore::ARMEmitter::XReg::x3;
+constexpr bool TMP_ABIARGS = true; // TMP{1-4} map to ABI arguments 0-3
 
 // Vector temporaries
 constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v0;

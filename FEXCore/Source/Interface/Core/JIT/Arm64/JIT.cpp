@@ -84,6 +84,40 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
     LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 #endif
   } else {
+    auto FillF80Result = [&]() {
+      if (!TMP_ABIARGS) {
+        mov(TMP1, ARMEmitter::XReg::x0);
+        mov(TMP2, ARMEmitter::XReg::x1);
+      }
+
+      FillForABICall(Info.SupportsPreserveAllABI, true);
+
+      const auto Dst = GetVReg(Node);
+      eor(Dst.Q(), Dst.Q(), Dst.Q());
+      ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
+      ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, TMP2);
+    };
+
+    auto FillF64Result = [&]() {
+      if (!TMP_ABIARGS) {
+        mov(VTMP1.D(), ARMEmitter::DReg::d0);
+      }
+      FillForABICall(Info.SupportsPreserveAllABI, true);
+
+      const auto Dst = GetVReg(Node);
+      mov(Dst.D(), VTMP1.D());
+    };
+
+    auto FillI32Result = [&]() {
+      if (!TMP_ABIARGS) {
+        mov(TMP1.W(), ARMEmitter::WReg::w0);
+      }
+      FillForABICall(Info.SupportsPreserveAllABI, true);
+
+      const auto Dst = GetReg(Node);
+      mov(Dst.W(), TMP1.W());
+    };
+
     switch(Info.ABI) {
       case FABI_F80_I16_F32:{
         SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
@@ -99,12 +133,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r1);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+        FillF80Result();
       }
       break;
 
@@ -122,12 +151,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r1);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+        FillF80Result();
       }
       break;
 
@@ -136,13 +160,13 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
         const auto Src1 = GetReg(IROp->Args[0].ID());
-        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         if (Info.ABI == FABI_F80_I16_I16) {
           sxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, Src1);
         }
         else {
           mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, Src1);
         }
+        ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
         if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
           GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
@@ -151,12 +175,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r2);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+        FillF80Result();
       }
       break;
 
@@ -177,10 +196,13 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r3);
         }
 
+        if (!TMP_ABIARGS) {
+          fmov(VTMP1.S(), ARMEmitter::SReg::s0);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetVReg(Node);
-        fmov(Dst.S(), ARMEmitter::SReg::s0);
+        fmov(Dst.S(), VTMP1.S());
       }
       break;
 
@@ -201,10 +223,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r3);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        mov(Dst.D(), ARMEmitter::DReg::d0);
+        FillF64Result();
       }
       break;
 
@@ -223,21 +242,24 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r1);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        mov(Dst.D(), ARMEmitter::DReg::d0);
+        FillF64Result();
       }
       break;
 
       case FABI_F64_I16_F64_F64: {
-        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
-
         const auto Src1 = GetVReg(IROp->Args[0].ID());
         const auto Src2 = GetVReg(IROp->Args[1].ID());
 
-        mov(ARMEmitter::DReg::d0, Src1.D());
-        mov(ARMEmitter::DReg::d1, Src2.D());
+        mov(VTMP1.D(), Src1.D());
+        mov(VTMP2.D(), Src2.D());
+
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
+
+        if (!TMP_ABIARGS) {
+          mov(ARMEmitter::DReg::d0, VTMP1.D());
+          mov(ARMEmitter::DReg::d1, VTMP2.D());
+        }
+
         ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
         ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
         if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
@@ -247,10 +269,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r1);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        mov(Dst.D(), ARMEmitter::DReg::d0);
+        FillF64Result();
       }
       break;
 
@@ -271,10 +290,13 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r3);
         }
 
+        if (!TMP_ABIARGS) {
+          mov(TMP1, ARMEmitter::XReg::x0);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
-        sxth(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
+        sxth(ARMEmitter::Size::i64Bit, Dst, TMP1);
       }
       break;
       case FABI_I32_I16_F80:{
@@ -294,10 +316,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r3);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetReg(Node);
-        mov(ARMEmitter::Size::i32Bit, Dst, ARMEmitter::Reg::r0);
+        FillI32Result();
       }
       break;
       case FABI_I64_I16_F80:{
@@ -316,10 +335,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         else {
           blr(ARMEmitter::Reg::r3);
         }
+
+        if (!TMP_ABIARGS) {
+          mov(TMP1, ARMEmitter::XReg::x0);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
-        mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
+        mov(ARMEmitter::Size::i64Bit, Dst, TMP1);
       }
       break;
       case FABI_I64_I16_F80_F80:{
@@ -342,10 +365,14 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         else {
           blr(ARMEmitter::Reg::r5);
         }
+
+        if (!TMP_ABIARGS) {
+          mov(TMP1, ARMEmitter::XReg::x0);
+        }
         FillForABICall(Info.SupportsPreserveAllABI, true);
 
         const auto Dst = GetReg(Node);
-        mov(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
+        mov(ARMEmitter::Size::i64Bit, Dst, TMP1);
       }
       break;
       case FABI_F80_I16_F80:{
@@ -365,12 +392,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r3);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+        FillF80Result();
       }
       break;
       case FABI_F80_I16_F80_F80:{
@@ -394,27 +416,28 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r5);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetVReg(Node);
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, ARMEmitter::Reg::r0);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
+        FillF80Result();
       }
       break;
       case FABI_I32_I64_I64_I128_I128_I16: {
-        SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
-
         const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
+        const auto SrcRAX = GetReg(Op->RAX.ID());
+        const auto SrcRDX = GetReg(Op->RDX.ID());
+
+        mov(TMP1, SrcRAX.X());
+        mov(TMP2, SrcRDX.X());
+
+        SpillForABICall(Info.SupportsPreserveAllABI, TMP3, true);
+
         const auto Control = Op->Control;
 
         const auto Src1 = GetVReg(Op->LHS.ID());
         const auto Src2 = GetVReg(Op->RHS.ID());
-        const auto SrcRAX = GetReg(Op->RAX.ID());
-        const auto SrcRDX = GetReg(Op->RDX.ID());
 
-        mov(ARMEmitter::XReg::x0, SrcRAX.X());
-        mov(ARMEmitter::XReg::x1, SrcRDX.X());
+        if (!TMP_ABIARGS) {
+          mov(ARMEmitter::XReg::x0, TMP1);
+          mov(ARMEmitter::XReg::x1, TMP2);
+        }
 
         umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r2, Src1, 0);
         umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src1, 1);
@@ -432,12 +455,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r7);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetReg(Node);
-        mov(Dst.W(), ARMEmitter::WReg::w0);
-        break;
+        FillI32Result();
       }
+      break;
       case FABI_I32_I128_I128_I16: {
         SpillForABICall(Info.SupportsPreserveAllABI, TMP1, true);
 
@@ -463,12 +483,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
           blr(ARMEmitter::Reg::r5);
         }
 
-        FillForABICall(Info.SupportsPreserveAllABI, true);
-
-        const auto Dst = GetReg(Node);
-        mov(Dst.W(), ARMEmitter::WReg::w0);
-        break;
+        FillI32Result();
       }
+      break;
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -486,8 +503,8 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Co
   uintptr_t branch = (uintptr_t)(Record) - 8;
   FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
   FEXCore::ARMEmitter::SingleUseForwardLabel l_BranchHost;
-  emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
-  emit.blr(FEXCore::ARMEmitter::Reg::r0);
+  emit.ldr(TMP1, &l_BranchHost);
+  emit.blr(TMP1);
   emit.Bind(&l_BranchHost);
   emit.dc64(LinkerAddress);
   FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 8);
@@ -763,8 +780,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
     if (vixl::aarch64::Assembler::IsImmAddSub(TotalSpillSlotsSize)) {
       sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
     } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, TotalSpillSlotsSize);
-      sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, ARMEmitter::XReg::x0, ARMEmitter::ExtendedType::LSL_64, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
+      sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
     }
   }
 
@@ -910,8 +927,8 @@ void Arm64JITCore::ResetStack() {
     add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
   } else {
     // Too big to fit in a 12bit immediate
-    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, TotalSpillSlotsSize);
-    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, ARMEmitter::XReg::x0, ARMEmitter::ExtendedType::LSL_64, 0);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
+    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
   }
 }
 
