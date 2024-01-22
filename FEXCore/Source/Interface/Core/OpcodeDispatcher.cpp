@@ -2122,12 +2122,12 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
                                  Length, MaxSrcBitOp);
 
   // Now build up the mask
-  // (1 << SanitizedLength) - 1
-  auto One = _Constant(SrcSize, 1);
-  auto Mask = _Sub(IR::SizeToOpSize(Size), _Lshl(IR::SizeToOpSize(Size), One, SanitizedLength), One);
+  // (1 << SanitizedLength) - 1 = ~(~0 << SanitizedLength)
+  auto AllOnes = _Constant(~0ull);
+  auto InvertedMask = _Lshl(IR::SizeToOpSize(Size), AllOnes, SanitizedLength);
 
   // Now put it all together and make the result.
-  auto Dest = _And(IR::SizeToOpSize(Size), SanitizedShifted, Mask);
+  auto Dest = _Andn(IR::SizeToOpSize(Size), SanitizedShifted, InvertedMask);
 
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
