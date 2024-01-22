@@ -36,6 +36,7 @@ using X86Tables::OpToIndex;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
+template<bool IsSyscallInst>
 void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   constexpr size_t SyscallArgs = 7;
   using SyscallArray = std::array<uint64_t, SyscallArgs>;
@@ -124,6 +125,20 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   };
   for (size_t i = 0; i < NumArguments; ++i) {
     Arguments[i] = LoadGPRRegister(GPRIndicesRef[i]);
+  }
+
+  if (IsSyscallInst) {
+    // If this is the `Syscall` instruction rather than `int 0x80` then we need to do some additional work.
+    // RCX = RIP after this instruction
+    // R11 = EFlags
+    // Calculate flags.
+    CalculateDeferredFlags();
+
+    auto RFLAG = GetPackedRFLAG();
+    StoreGPRRegister(X86State::REG_R11, RFLAG, 8);
+
+    auto RIPAfterInst = GetRelocatedPC(Op);
+    StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, 8);
   }
 
   auto SyscallOp = _Syscall(
@@ -5260,7 +5275,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 #endif
     if (Literal == SYSCALL_LITERAL) {
       // Syscall on linux
-      SyscallOp(Op);
+      SyscallOp<false>(Op);
       return;
     }
 
@@ -6272,7 +6287,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   };
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_64[] = {
-    {0x05, 1, &OpDispatchBuilder::SyscallOp},
+    {0x05, 1, &OpDispatchBuilder::SyscallOp<true>},
   };
 
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
