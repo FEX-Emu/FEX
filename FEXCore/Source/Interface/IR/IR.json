@@ -1612,7 +1612,13 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      
+      "FPR = VUMaxV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+        "Desc": ["Does a horizontal vector unsigned maximum of elements across the source vector",
+                 "Result is a zero extended scalar"
+                ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "FPR = VFAbs u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
