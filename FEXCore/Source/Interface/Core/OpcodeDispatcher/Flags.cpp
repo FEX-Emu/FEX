@@ -464,11 +464,8 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.OneSource.Src1);
       break;
-    case FlagsGenerationType::TYPE_TZCNT:
-      CalculateFlags_TZCNT(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_LZCNT:
-      CalculateFlags_LZCNT(
+    case FlagsGenerationType::TYPE_ZCNT:
+      CalculateFlags_ZCNT(
         CurrentDeferredFlags.SrcSize,
         CurrentDeferredFlags.Res);
       break;
@@ -1051,21 +1048,7 @@ void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 
-void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
-  // OF, SF, AF, PF all undefined
-  ZeroNZCV();
-
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, 0, true);
-}
-
-void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Result) {
+void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.
   SetNZ_ZeroCV(SrcSize, Result);

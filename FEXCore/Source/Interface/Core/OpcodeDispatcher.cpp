@@ -5378,7 +5378,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  GenerateFlags_TZCNT(Op, Src);
+  GenerateFlags_ZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -5387,7 +5387,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
-  GenerateFlags_LZCNT(Op, Res);
+  GenerateFlags_ZCNT(Op, Res);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
