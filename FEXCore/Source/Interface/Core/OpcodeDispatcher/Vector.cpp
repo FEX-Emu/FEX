@@ -4580,8 +4580,7 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   OrderedNode *Test1 = _VAnd(Size, 1, Dest, Src);
   OrderedNode *Test2 = _VBic(Size, 1, Src, Dest);
 
-  // Element size doesn't matter here
-  // x86-64 doesn't support a horizontal byte add though
+  // Element size must be less than 32-bit for the sign bit tricks.
   Test1 = _VUMaxV(Size, 2, Test1);
   Test2 = _VUMaxV(Size, 2, Test2);
 
@@ -4591,15 +4590,14 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
-  Test1 = _Select(FEXCore::IR::COND_EQ,
-      Test1, ZeroConst, OneConst, ZeroConst);
-
   Test2 = _Select(FEXCore::IR::COND_EQ,
       Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
-  ZeroNZCV();
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Test1);
+  // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
+  // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
+  // cleared even if the 16-bit scalars were negative.
+  SetNZ_ZeroCV(32, Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
 
   uint32_t FlagsMaskToZero =
