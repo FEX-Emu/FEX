@@ -4580,13 +4580,10 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   OrderedNode *Test1 = _VAnd(Size, 1, Dest, Src);
   OrderedNode *Test2 = _VBic(Size, 1, Src, Dest);
 
-  Test1 = _VPopcount(Size, 1, Test1);
-  Test2 = _VPopcount(Size, 1, Test2);
-
   // Element size doesn't matter here
   // x86-64 doesn't support a horizontal byte add though
-  Test1 = _VAddV(Size, 2, Test1);
-  Test2 = _VAddV(Size, 2, Test2);
+  Test1 = _VUMaxV(Size, 2, Test1);
+  Test2 = _VUMaxV(Size, 2, Test2);
 
   Test1 = _VExtractToGPR(Size, 2, Test1, 0);
   Test2 = _VExtractToGPR(Size, 2, Test2, 0);
