@@ -1048,22 +1048,14 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Src) {
-  // Set ZF
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
+void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
+  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
+  // is in the range [0, 63]. In particular, it is always positive. So a
+  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
+  SetNZ_ZeroCV(OpSize::i32Bit, Result);
 
-  // Set flags
-  uint32_t FlagsMaskToZero =
-    FullNZCVMask |
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_PF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  ZeroMultipleFlags((1U << X86State::RFLAG_AF_RAW_LOC) |
+                    (1U << X86State::RFLAG_PF_RAW_LOC));
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
