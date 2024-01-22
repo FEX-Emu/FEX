@@ -976,30 +976,12 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
 }
 
 void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
+  // AF are undefined.
+  SetNZ_ZeroCV(GetOpSize(Src), Src);
 
-  // Handle flag setting.
-  //
-  // All that matters primarily for this instruction is
-  // that we only set the ZF flag properly.
-  //
-  // CF and OF are defined as being set to zero
-  //
-  // Every other flag is considered undefined after a
-  // BEXTR instruction, but we opt to reliably clear them.
-  //
-  ZeroMultipleFlags(FullNZCVMask);
-
-  // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
-
-  // ZF
-  auto ZeroOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        One, Zero);
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZeroOp);
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
