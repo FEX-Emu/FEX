@@ -2117,17 +2117,17 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
   // Now handle the length specifier.
   auto Length = _Bfe(OpSizeFromSrc(Op), 8, 8, Src2);
-  auto SanitizedLength = _Select(IR::COND_ULE,
-                                 Length, MaxSrcBitOp,
-                                 Length, MaxSrcBitOp);
 
   // Now build up the mask
-  // (1 << SanitizedLength) - 1 = ~(~0 << SanitizedLength)
+  // (1 << Length) - 1 = ~(~0 << Length)
   auto AllOnes = _Constant(~0ull);
-  auto InvertedMask = _Lshl(IR::SizeToOpSize(Size), AllOnes, SanitizedLength);
+  auto InvertedMask = _Lshl(IR::SizeToOpSize(Size), AllOnes, Length);
 
   // Now put it all together and make the result.
-  auto Dest = _Andn(IR::SizeToOpSize(Size), SanitizedShifted, InvertedMask);
+  auto Masked = _Andn(IR::SizeToOpSize(Size), SanitizedShifted, InvertedMask);
+
+  // Sanitize the length. If it is above the max, we don't do the masking.
+  auto Dest = _Select(IR::COND_ULE, Length, MaxSrcBitOp, Masked, SanitizedShifted);
 
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
