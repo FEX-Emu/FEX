@@ -2597,8 +2597,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Rotate left and insert CF in to lowest bit
-  OrderedNode *Res = _Lshl(OpSize, Dest, _Constant(Size, 1));
-  Res = _Or(OpSize, Res, CF);
+  OrderedNode *Res = _Orlshl(OpSize, CF, Dest, 1);
 
   StoreResult(GPRClass, Op, Res, -1);
 
