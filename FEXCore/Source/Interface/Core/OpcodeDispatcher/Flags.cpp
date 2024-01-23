@@ -1026,7 +1026,7 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 
-  auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 }
 
