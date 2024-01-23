@@ -2114,8 +2114,9 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Essentially (Src1 >> Start) & ((1 << Length) - 1)
   // along with some edge-case handling and flag setting.
 
-  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = GetSrcSize(Op);
   const auto SrcSize = Size * 8;
