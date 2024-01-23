@@ -2153,10 +2153,12 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
-  auto Result = _And(OpSizeFromSrc(Op), Src, NegatedSrc);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto NegatedSrc = _Neg(Size, Src);
+  auto Result = _And(Size, Src, NegatedSrc);
 
   // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
