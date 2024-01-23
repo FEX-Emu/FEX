@@ -2177,11 +2177,11 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) & Src
-  auto One = _Constant(1);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto Result = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
-
+  auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   GenerateFlags_BLSR(Op, Result, Src);
