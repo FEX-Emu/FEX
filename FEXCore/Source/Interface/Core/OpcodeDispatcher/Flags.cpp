@@ -987,20 +987,15 @@ void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
-  // Now for the flags:
+void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Result) {
+  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
+  // Result is zero, so we can test the result instead. So, CF is just the
+  // inverted ZF.
   //
-  // Only CF, SF, ZF and OF are defined as being updated
-  // CF is cleared if Src is zero, otherwise it's set.
-  // SF is set to the value of the most significant operand bit of Result.
-  // OF is always cleared
-  // ZF is set, as usual, if Result is zero or not.
+  // ZF/SF/OF set as usual.
+  SetNZ_ZeroCV(SrcSize, Result);
 
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
-
-  SetNZ_ZeroCV(SrcSize, Src);
+  auto CFOp = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC, true /* Invert */);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
