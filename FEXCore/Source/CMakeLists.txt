@@ -7,6 +7,7 @@ set (FEXCORE_BASE_SRCS
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
+  Utils/SpinWaitLock.cpp
   )
 
 if (NOT MINGW_BUILD)

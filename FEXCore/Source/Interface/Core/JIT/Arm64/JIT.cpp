@@ -858,6 +858,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   // TODO: This needs to be a data RIP relocation once code caching works.
   //   Current relocation code doesn't support this feature yet.
   JITBlockTail->RIP = Entry;
+  JITBlockTail->SpinLockFutex = 0;
 
   {
     // Store the RIP entries.
