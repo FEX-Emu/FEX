@@ -444,7 +444,10 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res);
       break;
     case FlagsGenerationType::TYPE_BLSMSK:
-      CalculateFlags_BLSMSK(CurrentDeferredFlags.Res);
+      CalculateFlags_BLSMSK(
+        CurrentDeferredFlags.SrcSize,
+        CurrentDeferredFlags.Res,
+        CurrentDeferredFlags.Sources.OneSource.Src1);
       break;
     case FlagsGenerationType::TYPE_BLSR:
       CalculateFlags_BLSR(
@@ -1028,7 +1031,7 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
   // Now for the flags.
 
   auto Zero = _Constant(0);
@@ -1046,6 +1049,9 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
 
   auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
+
+  auto SFOp = _Bfe(SizeToOpSize(SrcSize), 1, (SrcSize * 8) - 1, Result);
+  SetRFLAG<X86State::RFLAG_SF_RAW_LOC>(SFOp);
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {

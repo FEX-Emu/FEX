@@ -1604,11 +1604,11 @@ private:
     OrderedNode *Res{};
 
     union {
-      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, RDRAND
+      // UMUL, BEXTR, BLSI, POPCOUNT, TZCNT, LZCNT, RDRAND
       struct {
       } NoSource;
 
-      // MUL, BLSR, BZHI
+      // MUL, BLSR, BLSMSKB, BZHI
       struct {
         OrderedNode *Src1;
       } OneSource;
@@ -1740,7 +1740,7 @@ private:
   void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_BEXTR(OrderedNode *Src);
   void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BLSMSK(OrderedNode *Src);
+  void CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
   void CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
   void CalculateFlags_POPCOUNT(OrderedNode *Src);
   void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
@@ -2064,11 +2064,16 @@ private:
     };
   }
 
-  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BLSMSK,
       .SrcSize = GetSrcSize(Op),
-      .Res = Src,
+      .Res = Res,
+      .Sources = {
+        .OneSource = {
+          .Src1 = Src,
+        },
+      },
     };
   }
 

@@ -2175,7 +2175,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  GenerateFlags_BLSMSK(Op, Src);
+  GenerateFlags_BLSMSK(Op, Result, Src);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
