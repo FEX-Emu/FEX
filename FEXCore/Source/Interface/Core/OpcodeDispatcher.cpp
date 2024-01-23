@@ -1719,7 +1719,13 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   const auto Size = GetSrcBitSize(Op);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op. Arm will mask
+  // by 0x3F when we do 64-bit shifts so we don't need to mask in that case,
+  // since the modulo is preserved even after presubtracting Size=64 for
+  // ShiftRight.
+  //
+  // TODO: Implement this optimization, it requires turning the shift=0 cases
+  // into (shift&0xc0) bit tests which is a bit complicated for now.
   if (Size == 64) {
     Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
   } else {
@@ -1736,6 +1742,12 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
   // where shift = 0 and the source register still gets Zext
+  //
+  // TODO: With a backwards pass ahead-of-time, we could stick this in the
+  // if(shift) used for flags.
+  //
+  // TODO: This whole function wants to be wrapped in the if. Maybe b/w pass is
+  // a good idea after all.
   Res = _Select(FEXCore::IR::COND_EQ,
     Shift, _Constant(0),
     Dest, Res);
