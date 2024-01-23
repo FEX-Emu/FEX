@@ -1032,18 +1032,14 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Resu
 void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
+  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
 
   SetNZ_ZeroCV(SrcSize, Result);
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
-    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-  }
 }
 
 void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
