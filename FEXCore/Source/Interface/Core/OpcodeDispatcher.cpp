@@ -2172,7 +2172,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  GenerateFlags_BLSMSK(Op, Src);
+  GenerateFlags_BLSMSK(Op, Result, Src);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
