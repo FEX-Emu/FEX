@@ -1041,7 +1041,7 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result
 
   // CF
   {
-    auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+    auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
     SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
   }
 }
