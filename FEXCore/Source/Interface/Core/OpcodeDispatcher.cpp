@@ -1733,7 +1733,10 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
     Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
   }
 
-  auto ShiftRight = _Sub(OpSize::i64Bit, _Constant(Size), Shift);
+  // a64 masks the bottom bits, so if we're using a native 32/64-bit shift, we
+  // can negate to do the subtract (it's congruent), which saves a constant.
+  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) :
+                                 _Sub(OpSize::i64Bit, _Constant(Size), Shift);
 
   auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
   auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
