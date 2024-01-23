@@ -4625,33 +4625,24 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   OrderedNode *MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
   OrderedNode *MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
 
-  OrderedNode *AndPopCount = _VPopcount(SrcSize, 1, MaskedAnd);
-  OrderedNode *AndNotPopCount = _VPopcount(SrcSize, 1, MaskedAndNot);
+  OrderedNode *MaxAnd = _VUMaxV(SrcSize, 2, MaskedAnd);
+  OrderedNode *MaxAndNot = _VUMaxV(SrcSize, 2, MaskedAndNot);
 
-  OrderedNode *SummedAnd = _VAddV(SrcSize, 2, AndPopCount);
-  OrderedNode *SummedAndNot = _VAddV(SrcSize, 2, AndNotPopCount);
-
-  OrderedNode *AndGPR = _VExtractToGPR(SrcSize, 2, SummedAnd, 0);
-  OrderedNode *AndNotGPR = _VExtractToGPR(SrcSize, 2, SummedAndNot, 0);
+  OrderedNode *AndGPR = _VExtractToGPR(SrcSize, 2, MaxAnd, 0);
+  OrderedNode *AndNotGPR = _VExtractToGPR(SrcSize, 2, MaxAndNot, 0);
 
   OrderedNode *ZeroConst = _Constant(0);
   OrderedNode *OneConst = _Constant(1);
 
-  OrderedNode *ZFResult = _Select(IR::COND_EQ, AndGPR, ZeroConst,
-                                  OneConst, ZeroConst);
   OrderedNode *CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst,
                                   OneConst, ZeroConst);
 
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
+  SetNZ_ZeroCV(32, AndGPR);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFResult);
 
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_RAW_LOC) |
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_SF_RAW_LOC) |
-    (1U << X86State::RFLAG_OF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  ZeroMultipleFlags((1U << X86State::RFLAG_PF_RAW_LOC) |
+                    (1U << X86State::RFLAG_AF_RAW_LOC));
 }
 
 template <size_t ElementSize>
