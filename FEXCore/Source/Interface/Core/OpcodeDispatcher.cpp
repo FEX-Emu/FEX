@@ -1715,7 +1715,8 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  OrderedNode *Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], 1, Op->Flags);
+  // Allow garbage on the shift, we're masking it anyway.
+  OrderedNode *Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = GetSrcBitSize(Op);
 
