@@ -2321,8 +2321,9 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
-  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
