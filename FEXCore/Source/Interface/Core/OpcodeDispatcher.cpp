@@ -2521,10 +2521,10 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
@@ -2720,11 +2720,10 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
