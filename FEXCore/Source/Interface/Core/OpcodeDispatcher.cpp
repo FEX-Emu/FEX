@@ -5373,7 +5373,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  // _FindTrailingZeroes ignores upper garbage so we don't need to mask
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
