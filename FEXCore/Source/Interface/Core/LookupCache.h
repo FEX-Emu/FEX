@@ -13,6 +13,9 @@
 #include <stddef.h>
 #include <utility>
 #include <mutex>
+#ifdef _M_ARM_64EC
+#include <winnt.h>
+#endif
 
 namespace FEXCore {
 
@@ -67,6 +70,24 @@ public:
     // Failed to find
     return 0;
   }
+
+#ifdef _M_ARM_64EC
+  bool CheckPageEC(uint64_t Address) {
+    if (!RtlIsEcCode(Address)) {
+        return false;
+    }
+
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
+    // Mark L2 entry for this page as EC by setting the LSB, this can then be
+    // checked by the dispatcher to see if it needs to perform a call/return to
+    // EC code.
+    const auto PageIndex = (Address & (VirtualMemSize -1)) >> 12;
+    const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    Pointers[PageIndex] |= 1;
+    return true;
+  }
+#endif
 
   fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
