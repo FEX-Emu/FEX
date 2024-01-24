@@ -1236,6 +1236,8 @@ DEF_OP(CountLeadingZeroes) {
   const auto Src = GetReg(Op->Src.ID());
 
   if (OpSize == 2) {
+    // Expressing as lsl+orr+clz clears away any garbage in the upper bits
+    // (alternatively could do uxth+clz+sub.. equal cost in total).
     lsl(EmitSize, Dst, Src, 16);
     orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);
