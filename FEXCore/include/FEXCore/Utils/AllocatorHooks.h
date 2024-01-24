@@ -90,7 +90,18 @@ namespace FEXCore::Allocator {
 #endif
 
   // Memory allocation routines aliased to jemalloc functions.
-#ifdef _WIN32
+#ifdef ENABLE_JEMALLOC
+  inline void *malloc(size_t size) { return ::je_malloc(size); }
+  inline void *calloc(size_t n, size_t size) { return ::je_calloc(n, size); }
+  inline void *memalign(size_t align, size_t s) { return ::je_memalign(align, s); }
+  inline void *valloc(size_t size) { return ::je_valloc(size); }
+  inline int posix_memalign(void** r, size_t a, size_t s) { return ::je_posix_memalign(r, a, s); }
+  inline void *realloc(void* ptr, size_t size) { return ::je_realloc(ptr, size); }
+  inline void free(void* ptr) { return ::je_free(ptr); }
+  inline size_t malloc_usable_size(void *ptr) { return ::je_malloc_usable_size(ptr); }
+  inline void *aligned_alloc(size_t a, size_t s) { return ::je_aligned_alloc(a, s); }
+  inline void aligned_free(void* ptr) { return ::je_free(ptr); }
+#elif defined(_WIN32)
   inline void *malloc(size_t size) { return ::malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
   inline void *memalign(size_t align, size_t s) { return ::_aligned_malloc(s, align); }
@@ -110,17 +121,6 @@ namespace FEXCore::Allocator {
   inline size_t malloc_usable_size(void *ptr) { return ::_msize(ptr); }
   inline void *aligned_alloc(size_t a, size_t s) { return ::_aligned_malloc(s, a); }
   inline void aligned_free(void* ptr) { return ::_aligned_free(ptr); }
-#elif defined(ENABLE_JEMALLOC)
-  inline void *malloc(size_t size) { return ::je_malloc(size); }
-  inline void *calloc(size_t n, size_t size) { return ::je_calloc(n, size); }
-  inline void *memalign(size_t align, size_t s) { return ::je_memalign(align, s); }
-  inline void *valloc(size_t size) { return ::je_valloc(size); }
-  inline int posix_memalign(void** r, size_t a, size_t s) { return ::je_posix_memalign(r, a, s); }
-  inline void *realloc(void* ptr, size_t size) { return ::je_realloc(ptr, size); }
-  inline void free(void* ptr) { return ::je_free(ptr); }
-  inline size_t malloc_usable_size(void *ptr) { return ::je_malloc_usable_size(ptr); }
-  inline void *aligned_alloc(size_t a, size_t s) { return ::je_aligned_alloc(a, s); }
-  inline void aligned_free(void* ptr) { return ::je_free(ptr); }
 #else
   inline void *malloc(size_t size) { return ::malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
