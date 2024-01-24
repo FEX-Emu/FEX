@@ -5386,7 +5386,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
-  GenerateFlags_LZCNT(Op, Src);
+  GenerateFlags_LZCNT(Op, Res);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
