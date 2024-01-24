@@ -8,6 +8,7 @@
 #endif
 
 #ifdef _WIN32
+#define NTDDI_VERSION 0x0A000005
 #include <memoryapi.h>
 #else
 #include <sys/mman.h>
@@ -38,12 +39,22 @@ extern "C" {
 
 namespace FEXCore::Allocator {
 #ifdef _WIN32
-  inline void *VirtualAlloc(size_t Size, bool Execute = false) {
-    return ::VirtualAlloc(nullptr, Size, MEM_COMMIT, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  inline void *VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
+#ifdef _M_ARM_64EC
+    MEM_EXTENDED_PARAMETER Parameter{};
+    if (Execute) {
+      Parameter.Type = MemExtendedParameterAttributeFlags;
+      Parameter.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
+    };
+    return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0), Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE,
+                          &Parameter, Execute ? 1 : 0);
+#else
+    return ::VirtualAlloc(Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0), Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+#endif
   }
 
-  inline void *VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
-    return ::VirtualAlloc(Base, Size, MEM_COMMIT | MEM_RESERVE, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  inline void *VirtualAlloc(size_t Size, bool Execute = false) {
+    return VirtualAlloc(nullptr, Size, Execute);
   }
 
   inline void VirtualFree(void *Ptr, size_t Size) {
