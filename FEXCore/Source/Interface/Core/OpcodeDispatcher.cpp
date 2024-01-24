@@ -5382,7 +5382,8 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  // _CountLeadingZeroes clears upper garbage so we don't need to mask
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
