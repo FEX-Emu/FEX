@@ -53,14 +53,23 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    ARMEmitter::SingleUseForwardLabel l_BranchHost;
+#ifdef _M_ARM_64EC
+    if (RtlIsEcCode(NewRIP)) {
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP3, NewRIP);
+      ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+      br(TMP2);
+    } else {
+#endif
+      ARMEmitter::SingleUseForwardLabel l_BranchHost;
+      ldr(TMP1, &l_BranchHost);
+      blr(TMP1);
 
-    ldr(TMP1, &l_BranchHost);
-    blr(TMP1);
-
-    Bind(&l_BranchHost);
-    dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
-    dc64(NewRIP);
+      Bind(&l_BranchHost);
+      dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
+      dc64(NewRIP);
+#ifdef _M_ARM_64EC
+    }
+#endif
   } else {
 
     ARMEmitter::SingleUseForwardLabel FullLookup;
