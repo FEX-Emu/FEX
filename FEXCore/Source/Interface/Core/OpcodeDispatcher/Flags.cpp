@@ -1091,18 +1091,16 @@ void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, 0, true);
 }
 
-void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Result) {
   // OF, SF, AF, PF all undefined
-  ZeroNZCV();
+  // Test ZF of result, SF is undefined so this is ok.
+  SetNZ_ZeroCV(SrcSize, Result);
 
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, SrcSize * 8 - 1, true);
+  // Now set CF if the Result = SrcSize * 8. Since SrcSize is a power-of-two and
+  // Result is <= SrcSize * 8, we equivalently check if the log2(SrcSize * 8)
+  // bit is set. No masking is needed because no higher bits could be set.
+  unsigned CarryBit = FEXCore::ilog2(SrcSize * 8u);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, CarryBit);
 }
 
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
