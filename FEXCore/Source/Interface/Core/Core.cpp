@@ -277,6 +277,7 @@ namespace FEXCore::Context {
       .DispatcherBegin = Dispatcher->Start,
       .DispatcherEnd = Dispatcher->End,
 
+      .AbsoluteLoopTopAddress = Dispatcher->AbsoluteLoopTopAddress,
       .AbsoluteLoopTopAddressFillSRA = Dispatcher->AbsoluteLoopTopAddressFillSRA,
       .SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress,
       .SignalHandlerReturnAddressRT = Dispatcher->SignalHandlerReturnAddressRT,
