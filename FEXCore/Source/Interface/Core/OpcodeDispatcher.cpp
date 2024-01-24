@@ -2524,7 +2524,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
+  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
@@ -2723,7 +2723,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
+  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
