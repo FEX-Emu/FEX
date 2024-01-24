@@ -2515,97 +2515,96 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
-  // Calculate flags early.
+  // Calculate flags early. Need to get flags outside of
+  // CalculateFlags_ShiftVariable because it will invalidate.
   CalculateDeferredFlags();
-
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
-  OrderedNode *Tmp{};
+  // CF only changes if we actually shifted. OF undefined if we didn't shift.
+  // The result is unchanged if we didn't shift. So branch over the whole thing.
+  CalculateFlags_ShiftVariable(Src, [this, CF, Op, Size, Src](){
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    OrderedNode *Tmp{};
 
-  // Insert the incoming value across the temporary 64bit source
-  // Make sure to insert at <BitSize> + 1 offsets
-  // We need to cover 32bits plus the amount that could rotate in
+    // Insert the incoming value across the temporary 64bit source
+    // Make sure to insert at <BitSize> + 1 offsets
+    // We need to cover 32bits plus the amount that could rotate in
 
-  if (Size == 8) {
-    // 8-bit optimal cascade
-    // Cascade: 0
-    //   Data: -> [7:0]
-    //   CF:   -> [8:8]
-    // Cascade: 1
-    //   Data: -> [16:9]
-    //   CF:   -> [17:17]
-    // Cascade: 2
-    //   Data: -> [25:18]
-    //   CF:   -> [26:26]
-    // Cascade: 3
-    //   Data: -> [34:27]
-    //   CF:   -> [35:35]
-    // Cascade: 4
-    //   Data: -> [43:36]
-    //   CF:   -> [44:44]
+    if (Size == 8) {
+      // 8-bit optimal cascade
+      // Cascade: 0
+      //   Data: -> [7:0]
+      //   CF:   -> [8:8]
+      // Cascade: 1
+      //   Data: -> [16:9]
+      //   CF:   -> [17:17]
+      // Cascade: 2
+      //   Data: -> [25:18]
+      //   CF:   -> [26:26]
+      // Cascade: 3
+      //   Data: -> [34:27]
+      //   CF:   -> [35:35]
+      // Cascade: 4
+      //   Data: -> [43:36]
+      //   CF:   -> [44:44]
 
-    // Insert CF, Destination already at [7:0]
-    Tmp = _Bfi(OpSize::i64Bit, 1, 8, Dest, CF);
+      // Insert CF, Destination already at [7:0]
+      Tmp = _Bfi(OpSize::i64Bit, 1, 8, Dest, CF);
 
-    // First Cascade, copies 9 bits from itself.
-    Tmp = _Bfi(OpSize::i64Bit, 9, 9, Tmp, Tmp);
+      // First Cascade, copies 9 bits from itself.
+      Tmp = _Bfi(OpSize::i64Bit, 9, 9, Tmp, Tmp);
 
-    // Second cascade, copies 18 bits from itself.
-    Tmp = _Bfi(OpSize::i64Bit, 18, 18, Tmp, Tmp);
+      // Second cascade, copies 18 bits from itself.
+      Tmp = _Bfi(OpSize::i64Bit, 18, 18, Tmp, Tmp);
 
-    // Final cascade, copies 9 bits again from itself.
-    Tmp = _Bfi(OpSize::i64Bit, 9, 36, Tmp, Tmp);
-  }
-  else {
-    // 16-bit optimal cascade
-    // Cascade: 0
-    //   Data: -> [15:0]
-    //   CF:   -> [16:16]
-    // Cascade: 1
-    //   Data: -> [32:17]
-    //   CF:   -> [33:33]
-    // Cascade: 2
-    //   Data: -> [49:34]
-    //   CF:   -> [50:50]
+      // Final cascade, copies 9 bits again from itself.
+      Tmp = _Bfi(OpSize::i64Bit, 9, 36, Tmp, Tmp);
+    }
+    else {
+      // 16-bit optimal cascade
+      // Cascade: 0
+      //   Data: -> [15:0]
+      //   CF:   -> [16:16]
+      // Cascade: 1
+      //   Data: -> [32:17]
+      //   CF:   -> [33:33]
+      // Cascade: 2
+      //   Data: -> [49:34]
+      //   CF:   -> [50:50]
 
-    // Insert CF, Destination already at [15:0]
-    Tmp = _Bfi(OpSize::i64Bit, 1, 16, Dest, CF);
+      // Insert CF, Destination already at [15:0]
+      Tmp = _Bfi(OpSize::i64Bit, 1, 16, Dest, CF);
 
-    // First Cascade, copies 17 bits from itself.
-    Tmp = _Bfi(OpSize::i64Bit, 17, 17, Tmp, Tmp);
+      // First Cascade, copies 17 bits from itself.
+      Tmp = _Bfi(OpSize::i64Bit, 17, 17, Tmp, Tmp);
 
-    // Final Cascade, copies 17 bits from itself again.
-    Tmp = _Bfi(OpSize::i64Bit, 17, 34, Tmp, Tmp);
-  }
+      // Final Cascade, copies 17 bits from itself again.
+      Tmp = _Bfi(OpSize::i64Bit, 17, 34, Tmp, Tmp);
+    }
 
-  // Entire bitfield has been setup
-  // Just extract the 8 or 16bits we need
-  OrderedNode *Res = _Lshr(OpSize::i64Bit, Tmp, Src);
+    // Entire bitfield has been setup
+    // Just extract the 8 or 16bits we need
+    OrderedNode *Res = _Lshr(OpSize::i64Bit, Tmp, Src);
 
-  StoreResult(GPRClass, Op, Res, -1);
+    StoreResult(GPRClass, Op, Res, -1);
 
-  // CF only changes if we actually shifted
-  // Our new CF will be bit (Shift - 1) of the source
-  auto One = _Constant(Size, 1);
-  auto NewCF = _Bfe(OpSize::i64Bit, 1, 0, _Lshr(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, Src, One)));
-  auto CompareResult = _Select(FEXCore::IR::COND_UGE,
-    Src, One,
-    NewCF, CF);
+    // Our new CF will be bit (Shift - 1) of the source
+    auto One = _Constant(Size, 1);
+    auto NewCF = _Bfe(OpSize::i64Bit, 1, 0, _Lshr(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, Src, One)));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
-
-  // OF is the top two MSBs XOR'd together
-  // Only when Shift == 1, it is undefined otherwise
-  // Make it easier, just store it regardless
-  auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+    // OF is the top two MSBs XOR'd together
+    // Only when Shift == 1, it is undefined otherwise
+    // Make it easier, just store it regardless
+    auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+  });
 }
 
 void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
@@ -2715,63 +2714,56 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
-  // Calculate flags early.
+  // Calculate flags early. Get CF outside the CalculateFlags_ShiftVariable
+  // since that invalidates flags.
   CalculateDeferredFlags();
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
 
-  OrderedNode *Tmp = _Constant(64, 0);
+  // CF only changes if we actually shifted. OF undefined if we didn't shift.
+  // The result is unchanged if we didn't shift. So branch over the whole thing.
+  CalculateFlags_ShiftVariable(Src, [this, CF, Op, Size, Src](){
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
+    OrderedNode *Tmp = _Constant(64, 0);
+
+    for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
+      // Insert incoming value
+      Tmp = _Bfi(OpSize::i64Bit, Size, 63 - i - Size, Tmp, Dest);
+
+      // Insert CF
+      Tmp = _Bfi(OpSize::i64Bit, 1, 63 - i, Tmp, CF);
+    }
+
     // Insert incoming value
-    Tmp = _Bfi(OpSize::i64Bit, Size, 63 - i - Size, Tmp, Dest);
+    Tmp = _Bfi(OpSize::i64Bit, Size, 0, Tmp, Dest);
 
-    // Insert CF
-    Tmp = _Bfi(OpSize::i64Bit, 1, 63 - i, Tmp, CF);
-  }
+    // The data is now set up like this
+    // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
+    // Shift 1 more bit that expected to get our result
+    // Shifting to the right will now behave like a rotate to the left
+    // Which we emulate with a _Ror
+    OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, _Constant(Size, 64), Src));
 
-  // Insert incoming value
-  Tmp = _Bfi(OpSize::i64Bit, Size, 0, Tmp, Dest);
+    StoreResult(GPRClass, Op, Res, -1);
 
-  // The data is now set up like this
-  // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
-  // Shift 1 more bit that expected to get our result
-  // Shifting to the right will now behave like a rotate to the left
-  // Which we emulate with a _Ror
-  OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, _Constant(Size, 64), Src));
-
-  StoreResult(GPRClass, Op, Res, -1);
-
-  {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
     auto NewCF = _Bfe(OpSize::i64Bit, 1, 0, _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src)));
-    auto CompareResult = _Select(FEXCore::IR::COND_UGE,
-      Src, _Constant(1),
-      NewCF, CF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CompareResult);
-
-    // OF is only defined for 1 bit shifts
-    // To make it easy, just always store a result
     // OF is the XOR of the NewCF and the MSB of the result
-    // Only changed if shift isn't zero
-    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+    // Only defined for 1-bit rotates.
     auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), NewCF);
-    CompareResult = _Select(FEXCore::IR::COND_EQ,
-      Src, _Constant(0),
-      OF, NewOF);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(CompareResult);
-  }
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+  });
 }
 
 template<uint32_t SrcIndex, BTAction Action>
