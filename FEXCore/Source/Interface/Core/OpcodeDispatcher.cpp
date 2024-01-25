@@ -2413,10 +2413,8 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   const auto SizeBit = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  uint32_t Shift = 1;
-
   // Our new CF will be bit (Shift - 1) of the source
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, 0, true);
 
   // Rotate and insert CF in the upper bit
   OrderedNode *Res = _Bfe(OpSize::i32Bit, 7, 1, Dest);
@@ -2424,11 +2422,8 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-
-  if (Shift == 1) {
-    // OF is the top two MSBs XOR'd together
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, SizeBit - 1, Res), _Bfe(OpSize::i32Bit, 1, SizeBit - 2, Res)));
-  }
+  // OF is the top two MSBs XOR'd together
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1), SizeBit - 2, true);
 }
 
 void OpDispatchBuilder::RCROp(OpcodeArgs) {
