@@ -2374,7 +2374,8 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  // We expliclty mask for <32-bit so allow garbage
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   OrderedNode *Res;
