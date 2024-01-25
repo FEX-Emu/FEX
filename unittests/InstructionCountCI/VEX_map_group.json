@@ -609,19 +609,17 @@
       ]
     },
     "blsr eax, ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b001 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "sub x21, x20, #0x1 (1)",
-        "and x21, x21, x20",
-        "mov w4, w21",
-        "tst w21, w21",
+        "sub w20, w7, #0x1 (1)",
+        "and w4, w20, w7",
+        "cmp x7, #0x0 (0)",
+        "cset x20, eq",
+        "tst w4, w4",
         "mrs x21, nzcv",
-        "cmp x20, #0x0 (0)",
-        "cset x20, ne",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
@@ -634,71 +632,63 @@
       "ExpectedArm64ASM": [
         "sub x20, x7, #0x1 (1)",
         "and x4, x20, x7",
-        "tst x4, x4",
-        "mrs x20, nzcv",
         "cmp x7, #0x0 (0)",
-        "cset x21, ne",
-        "orr w20, w20, w21, lsl #29",
+        "cset x20, eq",
+        "tst x4, x4",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
     "blsmsk eax, ebx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b010 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "sub x21, x20, #0x1 (1)",
-        "eor x21, x21, x20",
-        "mov w4, w21",
-        "mov w21, #0x50000000",
-        "mrs x22, nzcv",
-        "bic x21, x22, x21",
-        "cmp x20, #0x0 (0)",
-        "cset x20, ne",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
+        "sub w20, w7, #0x1 (1)",
+        "eor w4, w20, w7",
+        "cmp x7, #0x0 (0)",
+        "cset x20, eq",
+        "tst w4, w4",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
     "blsmsk rax, rbx": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b010 64-bit"
       ],
       "ExpectedArm64ASM": [
         "sub x20, x7, #0x1 (1)",
         "eor x4, x20, x7",
-        "mov w20, #0x50000000",
-        "mrs x21, nzcv",
-        "bic x20, x21, x20",
         "cmp x7, #0x0 (0)",
-        "cset x21, ne",
-        "bfi w20, w21, #29, #1",
+        "cset x20, eq",
+        "tst x4, x4",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
     "blsi eax, ebx": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map group 17 0b011 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "neg w21, w20",
-        "and w4, w20, w21",
+        "neg w20, w7",
+        "and w4, w7, w20",
         "tst w4, w4",
         "mrs x20, nzcv",
-        "cmp x4, #0x0 (0)",
-        "cset x21, ne",
+        "cset w21, ne",
         "orr w20, w20, w21, lsl #29",
         "msr nzcv, x20"
       ]
     },
     "blsi rax, rbx": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map group 17 0b011 64-bit"
       ],
@@ -707,8 +697,7 @@
         "and x4, x7, x20",
         "tst x4, x4",
         "mrs x20, nzcv",
-        "cmp x4, #0x0 (0)",
-        "cset x21, ne",
+        "cset w21, ne",
         "orr w20, w20, w21, lsl #29",
         "msr nzcv, x20"
       ]
