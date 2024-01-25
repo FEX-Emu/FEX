@@ -2762,8 +2762,8 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Only defined for 1-bit rotates.
     uint64_t SrcConst;
     if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
-      auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, 0, NewCF));
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+      auto NewOF = _XorShift(OpSize::i64Bit, NewCF, Res, ShiftType::LSR, Size - 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
     }
   });
 }
