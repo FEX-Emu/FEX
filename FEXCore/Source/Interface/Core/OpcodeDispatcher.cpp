@@ -2378,38 +2378,31 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  OrderedNode *Res;
 
   uint32_t Shift = 1;
 
   if (Size == 32 || Size == 64) {
     // Rotate and insert CF in the upper bit
-    auto Res = _Extr(OpSizeFromSrc(Op), CF, Dest, Shift);
-
-    // Our new CF will be bit (Shift - 1) of the source
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
-
-    StoreResult(GPRClass, Op, Res, -1);
-
-    // OF is the top two MSBs XOR'd together
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSizeFromSrc(Op), Res, Res, ShiftType::LSR, 1), Size - 2, true);
+    Res = _Extr(OpSizeFromSrc(Op), CF, Dest, Shift);
   }
   else {
     // Res = Src >> Shift
-    OrderedNode *Res = _Bfe(OpSize::i32Bit, Size - Shift, Shift, Dest);
+    Res = _Bfe(OpSize::i32Bit, Size - Shift, Shift, Dest);
 
     // inject the CF
     Res = _Or(OpSize::i32Bit, Res, _Lshl(OpSize::i32Bit, CF, _Constant(Size, Size - Shift)));
-
-    StoreResult(GPRClass, Op, Res, -1);
-
-    // CF only changes if we actually shifted
-    // Our new CF will be bit (Shift - 1) of the source
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
-
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize::i32Bit, _Bfe(OpSize::i32Bit, 1, Size - 1, Res), _Bfe(OpSize::i32Bit, 1, Size - 2, Res)));
   }
+
+  // CF only changes if we actually shifted
+  // Our new CF will be bit (Shift - 1) of the source
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  // OF is the top two MSBs XOR'd together
+  // Only when Shift == 1, it is undefined otherwise
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSize::i64Bit, Res, Res, ShiftType::LSR, 1), Size - 2, true);
 }
 
 void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
