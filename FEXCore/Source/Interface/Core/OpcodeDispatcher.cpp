@@ -2764,14 +2764,14 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Bfe(OpSize::i64Bit, 1, 0, _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src)));
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+    auto NewCF = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
 
     // OF is the XOR of the NewCF and the MSB of the result
     // Only defined for 1-bit rotates.
     uint64_t SrcConst;
     if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
-      auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), NewCF);
+      auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, 0, NewCF));
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
     }
   });
