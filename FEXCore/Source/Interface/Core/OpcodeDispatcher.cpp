@@ -2680,15 +2680,10 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 
   OrderedNode *SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
   CalculateFlags_ShiftVariable(SrcMasked, [this, CF, Op, Size, OpSize, SrcMasked, Dest, &Res](){
-    // Res |= (SrcMasked << (Size - Shift + 1));
-    OrderedNode *SrcMaskedShl = _Sub(OpSize, _Constant(Size, Size + 1), SrcMasked);
-    auto TmpHigher = _Lshr(OpSize, Dest, SrcMaskedShl);
-
-    auto One = _Constant(Size, 1);
-    auto Zero = _Constant(Size, 0);
-
-    auto CompareResult = _Select(FEXCore::IR::COND_UGT, SrcMasked, One, TmpHigher, Zero);
-    Res = _Or(OpSize, Res, CompareResult);
+    // Res |= (SrcMasked >> (Size - Shift + 1)), expressed as
+    // Res | ((SrcMasked >> (-Shift)) >> 1), since Size - Shift = -Shift mod
+    // Size.
+    Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, _Neg(OpSize, SrcMasked)), 1);
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, _Constant(Size, Size), SrcMasked));
