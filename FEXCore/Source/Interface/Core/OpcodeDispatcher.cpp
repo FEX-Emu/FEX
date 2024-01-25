@@ -2601,9 +2601,11 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    // Make it easier, just store it regardless
-    auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+    uint64_t SrcConst;
+    if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
+      auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+    }
   });
 }
 
@@ -2760,8 +2762,11 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
     // OF is the XOR of the NewCF and the MSB of the result
     // Only defined for 1-bit rotates.
-    auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), NewCF);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+    uint64_t SrcConst;
+    if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
+      auto NewOF = _Xor(OpSize::i64Bit, _Bfe(OpSize::i64Bit, 1, Size - 1, Res), NewCF);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+    }
   });
 }
 
