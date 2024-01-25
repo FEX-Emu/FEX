@@ -2477,15 +2477,13 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   OrderedNode *SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
   CalculateFlags_ShiftVariable(SrcMasked, [this, CF, Op, Size, OpSize, SrcMasked, Dest, &Res](){
-    auto Zero = _Constant(Size, 0);
     auto One = _Constant(Size, 1);
 
     // Res |= (SrcMasked << (Size - Shift + 1));
-    OrderedNode *SrcMaskedShl = _Sub(OpSize, _Constant(Size, Size + 1), SrcMasked);
-    auto TmpHigher = _Lshl(OpSize, Dest, SrcMaskedShl);
-
-    auto CompareResult = _Select(FEXCore::IR::COND_UGT, SrcMasked, One, TmpHigher, Zero);
-    Res = _Or(OpSize, Res, CompareResult);
+    // Expressed as Res | ((SrcMasked << (Size - Shift)) << 1) to get correct
+    // behaviour for Shift without clobbering NZCV.
+    OrderedNode *SrcMaskedShl = _Sub(OpSize, _Constant(Size, Size), SrcMasked);
+    Res = _Orlshl(OpSize, Res, _Lshl(OpSize, Dest, SrcMaskedShl), 1);
 
     // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
     // avoid the need to copy the source.
