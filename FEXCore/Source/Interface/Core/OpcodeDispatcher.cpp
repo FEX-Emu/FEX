@@ -2612,8 +2612,8 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
     if (!IsSrcConst || SrcConst == 1) {
-      auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
+      auto NewOF = _XorShift(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), Res, Res, ShiftType::LSR, 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 2, true);
     }
   });
 }
