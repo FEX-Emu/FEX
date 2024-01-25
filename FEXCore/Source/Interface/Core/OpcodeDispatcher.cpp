@@ -2481,9 +2481,10 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
     // Res |= (SrcMasked << (Size - Shift + 1));
     // Expressed as Res | ((SrcMasked << (Size - Shift)) << 1) to get correct
-    // behaviour for Shift without clobbering NZCV.
-    OrderedNode *SrcMaskedShl = _Sub(OpSize, _Constant(Size, Size), SrcMasked);
-    Res = _Orlshl(OpSize, Res, _Lshl(OpSize, Dest, SrcMaskedShl), 1);
+    // behaviour for Shift without clobbering NZCV. Then observe that modulo
+    // Size, Size - Shift = -Shift so we can use a simple Neg.
+    OrderedNode *NegSrc = _Neg(OpSize, SrcMasked);
+    Res = _Orlshl(OpSize, Res, _Lshl(OpSize, Dest, NegSrc), 1);
 
     // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
     // avoid the need to copy the source.
@@ -2491,8 +2492,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
 
     // Since shift != 0 we can inject the CF
-    OrderedNode *CFShl = _Sub(OpSize, _Constant(Size, Size), SrcMasked);
-    Res = _Or(OpSize, Res, _Lshl(OpSize::i64Bit, CF, CFShl));
+    Res = _Or(OpSize, Res, _Lshl(OpSize, CF, NegSrc));
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
