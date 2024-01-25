@@ -2391,7 +2391,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     Res = _Bfe(OpSize::i32Bit, Size - Shift, Shift, Dest);
 
     // inject the CF
-    Res = _Or(OpSize::i32Bit, Res, _Lshl(OpSize::i32Bit, CF, _Constant(Size, Size - Shift)));
+    Res = _Orlshl(OpSize::i32Bit, Res, CF, Size - Shift);
   }
 
   // CF only changes if we actually shifted
