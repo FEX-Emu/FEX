@@ -2594,15 +2594,21 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Res, -1);
 
+    uint64_t SrcConst;
+    bool IsSrcConst = IsValueConstant(WrapNode(Src), &SrcConst);
+
     // Our new CF will be bit (Shift - 1) of the source
-    auto One = _Constant(Size, 1);
-    auto NewCF = _Bfe(OpSize::i64Bit, 1, 0, _Lshr(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, Src, One)));
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+    if (IsSrcConst) {
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Tmp, SrcConst - 1, true);
+    } else {
+      auto One = _Constant(Size, 1);
+      auto NewCF = _Lshr(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
+    }
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    uint64_t SrcConst;
-    if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
+    if (!IsSrcConst || SrcConst == 1) {
       auto NewOF = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), _Bfe(OpSize::i64Bit, 1, Size - 1, Res), _Bfe(OpSize::i64Bit, 1, Size - 2, Res));
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF);
     }
