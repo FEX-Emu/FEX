@@ -2683,10 +2683,11 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     // Res |= (SrcMasked >> (Size - Shift + 1)), expressed as
     // Res | ((SrcMasked >> (-Shift)) >> 1), since Size - Shift = -Shift mod
     // Size.
-    Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, _Neg(OpSize, SrcMasked)), 1);
+    auto NegSrc = _Neg(OpSize, SrcMasked);
+    Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, NegSrc), 1);
 
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, _Constant(Size, Size), SrcMasked));
+    auto NewCF = _Lshr(OpSize, Dest, NegSrc);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
 
     // Since Shift != 0 we can inject the CF
