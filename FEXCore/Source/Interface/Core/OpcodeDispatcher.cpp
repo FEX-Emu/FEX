@@ -1984,7 +1984,8 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  // See ROLImmediateOp for masking explanation
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2064,7 +2065,8 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  // For 32-bit, garbage is ignored in hardware. For < 32, see Bfi comment.
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
@@ -2084,7 +2086,8 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
 
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
-    // StoreResult truncates back to a 8/16 bit value
+    // StoreResult truncates back to a 8/16 bit value. The inserts have the side
+    // effect of stomping over any garbage we had in the upper bits.
     Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
     if (Size == 8) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
