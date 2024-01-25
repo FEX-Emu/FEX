@@ -2380,6 +2380,9 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   OrderedNode *Res;
 
+  // Our new CF will be bit 0 of the source. Set upfront to avoid a move.
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, 0, true);
+
   uint32_t Shift = 1;
 
   if (Size == 32 || Size == 64) {
@@ -2393,10 +2396,6 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
     // inject the CF
     Res = _Orlshl(OpSize::i32Bit, Res, CF, Size - Shift);
   }
-
-  // CF only changes if we actually shifted
-  // Our new CF will be bit (Shift - 1) of the source
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Shift - 1, true);
 
   StoreResult(GPRClass, Op, Res, -1);
 
