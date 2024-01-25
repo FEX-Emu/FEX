@@ -1014,30 +1014,22 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
-  // Now for the flags.
-
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_ZF_RAW_LOC) |
-    (1U << X86State::RFLAG_OF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
-
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 
+  // CF set according to the Src
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
   auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
-  auto SFOp = _Bfe(SizeToOpSize(SrcSize), 1, (SrcSize * 8) - 1, Result);
-  SetRFLAG<X86State::RFLAG_SF_RAW_LOC>(SFOp);
+  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
+  // and O) while setting S.
+  SetNZ_ZeroCV(SrcSize, Result);
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
-  // Now for flags.
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
