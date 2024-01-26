@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -1465,6 +1466,21 @@ namespace FEX::HLE {
           // ARM64 just always does the access to reduce branching overhead.
           ERROR_AND_DIE_FMT("X86 shouldn't hit this DeferredSignalFaultAddress");
 #endif
+        }
+      }
+      else if (Signal == SIGSEGV &&
+               SigInfo.si_code == SEGV_ACCERR &&
+               FaultSafeMemcpy::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
+        // If you want to emulate EFAULT behaviour then enable this if-statement.
+        // Do this once we find an application that depends on this.
+        if constexpr (false) {
+          // Return from the subroutine, returning EFAULT.
+          ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
+          ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
+          return;
+        }
+        else {
+          LogMan::Msg::AFmt("Received invalid data to syscall. Crashing now!");
         }
       }
       else {
