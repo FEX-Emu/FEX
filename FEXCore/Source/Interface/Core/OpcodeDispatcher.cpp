@@ -1282,8 +1282,25 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  auto ALUOp = _And(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
-  GenerateFlags_Logical(Op, ALUOp, Dest, Src);
+  InvalidateDeferredFlags();
+
+  // SF/ZF/CF/OF
+  OrderedNode *ALUOp;
+
+  if (Size >= 4) {
+    ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
+  } else {
+    ALUOp = _And(OpSize::i32Bit, Dest, Src);
+    _TestNZ(IR::SizeToOpSize(Size), ALUOp, ALUOp);
+  }
+
+  CachedNZCV = nullptr;
+  PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+  NZCVDirty = false;
+
+  // PF/AF
+  CalculatePF(ALUOp);
+  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
