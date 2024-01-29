@@ -12,28 +12,23 @@
   },
   "Instructions": {
     "ptest xmm0, xmm1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0x66 0x0f 0x38 0x17"
       ],
       "ExpectedArm64ASM": [
         "and v2.16b, v16.16b, v17.16b",
         "bic v3.16b, v17.16b, v16.16b",
-        "cnt v2.16b, v2.16b",
-        "cnt v3.16b, v3.16b",
-        "addv h2, v2.8h",
-        "addv h3, v3.8h",
+        "umaxv h2, v2.8h",
+        "umaxv h3, v3.8h",
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x20, #0x0 (0)",
-        "cset x20, eq",
         "cmp x21, #0x0 (0)",
         "cset x21, eq",
-        "lsl x20, x20, #30",
-        "orr w20, w20, w21, lsl #29",
-        "msr nzcv, x20"
+        "tst w20, w20",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "adcx eax, ebx": {
