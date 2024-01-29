@@ -4580,13 +4580,9 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   OrderedNode *Test1 = _VAnd(Size, 1, Dest, Src);
   OrderedNode *Test2 = _VBic(Size, 1, Src, Dest);
 
-  Test1 = _VPopcount(Size, 1, Test1);
-  Test2 = _VPopcount(Size, 1, Test2);
-
-  // Element size doesn't matter here
-  // x86-64 doesn't support a horizontal byte add though
-  Test1 = _VAddV(Size, 2, Test1);
-  Test2 = _VAddV(Size, 2, Test2);
+  // Element size must be less than 32-bit for the sign bit tricks.
+  Test1 = _VUMaxV(Size, 2, Test1);
+  Test2 = _VUMaxV(Size, 2, Test2);
 
   Test1 = _VExtractToGPR(Size, 2, Test1, 0);
   Test2 = _VExtractToGPR(Size, 2, Test2, 0);
@@ -4594,15 +4590,14 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
-  Test1 = _Select(FEXCore::IR::COND_EQ,
-      Test1, ZeroConst, OneConst, ZeroConst);
-
   Test2 = _Select(FEXCore::IR::COND_EQ,
       Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
-  ZeroNZCV();
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Test1);
+  // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
+  // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
+  // cleared even if the 16-bit scalars were negative.
+  SetNZ_ZeroCV(32, Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
 
   uint32_t FlagsMaskToZero =
@@ -4630,33 +4625,24 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   OrderedNode *MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
   OrderedNode *MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
 
-  OrderedNode *AndPopCount = _VPopcount(SrcSize, 1, MaskedAnd);
-  OrderedNode *AndNotPopCount = _VPopcount(SrcSize, 1, MaskedAndNot);
+  OrderedNode *MaxAnd = _VUMaxV(SrcSize, 2, MaskedAnd);
+  OrderedNode *MaxAndNot = _VUMaxV(SrcSize, 2, MaskedAndNot);
 
-  OrderedNode *SummedAnd = _VAddV(SrcSize, 2, AndPopCount);
-  OrderedNode *SummedAndNot = _VAddV(SrcSize, 2, AndNotPopCount);
-
-  OrderedNode *AndGPR = _VExtractToGPR(SrcSize, 2, SummedAnd, 0);
-  OrderedNode *AndNotGPR = _VExtractToGPR(SrcSize, 2, SummedAndNot, 0);
+  OrderedNode *AndGPR = _VExtractToGPR(SrcSize, 2, MaxAnd, 0);
+  OrderedNode *AndNotGPR = _VExtractToGPR(SrcSize, 2, MaxAndNot, 0);
 
   OrderedNode *ZeroConst = _Constant(0);
   OrderedNode *OneConst = _Constant(1);
 
-  OrderedNode *ZFResult = _Select(IR::COND_EQ, AndGPR, ZeroConst,
-                                  OneConst, ZeroConst);
   OrderedNode *CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst,
                                   OneConst, ZeroConst);
 
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
+  SetNZ_ZeroCV(32, AndGPR);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFResult);
 
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_RAW_LOC) |
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_SF_RAW_LOC) |
-    (1U << X86State::RFLAG_OF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  ZeroMultipleFlags((1U << X86State::RFLAG_PF_RAW_LOC) |
+                    (1U << X86State::RFLAG_AF_RAW_LOC));
 }
 
 template <size_t ElementSize>

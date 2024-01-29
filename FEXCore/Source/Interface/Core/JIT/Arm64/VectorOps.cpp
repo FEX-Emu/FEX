@@ -1372,6 +1372,32 @@ DEF_OP(VUMinV) {
   }
 }
 
+DEF_OP(VUMaxV) {
+  const auto Op = IROp->C<IR::IROp_VUMaxV>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Pred = PRED_TMP_32B;
+    umaxv(SubRegSize, Dst, Pred, Vector.Z());
+  } else {
+    // Vector
+    umaxv(SubRegSize, Dst.Q(), Vector.Q());
+  }
+}
+
 DEF_OP(VURAvg) {
   const auto Op = IROp->C<IR::IROp_VURAvg>();
   const auto OpSize = IROp->Size;
