@@ -2786,8 +2786,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x98",
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "sxtb x20, w20",
+        "sxtb w20, w4",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2795,9 +2794,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x98",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "sxth x20, w20",
-        "mov w4, w20"
+        "sxth w4, w4"
       ]
     },
     "cdqe": {
