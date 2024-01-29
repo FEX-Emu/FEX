@@ -700,8 +700,10 @@ namespace {
                 // Marking here as written is overly agressive, but
                 // there might be write(s) later on the instruction stream
                 if ((*StaticMap)) {
-                  SRA_DEBUG("Markng ssa{} as written because ssa{} re-loads sra{}, and we can't track possible future writes\n",
-                            (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+                  SRA_DEBUG(
+                      "Marking ssa{} as written because ssa{} re-loads sra{}, "
+                      "and we can't track possible future writes\n",
+                      (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
                   (*StaticMap)->Written = true;
                 }
 

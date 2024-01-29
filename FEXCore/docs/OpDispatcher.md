@@ -32,7 +32,7 @@ BeginBlock
         %360 i64 = LoadContext 0x8, 0x58
         %392 i64 = LoadContext 0x8, 0x48
         %424 i64 = LoadContext 0x8, 0x50
-        %456 i64 = Syscall%232, %264, %296, %328, %360, %392, %424
+        %456 i64 = Syscall %232, %264, %296, %328, %360, %392, %424
         StoreContext 0x8, 0x8, %456
         BeginBlock
         EndBlock 0x1e

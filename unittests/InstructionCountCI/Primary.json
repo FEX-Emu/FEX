@@ -2818,7 +2818,7 @@
     },
     "cdq": {
       "ExpectedInstructionCount": 3,
-      "Comment": "0x98",
+      "Comment": "0x99",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "sbfx x20, x20, #31, #1",
@@ -2827,7 +2827,7 @@
     },
     "cqo": {
       "ExpectedInstructionCount": 1,
-      "Comment": "0x98",
+      "Comment": "0x99",
       "ExpectedArm64ASM": [
         "asr x6, x4, #63"
       ]
