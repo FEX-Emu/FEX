@@ -941,12 +941,12 @@ namespace {
 }
 
 int main(int argc, char **argv) {
+  FEX::Config::InitializeConfigs();
+
   fextl::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
   auto [window, gl_context] = FEX::GUI::SetupIMGui("#FEXConfig", ImGUIConfig);
 
   GlobalTime = std::chrono::high_resolution_clock::now();
-
-  FEX::Config::InitializeConfigs();
 
   // Attempt to open the config passed in
   if (argc > 1) {
