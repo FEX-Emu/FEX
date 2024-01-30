@@ -55,4 +55,8 @@ int RanCustomRepack(CustomRepackedType* data) {
   return data->custom_repack_invoked;
 }
 
+int FunctionWithDivergentSignature(DivType a, DivType b, DivType c, DivType d) {
+  return ((uint8_t)a << 24) | ((uint8_t)b << 16) | ((uint8_t)c << 8) | (uint8_t)d;
+}
+
 } // extern "C"

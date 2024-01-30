@@ -64,4 +64,14 @@ struct CustomRepackedType {
 // Should return true if the custom repacker set "custom_repack_invoked" to true
 int RanCustomRepack(CustomRepackedType*);
 
+/// Interface used to check that function arguments with different integer size
+/// get forwarded correctly
+
+#if !defined(GUEST_THUNK_LIBRARY)
+enum DivType : uint8_t {};
+#else
+enum DivType : uint32_t {};
+#endif
+int FunctionWithDivergentSignature(DivType, DivType, DivType, DivType);
+
 }
