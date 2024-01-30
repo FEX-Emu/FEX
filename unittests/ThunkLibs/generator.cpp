@@ -301,16 +301,37 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "struct host_layout {\n"
         "  T data;\n"
         "\n"
-        "  template<typename U>\n"
-        "  host_layout(const guest_layout<U>& from) requires(!std::is_integral_v<T> || sizeof(T) == sizeof(U));\n"
+        "  explicit host_layout(const guest_layout<T>&);\n"
+        "  template<typename U> explicit host_layout(const guest_layout<U>&) requires (std::is_integral_v<U> && sizeof(U) <= sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>);\n"
+        "};\n"
+        "\n"
+        "template<typename T>\n"
+        "struct host_layout<T*> {\n"
+        "  T* data;\n"
+        "  explicit host_layout(const guest_layout<T*>&);\n"
+        "  template<typename U> explicit host_layout(const guest_layout<U*>&) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>);\n"
+        "  template<typename U> explicit host_layout(const guest_layout<U*>&) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>);\n"
+        "  template<typename U> explicit host_layout(const guest_layout<U*>&) requires (std::is_same_v<std::remove_cv_t<T>, char> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == 1);\n"
+        "  template<typename U> explicit host_layout(const guest_layout<U*>&) requires (std::is_same_v<std::remove_cv_t<T>, wchar_t> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == sizeof(wchar_t));\n"
+        "};\n"
+        "\n"
+        "template<typename T> struct host_to_guest_convertible {\n"
+        "  operator guest_layout<T>();\n"
+        "  operator guest_layout<const unsigned long long*>() const requires(std::is_same_v<T, const unsigned long*>);\n"
+        "  operator guest_layout<const uint8_t*>() const requires(std::is_same_v<T, const char*>);\n"
+        "  operator guest_layout<uint8_t*>() const requires(std::is_same_v<T, char*>);\n"
+        "  operator guest_layout<uint32_t*>() const requires(std::is_same_v<T, wchar_t*>);\n"
+        "  template<typename U> operator guest_layout<U>() const requires (std::is_integral_v<U> && sizeof(U) == sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>);\n"
+        "#if IS_32BIT_THUNK\n"
+        "  operator guest_layout<uint32_t>() const requires(std::is_same_v<T, size_t>);\n"
+        "#endif\n"
         "};\n"
         "\n"
         "template<typename T, typename GuestT>\n"
         "struct repack_wrapper {};\n"
         "template<typename T, typename GuestT>\n"
         "repack_wrapper<T, GuestT> make_repack_wrapper(guest_layout<GuestT>& orig_arg);\n"
-        "template<typename T> guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>);\n"
-        "template<typename T> guest_layout<T*> to_guest(const host_layout<T*>& from);\n"
+        "template<typename T> host_to_guest_convertible<T> to_guest(const host_layout<T>& from);\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(F*);\n"
         "template<typename F> void FinalizeHostTrampolineForGuestFunction(guest_layout<F*>);\n"
         "template<typename T> T& unwrap_host(host_layout<T>&);\n"
@@ -678,6 +699,94 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
         CHECK_THAT(output, guest_converter_defined);
 
         CHECK_THAT(output, host_layout_is_trivial);
+    }
+}
+
+// Some integer types are differently sized on the guest than on the host.
+// All integer types are mapped to fixed-size equivalents when mentioned in a
+// guest context hence. This test ensures the mapping is done correctly and
+// the resulting guest_layout instantiations are convertible to host_layout.
+TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
+    auto guest_abi = GENERATE(GuestABI::X86_32, GuestABI::X86_64);
+    INFO(guest_abi);
+
+    // Run each test a second time to ensure fixed-size integer mapping is
+    // applied to pointees as well
+    const std::string ptr = GENERATE("", " *");
+
+    // These types are differently sized on 32-bit guests
+    SECTION("(u)intptr_t / size_t / long") {
+        const std::string type = GENERATE("long", "unsigned long", "uintptr_t", "intptr_t", "size_t");
+        INFO(type + ptr);
+        const auto code =
+            "#include <thunks_common.h>\n"
+            "#include <cstddef>\n"
+            "#include <cstdint>\n"
+            "void func(" + type + ptr + ");\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        if (!ptr.empty() && guest_abi == GuestABI::X86_32) {
+            // Guest points to a 32-bit integer, but the host to a 64-bit one.
+            // This should be detected as a failure.
+            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Contains("initialization of 'host_layout", Catch::CaseSensitive::No));
+        } else {
+            const auto output = run_thunkgen_host("", code, guest_abi);
+            std::string expected_type = "guest_layout<";
+            if (type == "size_t" || type.starts_with("u")) {
+                expected_type += "u";
+            }
+            expected_type += (guest_abi == GuestABI::X86_32 ? + "int32_t" : "int64_t");
+            expected_type += ptr + ">";
+            CHECK_THAT(output,
+                matches(functionDecl(
+                    hasName("fexfn_unpack_libtest_func"),
+                    // Packed argument struct should contain all parameters
+                    parameterCountIs(1),
+                    hasParameter(0, hasType(pointerType(pointee(hasUnqualifiedDesugaredType(
+                        recordType(hasDeclaration(decl(
+                            has(fieldDecl(hasType(asString(expected_type))))
+                    ))))))))
+                )));
+        }
+    }
+
+    // Most integer types are uniquely defined by specifying their size and
+    // their signedness. (w)char-types and long-types are special:
+    // * "char", "signed char", and "unsigned char" are different types
+    // * "wchar_t" is mapped to "guest_layout<uint32_t>", but uint32_t
+    //   itself is a type alias for "int"
+    // * "long long" is mapped to "guest_layout<uint64_t>", but uint64_t
+    //   itself is a type alias for "long" on 64-bit (which is a different
+    //   type than "long long")
+    //
+    // This test section ensures that the correct fixed-size integers are used
+    // *and* that they can be converted to host_layout.
+    SECTION("Special integer types") {
+        const std::string type = GENERATE("long long", "unsigned long long", "char", "unsigned char", "signed char", "wchar_t");
+        std::string fixed_size_type = ((type.starts_with("unsigned") || type == "char" || type == "wchar_t") ? "u" : "");
+        if (type.ends_with("long long")) {
+            fixed_size_type += "int64_t";
+        } else if (type.ends_with("wchar_t")) {
+            fixed_size_type += "int32_t";
+        } else {
+            fixed_size_type += "int8_t";
+        }
+        INFO(type + ptr + ", expecting " + fixed_size_type + ptr);
+        const auto code =
+            "#include <thunks_common.h>\n"
+            "#include <cstdint>\n"
+            "void func(" + type + ptr + ");\n"
+            "template<> struct fex_gen_config<func> {};\n";
+        const auto output = run_thunkgen_host("", code, guest_abi);
+        CHECK_THAT(output,
+            matches(functionDecl(
+                hasName("fexfn_unpack_libtest_func"),
+                // Packed argument struct should contain all parameters
+                parameterCountIs(1),
+                hasParameter(0, hasType(pointerType(pointee(hasUnqualifiedDesugaredType(
+                    recordType(hasDeclaration(decl(
+                        has(fieldDecl(hasType(asString("guest_layout<" + fixed_size_type + ptr + ">"))))
+                ))))))))
+            )));
     }
 }
 
