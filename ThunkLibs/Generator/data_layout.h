@@ -29,14 +29,17 @@ struct StructInfo : SimpleTypeInfo {
         std::string member_name;
         std::optional<uint64_t> array_size;
         bool is_function_pointer;
+        bool is_integral;
 
         bool operator==(const MemberInfo& other) const {
             return  size_bits == other.size_bits &&
                     offset_bits == other.offset_bits &&
-                    type_name == other.type_name &&
+                    // The type name may differ for integral types if all other parameters are equal
+                    (type_name == other.type_name || (is_integral && other.is_integral)) &&
                     member_name == other.member_name &&
                     array_size == other.array_size &&
-                    is_function_pointer == other.is_function_pointer;
+                    is_function_pointer == other.is_function_pointer &&
+                    is_integral == other.is_integral;
         }
     };
 
