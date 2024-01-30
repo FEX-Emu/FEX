@@ -210,6 +210,14 @@ struct host_layout {
 
   explicit host_layout(const guest_layout<T>& from) requires (std::is_enum_v<T>) : data { static_cast<T>(from.data) } {
   }
+
+  // Allow conversion of integral types of smaller or equal size and same sign
+  // to each other. Zero-extension is applied if needed.
+  // Notably, this is useful for handling "long"/"long long" on 64-bit, as well
+  // as uint8_t/char.
+  template<typename U>
+  explicit host_layout(const guest_layout<U>& from) requires (std::is_integral_v<U> && sizeof(U) <= sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { static_cast<T>(from.data) } {
+  }
 };
 
 // Explicitly turn a host type into its corresponding host_layout
@@ -229,8 +237,29 @@ struct host_layout<T*> {
   explicit host_layout(const guest_layout<T*>& from) : data { (T*)(uintptr_t)from.data } {
   }
 
-  // TODO: Make this explicit?
   host_layout() = default;
+
+  // Allow conversion of pointers to 64-bit integer types to "(un)signed long (long)*".
+  // This is useful for handling "long"/"long long" on 64-bit, which are distinct types
+  // but have equal data layout.
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { (T*)(uintptr_t)from.data } {
+  }
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // Allow conversion of pointers to 8-bit integer types to "char*".
+  // This is useful since "char"/"signed char"/"unsigned char"/"int8_t"/"uint8_t"
+  // may all be distinct types but have equal data layout
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_same_v<std::remove_cv_t<T>, char> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == 1) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // Allow conversion of pointers to 32-bit integer types to "wchar_t*".
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_same_v<std::remove_cv_t<T>, wchar_t> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == sizeof(wchar_t)) : data { (T*)(uintptr_t)from.data } {
+  }
 };
 
 template<typename T>
@@ -316,22 +345,67 @@ T* unwrap_host(repack_wrapper<T*, T2>& val) {
 }
 
 template<typename T>
-inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
-  if constexpr (std::is_enum_v<T>) {
-    // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
-    return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
-  } else {
-    guest_layout<T> ret { .data = from.data };
+struct host_to_guest_convertible {
+  const host_layout<T> from;
+
+  // Conversion from host to guest layout for non-pointers
+  operator guest_layout<T>() const requires(!std::is_pointer_v<T>) {
+    if constexpr (std::is_enum_v<T>) {
+      // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
+      return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+    } else {
+      guest_layout<T> ret { .data = from.data };
+      return ret;
+    }
+  }
+
+  operator guest_layout<T>() const requires(std::is_pointer_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    guest_layout<T> ret;
+    ret.data = reinterpret_cast<uintptr_t>(from.data);
     return ret;
   }
-}
+
+#if IS_32BIT_THUNK
+  // Allow size_t -> uint32_t conversions, since they are so common on 32-bit
+  operator guest_layout<uint32_t>() const requires(std::is_same_v<T, size_t>) {
+    return { static_cast<uint32_t>(from.data) };
+  }
+#endif
+
+  // Make guest_layout of "long long" and "long" interoperable, since they are
+  // the same type as far as data layout is concerned.
+  operator guest_layout<const unsigned long long*>() const requires(std::is_same_v<T, const unsigned long*>) {
+    return (guest_layout<const unsigned long long*>)reinterpret_cast<const host_to_guest_convertible<const unsigned long long*>&>(*this);
+  }
+
+  // Make guest_layout of "char" and "uint8_t" interoperable
+  operator guest_layout<const uint8_t*>() const requires(std::is_same_v<T, const char*>) {
+    return (guest_layout<const uint8_t*>)reinterpret_cast<const host_to_guest_convertible<const uint8_t*>&>(*this);
+  }
+
+  operator guest_layout<uint8_t*>() const requires(std::is_same_v<T, char*>) {
+    return (guest_layout<uint8_t*>)reinterpret_cast<const host_to_guest_convertible<uint8_t*>&>(*this);
+  }
+
+  // Make guest_layout of "wchar_t" and "uint32_t" interoperable
+  operator guest_layout<uint32_t*>() const requires(std::is_same_v<T, wchar_t*>) {
+    return (guest_layout<uint32_t*>)reinterpret_cast<const host_to_guest_convertible<uint32_t*>&>(*this);
+  }
+
+  static_assert(sizeof(wchar_t) == 4);
+
+  // Allow conversion of integral types of same size and sign to each other.
+  // This is useful for handling "long"/"long long" on 64-bit, as well as uint8_t/char.
+  template<typename U>
+  operator guest_layout<U>() const requires (std::is_integral_v<U> && sizeof(U) == sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) {
+    return guest_layout<U> { .data { static_cast<T>(from.data) } };
+  }
+};
 
 template<typename T>
-inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
-  // TODO: Assert upper 32 bits are zero
-  guest_layout<T*> ret;
-  ret.data = reinterpret_cast<uintptr_t>(from.data);
-  return ret;
+inline host_to_guest_convertible<T> to_guest(const host_layout<T>& from) {
+  return { from };
 }
 
 template<typename>
