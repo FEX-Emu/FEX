@@ -255,12 +255,11 @@ namespace WorkingAppsTester {
       // Scan its output to find the zstd compressor
       FILE *fp = fdopen(fd, "r");
       char *Line {nullptr};
-      ssize_t NumRead;
       size_t Len;
 
       bool ReadingDecompressors = false;
       bool SupportsZSTD = false;
-      while ((NumRead = getline(&Line, &Len, fp)) != -1) {
+      while (getline(&Line, &Len, fp) != -1) {
         if (!ReadingDecompressors) {
           if (strstr(Line, "Decompressors available")) {
             ReadingDecompressors = true;

@@ -505,8 +505,8 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       if (Def.HasArgs) {
-        RemainingLine = FEXCore::StringUtils::Trim(RemainingLine.substr(CurrentPos));
-        CurrentPos = 0;
+        RemainingLine =
+            FEXCore::StringUtils::Trim(RemainingLine.substr(CurrentPos));
         if (RemainingLine.empty()) {
           // How did we get here?
           Def.HasArgs = false;

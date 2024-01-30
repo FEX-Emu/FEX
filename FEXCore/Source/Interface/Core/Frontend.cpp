@@ -284,7 +284,6 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     if (DisplacementSize == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
-    Displacement = DisplacementSize;
 
     Operand->Type = DecodedOperand::OpType::GPRIndirect;
     Operand->Data.GPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);

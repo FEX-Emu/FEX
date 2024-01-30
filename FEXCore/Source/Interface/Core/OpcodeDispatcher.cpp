@@ -316,7 +316,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     _StoreContext(2, GPRClass, NewSegmentSS, offsetof(FEXCore::Core::CPUState, ss_idx));
     UpdatePrefixFromSegment(NewSegmentSS, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX);
 
-    SP = _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
+    _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
   }
   else {
     // Store the stack in 32-bit mode

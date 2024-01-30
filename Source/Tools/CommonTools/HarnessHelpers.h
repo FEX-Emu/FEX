@@ -91,7 +91,6 @@ namespace FEX::HarnessHelper {
     if (MatchMask & 1) {
       CheckGPRs("FS", State1.fs_cached, State2.fs_cached);
     }
-    MatchMask >>= 1;
 
     return Matches;
   }
