@@ -2,7 +2,7 @@
 ---
 The FEXCore frontend's job is to translate an incoming x86-64 instruction stream in to a more easily digested version of x86.
 This effectively expands x86-64 instruction encodings to be more easily ingested later on in the process.
-This ends up being essential to allowing our IR translation step to be less strenious. It can decode a "common" expanded instruction format rather than various things that x86-supports.
+This ends up being essential to allowing our IR translation step to be less strenuous. It can decode a "common" expanded instruction format rather than various things that x86-supports.
 For a simple example, x86-64's primary op table has ALU ops that duplicate themselves at least six times with minor differences between each. The frontend is able to decode a large amount of these ops to the "same" op that the IR translation understands more readily.
 This works for most instructions that follow a common decoding scheme, although there are instructions that don't follow the rules and must be handled explicitly elsewhere.
 
