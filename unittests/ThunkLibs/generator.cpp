@@ -301,7 +301,8 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "struct host_layout {\n"
         "  T data;\n"
         "\n"
-        "  host_layout(const guest_layout<T>& from);\n"
+        "  template<typename U>\n"
+        "  host_layout(const guest_layout<U>& from) requires(!std::is_integral_v<T> || sizeof(T) == sizeof(U));\n"
         "};\n"
         "\n"
         "template<typename T, typename GuestT>\n"
@@ -426,7 +427,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
             hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
-                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
+                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (unsigned char, unsigned char)";
             }));
 }
 
@@ -505,9 +506,9 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             parameterCountIs(1),
             hasParameter(0, hasType(pointerType(pointee(hasUnqualifiedDesugaredType(
                 recordType(hasDeclaration(decl(
-                    has(fieldDecl(hasType(asString("guest_layout<int>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<char>")))),
-                    has(fieldDecl(hasType(asString("guest_layout<unsigned long>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<int32_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint8_t>")))),
+                    has(fieldDecl(hasType(asString("guest_layout<uint64_t>")))),
                     has(fieldDecl(hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "TestStruct>"))))
                     ))))))))
             )));
@@ -622,9 +623,9 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                   hasAnyTemplateArgument(refersToType(asString("struct A"))),
                   // The member "data" exists and is defined to a struct...
                   has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
-                      // ... the members of which also use guest_layout
-                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<int>")))),
-                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      // ... the members of which also use guest_layout (with fixed-size integers)
+                      has(fieldDecl(hasName("a"), hasType(asString("guest_layout<int32_t>")))),
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int32_t>"))))
                       ))))))
             )));
         CHECK_THAT(output, guest_converter_defined);
@@ -671,7 +672,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                   has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
                       // ... the members of which also use guest_layout
                       has(fieldDecl(hasName("a"), hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "B *>")))),
-                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int>"))))
+                      has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int32_t>"))))
                       ))))))
             )));
         CHECK_THAT(output, guest_converter_defined);

@@ -87,6 +87,7 @@ std::unordered_map<const clang::Type*, TypeInfo> ComputeDataLayout(const clang::
                 .array_size = array_size,
                 .is_function_pointer = field_type->isFunctionPointerType(),
                 .is_integral = field->getType()->isIntegerType(),
+                .is_signed_integer = field->getType()->isSignedIntegerType(),
             };
 
             // TODO: Process types in dependency-order. Currently we skip this
@@ -150,8 +151,28 @@ ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<c
 
     for (auto [type, type_info] : data_layout) {
         auto type_name = get_type_name(context, type);
-        auto [it, inserted] = stable_layout.insert(std::pair { type_name, type_info });
-        if (!inserted && it->second != type_info) {
+        if (auto struct_info = type_info.get_if_struct()) {
+            for (auto& member : struct_info->members) {
+                if (member.is_integral) {
+                    // Map member types to fixed-size integers
+                    auto alt_type_name = get_fixed_size_int_name(member.is_signed_integer, member.size_bits);
+                    auto alt_type_info = SimpleTypeInfo {
+                        .size_bits = member.size_bits,
+                        .alignment_bits = context.getTypeAlign(context.getIntTypeForBitwidth(member.size_bits, member.is_signed_integer)),
+                    };
+                    stable_layout.insert(std::pair { alt_type_name, alt_type_info });
+                    member.type_name = std::move(alt_type_name);
+                }
+            }
+        }
+
+        auto [it, inserted] = stable_layout.insert(std::pair { type_name, std::move(type_info) });
+        if (type->isIntegerType()) {
+            auto alt_type_name = get_fixed_size_int_name(type, context);
+            stable_layout.insert(std::pair { std::move(alt_type_name), type_info });
+        }
+
+        if (!inserted && it->second != type_info && !type->isIntegerType()) {
             throw std::runtime_error("Duplicate type information: Tried to re-register type \"" + type_name + "\"");
         }
     }
@@ -169,6 +190,19 @@ static std::array<uint8_t, 32> GetSha256(const std::string& function_name) {
     return sha256;
 };
 
+std::string GetTypeNameWithFixedSizeIntegers(clang::ASTContext& context, clang::QualType type) {
+    if (type->isBuiltinType()) {
+        auto size = context.getTypeSize(type);
+        return fmt::format("uint{}_t", size);
+    } else if (type->isPointerType() && type->getPointeeType()->isBuiltinType() && context.getTypeSize(type->getPointeeType()) > 8) {
+        // TODO: Also apply this path to char-like types
+        auto size = context.getTypeSize(type->getPointeeType());
+        return fmt::format("uint{}_t*", size);
+    } else {
+        return type.getAsString();
+    }
+}
+
 void AnalyzeDataLayoutAction::OnAnalysisComplete(clang::ASTContext& context) {
     type_abi = GetStableLayout(context, ComputeDataLayout(context, types));
 
@@ -181,9 +215,11 @@ void AnalyzeDataLayoutAction::OnAnalysisComplete(clang::ASTContext& context) {
         auto cb_sha256 = GetSha256("fexcallback_" + mangled_name);
         FuncPtrInfo info = { cb_sha256 };
 
+        // TODO: Also apply GetTypeNameWithFixedSizeIntegers here
         info.result = func_type->getReturnType().getAsString();
+
         for (auto arg : func_type->getParamTypes()) {
-            info.args.push_back(arg.getAsString());
+            info.args.push_back(GetTypeNameWithFixedSizeIntegers(context, arg));
         }
         type_abi.thunked_funcptrs[funcptr_id] = std::move(info);
     }
@@ -219,7 +255,9 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
     }
 
     auto type_name = get_type_name(context, type);
-    auto& guest_info = guest_abi.at(type_name);
+    // Look up the same type name in the guest map,
+    // unless it's an integer (which is mapped to fixed-size uintX_t types)
+    auto guest_info = guest_abi.at(!type->isIntegerType() ? type_name : get_fixed_size_int_name(type, context));
     auto& host_info = host_abi.at(type->isBuiltinType() ? type : context.getCanonicalType(type));
 
     const bool is_32bit = (guest_abi.pointer_size == 4);

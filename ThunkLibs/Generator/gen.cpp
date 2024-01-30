@@ -189,7 +189,10 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
             fmt::print(file, "  struct type {{\n");
             // TODO: Insert any required padding bytes
             for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
-                fmt::print(file, "    guest_layout<{}> {};\n", member.type_name, member.member_name);
+                fmt::print( file, "    guest_layout<{}{}> {};\n",
+                            member.type_name,
+                            member.array_size ? fmt::format("[{}]", member.array_size.value()) : "",
+                            member.member_name);
             }
             fmt::print(file, "  }};\n");
         }
@@ -546,6 +549,18 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 }
             }
 
+            auto get_guest_type_name = [this](clang::QualType type) {
+                if (type->isBuiltinType() && !type->isFloatingType()) {
+                    auto size = guest_abi.at(type.getUnqualifiedType().getAsString()).get_if_simple_or_struct()->size_bits;
+                    return get_fixed_size_int_name(type.getTypePtr(), size);
+                } else if (type->isPointerType() && type->getPointeeType()->isIntegerType() && !type->getPointeeType()->isEnumeralType() && !type->getPointeeType()->isVoidType()) {
+                    auto size = guest_abi.at(type->getPointeeType().getUnqualifiedType().getAsString()).get_if_simple_or_struct()->size_bits;
+                    return fmt::format("{}{}*", type->getPointeeType().isConstQualified() ? "const " : "", get_fixed_size_int_name(type->getPointeeType().getTypePtr(), size));
+                } else {
+                    return type.getUnqualifiedType().getAsString();
+                }
+            };
+
             // Forward declarations for user-provided implementations
             if (thunk.custom_host_impl) {
                 file << "static auto fexfn_impl_" << libname << "_" << function_name << "(";
@@ -555,7 +570,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                     file << (idx == 0 ? "" : ", ");
 
                     if (thunk.param_annotations[idx].is_passthrough) {
-                        fmt::print(file, "guest_layout<{}> a_{}", type.getAsString(), idx);
+                        fmt::print(file, "guest_layout<{}> a_{}", get_guest_type_name(type), idx);
                     } else {
                         file << format_decl(type, fmt::format("a_{}", idx));
                     }
@@ -588,10 +603,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 file << "struct " << struct_name << " {\n";
 
                 for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
-                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_type_name(context, thunk.param_types[idx].getTypePtr()), idx);
+                    fmt::print(file, "  guest_layout<{}> a_{};\n", get_guest_type_name(thunk.param_types[idx]), idx);
                 }
                 if (!thunk.return_type->isVoidType()) {
-                    fmt::print(file, "  guest_layout<{}> rv;\n", get_type_name(context, thunk.return_type.getTypePtr()));
+                    fmt::print(file, "  guest_layout<{}> rv;\n", get_guest_type_name(thunk.return_type));
                 } else if (thunk.param_types.size() == 0) {
                     // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                     file << "    char force_nonempty;\n";
@@ -711,14 +726,17 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
         for (auto& host_funcptr_entry : thunked_funcptrs) {
             auto& [type, param_annotations] = host_funcptr_entry.second;
             auto func_type = type->getAs<clang::FunctionProtoType>();
-            std::string mangled_name = clang::QualType { type, 0 }.getAsString();
             FuncPtrInfo info = { };
 
+            // TODO: Use GetTypeNameWithFixedSizeIntegers
             info.result = func_type->getReturnType().getAsString();
 
-            // TODO: Use guest-sizes for integer types
+            // NOTE: In guest contexts, integer types must be mapped to
+            //       fixed-size equivalents. Since this is a host context, this
+            //       isn't strictly necessary here, but it makes matching up
+            //       guest_layout/host_layout constructors easier.
             for (auto arg : func_type->getParamTypes()) {
-                info.args.push_back(arg.getAsString());
+                info.args.push_back(GetTypeNameWithFixedSizeIntegers(context, arg));
             }
 
             std::string annotations;
