@@ -341,7 +341,7 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr
   : Emitter(static_cast<uint8_t*>(EmissionPtr), size)
   , EmitterCTX {ctx}
 #ifdef VIXL_SIMULATOR
-  , Simulator {&SimDecoder}
+  , Simulator {&SimDecoder, stdout, vixl::aarch64::SimStack(SimulatorStackSize).Allocate()}
 #endif
 {
 #ifdef VIXL_SIMULATOR
