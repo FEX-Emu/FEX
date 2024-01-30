@@ -23,7 +23,7 @@ struct SourceWithAST {
     std::string code;
     std::unique_ptr<clang::ASTUnit> ast;
 
-    SourceWithAST(std::string_view input);
+    SourceWithAST(std::string_view input, bool silent_compile = false);
 };
 
 std::ostream& operator<<(std::ostream& os, const SourceWithAST& ast) {
@@ -177,7 +177,7 @@ public:
     }
 };
 
-SourceWithAST::SourceWithAST(std::string_view input) : code(input) {
+SourceWithAST::SourceWithAST(std::string_view input, bool silent_compile) : code(input) {
     // Call run_tool with a ToolAction that assigns this->ast
 
     struct ToolAction : clang::tooling::ToolAction {
@@ -195,7 +195,7 @@ SourceWithAST::SourceWithAST(std::string_view input) : code(input) {
         }
     } tool_action { ast };
 
-    run_tool(tool_action, code);
+    run_tool(tool_action, code, silent_compile);
 }
 
 /**
@@ -335,7 +335,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
             result.replace(pos, 6, "      "); // Replace "static" with 6 spaces (avoiding reallocation)
         }
     }
-    return SourceWithAST { std::string { prelude } + result };
+    return SourceWithAST { std::string { prelude } + result, silent };
 }
 
 Fixture::GenOutput Fixture::run_thunkgen(std::string_view prelude, std::string_view code, bool silent) {
