@@ -1213,6 +1213,11 @@ DEF_OP(FindTrailingZeroes) {
   rbit(EmitSize, Dst, Src);
 
   if (OpSize == 2) {
+    // This orr does two things. First, if the (masked) source is zero, it
+    // reverses to zero in the top so it forces clz to return 16. Second, it
+    // ensures garbage in the upper bits of the source don't affect clz, because
+    // they'll rbit to garbage in the bottom below the 0x8000 and be ignored by
+    // the clz. So we handle Src upper garbage without explicitly masking.
     orr(EmitSize, Dst, Dst, 0x8000);
   }
 
@@ -1230,6 +1235,8 @@ DEF_OP(CountLeadingZeroes) {
   const auto Src = GetReg(Op->Src.ID());
 
   if (OpSize == 2) {
+    // Expressing as lsl+orr+clz clears away any garbage in the upper bits
+    // (alternatively could do uxth+clz+sub.. equal cost in total).
     lsl(EmitSize, Dst, Src, 16);
     orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);

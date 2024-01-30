@@ -2113,8 +2113,9 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Essentially (Src1 >> Start) & ((1 << Length) - 1)
   // along with some edge-case handling and flag setting.
 
-  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = GetSrcSize(Op);
   const auto SrcSize = Size * 8;
@@ -2152,10 +2153,12 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto NegatedSrc = _Neg(OpSizeFromSrc(Op), Src);
-  auto Result = _And(OpSizeFromSrc(Op), Src, NegatedSrc);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto NegatedSrc = _Neg(Size, Src);
+  auto Result = _And(Size, Src, NegatedSrc);
 
   // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
@@ -2165,10 +2168,11 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) ^ Src
-  auto One = _Constant(1);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto Result = _Xor(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
   GenerateFlags_BLSMSK(Op, Src);
@@ -2176,11 +2180,11 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) & Src
-  auto One = _Constant(1);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto Result = _And(OpSize::i64Bit, _Sub(OpSize::i64Bit, Src, One), Src);
-
+  auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   GenerateFlags_BLSR(Op, Result, Src);
@@ -2316,8 +2320,9 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
-  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResult(GPRClass, Op, Op->Dest, Result, -1);
@@ -3180,7 +3185,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = GetSrcSize(Op) >= 4});
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
@@ -5367,7 +5372,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  // _FindTrailingZeroes ignores upper garbage so we don't need to mask
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
@@ -5376,7 +5382,8 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  // _CountLeadingZeroes clears upper garbage so we don't need to mask
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
