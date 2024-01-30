@@ -371,8 +371,8 @@ struct CallbackUnpack<Result(Args...)> {
     GuestcallInfo *guestcall;
     LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
 
-    PackedArguments<Result, Args...> packed_args = {
-      args...
+    PackedArguments<Result, guest_layout<Args>...> packed_args = {
+      to_guest(to_host_layout(args))...
     };
     guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
     if constexpr (!std::is_void_v<Result>) {
@@ -381,18 +381,20 @@ struct CallbackUnpack<Result(Args...)> {
   }
 };
 
-template<typename>
+template<typename, typename...>
 struct GuestWrapperForHostFunction;
 
-template<typename Result, typename... Args>
-struct GuestWrapperForHostFunction<Result(Args...)> {
+template<typename Result, typename... Args, typename... GuestArgs>
+struct GuestWrapperForHostFunction<Result(Args...), GuestArgs...> {
   // Host functions called from Guest
+  // NOTE: GuestArgs typically matches up with Args, however there may be exceptions (e.g. size_t)
   template<ParameterAnnotations... Annotations>
   static void Call(void* argsv) {
     static_assert(sizeof...(Annotations) == sizeof...(Args));
+    static_assert(sizeof...(GuestArgs) == sizeof...(Args));
 
-    auto args = reinterpret_cast<PackedArguments<Result, guest_layout<Args>..., uintptr_t>*>(argsv);
-    constexpr auto CBIndex = sizeof...(Args);
+    auto args = reinterpret_cast<PackedArguments<Result, guest_layout<GuestArgs>..., uintptr_t>*>(argsv);
+    constexpr auto CBIndex = sizeof...(GuestArgs);
     uintptr_t cb;
     static_assert(CBIndex <= 18 || CBIndex == 23);
     if constexpr(CBIndex == 0) {
@@ -439,9 +441,9 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
 
     // This is almost the same type as "Result func(Args..., uintptr_t)", but
     // individual parameters annotated as passthrough are replaced by guest_layout<GuestArgs>
-    auto callback = reinterpret_cast<Result(*)(std::conditional_t<Annotations.is_passthrough, guest_layout<Args>, Args>..., uintptr_t)>(cb);
+    auto callback = reinterpret_cast<Result(*)(std::conditional_t<Annotations.is_passthrough, guest_layout<GuestArgs>, Args>..., uintptr_t)>(cb);
 
-    auto f = [&callback](guest_layout<Args>... args, uintptr_t target) -> Result {
+    auto f = [&callback](guest_layout<GuestArgs>... args, uintptr_t target) -> Result {
       // Fold over each of Annotations, Args, and args. This will match up the elements in triplets.
       return callback(Projection<Annotations, Args>(args)..., target);
     };
