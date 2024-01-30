@@ -18,22 +18,23 @@ $end_info$
 #endif
 
 #include "Common/ArgumentLoader.h"
-#include "TestHarnessRunner/HostRunner.h"
 #include "HarnessHelpers.h"
+#include "TestHarnessRunner/HostRunner.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <csetjmp>
 #include <cstdint>
@@ -198,13 +199,25 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Load();
 
   auto Args = FEX::ArgLoader::Get();
+  auto Filename = Args[0];
+  auto ConfigFile = Args[1];
 
   if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
     return -1;
   }
 
-  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1]};
+  if (!FHU::Filesystem::Exists(Filename)) {
+    LogMan::Msg::EFmt("File {} does not exist", Filename);
+    return -1;
+  }
+
+  if (!FHU::Filesystem::Exists(ConfigFile)) {
+    LogMan::Msg::EFmt("File {} does not exist", ConfigFile);
+    return -1;
+  }
+
+  FEX::HarnessHelper::HarnessCodeLoader Loader{Filename, ConfigFile};
 
   // Adds in environment options from the test harness config
   FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
