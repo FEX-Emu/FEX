@@ -232,6 +232,7 @@ protected:
 #ifdef VIXL_SIMULATOR
   vixl::aarch64::Decoder SimDecoder;
   vixl::aarch64::Simulator Simulator;
+  constexpr static size_t SimulatorStackSize = 8 * 1024 * 1024;
 #endif
 
 #ifdef VIXL_DISASSEMBLER

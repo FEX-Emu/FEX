@@ -63,7 +63,12 @@ namespace CodeSize {
   static std::string_view SanitizeDisassembly(std::string_view Message) {
     auto it = Message.find(" (addr");
     // If it contains an address calculation, strip it out.
-    return Message.substr(0, it);
+    Message = Message.substr(0, it);
+    if (Message.find("adrp ") != std::string_view::npos ||
+        Message.find("adr ") != std::string_view::npos) {
+      Message = Message.substr(0, Message.find(" #"));
+    }
+    return Message;
   }
 
   bool CodeSizeValidation::ParseMessage(char const *Message) {
