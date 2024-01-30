@@ -2783,7 +2783,7 @@
       "ExpectedArm64ASM": []
     },
     "cbw": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x98",
       "ExpectedArm64ASM": [
         "sxtb w20, w4",
@@ -2791,7 +2791,7 @@
       ]
     },
     "cwde": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x98",
       "ExpectedArm64ASM": [
         "sxth w4, w4"
