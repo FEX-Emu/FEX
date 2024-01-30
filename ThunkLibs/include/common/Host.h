@@ -228,6 +228,13 @@ const host_layout<T>& to_host_layout(const T& t) {
 }
 
 template<typename T>
+constexpr bool is_long_or_longlong =
+    std::is_same_v<T, long> ||
+    std::is_same_v<T, unsigned long> ||
+    std::is_same_v<T, long long> ||
+    std::is_same_v<T, unsigned long long>;
+
+template<typename T>
 struct host_layout<T*> {
   T* data;
 
@@ -243,10 +250,12 @@ struct host_layout<T*> {
   // This is useful for handling "long"/"long long" on 64-bit, which are distinct types
   // but have equal data layout.
   template<typename U>
-  explicit host_layout(const guest_layout<U*>& from) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { (T*)(uintptr_t)from.data } {
-  }
-  template<typename U>
-  explicit host_layout(const guest_layout<U*>& from) requires (std::is_integral_v<T> && std::is_integral_v<U> && sizeof(T) == sizeof(U) && std::is_same_v<std::make_signed_t<std::remove_cv_t<T>>, long long> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { (T*)(uintptr_t)from.data } {
+  explicit host_layout(const guest_layout<U*>& from) requires (is_long_or_longlong<std::remove_cv_t<T>> && std::is_integral_v<U> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>
+#if __clang_major__ >= 16
+    // Old clang versions don't support using sizeof on incomplete types when evaluating requires()
+    && sizeof(T) == sizeof(U)
+#endif
+  ) : data { (T*)(uintptr_t)from.data } {
   }
 
   // Allow conversion of pointers to 8-bit integer types to "char*".
