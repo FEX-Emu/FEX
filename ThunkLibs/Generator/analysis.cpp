@@ -429,7 +429,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             check_struct_type(param_type.getTypePtr());
                             types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
                         } else if (param_type->isPointerType()) {
-                            auto pointee_type = param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
+                            auto pointee_type = param_type->getPointeeType();
 
                             if (pointee_type->isIntegerType()) {
                                 // Add builtin pointee type to type list
