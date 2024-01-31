@@ -526,9 +526,7 @@ static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
   uint32_t *PC = (uint32_t*)ProgramCounter;
 
   uint32_t Size = (Instr >> 30) & 1;
-  uint32_t AddrReg = (Instr >> 5) & 0x1F;
   uint32_t DataReg = Instr & 0x1F;
-  uint32_t DataReg2 = (Instr >> 10) & 0x1F;
 
   if(Size == 1) {
     // 64-bit pair happens on paranoid vector stores
@@ -537,9 +535,9 @@ static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
     // [2] cbnz(TMP3, &B); // < Overwritten with DMB
     if (DataReg == 31) {
       uint32_t NextInstr = PC[1];
-      AddrReg = (NextInstr >> 5) & 0x1F;
+      uint32_t AddrReg = (NextInstr >> 5) & 0x1F;
       DataReg = NextInstr & 0x1F;
-      DataReg2 = (NextInstr >> 10) & 0x1F;
+      uint32_t DataReg2 = (NextInstr >> 10) & 0x1F;
       uint32_t STP =
         (0b10 << 30) |
         (0b101001000000000 << 15) |

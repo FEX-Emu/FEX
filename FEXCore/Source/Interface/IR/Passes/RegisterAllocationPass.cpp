@@ -1380,8 +1380,9 @@ namespace {
               auto FilledInterference = IREmit->_FillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
               FilledInterference.first->Header.Size = InterferenceIROp->Size;
               FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
-              IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FilledInterference);
-              Spilled = true;
+              IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode,
+                                           FilledInterference,
+                                           FilledInterference);
             }
           }
         }
