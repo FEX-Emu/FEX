@@ -2125,6 +2125,16 @@ private:
     };
   }
 
+  OrderedNode *AndConst(FEXCore::IR::OpSize Size, OrderedNode *Node, uint64_t Const) {
+    uint64_t NodeConst;
+
+    if (IsValueConstant(WrapNode(Node), &NodeConst)) {
+      return _Constant(NodeConst & Const);
+    } else {
+      return _And(Size, Node, _Constant(Const));
+    }
+  }
+
   /**  @} */
   /**  @} */
 
