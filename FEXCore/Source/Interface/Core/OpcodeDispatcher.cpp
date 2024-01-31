@@ -2133,17 +2133,17 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
   // Now handle the length specifier.
   auto Length = _Bfe(OpSizeFromSrc(Op), 8, 8, Src2);
-  auto SanitizedLength = _Select(IR::COND_ULE,
-                                 Length, MaxSrcBitOp,
-                                 Length, MaxSrcBitOp);
 
   // Now build up the mask
-  // (1 << SanitizedLength) - 1
-  auto One = _Constant(SrcSize, 1);
-  auto Mask = _Sub(IR::SizeToOpSize(Size), _Lshl(IR::SizeToOpSize(Size), One, SanitizedLength), One);
+  // (1 << Length) - 1 = ~(~0 << Length)
+  auto AllOnes = _Constant(~0ull);
+  auto InvertedMask = _Lshl(IR::SizeToOpSize(Size), AllOnes, Length);
 
   // Now put it all together and make the result.
-  auto Dest = _And(IR::SizeToOpSize(Size), SanitizedShifted, Mask);
+  auto Masked = _Andn(IR::SizeToOpSize(Size), SanitizedShifted, InvertedMask);
+
+  // Sanitize the length. If it is above the max, we don't do the masking.
+  auto Dest = _Select(IR::COND_ULE, Length, MaxSrcBitOp, Masked, SanitizedShifted);
 
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
@@ -2175,7 +2175,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  GenerateFlags_BLSMSK(Op, Src);
+  GenerateFlags_BLSMSK(Op, Result, Src);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
@@ -5378,7 +5378,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  GenerateFlags_TZCNT(Op, Src);
+  GenerateFlags_ZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -5387,7 +5387,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
-  GenerateFlags_LZCNT(Op, Src);
+  GenerateFlags_ZCNT(Op, Res);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {

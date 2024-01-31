@@ -444,7 +444,10 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res);
       break;
     case FlagsGenerationType::TYPE_BLSMSK:
-      CalculateFlags_BLSMSK(CurrentDeferredFlags.Res);
+      CalculateFlags_BLSMSK(
+        CurrentDeferredFlags.SrcSize,
+        CurrentDeferredFlags.Res,
+        CurrentDeferredFlags.Sources.OneSource.Src1);
       break;
     case FlagsGenerationType::TYPE_BLSR:
       CalculateFlags_BLSR(
@@ -461,11 +464,8 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.OneSource.Src1);
       break;
-    case FlagsGenerationType::TYPE_TZCNT:
-      CalculateFlags_TZCNT(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_LZCNT:
-      CalculateFlags_LZCNT(
+    case FlagsGenerationType::TYPE_ZCNT:
+      CalculateFlags_ZCNT(
         CurrentDeferredFlags.SrcSize,
         CurrentDeferredFlags.Res);
       break;
@@ -976,112 +976,67 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
 }
 
 void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
+  // AF are undefined.
+  SetNZ_ZeroCV(GetOpSize(Src), Src);
 
-  // Handle flag setting.
-  //
-  // All that matters primarily for this instruction is
-  // that we only set the ZF flag properly.
-  //
-  // CF and OF are defined as being set to zero
-  //
-  // Every other flag is considered undefined after a
-  // BEXTR instruction, but we opt to reliably clear them.
-  //
-  ZeroMultipleFlags(FullNZCVMask);
-
-  // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
-
-  // ZF
-  auto ZeroOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        One, Zero);
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(ZeroOp);
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) {
-  // Now for the flags:
+void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Result) {
+  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
+  // Result is zero, so we can test the result instead. So, CF is just the
+  // inverted ZF.
   //
-  // Only CF, SF, ZF and OF are defined as being updated
-  // CF is cleared if Src is zero, otherwise it's set.
-  // SF is set to the value of the most significant operand bit of Result.
-  // OF is always cleared
-  // ZF is set, as usual, if Result is zero or not.
+  // ZF/SF/OF set as usual.
+  SetNZ_ZeroCV(SrcSize, Result);
 
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  SetNZ_ZeroCV(SrcSize, Src);
+  auto CFOp = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC, true /* Invert */);
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
-
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
-    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-  }
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSMSK(OrderedNode *Src) {
-  // Now for the flags.
-
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_ZF_RAW_LOC) |
-    (1U << X86State::RFLAG_OF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
-
+void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
 
-  auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+  // CF set according to the Src
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
+
+  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
+  // and O) while setting S.
+  SetNZ_ZeroCV(SrcSize, Result);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
-  // Now for flags.
   auto Zero = _Constant(0);
   auto One = _Constant(1);
+  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
 
   SetNZ_ZeroCV(SrcSize, Result);
+  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
   _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
                    (1UL << X86State::RFLAG_AF_RAW_LOC));
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
-    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-  }
 }
 
-void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Src) {
-  // Set ZF
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
+void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
+  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
+  // is in the range [0, 63]. In particular, it is always positive. So a
+  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
+  SetNZ_ZeroCV(OpSize::i32Bit, Result);
 
-  // Set flags
-  uint32_t FlagsMaskToZero =
-    FullNZCVMask |
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_PF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  ZeroMultipleFlags((1U << X86State::RFLAG_AF_RAW_LOC) |
+                    (1U << X86State::RFLAG_PF_RAW_LOC));
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
@@ -1093,32 +1048,16 @@ void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 
-void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result) {
   // OF, SF, AF, PF all undefined
-  ZeroNZCV();
+  // Test ZF of result, SF is undefined so this is ok.
+  SetNZ_ZeroCV(SrcSize, Result);
 
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, 0, true);
-}
-
-void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) {
-  // OF, SF, AF, PF all undefined
-  ZeroNZCV();
-
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Src, SrcSize * 8 - 1, true);
+  // Now set CF if the Result = SrcSize * 8. Since SrcSize is a power-of-two and
+  // Result is <= SrcSize * 8, we equivalently check if the log2(SrcSize * 8)
+  // bit is set. No masking is needed because no higher bits could be set.
+  unsigned CarryBit = FEXCore::ilog2(SrcSize * 8u);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, CarryBit);
 }
 
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
