@@ -234,7 +234,12 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
   };
   const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, A, B), _And(OpSize::i32Bit, A, C)), _And(OpSize::i32Bit, B, C));
+    // Original expression: (A & B) ^ (A & C) ^ (B & C)
+    // This returns whether at least 2/3 of A/B/C is true.
+    // Reexpress as (A & (B | C)) | (B & C)
+    auto And = _And(OpSize::i32Bit, B, C);
+    auto Or = _Or(OpSize::i32Bit, B, C);
+    return _Or(OpSize::i32Bit, _And(OpSize::i32Bit, A, Or), And);
   };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
     return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), A, ShiftType::ROR, 13), A, ShiftType::ROR, 22);
