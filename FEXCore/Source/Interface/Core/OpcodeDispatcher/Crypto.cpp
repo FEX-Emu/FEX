@@ -259,10 +259,13 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
   auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
 
-  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0), Major(A0, B0, C0)), Sigma0(A0));
-  auto E1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0), D0);
-  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1)), WK1), G0), Major(A1, A0, B0)), Sigma0(A1));
-  auto E2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1)), WK1), G0), C0);
+  auto Q0 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0);
+  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, Major(A0, B0, C0)), Sigma0(A0));
+  auto E1 = _Add(OpSize::i32Bit, Q0, D0);
+
+  auto Q1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1)), WK1), G0);
+  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, Major(A1, A0, B0)), Sigma0(A1));
+  auto E2 = _Add(OpSize::i32Bit, Q1, C0);
 
   auto Res3 = _VInsGPR(16, 4, 3, Dest, A2);
   auto Res2 = _VInsGPR(16, 4, 2, Res3, A1);
