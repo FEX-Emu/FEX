@@ -272,12 +272,19 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto D0 = _VExtractToGPR(16, 4, Dest, 2);
   auto E1 = _Add(OpSize::i32Bit, Q0, D0);
 
-  OrderedNode * Q1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1)), G0);
+  OrderedNode * Q1 = _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1));
 
   auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
   Q1 = _Add(OpSize::i32Bit, Q1, WK1);
 
+  // Rematerialize G0. Costs a move but saves spilling, coming out ahead.
+  G0 = _VExtractToGPR(16, 4, Dest, 1);
+  Q1 = _Add(OpSize::i32Bit, Q1, G0);
+
   auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, Major(A1, A0, B0)), Sigma0(A1));
+
+  // Rematerialize C0. As with G0.
+  C0 = _VExtractToGPR(16, 4, Dest, 3);
   auto E2 = _Add(OpSize::i32Bit, Q1, C0);
 
   auto Res3 = _VInsGPR(16, 4, 3, Dest, A2);
