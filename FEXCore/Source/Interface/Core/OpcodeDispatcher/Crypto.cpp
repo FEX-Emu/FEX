@@ -237,10 +237,10 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, A, B), _And(OpSize::i32Bit, A, C)), _And(OpSize::i32Bit, B, C));
   };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), _Ror(OpSize::i32Bit, A, _Constant(32, 13))), _Ror(OpSize::i32Bit, A, _Constant(32, 22)));
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), A, ShiftType::ROR, 13), A, ShiftType::ROR, 22);
   };
   const auto Sigma1 = [this](OrderedNode *E) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), _Ror(OpSize::i32Bit, E, _Constant(32, 11))), _Ror(OpSize::i32Bit, E, _Constant(32, 25)));
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), E, ShiftType::ROR, 11), E, ShiftType::ROR, 25);
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
