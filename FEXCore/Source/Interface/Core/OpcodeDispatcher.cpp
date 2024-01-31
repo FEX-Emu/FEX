@@ -1730,18 +1730,28 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  OrderedNode *Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], 1, Op->Flags);
+  // Allow garbage on the shift, we're masking it anyway.
+  OrderedNode *Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = GetSrcBitSize(Op);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op. Arm will mask
+  // by 0x3F when we do 64-bit shifts so we don't need to mask in that case,
+  // since the modulo is preserved even after presubtracting Size=64 for
+  // ShiftRight.
+  //
+  // TODO: Implement this optimization, it requires turning the shift=0 cases
+  // into (shift&0xc0) bit tests which is a bit complicated for now.
   if (Size == 64) {
     Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
   } else {
     Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
   }
 
-  auto ShiftRight = _Sub(OpSize::i64Bit, _Constant(Size), Shift);
+  // a64 masks the bottom bits, so if we're using a native 32/64-bit shift, we
+  // can negate to do the subtract (it's congruent), which saves a constant.
+  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) :
+                                 _Sub(OpSize::i64Bit, _Constant(Size), Shift);
 
   auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
   auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
@@ -1751,6 +1761,12 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
   // where shift = 0 and the source register still gets Zext
+  //
+  // TODO: With a backwards pass ahead-of-time, we could stick this in the
+  // if(shift) used for flags.
+  //
+  // TODO: This whole function wants to be wrapped in the if. Maybe b/w pass is
+  // a good idea after all.
   Res = _Select(FEXCore::IR::COND_EQ,
     Shift, _Constant(0),
     Dest, Res);

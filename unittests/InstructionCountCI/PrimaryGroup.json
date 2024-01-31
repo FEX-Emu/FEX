@@ -1239,18 +1239,16 @@
       ]
     },
     "shr al, 2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xC0 /5",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "lsr w26, w20, #2",
         "bfxil x4, x26, #0, #8",
-        "cset w21, vs",
         "cmn wzr, w26, lsl #24",
-        "mrs x22, nzcv",
+        "mrs x21, nzcv",
         "ubfx x20, x20, #1, #1",
-        "orr w20, w22, w20, lsl #29",
-        "orr w20, w20, w21, lsl #28",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
@@ -1508,50 +1506,44 @@
       ]
     },
     "shr ax, 2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xC1 /5",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "lsr w26, w20, #2",
         "bfxil x4, x26, #0, #16",
-        "cset w21, vs",
         "cmn wzr, w26, lsl #16",
-        "mrs x22, nzcv",
+        "mrs x21, nzcv",
         "ubfx x20, x20, #1, #1",
-        "orr w20, w22, w20, lsl #29",
-        "orr w20, w20, w21, lsl #28",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
     "shr eax, 2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xC1 /5",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "lsr w4, w20, #2",
-        "cset w21, vs",
         "tst w4, w4",
-        "mrs x22, nzcv",
+        "mrs x21, nzcv",
         "ubfx x20, x20, #1, #1",
-        "orr w20, w22, w20, lsl #29",
+        "orr w20, w21, w20, lsl #29",
         "mov x26, x4",
-        "orr w20, w20, w21, lsl #28",
         "msr nzcv, x20"
       ]
     },
     "shr rax, 2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xC1 /5",
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "lsr x4, x20, #2",
-        "cset w21, vs",
         "tst x4, x4",
-        "mrs x22, nzcv",
+        "mrs x21, nzcv",
         "ubfx x20, x20, #1, #1",
-        "orr w20, w22, w20, lsl #29",
+        "orr w20, w21, w20, lsl #29",
         "mov x26, x4",
-        "orr w20, w20, w21, lsl #28",
         "msr nzcv, x20"
       ]
     },

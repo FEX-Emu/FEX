@@ -817,8 +817,8 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
-  // Stash OF before overwriting it
-  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC) : NULL;
+  // Set SF and PF. Clobbers OF, but OF only defined for Shift = 1 where it is
+  // set below.
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
@@ -832,11 +832,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   // AF
   // Undefined
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-
-  // Preserve OF if it won't be written
-  if (Shift != 1) {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(OldOF);
-  }
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
