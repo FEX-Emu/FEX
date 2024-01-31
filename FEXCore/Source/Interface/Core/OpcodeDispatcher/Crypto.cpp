@@ -256,10 +256,13 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto E0 = _VExtractToGPR(16, 4, Src, 1);
   auto F0 = _VExtractToGPR(16, 4, Src, 0);
   auto G0 = _VExtractToGPR(16, 4, Dest, 1);
-  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
-  auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
+  OrderedNode *Q0 = _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0));
 
-  auto Q0 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0);
+  auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
+  Q0 = _Add(OpSize::i32Bit, Q0, WK0);
+
+  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
+  Q0 = _Add(OpSize::i32Bit, Q0, H0);
 
   auto A0 = _VExtractToGPR(16, 4, Src, 3);
   auto B0 = _VExtractToGPR(16, 4, Src, 2);
