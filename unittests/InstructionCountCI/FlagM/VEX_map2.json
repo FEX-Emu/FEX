@@ -442,53 +442,43 @@
       ]
     },
     "bextr eax, ebx, ecx": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Map 2 0b00 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1f",
-        "uxtb w21, w5",
-        "lsr w22, w7, w21",
-        "mov w23, #0x0",
+        "uxtb w20, w5",
+        "lsr w21, w7, w20",
+        "mov w22, #0x0",
+        "cmp w20, #0x1f (31)",
+        "csel w20, w21, w22, ls",
+        "ubfx w21, w5, #8, #8",
+        "mov x22, #0xffffffffffffffff",
+        "lsl w22, w22, w21",
+        "bic w22, w20, w22",
         "cmp w21, #0x1f (31)",
-        "csel w21, w22, w23, ls",
-        "ubfx w22, w5, #8, #8",
-        "cmp w22, #0x1f (31)",
-        "csel w20, w22, w20, ls",
-        "mov w22, #0x1",
-        "lsl w20, w22, w20",
-        "sub w20, w20, #0x1 (1)",
-        "and w4, w21, w20",
-        "cmp x4, #0x0 (0)",
-        "cset x20, eq",
-        "lsl x20, x20, #30",
-        "msr nzcv, x20"
+        "csel w4, w22, w20, ls",
+        "tst w4, w4"
       ]
     },
     "bextr rax, rbx, rcx": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Map 2 0b00 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x3f",
-        "uxtb x21, w5",
-        "lsr x22, x7, x21",
-        "mov w23, #0x0",
+        "uxtb x20, w5",
+        "lsr x21, x7, x20",
+        "mov w22, #0x0",
+        "cmp x20, #0x3f (63)",
+        "csel x20, x21, x22, ls",
+        "ubfx x21, x5, #8, #8",
+        "mov x22, #0xffffffffffffffff",
+        "lsl x22, x22, x21",
+        "bic x22, x20, x22",
         "cmp x21, #0x3f (63)",
-        "csel x21, x22, x23, ls",
-        "ubfx x22, x5, #8, #8",
-        "cmp x22, #0x3f (63)",
-        "csel x20, x22, x20, ls",
-        "mov w22, #0x1",
-        "lsl x20, x22, x20",
-        "sub x20, x20, #0x1 (1)",
-        "and x4, x21, x20",
-        "cmp x4, #0x0 (0)",
-        "cset x20, eq",
-        "lsl x20, x20, #30",
-        "msr nzcv, x20"
+        "csel x4, x22, x20, ls",
+        "tst x4, x4"
       ]
     }
   }
