@@ -253,21 +253,23 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
-  auto A0 = _VExtractToGPR(16, 4, Src, 3);
-  auto B0 = _VExtractToGPR(16, 4, Src, 2);
-  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
-  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
   auto E0 = _VExtractToGPR(16, 4, Src, 1);
   auto F0 = _VExtractToGPR(16, 4, Src, 0);
   auto G0 = _VExtractToGPR(16, 4, Dest, 1);
   auto H0 = _VExtractToGPR(16, 4, Dest, 0);
   auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
-  auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
 
   auto Q0 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0);
+
+  auto A0 = _VExtractToGPR(16, 4, Src, 3);
+  auto B0 = _VExtractToGPR(16, 4, Src, 2);
+  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
   auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, Major(A0, B0, C0)), Sigma0(A0));
+
+  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
   auto E1 = _Add(OpSize::i32Bit, Q0, D0);
 
+  auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
   auto Q1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1)), WK1), G0);
   auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, Major(A1, A0, B0)), Sigma0(A1));
   auto E2 = _Add(OpSize::i32Bit, Q1, C0);
