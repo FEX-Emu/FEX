@@ -259,31 +259,24 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
   auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
 
-  using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*,
-                                 OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
-  const auto Round = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C, OrderedNode *D,
-                         OrderedNode *E, OrderedNode *F, OrderedNode *G, OrderedNode *H,
-                         OrderedNode* WK) -> RoundResult {
-    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), Major(A, B, C)), Sigma0(A));
-    auto BNext = A;
-    auto CNext = B;
-    auto DNext = C;
-    auto ENext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), D);
-    auto FNext = E;
-    auto GNext = F;
-    auto HNext = G;
+  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0), Major(A0, B0, C0)), Sigma0(A0));
+  auto B1 = A0;
+  auto C1 = B0;
+  auto D1 = C0;
+  auto E1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0)), WK0), H0), D0);
+  auto F1 = E0;
+  auto G1 = F0;
+  auto H1 = G0;
 
-    return {ANext, BNext, CNext, DNext, ENext, FNext, GNext, HNext};
-  };
+  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, F1, G1), Sigma1(E1)), WK1), H1), Major(A1, B1, C1)), Sigma0(A1));
+  auto B2 = A1;
+  auto E2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E1, F1, G1), Sigma1(E1)), WK1), H1), D1);
+  auto F2 = E1;
 
-
-  auto [A1, B1, C1, D1, E1, F1, G1, H1] = Round(A0, B0, C0, D0, E0, F0, G0, H0, WK0);
-  auto Final                            = Round(A1, B1, C1, D1, E1, F1, G1, H1, WK1);
-
-  auto Res3 = _VInsGPR(16, 4, 3, Dest, std::get<0>(Final));
-  auto Res2 = _VInsGPR(16, 4, 2, Res3, std::get<1>(Final));
-  auto Res1 = _VInsGPR(16, 4, 1, Res2, std::get<4>(Final));
-  auto Res0 = _VInsGPR(16, 4, 0, Res1, std::get<5>(Final));
+  auto Res3 = _VInsGPR(16, 4, 3, Dest, A2);
+  auto Res2 = _VInsGPR(16, 4, 2, Res3, B2);
+  auto Res1 = _VInsGPR(16, 4, 1, Res2, E2);
+  auto Res0 = _VInsGPR(16, 4, 0, Res1, F2);
 
   StoreResult(FPRClass, Op, Res0, -1);
 }
