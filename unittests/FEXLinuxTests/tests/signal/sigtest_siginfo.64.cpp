@@ -8,9 +8,8 @@
 #include <unistd.h>
 #include <cstdint>
 
-extern "C" {
-  extern void IntInstruction();
-}
+extern "C" void IntInstruction();
+
 __attribute__((naked, nocf_check))
 static void CauseInt() {
   __asm volatile(R"(

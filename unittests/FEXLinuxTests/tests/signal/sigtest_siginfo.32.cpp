@@ -9,9 +9,8 @@
 #include <cstdint>
 #include <syscall.h>
 
-extern "C" {
-extern void IntInstruction();
-}
+extern "C" void IntInstruction();
+
 __attribute__((naked))
 static void CauseInt() {
   __asm volatile(R"(

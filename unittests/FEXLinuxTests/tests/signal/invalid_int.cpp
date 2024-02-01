@@ -9,9 +9,8 @@
 #include <stdio.h>
 #include <cstdlib>
 
-extern "C" {
-  extern void IntInstruction();
-}
+extern "C" void IntInstruction();
+
 __attribute__((naked, nocf_check))
 static void InvalidINT() {
   __asm volatile(R"(
