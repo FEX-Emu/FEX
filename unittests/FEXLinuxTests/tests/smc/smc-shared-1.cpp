@@ -49,7 +49,7 @@ TEST_CASE("SMC: mmap_mmap") {
   char file[] = "smc-tests.XXXXXXXX";
   int fd = mkstemp(file);
   unlink(file);
-  ftruncate(fd, 4096);
+  REQUIRE(ftruncate(fd, 4096) == 0);
 
   auto code7 = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   auto code8 = (char *)mmap(0, 4096, PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
@@ -61,7 +61,7 @@ TEST_CASE("SMC: mmap_mmap_fd_fd2") {
   int fd = mkstemp(file);
   int fd2 = open(file, O_RDONLY);
   unlink(file);
-  ftruncate(fd, 4096);
+  REQUIRE(ftruncate(fd, 4096) == 0);
 
   auto code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   auto code2 = (char *)mmap(0, 4096, PROT_READ | PROT_EXEC, MAP_SHARED, fd2, 0);
@@ -73,7 +73,7 @@ TEST_CASE("SMC: shm_open_mmap_mmap") {
   mktemp(file);
   int fd = shm_open(file, O_RDWR | O_CREAT, 0700);
   shm_unlink(file);
-  ftruncate(fd, 4096);
+  REQUIRE(ftruncate(fd, 4096) == 0);
 
   auto code7 = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   auto code8 = (char *)mmap(0, 4096, PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
@@ -86,7 +86,7 @@ TEST_CASE("SMC: shm_open_mmap_mmap_fd_fd2") {
   int fd = shm_open(file, O_RDWR | O_CREAT, 0700);
   int fd2 = shm_open(file, O_RDONLY, 0700);
   shm_unlink(file);
-  ftruncate(fd, 4096);
+  REQUIRE(ftruncate(fd, 4096) == 0);
 
   auto code7 = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   auto code8 = (char *)mmap(0, 4096, PROT_READ | PROT_EXEC, MAP_SHARED, fd2, 0);
