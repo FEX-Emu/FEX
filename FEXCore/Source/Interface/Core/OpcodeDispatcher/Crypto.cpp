@@ -103,7 +103,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
   };
   const auto f2 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
-    return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, Self._And(OpSize::i32Bit, B, C), Self._And(OpSize::i32Bit, B, D)), Self._And(OpSize::i32Bit, C, D));
+    return Self.BitwiseAtLeastTwo(B, C, D);
   };
   const auto f3 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
