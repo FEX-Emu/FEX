@@ -229,17 +229,19 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, D0, -1);
 }
 
-void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
-  const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
-  };
-  const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
-    // Original expression: (A & B) ^ (A & C) ^ (B & C)
-    // This returns whether at least 2/3 of A/B/C is true.
-    // Reexpress as (A & (B | C)) | (B & C)
+OrderedNode *OpDispatchBuilder::BitwiseAtLeastTwo(OrderedNode *A, OrderedNode *B, OrderedNode *C) {
+    // Returns whether at least 2/3 of A/B/C is true.
+    // Expressed as (A & (B | C)) | (B & C)
+    //
+    // Equivalent to expression in SHA calculations: (A & B) ^ (A & C) ^ (B & C)
     auto And = _And(OpSize::i32Bit, B, C);
     auto Or = _Or(OpSize::i32Bit, B, C);
     return _Or(OpSize::i32Bit, _And(OpSize::i32Bit, A, Or), And);
+}
+
+void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
+  const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
+    return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
   };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
     return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), A, ShiftType::ROR, 13), A, ShiftType::ROR, 22);
@@ -267,7 +269,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto A0 = _VExtractToGPR(16, 4, Src, 3);
   auto B0 = _VExtractToGPR(16, 4, Src, 2);
   auto C0 = _VExtractToGPR(16, 4, Dest, 3);
-  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, Major(A0, B0, C0)), Sigma0(A0));
+  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, BitwiseAtLeastTwo(A0, B0, C0)), Sigma0(A0));
 
   auto D0 = _VExtractToGPR(16, 4, Dest, 2);
   auto E1 = _Add(OpSize::i32Bit, Q0, D0);
@@ -281,7 +283,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   G0 = _VExtractToGPR(16, 4, Dest, 1);
   Q1 = _Add(OpSize::i32Bit, Q1, G0);
 
-  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, Major(A1, A0, B0)), Sigma0(A1));
+  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, BitwiseAtLeastTwo(A1, A0, B0)), Sigma0(A1));
 
   // Rematerialize C0. As with G0.
   C0 = _VExtractToGPR(16, 4, Dest, 3);

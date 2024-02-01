@@ -867,6 +867,8 @@ public:
 
   void PSADBW(OpcodeArgs);
 
+  OrderedNode *BitwiseAtLeastTwo(OrderedNode *A, OrderedNode *B, OrderedNode *C);
+
   void SHA1NEXTEOp(OpcodeArgs);
   void SHA1MSG1Op(OpcodeArgs);
   void SHA1MSG2Op(OpcodeArgs);
