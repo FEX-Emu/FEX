@@ -6,7 +6,7 @@
 TEST_CASE("Close Range") {
   int fd_base = dup(STDOUT_FILENO);
   for (size_t i = 0; i < 15; ++i) {
-    dup(fd_base);
+    REQUIRE(dup(fd_base) >= 0);
   }
 
   // Specifically testing last as ~0U to ensure FEX doesn't hang

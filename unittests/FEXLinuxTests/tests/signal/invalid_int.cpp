@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <cstdlib>
 
-extern "C" {
-  extern void IntInstruction();
-}
+extern "C" void IntInstruction();
+
+#pragma GCC diagnostic ignored "-Wattributes" // Suppress warning in case control-flow checks aren't enabled
 __attribute__((naked, nocf_check))
 static void InvalidINT() {
   __asm volatile(R"(
