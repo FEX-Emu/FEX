@@ -833,12 +833,17 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       uint64_t Constant;
       if (IREmit->IsValueConstant(Op->Src, &Constant)) {
         // SBFE of a constant can be converted to a constant.
-        uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
+        uint64_t SourceMask =
+            Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
+        uint64_t DestSizeInBits = IROp->Size * 8;
+        uint64_t DestMask =
+            DestSizeInBits == 64 ? ~0ULL : ((1ULL << DestSizeInBits) - 1);
         SourceMask <<= Op->lsb;
 
         int64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
         NewConstant <<= 64 - Op->Width;
         NewConstant >>= 64 - Op->Width;
+        NewConstant &= DestMask;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
 
         Changed = true;

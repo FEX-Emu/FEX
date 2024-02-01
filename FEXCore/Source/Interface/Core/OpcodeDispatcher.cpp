@@ -1395,11 +1395,12 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CDQOp(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   uint8_t DstSize = GetDstSize(Op);
   uint8_t SrcSize = DstSize >> 1;
+  OrderedNode *Src = LoadGPRRegister(X86State::REG_RAX, SrcSize, 0, true);
 
-  Src = _Sbfe(OpSize::i64Bit, SrcSize * 8, 0, Src);
+  Src = _Sbfe(DstSize <= 4 ? OpSize::i32Bit : OpSize::i64Bit, SrcSize * 8, 0,
+              Src);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
