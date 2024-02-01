@@ -128,9 +128,6 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto W0E = _VExtractToGPR(16, 4, Src, 3);
-  auto W1  = _VExtractToGPR(16, 4, Src, 2);
-  auto W2  = _VExtractToGPR(16, 4, Src, 1);
-  auto W3  = _VExtractToGPR(16, 4, Src, 0);
 
   using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
 
@@ -149,8 +146,12 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     return {A1, B1, C1, D1, E1};
   };
   const auto Round1To3 = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C,
-                             OrderedNode *D, OrderedNode *E, OrderedNode *W) -> RoundResult {
-    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W), E), K);
+                             OrderedNode *D, OrderedNode *E, OrderedNode *Src, unsigned W_idx) -> RoundResult {
+    // Kill W and E at the beginning
+    auto W = _VExtractToGPR(16, 4, Src, W_idx);
+    auto Q = _Add(OpSize::i32Bit, W, E);
+
+    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), Q), K);
     auto BNext = A;
     auto CNext = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto DNext = C;
@@ -160,9 +161,9 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
 
   auto [A1, B1, C1, D1, E1] = Round0();
-  auto [A2, B2, C2, D2, E2] = Round1To3(A1, B1, C1, D1, E1, W1);
-  auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, W2);
-  auto Final                = Round1To3(A3, B3, C3, D3, E3, W3);
+  auto [A2, B2, C2, D2, E2] = Round1To3(A1, B1, C1, D1, E1, Src, 2);
+  auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, Src, 1);
+  auto Final                = Round1To3(A3, B3, C3, D3, E3, Src, 0);
 
   auto Dest3 = _VInsGPR(16, 4, 3, Dest,  std::get<0>(Final));
   auto Dest2 = _VInsGPR(16, 4, 2, Dest3, std::get<1>(Final));
