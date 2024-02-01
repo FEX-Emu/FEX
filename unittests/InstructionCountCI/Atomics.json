@@ -358,31 +358,28 @@
       ]
     },
     "xchg byte [rax], cl": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x86",
       "ExpectedArm64ASM": [
-        "uxtb w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpalb w1, w20, [x4]",
         "bfxil x5, x20, #0, #8"
       ]
     },
     "xchg word [rax], cx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "uxth w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpalh w1, w20, [x4]",
         "bfxil x5, x20, #0, #16"
       ]
     },
     "xchg dword [rax], ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpal w1, w5, [x4]"
       ]
     },
