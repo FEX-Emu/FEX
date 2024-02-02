@@ -1367,14 +1367,17 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     // So x86-64 spec mandates this special case that even though it is a 32bit instruction and
     // is supposed to zext the result, it is a true no-op
     if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-      // If this instruction has a REP prefix then this is architectually defined to be a `PAUSE` instruction.
-      // On older processors this ends up being a true `REP NOP` which is why they stuck this here.
+      // If this instruction has a REP prefix then this is architecturally
+      // defined to be a `PAUSE` instruction. On older processors this ends up
+      // being a true `REP NOP` which is why they stuck this here.
       _Yield();
     }
     return;
   }
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
+                                {.AllowUpperGarbage = true});
   if (DestIsMem(Op)) {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
@@ -1385,7 +1388,8 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
   else {
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
     // Swap the contents
     // Order matters here since we don't want to swap context contents for one that effects the other

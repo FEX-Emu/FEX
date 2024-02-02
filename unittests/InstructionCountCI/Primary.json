@@ -2210,18 +2210,17 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0x86",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "uxtb w21, w5",
-        "bfxil x5, x20, #0, #8",
-        "bfxil x7, x21, #0, #8"
+        "mov x20, x5",
+        "mov x5, x20",
+        "bfxil x5, x7, #0, #8",
+        "bfxil x7, x20, #0, #8"
       ]
     },
     "xchg [rax], cl": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x86",
       "ExpectedArm64ASM": [
-        "uxtb w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpalb w1, w20, [x4]",
         "bfxil x5, x20, #0, #8"
       ]
@@ -2230,18 +2229,17 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "uxth w21, w5",
-        "bfxil x5, x20, #0, #16",
-        "bfxil x7, x21, #0, #16"
+        "mov x20, x5",
+        "mov x5, x20",
+        "bfxil x5, x7, #0, #16",
+        "bfxil x7, x20, #0, #16"
       ]
     },
     "xchg [rax], cx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "uxth w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpalh w1, w20, [x4]",
         "bfxil x5, x20, #0, #16"
       ]
@@ -2250,17 +2248,16 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w7, w5",
-        "mov x5, x20"
+        "mov x20, x5",
+        "mov w5, w7",
+        "mov w7, w20"
       ]
     },
     "xchg [rax], ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x87",
       "ExpectedArm64ASM": [
-        "mov w20, w5",
-        "mov w1, w20",
+        "mov w1, w5",
         "swpal w1, w5, [x4]"
       ]
     },
@@ -2753,19 +2750,19 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0x90",
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "uxth w21, w7",
-        "bfxil x7, x20, #0, #16",
-        "bfxil x4, x21, #0, #16"
+        "mov x20, x7",
+        "mov x7, x20",
+        "bfxil x7, x4, #0, #16",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "xchg eax, ebx": {
       "ExpectedInstructionCount": 3,
       "Comment": "0x90",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "mov w4, w7",
-        "mov x7, x20"
+        "mov x20, x7",
+        "mov w7, w4",
+        "mov w4, w20"
       ]
     },
     "xchg rax, rbx": {
