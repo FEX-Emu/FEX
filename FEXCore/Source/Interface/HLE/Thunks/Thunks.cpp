@@ -240,7 +240,7 @@ namespace FEXCore {
                         IRHeader.first->Blocks = emit->WrapNode(Block);
                         emit->SetCurrentCodeBlock(Block);
 
-                        const uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+                        const uint8_t GPRSize = CTX->GetGPRSize();
 
                         if (GPRSize == 8) {
                           emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, IR::GPRFixedClass, GPRSize);

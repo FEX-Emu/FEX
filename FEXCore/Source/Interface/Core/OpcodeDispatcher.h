@@ -185,7 +185,7 @@ public:
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
-        const uint8_t GPRSize = GetGPRSize();
+        const uint8_t GPRSize = CTX->GetGPRSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
@@ -245,7 +245,7 @@ public:
   void SetDumpIR(bool DumpIR) { ShouldDump = DumpIR; }
   bool ShouldDumpIR() const { return ShouldDump; }
 
-  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks, uint32_t NumInstructions, bool Is64BitMode);
+  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks, uint32_t NumInstructions);
   void Finalize();
 
   // Dispatch builder functions
@@ -923,8 +923,6 @@ public:
     }
   }
 
-  uint8_t GetGPRSize() const { return Is64BitMode ? 8 : 4; }
-
 protected:
   void SaveNZCV(IROps Op = OP_DUMMY) override {
     /* Some opcodes are conservatively marked as clobbering flags, but in fact
@@ -1367,9 +1365,9 @@ private:
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, GetGPRSize());
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, GetGPRSize());
+      _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       if (ValueOffset || MustMask)
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1423,9 +1421,9 @@ private:
                            _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, GetGPRSize());
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, GetGPRSize());
+      return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
       return _LoadFlag(BitOffset);
     }
@@ -2160,7 +2158,6 @@ private:
 
   bool Multiblock{};
   uint64_t Entry;
-  bool Is64BitMode{};
 
   OrderedNode* _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *Addr, OrderedNode *Value, uint8_t Align = 1) {
     if (CTX->IsAtomicTSOEnabled())
