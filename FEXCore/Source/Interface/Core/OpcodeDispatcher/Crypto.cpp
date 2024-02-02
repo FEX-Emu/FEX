@@ -103,7 +103,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
   };
   const auto f2 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
-    return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, Self._And(OpSize::i32Bit, B, C), Self._And(OpSize::i32Bit, B, D)), Self._And(OpSize::i32Bit, C, D));
+    return Self.BitwiseAtLeastTwo(B, C, D);
   };
   const auto f3 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
     return Self._Xor(OpSize::i32Bit, Self._Xor(OpSize::i32Bit, B, C), D);
@@ -128,9 +128,6 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto W0E = _VExtractToGPR(16, 4, Src, 3);
-  auto W1  = _VExtractToGPR(16, 4, Src, 2);
-  auto W2  = _VExtractToGPR(16, 4, Src, 1);
-  auto W3  = _VExtractToGPR(16, 4, Src, 0);
 
   using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
 
@@ -149,8 +146,12 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     return {A1, B1, C1, D1, E1};
   };
   const auto Round1To3 = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C,
-                             OrderedNode *D, OrderedNode *E, OrderedNode *W) -> RoundResult {
-    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W), E), K);
+                             OrderedNode *D, OrderedNode *E, OrderedNode *Src, unsigned W_idx) -> RoundResult {
+    // Kill W and E at the beginning
+    auto W = _VExtractToGPR(16, 4, Src, W_idx);
+    auto Q = _Add(OpSize::i32Bit, W, E);
+
+    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), Q), K);
     auto BNext = A;
     auto CNext = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
     auto DNext = C;
@@ -160,9 +161,9 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
 
   auto [A1, B1, C1, D1, E1] = Round0();
-  auto [A2, B2, C2, D2, E2] = Round1To3(A1, B1, C1, D1, E1, W1);
-  auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, W2);
-  auto Final                = Round1To3(A3, B3, C3, D3, E3, W3);
+  auto [A2, B2, C2, D2, E2] = Round1To3(A1, B1, C1, D1, E1, Src, 2);
+  auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, Src, 1);
+  auto Final                = Round1To3(A3, B3, C3, D3, E3, Src, 0);
 
   auto Dest3 = _VInsGPR(16, 4, 3, Dest,  std::get<0>(Final));
   auto Dest2 = _VInsGPR(16, 4, 2, Dest3, std::get<1>(Final));
@@ -229,18 +230,25 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, D0, -1);
 }
 
+OrderedNode *OpDispatchBuilder::BitwiseAtLeastTwo(OrderedNode *A, OrderedNode *B, OrderedNode *C) {
+    // Returns whether at least 2/3 of A/B/C is true.
+    // Expressed as (A & (B | C)) | (B & C)
+    //
+    // Equivalent to expression in SHA calculations: (A & B) ^ (A & C) ^ (B & C)
+    auto And = _And(OpSize::i32Bit, B, C);
+    auto Or = _Or(OpSize::i32Bit, B, C);
+    return _Or(OpSize::i32Bit, _And(OpSize::i32Bit, A, Or), And);
+}
+
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
     return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
   };
-  const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, A, B), _And(OpSize::i32Bit, A, C)), _And(OpSize::i32Bit, B, C));
-  };
   const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), _Ror(OpSize::i32Bit, A, _Constant(32, 13))), _Ror(OpSize::i32Bit, A, _Constant(32, 22)));
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), A, ShiftType::ROR, 13), A, ShiftType::ROR, 22);
   };
   const auto Sigma1 = [this](OrderedNode *E) -> OrderedNode* {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), _Ror(OpSize::i32Bit, E, _Constant(32, 11))), _Ror(OpSize::i32Bit, E, _Constant(32, 25)));
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), E, ShiftType::ROR, 11), E, ShiftType::ROR, 25);
   };
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -248,42 +256,44 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
-  auto A0 = _VExtractToGPR(16, 4, Src, 3);
-  auto B0 = _VExtractToGPR(16, 4, Src, 2);
-  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
-  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
   auto E0 = _VExtractToGPR(16, 4, Src, 1);
   auto F0 = _VExtractToGPR(16, 4, Src, 0);
   auto G0 = _VExtractToGPR(16, 4, Dest, 1);
-  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
+  OrderedNode *Q0 = _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0));
+
   auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
+  Q0 = _Add(OpSize::i32Bit, Q0, WK0);
+
+  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
+  Q0 = _Add(OpSize::i32Bit, Q0, H0);
+
+  auto A0 = _VExtractToGPR(16, 4, Src, 3);
+  auto B0 = _VExtractToGPR(16, 4, Src, 2);
+  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
+  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, BitwiseAtLeastTwo(A0, B0, C0)), Sigma0(A0));
+
+  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
+  auto E1 = _Add(OpSize::i32Bit, Q0, D0);
+
+  OrderedNode * Q1 = _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1));
+
   auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
+  Q1 = _Add(OpSize::i32Bit, Q1, WK1);
 
-  using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*,
-                                 OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
-  const auto Round = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C, OrderedNode *D,
-                         OrderedNode *E, OrderedNode *F, OrderedNode *G, OrderedNode *H,
-                         OrderedNode* WK) -> RoundResult {
-    auto ANext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), Major(A, B, C)), Sigma0(A));
-    auto BNext = A;
-    auto CNext = B;
-    auto DNext = C;
-    auto ENext = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Ch(E, F, G), Sigma1(E)), WK), H), D);
-    auto FNext = E;
-    auto GNext = F;
-    auto HNext = G;
+  // Rematerialize G0. Costs a move but saves spilling, coming out ahead.
+  G0 = _VExtractToGPR(16, 4, Dest, 1);
+  Q1 = _Add(OpSize::i32Bit, Q1, G0);
 
-    return {ANext, BNext, CNext, DNext, ENext, FNext, GNext, HNext};
-  };
+  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, BitwiseAtLeastTwo(A1, A0, B0)), Sigma0(A1));
 
+  // Rematerialize C0. As with G0.
+  C0 = _VExtractToGPR(16, 4, Dest, 3);
+  auto E2 = _Add(OpSize::i32Bit, Q1, C0);
 
-  auto [A1, B1, C1, D1, E1, F1, G1, H1] = Round(A0, B0, C0, D0, E0, F0, G0, H0, WK0);
-  auto Final                            = Round(A1, B1, C1, D1, E1, F1, G1, H1, WK1);
-
-  auto Res3 = _VInsGPR(16, 4, 3, Dest, std::get<0>(Final));
-  auto Res2 = _VInsGPR(16, 4, 2, Res3, std::get<1>(Final));
-  auto Res1 = _VInsGPR(16, 4, 1, Res2, std::get<4>(Final));
-  auto Res0 = _VInsGPR(16, 4, 0, Res1, std::get<5>(Final));
+  auto Res3 = _VInsGPR(16, 4, 3, Dest, A2);
+  auto Res2 = _VInsGPR(16, 4, 2, Res3, A1);
+  auto Res1 = _VInsGPR(16, 4, 1, Res2, E2);
+  auto Res0 = _VInsGPR(16, 4, 0, Res1, E1);
 
   StoreResult(FPRClass, Op, Res0, -1);
 }
