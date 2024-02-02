@@ -512,12 +512,12 @@ namespace FEX::HLE {
       Frame->State.gs_idx = guest_uctx->sc.gs;
       Frame->State.ss_idx = guest_uctx->sc.ss;
 
-      Frame->State.cs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.cs_idx >> 3]);
-      Frame->State.ds_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.ds_idx >> 3]);
-      Frame->State.es_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.es_idx >> 3]);
-      Frame->State.fs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.fs_idx >> 3]);
-      Frame->State.gs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.gs_idx >> 3]);
-      Frame->State.ss_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.ss_idx >> 3]);
+      Frame->State.cs_cached = Frame->State.gdt[Frame->State.cs_idx >> 3].base;
+      Frame->State.ds_cached = Frame->State.gdt[Frame->State.ds_idx >> 3].base;
+      Frame->State.es_cached = Frame->State.gdt[Frame->State.es_idx >> 3].base;
+      Frame->State.fs_cached = Frame->State.gdt[Frame->State.fs_idx >> 3].base;
+      Frame->State.gs_cached = Frame->State.gdt[Frame->State.gs_idx >> 3].base;
+      Frame->State.ss_cached = Frame->State.gdt[Frame->State.ss_idx >> 3].base;
 
 #define COPY_REG(x, y) \
     Frame->State.gregs[FEXCore::X86State::REG_##x] = guest_uctx->sc.y;
@@ -592,12 +592,12 @@ namespace FEX::HLE {
       Frame->State.gs_idx = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS];
       Frame->State.ss_idx = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS];
 
-      Frame->State.cs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.cs_idx >> 3]);
-      Frame->State.ds_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.ds_idx >> 3]);
-      Frame->State.es_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.es_idx >> 3]);
-      Frame->State.fs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.fs_idx >> 3]);
-      Frame->State.gs_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.gs_idx >> 3]);
-      Frame->State.ss_cached = Frame->State.CalculateGDTBase(Frame->State.gdt[Frame->State.ss_idx >> 3]);
+      Frame->State.cs_cached = Frame->State.gdt[Frame->State.cs_idx >> 3].base;
+      Frame->State.ds_cached = Frame->State.gdt[Frame->State.ds_idx >> 3].base;
+      Frame->State.es_cached = Frame->State.gdt[Frame->State.es_idx >> 3].base;
+      Frame->State.fs_cached = Frame->State.gdt[Frame->State.fs_idx >> 3].base;
+      Frame->State.gs_cached = Frame->State.gdt[Frame->State.gs_idx >> 3].base;
+      Frame->State.ss_cached = Frame->State.gdt[Frame->State.ss_idx >> 3].base;
 
 #define COPY_REG(x) \
     Frame->State.gregs[FEXCore::X86State::REG_##x] = guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x];

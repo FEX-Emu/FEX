@@ -53,8 +53,8 @@ namespace FEX::HLE::x32 {
     if (u_info->entry_number == -1) {
       for (uint32_t i = TLS_NextEntry; i < TLS_MaxEntry; ++i) {
         auto GDT = &Frame->State.gdt[i];
-        if (Frame->State.CalculateGDTLimit(*GDT) == 0) {
-          // If the limit is zero then it isn't present in our setup.
+        if (GDT->base == 0) {
+          // If the base is zero then it isn't present with our setup
           u_info->entry_number = i;
           break;
         }
@@ -68,29 +68,29 @@ namespace FEX::HLE::x32 {
 
     // Now we need to update the thread's GDT to handle this change
     auto GDT = &Frame->State.gdt[u_info->entry_number];
-    Frame->State.SetGDTBase(GDT, u_info->base_addr);
+    GDT->base = u_info->base_addr;
 
     // With the segment register optimization we need to check all of the segment registers and update.
     const auto GetEntry = [](auto value) {
       return value >> 3;
     };
     if (GetEntry(Frame->State.cs_idx) == u_info->entry_number) {
-      Frame->State.cs_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.cs_cached = GDT->base;
     }
     if (GetEntry(Frame->State.ds_idx) == u_info->entry_number) {
-      Frame->State.ds_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.ds_cached = GDT->base;
     }
     if (GetEntry(Frame->State.es_idx) == u_info->entry_number) {
-      Frame->State.es_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.es_cached = GDT->base;
     }
     if (GetEntry(Frame->State.fs_idx) == u_info->entry_number) {
-      Frame->State.fs_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.fs_cached = GDT->base;
     }
     if (GetEntry(Frame->State.gs_idx) == u_info->entry_number) {
-      Frame->State.gs_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.gs_cached = GDT->base;
     }
     if (GetEntry(Frame->State.ss_idx) == u_info->entry_number) {
-      Frame->State.ss_cached = Frame->State.CalculateGDTBase(*GDT);
+      Frame->State.ss_cached = GDT->base;
     }
     return 0;
   }
@@ -150,7 +150,8 @@ namespace FEX::HLE::x32 {
 
       memset(u_info, 0, sizeof(*u_info));
 
-      u_info->base_addr = Frame->State.CalculateGDTBase(*GDT);
+      // FEX only stores base instead of the full GDT
+      u_info->base_addr = GDT->base;
 
       // Fill the rest of the structure with expected data (even if wrong at the moment)
       if (u_info->base_addr) {
