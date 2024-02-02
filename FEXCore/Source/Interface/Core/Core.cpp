@@ -569,22 +569,6 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
     Thread->CurrentFrame->State.rip = InitialRIP;
 
-    // Set up default code segment.
-    // Default code segment indexes match the numbers that the Linux kernel uses.
-    Thread->CurrentFrame->State.cs_idx = 6 << 3;
-    auto &GDT = Thread->CurrentFrame->State.gdt[Thread->CurrentFrame->State.cs_idx >> 3];
-    Thread->CurrentFrame->State.SetGDTBase(&GDT, 0);
-    Thread->CurrentFrame->State.SetGDTLimit(&GDT, 0xF'FFFFU);
-
-    if (Config.Is64BitMode) {
-      GDT.L = 1; // L = Long Mode = 64-bit
-      GDT.D = 0; // D = Default Operand SIze = Reserved
-    }
-    else {
-      GDT.L = 0; // L = Long Mode = 32-bit
-      GDT.D = 1; // D = Default Operand Size = 32-bit
-    }
-
     // Copy over the new thread state to the new object
     if (NewThreadState) {
       memcpy(&Thread->CurrentFrame->State, NewThreadState, sizeof(FEXCore::Core::CPUState));
@@ -777,7 +761,7 @@ namespace FEXCore::Context {
 
       bool HadDispatchError {false};
 
-      Thread->FrontendDecoder->DecodeInstructionsAtEntry(Thread, GuestCode, GuestRIP, MaxInst, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
+      Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
           static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
         }
@@ -786,9 +770,9 @@ namespace FEXCore::Context {
       auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
       auto CodeBlocks = &BlockInfo->Blocks;
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode);
+      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
 
-      const uint8_t GPRSize = Thread->OpDispatcher->GetGPRSize();
+      const uint8_t GPRSize = GetGPRSize();
 
       for (size_t j = 0; j < CodeBlocks->size(); ++j) {
         FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
@@ -873,6 +857,8 @@ namespace FEXCore::Context {
           }
 
           if (NeedsBlockEnd) {
+            const uint8_t GPRSize = GetGPRSize();
+
             // We had some instructions. Early exit
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
             break;

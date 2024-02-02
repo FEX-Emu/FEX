@@ -146,8 +146,7 @@ namespace Context {
     State.gs_idx = Context->SegGs & 0xffff;
 
     // The TEB is the only populated GDT entry by default
-    State.SetGDTBase(&State.gdt[(Context->SegFs & 0xffff) >> 3], WowTEB);
-    State.SetGDTLimit(&State.gdt[(Context->SegFs & 0xffff) >> 3], 0xF'FFFFU);
+    State.gdt[(Context->SegFs & 0xffff) >> 3].base = WowTEB;
     State.fs_cached = WowTEB;
     State.es_cached = 0;
     State.cs_cached = 0;

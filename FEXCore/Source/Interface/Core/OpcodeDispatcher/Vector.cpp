@@ -698,7 +698,7 @@ OrderedNode* OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs,
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPRSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
     return _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
   }
   else if (SrcSize != DstElementSize) {
@@ -1060,7 +1060,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
     GPR = _Lshr(OpSize::i64Bit, GPR, _Constant(62));
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, GetGPRSize(), -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   }
   else if (Size == 16 && ElementSize == 4) {
     // Shift all the sign bits to the bottom of their respective elements.
@@ -1073,7 +1073,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     Src = _VAddV(Size, 4, Src);
     // Extract to a GPR.
     OrderedNode *GPR = _VExtractToGPR(Size, 4, Src, 0);
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, GetGPRSize(), -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   }
   else {
     OrderedNode *CurrentVal = _Constant(0);
@@ -1759,7 +1759,7 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
     // Get the address to broadcast from into a GPR.
-    OrderedNode *Address = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GetGPRSize(), Op->Flags,
+    OrderedNode *Address = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags,
                                                  {.LoadData = false});
     Address = AppendSegmentOffset(Address, Op->Flags);
 
@@ -1795,7 +1795,7 @@ OrderedNode* OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize,
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPRSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
     return _VInsGPR(Size, ElementSize, Index, Src1, Src2);
   }
 
@@ -1924,7 +1924,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   Index &= NumElements - 1;
 
   if (Op->Dest.IsGPR()) {
-    const uint8_t GPRSize = GetGPRSize();
+    const uint8_t GPRSize = CTX->GetGPRSize();
     // Extract already zero extends the result.
     OrderedNode *Result = _VExtractToGPR(16, OverridenElementSize, Src, Index);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
@@ -2477,7 +2477,7 @@ OrderedNode* OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementS
   OrderedNode *Converted{};
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPRSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
     Converted = _Float_FromGPR_S(DstElementSize, SrcSize, Src2);
   }
   else if (SrcSize != DstElementSize) {
@@ -2826,7 +2826,7 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t Da
                                        const X86Tables::DecodedOperand& DataOp) {
 
   const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
-    OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, Data, GetGPRSize(), Op->Flags,
+    OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, Data, CTX->GetGPRSize(), Op->Flags,
                                                   {.LoadData = false});
     return AppendSegmentOffset(BaseAddr, Op->Flags);
   };
@@ -2877,7 +2877,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
       Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
-      OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], GetGPRSize(), Op->Flags);
+      OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
       // zext to 128bit
       auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
       StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
@@ -3011,7 +3011,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
   OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
   OrderedNode *Base = XSaveBase();
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
@@ -3065,7 +3065,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
   if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
@@ -3151,8 +3151,8 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode *MemBase) {
 }
 
 void OpDispatchBuilder::SaveSSEState(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *XMMReg = LoadXMMRegister(i);
@@ -3163,7 +3163,7 @@ void OpDispatchBuilder::SaveSSEState(OrderedNode *MemBase) {
 }
 
 void OpDispatchBuilder::SaveMXCSRState(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   OrderedNode *MXCSR = GetMXCSR();
   OrderedNode *MXCSRLocation = _Add(OpSize, MemBase, _Constant(24));
@@ -3175,8 +3175,8 @@ void OpDispatchBuilder::SaveMXCSRState(OrderedNode *MemBase) {
 }
 
 void OpDispatchBuilder::SaveAVXState(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
@@ -3194,7 +3194,7 @@ OrderedNode *OpDispatchBuilder::GetMXCSR() {
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
@@ -3208,7 +3208,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   const auto XSaveBase = [this, Op] {
     OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
@@ -3283,7 +3283,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   auto NewFCW = _LoadMem(GPRClass, 2, MemBase, 2);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
@@ -3309,8 +3309,8 @@ void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
 }
 
 void OpDispatchBuilder::RestoreSSEState(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *MemLocation = _Add(OpSize, MemBase, _Constant(i * 16 + 160));
@@ -3326,8 +3326,8 @@ void OpDispatchBuilder::RestoreMXCSRState(OrderedNode *MXCSR) {
 }
 
 void OpDispatchBuilder::RestoreAVXState(OrderedNode *MemBase) {
-  const auto OpSize = IR::SizeToOpSize(GetGPRSize());
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
     OrderedNode *XMMReg = LoadXMMRegister(i);
@@ -3352,7 +3352,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DefaultSSEState() {
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   OrderedNode *ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   for (uint32_t i = 0; i < NumRegs; ++i) {
@@ -3361,7 +3361,7 @@ void OpDispatchBuilder::DefaultSSEState() {
 }
 
 void OpDispatchBuilder::DefaultAVXState() {
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i++) {
       OrderedNode* Reg = LoadXMMRegister(i);
@@ -5346,7 +5346,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto NumRegs = Is64BitMode ? 16U : 8U;
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   if (IsVZEROALL) {
     // NOTE: Despite the name being VZEROALL, this will still only ever
@@ -5550,7 +5550,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
                                   IfZero, IfNotZero);
 
-    const uint8_t GPRSize = GetGPRSize();
+    const uint8_t GPRSize = CTX->GetGPRSize();
     if (GPRSize == 8) {
       // If being stored to an 8-byte register, zero extend the 4-byte result.
       Result = _Bfe(OpSize::i64Bit, 32, 0, Result);
