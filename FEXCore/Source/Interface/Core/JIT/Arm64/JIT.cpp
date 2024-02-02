@@ -79,7 +79,7 @@ namespace FEXCore::CPU {
 
 void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
   FallbackInfo Info;
-  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+  if (!InterpreterOps::GetFallbackHandler(CTX->HostFeatures.SupportsPreserveAllABI, IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 #endif

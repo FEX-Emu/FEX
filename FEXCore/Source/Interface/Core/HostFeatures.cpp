@@ -91,6 +91,7 @@ static void OverrideFeatures(HostFeatures *Features) {
   ENABLE_DISABLE_OPTION(SupportsFlagM, FlagM, FLAGM);
   ENABLE_DISABLE_OPTION(SupportsFlagM2, FlagM2, FLAGM2);
   ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
+  ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
@@ -252,6 +253,7 @@ HostFeatures::HostFeatures() {
   SupportsFloatExceptions = true;
 #endif
 #endif
+  SupportsPreserveAllABI = FEXCORE_HAS_PRESERVE_ALL_ATTR;
   OverrideFeatures(this);
 }
 }
