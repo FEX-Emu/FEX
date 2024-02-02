@@ -210,6 +210,14 @@ struct host_layout {
 
   explicit host_layout(const guest_layout<T>& from) requires (std::is_enum_v<T>) : data { static_cast<T>(from.data) } {
   }
+
+  // Allow conversion of integral types of smaller or equal size and same sign
+  // to each other. Zero-extension is applied if needed.
+  // Notably, this is useful for handling "long"/"long long" on 64-bit, as well
+  // as uint8_t/char.
+  template<typename U>
+  explicit host_layout(const guest_layout<U>& from) requires (std::is_integral_v<U> && sizeof(U) <= sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) : data { static_cast<T>(from.data) } {
+  }
 };
 
 // Explicitly turn a host type into its corresponding host_layout
@@ -218,6 +226,13 @@ const host_layout<T>& to_host_layout(const T& t) {
   static_assert(std::is_same_v<decltype(host_layout<T>::data), T>);
   return reinterpret_cast<const host_layout<T>&>(t);
 }
+
+template<typename T>
+constexpr bool is_long_or_longlong =
+    std::is_same_v<T, long> ||
+    std::is_same_v<T, unsigned long> ||
+    std::is_same_v<T, long long> ||
+    std::is_same_v<T, unsigned long long>;
 
 template<typename T>
 struct host_layout<T*> {
@@ -229,8 +244,31 @@ struct host_layout<T*> {
   explicit host_layout(const guest_layout<T*>& from) : data { (T*)(uintptr_t)from.data } {
   }
 
-  // TODO: Make this explicit?
   host_layout() = default;
+
+  // Allow conversion of pointers to 64-bit integer types to "(un)signed long (long)*".
+  // This is useful for handling "long"/"long long" on 64-bit, which are distinct types
+  // but have equal data layout.
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (is_long_or_longlong<std::remove_cv_t<T>> && std::is_integral_v<U> && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>
+#if __clang_major__ >= 16
+    // Old clang versions don't support using sizeof on incomplete types when evaluating requires()
+    && sizeof(T) == sizeof(U)
+#endif
+  ) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // Allow conversion of pointers to 8-bit integer types to "char*".
+  // This is useful since "char"/"signed char"/"unsigned char"/"int8_t"/"uint8_t"
+  // may all be distinct types but have equal data layout
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_same_v<std::remove_cv_t<T>, char> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == 1) : data { (T*)(uintptr_t)from.data } {
+  }
+
+  // Allow conversion of pointers to 32-bit integer types to "wchar_t*".
+  template<typename U>
+  explicit host_layout(const guest_layout<U*>& from) requires (std::is_same_v<std::remove_cv_t<T>, wchar_t> && std::is_integral_v<U> && std::is_convertible_v<T, U> && sizeof(U) == sizeof(wchar_t)) : data { (T*)(uintptr_t)from.data } {
+  }
 };
 
 template<typename T>
@@ -315,22 +353,67 @@ T* unwrap_host(repack_wrapper<T*, T2>& val) {
 }
 
 template<typename T>
-inline guest_layout<T> to_guest(const host_layout<T>& from) requires(!std::is_pointer_v<T>) {
-  if constexpr (std::is_enum_v<T>) {
-    // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
-    return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
-  } else {
-    guest_layout<T> ret { .data = from.data };
+struct host_to_guest_convertible {
+  const host_layout<T> from;
+
+  // Conversion from host to guest layout for non-pointers
+  operator guest_layout<T>() const requires(!std::is_pointer_v<T>) {
+    if constexpr (std::is_enum_v<T>) {
+      // enums are represented by fixed-size integers in guest_layout, so explicitly cast them
+      return guest_layout<T> { static_cast<std::underlying_type_t<T>>(from.data) };
+    } else {
+      guest_layout<T> ret { .data = from.data };
+      return ret;
+    }
+  }
+
+  operator guest_layout<T>() const requires(std::is_pointer_v<T>) {
+    // TODO: Assert upper 32 bits are zero
+    guest_layout<T> ret;
+    ret.data = reinterpret_cast<uintptr_t>(from.data);
     return ret;
   }
-}
+
+#if IS_32BIT_THUNK
+  // Allow size_t -> uint32_t conversions, since they are so common on 32-bit
+  operator guest_layout<uint32_t>() const requires(std::is_same_v<T, size_t>) {
+    return { static_cast<uint32_t>(from.data) };
+  }
+#endif
+
+  // Make guest_layout of "long long" and "long" interoperable, since they are
+  // the same type as far as data layout is concerned.
+  operator guest_layout<const unsigned long long*>() const requires(std::is_same_v<T, const unsigned long*>) {
+    return (guest_layout<const unsigned long long*>)reinterpret_cast<const host_to_guest_convertible<const unsigned long long*>&>(*this);
+  }
+
+  // Make guest_layout of "char" and "uint8_t" interoperable
+  operator guest_layout<const uint8_t*>() const requires(std::is_same_v<T, const char*>) {
+    return (guest_layout<const uint8_t*>)reinterpret_cast<const host_to_guest_convertible<const uint8_t*>&>(*this);
+  }
+
+  operator guest_layout<uint8_t*>() const requires(std::is_same_v<T, char*>) {
+    return (guest_layout<uint8_t*>)reinterpret_cast<const host_to_guest_convertible<uint8_t*>&>(*this);
+  }
+
+  // Make guest_layout of "wchar_t" and "uint32_t" interoperable
+  operator guest_layout<uint32_t*>() const requires(std::is_same_v<T, wchar_t*>) {
+    return (guest_layout<uint32_t*>)reinterpret_cast<const host_to_guest_convertible<uint32_t*>&>(*this);
+  }
+
+  static_assert(sizeof(wchar_t) == 4);
+
+  // Allow conversion of integral types of same size and sign to each other.
+  // This is useful for handling "long"/"long long" on 64-bit, as well as uint8_t/char.
+  template<typename U>
+  operator guest_layout<U>() const requires (std::is_integral_v<U> && sizeof(U) == sizeof(T) && std::is_convertible_v<T, U> && std::is_signed_v<T> == std::is_signed_v<U>) {
+    return guest_layout<U> { .data { static_cast<T>(from.data) } };
+  }
+};
 
 template<typename T>
-inline guest_layout<T*> to_guest(const host_layout<T*>& from) {
-  // TODO: Assert upper 32 bits are zero
-  guest_layout<T*> ret;
-  ret.data = reinterpret_cast<uintptr_t>(from.data);
-  return ret;
+inline host_to_guest_convertible<T> to_guest(const host_layout<T>& from) {
+  return { from };
 }
 
 template<typename>
@@ -370,8 +453,8 @@ struct CallbackUnpack<Result(Args...)> {
     GuestcallInfo *guestcall;
     LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
 
-    PackedArguments<Result, Args...> packed_args = {
-      args...
+    PackedArguments<Result, guest_layout<Args>...> packed_args = {
+      to_guest(to_host_layout(args))...
     };
     guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
     if constexpr (!std::is_void_v<Result>) {
@@ -380,18 +463,20 @@ struct CallbackUnpack<Result(Args...)> {
   }
 };
 
-template<typename>
+template<typename, typename...>
 struct GuestWrapperForHostFunction;
 
-template<typename Result, typename... Args>
-struct GuestWrapperForHostFunction<Result(Args...)> {
+template<typename Result, typename... Args, typename... GuestArgs>
+struct GuestWrapperForHostFunction<Result(Args...), GuestArgs...> {
   // Host functions called from Guest
+  // NOTE: GuestArgs typically matches up with Args, however there may be exceptions (e.g. size_t)
   template<ParameterAnnotations... Annotations>
   static void Call(void* argsv) {
     static_assert(sizeof...(Annotations) == sizeof...(Args));
+    static_assert(sizeof...(GuestArgs) == sizeof...(Args));
 
-    auto args = reinterpret_cast<PackedArguments<Result, guest_layout<Args>..., uintptr_t>*>(argsv);
-    constexpr auto CBIndex = sizeof...(Args);
+    auto args = reinterpret_cast<PackedArguments<Result, guest_layout<GuestArgs>..., uintptr_t>*>(argsv);
+    constexpr auto CBIndex = sizeof...(GuestArgs);
     uintptr_t cb;
     static_assert(CBIndex <= 18 || CBIndex == 23);
     if constexpr(CBIndex == 0) {
@@ -438,9 +523,9 @@ struct GuestWrapperForHostFunction<Result(Args...)> {
 
     // This is almost the same type as "Result func(Args..., uintptr_t)", but
     // individual parameters annotated as passthrough are replaced by guest_layout<GuestArgs>
-    auto callback = reinterpret_cast<Result(*)(std::conditional_t<Annotations.is_passthrough, guest_layout<Args>, Args>..., uintptr_t)>(cb);
+    auto callback = reinterpret_cast<Result(*)(std::conditional_t<Annotations.is_passthrough, guest_layout<GuestArgs>, Args>..., uintptr_t)>(cb);
 
-    auto f = [&callback](guest_layout<Args>... args, uintptr_t target) -> Result {
+    auto f = [&callback](guest_layout<GuestArgs>... args, uintptr_t target) -> Result {
       // Fold over each of Annotations, Args, and args. This will match up the elements in triplets.
       return callback(Projection<Annotations, Args>(args)..., target);
     };

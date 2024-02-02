@@ -33,3 +33,5 @@ template<> struct fex_gen_param<QueryOffsetOf, 0, ReorderingType*> : fexgen::ptr
 
 template<> struct fex_gen_config<&CustomRepackedType::data> : fexgen::custom_repack {};
 template<> struct fex_gen_config<RanCustomRepack> {};
+
+template<> struct fex_gen_config<FunctionWithDivergentSignature> {};

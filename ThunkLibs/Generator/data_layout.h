@@ -29,14 +29,18 @@ struct StructInfo : SimpleTypeInfo {
         std::string member_name;
         std::optional<uint64_t> array_size;
         bool is_function_pointer;
+        bool is_integral;
+        bool is_signed_integer;
 
         bool operator==(const MemberInfo& other) const {
             return  size_bits == other.size_bits &&
                     offset_bits == other.offset_bits &&
-                    type_name == other.type_name &&
+                    // The type name may differ for integral types if all other parameters are equal
+                    (type_name == other.type_name || (is_integral && other.is_integral)) &&
                     member_name == other.member_name &&
                     array_size == other.array_size &&
-                    is_function_pointer == other.is_function_pointer;
+                    is_function_pointer == other.is_function_pointer &&
+                    is_integral == other.is_integral;
         }
     };
 
@@ -96,6 +100,17 @@ ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<con
 // Convert the output of ComputeDataLayout to a format that isn't tied to a libclang session.
 // As a consequence, type information is indexed by type name instead of clang::Type.
 ABI GetStableLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, TypeInfo>& data_layout);
+
+/**
+ * Returns the type of the given name, but replaces any mentions of integer
+ * types with fixed-size equivalents.
+ *
+ * Examples:
+ * - int -> int32_t
+ * - unsigned long long* -> uint64_t*
+ * - MyStruct -> MyStruct (no change)
+ */
+std::string GetTypeNameWithFixedSizeIntegers(clang::ASTContext&, clang::QualType);
 
 enum class TypeCompatibility {
     Full,       // Type has matching data layout across architectures

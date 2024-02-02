@@ -199,3 +199,15 @@ inline std::string get_type_name(const clang::ASTContext& context, const clang::
     }
     return type_name;
 }
+
+inline std::string get_fixed_size_int_name(bool is_signed, int size) {
+    return (!is_signed ? "u" : "") + std::string { "int" } + std::to_string(size) + "_t";
+}
+
+inline std::string get_fixed_size_int_name(const clang::Type* type, int size) {
+    return get_fixed_size_int_name(type->isSignedIntegerType(), size);
+}
+
+inline std::string get_fixed_size_int_name(const clang::Type* type, const clang::ASTContext& context) {
+    return get_fixed_size_int_name(type, context.getTypeSize(type));
+}
