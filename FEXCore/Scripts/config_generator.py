@@ -453,12 +453,6 @@ def print_parse_jsonloader_options(options):
                 output_argloader.write("Set(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key, op_key))
                 output_argloader.write("}\n")
 
-            if ("ArgumentHandler" in op_vals):
-                conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
-                output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
-                output_argloader.write("Set(KeyOption, {0}(Value_View));\n".format(conversion_func))
-                output_argloader.write("}\n")
-
     output_argloader.write("else {{\n".format(op_key))
     output_argloader.write("Set(KeyOption, ConfigString);\n")
     output_argloader.write("}\n")
