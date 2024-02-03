@@ -83,19 +83,12 @@ namespace FEXCore::Context {
       void SetExitHandler(ExitHandler handler) override;
       ExitHandler GetExitHandler() const override;
 
-      void Pause() override;
-      void Run() override;
-      void Stop() override;
-      void Step() override;
-
       ExitReason RunUntilExit(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ExecuteThread(FEXCore::Core::InternalThreadState *Thread) override;
 
       void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) override;
       void CompileRIPCount(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
-
-      bool IsDone() const override;
 
       void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
@@ -135,17 +128,11 @@ namespace FEXCore::Context {
        *    - HandleCallback(Thread, RIP);
        */
 
-      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, ManagedBy WhoManages, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
+      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
 
       // Public for threading
       void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) override;
-      /**
-       * @brief Starts the OS thread object to start executing guest code
-       *
-       * @param Thread The internal FEX thread state object
-       */
-      void RunThread(FEXCore::Core::InternalThreadState *Thread) override;
-      void StopThread(FEXCore::Core::InternalThreadState *Thread) override;
+
       /**
        * @brief Destroys this FEX thread object and stops tracking it internally
        *
@@ -183,6 +170,8 @@ namespace FEXCore::Context {
       void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) override {
         IRCaptureCache.WriteFilesWithCode(Writer);
       }
+
+      void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) override;
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) override;
       void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) override;
@@ -239,17 +228,8 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     } Config;
 
-    std::mutex ThreadCreationMutex;
-    FEXCore::Core::InternalThreadState* ParentThread{};
-    fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
+
     std::atomic_bool CoreShuttingDown{false};
-
-    std::mutex IdleWaitMutex;
-    std::condition_variable IdleWaitCV;
-    std::atomic<uint32_t> IdleWaitRefCount{};
-
-    Event PauseWait;
-    bool Running{};
 
     FEXCore::ForkableSharedMutex CodeInvalidationMutex;
 
@@ -273,12 +253,6 @@ namespace FEXCore::Context {
 
     ContextImpl();
     ~ContextImpl();
-
-    bool IsPaused() const { return !Running; }
-    void WaitForThreadsToRun() override;
-    void Stop(bool IgnoreCurrentThread);
-    void WaitForIdle() override;
-    void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
     static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData *HostLink, const BlockDelinkerFunc &delinker);
@@ -350,10 +324,6 @@ namespace FEXCore::Context {
       }
     }
 
-    void IncrementIdleRefCount() override {
-      ++IdleWaitRefCount;
-    }
-
     FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator;
 
@@ -383,18 +353,9 @@ namespace FEXCore::Context {
 
     bool ExitOnHLTEnabled() const { return ExitOnHLT; }
 
-    ThreadsState GetThreads() override  {
-      return ThreadsState {
-        .ParentThread = ParentThread,
-        .Threads = &Threads,
-      };
-    }
-
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
 
   protected:
-    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
-
     void UpdateAtomicTSOEmulationConfig() {
       if (SupportsHardwareTSO) {
         // If the hardware supports TSO then we don't need to emulate it through atomics.
@@ -416,14 +377,7 @@ namespace FEXCore::Context {
      */
     void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
 
-    void WaitForIdleWithTimeout();
-
-    void NotifyPause();
-
     void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
-
-    // Entry Cache
-    std::mutex ExitMutex;
 
     IR::AOTIRCaptureCache IRCaptureCache;
     fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;

@@ -1359,7 +1359,7 @@ namespace FEX::HLE {
       if (Thread->RunningEvents.ThreadSleeping) {
         // If the thread was sleeping then its idle counter was decremented
         // Reincrement it here to not break logic
-        CTX->IncrementIdleRefCount();
+        FEX::HLE::_SyscallHandler->TM.IncrementIdleRefCount();
       }
 
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
