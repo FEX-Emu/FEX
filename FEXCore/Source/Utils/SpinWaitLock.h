@@ -259,6 +259,7 @@ namespace FEXCore::Utils::SpinWaitLock {
     do {
       // Wait until the futex is unlocked.
       Wait(Futex, 0);
+      Expected = 0;
     } while (!AtomicFutex->compare_exchange_strong(Expected, Desired));
   }
 
