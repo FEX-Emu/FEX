@@ -82,7 +82,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool Inli
     InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9));
 
-    ////// InsertPass(CreateDeadFlagCalculationEliminination());
+    InsertPass(CreateDeadFlagCalculationEliminination());
 
     InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
     InsertPass(CreatePassDeadCodeElimination());
