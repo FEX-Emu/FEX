@@ -1,0 +1,267 @@
+{
+  "Features": {
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "Chained add": {
+      "ExpectedInstructionCount": 10,
+      "x86Insts": [
+        "add rax, rbx",
+        "adc rcx, rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "add x4, x20, x7",
+        "cmn x20, x7",
+        "mov x20, x5",
+        "cset w21, hs",
+        "add x21, x20, x21",
+        "add x5, x20, x21",
+        "mov w27, #0x0",
+        "mov x26, x5",
+        "adcs xzr, x20, x20"
+      ]
+    },
+    "Chained sub": {
+      "ExpectedInstructionCount": 13,
+      "x86Insts": [
+        "sub rax, rbx",
+        "sbb rcx, rdx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "sub x4, x20, x7",
+        "cmp x20, x7",
+        "cfinv",
+        "cset w20, hs",
+        "add x20, x6, x20",
+        "mov x21, x5",
+        "sub x5, x21, x20",
+        "eor x27, x21, x6",
+        "mov x26, x5",
+        "cfinv",
+        "sbcs xzr, x21, x6",
+        "cfinv"
+      ]
+    },
+    "Inverted add": {
+      "ExpectedInstructionCount": 11,
+      "x86Insts": [
+        "add rax, rbx",
+        "adc rcx, rdx",
+        "cmc"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "add x4, x20, x7",
+        "cmn x20, x7",
+        "cset w20, hs",
+        "add x20, x6, x20",
+        "mov x21, x5",
+        "add x5, x21, x20",
+        "eor x27, x21, x6",
+        "mov x26, x5",
+        "adcs xzr, x21, x6",
+        "cfinv"
+      ]
+    },
+    "Inverted sub": {
+      "ExpectedInstructionCount": 14,
+      "x86Insts": [
+        "sub rax, rbx",
+        "sbb rcx, rcx",
+        "cmc"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "sub x4, x20, x7",
+        "cmp x20, x7",
+        "cfinv",
+        "mov x20, x5",
+        "cset w21, hs",
+        "add x21, x20, x21",
+        "sub x5, x20, x21",
+        "mov w27, #0x0",
+        "mov x26, x5",
+        "cfinv",
+        "sbcs xzr, x20, x20",
+        "cfinv",
+        "cfinv"
+      ]
+    },
+    "INC consumed": {
+      "ExpectedInstructionCount": 10,
+      "x86Insts": [
+        "add rax, rbx",
+        "inc rax"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "add x21, x20, x7",
+        "mov x4, x21",
+        "add x4, x21, #0x1 (1)",
+        "cmn x20, x7",
+        "mov x27, x21",
+        "mov x26, x4",
+        "cset w20, hs",
+        "cmn x21, #0x1 (1)",
+        "rmif x20, #63, #nzCv"
+      ]
+    },
+    "INC dead": {
+      "ExpectedInstructionCount": 3,
+      "x86Insts": [
+        "add rax, rbx",
+        "inc rax",
+        "test rax, rdx"
+      ],
+      "ExpectedArm64ASM": [
+        "add x4, x4, x7",
+        "add x4, x4, #0x1 (1)",
+        "ands x26, x4, x6"
+      ]
+    },
+    "DEC consumed": {
+      "ExpectedInstructionCount": 11,
+      "x86Insts": [
+        "sub rax, rbx",
+        "dec rax"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "sub x21, x20, x7",
+        "mov x4, x21",
+        "sub x4, x21, #0x1 (1)",
+        "cmp x20, x7",
+        "cfinv",
+        "mov x27, x21",
+        "mov x26, x4",
+        "cset w20, hs",
+        "cmp x21, #0x1 (1)",
+        "rmif x20, #63, #nzCv"
+      ]
+    },
+    "DEC dead": {
+      "ExpectedInstructionCount": 3,
+      "x86Insts": [
+        "sub rax, rbx",
+        "dec rax",
+        "test rax, rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "sub x4, x4, x7",
+        "sub x4, x4, #0x1 (1)",
+        "ands x26, x4, x5"
+      ]
+    },
+    "Variable shift dead": {
+      "ExpectedInstructionCount": 2,
+      "x86Insts": [
+        "sar rax, cl",
+        "test rax, rdx"
+      ],
+      "ExpectedArm64ASM": [
+        "asr x4, x4, x5",
+        "ands x26, x4, x6"
+      ]
+    },
+    "Variable rotate-through-carry dead": {
+      "ExpectedInstructionCount": 16,
+      "x86Insts": [
+        "rcr rax, cl",
+        "test rax, rdx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "lsr x21, x20, x5",
+        "cset w22, hs",
+        "and x23, x5, #0x3f",
+        "cbz x23, #+0x2c",
+        "neg x24, x23",
+        "lsl x25, x20, x24",
+        "orr x21, x21, x25, lsl #1",
+        "sub x23, x23, #0x1 (1)",
+        "lsr x20, x20, x23",
+        "rmif x20, #63, #nzCv",
+        "lsl x20, x22, x24",
+        "orr x4, x21, x20",
+        "eor x20, x4, x4, lsr #1",
+        "rmif x20, #62, #nzcV",
+        "ands x26, x4, x6"
+      ]
+    },
+    "Partial NZCV select (cmp)": {
+      "ExpectedInstructionCount": 5,
+      "x86Insts": [
+        "cmp rax, rbx",
+        "setz cl",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "cmp x4, x7",
+        "cset x20, eq",
+        "bfxil x5, x20, #0, #8",
+        "cmn wzr, w5, lsl #24",
+        "mov x26, x5"
+      ]
+    },
+    "Partial NZCV select (add)": {
+      "ExpectedInstructionCount": 7,
+      "x86Insts": [
+        "add rax, rbx",
+        "setz cl",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "add x4, x20, x7",
+        "cmn x20, x7",
+        "cset x20, eq",
+        "bfxil x5, x20, #0, #8",
+        "cmn wzr, w5, lsl #24",
+        "mov x26, x5"
+      ]
+    },
+    "AND use only ZF": {
+      "ExpectedInstructionCount": 5,
+      "x86Insts": [
+        "and eax, ebx",
+        "setz cl",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "ands w4, w4, w7",
+        "cset x20, eq",
+        "bfxil x5, x20, #0, #8",
+        "mov x26, x5",
+        "cmn wzr, w26, lsl #24"
+      ]
+    },
+    "AND use only PF": {
+      "ExpectedInstructionCount": 9,
+      "x86Insts": [
+        "and eax, ebx",
+        "setp cl",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "and w4, w4, w7",
+        "fmov s2, w4",
+        "cnt v2.16b, v2.16b",
+        "umov w20, v2.b[0]",
+        "mvn w20, w20",
+        "and x20, x20, #0x1",
+        "bfxil x5, x20, #0, #8",
+        "mov x26, x5",
+        "cmn wzr, w26, lsl #24"
+      ]
+    }
+  }
+}
