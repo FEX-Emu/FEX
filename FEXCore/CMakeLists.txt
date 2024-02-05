@@ -26,12 +26,6 @@ include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
 include(CheckCXXSourceCompiles)
 
-# Clang17 introduced __attribute__((preserve_all)).
-# This is a performance improvement for x87 insts (ref: https://github.com/FEX-Emu/FEX/pull/3120)
-# However since CI doesn't use clang17 yet, this is unsupported in instcountci.
-# If you use clang17, you need to force disable of preserve_all to see instcountci passing.
-# Use -DDISABLE_CLANG_PRESERVE_ALL=TRUE to force disable.
-option(DISABLE_CLANG_PRESERVE_ALL "Force disable clang::preserve_all" OFF)
 set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
 check_cxx_source_compiles(
   "
@@ -43,7 +37,6 @@ check_cxx_source_compiles(
   }"
   HAS_CLANG_PRESERVE_ALL)
 unset(CMAKE_REQUIRED_FLAGS)
-
 if (HAS_CLANG_PRESERVE_ALL)
   if (MINGW_BUILD)
     message(STATUS "Ignoring broken clang::preserve_all support")
@@ -51,13 +44,7 @@ if (HAS_CLANG_PRESERVE_ALL)
   else()
     message(STATUS "Has clang::preserve_all")
   endif()
-else()
-  message(STATUS "UNSUPPORTED clang::preserve_all")
-endif()
-if (DISABLE_CLANG_PRESERVE_ALL AND HAS_CLANG_PRESERVE_ALL)
-  message(STATUS "Support for clang::preserve_all available, but disabled")
-  set(HAS_CLANG_PRESERVE_ALL FALSE)
-endif()
+endif ()
 
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
     # Useful to have for freestanding libFEXCore
