@@ -105,6 +105,10 @@ class ThreadManager final {
     ~ThreadManager();
 
     FEXCore::Core::InternalThreadState *CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState = nullptr, uint64_t ParentTID = 0);
+    void TrackThread(FEXCore::Core::InternalThreadState *Thread) {
+      std::lock_guard lk(ThreadCreationMutex);
+      Threads.emplace_back(Thread);
+    }
 
     void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
     void StopThread(FEXCore::Core::InternalThreadState *Thread);

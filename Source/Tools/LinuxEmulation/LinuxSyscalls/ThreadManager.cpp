@@ -9,9 +9,6 @@ namespace FEX::HLE {
   FEXCore::Core::InternalThreadState *ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     auto Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
 
-    std::lock_guard lk(ThreadCreationMutex);
-    Threads.emplace_back(Thread);
-
     ++IdleWaitRefCount;
     return Thread;
   }
