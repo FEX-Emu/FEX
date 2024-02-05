@@ -2822,19 +2822,17 @@
       ]
     },
     "test ebx, 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "and w26, w7, #0x1",
-        "tst w26, w26"
+        "ands w26, w7, #0x1"
       ]
     },
     "test rbx, 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "and x26, x7, #0x1",
-        "tst x26, x26"
+        "ands x26, x7, #0x1"
       ]
     },
     "test bx, -1": {
@@ -2846,21 +2844,19 @@
       ]
     },
     "test ebx, -1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "and w26, w7, w20",
-        "tst w26, w26"
+        "ands w26, w7, w20"
       ]
     },
     "test rbx, -1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "and x26, x7, x20",
-        "tst x26, x26"
+        "ands x26, x7, x20"
       ]
     },
     "not bx": {

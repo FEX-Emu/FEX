@@ -1937,19 +1937,17 @@
       ]
     },
     "test eax, ebx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "and w26, w4, w7",
-        "tst w26, w26"
+        "ands w26, w4, w7"
       ]
     },
     "test rax, rbx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "and x26, x4, x7",
-        "tst x26, x26"
+        "ands x26, x4, x7"
       ]
     },
     "pushf": {
@@ -2398,19 +2396,17 @@
       ]
     },
     "test eax, 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "and w26, w4, #0x1",
-        "tst w26, w26"
+        "ands w26, w4, #0x1"
       ]
     },
     "test rax, 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "and x26, x4, #0x1",
-        "tst x26, x26"
+        "ands x26, x4, #0x1"
       ]
     },
     "test al, -1": {
@@ -2430,21 +2426,19 @@
       ]
     },
     "test eax, -1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "and w26, w4, w20",
-        "tst w26, w26"
+        "ands w26, w4, w20"
       ]
     },
     "test rax, -1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "and x26, x4, x20",
-        "tst x26, x26"
+        "ands x26, x4, x20"
       ]
     },
     "scasb": {
