@@ -77,7 +77,9 @@
           "ENABLECRYPTO": "enablecrypto",
           "DISABLECRYPTO": "disablecrypto",
           "ENABLERPRES": "enablerpres",
-          "DISABLERPRES": "disablerpres"
+          "DISABLERPRES": "disablerpres",
+          "ENABLEPRESERVEALLABI": "enablepreserveallabi",
+          "DISABLEPRESERVEALLABI": "disablepreserveallabi"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -97,7 +99,8 @@
           "\t{enable,disable}flagm: Will force enable or disable flagm even if the host doesn't support it",
           "\t{enable,disable}flagm2: Will force enable or disable flagm2 even if the host doesn't support it",
           "\t{enable,disable}crypto: Will force enable or disable crypto extensions even if the host doesn't support it",
-          "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it"
+          "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it",
+          "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it"
         ]
       },
       "CPUID": {

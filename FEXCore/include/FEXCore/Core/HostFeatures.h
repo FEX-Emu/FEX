@@ -37,6 +37,7 @@ class HostFeatures final {
     bool SupportsFlagM{};
     bool SupportsFlagM2{};
     bool SupportsRPRES{};
+    bool SupportsPreserveAllABI{};
 
     // Float exception behaviour
     bool SupportsAFP{};
