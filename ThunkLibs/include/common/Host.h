@@ -30,6 +30,12 @@ namespace FEXCore {
   __attribute__((weak))
   HostToGuestTrampolinePtr*
   FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr*, void* HostPacker);
+
+  __attribute__((weak))
+  void* GetGuestStack();
+
+  __attribute__((weak))
+  void MoveGuestStack(uintptr_t NewAddress);
 }
 
 template<typename Fn>
@@ -447,16 +453,53 @@ auto Projection(guest_layout<T>& data) {
   }
 }
 
+#ifdef IS_32BIT_THUNK
+/**
+ * Helper class to manage guest stack memory from a host function.
+ *
+ * The current guest stack position is saved upon construction and bumped
+ * for each object construction. Upon destruction, the old guest stack is
+ * restored.
+ */
+class GuestStackBumpAllocator final {
+  uintptr_t Top = reinterpret_cast<uintptr_t>(FEXCore::GetGuestStack());
+  uintptr_t Next = Top;
+
+public:
+  ~GuestStackBumpAllocator() {
+    FEXCore::MoveGuestStack(Top);
+  }
+
+  template<typename T, typename... Args>
+  T* New(Args&&... args) {
+    Next -= sizeof(T);
+    Next &= ~uintptr_t { alignof(T) - 1 };
+    FEXCore::MoveGuestStack(Next);
+    return new (reinterpret_cast<void*>(Next)) T {
+      std::forward<Args>(args)...
+    };
+  }
+};
+#endif
+
 template<typename Result, typename... Args>
 struct CallbackUnpack<Result(Args...)> {
   static Result CallGuestPtr(Args... args) {
     GuestcallInfo *guestcall;
     LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
 
+#ifndef IS_32BIT_THUNK
     PackedArguments<Result, guest_layout<Args>...> packed_args = {
       to_guest(to_host_layout(args))...
     };
+#else
+    GuestStackBumpAllocator GuestStack;
+    auto& packed_args = *GuestStack.New<PackedArguments<Result, guest_layout<Args>...>>(
+      to_guest(to_host_layout(args))...
+    );
+#endif
     guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
+
     if constexpr (!std::is_void_v<Result>) {
       return packed_args.rv;
     }
