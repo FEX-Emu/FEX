@@ -209,7 +209,6 @@ namespace FEXCore::Utils::SpinWaitLock {
   template<typename T, typename TT>
   static inline void Wait(T *Futex, TT ExpectedValue) {
     std::atomic<T> *AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
-    T Tmp{};
     T Result = AtomicFutex->load();
 
     // Early exit if possible.
@@ -224,7 +223,6 @@ namespace FEXCore::Utils::SpinWaitLock {
   static inline bool Wait(T *Futex, TT ExpectedValue, std::chrono::nanoseconds const &Timeout) {
     std::atomic<T> *AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
 
-    T Tmp{};
     T Result = AtomicFutex->load();
 
     // Early exit if possible.
