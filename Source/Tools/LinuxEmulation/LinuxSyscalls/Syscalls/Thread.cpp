@@ -142,6 +142,8 @@ namespace FEX::HLE {
       }
     }
 
+    FEX::HLE::_SyscallHandler->TM.TrackThread(NewThread);
+
     return NewThread;
   }
 
@@ -149,6 +151,8 @@ namespace FEX::HLE {
     auto GuestArgs = &CloneArgs->args;
     uint64_t flags = GuestArgs->flags;
     auto NewThread = Thread;
+    bool CreatedNewThreadObject{};
+
     if (flags & CLONE_THREAD) {
       FEXCore::Core::CPUState NewThreadState{};
       // Clone copies the parent thread's state
@@ -168,6 +172,7 @@ namespace FEX::HLE {
       // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
       // Call execution thread directly since we already are on the new thread
       NewThread->StartRunning.NotifyAll(); // Clear the start running flag
+      CreatedNewThreadObject = true;
     }
     else{
       // If we don't have CLONE_THREAD then we are effectively a fork
@@ -210,6 +215,10 @@ namespace FEX::HLE {
     Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
     FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
+
+    if (CreatedNewThreadObject) {
+      FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
+    }
 
     // Start exuting the thread directly
     // Our host clone starts in a new stack space, so it can't return back to the JIT space
