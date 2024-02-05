@@ -2204,6 +2204,36 @@
         "ands x26, x4, x7"
       ]
     },
+    "test al, al": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x84",
+      "ExpectedArm64ASM": [
+        "mov x26, x4",
+        "cmn wzr, w26, lsl #24"
+      ]
+    },
+    "test ax, ax": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x84",
+      "ExpectedArm64ASM": [
+        "mov x26, x4",
+        "cmn wzr, w26, lsl #16"
+      ]
+    },
+    "test eax, eax": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x84",
+      "ExpectedArm64ASM": [
+        "ands w26, w4, w4"
+      ]
+    },
+    "test rax, rax": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x84",
+      "ExpectedArm64ASM": [
+        "ands x26, x4, x4"
+      ]
+    },
     "xchg bl, cl": {
       "ExpectedInstructionCount": 4,
       "Comment": "0x86",
