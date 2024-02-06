@@ -152,7 +152,6 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
       };
 
     case OP_LOADNZCV:
-    case OP_CONDJUMP:
       return {.Read = FLAG_NZCV};
 
     case OP_RMIFNZCV: // TODO: Optimize?
@@ -173,6 +172,14 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
 
     case OP_NZCVSELECT: {
       auto Op = IROp->CW<IR::IROp_NZCVSelect>();
+      return {.Read = FlagsForCondClassType(Op->Cond)};
+    }
+
+    case OP_CONDJUMP: {
+      auto Op = IROp->CW<IR::IROp_CondJump>();
+      if (!Op->FromNZCV)
+        break;
+
       return {.Read = FlagsForCondClassType(Op->Cond)};
     }
 
