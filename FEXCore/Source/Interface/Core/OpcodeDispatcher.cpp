@@ -1283,15 +1283,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   // SF/ZF/CF/OF
-  OrderedNode *ALUOp;
-
-  if (Size >= 4) {
-    ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
-  } else {
-    ALUOp = _And(OpSize::i32Bit, Dest, Src);
-    _TestNZ(IR::SizeToOpSize(Size), ALUOp, ALUOp);
-  }
-
+  OrderedNode *ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
   CachedNZCV = nullptr;
   PossiblySetNZCVBits = (1u << 31) | (1u << 30);
   NZCVDirty = false;

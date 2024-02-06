@@ -568,15 +568,33 @@ DEF_OP(AndWithFlags) {
   const uint8_t OpSize = IROp->Size;
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
   uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    ands(EmitSize, Dst, Src1, Const);
+  const auto Dst = GetReg(Node);
+  auto Src1 = GetReg(Op->Src1.ID());
+
+  // See TestNZ
+  if (OpSize < 4) {
+    if (IsInlineConstant(Op->Src2, &Const)) {
+      and_(EmitSize, Dst, Src1, Const);
+    } else {
+      auto Src2 = GetReg(Op->Src2.ID());
+
+      if (Src1 != Src2) {
+        and_(EmitSize, Dst, Src1, Src2);
+      } else if (Dst != Src1) {
+        mov(ARMEmitter::Size::i64Bit, Dst, Src1);
+      }
+    }
+
+    unsigned Shift = 32 - (OpSize * 8);
+    cmn(EmitSize, ARMEmitter::Reg::zr, Dst, ARMEmitter::ShiftType::LSL, Shift);
   } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    ands(EmitSize, Dst, Src1, Src2);
+    if (IsInlineConstant(Op->Src2, &Const)) {
+      ands(EmitSize, Dst, Src1, Const);
+    } else {
+      const auto Src2 = GetReg(Op->Src2.ID());
+      ands(EmitSize, Dst, Src1, Src2);
+    }
   }
 }
 
