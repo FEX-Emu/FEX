@@ -5215,10 +5215,15 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
   auto Size = GetDstSize(Op);
-  const auto OpSize = Size == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto RoundedSize = Size;
+  if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS)
+    RoundedSize = std::max<uint8_t>(4u, RoundedSize);
+
+  const auto OpSize = IR::SizeToOpSize(RoundedSize);
 
   // Logical ops can tolerate garbage in the upper bits, so don't mask.
-  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_AND ||
+  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_ANDWITHFLAGS ||
                            ALUIROp == FEXCore::IR::IROps::OP_XOR ||
                            ALUIROp == FEXCore::IR::IROps::OP_OR;
 
@@ -5237,7 +5242,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem));
     Dest = FetchOp;
 
-    DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
+    DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
     Result = ALUOp;
   }
   else {
@@ -5256,7 +5261,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
         Result = _Constant(0);
     } else {
-        DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
+        DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
         Result = ALUOp;
     }
 
@@ -5272,10 +5277,22 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     case FEXCore::IR::IROps::OP_SUB:
       GenerateFlags_SUB(Op, Result, Dest, Src);
     break;
-    case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
       GenerateFlags_Logical(Op, Result, Dest, Src);
+    break;
+    }
+    case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
+      InvalidateDeferredFlags();
+
+      // SF/ZF/CF/OF
+      CachedNZCV = nullptr;
+      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+      NZCVDirty = false;
+
+      // PF/AF
+      CalculatePF(Result);
+      _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
     break;
     }
     default: break;
@@ -6084,7 +6101,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x18, 6, &OpDispatchBuilder::SBBOp<0, true>},
 
-    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
+    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
 
     {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB>},
 
