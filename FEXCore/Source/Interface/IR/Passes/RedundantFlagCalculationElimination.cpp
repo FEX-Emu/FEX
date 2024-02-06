@@ -6,6 +6,7 @@ desc: This is not used right now, possibly broken
 $end_info$
 */
 
+#include "FEXCore/Core/X86Enums.h"
 #include "Interface/IR/IREmitter.h"
 
 #include <FEXCore/IR/IR.h>
@@ -122,6 +123,38 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .Write = FLAG_NZCV,
         .CanEliminate = true,
       };
+
+    case OP_INVALIDATEFLAGS: {
+      auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
+      unsigned Flags = 0;
+
+      // TODO: Make this translation less silly
+      if (Op->Flags & (1u << X86State::RFLAG_SF_RAW_LOC))
+        Flags |= FLAG_N;
+
+      if (Op->Flags & (1u << X86State::RFLAG_ZF_RAW_LOC))
+        Flags |= FLAG_Z;
+
+      if (Op->Flags & (1u << X86State::RFLAG_CF_RAW_LOC))
+        Flags |= FLAG_C;
+
+      if (Op->Flags & (1u << X86State::RFLAG_OF_RAW_LOC))
+        Flags |= FLAG_V;
+
+      if (Op->Flags & (1u << X86State::RFLAG_PF_RAW_LOC))
+        Flags |= FLAG_P;
+
+      if (Op->Flags & (1u << X86State::RFLAG_AF_RAW_LOC))
+        Flags |= FLAG_A;
+
+      // The mental model of InvalidateFlags is writing undefined values to all
+      // of the selected flags, allowing the write-after-write optimizations to
+      // optimize invalidate-after-write for free.
+      return {
+        .Write = Flags,
+        .CanEliminate = true,
+      };
+    }
 
     case OP_LOADREGISTER: {
       auto Op = IROp->CW<IR::IROp_LoadRegister>();
