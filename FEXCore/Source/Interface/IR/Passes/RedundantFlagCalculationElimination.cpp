@@ -58,6 +58,7 @@ public:
 private:
   FlagInfo Classify(IROp_Header *Node);
   unsigned FlagForOffset(unsigned Offset);
+  unsigned FlagsForCondClassType(CondClassType Cond);
 };
 
 unsigned
@@ -66,6 +67,53 @@ DeadFlagCalculationEliminination::FlagForOffset(unsigned Offset)
   return Offset == offsetof(FEXCore::Core::CPUState, pf_raw) ? FLAG_P :
          Offset == offsetof(FEXCore::Core::CPUState, af_raw) ? FLAG_A :
          0;
+};
+
+unsigned
+DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond)
+{
+  switch (Cond) {
+  case COND_AL:
+    return 0;
+
+  case COND_MI:
+  case COND_PL:
+    return FLAG_N;
+
+  case COND_EQ:
+  case COND_NEQ:
+    return FLAG_Z;
+
+  case COND_UGE:
+  case COND_ULT:
+    return FLAG_C;
+
+  case COND_VS:
+  case COND_VC:
+  case COND_FU:
+  case COND_FNU:
+    return FLAG_V;
+
+  case COND_UGT:
+  case COND_ULE:
+    return FLAG_Z | FLAG_C;
+
+  case COND_SGE:
+  case COND_SLT:
+  case COND_FLU:
+  case COND_FGE:
+    return FLAG_N | FLAG_V;
+
+  case COND_SGT:
+  case COND_SLE:
+  case COND_FLEU:
+  case COND_FGT:
+    return FLAG_N | FLAG_Z | FLAG_V;
+
+  default:
+    LOGMAN_THROW_AA_FMT(false, "unknown cond class type");
+    return FLAG_NZCV;
+  }
 }
 
 FlagInfo
@@ -104,7 +152,6 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
       };
 
     case OP_LOADNZCV:
-    case OP_NZCVSELECT:
     case OP_CONDJUMP:
       return {.Read = FLAG_NZCV};
 
@@ -123,6 +170,11 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .Write = FLAG_NZCV,
         .CanEliminate = true,
       };
+
+    case OP_NZCVSELECT: {
+      auto Op = IROp->CW<IR::IROp_NZCVSelect>();
+      return {.Read = FlagsForCondClassType(Op->Cond)};
+    }
 
     case OP_INVALIDATEFLAGS: {
       auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
