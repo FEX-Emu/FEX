@@ -156,13 +156,6 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
     case OP_LOADNZCV:
       return {.Read = FLAG_NZCV};
 
-    case OP_RMIFNZCV: // TODO: Optimize?
-      return {
-        .Read = FLAG_NZCV,
-        .Write = FLAG_NZCV,
-        .CanEliminate = true,
-      };
-
     case OP_ADCNZCV:
     case OP_SBBNZCV:
       return {
@@ -189,6 +182,20 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
       return {
         .Read = FlagsForCondClassType(Op->Cond),
         .Write = FLAG_NZCV,
+        .CanEliminate = true,
+      };
+    }
+
+    case OP_RMIFNZCV: {
+      auto Op = IROp->CW<IR::IROp_RmifNZCV>();
+
+      static_assert(FLAG_N == (1 << 3), "rmif mask lines up with our bits");
+      static_assert(FLAG_Z == (1 << 2), "rmif mask lines up with our bits");
+      static_assert(FLAG_C == (1 << 1), "rmif mask lines up with our bits");
+      static_assert(FLAG_V == (1 << 0), "rmif mask lines up with our bits");
+
+      return {
+        .Write = Op->Mask,
         .CanEliminate = true,
       };
     }
