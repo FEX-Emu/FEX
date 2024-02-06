@@ -26,7 +26,8 @@ $end_info$
 #define FLAG_A (1U << 4)
 #define FLAG_P (1U << 5)
 
-#define FLAG_NZCV (FLAG_N | FLAG_Z | FLAG_C | FLAG_V)
+#define FLAG_ZCV (FLAG_Z | FLAG_C | FLAG_V)
+#define FLAG_NZCV (FLAG_N | FLAG_ZCV)
 #define FLAG_ALL (FLAG_NZCV | FLAG_A | FLAG_P)
 
 namespace FEXCore::IR {
@@ -138,8 +139,9 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
       };
 
     case OP_AXFLAG:
+      // Per the Arm spec, axflag reads Z/V/C but not N. It writes all flags.
       return {
-        .Read = FLAG_NZCV,
+        .Read = FLAG_ZCV,
         .Write = FLAG_NZCV,
         .CanEliminate = true,
       };
