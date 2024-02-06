@@ -112,8 +112,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
   _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
 
-  const auto& GPRIndicesRef = *GPRIndexes;
-
   OrderedNode *Arguments[SyscallArgs] {
     InvalidNode,
     InvalidNode,
@@ -124,7 +122,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     InvalidNode,
   };
   for (size_t i = 0; i < NumArguments; ++i) {
-    Arguments[i] = LoadGPRRegister(GPRIndicesRef[i]);
+    Arguments[i] = LoadGPRRegister(GPRIndexes->at(i));
   }
 
   if (IsSyscallInst) {
