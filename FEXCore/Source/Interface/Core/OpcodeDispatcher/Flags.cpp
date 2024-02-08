@@ -568,31 +568,16 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  // TODO: Could do this path for small sources if we have FEAT_FlagM
-  if (SrcSize >= 4) {
-    _SubNZCV(OpSize, Src1, Src2);
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    PossiblySetNZCVBits = ~0;
+  _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+  CachedNZCV = nullptr;
+  NZCVDirty = false;
+  PossiblySetNZCVBits = ~0;
 
-    // We only bother inverting CF if we're actually going to update CF.
-    if (UpdateCF)
-      CarryInvert();
-  } else {
-    // SF/ZF
-    SetNZ_ZeroCV(SrcSize, Res);
-
-    // CF
-    if (UpdateCF) {
-      // Grab carry bit from unmasked output.
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
-    }
-
-    CalculateOF(SrcSize, Res, Src1, Src2, true);
-  }
-
-  // We stomped over CF while calculation flags, restore it.
-  if (!UpdateCF)
+  // If we're updating CF, we need to invert it for correctness. If we're not
+  // updating CF, we need to restore the CF since we stomped over it.
+  if (UpdateCF)
+    CarryInvert();
+  else
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
 }
 
@@ -605,24 +590,10 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-  // TODO: Could do this path for small sources if we have FEAT_FlagM
-  if (SrcSize >= 4) {
-    _AddNZCV(OpSize, Src1, Src2);
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    PossiblySetNZCVBits = ~0;
-  } else {
-    // SF/ZF
-    SetNZ_ZeroCV(SrcSize, Res);
-
-    // CF
-    if (UpdateCF) {
-      // Grab carry bit from unmasked output
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, SrcSize * 8, true);
-    }
-
-    CalculateOF(SrcSize, Res, Src1, Src2, false);
-  }
+  _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+  CachedNZCV = nullptr;
+  NZCVDirty = false;
+  PossiblySetNZCVBits = ~0;
 
   // We stomped over CF while calculation flags, restore it.
   if (!UpdateCF)
