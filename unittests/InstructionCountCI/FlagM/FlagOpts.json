@@ -208,8 +208,8 @@
         "cmp x4, x7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
-        "cmn wzr, w5, lsl #24",
-        "mov x26, x5"
+        "mov x26, x5",
+        "cmn wzr, w26, lsl #24"
       ]
     },
     "Partial NZCV select (add)": {
@@ -225,8 +225,8 @@
         "cmn x20, x7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
-        "cmn wzr, w5, lsl #24",
-        "mov x26, x5"
+        "mov x26, x5",
+        "cmn wzr, w26, lsl #24"
       ]
     },
     "AND use only ZF": {
