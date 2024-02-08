@@ -7,6 +7,7 @@
 #include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 
 namespace CodeSize {
   class CodeSizeValidation final {
@@ -199,6 +200,7 @@ namespace CodeSize {
     ClearStats();
 
     // Invalidate the code ranges to be safe.
+    auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
     CTX->InvalidateGuestCodeRange(Thread, (uint64_t)NOP, sizeof(NOP));
     CTX->InvalidateGuestCodeRange(Thread, (uint64_t)MFENCE, sizeof(MFENCE));
     SetupInfoDisabled = false;

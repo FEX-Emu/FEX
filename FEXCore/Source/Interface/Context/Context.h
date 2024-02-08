@@ -174,6 +174,10 @@ namespace FEXCore::Context {
       void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) override;
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) override;
+      FEXCore::ForkableSharedMutex &GetCodeInvalidationMutex() override {
+        return CodeInvalidationMutex;
+      }
+
       void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;

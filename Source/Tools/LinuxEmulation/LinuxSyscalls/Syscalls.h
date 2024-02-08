@@ -134,6 +134,11 @@ class ThreadManager final {
     void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *CallingThread, uint64_t Start, uint64_t Length) {
       std::lock_guard lk(ThreadCreationMutex);
 
+      // Potential deferred since Thread might not be valid.
+      // Thread object isn't valid very early in frontend's initialization.
+      // To be more optimal the frontend should provide this code with a valid Thread object earlier.
+      auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
+
       for (auto &Thread : Threads) {
         CTX->InvalidateGuestCodeRange(Thread, Start, Length);
       }
@@ -141,6 +146,11 @@ class ThreadManager final {
 
     void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *CallingThread, uint64_t Start, uint64_t Length, FEXCore::Context::CodeRangeInvalidationFn callback) {
       std::lock_guard lk(ThreadCreationMutex);
+
+      // Potential deferred since Thread might not be valid.
+      // Thread object isn't valid very early in frontend's initialization.
+      // To be more optimal the frontend should provide this code with a valid Thread object earlier.
+      auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
 
       for (auto &Thread : Threads) {
         CTX->InvalidateGuestCodeRange(Thread, Start, Length, callback);
