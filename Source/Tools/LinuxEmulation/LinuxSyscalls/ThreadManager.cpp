@@ -97,7 +97,7 @@ namespace FEX::HLE {
   void ThreadManager::WaitForThreadsToRun() {
     size_t NumThreads{};
     {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      std::lock_guard lk(ThreadCreationMutex);
       NumThreads = Threads.size();
     }
 
@@ -134,7 +134,7 @@ namespace FEX::HLE {
 
     // Tell all the threads that they should stop
     {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      std::lock_guard lk(ThreadCreationMutex);
       for (auto &Thread : Threads) {
         if (IgnoreCurrentThread &&
             Thread->ThreadManager.TID == tid) {

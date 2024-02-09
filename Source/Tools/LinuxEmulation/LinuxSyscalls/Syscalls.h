@@ -165,7 +165,7 @@ class ThreadManager final {
     FEXCore::Context::Context *CTX;
     FEX::HLE::SignalDelegator *SignalDelegation;
 
-    std::mutex ThreadCreationMutex;
+    FEXCore::ForkableUniqueMutex ThreadCreationMutex;
     fextl::vector<FEXCore::Core::InternalThreadState *> Threads;
 
     // Thread idling support.
