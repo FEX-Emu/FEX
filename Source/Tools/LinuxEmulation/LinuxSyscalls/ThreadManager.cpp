@@ -223,6 +223,7 @@ namespace FEX::HLE {
 
     // We now only have one thread.
     IdleWaitRefCount = 1;
+    ThreadCreationMutex.StealAndDropActiveLocks();
   }
 
   void ThreadManager::WaitForIdle() {
