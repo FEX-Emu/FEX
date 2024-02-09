@@ -1280,6 +1280,13 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
+  // Optimize out masking constants
+  uint64_t Const;
+  if (IsValueConstant(WrapNode(Src), &Const)) {
+    if (Const == (Size == 8 ? ~0ULL : ((1ull << Size * 8) - 1)))
+      Src = Dest;
+  }
+
   InvalidateDeferredFlags();
 
   // SF/ZF/CF/OF
