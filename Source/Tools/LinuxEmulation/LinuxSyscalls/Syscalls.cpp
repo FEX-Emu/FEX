@@ -580,7 +580,6 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     if (!AnyFlagsSet(flags, CLONE_THREAD)) {
       // Has an unsupported flag
       // Fall to a handler that can handle this case
-      auto Thread = Frame->Thread;
 
       args->SignalMask = ~0ULL;
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, &args->SignalMask, sizeof(args->SignalMask));
@@ -590,9 +589,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       args->StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
       args->NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
 
-      Thread->CTX->LockBeforeFork(Frame->Thread);
-
-      FEX::HLE::_SyscallHandler->LockBeforeFork();
+      FEX::HLE::_SyscallHandler->LockBeforeFork(Frame->Thread);
 
       uint64_t Result{};
       if (args->Type == TYPE_CLONE2) {
@@ -829,7 +826,8 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t 
   return -ENOSYS;
 }
 
-void SyscallHandler::LockBeforeFork() {
+void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {
+  Thread->CTX->LockBeforeFork(Thread);
   VMATracking.Mutex.lock();
 }
 
@@ -840,6 +838,8 @@ void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThr
   else {
     VMATracking.Mutex.unlock();
   }
+
+  CTX->UnlockAfterFork(LiveThread, Child);
 
   // Clear all the other threads that are being tracked
   TM.UnlockAfterFork(LiveThread, Child);

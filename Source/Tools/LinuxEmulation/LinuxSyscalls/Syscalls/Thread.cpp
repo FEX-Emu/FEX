@@ -233,9 +233,8 @@ namespace FEX::HLE {
 
     uint64_t Mask{~0ULL};
     ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, sizeof(Mask));
-    Thread->CTX->LockBeforeFork(Frame->Thread);
 
-    FEX::HLE::_SyscallHandler->LockBeforeFork();
+    FEX::HLE::_SyscallHandler->LockBeforeFork(Frame->Thread);
 
     const bool IsVFork = flags & CLONE_VFORK;
     pid_t Result{};

@@ -185,8 +185,6 @@ namespace FEX::HLE {
   }
 
   void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
-    CTX->UnlockAfterFork(LiveThread, Child);
-
     if (!Child) return;
 
     // This function is called after fork
