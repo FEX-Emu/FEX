@@ -354,7 +354,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4):
-    IROp = FEXCore::IR::IROps::OP_AND;
+    IROp = FEXCore::IR::IROps::OP_ANDWITHFLAGS;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5):
@@ -373,7 +373,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
   // Logical ops can tolerate garbage in the upper bits, so don't mask.
-  bool AllowUpperGarbage = IROp == FEXCore::IR::IROps::OP_AND ||
+  bool AllowUpperGarbage = IROp == FEXCore::IR::IROps::OP_ANDWITHFLAGS ||
                            IROp == FEXCore::IR::IROps::OP_XOR ||
                            IROp == FEXCore::IR::IROps::OP_OR;
 
@@ -403,9 +403,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         Result = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
         break;
       }
-      case FEXCore::IR::IROps::OP_AND: {
+      case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
         Dest = _AtomicFetchAnd(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _And(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
+        Result = _AndWithFlags(IR::SizeToOpSize(std::max(GetOpSize(Dest), GetOpSize(Src))), Dest, Src);
         break;
       }
       case FEXCore::IR::IROps::OP_XOR: {
@@ -420,7 +420,11 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
-    DeriveOp(ALUOp, IROp, _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Dest, Src));
+
+    if (IROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS)
+      Size = std::max<uint8_t>(4u, Size);
+
+    DeriveOp(ALUOp, IROp, _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
 
     Result = ALUOp;
 
@@ -436,10 +440,22 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     case FEXCore::IR::IROps::OP_SUB:
       GenerateFlags_SUB(Op, Result, Dest, Src);
     break;
-    case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
       GenerateFlags_Logical(Op, Result, Dest, Src);
+    break;
+    }
+    case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
+      InvalidateDeferredFlags();
+
+      // SF/ZF/CF/OF
+      CachedNZCV = nullptr;
+      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+      NZCVDirty = false;
+
+      // PF/AF
+      CalculatePF(Result);
+      _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
     break;
     }
     default: break;
@@ -1290,15 +1306,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
   // SF/ZF/CF/OF
-  OrderedNode *ALUOp;
-
-  if (Size >= 4) {
-    ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
-  } else {
-    ALUOp = _And(OpSize::i32Bit, Dest, Src);
-    _TestNZ(IR::SizeToOpSize(Size), ALUOp, ALUOp);
-  }
-
+  OrderedNode *ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
   CachedNZCV = nullptr;
   PossiblySetNZCVBits = (1u << 31) | (1u << 30);
   NZCVDirty = false;
@@ -5214,10 +5222,15 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
   auto Size = GetDstSize(Op);
-  const auto OpSize = Size == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto RoundedSize = Size;
+  if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS)
+    RoundedSize = std::max<uint8_t>(4u, RoundedSize);
+
+  const auto OpSize = IR::SizeToOpSize(RoundedSize);
 
   // Logical ops can tolerate garbage in the upper bits, so don't mask.
-  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_AND ||
+  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_ANDWITHFLAGS ||
                            ALUIROp == FEXCore::IR::IROps::OP_XOR ||
                            ALUIROp == FEXCore::IR::IROps::OP_OR;
 
@@ -5236,7 +5249,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem));
     Dest = FetchOp;
 
-    DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
+    DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
     Result = ALUOp;
   }
   else {
@@ -5255,7 +5268,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
         Result = _Constant(0);
     } else {
-        DeriveOp(ALUOp, ALUIROp, _Add(OpSize, Dest, Src));
+        DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
         Result = ALUOp;
     }
 
@@ -5271,10 +5284,22 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     case FEXCore::IR::IROps::OP_SUB:
       GenerateFlags_SUB(Op, Result, Dest, Src);
     break;
-    case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
       GenerateFlags_Logical(Op, Result, Dest, Src);
+    break;
+    }
+    case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
+      InvalidateDeferredFlags();
+
+      // SF/ZF/CF/OF
+      CachedNZCV = nullptr;
+      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+      NZCVDirty = false;
+
+      // PF/AF
+      CalculatePF(Result);
+      _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
     break;
     }
     default: break;
@@ -6083,7 +6108,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x18, 6, &OpDispatchBuilder::SBBOp<0, true>},
 
-    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
+    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
 
     {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB>},
 

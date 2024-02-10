@@ -1093,10 +1093,7 @@
         "Desc": ["Integer binary and"
                 ],
         "DestSize": "Size",
-        "HasSideEffects": true,
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "HasSideEffects": true
       },
       "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
