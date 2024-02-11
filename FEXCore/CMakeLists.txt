@@ -30,10 +30,11 @@ set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
 check_cxx_source_compiles(
   "
   __attribute__((preserve_all))
-  void Testy() {
+  int Testy(int a, int b, int c, int d, int e, int f) {
+  return a + b + c + d + e + f;
   }
   int main() {
-  return 0;
+  return Testy(0, 1, 2, 3, 4, 5);
   }"
   HAS_CLANG_PRESERVE_ALL)
 unset(CMAKE_REQUIRED_FLAGS)
