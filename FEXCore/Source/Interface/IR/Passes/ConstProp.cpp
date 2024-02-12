@@ -970,7 +970,9 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         uint64_t Constant2{};
         if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          if (IsImmAddSub(Constant2)) {
+          // We don't allow 8/16-bit operations to have constants, since no
+          // constant would be in bounds after the JIT's 24/16 shift.
+          if (IsImmAddSub(Constant2) && Op->Header.Size >= 4) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
             IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));

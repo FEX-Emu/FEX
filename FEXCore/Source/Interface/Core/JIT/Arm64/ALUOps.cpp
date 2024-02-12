@@ -97,16 +97,24 @@ DEF_OP(AddShift) {
 
 DEF_OP(AddNZCV) {
   auto Op = IROp->C<IR::IROp_AddNZCV>();
-  const auto OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  auto Src1 = GetReg(Op->Src1.ID());
 
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
-    cmn(EmitSize, GetReg(Op->Src1.ID()), Const);
+    LOGMAN_THROW_AA_FMT(OpSize >= 4, "Constant not allowed here");
+    cmn(EmitSize, Src1, Const);
   } else {
-    cmn(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+    unsigned Shift = OpSize < 4 ? (32 - (8 * OpSize)) : 0;
+
+    if (OpSize < 4) {
+      lsl(ARMEmitter::Size::i32Bit, TMP1, Src1, Shift);
+      cmn(EmitSize, TMP1, GetReg(Op->Src2.ID()), ARMEmitter::ShiftType::LSL, Shift);
+    } else {
+      cmn(EmitSize, Src1, GetReg(Op->Src2.ID()));
+    }
   }
 }
 
@@ -194,19 +202,35 @@ DEF_OP(SubShift) {
 
 DEF_OP(SubNZCV) {
   auto Op = IROp->C<IR::IROp_SubNZCV>();
-  const auto OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
+    LOGMAN_THROW_AA_FMT(OpSize >= 4, "Constant not allowed here");
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
-  } else if (IsInlineConstant(Op->Src1, &Const)) {
-    LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
-    cmp(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src2.ID()));
   } else {
-    cmp(EmitSize, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+    unsigned Shift = OpSize < 4 ? (32 - (8 * OpSize)) : 0;
+    ARMEmitter::Register ShiftedSrc1 = ARMEmitter::Reg::zr;
+
+    if (IsInlineConstant(Op->Src1, &Const)) {
+      LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
+      // Any shift of zero is still zero
+    } else {
+      ShiftedSrc1 = GetReg(Op->Src1.ID());
+
+      if (OpSize < 4) {
+        lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
+        ShiftedSrc1 = TMP1;
+      }
+    }
+
+    if (OpSize < 4) {
+      cmp(EmitSize, ShiftedSrc1, GetReg(Op->Src2.ID()), ARMEmitter::ShiftType::LSL, Shift);
+    } else {
+      cmp(EmitSize, ShiftedSrc1, GetReg(Op->Src2.ID()));
+    }
   }
 }
 

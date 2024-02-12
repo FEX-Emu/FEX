@@ -267,19 +267,18 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
+        "mov w20, #0x1",
         "uxth w27, w4",
         "add w26, w27, #0x1 (1)",
         "bfxil w4, w26, #0, #16",
-        "cset w20, hs",
-        "cmn wzr, w26, lsl #16",
-        "mrs x21, nzcv",
-        "bic w22, w26, w27",
-        "ubfx x22, x22, #15, #1",
-        "orr w21, w21, w22, lsl #28",
-        "orr w20, w21, w20, lsl #29",
+        "cset w21, hs",
+        "lsl w0, w27, #16",
+        "cmn w0, w20, lsl #16",
+        "mrs x20, nzcv",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -300,19 +299,18 @@
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
+        "mov w20, #0x1",
         "uxth w27, w4",
         "sub w26, w27, #0x1 (1)",
         "bfxil w4, w26, #0, #16",
-        "cset w20, hs",
-        "cmn wzr, w26, lsl #16",
-        "mrs x21, nzcv",
-        "bic w22, w27, w26",
-        "ubfx x22, x22, #15, #1",
-        "orr w21, w21, w22, lsl #28",
-        "orr w20, w21, w20, lsl #29",
+        "cset w21, hs",
+        "lsl w0, w27, #16",
+        "cmp w0, w20, lsl #16",
+        "mrs x20, nzcv",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
