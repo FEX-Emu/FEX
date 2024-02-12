@@ -97,7 +97,7 @@ namespace FEX::HLE {
   void ThreadManager::WaitForThreadsToRun() {
     size_t NumThreads{};
     {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      std::lock_guard lk(ThreadCreationMutex);
       NumThreads = Threads.size();
     }
 
@@ -134,7 +134,7 @@ namespace FEX::HLE {
 
     // Tell all the threads that they should stop
     {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      std::lock_guard lk(ThreadCreationMutex);
       for (auto &Thread : Threads) {
         if (IgnoreCurrentThread &&
             Thread->ThreadManager.TID == tid) {
@@ -185,8 +185,6 @@ namespace FEX::HLE {
   }
 
   void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
-    CTX->UnlockAfterFork(LiveThread, Child);
-
     if (!Child) return;
 
     // This function is called after fork
@@ -225,6 +223,7 @@ namespace FEX::HLE {
 
     // We now only have one thread.
     IdleWaitRefCount = 1;
+    ThreadCreationMutex.StealAndDropActiveLocks();
   }
 
   void ThreadManager::WaitForIdle() {

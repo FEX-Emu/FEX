@@ -165,7 +165,7 @@ class ThreadManager final {
     FEXCore::Context::Context *CTX;
     FEX::HLE::SignalDelegator *SignalDelegation;
 
-    std::mutex ThreadCreationMutex;
+    FEXCore::ForkableUniqueMutex ThreadCreationMutex;
     fextl::vector<FEXCore::Core::InternalThreadState *> Threads;
 
     // Thread idling support.
@@ -303,7 +303,7 @@ public:
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) final override;
 
   ///// FORK tracking /////
-  void LockBeforeFork();
+  void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread);
   void UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child);
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
