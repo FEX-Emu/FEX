@@ -372,14 +372,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   break;
   };
 #undef OPD
-  // Logical ops can tolerate garbage in the upper bits, so don't mask.
-  bool AllowUpperGarbage = IROp == FEXCore::IR::IROps::OP_ANDWITHFLAGS ||
-                           IROp == FEXCore::IR::IROps::OP_XOR ||
-                           IROp == FEXCore::IR::IROps::OP_OR;
-
   // X86 basic ALU ops just do the operation between the destination and a single source
   uint8_t Size = GetDstSize(Op);
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   OrderedNode *Result{};
   OrderedNode *Dest{};
 
@@ -419,7 +414,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     }
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
     if (IROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS)
       Size = std::max<uint8_t>(4u, Size);
@@ -1364,8 +1359,8 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
   auto Size = GetDstSize(Op);
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = Size >= 4});
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   auto ALUOp = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
@@ -5229,14 +5224,8 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
   const auto OpSize = IR::SizeToOpSize(RoundedSize);
 
-  // Logical ops can tolerate garbage in the upper bits, so don't mask.
-  bool AllowUpperGarbage = ALUIROp == FEXCore::IR::IROps::OP_ANDWITHFLAGS ||
-                           ALUIROp == FEXCore::IR::IROps::OP_XOR ||
-                           ALUIROp == FEXCore::IR::IROps::OP_OR;
-
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
-                                {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5253,8 +5242,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     Result = ALUOp;
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags,
-                      {.AllowUpperGarbage = AllowUpperGarbage || Size >= 4});
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
     /* On x86, the canonical way to zero a register is XOR with itself...
      * because modern x86 detects this pattern in hardware. arm64 does not
