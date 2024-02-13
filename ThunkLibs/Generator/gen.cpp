@@ -164,7 +164,7 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         }
 
         if (type->isEnumeralType()) {
-            fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+            fmt::print(file, "template<>\nstruct __attribute__((packed)) guest_layout<{}> {{\n", struct_name);
             fmt::print(file, "  using type = {}int{}_t;\n",
                        type->isUnsignedIntegerOrEnumerationType() ? "u" : "",
                        guest_abi.at(struct_name).get_if_simple_or_struct()->size_bits);
@@ -182,12 +182,13 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(
         }
 
         // Guest layout definition
-        fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
+        // NOTE: uint64_t has lower alignment requirements on 32-bit than on 64-bit, so we require tightly packed structs
+        // TODO: Now we must emit padding bytes explicitly, though!
+        fmt::print(file, "template<>\nstruct __attribute__((packed)) guest_layout<{}> {{\n", struct_name);
         if (type_compat.at(type) == TypeCompatibility::Full) {
             fmt::print(file, "  using type = {};\n", struct_name);
         } else {
             fmt::print(file, "  struct type {{\n");
-            // TODO: Insert any required padding bytes
             for (auto& member : guest_abi.at(struct_name).get_if_struct()->members) {
                 fmt::print( file, "    guest_layout<{}{}> {};\n",
                             member.type_name,
@@ -454,7 +455,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             }
             // Using trailing return type as it makes handling function pointer returns much easier
             file << ") -> " << data.return_type.getAsString() << " {\n";
-            file << "  struct {\n";
+            file << "  struct __attribute__((packed)) {\n";
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
                 file << "    " << format_decl(type.getUnqualifiedType(), fmt::format("a_{}", idx)) << ";\n";
@@ -600,7 +601,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             // Packed argument structs used in fexfn_unpack_*
             auto GeneratePackedArgs = [&](const auto &function_name, const ThunkedFunction &thunk) -> std::string {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
-                file << "struct " << struct_name << " {\n";
+                file << "struct __attribute__((packed)) " << struct_name << " {\n";
 
                 for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
                     fmt::print(file, "  guest_layout<{}> a_{};\n", get_guest_type_name(thunk.param_types[idx]), idx);

@@ -121,7 +121,7 @@ template<> inline constexpr bool has_compatible_data_layout<const void**> = true
 
 // Placeholder type to indicate the given data is in guest-layout
 template<typename T>
-struct guest_layout {
+struct __attribute__((packed)) guest_layout {
   static_assert(!std::is_class_v<T>, "No guest layout defined for this non-opaque struct type. This may be a bug in the thunk generator.");
   static_assert(!std::is_union_v<T>, "No guest layout defined for this non-opaque union type. This may be a bug in the thunk generator.");
   static_assert(!std::is_enum_v<T>, "No guest layout defined for this enum type. This is a bug in the thunk generator.");
