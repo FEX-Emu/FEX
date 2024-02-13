@@ -181,23 +181,11 @@ namespace FEXCore {
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
           } else {
-            // The argument pointer comes from the host stack, so it's not
-            // accessible by the guest. Allocate a thread-local chunk of memory
-            // to relocate the argument data.
-            // TODO: Directly store the arguments in a guest-accessible location instead
-            // TODO: FEXCore::Allocator::malloc() still returns pointers inaccessible from 32-bit guests here
-            thread_local void* local_args =
-              mmap( 0, 128, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-            // We don't know how much argument data is on the stack, so we
-            // unconditionally copy a fixed amount and leave everything else
-            // uninitialized.
-            // TODO: This breaks functions with large argument counts.
-            memcpy(local_args, arg1, 128);
-
+            if ((reinterpret_cast<uintptr_t>(arg1) >> 32) != 0) {
+              ERROR_AND_DIE_FMT("Tried to call guest function with arguments packed to a 64-bit address");
+            }
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RCX] = (uintptr_t)arg0;
-            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = (uintptr_t)local_args;
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = (uintptr_t)arg1;
           }
 
           Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
@@ -497,6 +485,26 @@ namespace FEXCore {
         LogMan::Msg::DFmt("Thunks: Finalizing trampoline at {} with host packer {}", fmt::ptr(TrampolineAddress), fmt::ptr(HostPacker));
         Trampoline.HostPacker = HostPacker;
       }
+    }
+
+    FEX_DEFAULT_VISIBILITY void* GetGuestStack() {
+      if (!Thread) {
+        ERROR_AND_DIE_FMT("Thunked library attempted to query guest stack pointer asynchronously");
+      }
+
+      return (void*)(uintptr_t)((Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP]));
+    }
+
+    FEX_DEFAULT_VISIBILITY void MoveGuestStack(uintptr_t NewAddress) {
+      if (!Thread) {
+        ERROR_AND_DIE_FMT("Thunked library attempted to query guest stack pointer asynchronously");
+      }
+
+      if (NewAddress >> 32) {
+         ERROR_AND_DIE_FMT("Tried to set stack pointer for 32-bit guest to a 64-bit address");
+      }
+
+      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = NewAddress;
     }
 
 #else
