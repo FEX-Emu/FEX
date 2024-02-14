@@ -139,6 +139,9 @@ namespace FEXCore::Core {
     // Async signals aren't guaranteed to be delivered in any particular order, but FEX treats them as FILO.
     fextl::vector<DeferredSignalState> DeferredSignalFrames;
 
+    ///< Data pointer for exclusive use by the frontend
+    void* FrontendPtr;
+
     // BaseFrameState should always be at the end, directly before the interrupt fault page
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
