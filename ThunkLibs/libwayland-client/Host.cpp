@@ -437,7 +437,7 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
 void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout<wl_interface*> guest_interface_raw, const char* name) {
   auto& guest_interface = *guest_interface_raw.get_pointer();
   auto& host_interface = guest_to_host_interface[reinterpret_cast<guest_layout<const wl_interface>*>(&guest_interface)];
-  host_interface = reinterpret_cast<wl_interface*>(dlsym(fexldr_ptr_libwayland_client_so, (std::string { name } + "_interface").c_str()));
+  host_interface = reinterpret_cast<wl_interface*>(dlsym(fexldr_ptr_libwayland_client_so, name));
   if (!host_interface) {
     fprintf(stderr, "Could not find host interface corresponding to %p (%s)\n", &guest_interface, name);
     std::abort();
