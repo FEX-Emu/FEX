@@ -39,11 +39,6 @@ extern "C" const wl_interface wl_callback_interface {};
 
 #include "thunkgen_guest_libwayland-client.inl"
 
-struct wl_proxy_private {
-  wl_interface* interface;
-  // Other data members omitted
-};
-
 // See wayland-util.h for documentation on protocol message signatures
 template<char> struct ArgType;
 template<> struct ArgType<'s'> { using type = const char*; };
@@ -75,18 +70,18 @@ static std::unordered_map<wl_proxy*, std::array<void*, WL_CLOSURE_MAX_ARGS>> pro
 
 extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
       void (**callback)(void), void *data) {
-  auto interface = ((wl_proxy_private*)proxy)->interface;
-
   // NOTE: This table must remain valid past the return of this function.
   auto& host_callbacks = proxy_listeners[proxy];
 
-  for (int i = 0; i < ((wl_proxy_private*)proxy)->interface->event_count; ++i) {
-    auto signature_view = std::string_view { interface->events[i].signature };
+  for (int i = 0; i < fex_wl_get_interface_event_count(proxy); ++i) {
+    char event_signature[16];
+    fex_wl_get_interface_event_signature(proxy, i, event_signature);
+    auto signature2 = std::string_view { event_signature };
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
-    auto [ptr, res] = std::from_chars(signature_view.begin(), signature_view.end(), since_version, 10);
-    std::string signature { ptr, &*signature_view.end() };
+    auto [ptr, res] = std::from_chars(signature2.begin(), signature2.end(), since_version, 10);
+    auto signature = std::string { signature2.substr(ptr - signature2.begin()) };
 
     // ? just indicates that the argument may be null, so it doesn't change the signature
     signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
@@ -185,7 +180,7 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
       // E.g. zwp_text_input_v3::preedit_string
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s', 'i', 'i'>(callback[i]);
     } else {
-      fprintf(stderr, "Unknown wayland signature descriptor \"%s\" for event \"%s\" in interface \"%s\"\n", signature.data(), interface->events[i].name, interface->name);
+      fprintf(stderr, "TODO: Unknown wayland event signature descriptor %s\n", signature.data());
       std::abort();
     }
   }
@@ -266,13 +261,11 @@ extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
   va_list ap;
 
   va_start(ap, opcode);
-#ifdef IS_32BIT_THUNK
-// Must extract signature from host due to different data layout on 32-bit
-#error Not implemented
-#else
-  wl_argument_from_va_list(((wl_proxy_private*)proxy)->interface->methods[opcode].signature,
-                           args, WL_CLOSURE_MAX_ARGS, ap);
-#endif
+  // This is equivalent to reading proxy->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
   va_end(ap);
 
   wl_proxy_marshal_array(proxy, opcode, args);
@@ -286,13 +279,11 @@ extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
   va_list ap;
 
   va_start(ap, flags);
-#ifdef IS_32BIT_THUNK
-// Must extract signature from host due to different data layout on 32-bit
-#error Not implemented
-#else
-  wl_argument_from_va_list(((wl_proxy_private*)proxy)->interface->methods[opcode].signature,
-                           args, WL_CLOSURE_MAX_ARGS, ap);
-#endif
+  // This is equivalent to reading proxy->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
   va_end(ap);
 
   // wl_proxy_marshal_array_flags is only available starting from Wayland 1.19.91

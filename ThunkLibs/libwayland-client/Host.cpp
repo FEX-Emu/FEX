@@ -23,10 +23,10 @@ $end_info$
 
 #include "thunkgen_host_libwayland-client.inl"
 
-struct wl_proxy_private {
-  wl_interface* interface;
-  // Other data members omitted
-};
+static wl_interface* get_proxy_interface(wl_proxy* proxy) {
+  // wl_proxy is a private struct, but its first member is the wl_interface pointer
+  return *reinterpret_cast<wl_interface**>(proxy);
+}
 
 // See wayland-util.h for documentation on protocol message signatures
 template<char> struct ArgType;
@@ -47,10 +47,10 @@ static void WaylandFinalizeHostTrampolineForGuestListener(void (*callback)()) {
 
 extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy *proxy,
       guest_layout<void (**)(void)> callback_raw, void* data) {
-  auto guest_interface = ((wl_proxy_private*)proxy)->interface;
+  auto interface = get_proxy_interface(proxy);
 
-  for (int i = 0; i < guest_interface->event_count; ++i) {
-    auto signature_view = std::string_view { guest_interface->events[i].signature };
+  for (int i = 0; i < interface->event_count; ++i) {
+    auto signature_view = std::string_view { interface->events[i].signature };
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
@@ -195,6 +195,22 @@ wl_interface* fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(wl_
 //  mprotect((void*)page_begin, 0x1000, PROT_READ);
 
   return host_interface;
+}
+
+void fexfn_impl_libwayland_client_fex_wl_get_method_signature(wl_proxy* proxy, uint32_t opcode, char* out) {
+  strcpy(out, get_proxy_interface(proxy)->methods[opcode].signature);
+}
+
+int fexfn_impl_libwayland_client_fex_wl_get_interface_event_count(wl_proxy* proxy) {
+  return get_proxy_interface(proxy)->event_count;
+}
+
+void fexfn_impl_libwayland_client_fex_wl_get_interface_event_name(wl_proxy* proxy, int i, char* out) {
+  strcpy(out, get_proxy_interface(proxy)->events[i].name);
+}
+
+void fexfn_impl_libwayland_client_fex_wl_get_interface_event_signature(wl_proxy* proxy, int i, char* out) {
+  strcpy(out, get_proxy_interface(proxy)->events[i].signature);
 }
 
 EXPORTS(libwayland_client)

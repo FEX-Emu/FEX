@@ -69,3 +69,14 @@ template<> struct fex_gen_config<wl_proxy_marshal_array_flags> {};
 // Guest notifies host about its interface. Host returns its corresponding interface pointer
 wl_interface* fex_wl_exchange_interface_pointer(wl_interface*, const char* name);
 template<> struct fex_gen_config<fex_wl_exchange_interface_pointer> : fexgen::custom_host_impl {};
+
+// This is equivalent to reading proxy->interface->methods[opcode].signature on 64-bit.
+// On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+void fex_wl_get_method_signature(wl_proxy*, uint32_t opcode, char*);
+template<> struct fex_gen_config<fex_wl_get_method_signature> : fexgen::custom_host_impl {};
+int fex_wl_get_interface_event_count(wl_proxy*);
+template<> struct fex_gen_config<fex_wl_get_interface_event_count> : fexgen::custom_host_impl {};
+void fex_wl_get_interface_event_name(wl_proxy*, int, char*);
+template<> struct fex_gen_config<fex_wl_get_interface_event_name> : fexgen::custom_host_impl {};
+void fex_wl_get_interface_event_signature(wl_proxy*, int, char*);
+template<> struct fex_gen_config<fex_wl_get_interface_event_signature> : fexgen::custom_host_impl {};
