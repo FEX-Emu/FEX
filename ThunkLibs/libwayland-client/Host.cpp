@@ -233,6 +233,38 @@ fexfn_impl_libwayland_client_wl_proxy_marshal_array_flags(
   return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, version, flags);
 }
 
+// Variant of CallbackUnpack::CallGuestPtr that relocates a wl_array parameter
+// for 32-bit guests. Relocating this parameter is required since it may
+// reference inaccessible memory regions (presumably due to pointing to data
+// on the host stack).
+#ifndef IS_32BIT_THUNK
+template<typename Result, typename... Args>
+const auto CallGuestPtrWithWaylandArray = CallbackUnpack<Result(Args..., wl_array*)>::CallGuestPtr;
+#else
+template<typename Result, typename... Args>
+static auto CallGuestPtrWithWaylandArray(Args... args, wl_array *array) -> Result {
+  GuestcallInfo *guestcall;
+  LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
+
+  using PackedArgumentsType = PackedArguments<Result, guest_layout<Args>..., guest_layout<wl_array*>>;
+
+  GuestStackBumpAllocator GuestStack;
+
+  auto* guest_array = GuestStack.New<guest_layout<wl_array>>(to_guest(to_host_layout(*array)));
+  guest_layout<wl_array*> guest_array_ptr = { .data = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(guest_array)) };
+
+  auto& packed_args =  *GuestStack.New<PackedArgumentsType>(
+    to_guest(to_host_layout(args))..., guest_array_ptr
+  );
+
+  guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
+
+  if constexpr (!std::is_void_v<Result>) {
+    return packed_args.rv;
+  }
+}
+#endif
+
 // See wayland-util.h for documentation on protocol message signatures
 template<char> struct ArgType;
 template<> struct ArgType<'s'> { using type = const char*; };
@@ -276,7 +308,9 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<>(callback);
     } else if (signature == "a") {
       // E.g. xdg_toplevel::wm_capabilities
-      WaylandFinalizeHostTrampolineForGuestListener<'a'>(callback);
+      FEXCore::FinalizeHostTrampolineForGuestFunction(
+          (FEXCore::HostToGuestTrampolinePtr*)callback,
+          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
     } else if (signature == "hu") {
       // E.g. zwp_linux_dmabuf_feedback_v1::format_table
       WaylandFinalizeHostTrampolineForGuestListener<'h', 'u'>(callback);
@@ -294,7 +328,9 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i'>(callback);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
-      WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'a'>(callback);
+      FEXCore::FinalizeHostTrampolineForGuestFunction(
+          (FEXCore::HostToGuestTrampolinePtr*)callback,
+          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
     } else if (signature == "iiiiissi") {
       // E.g. wl_output_listener::geometry
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'i', 'i', 'i', 's', 's', 'i'>(callback);
@@ -327,7 +363,9 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o'>(callback);
     } else if (signature == "uoa") {
       // E.g. wl_keyboard_listener::enter
-      WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'a'>(callback);
+      FEXCore::FinalizeHostTrampolineForGuestFunction(
+          (FEXCore::HostToGuestTrampolinePtr*)callback,
+          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, uint32_t, wl_surface*>);
     } else if (signature == "uoff") {
       // E.g. wl_pointer_listener::enter
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback);
