@@ -74,6 +74,8 @@ namespace FEX::FormatCheck {
       return false;
     }
 
+    close(fd);
+
     return Header.Magic == COOKIE_MAGIC_V1;
   }
 }
