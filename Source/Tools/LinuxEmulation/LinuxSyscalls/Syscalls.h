@@ -38,9 +38,11 @@ $end_info$
 #define SYSCALL_ARCH_NAME Arm64
 #endif
 
+#include "LinuxSyscalls/x64/SyscallsEnum.h"
+
 #define CONCAT_(a, b) a ## b
 #define CONCAT(a, b) CONCAT_(a, b)
-#define SYSCALL_DEF(name) ( SYSCALL_ARCH_NAME::CONCAT(CONCAT(SYSCALL_, SYSCALL_ARCH_NAME), _##name))
+#define SYSCALL_DEF(name) ( HLE::SYSCALL_ARCH_NAME::CONCAT(CONCAT(SYSCALL_, SYSCALL_ARCH_NAME), _##name))
 
 // #define DEBUG_STRACE
 

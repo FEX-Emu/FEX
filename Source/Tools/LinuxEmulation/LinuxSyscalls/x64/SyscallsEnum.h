@@ -6,6 +6,7 @@ $end_info$
 */
 #pragma once
 
+namespace FEX::HLE::x64 {
 ///< Enum containing all x86-64 linux syscalls for the guest kernel version
 enum Syscalls_x64 {
   SYSCALL_x64_read = 0,
@@ -479,4 +480,4 @@ enum Syscalls_x64 {
   SYSCALL_x64_futex_time64 = ~0,
   SYSCALL_x64_sched_rr_get_interval_time64 = ~0,
 };
-
+}

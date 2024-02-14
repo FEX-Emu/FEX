@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "LinuxSyscalls/Utils/Threads.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Threads.h>
@@ -12,33 +13,53 @@ namespace FEX::LinuxEmulation::Threads {
     void *Ptr;
     size_t Size;
   };
+
+  struct DeadStackPoolItem {
+    void *Ptr;
+    size_t Size;
+    bool ReadyToBeReaped;
+  };
+
   std::mutex DeadStackPoolMutex{};
   std::mutex LiveStackPoolMutex{};
 
-  static fextl::deque<StackPoolItem> DeadStackPool{};
+  static fextl::deque<DeadStackPoolItem> DeadStackPool{};
   static fextl::deque<StackPoolItem> LiveStackPool{};
 
   void *AllocateStackObject() {
     std::lock_guard lk{DeadStackPoolMutex};
-    if (DeadStackPool.size() == 0) {
-      // Nothing in the pool, just allocate
-      return FEXCore::Allocator::mmap(nullptr, FEX::LinuxEmulation::Threads::STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    }
-
     // Keep the first item in the stack pool
-    auto Result = DeadStackPool.front().Ptr;
-    DeadStackPool.pop_front();
+    void *Ptr{};
 
-    // Erase the rest as a garbage collection step
-    for (auto &Item : DeadStackPool) {
-      FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+    for (auto it = DeadStackPool.begin(); it != DeadStackPool.end();) {
+      auto Ready = std::atomic_ref<bool>(it->ReadyToBeReaped);
+      bool ReadyToBeReaped = Ready.load();
+      if (Ptr == nullptr && ReadyToBeReaped) {
+        Ptr = it->Ptr;
+        it = DeadStackPool.erase(it);
+        continue;
+      }
+
+      if (ReadyToBeReaped) {
+        FEXCore::Allocator::munmap(it->Ptr, it->Size);
+        it = DeadStackPool.erase(it);
+        continue;
+      }
+
+      ++it;
     }
-    return Result;
+
+    if (Ptr == nullptr) {
+      Ptr = FEXCore::Allocator::mmap(nullptr, FEX::LinuxEmulation::Threads::STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    }
+
+    return Ptr;
   }
 
-  void AddStackToDeadPool(void *Ptr) {
+  bool *AddStackToDeadPool(void *Ptr) {
     std::lock_guard lk{DeadStackPoolMutex};
-    DeadStackPool.emplace_back(StackPoolItem{Ptr, FEX::LinuxEmulation::Threads::STACK_SIZE});
+    auto &it = DeadStackPool.emplace_back(DeadStackPoolItem{Ptr, FEX::LinuxEmulation::Threads::STACK_SIZE, false});
+    return &it.ReadyToBeReaped;
   }
 
   void AddStackToLivePool(void *Ptr) {
@@ -59,6 +80,31 @@ namespace FEX::LinuxEmulation::Threads {
   void DeallocateStackObject(void *Ptr) {
     RemoveStackFromLivePool(Ptr);
     AddStackToDeadPool(Ptr);
+  }
+
+  [[noreturn]]
+  void DeallocateStackObjectAndExit(void *Ptr, int Status) {
+    RemoveStackFromLivePool(Ptr);
+    auto ReadyToBeReaped = AddStackToDeadPool(Ptr);
+    *ReadyToBeReaped = true;
+
+#ifdef _M_ARM_64
+  __asm volatile(
+    "mov x8, %[SyscallNum];"
+    "mov w0, %w[Result];"
+    "svc #0;"
+    :: [SyscallNum] "i" (SYSCALL_DEF(exit))
+    , [Result] "r" (Status)
+    : "memory", "x0", "x8");
+#else
+  __asm volatile(
+    "mov %[Result], %%edi;"
+    "syscall;"
+    :: "a" (SYSCALL_DEF(exit))
+    , [Result] "r" (Status)
+    : "memory", "rdi");
+#endif
+    FEX_UNREACHABLE;
   }
 
   namespace PThreads {
@@ -154,7 +200,7 @@ namespace FEX::LinuxEmulation::Threads {
 
       auto ClearStackPool = [&](auto &StackPool) {
         for (auto it = StackPool.begin(); it != StackPool.end(); ) {
-          StackPoolItem &Item = *it;
+          auto &Item = *it;
           uintptr_t ItemStack = reinterpret_cast<uintptr_t>(Item.Ptr);
           if (ItemStack <= StackLocation && (ItemStack + Item.Size) > StackLocation) {
             // This is our stack item, skip it
