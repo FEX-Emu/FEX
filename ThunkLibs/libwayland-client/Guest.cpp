@@ -33,7 +33,6 @@ extern "C" const wl_interface wl_callback_interface {};
 #include <cstdarg>
 #include <cstring>
 #include <string>
-#include <unordered_map>
 
 #include "common/Guest.h"
 
@@ -51,27 +50,21 @@ template<> struct ArgType<'f'> { using type = wl_fixed_t; };
 template<> struct ArgType<'h'> { using type = int32_t; }; // fd?
 
 template<char... Signature>
-static void* WaylandAllocateHostTrampolineForGuestListener(void (*callback)()) {
+static uint64_t WaylandAllocateHostTrampolineForGuestListener(void (*callback)()) {
   using cb = void(void*, wl_proxy*, typename ArgType<Signature>::type...);
-  return (void*)AllocateHostTrampolineForGuestFunction((cb*)callback);
+  return (uint64_t)(uintptr_t)(void*)AllocateHostTrampolineForGuestFunction((cb*)callback);
 }
 
 #define WL_CLOSURE_MAX_ARGS 20
 
-// Per-proxy list of callbacks set up via wl_proxy_add_listener.
-// These tables store the host-callable trampolines to the actual listener
-// callbacks provided by the guest application.
-// NOTE: There can only be one listener per proxy. Wayland will return an error
-//       if wl_proxy_add_listener is called twice.
-// NOTE: Entries should be removed in wl_destroy_proxy. Since proxy wrappers do
-//       not use their own listeners, wl_proxy_wrapper_destroy does not need to
-//       be customized.
-static std::unordered_map<wl_proxy*, std::array<void*, WL_CLOSURE_MAX_ARGS>> proxy_listeners;
-
 extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
       void (**callback)(void), void *data) {
-  // NOTE: This table must remain valid past the return of this function.
-  auto& host_callbacks = proxy_listeners[proxy];
+  // Replace guest-provided callback table with host-callable function pointers
+  // NOTE: A reference to this table is stored in the wl_proxy, so the data
+  //       must remain valid until the proxy is destroyed (or another listener
+  //       is added)
+  delete[] (uint64_t*)wl_proxy_get_listener(proxy); // Delete previous substitute, if any
+  auto host_callbacks = new uint64_t[WL_CLOSURE_MAX_ARGS];
 
   for (int i = 0; i < fex_wl_get_interface_event_count(proxy); ++i) {
     char event_signature[16];
@@ -185,12 +178,13 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     }
   }
 
-  return fexfn_pack_wl_proxy_add_listener(proxy, (void(**)())host_callbacks.data(), data);
+  return fexfn_pack_wl_proxy_add_listener(proxy, (void(**)())host_callbacks, data);
 }
 
-extern "C" void wl_proxy_destroy(struct wl_proxy *proxy) {
-  proxy_listeners.erase(proxy);
-  return fexfn_pack_wl_proxy_destroy(proxy);
+extern "C" void wl_proxy_destroy(wl_proxy *proxy) {
+  // Delete substitute callback table (if any), then the proxy itself
+  delete[] (uint64_t*)wl_proxy_get_listener(proxy);
+  fexfn_pack_wl_proxy_destroy(proxy);
 }
 
 // Adapted from the Wayland sources

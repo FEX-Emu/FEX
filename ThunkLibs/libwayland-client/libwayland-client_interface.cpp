@@ -51,6 +51,7 @@ template<> struct fex_gen_param<wl_proxy_add_listener, 1, void(**)()> : fexgen::
 template<> struct fex_gen_param<wl_proxy_add_listener, 2, void*> : fexgen::assume_compatible_data_layout {};
 template<> struct fex_gen_config<wl_proxy_create> {};
 template<> struct fex_gen_config<wl_proxy_create_wrapper> {};
+template<> struct fex_gen_config<wl_proxy_get_listener> {};
 template<> struct fex_gen_config<wl_proxy_get_tag> {};
 template<> struct fex_gen_config<wl_proxy_get_user_data> {};
 template<> struct fex_gen_config<wl_proxy_get_version> {};
