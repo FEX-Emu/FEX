@@ -716,6 +716,9 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
     // applied to pointees as well
     const std::string ptr = GENERATE("", " *");
 
+    // Run each test with and without the ptr_passthrough annotation
+    const bool passthrough_guest_type = GENERATE(false, true);
+
     // These types are differently sized on 32-bit guests
     SECTION("(u)intptr_t / size_t / long") {
         const std::string type = GENERATE("long", "unsigned long", "uintptr_t", "intptr_t", "size_t");
@@ -725,8 +728,9 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
             "#include <cstddef>\n"
             "#include <cstdint>\n"
             "void func(" + type + ptr + ");\n"
-            "template<> struct fex_gen_config<func> {};\n";
-        if (!ptr.empty() && guest_abi == GuestABI::X86_32) {
+            "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n" +
+            (passthrough_guest_type ? "template<> struct fex_gen_param<func, 0> : fexgen::ptr_passthrough {};\n" : "");
+        if (!ptr.empty() && guest_abi == GuestABI::X86_32 && !passthrough_guest_type) {
             // Guest points to a 32-bit integer, but the host to a 64-bit one.
             // This should be detected as a failure.
             CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Contains("initialization of 'host_layout", Catch::CaseSensitive::No));
@@ -748,6 +752,17 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
                             has(fieldDecl(hasType(asString(expected_type))))
                     ))))))))
                 )));
+
+            // For passthrough parameters, the target function signature should
+            // match the guest_layout type
+            if (passthrough_guest_type) {
+                CHECK_THAT(output,
+                    matches(functionDecl(
+                        hasName("fexfn_impl_libtest_func"),
+                        parameterCountIs(1),
+                        hasParameter(0, hasType(asString(expected_type)))
+                    )));
+            }
         }
     }
 
@@ -777,7 +792,8 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
             "#include <thunks_common.h>\n"
             "#include <cstdint>\n"
             "void func(" + type + ptr + ");\n"
-            "template<> struct fex_gen_config<func> {};\n";
+            "template<> struct fex_gen_config<func> : fexgen::custom_host_impl {};\n" +
+            (passthrough_guest_type ? "template<> struct fex_gen_param<func, 0> : fexgen::ptr_passthrough {};\n" : "");
         const auto output = run_thunkgen_host("", code, guest_abi);
         CHECK_THAT(output,
             matches(functionDecl(
@@ -789,6 +805,17 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
                         has(fieldDecl(hasType(asString("guest_layout<" + fixed_size_type + ptr + ">"))))
                 ))))))))
             )));
+
+        // For passthrough parameters, the target function signature should
+        // match the guest_layout type
+        if (passthrough_guest_type) {
+            CHECK_THAT(output,
+                matches(functionDecl(
+                    hasName("fexfn_impl_libtest_func"),
+                    parameterCountIs(1),
+                    hasParameter(0, hasType(asString("guest_layout<" + fixed_size_type + ptr + ">")))
+                )));
+        }
     }
 }
 
