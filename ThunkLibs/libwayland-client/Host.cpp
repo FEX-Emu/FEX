@@ -199,6 +199,7 @@ fex_wl_proxy_marshal_array(
             wl_proxy *proxy, uint32_t opcode,
             guest_layout<wl_argument*> args,
             guest_layout<const wl_interface*> guest_interface,
+            bool constructor, // Call the _constructor variant of the native wayland function
             std::optional<uint32_t> version,
             std::optional<uint32_t> flags) {
   auto interface = lookup_wl_interface(guest_interface);
@@ -208,9 +209,9 @@ fex_wl_proxy_marshal_array(
   auto host_args = fex_wl_remap_argument_list(args, get_proxy_interface(proxy)->methods[opcode]);
 
   if (false) {
-  } else if (!version && !flags) {
+  } else if (!constructor && !version && !flags) {
     return nullptr;
-  } else if (version && flags) {
+  } else if (!constructor && version && flags) {
     // wl_proxy_marshal_array_flags is only available starting from Wayland 1.19.91
 #if WAYLAND_VERSION_MAJOR * 10000 + WAYLAND_VERSION_MINOR * 100 + WAYLAND_VERSION_MICRO >= 11991
     return fexldr_ptr_libwayland_client_wl_proxy_marshal_array_flags(proxy, opcode, interface, version.value(), flags.value(), host_args.data());
@@ -218,10 +219,31 @@ fex_wl_proxy_marshal_array(
     fprintf(stderr, "Host Wayland version is too old to support FEX thunking\n");
     __builtin_trap();
 #endif
+  } else if (constructor && version && !flags) {
+    return fexldr_ptr_libwayland_client_wl_proxy_marshal_array_constructor_versioned(proxy, opcode, host_args.data(), interface, version.value());
+  } else if (constructor && version && !flags) {
+    return fexldr_ptr_libwayland_client_wl_proxy_marshal_array_constructor(proxy, opcode, host_args.data(), interface);
   } else {
     fprintf(stderr, "Invalid configuration\n");
     __builtin_trap();
   }
+}
+
+extern "C" wl_proxy*
+fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor_versioned(
+            wl_proxy *proxy, uint32_t opcode,
+            guest_layout<wl_argument*> args,
+            guest_layout<const wl_interface*> interface,
+            uint32_t version) {
+  return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, true, version, std::nullopt);
+}
+
+extern "C" wl_proxy*
+fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor(
+            wl_proxy *proxy, uint32_t opcode,
+            guest_layout<wl_argument*> args,
+            guest_layout<const wl_interface*> interface) {
+  return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, true, std::nullopt, std::nullopt);
 }
 
 extern "C" wl_proxy*
@@ -230,7 +252,7 @@ fexfn_impl_libwayland_client_wl_proxy_marshal_array_flags(
             guest_layout<const wl_interface*> interface,
             uint32_t version, uint32_t flags,
             guest_layout<wl_argument*> args) {
-  return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, version, flags);
+  return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, false, version, flags);
 }
 
 // Variant of CallbackUnpack::CallGuestPtr that relocates a wl_array parameter

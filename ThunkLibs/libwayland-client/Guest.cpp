@@ -265,6 +265,38 @@ extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
   wl_proxy_marshal_array(proxy, opcode, args);
 }
 
+extern "C" wl_proxy *wl_proxy_marshal_constructor(wl_proxy *proxy, uint32_t opcode,
+           const wl_interface *interface, ...) {
+  wl_argument args[WL_CLOSURE_MAX_ARGS];
+  va_list ap;
+
+  va_start(ap, interface);
+  // This is equivalent to reading ((wl_proxy_private*)proxy)->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
+  va_end(ap);
+
+  return wl_proxy_marshal_array_constructor(proxy, opcode, args, interface);
+}
+
+extern "C" wl_proxy *wl_proxy_marshal_constructor_versioned(wl_proxy *proxy, uint32_t opcode,
+           const wl_interface *interface, uint32_t version, ...) {
+  wl_argument args[WL_CLOSURE_MAX_ARGS];
+  va_list ap;
+
+  va_start(ap, version);
+  // This is equivalent to reading ((wl_proxy_private*)proxy)->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
+  va_end(ap);
+
+  return wl_proxy_marshal_array_constructor_versioned(proxy, opcode, args, interface, version);
+}
+
 extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
            const wl_interface *interface,
            uint32_t version,
@@ -288,6 +320,11 @@ extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
   __builtin_trap();
 #endif
 }
+
+extern "C" void wl_log_set_handler_client(wl_log_func_t handler) {
+  // Ignore
+}
+
 
 void OnInit() {
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_output_interface), "wl_output");

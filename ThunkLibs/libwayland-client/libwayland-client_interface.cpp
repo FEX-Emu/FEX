@@ -44,11 +44,13 @@ template<> struct fex_gen_config<wl_display_dispatch> {};
 template<> struct fex_gen_config<wl_display_dispatch_pending> {};
 template<> struct fex_gen_config<wl_display_dispatch_queue> {};
 template<> struct fex_gen_config<wl_display_dispatch_queue_pending> {};
+template<> struct fex_gen_config<wl_display_get_error> {};
 template<> struct fex_gen_config<wl_display_prepare_read> {};
 template<> struct fex_gen_config<wl_display_prepare_read_queue> {};
 template<> struct fex_gen_config<wl_display_read_events> {};
 template<> struct fex_gen_config<wl_display_roundtrip> {};
 template<> struct fex_gen_config<wl_display_roundtrip_queue> {};
+template<> struct fex_gen_config<wl_display_connect_to_fd> {};
 template<> struct fex_gen_config<wl_display_get_fd> {};
 
 template<> struct fex_gen_config<wl_event_queue_destroy> {};
@@ -61,6 +63,8 @@ template<> struct fex_gen_param<wl_proxy_add_listener, 2, void*> : fexgen::assum
 template<> struct fex_gen_config<wl_proxy_create> : fexgen::custom_host_impl {};
 template<> struct fex_gen_param<wl_proxy_create, 1, const wl_interface*> : fexgen::ptr_passthrough {};
 template<> struct fex_gen_config<wl_proxy_create_wrapper> {};
+template<> struct fex_gen_config<wl_proxy_get_class> {};
+template<> struct fex_gen_config<wl_proxy_get_id> {};
 template<> struct fex_gen_config<wl_proxy_get_listener> {};
 template<> struct fex_gen_config<wl_proxy_get_tag> {};
 template<> struct fex_gen_config<wl_proxy_get_user_data> {};
@@ -73,6 +77,12 @@ template<> struct fex_gen_config<wl_proxy_wrapper_destroy> {};
 
 template<> struct fex_gen_config<wl_proxy_marshal_array> : fexgen::custom_host_impl {};
 template<> struct fex_gen_param<wl_proxy_marshal_array, 2, wl_argument*> : fexgen::ptr_passthrough {};
+template<> struct fex_gen_config<wl_proxy_marshal_array_constructor> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<wl_proxy_marshal_array_constructor, 2, wl_argument*> : fexgen::ptr_passthrough {};
+template<> struct fex_gen_param<wl_proxy_marshal_array_constructor, 3, const wl_interface*> : fexgen::ptr_passthrough {};
+template<> struct fex_gen_config<wl_proxy_marshal_array_constructor_versioned> : fexgen::custom_host_impl {};
+template<> struct fex_gen_param<wl_proxy_marshal_array_constructor_versioned, 2, wl_argument*> : fexgen::ptr_passthrough {};
+template<> struct fex_gen_param<wl_proxy_marshal_array_constructor_versioned, 3, const wl_interface*> : fexgen::ptr_passthrough {};
 // wl_proxy_marshal_array_flags is only available starting from Wayland 1.19.91
 #if WAYLAND_VERSION_MAJOR * 10000 + WAYLAND_VERSION_MINOR * 100 + WAYLAND_VERSION_MICRO >= 11991
 template<> struct fex_gen_config<wl_proxy_marshal_array_flags> : fexgen::custom_host_impl {};
