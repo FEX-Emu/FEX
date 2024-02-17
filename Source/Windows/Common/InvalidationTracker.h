@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
-// FIXME TODO put in cpp
 #pragma once
 
 #include "IntervalList.h"
 #include <mutex>
+#include <unordered_map>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
+}
+
+namespace FEXCore::Context {
+class Context;
 }
 
 namespace FEX::Windows {
@@ -15,14 +19,17 @@ namespace FEX::Windows {
  */
 class InvalidationTracker {
 public:
-  void HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size, ULONG Prot);
-  void InvalidateContainingSection(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, bool Free);
-  void InvalidateAlignedInterval(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size, bool Free);
+  InvalidationTracker(FEXCore::Context::Context& CTX, const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads);
+  void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot);
+  void InvalidateContainingSection(uint64_t Address, bool Free);
+  void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
-  bool HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t FaultAddress);
+  bool HandleRWXAccessViolation(uint64_t FaultAddress);
 
 private:
   IntervalList<uint64_t> RWXIntervals;
   std::mutex RWXIntervalsLock;
+  FEXCore::Context::Context& CTX;
+  const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;
 };
 } // namespace FEX::Windows
