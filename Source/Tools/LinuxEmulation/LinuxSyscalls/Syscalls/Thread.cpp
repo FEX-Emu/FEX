@@ -53,6 +53,7 @@ namespace FEX::HLE {
     auto Thread = Handler->Thread;
     FEXCore::Allocator::free(Handler);
     CTX->ExecutionThread(Thread);
+    FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
     return nullptr;
   }
 
