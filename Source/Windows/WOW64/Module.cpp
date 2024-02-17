@@ -36,7 +36,7 @@ $end_info$
 #include <atomic>
 #include <mutex>
 #include <utility>
-#include <unordered_set>
+#include <unordered_map>
 #include <ntstatus.h>
 #include <windef.h>
 #include <winternl.h>
@@ -97,8 +97,9 @@ fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
 FEX::Windows::InvalidationTracker InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 
-std::mutex ThreadSuspendLock;
-std::unordered_set<DWORD> InitializedWOWThreads; // Set of TIDs, `ThreadSuspendLock` must be locked when accessing
+std::mutex ThreadCreationMutex;
+// Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
+std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
 std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -426,10 +427,11 @@ void BTCpuProcessInit() {
 }
 
 NTSTATUS BTCpuThreadInit() {
-  GetTLS().ThreadState() = CTX->CreateThread(0, 0);
+  auto* Thread = CTX->CreateThread(0, 0);
+  GetTLS().ThreadState() = Thread;
 
-  std::scoped_lock Lock(ThreadSuspendLock);
-  InitializedWOWThreads.emplace(GetCurrentThreadId());
+  std::scoped_lock Lock(ThreadCreationMutex);
+  Threads.emplace(GetCurrentThreadId(), Thread);
   return STATUS_SUCCESS;
 }
 
@@ -446,8 +448,8 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
     }
 
     const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
-    std::scoped_lock Lock(ThreadSuspendLock);
-    InitializedWOWThreads.erase(ThreadTID);
+    std::scoped_lock Lock(ThreadCreationMutex);
+    Threads.erase(ThreadTID);
   }
 
   CTX->DestroyThread(TLS.ThreadState());
@@ -550,10 +552,10 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
     return Err;
   }
 
-  std::scoped_lock Lock(ThreadSuspendLock);
+  std::scoped_lock Lock(ThreadCreationMutex);
 
   // If the thread hasn't yet been initialized, suspend it without special handling as it wont yet have entered the JIT
-  if (!InitializedWOWThreads.contains(ThreadTID)) {
+  if (!Threads.contains(ThreadTID)) {
     return NtSuspendThread(Thread, Count);
   }
 
