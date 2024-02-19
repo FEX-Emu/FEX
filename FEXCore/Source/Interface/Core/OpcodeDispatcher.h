@@ -1263,6 +1263,30 @@ private:
     return NZCVMask;
   }
 
+  // Set flag tracking to prepare for an operation that directly writes NZCV. If
+  // some bits are known to be zeroed, the PossiblySetNZCVBits mask can be
+  // passed. Otherwise, it defaults to assuming all bits may be set after
+  // (this is conservative).
+  void HandleNZCVWrite(uint32_t _PossiblySetNZCVBits = ~0) {
+    InvalidateDeferredFlags();
+    CachedNZCV = nullptr;
+    PossiblySetNZCVBits = _PossiblySetNZCVBits;
+    NZCVDirty = false;
+  }
+
+  // Set flag tracking to prepare for a read-modify-write operation on NZCV.
+  void HandleNZCV_RMW(uint32_t _PossiblySetNZCVBits = ~0) {
+    if (NZCVDirty && CachedNZCV)
+      _StoreNZCV(CachedNZCV);
+
+    HandleNZCVWrite(_PossiblySetNZCVBits);
+  }
+
+  // Special case of the above where we are known to zero C/V
+  void HandleNZ00Write() {
+    HandleNZCVWrite((1u << 31) | (1u << 30));
+  }
+
   OrderedNode *GetNZCV() {
     if (!CachedNZCV) {
       CachedNZCV = _LoadNZCV();
