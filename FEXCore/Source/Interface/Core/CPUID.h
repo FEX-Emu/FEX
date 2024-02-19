@@ -14,6 +14,8 @@ namespace Context {
   class ContextImpl;
 }
 
+uint32_t GetCycleCounterFrequency();
+
 // Debugging define to switch what family of CPU we execute as.
 // Might be useful if an application makes an assumption about a CPU.
 // #define CPUID_AMD
@@ -115,6 +117,7 @@ private:
   bool Hybrid{};
   uint32_t Cores{};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
+  FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
 
   // XFEATURE_ENABLED_MASK
   // Mask that configures what features are enabled on the CPU.

@@ -352,6 +352,11 @@ public:
   void PUSHFOp(OpcodeArgs);
   void POPFOp(OpcodeArgs);
 
+  struct CycleCounterPair {
+    OrderedNode *CounterLow;
+    OrderedNode *CounterHigh;
+  };
+  CycleCounterPair CycleCounter();
   void RDTSCOp(OpcodeArgs);
   void INCOp(OpcodeArgs);
   void DECOp(OpcodeArgs);

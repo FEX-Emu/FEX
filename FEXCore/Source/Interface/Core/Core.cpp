@@ -99,6 +99,10 @@ namespace FEXCore::Context {
       Symbols.InitFile();
     }
 
+    if (FEXCore::GetCycleCounterFrequency() >= FEXCore::Context::TSC_SCALE_MAXIMUM) {
+      Config.SmallTSCScale = false;
+    }
+
     // Track atomic TSO emulation configuration.
     UpdateAtomicTSOEmulationConfig();
   }
