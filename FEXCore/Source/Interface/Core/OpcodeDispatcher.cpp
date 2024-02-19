@@ -441,14 +441,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     break;
     }
     case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
-      InvalidateDeferredFlags();
-
-      // SF/ZF/CF/OF
-      CachedNZCV = nullptr;
-      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-      NZCVDirty = false;
-
-      // PF/AF
+      HandleNZ00Write();
       CalculatePF(Result);
       _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
     break;
@@ -1298,16 +1291,8 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
       Src = Dest;
   }
 
-  InvalidateDeferredFlags();
-
-  // SF/ZF/CF/OF
-  OrderedNode *ALUOp = _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src);
-  CachedNZCV = nullptr;
-  PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-  NZCVDirty = false;
-
-  // PF/AF
-  CalculatePF(ALUOp);
+  HandleNZ00Write();
+  CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 }
 
@@ -5278,14 +5263,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     break;
     }
     case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
-      InvalidateDeferredFlags();
-
-      // SF/ZF/CF/OF
-      CachedNZCV = nullptr;
-      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-      NZCVDirty = false;
-
-      // PF/AF
+      HandleNZ00Write();
       CalculatePF(Result);
       _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
     break;
