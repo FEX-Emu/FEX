@@ -36,7 +36,7 @@ namespace FEX::VDSO {
 
   using HandlerPtr = void(*)(void*);
   namespace x64 {
-    static uint64_t SyscallRet(int Result) {
+    static uint64_t SyscallRet(uint64_t Result) {
       if (Result == -1) {
         return -errno;
       }
@@ -50,7 +50,7 @@ namespace FEX::VDSO {
           uint64_t rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-        int Result = ::time(args->a_0);
+        uint64_t Result = ::time(args->a_0);
         args->rv = SyscallRet(Result);
       }
 
@@ -58,7 +58,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           struct timeval *tv;
           struct timezone *tz;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         int Result = ::gettimeofday(args->tv, args->tz);
@@ -69,7 +69,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         int Result = ::clock_gettime(args->clk_id, args->tp);
@@ -80,7 +80,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         int Result = ::clock_getres(args->clk_id, args->tp);
@@ -91,7 +91,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           uint32_t *cpu;
           uint32_t *node;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         int Result = FHU::Syscalls::getcpu(args->cpu, args->node);
@@ -114,7 +114,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           struct timeval *tv;
           struct timezone *tz;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         args->rv = VDSOHandlers::GetTimeOfDayPtr(args->tv, args->tz);
@@ -124,7 +124,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         args->rv = VDSOHandlers::ClockGetTimePtr(args->clk_id, args->tp);
@@ -134,7 +134,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           clockid_t clk_id;
           struct timespec *tp;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         args->rv = VDSOHandlers::ClockGetResPtr(args->clk_id, args->tp);
@@ -144,7 +144,7 @@ namespace FEX::VDSO {
         struct __attribute__((packed)) ArgsRV_t {
           uint32_t *cpu;
           uint32_t *node;
-          uint64_t rv;
+          int rv;
         } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
         args->rv = VDSOHandlers::GetCPUPtr(args->cpu, args->node);
