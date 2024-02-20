@@ -495,12 +495,8 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
-    if (NZCVDirty && CachedNZCV)
-      _StoreNZCV(CachedNZCV);
-    CachedNZCV = nullptr;
-
+    HandleNZCV_RMW();
     _AdcNZCV(OpSize, Src1, Src2);
-    PossiblySetNZCVBits = ~0;
   } else {
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
@@ -531,13 +527,8 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     // Rectify input carry
     CarryInvert();
 
-    if (NZCVDirty && CachedNZCV)
-      _StoreNZCV(CachedNZCV);
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-
+    HandleNZCV_RMW();
     _SbbNZCV(OpSize, Src1, Src2);
-    PossiblySetNZCVBits = ~0;
 
     // Rectify output carry
     CarryInvert();
@@ -568,10 +559,8 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
+  HandleNZCVWrite();
   _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
-  CachedNZCV = nullptr;
-  NZCVDirty = false;
-  PossiblySetNZCVBits = ~0;
 
   // If we're updating CF, we need to invert it for correctness. If we're not
   // updating CF, we need to restore the CF since we stomped over it.
@@ -590,10 +579,8 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
+  HandleNZCVWrite();
   _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
-  CachedNZCV = nullptr;
-  NZCVDirty = false;
-  PossiblySetNZCVBits = ~0;
 
   // We stomped over CF while calculation flags, restore it.
   if (!UpdateCF)
@@ -601,6 +588,8 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
+  HandleNZCVWrite();
+
   // PF/AF/ZF/SF
   // Undefined
   {
@@ -619,13 +608,12 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
     // undefined, this does what we need.
     auto Zero = _Constant(0);
     _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    PossiblySetNZCVBits = ~0;
   }
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
+  HandleNZCVWrite();
+
   auto Zero = _Constant(0);
   OpSize Size = IR::SizeToOpSize(GetOpSize(High));
 
@@ -645,9 +633,6 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
     // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
     // this does what we need.
     _CondAddNZCV(Size, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    PossiblySetNZCVBits = ~0;
   }
 }
 
