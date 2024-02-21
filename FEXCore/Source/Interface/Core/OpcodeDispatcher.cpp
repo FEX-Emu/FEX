@@ -338,117 +338,48 @@ void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
-  FEXCore::IR::IROps IROp;
+  FEXCore::IR::IROps IROp, AtomicIROp;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
   switch (Op->OP) {
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0):
     IROp = FEXCore::IR::IROps::OP_ADD;
+    AtomicIROp = FEXCore::IR::IROps::OP_ATOMICFETCHADD;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 1):
     IROp = FEXCore::IR::IROps::OP_OR;
+    AtomicIROp = FEXCore::IR::IROps::OP_ATOMICFETCHOR;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4):
     IROp = FEXCore::IR::IROps::OP_ANDWITHFLAGS;
+    AtomicIROp = FEXCore::IR::IROps::OP_ATOMICFETCHAND;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5):
     IROp = FEXCore::IR::IROps::OP_SUB;
+    AtomicIROp = FEXCore::IR::IROps::OP_ATOMICFETCHSUB;
   break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6):
     IROp = FEXCore::IR::IROps::OP_XOR;
+    AtomicIROp = FEXCore::IR::IROps::OP_ATOMICFETCHXOR;
   break;
   default:
     IROp = FEXCore::IR::IROps::OP_LAST;
+    AtomicIROp = FEXCore::IR::IROps::OP_LAST;
     LOGMAN_MSG_A_FMT("Unknown ALU Op: 0x{:x}", Op->OP);
   break;
   };
 #undef OPD
-  // X86 basic ALU ops just do the operation between the destination and a single source
-  uint8_t Size = GetDstSize(Op);
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  OrderedNode *Result{};
-  OrderedNode *Dest{};
 
-  if (DestIsLockedMem(Op)) {
-    HandledLock = true;
-    auto DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    switch (IROp) {
-      case FEXCore::IR::IROps::OP_ADD: {
-        Dest = _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Add(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_SUB: {
-        Dest = _AtomicFetchSub(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Sub(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_OR: {
-        Dest = _AtomicFetchOr(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Or(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
-        Dest = _AtomicFetchAnd(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _AndWithFlags(IR::SizeToOpSize(std::max(GetOpSize(Dest), GetOpSize(Src))), Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_XOR: {
-        Dest = _AtomicFetchXor(IR::SizeToOpSize(Size), Src, DestMem);
-        Result = _Xor(IR::SizeToOpSize(std::max<uint8_t>(4u, std::max(GetOpSize(Dest), GetOpSize(Src)))), Dest, Src);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", ToUnderlying(IROp));
-        break;
-    }
-  }
-  else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    if (IROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS)
-      Size = std::max<uint8_t>(4u, Size);
-
-    DeriveOp(ALUOp, IROp, _AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
-
-    Result = ALUOp;
-
-    StoreResult(GPRClass, Op, Result, -1);
-  }
-
-  // Flags set
-  {
-    switch (IROp) {
-    case FEXCore::IR::IROps::OP_ADD:
-      GenerateFlags_ADD(Op, Result, Dest, Src);
-    break;
-    case FEXCore::IR::IROps::OP_SUB:
-      GenerateFlags_SUB(Op, Dest, Src);
-    break;
-    case FEXCore::IR::IROps::OP_XOR:
-    case FEXCore::IR::IROps::OP_OR: {
-      GenerateFlags_Logical(Op, Result, Dest, Src);
-    break;
-    }
-    case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
-      HandleNZ00Write();
-      CalculatePF(Result);
-      _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-    break;
-    }
-    default: break;
-    }
-  }
+  ALUOpImpl(Op, IROp, AtomicIROp, 1);
 }
 
 template<uint32_t SrcIndex>
@@ -5201,7 +5132,7 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
-void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
+void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
   /* On x86, the canonical way to zero a register is XOR with itself...  because
    * modern x86 detects this pattern in hardware. arm64 does not detect this
    * pattern, we should do it like the x86 hardware would. On arm64, "mov x0,
@@ -5210,8 +5141,8 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
    */
   if (!DestIsLockedMem(Op) &&
     ALUIROp == FEXCore::IR::IROps::OP_XOR &&
-    Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
-    Op->Dest.Data.GPR == Op->Src[0].Data.GPR) {
+    Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
+    Op->Dest.Data.GPR == Op->Src[SrcIdx].Data.GPR) {
 
     StoreResult(GPRClass, Op, _Constant(0), -1);
     ZeroNZCV();
@@ -5227,7 +5158,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   const auto OpSize = IR::SizeToOpSize(RoundedSize);
 
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIdx], Op->Flags, {.AllowUpperGarbage = true});
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5275,7 +5206,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
 template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
 void OpDispatchBuilder::ALUOp(OpcodeArgs) {
-  ALUOpImpl(Op, ALUIROp, AtomicFetchOp);
+  ALUOpImpl(Op, ALUIROp, AtomicFetchOp, 0);
 }
 
 void OpDispatchBuilder::INTOp(OpcodeArgs) {

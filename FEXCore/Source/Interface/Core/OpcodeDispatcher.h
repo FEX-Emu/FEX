@@ -1002,7 +1002,7 @@ private:
   // Used during new op bringup
   bool ShouldDump{false};
 
-  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp);
+  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
