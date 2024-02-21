@@ -5253,7 +5253,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     GenerateFlags_ADD(Op, Result, Dest, Src);
   break;
   case FEXCore::IR::IROps::OP_SUB:
-    GenerateFlags_SUB(Op, Dest, Src);
+    Result = CalculateFlags_SUB(Size, Dest, Src);
   break;
   case FEXCore::IR::IROps::OP_XOR:
   case FEXCore::IR::IROps::OP_OR: {
