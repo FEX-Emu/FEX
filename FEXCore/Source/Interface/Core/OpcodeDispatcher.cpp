@@ -3653,12 +3653,11 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
 
-  Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, OneConst);
+  CalculateDeferredFlags();
+  Result = CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, OneConst, false);
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
   }
-
-  GenerateFlags_SUB(Op, Dest, OneConst, false);
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
