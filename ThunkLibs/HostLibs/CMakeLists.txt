@@ -163,9 +163,6 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   target_compile_definitions(libxcb-${GUEST_BITNESS}-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
   target_compile_definitions(libxcb-${GUEST_BITNESS}-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
 
-  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
-  add_host_lib(wayland-client ${GUEST_BITNESS})
-
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp ${GUEST_BITNESS})
   add_host_lib(xcb-dri2 ${GUEST_BITNESS})
 
@@ -203,6 +200,9 @@ set (BITNESS_LIST "32;64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})
   add_host_lib(fex_thunk_test ${GUEST_BITNESS})
+
+  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(wayland-client ${GUEST_BITNESS})
 endforeach()
 
 add_library(fex_thunk_test SHARED ../libfex_thunk_test/lib.cpp)

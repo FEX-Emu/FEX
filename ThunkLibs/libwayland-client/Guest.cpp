@@ -33,16 +33,10 @@ extern "C" const wl_interface wl_callback_interface {};
 #include <cstdarg>
 #include <cstring>
 #include <string>
-#include <unordered_map>
 
 #include "common/Guest.h"
 
 #include "thunkgen_guest_libwayland-client.inl"
-
-struct wl_proxy_private {
-  wl_interface* interface;
-  // Other data members omitted
-};
 
 // See wayland-util.h for documentation on protocol message signatures
 template<char> struct ArgType;
@@ -56,37 +50,31 @@ template<> struct ArgType<'f'> { using type = wl_fixed_t; };
 template<> struct ArgType<'h'> { using type = int32_t; }; // fd?
 
 template<char... Signature>
-static void* WaylandAllocateHostTrampolineForGuestListener(void (*callback)()) {
+static uint64_t WaylandAllocateHostTrampolineForGuestListener(void (*callback)()) {
   using cb = void(void*, wl_proxy*, typename ArgType<Signature>::type...);
-  return (void*)AllocateHostTrampolineForGuestFunction((cb*)callback);
+  return (uint64_t)(uintptr_t)(void*)AllocateHostTrampolineForGuestFunction((cb*)callback);
 }
 
 #define WL_CLOSURE_MAX_ARGS 20
 
-// Per-proxy list of callbacks set up via wl_proxy_add_listener.
-// These tables store the host-callable trampolines to the actual listener
-// callbacks provided by the guest application.
-// NOTE: There can only be one listener per proxy. Wayland will return an error
-//       if wl_proxy_add_listener is called twice.
-// NOTE: Entries should be removed in wl_destroy_proxy. Since proxy wrappers do
-//       not use their own listeners, wl_proxy_wrapper_destroy does not need to
-//       be customized.
-static std::unordered_map<wl_proxy*, std::array<void*, WL_CLOSURE_MAX_ARGS>> proxy_listeners;
-
 extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
       void (**callback)(void), void *data) {
-  auto interface = ((wl_proxy_private*)proxy)->interface;
+  // Replace guest-provided callback table with host-callable function pointers
+  // NOTE: A reference to this table is stored in the wl_proxy, so the data
+  //       must remain valid until the proxy is destroyed (or another listener
+  //       is added)
+  delete[] (uint64_t*)wl_proxy_get_listener(proxy); // Delete previous substitute, if any
+  auto host_callbacks = new uint64_t[WL_CLOSURE_MAX_ARGS];
 
-  // NOTE: This table must remain valid past the return of this function.
-  auto& host_callbacks = proxy_listeners[proxy];
-
-  for (int i = 0; i < ((wl_proxy_private*)proxy)->interface->event_count; ++i) {
-    auto signature_view = std::string_view { interface->events[i].signature };
+  for (int i = 0; i < fex_wl_get_interface_event_count(proxy); ++i) {
+    char event_signature[16];
+    fex_wl_get_interface_event_signature(proxy, i, event_signature);
+    auto signature2 = std::string_view { event_signature };
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
-    auto [ptr, res] = std::from_chars(signature_view.begin(), signature_view.end(), since_version, 10);
-    std::string signature { ptr, &*signature_view.end() };
+    auto [ptr, res] = std::from_chars(signature2.begin(), signature2.end(), since_version, 10);
+    auto signature = std::string { signature2.substr(ptr - signature2.begin()) };
 
     // ? just indicates that the argument may be null, so it doesn't change the signature
     signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
@@ -185,17 +173,18 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
       // E.g. zwp_text_input_v3::preedit_string
       host_callbacks[i] = WaylandAllocateHostTrampolineForGuestListener<'s', 'i', 'i'>(callback[i]);
     } else {
-      fprintf(stderr, "Unknown wayland signature descriptor \"%s\" for event \"%s\" in interface \"%s\"\n", signature.data(), interface->events[i].name, interface->name);
+      fprintf(stderr, "TODO: Unknown wayland event signature descriptor %s\n", signature.data());
       std::abort();
     }
   }
 
-  return fexfn_pack_wl_proxy_add_listener(proxy, (void(**)())host_callbacks.data(), data);
+  return fexfn_pack_wl_proxy_add_listener(proxy, (void(**)())host_callbacks, data);
 }
 
-extern "C" void wl_proxy_destroy(struct wl_proxy *proxy) {
-  proxy_listeners.erase(proxy);
-  return fexfn_pack_wl_proxy_destroy(proxy);
+extern "C" void wl_proxy_destroy(wl_proxy *proxy) {
+  // Delete substitute callback table (if any), then the proxy itself
+  delete[] (uint64_t*)wl_proxy_get_listener(proxy);
+  fexfn_pack_wl_proxy_destroy(proxy);
 }
 
 // Adapted from the Wayland sources
@@ -266,16 +255,46 @@ extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
   va_list ap;
 
   va_start(ap, opcode);
-#ifdef IS_32BIT_THUNK
-// Must extract signature from host due to different data layout on 32-bit
-#error Not implemented
-#else
-  wl_argument_from_va_list(((wl_proxy_private*)proxy)->interface->methods[opcode].signature,
-                           args, WL_CLOSURE_MAX_ARGS, ap);
-#endif
+  // This is equivalent to reading proxy->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
   va_end(ap);
 
   wl_proxy_marshal_array(proxy, opcode, args);
+}
+
+extern "C" wl_proxy *wl_proxy_marshal_constructor(wl_proxy *proxy, uint32_t opcode,
+           const wl_interface *interface, ...) {
+  wl_argument args[WL_CLOSURE_MAX_ARGS];
+  va_list ap;
+
+  va_start(ap, interface);
+  // This is equivalent to reading ((wl_proxy_private*)proxy)->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
+  va_end(ap);
+
+  return wl_proxy_marshal_array_constructor(proxy, opcode, args, interface);
+}
+
+extern "C" wl_proxy *wl_proxy_marshal_constructor_versioned(wl_proxy *proxy, uint32_t opcode,
+           const wl_interface *interface, uint32_t version, ...) {
+  wl_argument args[WL_CLOSURE_MAX_ARGS];
+  va_list ap;
+
+  va_start(ap, version);
+  // This is equivalent to reading ((wl_proxy_private*)proxy)->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
+  va_end(ap);
+
+  return wl_proxy_marshal_array_constructor_versioned(proxy, opcode, args, interface, version);
 }
 
 extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
@@ -286,13 +305,11 @@ extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
   va_list ap;
 
   va_start(ap, flags);
-#ifdef IS_32BIT_THUNK
-// Must extract signature from host due to different data layout on 32-bit
-#error Not implemented
-#else
-  wl_argument_from_va_list(((wl_proxy_private*)proxy)->interface->methods[opcode].signature,
-                           args, WL_CLOSURE_MAX_ARGS, ap);
-#endif
+  // This is equivalent to reading proxy->interface->methods[opcode].signature on 64-bit.
+  // On 32-bit, the data layout differs between host and guest however, so we let the host extract the data.
+  char signature[64];
+  fex_wl_get_method_signature(proxy, opcode, signature);
+  wl_argument_from_va_list(signature, args, WL_CLOSURE_MAX_ARGS, ap);
   va_end(ap);
 
   // wl_proxy_marshal_array_flags is only available starting from Wayland 1.19.91
@@ -304,18 +321,23 @@ extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
 #endif
 }
 
+extern "C" void wl_log_set_handler_client(wl_log_func_t handler) {
+  // Ignore
+}
+
+
 void OnInit() {
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_output_interface), "wl_output");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shm_pool_interface), "wl_shm_pool");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_pointer_interface), "wl_pointer");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_compositor_interface), "wl_compositor");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shm_interface), "wl_shm");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_registry_interface), "wl_registry");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_buffer_interface), "wl_buffer");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_seat_interface), "wl_seat");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_surface_interface), "wl_surface");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_keyboard_interface), "wl_keyboard");
-  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_callback_interface), "wl_callback");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_output_interface), "wl_output_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shm_pool_interface), "wl_shm_pool_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_pointer_interface), "wl_pointer_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_compositor_interface), "wl_compositor_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shm_interface), "wl_shm_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_registry_interface), "wl_registry_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_buffer_interface), "wl_buffer_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_seat_interface), "wl_seat_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_surface_interface), "wl_surface_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_keyboard_interface), "wl_keyboard_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_callback_interface), "wl_callback_interface");
 }
 
 LOAD_LIB_INIT(libwayland-client, OnInit)

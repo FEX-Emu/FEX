@@ -366,6 +366,13 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             continue;
                         }
 
+                        // Skip pointers-to-structs passed through to the host in guest_layout.
+                        // This avoids pulling in member types that can't be processed.
+                        if (data.param_annotations[param_idx].is_passthrough &&
+                            param_type->isPointerType() && param_type->getPointeeType()->isStructureType()) {
+                            continue;
+                        }
+
                         auto check_struct_type = [&](const clang::Type* type) {
                             if (type->isIncompleteType()) {
                                 throw report_error(type->getAsTagDecl()->getBeginLoc(), "Unannotated pointer with incomplete struct type; consider using an opaque_type annotation")

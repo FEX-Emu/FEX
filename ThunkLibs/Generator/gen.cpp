@@ -588,11 +588,11 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
                 if (!param_type->isPointerType() || !param_type->getPointeeType()->isStructureType()) {
                     continue;
                 }
-                auto type = param_type->getPointeeType();
-                if (!types.at(context.getCanonicalType(type.getTypePtr())).assumed_compatible && type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
-                    // TODO: Factor in "assume_compatible_layout" annotations here
-                    //       That annotation should cause the type to be treated as TypeCompatibility::Full
-                    if (!thunk.param_annotations[param_idx].is_passthrough) {
+                if (!thunk.param_annotations[param_idx].is_passthrough) {
+                    auto type = param_type->getPointeeType();
+                    if (!types.at(context.getCanonicalType(type.getTypePtr())).assumed_compatible && type_compat.at(context.getCanonicalType(type.getTypePtr())) == TypeCompatibility::None) {
+                        // TODO: Factor in "assume_compatible_layout" annotations here
+                        //       That annotation should cause the type to be treated as TypeCompatibility::Full
                         throw report_error(thunk.decl->getLocation(), "Unsupported parameter type %0").AddTaggedVal(param_type);
                     }
                 }

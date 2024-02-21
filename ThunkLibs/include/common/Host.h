@@ -167,6 +167,14 @@ struct guest_layout<T*> {
   const guest_layout<T>* get_pointer() const {
     return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
   }
+
+  T* force_get_host_pointer() {
+    return reinterpret_cast<T*>(uintptr_t { data });
+  }
+
+  const T* force_get_host_pointer() const {
+    return reinterpret_cast<const T*>(uintptr_t { data });
+  }
 };
 
 template<typename T>

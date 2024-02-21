@@ -232,9 +232,6 @@ if (BITNESS EQUAL 64)
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
   target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
 
-  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
-  add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
-
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
   add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
@@ -267,6 +264,9 @@ if (BITNESS EQUAL 64)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
   add_guest_lib(drm "libdrm.so.2")
 endif()
+
+generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
+add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
 
 generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
 add_guest_lib(VDSO "linux-vdso.so.1")
