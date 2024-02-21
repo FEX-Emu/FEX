@@ -417,11 +417,17 @@ int main(int argc, char **argv, char **const envp) {
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
+  fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
 
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
   } else {
+    // Reserve [0x1_0000_0000, 0x2_0000_0000).
+    // Safety net if 32-bit address calculation overflows in to 64-bit range.
+    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
+    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
+
     // Setup our userspace allocator
     FEXCore::Allocator::SetupHooks();
     Allocator = FEX::HLE::CreatePassthroughAllocator();
@@ -578,6 +584,8 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Allocator::ClearHooks();
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
+  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
