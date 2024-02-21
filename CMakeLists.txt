@@ -124,6 +124,9 @@ endif()
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
   set(_M_ARM_64EC 1)
   add_definitions(-D_M_ARM_64EC=1)
+
+  # Required as FEX is not allowed to lock the CRT heap lock during compilation or callbacks
+  set(ENABLE_JEMALLOC TRUE)
 endif()
 
 if (ENABLE_CCACHE)
