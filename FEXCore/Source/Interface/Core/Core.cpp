@@ -347,13 +347,6 @@ namespace FEXCore::Context {
     Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
 
-    if (Config.BlockJITNaming() ||
-        Config.GlobalJITNaming() ||
-        Config.LibraryJITNaming()) {
-      // Allocate a TLS JIT symbol buffer only if enabled.
-      Thread->SymbolBuffer = JITSymbols::AllocateBuffer();
-    }
-
     SignalDelegation->RegisterTLSState(Thread);
     if (ThunkHandler) {
       ThunkHandler->RegisterTLSState(Thread);
@@ -418,6 +411,13 @@ namespace FEXCore::Context {
 
     Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
     Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
+
+    if (Config.BlockJITNaming() ||
+        Config.GlobalJITNaming() ||
+        Config.LibraryJITNaming()) {
+      // Allocate a JIT symbol buffer only if enabled.
+      Thread->SymbolBuffer = JITSymbols::AllocateBuffer();
+    }
 
     return Thread;
   }
