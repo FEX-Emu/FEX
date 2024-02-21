@@ -549,7 +549,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+OrderedNode *OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -573,6 +573,8 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, O
     CarryInvert();
   else
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+
+  return Res;
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
