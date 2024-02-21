@@ -53,7 +53,7 @@
       "ExpectedArm64ASM": [
         "mov x20, x7",
         "add x7, x20, x5",
-        "eor x27, x20, x5",
+        "eor w27, w20, w5",
         "mov x26, x7",
         "cmn x20, x5"
       ]
@@ -113,7 +113,7 @@
       "ExpectedArm64ASM": [
         "mov x20, x5",
         "add x5, x20, x7",
-        "eor x27, x20, x7",
+        "eor w27, w20, w7",
         "mov x26, x5",
         "cmn x20, x7"
       ]
@@ -211,7 +211,7 @@
         "mov x20, #0xffffffffffffffff",
         "mov x21, x4",
         "sub x4, x21, #0x1 (1)",
-        "eor x27, x21, x20",
+        "eor w27, w21, w20",
         "mov x26, x4",
         "cmn x21, x20"
       ]
@@ -464,7 +464,7 @@
         "add x20, x5, x20",
         "mov x21, x7",
         "add x7, x21, x20",
-        "eor x27, x21, x5",
+        "eor w27, w21, w5",
         "mov x26, x7",
         "adcs xzr, x21, x5"
       ]
@@ -561,7 +561,7 @@
         "add x20, x7, x20",
         "mov x21, x5",
         "add x5, x21, x20",
-        "eor x27, x21, x7",
+        "eor w27, w21, w7",
         "mov x26, x5",
         "adcs xzr, x21, x7"
       ]
@@ -721,7 +721,7 @@
         "add x21, x20, x21",
         "mov x22, x4",
         "add x4, x22, x21",
-        "eor x27, x22, x20",
+        "eor w27, w22, w20",
         "mov x26, x4",
         "adcs xzr, x22, x20"
       ]
@@ -812,7 +812,7 @@
         "add x20, x5, x20",
         "mov x21, x7",
         "sub x7, x21, x20",
-        "eor x27, x21, x5",
+        "eor w27, w21, w5",
         "mov x26, x7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -921,7 +921,7 @@
         "add x20, x7, x20",
         "mov x21, x5",
         "sub x5, x21, x20",
-        "eor x27, x21, x7",
+        "eor w27, w21, w7",
         "mov x26, x5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -1105,7 +1105,7 @@
         "add x21, x20, x21",
         "mov x22, x4",
         "sub x4, x22, x21",
-        "eor x27, x22, x20",
+        "eor w27, w22, w20",
         "mov x26, x4",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
@@ -1318,7 +1318,7 @@
       "ExpectedArm64ASM": [
         "mov x20, x7",
         "sub x7, x20, x5",
-        "eor x27, x20, x5",
+        "eor w27, w20, w5",
         "mov x26, x7",
         "cmp x20, x5",
         "mrs x20, nzcv",
@@ -1390,7 +1390,7 @@
       "ExpectedArm64ASM": [
         "mov x20, x5",
         "sub x5, x20, x7",
-        "eor x27, x20, x7",
+        "eor w27, w20, w7",
         "mov x26, x5",
         "cmp x20, x7",
         "mrs x20, nzcv",
@@ -1512,7 +1512,7 @@
         "mov x20, #0xffffffffffffffff",
         "mov x21, x4",
         "sub x4, x21, x20",
-        "eor x27, x21, x20",
+        "eor w27, w21, w20",
         "mov x26, x4",
         "cmp x21, x20",
         "mrs x20, nzcv",
@@ -1721,7 +1721,7 @@
       "Comment": "0x39",
       "ExpectedArm64ASM": [
         "sub x26, x7, x5",
-        "eor x27, x7, x5",
+        "eor w27, w7, w5",
         "cmp x7, x5",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -1783,7 +1783,7 @@
       ],
       "ExpectedArm64ASM": [
         "sub x26, x5, x7",
-        "eor x27, x5, x7",
+        "eor w27, w5, w7",
         "cmp x5, x7",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -1889,7 +1889,7 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
         "sub x26, x4, x20",
-        "eor x27, x4, x20",
+        "eor w27, w4, w20",
         "cmp x4, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -3231,7 +3231,7 @@
         "sub x22, x23, x22, lsl #4",
         "add x11, x11, x22",
         "add x10, x10, x22",
-        "eor x27, x21, x20",
+        "eor w27, w21, w20",
         "cmp x21, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -3320,7 +3320,7 @@
         "ldr x21, [x11]",
         "ldr x22, [x10]",
         "sub x26, x22, x21",
-        "eor x27, x22, x21",
+        "eor w27, w22, w21",
         "cmp x22, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
@@ -3414,7 +3414,7 @@
         "ldr x21, [x11]",
         "ldr x22, [x10]",
         "sub x26, x22, x21",
-        "eor x27, x22, x21",
+        "eor w27, w22, w21",
         "cmp x22, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
@@ -3798,7 +3798,7 @@
         "mov w22, #0x8",
         "sub x21, x22, x21, lsl #4",
         "add x11, x11, x21",
-        "eor x27, x4, x20",
+        "eor w27, w4, w20",
         "cmp x4, x20",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -3883,7 +3883,7 @@
         "cbz x5, #+0x30",
         "ldr x21, [x11]",
         "sub x26, x4, x21",
-        "eor x27, x4, x21",
+        "eor w27, w4, w21",
         "cmp x4, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",
@@ -3972,7 +3972,7 @@
         "cbz x5, #+0x30",
         "ldr x21, [x11]",
         "sub x26, x4, x21",
-        "eor x27, x4, x21",
+        "eor w27, w4, w21",
         "cmp x4, x21",
         "mrs x21, nzcv",
         "eor w21, w21, #0x20000000",

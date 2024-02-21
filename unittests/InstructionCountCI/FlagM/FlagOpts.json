@@ -44,7 +44,7 @@
         "add x20, x6, x20",
         "mov x21, x5",
         "sub x5, x21, x20",
-        "eor x27, x21, x6",
+        "eor w27, w21, w6",
         "mov x26, x5",
         "cfinv",
         "sbcs xzr, x21, x6",
@@ -66,7 +66,7 @@
         "add x20, x6, x20",
         "mov x21, x5",
         "add x5, x21, x20",
-        "eor x27, x21, x6",
+        "eor w27, w21, w6",
         "mov x26, x5",
         "adcs xzr, x21, x6",
         "cfinv"
