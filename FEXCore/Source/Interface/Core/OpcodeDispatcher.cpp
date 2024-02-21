@@ -4141,23 +4141,20 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
 
   OrderedNode *Dest{};
-  OrderedNode *Result{};
 
   if (DestIsLockedMem(Op)) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
     Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
-    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
+    CalculateFlags_SUB(Size, ZeroConst, Dest);
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    Result = _Neg(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest);
+    OrderedNode *Result = CalculateFlags_SUB(Size, ZeroConst, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
   }
-
-  GenerateFlags_SUB(Op, ZeroConst, Dest);
 }
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
