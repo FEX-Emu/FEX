@@ -79,8 +79,8 @@
       "ExpectedArm64ASM": [
         "dmb ld",
         "mrs x20, S3_3_c14_c0_2",
-        "mov w4, w20",
-        "lsr x6, x20, #32",
+        "lsl w4, w20, #7",
+        "lsr x6, x20, #25",
         "mrs x0, nzcv",
         "str w0, [x28, #728]",
         "str x8, [x28, #40]",

@@ -74,6 +74,8 @@ namespace FEXCore::Context {
   };
 
   using BlockDelinkerFunc = void(*)(FEXCore::Core::CpuStateFrame *Frame, FEXCore::Context::ExitFunctionLinkData *Record);
+  constexpr uint32_t TSC_SCALE = 128;
+  constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
   class ContextImpl final : public FEXCore::Context::Context {
     public:
@@ -230,6 +232,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
       FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
       FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
+      FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
     } Config;
 
 

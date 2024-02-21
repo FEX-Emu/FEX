@@ -3576,12 +3576,31 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   _StoreMemAutoTSO(GPRClass, GDTStoreSize, _Add(OpSize::i64Bit, DestAddress, _Constant(2)), _Constant(GDTAddress));
 }
 
-void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
+
+OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter() {
+  OrderedNode *CounterLow{};
+  OrderedNode *CounterHigh{};
   auto Counter = _CycleCounter();
-  auto CounterLow = _Bfe(OpSize::i64Bit, 32, 0, Counter);
-  auto CounterHigh = _Bfe(OpSize::i64Bit, 32, 32, Counter);
-  StoreGPRRegister(X86State::REG_RAX, CounterLow);
-  StoreGPRRegister(X86State::REG_RDX, CounterHigh);
+  if (CTX->Config.SmallTSCScale()) {
+    const auto ShiftAmount = FEXCore::ilog2(FEXCore::Context::TSC_SCALE);
+    CounterLow = _Lshl(OpSize::i32Bit, Counter, _Constant(ShiftAmount));
+    CounterHigh = _Lshr(OpSize::i64Bit, Counter, _Constant(32 - ShiftAmount));
+  }
+  else {
+    CounterLow = _Bfe(OpSize::i64Bit, 32, 0, Counter);
+    CounterHigh = _Bfe(OpSize::i64Bit, 32, 32, Counter);
+  }
+
+  return {
+    .CounterLow = CounterLow,
+    .CounterHigh = CounterHigh,
+  };
+}
+
+void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
+  auto Counter = CycleCounter();
+  StoreGPRRegister(X86State::REG_RAX, Counter.CounterLow);
+  StoreGPRRegister(X86State::REG_RDX, Counter.CounterHigh);
 }
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
@@ -5483,13 +5502,12 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   //  - Explicitly use an LFENCE after RDTSCP if you want to block this behaviour
 
   _Fence({FEXCore::IR::Fence_Load});
-  auto Counter = _CycleCounter();
-  auto CounterLow = _Bfe(OpSize::i64Bit, 32, 0, Counter);
-  auto CounterHigh = _Bfe(OpSize::i64Bit, 32, 32, Counter);
+  auto Counter = CycleCounter();
+
   auto ID = _ProcessorID();
-  StoreGPRRegister(X86State::REG_RAX, CounterLow);
+  StoreGPRRegister(X86State::REG_RAX, Counter.CounterLow);
   StoreGPRRegister(X86State::REG_RCX, ID);
-  StoreGPRRegister(X86State::REG_RDX, CounterHigh);
+  StoreGPRRegister(X86State::REG_RDX, Counter.CounterHigh);
 }
 
 void OpDispatchBuilder::CRC32(OpcodeArgs) {
