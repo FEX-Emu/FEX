@@ -186,7 +186,7 @@ DEF_OP(Sub) {
   if (IsInlineConstant(Op->Src2, &Const)) {
     sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), Const);
   } else {
-    sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+    sub(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
   }
 }
 
