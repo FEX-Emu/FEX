@@ -5202,6 +5202,22 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp) {
+  /* On x86, the canonical way to zero a register is XOR with itself...  because
+   * modern x86 detects this pattern in hardware. arm64 does not detect this
+   * pattern, we should do it like the x86 hardware would. On arm64, "mov x0,
+   * #0" is faster than "eor x0, x0, x0". Additionally this lets more constant
+   * folding kick in for flags.
+   */
+  if (!DestIsLockedMem(Op) &&
+    ALUIROp == FEXCore::IR::IROps::OP_XOR &&
+    Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
+    Op->Dest.Data.GPR == Op->Src[0].Data.GPR) {
+
+    StoreResult(GPRClass, Op, _Constant(0), -1);
+    ZeroNZCV();
+    return;
+  }
+
   auto Size = GetDstSize(Op);
 
   auto RoundedSize = Size;
@@ -5223,55 +5239,38 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
     DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem));
     Dest = FetchOp;
-
-    DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
-    Result = ALUOp;
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    /* On x86, the canonical way to zero a register is XOR with itself...
-     * because modern x86 detects this pattern in hardware. arm64 does not
-     * detect this pattern, we should do it like the x86 hardware would. On
-     * arm64, "mov x0, #0" is faster than "eor x0, x0, x0". Additionally this
-     * lets more constant folding kick in for flags.
-     */
-    if (ALUIROp == FEXCore::IR::IROps::OP_XOR &&
-        Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
-        Op->Dest.Data.GPR == Op->Src[0].Data.GPR) {
-
-        Result = _Constant(0);
-    } else {
-        DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
-        Result = ALUOp;
-    }
-
-    StoreResult(GPRClass, Op, Result, -1);
   }
+
+  DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
+  Result = ALUOp;
 
   // Flags set
-  {
-    switch (ALUIROp) {
-    case FEXCore::IR::IROps::OP_ADD:
-      GenerateFlags_ADD(Op, Result, Dest, Src);
-    break;
-    case FEXCore::IR::IROps::OP_SUB:
-      GenerateFlags_SUB(Op, Dest, Src);
-    break;
-    case FEXCore::IR::IROps::OP_XOR:
-    case FEXCore::IR::IROps::OP_OR: {
-      GenerateFlags_Logical(Op, Result, Dest, Src);
-    break;
-    }
-    case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
-      HandleNZ00Write();
-      CalculatePF(Result);
-      _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-    break;
-    }
-    default: break;
-    }
+  switch (ALUIROp) {
+  case FEXCore::IR::IROps::OP_ADD:
+    GenerateFlags_ADD(Op, Result, Dest, Src);
+  break;
+  case FEXCore::IR::IROps::OP_SUB:
+    GenerateFlags_SUB(Op, Dest, Src);
+  break;
+  case FEXCore::IR::IROps::OP_XOR:
+  case FEXCore::IR::IROps::OP_OR: {
+    GenerateFlags_Logical(Op, Result, Dest, Src);
+  break;
   }
+  case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
+    HandleNZ00Write();
+    CalculatePF(Result);
+    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  break;
+  }
+  default: break;
+  }
+
+  if (!DestIsLockedMem(Op))
+    StoreResult(GPRClass, Op, Result, -1);
 }
 
 template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
