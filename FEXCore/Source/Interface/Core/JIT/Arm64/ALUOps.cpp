@@ -1487,11 +1487,8 @@ DEF_OP(NZCVSelect) {
       csetm(EmitSize, Dst, cc);
     else
       cset(EmitSize, Dst, cc);
-  } else if (is_const_false) {
-    LOGMAN_THROW_A_FMT(const_false == 0, "NZCVSelect: unsupported constant");
-    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), ARMEmitter::Reg::zr, cc);
   } else {
-    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), cc);
   }
 }
 
