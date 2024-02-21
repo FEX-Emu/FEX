@@ -329,7 +329,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     case FlagsGenerationType::TYPE_SUB:
       CalculateFlags_SUB(
         CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
@@ -550,15 +549,23 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  CalculateAF(Src1, Src2);
-  CalculatePF(Res);
-
+void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   HandleNZCVWrite();
-  _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+
+  CalculateAF(Src1, Src2);
+
+  OrderedNode *Res;
+  if (SrcSize >= 4) {
+    Res = _SubWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
+  } else {
+    _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    Res = _Sub(OpSize::i32Bit, Src1, Src2);
+  }
+
+  CalculatePF(Res);
 
   // If we're updating CF, we need to invert it for correctness. If we're not
   // updating CF, we need to restore the CF since we stomped over it.
