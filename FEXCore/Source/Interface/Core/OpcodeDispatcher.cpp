@@ -433,7 +433,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
       GenerateFlags_ADD(Op, Result, Dest, Src);
     break;
     case FEXCore::IR::IROps::OP_SUB:
-      GenerateFlags_SUB(Op, Result, Dest, Src);
+      GenerateFlags_SUB(Op, Dest, Src);
     break;
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
@@ -1343,14 +1343,9 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
-  auto Size = GetDstSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-  auto ALUOp = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
-
-  OrderedNode *Result = ALUOp;
-  GenerateFlags_SUB(Op, Result, Dest, Src);
+  GenerateFlags_SUB(Op, Dest, Src);
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
@@ -3663,7 +3658,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  GenerateFlags_SUB(Op, Result, Dest, OneConst, false);
+  GenerateFlags_SUB(Op, Dest, OneConst, false);
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
@@ -3793,8 +3788,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
-    OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src2, Src1);
-    GenerateFlags_SUB(Op, Result, Src2, Src1);
+    GenerateFlags_SUB(Op, Src2, Src1);
 
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
     auto SizeConst = _Constant(Size);
@@ -3850,8 +3844,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
       auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
-      OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src2, Src1);
-      GenerateFlags_SUB(Op, Result, Src2, Src1);
+      GenerateFlags_SUB(Op, Src2, Src1);
 
       // Calculate flags early.
       CalculateDeferredFlags();
@@ -4004,8 +3997,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-    OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
-    GenerateFlags_SUB(Op, Result, Src1, Src2);
+    GenerateFlags_SUB(Op, Src1, Src2);
 
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
     auto SizeConst = _Constant(Size);
@@ -4056,8 +4048,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-      OrderedNode* Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Src1, Src2);
-      GenerateFlags_SUB(Op, Result, Src1, Src2);
+      GenerateFlags_SUB(Op, Src1, Src2);
 
       // Calculate flags early.
       CalculateDeferredFlags();
@@ -4167,7 +4158,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  GenerateFlags_SUB(Op, Result, ZeroConst, Dest);
+  GenerateFlags_SUB(Op, ZeroConst, Dest);
 }
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
@@ -4377,8 +4368,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     }
 
     // Compare RAX with the destination, setting flags accordingly.
-    OrderedNode *Result = _Sub(IR::SizeToOpSize(GPRSize), Src3Lower, Src1Lower);
-    GenerateFlags_SUB(Op, Result, Src3Lower, Src1Lower);
+    GenerateFlags_SUB(Op, Src3Lower, Src1Lower);
     CalculateDeferredFlags();
 
     if (!Trivial) {
@@ -4444,11 +4434,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // RAX gets the result of the CAS op
     StoreGPRRegister(X86State::REG_RAX, RAXResult, Size);
 
-
-    const auto Size = GetDstBitSize(Op);
-
-    OrderedNode *Result = _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src3Lower, CASResult);
-    GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
+    GenerateFlags_SUB(Op, Src3Lower, CASResult);
   }
 }
 
@@ -5274,7 +5260,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
       GenerateFlags_ADD(Op, Result, Dest, Src);
     break;
     case FEXCore::IR::IROps::OP_SUB:
-      GenerateFlags_SUB(Op, Result, Dest, Src);
+      GenerateFlags_SUB(Op, Dest, Src);
     break;
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
