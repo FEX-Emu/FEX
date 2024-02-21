@@ -1021,6 +1021,14 @@
           "_Shift != ShiftType::ROR"
         ]
       },
+      "GPR = SubWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": [ "Integer Sub. Truncates and sets NZCV per SubNZCV"],
+        "DestSize": "Size",
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "SubNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the difference of two GPRs. ",
                  "Carry flag uses arm64 definition, inverted x86.",
