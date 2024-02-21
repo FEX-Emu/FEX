@@ -55,6 +55,7 @@ namespace Core {
       uint64_t DispatcherEnd;
 
       // Dispatcher entrypoint.
+      uint64_t AbsoluteLoopTopAddress{};
       uint64_t AbsoluteLoopTopAddressFillSRA{};
 
       // Signal return pointers.
