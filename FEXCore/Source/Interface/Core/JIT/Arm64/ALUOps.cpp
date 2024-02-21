@@ -283,9 +283,7 @@ DEF_OP(CondAddNZCV) {
 
   ARMEmitter::StatusFlags Flags = (ARMEmitter::StatusFlags)Op->FalseNZCV;
   uint64_t Const = 0;
-  auto Src1 = IsInlineConstant(Op->Src1, &Const) ? ARMEmitter::Reg::zr :
-                                                   GetReg(Op->Src1.ID());
-  LOGMAN_THROW_A_FMT(Const == 0, "Unsupported inline constant");
+  auto Src1 = GetZeroableReg(Op->Src1);
 
   if (IsInlineConstant(Op->Src2, &Const)) {
     ccmn(EmitSize, Src1, Const, Flags, MapSelectCC(Op->Cond));
