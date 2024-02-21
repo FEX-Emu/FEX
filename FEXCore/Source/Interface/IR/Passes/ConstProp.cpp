@@ -980,8 +980,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
             Changed = true;
           }
-        } else if (IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS) {
-          // If the first source is zero, we can use a NEGS instruction.
+        } else if (IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS || IROp->Op == OP_SUB) {
+          // TODO: Generalize this
           uint64_t Constant1{};
           if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
             if (Constant1 == 0) {
