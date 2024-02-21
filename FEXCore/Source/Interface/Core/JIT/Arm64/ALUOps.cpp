@@ -212,18 +212,13 @@ DEF_OP(SubNZCV) {
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
   } else {
     unsigned Shift = OpSize < 4 ? (32 - (8 * OpSize)) : 0;
-    ARMEmitter::Register ShiftedSrc1 = ARMEmitter::Reg::zr;
+    ARMEmitter::Register ShiftedSrc1 = GetZeroableReg(Op->Src1);
 
-    if (IsInlineConstant(Op->Src1, &Const)) {
-      LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
-      // Any shift of zero is still zero
-    } else {
-      ShiftedSrc1 = GetReg(Op->Src1.ID());
-
-      if (OpSize < 4) {
-        lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
-        ShiftedSrc1 = TMP1;
-      }
+    // Shift to fix flags for <32-bit ops.
+    // Any shift of zero is still zero so optimize out silly zero shifts.
+    if (OpSize < 4 && ShiftedSrc1 != ARMEmitter::Reg::zr) {
+      lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
+      ShiftedSrc1 = TMP1;
     }
 
     if (OpSize < 4) {
