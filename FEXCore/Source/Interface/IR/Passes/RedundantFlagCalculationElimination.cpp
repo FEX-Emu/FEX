@@ -293,42 +293,53 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
     while (1) {
       auto [CodeNode, IROp] = CodeLast();
 
-      // Optimiation algorithm: For each flag written...
+      // Optimizing flags can cause earlier flag reads to become dead but dead
+      // flag reads should not impede optimiation of earlier dead flag writes.
+      // We must DCE as we go to ensure we converge in a single iteration.
       //
-      //  If the flag has a later read (per FlagsRead), remove the flag from
-      //  FlagsRead, since the reader is covered by this write.
-      //
-      //  Else, there is no later read, so remove the flag write (if we can).
-      //  This is the active part of the optimization.
-      //
-      // Then, add each flag read to FlagsRead.
-      //
-      // This order is important: instructions that read-modify-write flags
-      // (like adcs) first read flags, then write flags. Since we're iterating
-      // the block backwards, that means we handle the write first.
-      struct FlagInfo Info = Classify(IROp);
+      // TODO: This whole pass could be merged with DCE?
+      bool HasSideEffects = IR::HasSideEffects(IROp->Op);
+      if (!HasSideEffects && CodeNode->GetUses() == 0) {
+        Changed = true;
+        IREmit->Remove(CodeNode);
+      } else {
+        // Optimiation algorithm: For each flag written...
+        //
+        //  If the flag has a later read (per FlagsRead), remove the flag from
+        //  FlagsRead, since the reader is covered by this write.
+        //
+        //  Else, there is no later read, so remove the flag write (if we can).
+        //  This is the active part of the optimization.
+        //
+        // Then, add each flag read to FlagsRead.
+        //
+        // This order is important: instructions that read-modify-write flags
+        // (like adcs) first read flags, then write flags. Since we're iterating
+        // the block backwards, that means we handle the write first.
+        struct FlagInfo Info = Classify(IROp);
 
-      if (!Info.Trivial) {
-        bool Eliminated = false;
+        if (!Info.Trivial) {
+          bool Eliminated = false;
 
-        if ((FlagsRead & Info.Write) == 0) {
-          if (Info.CanEliminate) {
-            IREmit->Remove(CodeNode);
-            Eliminated = true;
-            Changed = true;
-          } else if (Info.CanReplace) {
-            IROp->Op = Info.Replacement;
-            Changed = true;
+          if ((FlagsRead & Info.Write) == 0) {
+            if (Info.CanEliminate) {
+              IREmit->Remove(CodeNode);
+              Eliminated = true;
+              Changed = true;
+            } else if (Info.CanReplace) {
+              IROp->Op = Info.Replacement;
+              Changed = true;
+            }
+          } else {
+            FlagsRead &= ~Info.Write;
           }
-        } else {
-          FlagsRead &= ~Info.Write;
-        }
 
-        // If we eliminated the instruction, we eliminate its read too. This
-        // check is required to ensure the pass converges locally in a single
-        // iteration.
-        if (!Eliminated)
-          FlagsRead |= Info.Read;
+          // If we eliminated the instruction, we eliminate its read too. This
+          // check is required to ensure the pass converges locally in a single
+          // iteration.
+          if (!Eliminated)
+            FlagsRead |= Info.Read;
+        }
       }
 
       // Iterate in reverse
