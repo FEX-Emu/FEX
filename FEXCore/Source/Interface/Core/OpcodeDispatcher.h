@@ -81,7 +81,6 @@ public:
     TYPE_ADC,
     TYPE_SBB,
     TYPE_SUB,
-    TYPE_ADD,
     TYPE_MUL,
     TYPE_UMUL,
     TYPE_LOGICAL,
@@ -1818,24 +1817,6 @@ private:
     }
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_SUB,
-      .SrcSize = GetSrcSize(Op),
-      .Sources = {
-        .TwoSrcImmediate = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-          .UpdateCF = UpdateCF,
-        },
-      },
-    };
-  }
-
-  void GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
-    if (!UpdateCF) {
-      // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
-      CalculateDeferredFlags();
-    }
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ADD,
       .SrcSize = GetSrcSize(Op),
       .Sources = {
         .TwoSrcImmediate = {
