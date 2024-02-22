@@ -309,6 +309,7 @@ int main(int argc, char **argv, char **const envp) {
       return 1;
     }
     auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    SignalDelegation->RegisterTLSState(ParentThread);
 
     if (!ParentThread) {
       return 1;
@@ -324,6 +325,7 @@ int main(int argc, char **argv, char **const envp) {
 
     SyscallHandler.reset();
 
+    SignalDelegation->UninstallTLSState(ParentThread);
     CTX->DestroyThread(ParentThread, true);
   }
 #ifndef _WIN32

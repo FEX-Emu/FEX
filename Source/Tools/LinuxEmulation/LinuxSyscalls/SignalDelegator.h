@@ -54,8 +54,8 @@ namespace FEX::HLE {
     // Called from the signal trampoline function.
     void HandleSignal(int Signal, void *Info, void *UContext);
 
-    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override;
-    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread);
+    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread);
 
     /**
      * @brief Registers a signal handler for the host to handle a signal

@@ -32,8 +32,8 @@ class DummySignalDelegator final : public FEXCore::SignalDelegator, public FEXCo
   }
 
   protected:
-    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override;
-    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread);
+    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread);
 
   private:
     FEXCore::Core::InternalThreadState *GetTLSThread();

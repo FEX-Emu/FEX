@@ -39,14 +39,6 @@ namespace Core {
   public:
     virtual ~SignalDelegator() = default;
 
-    /**
-     * @brief Registers an emulated thread's object to a TLS object
-     *
-     * Required to know which thread has received the signal when it occurs
-     */
-    virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
-    virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
-
     struct SignalDelegatorConfig {
       bool SupportsAVX{};
 
