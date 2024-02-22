@@ -11,7 +11,7 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
@@ -29,8 +29,7 @@ DEF_OP(CASPair) {
     caspal(EmitSize, TMP3, TMP4, Desired.first, Desired.second, MemSrc);
     mov(EmitSize, Dst.first, TMP3.R());
     mov(EmitSize, Dst.second, TMP4.R());
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::SingleUseForwardLabel LoopNotExpected;
     ARMEmitter::SingleUseForwardLabel LoopExpected;
@@ -47,12 +46,12 @@ DEF_OP(CASPair) {
 
     b(&LoopExpected);
 
-      Bind(&LoopNotExpected);
-      mov(EmitSize, Dst.first, TMP2.R());
-      mov(EmitSize, Dst.second, TMP3.R());
-      // exclusive monitor needs to be cleared here
-      // Might have hit the case where ldaxr was hit but stlxr wasn't
-      clrex();
+    Bind(&LoopNotExpected);
+    mov(EmitSize, Dst.first, TMP2.R());
+    mov(EmitSize, Dst.second, TMP3.R());
+    // exclusive monitor needs to be cleared here
+    // Might have hit the case where ldaxr was hit but stlxr wasn't
+    clrex();
     Bind(&LoopExpected);
   }
 }
@@ -70,17 +69,18 @@ DEF_OP(CAS) {
   auto MemSrc = GetReg(Op->Addr.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(EmitSize, TMP2, Expected);
     casal(SubEmitSize, TMP2, Desired, MemSrc);
     mov(EmitSize, GetReg(Node), TMP2.R());
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::SingleUseForwardLabel LoopNotExpected;
     ARMEmitter::SingleUseForwardLabel LoopExpected;
@@ -88,11 +88,9 @@ DEF_OP(CAS) {
     ldaxr(SubEmitSize, TMP2, MemSrc);
     if (OpSize == 1) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTB, 0);
-    }
-    else if (OpSize == 2) {
+    } else if (OpSize == 2) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTH, 0);
-    }
-    else {
+    } else {
       cmp(EmitSize, TMP2, Expected);
     }
     b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
@@ -101,11 +99,11 @@ DEF_OP(CAS) {
     mov(EmitSize, GetReg(Node), Expected);
     b(&LoopExpected);
 
-      Bind(&LoopNotExpected);
-      mov(EmitSize, GetReg(Node), TMP2.R());
-      // exclusive monitor needs to be cleared here
-      // Might have hit the case where ldaxr was hit but stlxr wasn't
-      clrex();
+    Bind(&LoopNotExpected);
+    mov(EmitSize, GetReg(Node), TMP2.R());
+    // exclusive monitor needs to be cleared here
+    // Might have hit the case where ldaxr was hit but stlxr wasn't
+    clrex();
     Bind(&LoopExpected);
   }
 }
@@ -119,15 +117,16 @@ DEF_OP(AtomicAdd) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     staddl(SubEmitSize, Src, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -146,16 +145,17 @@ DEF_OP(AtomicSub) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
     staddl(SubEmitSize, TMP2, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -174,16 +174,17 @@ DEF_OP(AtomicAnd) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
     stclrl(SubEmitSize, TMP2, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -202,15 +203,16 @@ DEF_OP(AtomicCLR) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stclrl(SubEmitSize, Src, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -229,15 +231,16 @@ DEF_OP(AtomicOr) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stsetl(SubEmitSize, Src, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -256,15 +259,16 @@ DEF_OP(AtomicXor) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     steorl(SubEmitSize, Src, MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -282,10 +286,12 @@ DEF_OP(AtomicNeg) {
   auto MemSrc = GetReg(Op->Addr.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);
@@ -304,16 +310,17 @@ DEF_OP(AtomicSwap) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(EmitSize, TMP2, Src);
     ldswpal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -332,15 +339,16 @@ DEF_OP(AtomicFetchAdd) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldaddal(SubEmitSize, Src, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -360,16 +368,17 @@ DEF_OP(AtomicFetchSub) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
     ldaddal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -389,16 +398,17 @@ DEF_OP(AtomicFetchAnd) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
     ldclral(SubEmitSize, TMP2, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -418,15 +428,16 @@ DEF_OP(AtomicFetchCLR) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldclral(SubEmitSize, Src, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -446,15 +457,16 @@ DEF_OP(AtomicFetchOr) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldsetal(SubEmitSize, Src, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -474,15 +486,16 @@ DEF_OP(AtomicFetchXor) {
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldeoral(SubEmitSize, Src, GetReg(Node), MemSrc);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
@@ -501,10 +514,12 @@ DEF_OP(AtomicFetchNeg) {
   auto MemSrc = GetReg(Op->Addr.ID());
 
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+  const auto SubEmitSize =
+    OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
     OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                  ARMEmitter::SubRegSize::i8Bit;
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);
@@ -528,8 +543,7 @@ DEF_OP(TelemetrySetValue) {
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stsetl(ARMEmitter::SubRegSize::i64Bit, TMP1, TMP2);
-  }
-  else {
+  } else {
     ARMEmitter::BackwardLabel LoopTop;
     Bind(&LoopTop);
     ldaxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP2);
@@ -541,5 +555,4 @@ DEF_OP(TelemetrySetValue) {
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

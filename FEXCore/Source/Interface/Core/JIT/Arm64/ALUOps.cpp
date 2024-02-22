@@ -16,21 +16,19 @@ namespace FEXCore::CPU {
 #define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
 #define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
   switch (IROp->Size) {
-    case 4: {
-      auto Dst = GetRegPair(Node);
-      auto Src = GetRegPair(Op->Pair.ID());
-      mov(ARMEmitter::Size::i32Bit, Dst.first, Src.first);
-      mov(ARMEmitter::Size::i32Bit, Dst.second, Src.second);
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size);
-      break;
+  case 4: {
+    auto Dst = GetRegPair(Node);
+    auto Src = GetRegPair(Op->Pair.ID());
+    mov(ARMEmitter::Size::i32Bit, Dst.first, Src.first);
+    mov(ARMEmitter::Size::i32Bit, Dst.second, Src.second);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size); break;
   }
 }
 
@@ -55,11 +53,11 @@ DEF_OP(EntrypointOffset) {
 }
 
 DEF_OP(InlineConstant) {
-  //nop
+  // nop
 }
 
 DEF_OP(InlineEntrypointOffset) {
-  //nop
+  // nop
 }
 
 DEF_OP(CycleCounter) {
@@ -253,7 +251,7 @@ DEF_OP(AXFlag) {
 
 ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
-  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
   case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
   case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
   case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
@@ -265,17 +263,15 @@ ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
   case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
   case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
   case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
+  case FEXCore::IR::COND_FU: return ARMEmitter::Condition::CC_VS;
   case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
   case FEXCore::IR::COND_VS:
   case FEXCore::IR::COND_VC:
   case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
   case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
-  default:
-  LOGMAN_MSG_A_FMT("Unsupported compare type");
-  return ARMEmitter::Condition::CC_NV;
+  default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
   }
 }
 
@@ -288,8 +284,7 @@ DEF_OP(CondAddNZCV) {
 
   ARMEmitter::StatusFlags Flags = (ARMEmitter::StatusFlags)Op->FalseNZCV;
   uint64_t Const = 0;
-  auto Src1 = IsInlineConstant(Op->Src1, &Const) ? ARMEmitter::Reg::zr :
-                                                   GetReg(Op->Src1.ID());
+  auto Src1 = IsInlineConstant(Op->Src1, &Const) ? ARMEmitter::Reg::zr : GetReg(Op->Src1.ID());
   LOGMAN_THROW_A_FMT(Const == 0, "Unsupported inline constant");
 
   if (IsInlineConstant(Op->Src2, &Const)) {
@@ -306,10 +301,11 @@ DEF_OP(Neg) {
   LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  if (Op->Cond == FEXCore::IR::COND_AL)
+  if (Op->Cond == FEXCore::IR::COND_AL) {
     neg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()));
-  else
+  } else {
     cneg(EmitSize, GetReg(Node), GetReg(Op->Src.ID()), MapSelectCC(Op->Cond));
+  }
 }
 
 DEF_OP(Mul) {
@@ -361,8 +357,7 @@ DEF_OP(Div) {
 
     Src1 = TMP1;
     Src2 = TMP2;
-  }
-  else if (OpSize == 2) {
+  } else if (OpSize == 2) {
     sxth(EmitSize, TMP1, Src1);
     sxth(EmitSize, TMP2, Src2);
 
@@ -392,8 +387,7 @@ DEF_OP(UDiv) {
 
     Src1 = TMP1;
     Src2 = TMP2;
-  }
-  else if (OpSize == 2) {
+  } else if (OpSize == 2) {
     uxth(EmitSize, TMP1, Src1);
     uxth(EmitSize, TMP2, Src2);
 
@@ -422,8 +416,7 @@ DEF_OP(Rem) {
 
     Src1 = TMP1;
     Src2 = TMP2;
-  }
-  else if (OpSize == 2) {
+  } else if (OpSize == 2) {
     sxth(EmitSize, TMP1, Src1);
     sxth(EmitSize, TMP2, Src2);
 
@@ -452,8 +445,7 @@ DEF_OP(URem) {
 
     Src1 = TMP1;
     Src2 = TMP2;
-  }
-  else if (OpSize == 2) {
+  } else if (OpSize == 2) {
     uxth(EmitSize, TMP1, Src1);
     uxth(EmitSize, TMP2, Src2);
 
@@ -480,8 +472,7 @@ DEF_OP(MulH) {
     sxtw(TMP2, Src2.W());
     mul(ARMEmitter::Size::i32Bit, Dst, TMP1, TMP2);
     ubfx(ARMEmitter::Size::i32Bit, Dst, Dst, 32, 32);
-  }
-  else {
+  } else {
     smulh(Dst.X(), Src1.X(), Src2.X());
   }
 }
@@ -501,8 +492,7 @@ DEF_OP(UMulH) {
     uxtw(ARMEmitter::Size::i64Bit, TMP2, Src2);
     mul(ARMEmitter::Size::i64Bit, Dst, TMP1, TMP2);
     ubfx(ARMEmitter::Size::i64Bit, Dst, Dst, 32, 32);
-  }
-  else {
+  } else {
     umulh(Dst.X(), Src1.X(), Src2.X());
   }
 }
@@ -713,8 +703,7 @@ DEF_OP(Ashr) {
   if (IsInlineConstant(Op->Src2, &Const)) {
     if (OpSize >= 4) {
       asr(EmitSize, Dst, Src1, (unsigned int)Const);
-    }
-    else {
+    } else {
       sbfx(EmitSize, TMP1, Src1, 0, OpSize * 8);
       asr(EmitSize, Dst, TMP1, (unsigned int)Const);
       ubfx(EmitSize, Dst, Dst, 0, OpSize * 8);
@@ -723,8 +712,7 @@ DEF_OP(Ashr) {
     const auto Src2 = GetReg(Op->Src2.ID());
     if (OpSize >= 4) {
       asrv(EmitSize, Dst, Src1, Src2);
-    }
-    else {
+    } else {
       sbfx(EmitSize, TMP1, Src1, 0, OpSize * 8);
       asrv(EmitSize, Dst, TMP1, Src2);
       ubfx(EmitSize, Dst, Dst, 0, OpSize * 8);
@@ -791,11 +779,11 @@ DEF_OP(PDep) {
 
   // So we have shadow as temporaries
   const auto Input = TMP1.R();
-  const auto Mask  = TMP2.R();
+  const auto Mask = TMP2.R();
 
   // these get used variously as scratch
-  const auto T0    = TMP3.R();
-  const auto T1    = TMP4.R();
+  const auto T0 = TMP3.R();
+  const auto T1 = TMP4.R();
 
   ARMEmitter::BackwardLabel NextBit;
   ARMEmitter::SingleUseForwardLabel Done;
@@ -841,8 +829,8 @@ DEF_OP(PExt) {
   const auto Mask = GetReg(Op->Mask.ID());
   const auto Dest = GetReg(Node);
 
-  const auto MaskReg  = TMP1;
-  const auto BitReg   = TMP2;
+  const auto MaskReg = TMP1;
+  const auto BitReg = TMP2;
   const auto ValueReg = TMP3;
 
   ARMEmitter::SingleUseForwardLabel EarlyExit;
@@ -885,64 +873,60 @@ DEF_OP(LDiv) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-    case 2: {
-      uxth(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 16, 16);
-      sxth(EmitSize, TMP2, Divisor);
-      sdiv(EmitSize, Dst, TMP1, TMP2);
+  case 2: {
+    uxth(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 16, 16);
+    sxth(EmitSize, TMP2, Divisor);
+    sdiv(EmitSize, Dst, TMP1, TMP2);
     break;
-    }
-    case 4: {
-      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-      mov(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 32, 32);
-      sxtw(TMP2, Divisor.W());
-      sdiv(EmitSize, Dst, TMP1, TMP2);
+  }
+  case 4: {
+    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
+    mov(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 32, 32);
+    sxtw(TMP2, Divisor.W());
+    sdiv(EmitSize, Dst, TMP1, TMP2);
     break;
+  }
+  case 8: {
+    ARMEmitter::SingleUseForwardLabel Only64Bit {};
+    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+
+    // Check if the upper bits match the top bit of the lower 64-bits
+    // Sign extend the top bit of lower bits
+    sbfx(EmitSize, TMP1, Lower, 63, 1);
+    eor(EmitSize, TMP1, TMP1, Upper);
+
+    // If the sign bit matches then the result is zero
+    cbz(EmitSize, TMP1, &Only64Bit);
+
+    // Long divide
+    {
+      mov(EmitSize, TMP1, Upper);
+      mov(EmitSize, TMP2, Lower);
+      mov(EmitSize, TMP3, Divisor);
+
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIVHandler));
+
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+      blr(TMP4);
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
+      // Move result to its destination register
+      mov(EmitSize, Dst, TMP1);
+
+      // Skip 64-bit path
+      b(&LongDIVRet);
     }
-    case 8: {
-      ARMEmitter::SingleUseForwardLabel Only64Bit{};
-      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
-      // Check if the upper bits match the top bit of the lower 64-bits
-      // Sign extend the top bit of lower bits
-      sbfx(EmitSize, TMP1, Lower, 63, 1);
-      eor(EmitSize, TMP1, TMP1, Upper);
+    Bind(&Only64Bit);
+    // 64-Bit only
+    { sdiv(EmitSize, Dst, Lower, Divisor); }
 
-      // If the sign bit matches then the result is zero
-      cbz(EmitSize, TMP1, &Only64Bit);
-
-      // Long divide
-      {
-        mov(EmitSize, TMP1, Upper);
-        mov(EmitSize, TMP2, Lower);
-        mov(EmitSize, TMP3, Divisor);
-
-        ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIVHandler));
-
-        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-        blr(TMP4);
-        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-        // Move result to its destination register
-        mov(EmitSize, Dst, TMP1);
-
-        // Skip 64-bit path
-        b(&LongDIVRet);
-      }
-
-      Bind(&Only64Bit);
-      // 64-Bit only
-      {
-        sdiv(EmitSize, Dst, Lower, Divisor);
-      }
-
-      Bind(&LongDIVRet);
+    Bind(&LongDIVRet);
     break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", OpSize);
-      break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", OpSize); break;
   }
 }
 
@@ -959,58 +943,54 @@ DEF_OP(LUDiv) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64=
   switch (OpSize) {
-    case 2: {
-      uxth(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 16, 16);
-      udiv(EmitSize, Dst, TMP1, Divisor);
+  case 2: {
+    uxth(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 16, 16);
+    udiv(EmitSize, Dst, TMP1, Divisor);
     break;
-    }
-    case 4: {
-      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-      mov(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 32, 32);
-      udiv(EmitSize, Dst, TMP1, Divisor);
+  }
+  case 4: {
+    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
+    mov(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 32, 32);
+    udiv(EmitSize, Dst, TMP1, Divisor);
     break;
+  }
+  case 8: {
+    ARMEmitter::SingleUseForwardLabel Only64Bit {};
+    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+
+    // Check the upper bits for zero
+    // If the upper bits are zero then we can do a 64-bit divide
+    cbz(EmitSize, Upper, &Only64Bit);
+
+    // Long divide
+    {
+      mov(EmitSize, TMP1, Upper);
+      mov(EmitSize, TMP2, Lower);
+      mov(EmitSize, TMP3, Divisor);
+
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIVHandler));
+
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+      blr(TMP4);
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
+      // Move result to its destination register
+      mov(EmitSize, Dst, TMP1);
+
+      // Skip 64-bit path
+      b(&LongDIVRet);
     }
-    case 8: {
-      ARMEmitter::SingleUseForwardLabel Only64Bit{};
-      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
-      // Check the upper bits for zero
-      // If the upper bits are zero then we can do a 64-bit divide
-      cbz(EmitSize, Upper, &Only64Bit);
+    Bind(&Only64Bit);
+    // 64-Bit only
+    { udiv(EmitSize, Dst, Lower, Divisor); }
 
-      // Long divide
-      {
-        mov(EmitSize, TMP1, Upper);
-        mov(EmitSize, TMP2, Lower);
-        mov(EmitSize, TMP3, Divisor);
-
-        ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIVHandler));
-
-        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-        blr(TMP4);
-        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-        // Move result to its destination register
-        mov(EmitSize, Dst, TMP1);
-
-        // Skip 64-bit path
-        b(&LongDIVRet);
-      }
-
-      Bind(&Only64Bit);
-      // 64-Bit only
-      {
-        udiv(EmitSize, Dst, Lower, Divisor);
-      }
-
-      Bind(&LongDIVRet);
+    Bind(&LongDIVRet);
     break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", OpSize);
-      break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", OpSize); break;
   }
 }
 
@@ -1027,66 +1007,64 @@ DEF_OP(LRem) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-    case 2: {
-      uxth(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 16, 16);
-      sxth(EmitSize, TMP2, Divisor);
-      sdiv(EmitSize, TMP3, TMP1, TMP2);
-      msub(EmitSize, Dst, TMP3, TMP2, TMP1);
+  case 2: {
+    uxth(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 16, 16);
+    sxth(EmitSize, TMP2, Divisor);
+    sdiv(EmitSize, TMP3, TMP1, TMP2);
+    msub(EmitSize, Dst, TMP3, TMP2, TMP1);
     break;
-    }
-    case 4: {
-      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-      mov(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 32, 32);
-      sxtw(TMP3, Divisor.W());
-      sdiv(EmitSize, TMP2, TMP1, TMP3);
-      msub(EmitSize, Dst, TMP2, TMP3, TMP1);
+  }
+  case 4: {
+    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
+    mov(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 32, 32);
+    sxtw(TMP3, Divisor.W());
+    sdiv(EmitSize, TMP2, TMP1, TMP3);
+    msub(EmitSize, Dst, TMP2, TMP3, TMP1);
     break;
+  }
+  case 8: {
+    ARMEmitter::SingleUseForwardLabel Only64Bit {};
+    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+
+    // Check if the upper bits match the top bit of the lower 64-bits
+    // Sign extend the top bit of lower bits
+    sbfx(EmitSize, TMP1, Lower, 63, 1);
+    eor(EmitSize, TMP1, TMP1, Upper);
+
+    // If the sign bit matches then the result is zero
+    cbz(EmitSize, TMP1, &Only64Bit);
+
+    // Long divide
+    {
+      mov(EmitSize, TMP1, Upper);
+      mov(EmitSize, TMP2, Lower);
+      mov(EmitSize, TMP3, Divisor);
+
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler));
+
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+      blr(TMP4);
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
+      // Move result to its destination register
+      mov(EmitSize, Dst, TMP1);
+
+      // Skip 64-bit path
+      b(&LongDIVRet);
     }
-    case 8: {
-      ARMEmitter::SingleUseForwardLabel Only64Bit{};
-      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
-      // Check if the upper bits match the top bit of the lower 64-bits
-      // Sign extend the top bit of lower bits
-      sbfx(EmitSize, TMP1, Lower, 63, 1);
-      eor(EmitSize, TMP1, TMP1, Upper);
-
-      // If the sign bit matches then the result is zero
-      cbz(EmitSize, TMP1, &Only64Bit);
-
-      // Long divide
-      {
-        mov(EmitSize, TMP1, Upper);
-        mov(EmitSize, TMP2, Lower);
-        mov(EmitSize, TMP3, Divisor);
-
-        ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler));
-
-        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-        blr(TMP4);
-        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-        // Move result to its destination register
-        mov(EmitSize, Dst, TMP1);
-
-        // Skip 64-bit path
-        b(&LongDIVRet);
-      }
-
-      Bind(&Only64Bit);
-      // 64-Bit only
-      {
-        sdiv(EmitSize, TMP1, Lower, Divisor);
-        msub(EmitSize, Dst, TMP1, Divisor, Lower);
-      }
-      Bind(&LongDIVRet);
+    Bind(&Only64Bit);
+    // 64-Bit only
+    {
+      sdiv(EmitSize, TMP1, Lower, Divisor);
+      msub(EmitSize, Dst, TMP1, Divisor, Lower);
+    }
+    Bind(&LongDIVRet);
     break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", OpSize);
-      break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", OpSize); break;
   }
 }
 
@@ -1103,61 +1081,59 @@ DEF_OP(LURem) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-    case 2: {
-      uxth(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 16, 16);
-      udiv(EmitSize, TMP2, TMP1, Divisor);
-      msub(EmitSize, Dst, TMP2, Divisor, TMP1);
+  case 2: {
+    uxth(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 16, 16);
+    udiv(EmitSize, TMP2, TMP1, Divisor);
+    msub(EmitSize, Dst, TMP2, Divisor, TMP1);
     break;
-    }
-    case 4: {
-      // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-      mov(EmitSize, TMP1, Lower);
-      bfi(EmitSize, TMP1, Upper, 32, 32);
-      udiv(EmitSize, TMP2, TMP1, Divisor);
-      msub(EmitSize, Dst, TMP2, Divisor, TMP1);
+  }
+  case 4: {
+    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
+    mov(EmitSize, TMP1, Lower);
+    bfi(EmitSize, TMP1, Upper, 32, 32);
+    udiv(EmitSize, TMP2, TMP1, Divisor);
+    msub(EmitSize, Dst, TMP2, Divisor, TMP1);
     break;
+  }
+  case 8: {
+    ARMEmitter::SingleUseForwardLabel Only64Bit {};
+    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+
+    // Check the upper bits for zero
+    // If the upper bits are zero then we can do a 64-bit divide
+    cbz(EmitSize, Upper, &Only64Bit);
+
+    // Long divide
+    {
+      mov(EmitSize, TMP1, Upper);
+      mov(EmitSize, TMP2, Lower);
+      mov(EmitSize, TMP3, Divisor);
+
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler));
+
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+      blr(TMP4);
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
+      // Move result to its destination register
+      mov(EmitSize, Dst, TMP1);
+
+      // Skip 64-bit path
+      b(&LongDIVRet);
     }
-    case 8: {
-      ARMEmitter::SingleUseForwardLabel Only64Bit{};
-      ARMEmitter::SingleUseForwardLabel LongDIVRet{};
 
-      // Check the upper bits for zero
-      // If the upper bits are zero then we can do a 64-bit divide
-      cbz(EmitSize, Upper, &Only64Bit);
+    Bind(&Only64Bit);
+    // 64-Bit only
+    {
+      udiv(EmitSize, TMP1, Lower, Divisor);
+      msub(EmitSize, Dst, TMP1, Divisor, Lower);
+    }
 
-      // Long divide
-      {
-        mov(EmitSize, TMP1, Upper);
-        mov(EmitSize, TMP2, Lower);
-        mov(EmitSize, TMP3, Divisor);
-
-        ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler));
-
-        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-        blr(TMP4);
-        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-        // Move result to its destination register
-        mov(EmitSize, Dst, TMP1);
-
-        // Skip 64-bit path
-        b(&LongDIVRet);
-      }
-
-      Bind(&Only64Bit);
-      // 64-Bit only
-      {
-        udiv(EmitSize, TMP1, Lower, Divisor);
-        msub(EmitSize, Dst, TMP1, Divisor, Lower);
-      }
-
-      Bind(&LongDIVRet);
+    Bind(&LongDIVRet);
     break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize);
-      break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize); break;
   }
 }
 
@@ -1182,30 +1158,30 @@ DEF_OP(Popcount) {
   const auto Src = GetReg(Op->Src.ID());
 
   switch (OpSize) {
-    case 0x1:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      // only use lowest byte
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    case 0x2:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // only count two lowest bytes
-      addp(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
-      break;
-    case 0x4:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // fmov has zero extended, unused bytes are zero
-      addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    case 0x8:
-      fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // fmov has zero extended, unused bytes are zero
-      addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
+  case 0x1:
+    fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+    // only use lowest byte
+    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    break;
+  case 0x2:
+    fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    // only count two lowest bytes
+    addp(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
+    break;
+  case 0x4:
+    fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    // fmov has zero extended, unused bytes are zero
+    addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    break;
+  case 0x8:
+    fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
+    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    // fmov has zero extended, unused bytes are zero
+    addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    break;
+  default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
   }
 
   umov<ARMEmitter::SubRegSize::i8Bit>(Dst, VTMP1, 0);
@@ -1224,15 +1200,13 @@ DEF_OP(FindLSB) {
     ubfx(EmitSize, TMP1, Src, 0, OpSize * 8);
     cmp(EmitSize, TMP1, 0);
     rbit(EmitSize, TMP1, TMP1);
-  }
-  else {
+  } else {
     rbit(EmitSize, TMP1, Src);
     cmp(EmitSize, Src, 0);
   }
 
   clz(EmitSize, Dst, TMP1);
   csinv(EmitSize, Dst, Dst, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_NE);
-
 }
 
 DEF_OP(FindMSB) {
@@ -1251,8 +1225,7 @@ DEF_OP(FindMSB) {
     lsl(EmitSize, Dst, Src, 16);
     orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);
-  }
-  else {
+  } else {
     clz(EmitSize, Dst, Src);
   }
 
@@ -1299,8 +1272,7 @@ DEF_OP(CountLeadingZeroes) {
     lsl(EmitSize, Dst, Src, 16);
     orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);
-  }
-  else {
+  } else {
     clz(EmitSize, Dst, Src);
   }
 }
@@ -1334,13 +1306,11 @@ DEF_OP(Bfi) {
   if (Dst == SrcDst) {
     // If Dst and SrcDst match then this turns in to a simple BFI instruction.
     bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
-  }
-  else if (Dst != Src) {
+  } else if (Dst != Src) {
     // If the destination isn't the source then we can move the DstSrc and insert directly.
     mov(EmitSize, Dst, SrcDst);
     bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
-  }
-  else {
+  } else {
     // Destination didn't match the dst source register.
     // TODO: Inefficient until FEX can have RA constraints here.
     mov(EmitSize, TMP1, SrcDst);
@@ -1348,8 +1318,7 @@ DEF_OP(Bfi) {
 
     if (OpSize >= 4) {
       mov(EmitSize, Dst, TMP1.R());
-    }
-    else {
+    } else {
       ubfx(EmitSize, Dst, TMP1, 0, OpSize * 8);
     }
   }
@@ -1368,13 +1337,11 @@ DEF_OP(Bfxil) {
   if (Dst == SrcDst) {
     // If Dst and SrcDst match then this turns in to a single instruction.
     bfxil(EmitSize, Dst, Src, Op->lsb, Op->Width);
-  }
-  else if (Dst != Src) {
+  } else if (Dst != Src) {
     // If the destination isn't the source then we can move the DstSrc and insert directly.
     mov(EmitSize, Dst, SrcDst);
     bfxil(EmitSize, Dst, Src, Op->lsb, Op->Width);
-  }
-  else {
+  } else {
     // Destination didn't match the dst source register.
     // TODO: Inefficient until FEX can have RA constraints here.
     mov(EmitSize, TMP1, SrcDst);
@@ -1388,8 +1355,7 @@ DEF_OP(Bfe) {
   LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
   LOGMAN_THROW_AA_FMT(Op->Width != 0, "Invalid BFE width of 0");
   const uint8_t OpSize = IROp->Size;
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit
-                                    : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
@@ -1427,20 +1393,18 @@ DEF_OP(Select) {
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
 
-    if (IsInlineConstant(Op->Cmp2, &Const))
+    if (IsInlineConstant(Op->Cmp2, &Const)) {
       cmp(CompareEmitSize, Src1, Const);
-    else {
+    } else {
       const auto Src2 = GetReg(Op->Cmp2.ID());
       cmp(CompareEmitSize, Src1, Src2);
     }
-  }
-  else if (IsGPRPair(Op->Cmp1.ID())) {
+  } else if (IsGPRPair(Op->Cmp1.ID())) {
     const auto Src1 = GetRegPair(Op->Cmp1.ID());
     const auto Src2 = GetRegPair(Op->Cmp2.ID());
     cmp(EmitSize, Src1.first, Src2.first);
     ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, cc);
-  }
-  else if (IsFPR(Op->Cmp1.ID())) {
+  } else if (IsFPR(Op->Cmp1.ID())) {
     const auto Src1 = GetVReg(Op->Cmp1.ID());
     const auto Src2 = GetVReg(Op->Cmp2.ID());
     fcmp(Op->CompareSize == 8 ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit, Src1, Src2);
@@ -1461,10 +1425,11 @@ DEF_OP(Select) {
       LOGMAN_MSG_A_FMT("Select: Unsupported compare inline parameters");
     }
 
-    if (const_true == all_ones)
+    if (const_true == all_ones) {
       csetm(EmitSize, Dst, cc);
-    else
+    } else {
       cset(EmitSize, Dst, cc);
+    }
   } else {
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
   }
@@ -1490,10 +1455,11 @@ DEF_OP(NZCVSelect) {
       LOGMAN_MSG_A_FMT("NZCVSelect: Unsupported constant");
     }
 
-    if (const_true == all_ones)
+    if (const_true == all_ones) {
       csetm(EmitSize, Dst, cc);
-    else
+    } else {
       cset(EmitSize, Dst, cc);
+    }
   } else if (is_const_false) {
     LOGMAN_THROW_A_FMT(const_false == 0, "NZCVSelect: unsupported constant");
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), ARMEmitter::Reg::zr, cc);
@@ -1518,21 +1484,11 @@ DEF_OP(VExtractToGPR) {
 
   const auto PerformMove = [&](const ARMEmitter::VRegister reg, int index) {
     switch (OpSize) {
-      case 1:
-        umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index);
-        break;
-      case 2:
-        umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index);
-        break;
-      case 4:
-        umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index);
-        break;
-      case 8:
-        umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
-        break;
+    case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+    case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+    case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize); break;
     }
   };
 
@@ -1542,13 +1498,9 @@ DEF_OP(VExtractToGPR) {
     // when acting on larger register sizes.
     PerformMove(Vector, Op->Index);
   } else {
-    LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                        "Host doesn't support SVE. Cannot perform 256-bit operation.");
-    LOGMAN_THROW_AA_FMT(Is256Bit,
-                        "Can't perform 256-bit extraction with op side: {}", OpSize);
-    LOGMAN_THROW_AA_FMT(Offset < AVXRegBitSize,
-                        "Trying to extract element outside bounds of register. Offset={}, Index={}",
-                        Offset, Op->Index);
+    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host doesn't support SVE. Cannot perform 256-bit operation.");
+    LOGMAN_THROW_AA_FMT(Is256Bit, "Can't perform 256-bit extraction with op side: {}", OpSize);
+    LOGMAN_THROW_AA_FMT(Offset < AVXRegBitSize, "Trying to extract element outside bounds of register. Offset={}, Index={}", Offset, Op->Index);
 
     // We need to use the upper 128-bit lane, so lets move it down.
     // Inverting our dedicated predicate for 128-bit operations selects
@@ -1561,17 +1513,11 @@ DEF_OP(VExtractToGPR) {
     // upper half of the vector.
     const auto SanitizedIndex = [OpSize, Op] {
       switch (OpSize) {
-        case 1:
-          return Op->Index - 16;
-        case 2:
-          return Op->Index - 8;
-        case 4:
-          return Op->Index - 4;
-        case 8:
-          return Op->Index - 2;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled OpSize: {}", OpSize);
-          return 0;
+      case 1: return Op->Index - 16;
+      case 2: return Op->Index - 8;
+      case 4: return Op->Index - 4;
+      case 8: return Op->Index - 2;
+      default: LOGMAN_MSG_A_FMT("Unhandled OpSize: {}", OpSize); return 0;
       }
     }();
 
@@ -1589,8 +1535,7 @@ DEF_OP(Float_ToGPR_ZS) {
 
   if (Op->SrcElementSize == 8) {
     fcvtzs(DestSize, Dst, Src.D());
-  }
-  else {
+  } else {
     fcvtzs(DestSize, Dst, Src.S());
   }
 }
@@ -1605,8 +1550,7 @@ DEF_OP(Float_ToGPR_S) {
   if (Op->SrcElementSize == 8) {
     frinti(VTMP1.D(), Src.D());
     fcvtzs(DestSize, Dst, VTMP1.D());
-  }
-  else {
+  } else {
     frinti(VTMP1.S(), Src.S());
     fcvtzs(DestSize, Dst, VTMP1.S());
   }
@@ -1624,4 +1568,4 @@ DEF_OP(FCmp) {
 
 #undef DEF_OP
 
-}
+} // namespace FEXCore::CPU

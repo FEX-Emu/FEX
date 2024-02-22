@@ -13,7 +13,7 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -26,9 +26,11 @@ void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool Z
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   constexpr auto Predicate = ARMEmitter::PReg::p0;
 
@@ -41,59 +43,50 @@ void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool Z
     if (HostSupportsAFP) {
       // If the host CPU supports AFP then scalar does an insert without modifying upper bits.
       ScalarEmit(Dst, Vector1, Vector2);
-    }
-    else {
+    } else {
       // If AFP is unsupported then the operation result goes in to a temporary.
       // and then it gets inserted.
       ScalarEmit(VTMP1, Vector1, Vector2);
       if (!ZeroUpperBits && Is256Bit) {
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  }
-  else if (Dst != Vector2) {
+  } else if (Dst != Vector2) {
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    }
-    else {
+    } else {
       mov(Dst.Q(), Vector1.Q());
     }
 
     if (HostSupportsAFP) {
       ScalarEmit(Dst, Vector1, Vector2);
-    }
-    else {
+    } else {
       ScalarEmit(VTMP1, Vector1, Vector2);
       if (!ZeroUpperBits && Is256Bit) {
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  }
-  else {
+  } else {
     // Destination intersects Vector2, can't do anything optimal in this case.
     // Do the scalar operation first and then move and insert.
     ScalarEmit(VTMP1, Vector1, Vector2);
 
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    }
-    else {
+    } else {
       mov(Dst.Q(), Vector1.Q());
     }
 
     if (!ZeroUpperBits && Is256Bit) {
       ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
       mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-    }
-    else {
+    } else {
       ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
     }
   }
@@ -110,9 +103,11 @@ void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, b
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   constexpr auto Predicate = ARMEmitter::PReg::p0;
   bool DstOverlapsVector2 = false;
@@ -129,59 +124,50 @@ void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, b
     if (HostSupportsAFP) {
       // If the host CPU supports AFP then scalar does an insert without modifying upper bits.
       ScalarEmit(Dst, Vector2);
-    }
-    else {
+    } else {
       // If AFP is unsupported then the operation result goes in to a temporary.
       // and then it gets inserted.
       ScalarEmit(VTMP1, Vector2);
       if (!ZeroUpperBits && Is256Bit) {
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  }
-  else if (!DstOverlapsVector2) {
+  } else if (!DstOverlapsVector2) {
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    }
-    else {
+    } else {
       mov(Dst.Q(), Vector1.Q());
     }
 
     if (HostSupportsAFP) {
       ScalarEmit(Dst, Vector2);
-    }
-    else {
+    } else {
       ScalarEmit(VTMP1, Vector2);
       if (!ZeroUpperBits && Is256Bit) {
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  }
-  else {
+  } else {
     // Destination intersects Vector2, can't do anything optimal in this case.
     // Do the scalar operation first and then move and insert.
     ScalarEmit(VTMP1, Vector2);
 
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    }
-    else {
+    } else {
       mov(Dst.Q(), Vector1.Q());
     }
 
     if (!ZeroUpperBits && Is256Bit) {
       ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
       mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-    }
-    else {
+    } else {
       ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
     }
   }
@@ -193,9 +179,11 @@ DEF_OP(VFAddScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fadd(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -216,9 +204,11 @@ DEF_OP(VFSubScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fsub(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -239,9 +229,11 @@ DEF_OP(VFMulScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fmul(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -262,9 +254,11 @@ DEF_OP(VFDivScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fdiv(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -285,16 +279,17 @@ DEF_OP(VFMinScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     if (HostSupportsAFP) {
       // AFP.AH lets fmin behave like x86 min
       fmin(SubRegSize.Scalar, Dst, Src1, Src2);
-    }
-    else {
+    } else {
       fcmp(SubRegSize.Scalar, Src1, Src2);
       fcsel(SubRegSize.Scalar, Dst, Src1, Src2, ARMEmitter::Condition::CC_MI);
     }
@@ -315,17 +310,18 @@ DEF_OP(VFMaxScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   // AFP can make this more optimal.
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     if (HostSupportsAFP) {
       // AFP.AH lets fmax behave like x86 max
       fmax(SubRegSize.Scalar, Dst, Src1, Src2);
-    }
-    else {
+    } else {
       fcmp(SubRegSize.Scalar, Src1, Src2);
       fcsel(SubRegSize.Scalar, Dst, Src2, Src1, ARMEmitter::Condition::CC_MI);
     }
@@ -346,9 +342,11 @@ DEF_OP(VFSqrtScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -370,9 +368,11 @@ DEF_OP(VFRSqrtScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -408,9 +408,11 @@ DEF_OP(VFRecpScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -448,31 +450,31 @@ DEF_OP(VFToFScalarInsert) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
 
     switch (Conv) {
-      case 0x0204: { // Half <- Float
-        fcvt(Dst.H(), Src.S());
-        break;
-      }
-      case 0x0208: { // Half <- Double
-        fcvt(Dst.H(), Src.D());
-        break;
-      }
-      case 0x0402: { // Float <- Half
-        fcvt(Dst.S(), Src.H());
-        break;
-      }
-      case 0x0802: { // Double <- Half
-        fcvt(Dst.D(), Src.H());
-        break;
-      }
-      case 0x0804: { // Double <- Float
-        fcvt(Dst.D(), Src.S());
-        break;
-      }
-      case 0x0408: { // Float <- Double
-        fcvt(Dst.S(), Src.D());
-        break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
+    case 0x0204: { // Half <- Float
+      fcvt(Dst.H(), Src.S());
+      break;
+    }
+    case 0x0208: { // Half <- Double
+      fcvt(Dst.H(), Src.D());
+      break;
+    }
+    case 0x0402: { // Float <- Half
+      fcvt(Dst.S(), Src.H());
+      break;
+    }
+    case 0x0802: { // Double <- Half
+      fcvt(Dst.D(), Src.H());
+      break;
+    }
+    case 0x0804: { // Double <- Float
+      fcvt(Dst.D(), Src.S());
+      break;
+    }
+    case 0x0408: { // Float <- Double
+      fcvt(Dst.S(), Src.D());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
     }
   };
 
@@ -500,12 +502,10 @@ DEF_OP(VSToFVectorInsert) {
     if (ElementSize == 4) {
       if (HasTwoElements) {
         scvtf(ARMEmitter::SubRegSize::i32Bit, Dst.D(), Src.D());
-      }
-      else {
+      } else {
         scvtf(ARMEmitter::ScalarRegSize::i32Bit, Dst.S(), Src.S());
       }
-    }
-    else {
+    } else {
       scvtf(ARMEmitter::ScalarRegSize::i64Bit, Dst.D(), Src.D());
     }
   };
@@ -532,34 +532,31 @@ DEF_OP(VSToFGPRInsert) {
     auto Src = *std::get_if<ARMEmitter::Register>(&SrcVar);
 
     switch (Conv) {
-      case 0x0204: { // Half <- int32_t
-        scvtf(ARMEmitter::Size::i32Bit, Dst.H(), Src);
-        break;
-      }
-      case 0x0208: { // Half <- int64_t
-        scvtf(ARMEmitter::Size::i64Bit, Dst.H(), Src);
-        break;
-      }
-      case 0x0404: { // Float <- int32_t
-        scvtf(ARMEmitter::Size::i32Bit, Dst.S(), Src);
-        break;
-      }
-      case 0x0408: { // Float <- int64_t
-        scvtf(ARMEmitter::Size::i64Bit, Dst.S(), Src);
-        break;
-      }
-      case 0x0804: { // Double <- int32_t
-        scvtf(ARMEmitter::Size::i32Bit, Dst.D(), Src);
-        break;
-      }
-      case 0x0808: { // Double <- int64_t
-        scvtf(ARMEmitter::Size::i64Bit, Dst.D(), Src);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled conversion mask: Mask=0x{:04x}",
-                         Conv);
-        break;
+    case 0x0204: { // Half <- int32_t
+      scvtf(ARMEmitter::Size::i32Bit, Dst.H(), Src);
+      break;
+    }
+    case 0x0208: { // Half <- int64_t
+      scvtf(ARMEmitter::Size::i64Bit, Dst.H(), Src);
+      break;
+    }
+    case 0x0404: { // Float <- int32_t
+      scvtf(ARMEmitter::Size::i32Bit, Dst.S(), Src);
+      break;
+    }
+    case 0x0408: { // Float <- int64_t
+      scvtf(ARMEmitter::Size::i64Bit, Dst.S(), Src);
+      break;
+    }
+    case 0x0804: { // Double <- int32_t
+      scvtf(ARMEmitter::Size::i32Bit, Dst.D(), Src);
+      break;
+    }
+    case 0x0808: { // Double <- int64_t
+      scvtf(ARMEmitter::Size::i64Bit, Dst.D(), Src);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled conversion mask: Mask=0x{:04x}", Conv); break;
     }
   };
 
@@ -579,9 +576,11 @@ DEF_OP(VFToIScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   const auto RoundMode = Op->Round;
 
@@ -589,21 +588,11 @@ DEF_OP(VFToIScalarInsert) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
 
     switch (RoundMode) {
-      case IR::Round_Nearest:
-        frintn(SubRegSize.Scalar, Dst, Src);
-        break;
-      case IR::Round_Negative_Infinity:
-        frintm(SubRegSize.Scalar, Dst, Src);
-        break;
-      case IR::Round_Positive_Infinity:
-        frintp(SubRegSize.Scalar, Dst, Src);
-        break;
-      case IR::Round_Towards_Zero:
-        frintz(SubRegSize.Scalar, Dst, Src);
-        break;
-      case IR::Round_Host:
-        frinti(SubRegSize.Scalar, Dst, Src);
-        break;
+    case IR::Round_Nearest: frintn(SubRegSize.Scalar, Dst, Src); break;
+    case IR::Round_Negative_Infinity: frintm(SubRegSize.Scalar, Dst, Src); break;
+    case IR::Round_Positive_Infinity: frintp(SubRegSize.Scalar, Dst, Src); break;
+    case IR::Round_Towards_Zero: frintz(SubRegSize.Scalar, Dst, Src); break;
+    case IR::Round_Host: frinti(SubRegSize.Scalar, Dst, Src); break;
     }
   };
 
@@ -622,69 +611,61 @@ DEF_OP(VFCMPScalarInsert) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   const auto ZeroUpperBits = Op->ZeroUpperBits;
   const auto Is256Bit = IROp->Size == Core::CPUState::XMM_AVX_REG_SIZE;
 
   auto ScalarEmitEQ = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmeq(Dst.H(), Src1.H(), Src2.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmeq(SubRegSize.Scalar, Dst, Src1, Src2);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmeq(Dst.H(), Src1.H(), Src2.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, Dst, Src1, Src2); break;
+    default: break;
     }
   };
   auto ScalarEmitLT = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmgt(Dst.H(), Src2.H(), Src1.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmgt(SubRegSize.Scalar, Dst, Src2, Src1);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmgt(Dst.H(), Src2.H(), Src1.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmgt(SubRegSize.Scalar, Dst, Src2, Src1); break;
+    default: break;
     }
   };
   auto ScalarEmitLE = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmge(Dst.H(), Src2.H(), Src1.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmge(SubRegSize.Scalar, Dst, Src2, Src1);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmge(Dst.H(), Src2.H(), Src1.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmge(SubRegSize.Scalar, Dst, Src2, Src1); break;
+    default: break;
     }
   };
   auto ScalarEmitUNO = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmge(VTMP1.H(), Src1.H(), Src2.H());
-        fcmgt(VTMP2.H(), Src2.H(), Src1.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmge(SubRegSize.Scalar, VTMP1, Src1, Src2);
-        fcmgt(SubRegSize.Scalar, VTMP2, Src2, Src1);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmge(VTMP1.H(), Src1.H(), Src2.H());
+      fcmgt(VTMP2.H(), Src2.H(), Src1.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit:
+      fcmge(SubRegSize.Scalar, VTMP1, Src1, Src2);
+      fcmgt(SubRegSize.Scalar, VTMP2, Src2, Src1);
+      break;
+    default: break;
     }
     // If the destination is a temporary then it is going to do an insert after the operation.
     // This means this operation can avoid a redundant insert in this case.
@@ -701,24 +682,20 @@ DEF_OP(VFCMPScalarInsert) {
         constexpr auto Predicate = ARMEmitter::PReg::p0;
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
   };
   auto ScalarEmitNEQ = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmeq(VTMP1.H(), Src1.H(), Src2.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmeq(SubRegSize.Scalar, VTMP1, Src1, Src2);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmeq(VTMP1.H(), Src1.H(), Src2.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, VTMP1, Src1, Src2); break;
+    default: break;
     }
     // If the destination is a temporary then it is going to do an insert after the operation.
     // This means this operation can avoid a redundant insert in this case.
@@ -734,26 +711,24 @@ DEF_OP(VFCMPScalarInsert) {
         constexpr auto Predicate = ARMEmitter::PReg::p0;
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
   };
   auto ScalarEmitORD = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
-      case ARMEmitter::ScalarRegSize::i16Bit: {
-        fcmge(VTMP1.H(), Src1.H(), Src2.H());
-        fcmgt(VTMP2.H(), Src2.H(), Src1.H());
-        break;
-      }
-      case ARMEmitter::ScalarRegSize::i32Bit:
-      case ARMEmitter::ScalarRegSize::i64Bit:
-        fcmge(SubRegSize.Scalar, VTMP1, Src1, Src2);
-        fcmgt(SubRegSize.Scalar, VTMP2, Src2, Src1);
-        break;
-      default:
-        break;
+    case ARMEmitter::ScalarRegSize::i16Bit: {
+      fcmge(VTMP1.H(), Src1.H(), Src2.H());
+      fcmgt(VTMP2.H(), Src2.H(), Src1.H());
+      break;
+    }
+    case ARMEmitter::ScalarRegSize::i32Bit:
+    case ARMEmitter::ScalarRegSize::i64Bit:
+      fcmge(SubRegSize.Scalar, VTMP1, Src1, Src2);
+      fcmgt(SubRegSize.Scalar, VTMP2, Src2, Src1);
+      break;
+    default: break;
     }
     // If the destination is a temporary then it is going to do an insert after the operation.
     // This means this operation can avoid a redundant insert in this case.
@@ -769,8 +744,7 @@ DEF_OP(VFCMPScalarInsert) {
         constexpr auto Predicate = ARMEmitter::PReg::p0;
         ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
         mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
-      }
-      else {
+      } else {
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
@@ -804,17 +778,15 @@ DEF_OP(VectorZero) {
     mov_imm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), 0);
   } else {
     switch (OpSize) {
-      case 8: {
-        movi(ARMEmitter::SubRegSize::i64Bit, Dst.D(), 0);
-        break;
-      }
-      case 16: {
-        movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
-        break;
+    case 8: {
+      movi(ARMEmitter::SubRegSize::i64Bit, Dst.D(), 0);
+      break;
+    }
+    case 16: {
+      movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize); break;
     }
   }
 }
@@ -828,10 +800,15 @@ DEF_OP(VectorImm) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   const auto Dst = GetVReg(Node);
 
@@ -841,8 +818,7 @@ DEF_OP(VectorImm) {
       // SVE dup uses sign extension where VectorImm wants zext
       LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Immediate);
       dup(SubRegSize, Dst.Z(), TMP1);
-    }
-    else {
+    } else {
       dup_imm(SubRegSize, Dst.Z(), static_cast<int8_t>(Op->Immediate));
     }
   } else {
@@ -850,8 +826,7 @@ DEF_OP(VectorImm) {
       // movi with 64bit element size doesn't do what we want here
       LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->Immediate) << Op->ShiftAmount);
       dup(SubRegSize, Dst.Q(), TMP1.R());
-    }
-    else {
+    } else {
       movi(SubRegSize, Dst.Q(), Op->Immediate, Op->ShiftAmount);
     }
   }
@@ -863,22 +838,18 @@ DEF_OP(LoadNamedVectorConstant) {
 
   const auto Dst = GetVReg(Node);
   switch (Op->Constant) {
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO:
-      movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
-      return;
-    default:
-      // Intentionally doing nothing.
-      break;
+  case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO: movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0); return;
+  default:
+    // Intentionally doing nothing.
+    break;
   }
 
   if (HostSupportsSVE128) {
     switch (Op->Constant) {
-      case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT:
-        index(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), 0, 1);
-        return;
-      default:
-        // Intentionally doing nothing.
-        break;
+    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT: index(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), 0, 1); return;
+    default:
+      // Intentionally doing nothing.
+      break;
     }
   }
   // Load the pointer.
@@ -903,24 +874,12 @@ DEF_OP(LoadNamedVectorConstant) {
 
   auto MemOperand = GenerateMemOperand(OpSize, Op->Constant, STATE);
   switch (OpSize) {
-    case 1:
-      ldrb(Dst, MemOperand);
-      break;
-    case 2:
-      ldrh(Dst, MemOperand);
-      break;
-    case 4:
-      ldr(Dst.S(), MemOperand);
-      break;
-    case 8:
-      ldr(Dst.D(), MemOperand);
-      break;
-    case 16:
-      ldr(Dst.Q(), MemOperand);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-      break;
+  case 1: ldrb(Dst, MemOperand); break;
+  case 2: ldrh(Dst, MemOperand); break;
+  case 4: ldr(Dst.S(), MemOperand); break;
+  case 8: ldr(Dst.D(), MemOperand); break;
+  case 16: ldr(Dst.Q(), MemOperand); break;
+  default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
   }
 }
 DEF_OP(LoadNamedVectorIndexedConstant) {
@@ -933,29 +892,17 @@ DEF_OP(LoadNamedVectorIndexedConstant) {
   ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant]));
 
   switch (OpSize) {
-    case 1:
-      ldrb(Dst, TMP1, Op->Index);
-      break;
-    case 2:
-      ldrh(Dst, TMP1, Op->Index);
-      break;
-    case 4:
-      ldr(Dst.S(), TMP1, Op->Index);
-      break;
-    case 8:
-      ldr(Dst.D(), TMP1, Op->Index);
-      break;
-    case 16:
-      ldr(Dst.Q(), TMP1, Op->Index);
-      break;
-    case 32: {
-      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, Op->Index);
-      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-      break;
+  case 1: ldrb(Dst, TMP1, Op->Index); break;
+  case 2: ldrh(Dst, TMP1, Op->Index); break;
+  case 4: ldr(Dst.S(), TMP1, Op->Index); break;
+  case 8: ldr(Dst.D(), TMP1, Op->Index); break;
+  case 16: ldr(Dst.Q(), TMP1, Op->Index); break;
+  case 32: {
+    add(ARMEmitter::Size::i64Bit, TMP1, TMP1, Op->Index);
+    ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
   }
 }
 
@@ -967,47 +914,45 @@ DEF_OP(VMov) {
   const auto Source = GetVReg(Op->Source.ID());
 
   switch (OpSize) {
-    case 1: {
-      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-      ins(ARMEmitter::SubRegSize::i8Bit, VTMP1, 0, Source, 0);
-      mov(Dst.Q(), VTMP1.Q());
-      break;
+  case 1: {
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+    ins(ARMEmitter::SubRegSize::i8Bit, VTMP1, 0, Source, 0);
+    mov(Dst.Q(), VTMP1.Q());
+    break;
+  }
+  case 2: {
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+    ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 0, Source, 0);
+    mov(Dst.Q(), VTMP1.Q());
+    break;
+  }
+  case 4: {
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+    ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 0, Source, 0);
+    mov(Dst.Q(), VTMP1.Q());
+    break;
+  }
+  case 8: {
+    mov(Dst.D(), Source.D());
+    break;
+  }
+  case 16: {
+    if (HostSupportsSVE256 || Dst.Idx() != Source.Idx()) {
+      mov(Dst.Q(), Source.Q());
     }
-    case 2: {
-      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-      ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 0, Source, 0);
-      mov(Dst.Q(), VTMP1.Q());
-      break;
+    break;
+  }
+  case 32: {
+    // NOTE: If, in the distant future we support larger moves, or registers
+    //       (*cough* AVX-512 *cough*) make sure to change this to treat
+    //       256-bit moves with zero extending behavior instead of doing only
+    //       a regular SVE move into a 512-bit register.
+    if (Dst.Idx() != Source.Idx()) {
+      mov(Dst.Z(), Source.Z());
     }
-    case 4: {
-      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-      ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 0, Source, 0);
-      mov(Dst.Q(), VTMP1.Q());
-      break;
-    }
-    case 8: {
-      mov(Dst.D(), Source.D());
-      break;
-    }
-    case 16: {
-      if (HostSupportsSVE256 || Dst.Idx() != Source.Idx()) {
-        mov(Dst.Q(), Source.Q());
-      }
-      break;
-    }
-    case 32: {
-      // NOTE: If, in the distant future we support larger moves, or registers
-      //       (*cough* AVX-512 *cough*) make sure to change this to treat
-      //       256-bit moves with zero extending behavior instead of doing only
-      //       a regular SVE move into a 512-bit register.
-      if (Dst.Idx() != Source.Idx()) {
-        mov(Dst.Z(), Source.Z());
-      }
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
-      break;
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize); break;
   }
 }
 
@@ -1088,10 +1033,15 @@ DEF_OP(VAdd) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     add(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1113,10 +1063,15 @@ DEF_OP(VSub) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1138,10 +1093,15 @@ DEF_OP(VUQAdd) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uqadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1163,10 +1123,15 @@ DEF_OP(VUQSub) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uqsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1188,10 +1153,15 @@ DEF_OP(VSQAdd) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1213,10 +1183,15 @@ DEF_OP(VSQSub) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1239,10 +1214,15 @@ DEF_OP(VAddP) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1279,11 +1259,15 @@ DEF_OP(VFAddV) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE || OpSize == Core::CPUState::XMM_AVX_REG_SIZE, "Only AVX and SSE size supported");
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE || OpSize == Core::CPUState::XMM_AVX_REG_SIZE, "Only AVX and SSE size "
+                                                                                                                "supported");
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1297,8 +1281,7 @@ DEF_OP(VFAddV) {
     if (ElementSize == 4) {
       faddp(SubRegSize.Vector, Dst.Q(), Vector.Q(), Vector.Q());
       faddp(SubRegSize.Scalar, Dst, Vector);
-    }
-    else {
+    } else {
       faddp(SubRegSize.Scalar, Dst, Vector);
     }
   }
@@ -1316,10 +1299,15 @@ DEF_OP(VAddV) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     // SVE doesn't have an equivalent ADDV instruction, so we make do
@@ -1339,8 +1327,7 @@ DEF_OP(VAddV) {
   } else {
     if (ElementSize == 8) {
       addp(SubRegSize.Scalar, Dst, Vector);
-    }
-    else {
+    } else {
       addv(SubRegSize.Vector, Dst.Q(), Vector.Q());
     }
   }
@@ -1358,10 +1345,15 @@ DEF_OP(VUMinV) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B;
@@ -1384,10 +1376,15 @@ DEF_OP(VUMaxV) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B;
@@ -1411,10 +1408,15 @@ DEF_OP(VURAvg) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -1449,10 +1451,15 @@ DEF_OP(VAbs) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     abs(SubRegSize, Dst.Z(), PRED_TMP_32B.Merging(), Src.Z());
@@ -1479,29 +1486,32 @@ DEF_OP(VFAbs) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fabs(SubRegSize, Dst.Z(), PRED_TMP_32B.Merging(), Src.Z());
   } else {
     if (ElementSize == OpSize) {
       switch (ElementSize) {
-        case 2: {
-          fabs(Dst.H(), Src.H());
-          break;
-        }
-        case 4: {
-          fabs(Dst.S(), Src.S());
-          break;
-        }
-        case 8: {
-          fabs(Dst.D(), Src.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fabs(Dst.H(), Src.H());
+        break;
+      }
+      case 4: {
+        fabs(Dst.S(), Src.S());
+        break;
+      }
+      case 8: {
+        fabs(Dst.D(), Src.D());
+        break;
+      }
+      default: break;
       }
     } else {
       // Vector
@@ -1524,10 +1534,15 @@ DEF_OP(VPopcount) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1555,29 +1570,32 @@ DEF_OP(VFAdd) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fadd(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4: {
-          fadd(Dst.S(), Vector1.S(), Vector2.S());
-          break;
-        }
-        case 8: {
-          fadd(Dst.D(), Vector1.D(), Vector2.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fadd(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4: {
+        fadd(Dst.S(), Vector1.S(), Vector2.S());
+        break;
+      }
+      case 8: {
+        fadd(Dst.D(), Vector1.D(), Vector2.D());
+        break;
+      }
+      default: break;
       }
     } else {
       fadd(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -1598,9 +1616,13 @@ DEF_OP(VFAddP) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1637,29 +1659,32 @@ DEF_OP(VFSub) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fsub(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4: {
-          fsub(Dst.S(), Vector1.S(), Vector2.S());
-          break;
-        }
-        case 8: {
-          fsub(Dst.D(), Vector1.D(), Vector2.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fsub(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4: {
+        fsub(Dst.S(), Vector1.S(), Vector2.S());
+        break;
+      }
+      case 8: {
+        fsub(Dst.D(), Vector1.D(), Vector2.D());
+        break;
+      }
+      default: break;
       }
     } else {
       fsub(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -1681,29 +1706,32 @@ DEF_OP(VFMul) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fmul(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fmul(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4: {
-          fmul(Dst.S(), Vector1.S(), Vector2.S());
-          break;
-        }
-        case 8: {
-          fmul(Dst.D(), Vector1.D(), Vector2.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fmul(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4: {
+        fmul(Dst.S(), Vector1.S(), Vector2.S());
+        break;
+      }
+      case 8: {
+        fmul(Dst.D(), Vector1.D(), Vector2.D());
+        break;
+      }
+      default: break;
       }
     } else {
       fmul(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -1725,9 +1753,13 @@ DEF_OP(VFDiv) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -1751,20 +1783,19 @@ DEF_OP(VFDiv) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fdiv(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4: {
-          fdiv(Dst.S(), Vector1.S(), Vector2.S());
-          break;
-        }
-        case 8: {
-          fdiv(Dst.D(), Vector1.D(), Vector2.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fdiv(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4: {
+        fdiv(Dst.S(), Vector1.S(), Vector2.S());
+        break;
+      }
+      case 8: {
+        fdiv(Dst.D(), Vector1.D(), Vector2.D());
+        break;
+      }
+      default: break;
       }
     } else {
       fdiv(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -1786,9 +1817,13 @@ DEF_OP(VFMin) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   // NOTE: We don't directly use FMIN here for any of the implementations,
   //       because it has undesirable NaN handling behavior (it sets
@@ -1810,10 +1845,9 @@ DEF_OP(VFMin) {
     //    predicate bits from the second vector into the
     //    same temporary.
     // 5. Move temporary into the destination register and we're done.
-    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(),
-          Vector2.Z(), Vector1.Z());
+    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(), Vector2.Z(), Vector1.Z());
     not_(ComparePred, Mask.Zeroing(), ComparePred);
-    
+
     if (Dst == Vector1) {
       // Trivial case where Vector1 is also the destination.
       // We don't need to move any data around in this case (aside from the merge).
@@ -1829,23 +1863,22 @@ DEF_OP(VFMin) {
       mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
       switch (ElementSize) {
-        case 2: {
-          fcmp(Vector1.H(), Vector2.H());
-          fcsel(Dst.H(), Vector1.H(), Vector2.H(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        case 4: {
-          fcmp(Vector1.S(), Vector2.S());
-          fcsel(Dst.S(), Vector1.S(), Vector2.S(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        case 8: {
-          fcmp(Vector1.D(), Vector2.D());
-          fcsel(Dst.D(), Vector1.D(), Vector2.D(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fcmp(Vector1.H(), Vector2.H());
+        fcsel(Dst.H(), Vector1.H(), Vector2.H(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      case 4: {
+        fcmp(Vector1.S(), Vector2.S());
+        fcsel(Dst.S(), Vector1.S(), Vector2.S(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      case 8: {
+        fcmp(Vector1.D(), Vector2.D());
+        fcsel(Dst.D(), Vector1.D(), Vector2.D(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      default: break;
       }
 
       // Restore NZCV
@@ -1855,13 +1888,11 @@ DEF_OP(VFMin) {
         // Destination is already Vector1, need to insert Vector2 on false.
         fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
         bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      }
-      else if (Dst == Vector2) {
+      } else if (Dst == Vector2) {
         // Destination is already Vector2, Invert arguments and insert Vector1 on false.
         fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
         bif(Dst.Q(), Vector1.Q(), VTMP1.Q());
-      }
-      else {
+      } else {
         // Dst is not either source, need a move.
         fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
         mov(Dst.Q(), Vector1.Q());
@@ -1885,9 +1916,13 @@ DEF_OP(VFMax) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   // NOTE: See VFMin implementation for reasons why we
   //       don't just use FMAX/FMIN for these implementations.
@@ -1896,8 +1931,7 @@ DEF_OP(VFMax) {
     const auto Mask = PRED_TMP_32B;
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(),
-          Vector2.Z(), Vector1.Z());
+    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(), Vector2.Z(), Vector1.Z());
 
     if (Dst == Vector1) {
       // Trivial case where Vector1 is also the destination.
@@ -1914,23 +1948,22 @@ DEF_OP(VFMax) {
       mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
       switch (ElementSize) {
-        case 2: {
-          fcmp(Vector1.H(), Vector2.H());
-          fcsel(Dst.H(), Vector2.H(), Vector1.H(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        case 4: {
-          fcmp(Vector1.S(), Vector2.S());
-          fcsel(Dst.S(), Vector2.S(), Vector1.S(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        case 8: {
-          fcmp(Vector1.D(), Vector2.D());
-          fcsel(Dst.D(), Vector2.D(), Vector1.D(), ARMEmitter::Condition::CC_MI);
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fcmp(Vector1.H(), Vector2.H());
+        fcsel(Dst.H(), Vector2.H(), Vector1.H(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      case 4: {
+        fcmp(Vector1.S(), Vector2.S());
+        fcsel(Dst.S(), Vector2.S(), Vector1.S(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      case 8: {
+        fcmp(Vector1.D(), Vector2.D());
+        fcsel(Dst.D(), Vector2.D(), Vector1.D(), ARMEmitter::Condition::CC_MI);
+        break;
+      }
+      default: break;
       }
 
       // Restore NZCV
@@ -1940,13 +1973,11 @@ DEF_OP(VFMax) {
         // Destination is already Vector1, need to insert Vector2 on true.
         fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
         bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      }
-      else if (Dst == Vector2) {
+      } else if (Dst == Vector2) {
         // Destination is already Vector2, Invert arguments and insert Vector1 on true.
         fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
         bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
-      }
-      else {
+      } else {
         // Dst is not either source, need a move.
         fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
         mov(Dst.Q(), Vector1.Q());
@@ -1969,9 +2000,13 @@ DEF_OP(VFRecp) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1995,28 +2030,26 @@ DEF_OP(VFRecp) {
 
       fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
       switch (ElementSize) {
-        case 2: {
-          fdiv(Dst.H(), VTMP1.H(), Vector.H());
-          break;
-        }
-        case 4: {
-          fdiv(Dst.S(), VTMP1.S(), Vector.S());
-          break;
-        }
-        case 8: {
-          fdiv(Dst.D(), VTMP1.D(), Vector.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fdiv(Dst.H(), VTMP1.H(), Vector.H());
+        break;
+      }
+      case 4: {
+        fdiv(Dst.S(), VTMP1.S(), Vector.S());
+        break;
+      }
+      case 8: {
+        fdiv(Dst.D(), VTMP1.D(), Vector.D());
+        break;
+      }
+      default: break;
       }
     } else {
       if (ElementSize == 4 && HostSupportsRPRES) {
         // RPRES gives enough precision for this.
         if (OpSize == 8) {
           frecpe(SubRegSize.Vector, Dst.D(), Vector.D());
-        }
-        else {
+        } else {
           frecpe(SubRegSize.Vector, Dst.Q(), Vector.Q());
         }
         return;
@@ -2041,9 +2074,13 @@ DEF_OP(VFSqrt) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2052,20 +2089,19 @@ DEF_OP(VFSqrt) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fsqrt(Dst.H(), Vector.H());
-          break;
-        }
-        case 4: {
-          fsqrt(Dst.S(), Vector.S());
-          break;
-        }
-        case 8: {
-          fsqrt(Dst.D(), Vector.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fsqrt(Dst.H(), Vector.H());
+        break;
+      }
+      case 4: {
+        fsqrt(Dst.S(), Vector.S());
+        break;
+      }
+      case 8: {
+        fsqrt(Dst.D(), Vector.D());
+        break;
+      }
+      default: break;
       }
     } else {
       fsqrt(SubRegSize, Dst.Q(), Vector.Q());
@@ -2086,9 +2122,13 @@ DEF_OP(VFRSqrt) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2111,31 +2151,29 @@ DEF_OP(VFRSqrt) {
 
       fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0);
       switch (ElementSize) {
-        case 2: {
-          fsqrt(VTMP2.H(), Vector.H());
-          fdiv(Dst.H(), VTMP1.H(), VTMP2.H());
-          break;
-        }
-        case 4: {
-          fsqrt(VTMP2.S(), Vector.S());
-          fdiv(Dst.S(), VTMP1.S(), VTMP2.S());
-          break;
-        }
-        case 8: {
-          fsqrt(VTMP2.D(), Vector.D());
-          fdiv(Dst.D(), VTMP1.D(), VTMP2.D());
-          break;
-        }
-        default:
-          break;
+      case 2: {
+        fsqrt(VTMP2.H(), Vector.H());
+        fdiv(Dst.H(), VTMP1.H(), VTMP2.H());
+        break;
+      }
+      case 4: {
+        fsqrt(VTMP2.S(), Vector.S());
+        fdiv(Dst.S(), VTMP1.S(), VTMP2.S());
+        break;
+      }
+      case 8: {
+        fsqrt(VTMP2.D(), Vector.D());
+        fdiv(Dst.D(), VTMP1.D(), VTMP2.D());
+        break;
+      }
+      default: break;
       }
     } else {
       if (ElementSize == 4 && HostSupportsRPRES) {
         // RPRES gives enough precision for this.
         if (OpSize == 8) {
           frsqrte(SubRegSize.Vector, Dst.D(), Vector.D());
-        }
-        else {
+        } else {
           frsqrte(SubRegSize.Vector, Dst.Q(), Vector.Q());
         }
         return;
@@ -2156,14 +2194,19 @@ DEF_OP(VNeg) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
-  const auto Vector= GetVReg(Op->Vector.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2185,9 +2228,13 @@ DEF_OP(VFNeg) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2226,10 +2273,15 @@ DEF_OP(VUMin) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2249,21 +2301,20 @@ DEF_OP(VUMin) {
     }
   } else {
     switch (ElementSize) {
-      case 1:
-      case 2:
-      case 4: {
-        umin(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
-        break;
-      }
-      case 8: {
-        cmhi(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        mov(VTMP2.Q(), Vector1.Q());
-        bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-        mov(Dst.Q(), VTMP2.Q());
-        break;
-      }
-      default:
-        break;
+    case 1:
+    case 2:
+    case 4: {
+      umin(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      break;
+    }
+    case 8: {
+      cmhi(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      mov(VTMP2.Q(), Vector1.Q());
+      bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
+      mov(Dst.Q(), VTMP2.Q());
+      break;
+    }
+    default: break;
     }
   }
 }
@@ -2281,10 +2332,15 @@ DEF_OP(VSMin) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2304,21 +2360,20 @@ DEF_OP(VSMin) {
     }
   } else {
     switch (ElementSize) {
-      case 1:
-      case 2:
-      case 4: {
-        smin(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
-        break;
-      }
-      case 8: {
-        cmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
-        mov(VTMP2.Q(), Vector1.Q());
-        bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-        mov(Dst.Q(), VTMP2.Q());
-        break;
-      }
-      default:
-        break;
+    case 1:
+    case 2:
+    case 4: {
+      smin(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      break;
+    }
+    case 8: {
+      cmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+      mov(VTMP2.Q(), Vector1.Q());
+      bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
+      mov(Dst.Q(), VTMP2.Q());
+      break;
+    }
+    default: break;
     }
   }
 }
@@ -2336,10 +2391,15 @@ DEF_OP(VUMax) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2359,21 +2419,20 @@ DEF_OP(VUMax) {
     }
   } else {
     switch (ElementSize) {
-      case 1:
-      case 2:
-      case 4: {
-        umax(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
-        break;
-      }
-      case 8: {
-        cmhi(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        mov(VTMP2.Q(), Vector1.Q());
-        bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-        mov(Dst.Q(), VTMP2.Q());
-        break;
-      }
-      default:
-        break;
+    case 1:
+    case 2:
+    case 4: {
+      umax(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      break;
+    }
+    case 8: {
+      cmhi(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      mov(VTMP2.Q(), Vector1.Q());
+      bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
+      mov(Dst.Q(), VTMP2.Q());
+      break;
+    }
+    default: break;
     }
   }
 }
@@ -2391,10 +2450,15 @@ DEF_OP(VSMax) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2414,21 +2478,20 @@ DEF_OP(VSMax) {
     }
   } else {
     switch (ElementSize) {
-      case 1:
-      case 2:
-      case 4: {
-        smax(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
-        break;
-      }
-      case 8: {
-        cmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        mov(VTMP2.Q(), Vector1.Q());
-        bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
-        mov(Dst.Q(), VTMP2.Q());
-        break;
-      }
-      default:
-        break;
+    case 1:
+    case 2:
+    case 4: {
+      smax(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      break;
+    }
+    case 8: {
+      cmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      mov(VTMP2.Q(), Vector1.Q());
+      bif(VTMP2.Q(), Vector2.Q(), VTMP1.Q());
+      mov(Dst.Q(), VTMP2.Q());
+      break;
+    }
+    default: break;
     }
   }
 }
@@ -2446,10 +2509,15 @@ DEF_OP(VZip) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     zip1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2475,10 +2543,15 @@ DEF_OP(VZip2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     zip2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2504,10 +2577,15 @@ DEF_OP(VUnZip) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uzp1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2533,10 +2611,15 @@ DEF_OP(VUnZip2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uzp2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2562,10 +2645,15 @@ DEF_OP(VTrn) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     trn1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2591,10 +2679,15 @@ DEF_OP(VTrn2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     trn2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2636,30 +2729,24 @@ DEF_OP(VBSL) {
       // Can use BSL without any moves.
       if (OpSize == 8) {
         bsl(Dst.D(), VectorTrue.D(), VectorFalse.D());
-      }
-      else {
+      } else {
         bsl(Dst.Q(), VectorTrue.Q(), VectorFalse.Q());
       }
-    }
-    else if (VectorTrue == Dst) {
+    } else if (VectorTrue == Dst) {
       // Can use BIF without any moves.
       if (OpSize == 8) {
         bif(Dst.D(), VectorFalse.D(), VectorMask.D());
-      }
-      else {
+      } else {
         bif(Dst.Q(), VectorFalse.Q(), VectorMask.Q());
       }
-    }
-    else if (VectorFalse == Dst) {
+    } else if (VectorFalse == Dst) {
       // Can use BIT without any moves.
       if (OpSize == 8) {
         bit(Dst.D(), VectorTrue.D(), VectorMask.D());
-      }
-      else {
+      } else {
         bit(Dst.Q(), VectorTrue.Q(), VectorMask.Q());
       }
-    }
-    else {
+    } else {
       // Needs moves.
       if (OpSize == 8) {
         mov(Dst.D(), VectorMask.D());
@@ -2686,10 +2773,15 @@ DEF_OP(VCMPEQ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
@@ -2730,10 +2822,15 @@ DEF_OP(VCMPEQZ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2778,10 +2875,15 @@ DEF_OP(VCMPGT) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2822,10 +2924,15 @@ DEF_OP(VCMPGTZ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2866,10 +2973,15 @@ DEF_OP(VCMPLTZ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit);
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2911,9 +3023,13 @@ DEF_OP(VFCMPEQ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2926,16 +3042,13 @@ DEF_OP(VFCMPEQ) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmeq(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2);
-          break;
-        default:
-          break;
+      case 2: {
+        fcmeq(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4:
+      case 8: fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2); break;
+      default: break;
       }
     } else {
       fcmeq(SubRegSize.Vector, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -2957,9 +3070,13 @@ DEF_OP(VFCMPNEQ) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2972,16 +3089,13 @@ DEF_OP(VFCMPNEQ) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmeq(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2);
-          break;
-        default:
-          break;
+      case 2: {
+        fcmeq(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4:
+      case 8: fcmeq(SubRegSize.Scalar, Dst, Vector1, Vector2); break;
+      default: break;
       }
       mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
     } else {
@@ -2993,7 +3107,7 @@ DEF_OP(VFCMPNEQ) {
 
 DEF_OP(VFCMPLT) {
   const auto Op = IROp->C<IR::IROp_VFCMPLT>();
-  const auto  OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto IsScalar = ElementSize == OpSize;
@@ -3005,9 +3119,13 @@ DEF_OP(VFCMPLT) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3020,16 +3138,13 @@ DEF_OP(VFCMPLT) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmgt(Dst.H(), Vector2.H(), Vector1.H());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmgt(SubRegSize.Scalar, Dst, Vector2, Vector1);
-          break;
-        default:
-          break;
+      case 2: {
+        fcmgt(Dst.H(), Vector2.H(), Vector1.H());
+        break;
+      }
+      case 4:
+      case 8: fcmgt(SubRegSize.Scalar, Dst, Vector2, Vector1); break;
+      default: break;
       }
     } else {
       fcmgt(SubRegSize.Vector, Dst.Q(), Vector2.Q(), Vector1.Q());
@@ -3051,9 +3166,13 @@ DEF_OP(VFCMPGT) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3066,16 +3185,13 @@ DEF_OP(VFCMPGT) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmgt(Dst.H(), Vector1.H(), Vector2.H());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmgt(SubRegSize.Scalar, Dst, Vector1, Vector2);
-          break;
-        default:
-          break;
+      case 2: {
+        fcmgt(Dst.H(), Vector1.H(), Vector2.H());
+        break;
+      }
+      case 4:
+      case 8: fcmgt(SubRegSize.Scalar, Dst, Vector1, Vector2); break;
+      default: break;
       }
     } else {
       fcmgt(SubRegSize.Vector, Dst.Q(), Vector1.Q(), Vector2.Q());
@@ -3097,9 +3213,13 @@ DEF_OP(VFCMPLE) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3112,16 +3232,13 @@ DEF_OP(VFCMPLE) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmge(Dst.H(), Vector2.H(), Vector1.H());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmge(SubRegSize.Scalar, Dst, Vector2, Vector1);
-          break;
-        default:
-          break;
+      case 2: {
+        fcmge(Dst.H(), Vector2.H(), Vector1.H());
+        break;
+      }
+      case 4:
+      case 8: fcmge(SubRegSize.Scalar, Dst, Vector2, Vector1); break;
+      default: break;
       }
     } else {
       fcmge(SubRegSize.Vector, Dst.Q(), Vector2.Q(), Vector1.Q());
@@ -3144,9 +3261,13 @@ DEF_OP(VFCMPORD) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3163,20 +3284,19 @@ DEF_OP(VFCMPORD) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmge(VTMP1.H(), Vector1.H(), Vector2.H());
-          fcmgt(VTMP2.H(), Vector2.H(), Vector1.H());
-          orr(Dst.D(), VTMP1.D(), VTMP2.D());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmge(SubRegSize.Scalar, VTMP1, Vector1, Vector2);
-          fcmgt(SubRegSize.Scalar, VTMP2, Vector2, Vector1);
-          orr(Dst.D(), VTMP1.D(), VTMP2.D());
-          break;
-        default:
-          break;
+      case 2: {
+        fcmge(VTMP1.H(), Vector1.H(), Vector2.H());
+        fcmgt(VTMP2.H(), Vector2.H(), Vector1.H());
+        orr(Dst.D(), VTMP1.D(), VTMP2.D());
+        break;
+      }
+      case 4:
+      case 8:
+        fcmge(SubRegSize.Scalar, VTMP1, Vector1, Vector2);
+        fcmgt(SubRegSize.Scalar, VTMP2, Vector2, Vector1);
+        orr(Dst.D(), VTMP1.D(), VTMP2.D());
+        break;
+      default: break;
       }
     } else {
       fcmge(SubRegSize.Vector, VTMP1.Q(), Vector1.Q(), Vector2.Q());
@@ -3201,9 +3321,13 @@ DEF_OP(VFCMPUNO) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit);
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3216,22 +3340,21 @@ DEF_OP(VFCMPUNO) {
   } else {
     if (IsScalar) {
       switch (ElementSize) {
-        case 2: {
-          fcmge(VTMP1.H(), Vector1.H(), Vector2.H());
-          fcmgt(VTMP2.H(), Vector2.H(), Vector1.H());
-          orr(Dst.D(), VTMP1.D(), VTMP2.D());
-          mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
-          break;
-        }
-        case 4:
-        case 8:
-          fcmge(SubRegSize.Scalar, VTMP1, Vector1, Vector2);
-          fcmgt(SubRegSize.Scalar, VTMP2, Vector2, Vector1);
-          orr(Dst.D(), VTMP1.D(), VTMP2.D());
-          mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
-          break;
-        default:
-          break;
+      case 2: {
+        fcmge(VTMP1.H(), Vector1.H(), Vector2.H());
+        fcmgt(VTMP2.H(), Vector2.H(), Vector1.H());
+        orr(Dst.D(), VTMP1.D(), VTMP2.D());
+        mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
+        break;
+      }
+      case 4:
+      case 8:
+        fcmge(SubRegSize.Scalar, VTMP1, Vector1, Vector2);
+        fcmgt(SubRegSize.Scalar, VTMP2, Vector2, Vector1);
+        orr(Dst.D(), VTMP1.D(), VTMP2.D());
+        mvn(ARMEmitter::SubRegSize::i8Bit, Dst.D(), Dst.D());
+        break;
+      default: break;
       }
     } else {
       fcmge(SubRegSize.Vector, VTMP1.Q(), Vector1.Q(), Vector2.Q());
@@ -3257,10 +3380,15 @@ DEF_OP(VUShl) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3317,10 +3445,15 @@ DEF_OP(VUShr) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3380,10 +3513,15 @@ DEF_OP(VSShr) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3441,10 +3579,15 @@ DEF_OP(VUShlS) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3476,10 +3619,15 @@ DEF_OP(VUShrS) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3512,9 +3660,13 @@ DEF_OP(VUShrSWide) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3526,12 +3678,10 @@ DEF_OP(VUShrSWide) {
     }
     if (ElementSize == 8) {
       lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
-    }
-    else {
+    } else {
       lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     }
-  }
-  else if (HostSupportsSVE128) {
+  } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
     auto ShiftRegister = ShiftScalar;
@@ -3554,8 +3704,7 @@ DEF_OP(VUShrSWide) {
     }
     if (ElementSize == 8) {
       lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
-    }
-    else {
+    } else {
       lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
     }
   } else {
@@ -3585,9 +3734,13 @@ DEF_OP(VSShrSWide) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3599,12 +3752,10 @@ DEF_OP(VSShrSWide) {
     }
     if (ElementSize == 8) {
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
-    }
-    else {
+    } else {
       asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     }
-  }
-  else if (HostSupportsSVE128) {
+  } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
     auto ShiftRegister = ShiftScalar;
@@ -3627,8 +3778,7 @@ DEF_OP(VSShrSWide) {
     }
     if (ElementSize == 8) {
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
-    }
-    else {
+    } else {
       asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
     }
   } else {
@@ -3658,9 +3808,13 @@ DEF_OP(VUShlSWide) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3672,12 +3826,10 @@ DEF_OP(VUShlSWide) {
     }
     if (ElementSize == 8) {
       lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
-    }
-    else {
+    } else {
       lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     }
-  }
-  else if (HostSupportsSVE128) {
+  } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
 
     auto ShiftRegister = ShiftScalar;
@@ -3700,8 +3852,7 @@ DEF_OP(VUShlSWide) {
     }
     if (ElementSize == 8) {
       lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
-    }
-    else {
+    } else {
       lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), ShiftRegister.Z());
     }
   } else {
@@ -3730,12 +3881,17 @@ DEF_OP(VSShrS) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
-   if (HostSupportsSVE256 && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     // NOTE: SVE ASR is a destructive operation, so we need to
@@ -3770,10 +3926,15 @@ DEF_OP(VInsElement) {
   if (HostSupportsSVE256 && Is256Bit) {
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
     const auto SubRegSize =
-      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+      ElementSize == 1 ?
+        ARMEmitter::SubRegSize::i8Bit :
+      ElementSize == 2 ?
+        ARMEmitter::SubRegSize::i16Bit :
+      ElementSize == 4 ?
+        ARMEmitter::SubRegSize::i32Bit :
+      ElementSize == 8 ?
+        ARMEmitter::SubRegSize::i64Bit :
+        ARMEmitter::SubRegSize::i128Bit;
 
     // Broadcast our source value across a temporary,
     // then combine with the destination.
@@ -3809,14 +3970,18 @@ DEF_OP(VInsElement) {
       // Restore NZCV
       msr(ARMEmitter::SystemRegister::NZCV, TMP1);
     }
-  }
-  else {
+  } else {
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
     const auto SubRegSize =
-      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+      ElementSize == 1 ?
+        ARMEmitter::SubRegSize::i8Bit :
+      ElementSize == 2 ?
+        ARMEmitter::SubRegSize::i16Bit :
+      ElementSize == 4 ?
+        ARMEmitter::SubRegSize::i32Bit :
+      ElementSize == 8 ?
+        ARMEmitter::SubRegSize::i64Bit :
+        ARMEmitter::SubRegSize::i8Bit;
 
     // If nothing aliases the destination, then we can just
     // move the DestVector over and directly insert.
@@ -3860,18 +4025,22 @@ DEF_OP(VDupElement) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     dup(SubRegSize, Dst.Z(), Vector.Z(), Index);
   } else {
     if (Is128Bit) {
       dup(SubRegSize, Dst.Q(), Vector.Q(), Index);
-    }
-    else {
+    } else {
       dup(SubRegSize, Dst.D(), Vector.D(), Index);
     }
   }
@@ -3937,10 +4106,15 @@ DEF_OP(VUShrI) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (BitShift >= (ElementSize * 8)) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
@@ -3986,21 +4160,24 @@ DEF_OP(VUShraI) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     if (Dst == DestVector) {
       usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-    }
-    else {
+    } else {
       if (Dst != Vector) {
         mov(Dst.Z(), DestVector.Z());
         usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-      }
-      else {
+      } else {
         mov(VTMP1.Z(), DestVector.Z());
         usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
         mov(Dst.Z(), VTMP1.Z());
@@ -4009,13 +4186,11 @@ DEF_OP(VUShraI) {
   } else {
     if (Dst == DestVector) {
       usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
-    }
-    else {
+    } else {
       if (Dst != Vector) {
         mov(Dst.Q(), DestVector.Q());
         usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
-      }
-      else {
+      } else {
         mov(VTMP1.Q(), DestVector.Q());
         usra(SubRegSize, VTMP1.Q(), Vector.Q(), BitShift);
         mov(Dst.Q(), VTMP1.Q());
@@ -4037,10 +4212,15 @@ DEF_OP(VSShrI) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4081,10 +4261,15 @@ DEF_OP(VShlI) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
 
   if (BitShift >= (ElementSize * 8)) {
@@ -4130,9 +4315,13 @@ DEF_OP(VUShrNI) {
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     shrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
@@ -4156,9 +4345,13 @@ DEF_OP(VUShrNI2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_16B;
@@ -4197,12 +4390,15 @@ DEF_OP(VSXTL) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
-      (HostSupportsSVE256 && Is256Bit)) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     sunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl(SubRegSize, Dst.D(), Vector.D());
@@ -4221,12 +4417,15 @@ DEF_OP(VSXTL2) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
-      (HostSupportsSVE256 && Is256Bit)) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     sunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl2(SubRegSize, Dst.Q(), Vector.Q());
@@ -4245,12 +4444,15 @@ DEF_OP(VUXTL) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
-      (HostSupportsSVE256 && Is256Bit)) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     uunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl(SubRegSize, Dst.D(), Vector.D());
@@ -4269,12 +4471,15 @@ DEF_OP(VUXTL2) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
-      (HostSupportsSVE256 && Is256Bit)) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl2(SubRegSize, Dst.Q(), Vector.Q());
@@ -4293,9 +4498,13 @@ DEF_OP(VSQXTN) {
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // Note that SVE SQXTNB and SQXTNT are a tad different
@@ -4351,9 +4560,13 @@ DEF_OP(VSQXTN2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // We use the 16 byte mask due to how SPLICE works. We only
@@ -4400,9 +4613,13 @@ DEF_OP(VSQXTNPair) {
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // This combines the SVE versions of VSQXTN/VSQXTN2.
@@ -4424,8 +4641,7 @@ DEF_OP(VSQXTNPair) {
     if (OpSize == 8) {
       zip1(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
       sqxtn(SubRegSize, Dst, Dst);
-    }
-    else {
+    } else {
       if (Dst == VectorUpper) {
         // If the destination overlaps the upper then we need to move it temporarily.
         mov(VTMP1.Q(), VectorUpper.Q());
@@ -4449,9 +4665,13 @@ DEF_OP(VSQXTUN) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqxtunb(SubRegSize, Dst.Z(), Vector.Z());
@@ -4474,9 +4694,13 @@ DEF_OP(VSQXTUN2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // NOTE: See VSQXTN2 implementation for an in-depth explanation
@@ -4525,9 +4749,13 @@ DEF_OP(VSQXTUNPair) {
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
 
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // This combines the SVE versions of VSQXTUN/VSQXTUN2.
@@ -4549,8 +4777,7 @@ DEF_OP(VSQXTUNPair) {
     if (OpSize == 8) {
       zip1(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
       sqxtun(SubRegSize, Dst, Dst);
-    }
-    else {
+    } else {
       if (Dst == VectorUpper) {
         // If the destination overlaps the upper then we need to move it temporarily.
         mov(VTMP1.Q(), VectorUpper.Q());
@@ -4575,10 +4802,15 @@ DEF_OP(VSRSHR) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4591,8 +4823,7 @@ DEF_OP(VSRSHR) {
   } else {
     if (OpSize == 8) {
       srshr(SubRegSize, Dst.D(), Vector.D(), BitShift);
-    }
-    else {
+    } else {
       srshr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
     }
   }
@@ -4611,10 +4842,15 @@ DEF_OP(VSQSHL) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4627,8 +4863,7 @@ DEF_OP(VSQSHL) {
   } else {
     if (OpSize == 8) {
       sqshl(SubRegSize, Dst.D(), Vector.D(), BitShift);
-    }
-    else {
+    } else {
       sqshl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
     }
   }
@@ -4647,10 +4882,15 @@ DEF_OP(VMul) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     mul(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -4672,9 +4912,13 @@ DEF_OP(VUMull) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     umullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4698,9 +4942,13 @@ DEF_OP(VSMull) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     smullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4724,9 +4972,13 @@ DEF_OP(VUMull2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     umullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4750,9 +5002,13 @@ DEF_OP(VSMull2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     smullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4777,45 +5033,47 @@ DEF_OP(VUMulH) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
 
   const auto SubRegSizeLarger =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     umulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
-  }
-  else if (HostSupportsSVE128 && Is128Bit) {
+  } else if (HostSupportsSVE128 && Is128Bit) {
     if (HostSupportsSVE256) {
       // Do predicated to ensure upper-bits get zero as expected
       const auto Mask = PRED_TMP_16B.Merging();
 
       if (Dst == Vector1) {
         umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
-      }
-      else if (Dst == Vector2) {
+      } else if (Dst == Vector2) {
         umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
-      }
-      else {
+      } else {
         // Destination register doesn't overlap either source.
         // NOTE: SVE umulh (predicated) is a destructive operation.
         movprfx(Dst.Z(), Vector1.Z());
         umulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
       }
-    }
-    else {
+    } else {
       umulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
     }
-  }
-  else if (OpSize == 8) {
+  } else if (OpSize == 8) {
     umull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
     shrn(SubRegSize, Dst.D(), Dst.D(), ElementSize * 8);
-  }
-  else {
+  } else {
     // ASIMD doesn't have a umulh. Need to emulate.
     umull2(SubRegSizeLarger, VTMP1.Q(), Vector1.Q(), Vector2.Q());
     umull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
@@ -4837,45 +5095,47 @@ DEF_OP(VSMulH) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
 
   const auto SubRegSizeLarger =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     smulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
-  }
-  else if (HostSupportsSVE128 && Is128Bit) {
+  } else if (HostSupportsSVE128 && Is128Bit) {
     if (HostSupportsSVE256) {
       // Do predicated to ensure upper-bits get zero as expected
       const auto Mask = PRED_TMP_16B.Merging();
 
       if (Dst == Vector1) {
         smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
-      }
-      else if (Dst == Vector2) {
+      } else if (Dst == Vector2) {
         smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
-      }
-      else {
+      } else {
         // Destination register doesn't overlap either source.
         // NOTE: SVE umulh (predicated) is a destructive operation.
         movprfx(Dst.Z(), Vector1.Z());
         smulh(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
       }
-    }
-    else {
+    } else {
       smulh(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
     }
-  }
-  else if (OpSize == 8) {
+  } else if (OpSize == 8) {
     smull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
     shrn(SubRegSize, Dst.D(), Dst.D(), ElementSize * 8);
-  }
-  else {
+  } else {
     // ASIMD doesn't have a umulh. Need to emulate.
     smull2(SubRegSizeLarger, VTMP1.Q(), Vector1.Q(), Vector2.Q());
     smull(SubRegSizeLarger, Dst.D(), Vector1.D(), Vector2.D());
@@ -4896,9 +5156,13 @@ DEF_OP(VUABDL) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // To mimic the behavior of AdvSIMD UABDL, we need to get the
@@ -4927,9 +5191,13 @@ DEF_OP(VUABDL2) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ?
+      ARMEmitter::SubRegSize::i64Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // To mimic the behavior of AdvSIMD UABDL, we need to get the
@@ -4954,24 +5222,21 @@ DEF_OP(VTBL1) {
   const auto VectorTable = GetVReg(Op->VectorTable.ID());
 
   switch (OpSize) {
-    case 8: {
-      tbl(Dst.D(), VectorTable.Q(), VectorIndices.D());
-      break;
-    }
-    case 16: {
-      tbl(Dst.Q(), VectorTable.Q(), VectorIndices.Q());
-      break;
-    }
-    case 32: {
-      LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                          "Host does not support SVE. Cannot perform 256-bit table lookup");
+  case 8: {
+    tbl(Dst.D(), VectorTable.Q(), VectorIndices.D());
+    break;
+  }
+  case 16: {
+    tbl(Dst.Q(), VectorTable.Q(), VectorIndices.Q());
+    break;
+  }
+  case 32: {
+    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
-      tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable.Z(), VectorIndices.Z());
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
-      break;
+    tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable.Z(), VectorIndices.Z());
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
   }
 }
 
@@ -4989,37 +5254,32 @@ DEF_OP(VTBL2) {
     if (OpSize == 32) {
       mov(VTMP1.Z(), VectorTable1.Z());
       mov(VTMP2.Z(), VectorTable2.Z());
-    }
-    else {
+    } else {
       mov(VTMP1.Q(), VectorTable1.Q());
       mov(VTMP2.Q(), VectorTable2.Q());
     }
 
-    static_assert(ARMEmitter::AreVectorsSequential(VTMP1, VTMP2),
-                  "VTMP1 and VTMP2 must be sequential in order to use double-table TBL");
+    static_assert(ARMEmitter::AreVectorsSequential(VTMP1, VTMP2), "VTMP1 and VTMP2 must be sequential in order to use double-table TBL");
     VectorTable1 = VTMP1;
     VectorTable2 = VTMP2;
   }
 
   switch (OpSize) {
-    case 8: {
-      tbl(Dst.D(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.D());
-      break;
-    }
-    case 16: {
-      tbl(Dst.Q(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.Q());
-      break;
-    }
-    case 32: {
-      LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                          "Host does not support SVE. Cannot perform 256-bit table lookup");
+  case 8: {
+    tbl(Dst.D(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.D());
+    break;
+  }
+  case 16: {
+    tbl(Dst.Q(), VectorTable1.Q(), VectorTable2.Q(), VectorIndices.Q());
+    break;
+  }
+  case 32: {
+    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
-      tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable1.Z(), VectorTable2.Z(), VectorIndices.Z());
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
-      break;
+    tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable1.Z(), VectorTable2.Z(), VectorIndices.Z());
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
   }
 }
 
@@ -5034,50 +5294,44 @@ DEF_OP(VTBX1) {
 
   if (Dst != VectorSrcDst) {
     switch (OpSize) {
-      case 8: {
-        mov(VTMP1.D(), VectorSrcDst.D());
-        tbx(VTMP1.D(), VectorTable.Q(), VectorIndices.D());
-        mov(Dst.D(), VTMP1.D());
-        break;
-      }
-      case 16: {
-        mov(VTMP1.Q(), VectorSrcDst.Q());
-        tbx(VTMP1.Q(), VectorTable.Q(), VectorIndices.Q());
-        mov(Dst.Q(), VTMP1.Q());
-        break;
-      }
-      case 32: {
-        LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                            "Host does not support SVE. Cannot perform 256-bit table lookup");
-        mov(VTMP1.Z(), VectorSrcDst.Z());
-        tbx(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), VectorTable.Z(), VectorIndices.Z());
-        mov(Dst.Z(), VTMP1.Z());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
-        break;
+    case 8: {
+      mov(VTMP1.D(), VectorSrcDst.D());
+      tbx(VTMP1.D(), VectorTable.Q(), VectorIndices.D());
+      mov(Dst.D(), VTMP1.D());
+      break;
+    }
+    case 16: {
+      mov(VTMP1.Q(), VectorSrcDst.Q());
+      tbx(VTMP1.Q(), VectorTable.Q(), VectorIndices.Q());
+      mov(Dst.Q(), VTMP1.Q());
+      break;
+    }
+    case 32: {
+      LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
+      mov(VTMP1.Z(), VectorSrcDst.Z());
+      tbx(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), VectorTable.Z(), VectorIndices.Z());
+      mov(Dst.Z(), VTMP1.Z());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
     }
   } else {
     switch (OpSize) {
-      case 8: {
-        tbx(VectorSrcDst.D(), VectorTable.Q(), VectorIndices.D());
-        break;
-      }
-      case 16: {
-        tbx(VectorSrcDst.Q(), VectorTable.Q(), VectorIndices.Q());
-        break;
-      }
-      case 32: {
-        LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
-                            "Host does not support SVE. Cannot perform 256-bit table lookup");
+    case 8: {
+      tbx(VectorSrcDst.D(), VectorTable.Q(), VectorIndices.D());
+      break;
+    }
+    case 16: {
+      tbx(VectorSrcDst.Q(), VectorTable.Q(), VectorIndices.Q());
+      break;
+    }
+    case 32: {
+      LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
-        tbx(ARMEmitter::SubRegSize::i8Bit, VectorSrcDst.Z(), VectorTable.Z(), VectorIndices.Z());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
-        break;
+      tbx(ARMEmitter::SubRegSize::i8Bit, VectorSrcDst.Z(), VectorTable.Z(), VectorIndices.Z());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
     }
   }
 }
@@ -5093,30 +5347,26 @@ DEF_OP(VRev32) {
   const auto Vector = GetVReg(Op->Vector.ID());
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2, "Invalid size");
-  const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i16Bit;
+  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i16Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (ElementSize) {
-      case 1: {
-        revb(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
-        break;
-      }
-      case 2: {
-        revh(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize);
-        break;
+    case 1: {
+      revb(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+      break;
+    }
+    case 2: {
+      revh(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize); break;
     }
   } else {
     if (OpSize == 8) {
       rev32(SubRegSize, Dst.D(), Vector.D());
-    }
-    else {
+    } else {
       rev32(SubRegSize, Dst.Q(), Vector.Q());
     }
   }
@@ -5135,35 +5385,36 @@ DEF_OP(VRev64) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
   const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
+    ElementSize == 1 ?
+      ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (ElementSize) {
-      case 1: {
-        revb(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
-        break;
-      }
-      case 2: {
-        revh(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
-        break;
-      }
-      case 4: {
-        revw(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize);
-        break;
+    case 1: {
+      revb(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
+      break;
+    }
+    case 2: {
+      revh(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
+      break;
+    }
+    case 4: {
+      revw(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize); break;
     }
   } else {
     if (OpSize == 8) {
       rev64(SubRegSize, Dst.D(), Vector.D());
-    }
-    else {
+    } else {
       rev64(SubRegSize, Dst.Q(), Vector.Q());
     }
   }
@@ -5183,10 +5434,12 @@ DEF_OP(VFCADD) {
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   LOGMAN_THROW_A_FMT(Op->Rotate == 90 || Op->Rotate == 270, "Invalidate Rotate");
   const auto SubRegSize =
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit;
-  const auto Rotate =
-    Op->Rotate == 90 ? ARMEmitter::Rotation::ROTATE_90 : ARMEmitter::Rotation::ROTATE_270;
+    ElementSize == 2 ?
+      ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ?
+      ARMEmitter::SubRegSize::i32Bit :
+      ARMEmitter::SubRegSize::i64Bit;
+  const auto Rotate = Op->Rotate == 90 ? ARMEmitter::Rotation::ROTATE_90 : ARMEmitter::Rotation::ROTATE_270;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -5209,13 +5462,11 @@ DEF_OP(VFCADD) {
   } else {
     if (OpSize == 8) {
       fcadd(SubRegSize, Dst.D(), Vector1.D(), Vector2.D(), Rotate);
-    }
-    else {
+    } else {
       fcadd(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q(), Rotate);
     }
   }
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

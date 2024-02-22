@@ -12,8 +12,7 @@
 extern "C" void IntInstruction();
 
 #pragma GCC diagnostic ignored "-Wattributes" // Suppress warning in case control-flow checks aren't enabled
-__attribute__((naked, nocf_check))
-static void InvalidINT() {
+__attribute__((naked, nocf_check)) static void InvalidINT() {
   __asm volatile(R"(
   IntInstruction:
   int 0x2d;
@@ -29,7 +28,7 @@ constexpr int EXPECTED_SIGNAL = SIGSEGV;
 
 TEST_CASE("Signals: Invalid INT") {
   capturing_handler_skip = 2;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);

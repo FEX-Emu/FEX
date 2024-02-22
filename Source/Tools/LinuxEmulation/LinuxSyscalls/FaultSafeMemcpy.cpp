@@ -3,9 +3,9 @@
 
 namespace FEX::HLE::FaultSafeMemcpy {
 #ifdef _M_ARM_64
-__attribute__((naked))
-size_t CopyFromUser(void *Dest, const void* Src, size_t Size) {
-  __asm volatile(R"(
+__attribute__((naked)) size_t CopyFromUser(void* Dest, const void* Src, size_t Size) {
+  __asm volatile(
+    R"(
   // Early exit if a memcpy of size zero.
   cbz x2, 2f;
 
@@ -19,13 +19,13 @@ size_t CopyFromUser(void *Dest, const void* Src, size_t Size) {
 2:
     mov x0, 0;
     ret;
-  )"
-  ::: "memory");
+  )" ::
+      : "memory");
 }
 
-__attribute__((naked))
-size_t CopyToUser(void *Dest, const void* Src, size_t Size) {
-  __asm volatile(R"(
+__attribute__((naked)) size_t CopyToUser(void* Dest, const void* Src, size_t Size) {
+  __asm volatile(
+    R"(
   // Early exit if a memcpy of size zero.
   cbz x2, 2f;
 
@@ -39,34 +39,31 @@ size_t CopyToUser(void *Dest, const void* Src, size_t Size) {
 2:
     mov x0, 0;
     ret;
-  )"
-  ::: "memory");
+  )" ::
+      : "memory");
 }
 
 extern "C" uint64_t CopyFromUser_FaultInst;
-void * const CopyFromUser_FaultLocation = &CopyFromUser_FaultInst;
+void* const CopyFromUser_FaultLocation = &CopyFromUser_FaultInst;
 
 extern "C" uint64_t CopyToUser_FaultInst;
-void * const CopyToUser_FaultLocation = &CopyToUser_FaultInst;
+void* const CopyToUser_FaultLocation = &CopyToUser_FaultInst;
 
 bool IsFaultLocation(uint64_t PC) {
-  return reinterpret_cast<void*>(PC) == CopyFromUser_FaultLocation ||
-    reinterpret_cast<void*>(PC) == CopyToUser_FaultLocation;
+  return reinterpret_cast<void*>(PC) == CopyFromUser_FaultLocation || reinterpret_cast<void*>(PC) == CopyToUser_FaultLocation;
 }
 
 #else
-size_t CopyFromUser(void *Dest, const void* Src, size_t Size) {
+size_t CopyFromUser(void* Dest, const void* Src, size_t Size) {
   memcpy(Dest, Src, Size);
   return Size;
 }
 
-size_t CopyToUser(void *Dest, const void* Src, size_t Size) {
+size_t CopyToUser(void* Dest, const void* Src, size_t Size) {
   memcpy(Dest, Src, Size);
   return Size;
 }
 
-bool IsFaultLocation(uint64_t PC) {
-  return false;
-}
+bool IsFaultLocation(uint64_t PC) { return false; }
 #endif
-}
+} // namespace FEX::HLE::FaultSafeMemcpy

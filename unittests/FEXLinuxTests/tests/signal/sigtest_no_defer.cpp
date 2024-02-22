@@ -11,7 +11,7 @@ volatile int count2 = 0;
 #define NUMCOUNT 10
 #define SIGN SIGTSTP
 
-void sig_handler(int signum, siginfo_t *info, void *context) {
+void sig_handler(int signum, siginfo_t* info, void* context) {
   printf("Inside handler function\n");
   if (count != 0) {
     printf("SA_NODEFER bug\n");

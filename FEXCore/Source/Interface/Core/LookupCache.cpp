@@ -13,8 +13,8 @@ $end_info$
 #include "Interface/Core/LookupCache.h"
 
 namespace FEXCore {
-LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
-  : BlockLinks_mbr { fextl::pmr::get_default_resource() }
+LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
+  : BlockLinks_mbr {fextl::pmr::get_default_resource()}
   , ctx {CTX} {
 
   TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
@@ -78,5 +78,4 @@ void LookupCache::ClearCache() {
   BlockList.clear();
 }
 
-}
-
+} // namespace FEXCore

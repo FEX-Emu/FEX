@@ -11,8 +11,7 @@
 
 extern "C" void IntInstruction();
 
-__attribute__((naked))
-static void CauseInt() {
+__attribute__((naked)) static void CauseInt() {
   __asm volatile(R"(
   IntInstruction:
   int 1;
@@ -48,7 +47,7 @@ TEST_CASE("sigaction: no siginfo") {
   // This is how Linux allows an application to modify its context on signal return.
   // This unit test is testing this by incrementing EIP by 2.
   capturing_handler_skip = 2;
-  ActionHandler act{};
+  ActionHandler act {};
   act.handler = (void*)CapturingHandler_non_realtime;
   act.sa_flags = 0;
   syscall(SYS_sigaction, SIGSEGV, &act, nullptr);
@@ -67,7 +66,7 @@ TEST_CASE("sigaction: siginfo - regparm") {
   // This can be modified by the userspace application as it is part of the uapi.
   // This unit test is testing this by incrementing EIP by 2.
   capturing_handler_skip = 2;
-  ActionHandler act{};
+  ActionHandler act {};
   act.handler = (void*)CapturingHandler_realtime_regparm;
   act.sa_flags = SA_SIGINFO;
   syscall(SYS_sigaction, SIGSEGV, &act, nullptr);
@@ -86,7 +85,7 @@ TEST_CASE("sigaction: no siginfo - regparm") {
   // This can be modified by the userspace application as it is part of the uapi.
   // This unit test is testing this by incrementing EIP by 2.
   capturing_handler_skip = 2;
-  ActionHandler act{};
+  ActionHandler act {};
   act.handler = (void*)CapturingHandler_non_realtime_regparm;
   act.sa_flags = 0;
   syscall(SYS_sigaction, SIGSEGV, &act, nullptr);
@@ -104,7 +103,7 @@ TEST_CASE("sigaction: siginfo - stack") {
   // This can be modified by the userspace application as it is part of the uapi.
   // This unit test is testing this by incrementing EIP by 2.
   capturing_handler_skip = 2;
-  ActionHandler act{};
+  ActionHandler act {};
   act.handler = (void*)CapturingHandler_realtime;
   act.sa_flags = SA_SIGINFO;
   syscall(SYS_sigaction, SIGSEGV, &act, nullptr);
@@ -123,7 +122,7 @@ TEST_CASE("rt_sigaction: no siginfo") {
   // This can be modified by the userspace application as it is part of the uapi.
   // This is how to modify the context on sigreturn.
   capturing_handler_skip = 2;
-  rt_ActionHandler act{};
+  rt_ActionHandler act {};
   act.handler = (void*)CapturingHandler_non_realtime;
   act.sa_flags = 0;
   syscall(SYS_rt_sigaction, SIGSEGV, &act, nullptr, 8);
@@ -141,7 +140,7 @@ TEST_CASE("rt_sigaction: siginfo - regparm") {
   // On 32-bit, a realtime sigaction supports arguments being received on the stack AND regparm.
   // This unit test ensures that the regparm implementation is working correctly.
   capturing_handler_skip = 2;
-  rt_ActionHandler act{};
+  rt_ActionHandler act {};
   act.handler = (void*)CapturingHandler_realtime_regparm;
   act.sa_flags = SA_SIGINFO;
   syscall(SYS_rt_sigaction, SIGSEGV, &act, nullptr, 8);
@@ -159,7 +158,7 @@ TEST_CASE("rt_sigaction: siginfo - stack") {
   // On 32-bit, a realtime sigaction supports arguments being received on the stack AND regparm.
   // This unit test ensures that the stack implementation is working correctly.
   capturing_handler_skip = 2;
-  rt_ActionHandler act{};
+  rt_ActionHandler act {};
   act.handler = (void*)CapturingHandler_realtime;
   act.sa_flags = SA_SIGINFO;
   syscall(SYS_rt_sigaction, SIGSEGV, &act, nullptr, 8);
@@ -176,7 +175,7 @@ TEST_CASE("rt_sigaction: siginfo - stack") {
 TEST_CASE("sigaction: siginfo - glibc") {
   // Test to ensure that regular glibc sigaction works.
   capturing_handler_skip = 2;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler_realtime_glibc_helper;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);

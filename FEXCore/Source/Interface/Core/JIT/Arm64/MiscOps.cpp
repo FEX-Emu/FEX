@@ -17,7 +17,7 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(GuestOpcode) {
   auto Op = IROp->C<IR::IROp_GuestOpcode>();
@@ -28,16 +28,10 @@ DEF_OP(GuestOpcode) {
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {
-    case IR::Fence_Load.Val:
-      dmb(FEXCore::ARMEmitter::BarrierScope::LD);
-      break;
-    case IR::Fence_LoadStore.Val:
-      dmb(FEXCore::ARMEmitter::BarrierScope::SY);
-      break;
-    case IR::Fence_Store.Val:
-      dmb(FEXCore::ARMEmitter::BarrierScope::ST);
-      break;
-    default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
+  case IR::Fence_Load.Val: dmb(FEXCore::ARMEmitter::BarrierScope::LD); break;
+  case IR::Fence_LoadStore.Val: dmb(FEXCore::ARMEmitter::BarrierScope::SY); break;
+  case IR::Fence_Store.Val: dmb(FEXCore::ARMEmitter::BarrierScope::ST); break;
+  default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
 }
 
@@ -55,7 +49,7 @@ DEF_OP(Break) {
     .err_code = Op->Reason.ErrorRegister,
   };
 
-  uint64_t Constant{};
+  uint64_t Constant {};
   memcpy(&Constant, &State, sizeof(State));
 
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant);
@@ -136,8 +130,7 @@ DEF_OP(Print) {
   if (IsGPR(Op->Value.ID())) {
     mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value.ID()));
     ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue));
-  }
-  else {
+  } else {
     fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetVReg(Op->Value.ID()), false);
     fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetVReg(Op->Value.ID()), true);
     ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue));
@@ -146,12 +139,10 @@ DEF_OP(Print) {
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     if (IsGPR(Op->Value.ID())) {
       GenerateIndirectRuntimeCall<void, uint64_t>(ARMEmitter::Reg::r3);
-    }
-    else {
+    } else {
       GenerateIndirectRuntimeCall<void, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
     }
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r3);
   }
 
@@ -217,9 +208,7 @@ DEF_OP(ProcessorID) {
   orr(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ShiftType::LSL, 12);
 }
 #else
-DEF_OP(ProcessorID) {
-  ERROR_AND_DIE_FMT("Unsupported");
-}
+DEF_OP(ProcessorID) { ERROR_AND_DIE_FMT("Unsupported"); }
 #endif
 
 DEF_OP(RDRAND) {
@@ -231,8 +220,7 @@ DEF_OP(RDRAND) {
 
   if (Op->GetReseeded) {
     mrs(Dst.first, ARMEmitter::SystemRegister::RNDRRS);
-  }
-  else {
+  } else {
     mrs(Dst.first, ARMEmitter::SystemRegister::RNDR);
   }
 
@@ -240,10 +228,7 @@ DEF_OP(RDRAND) {
   cset(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Condition::CC_NE);
 }
 
-DEF_OP(Yield) {
-  yield();
-}
+DEF_OP(Yield) { yield(); }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

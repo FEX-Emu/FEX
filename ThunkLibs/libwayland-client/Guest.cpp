@@ -39,15 +39,40 @@ extern "C" const wl_interface wl_callback_interface {};
 #include "thunkgen_guest_libwayland-client.inl"
 
 // See wayland-util.h for documentation on protocol message signatures
-template<char> struct ArgType;
-template<> struct ArgType<'s'> { using type = const char*; };
-template<> struct ArgType<'u'> { using type = uint32_t; };
-template<> struct ArgType<'i'> { using type = int32_t; };
-template<> struct ArgType<'o'> { using type = wl_proxy*; };
-template<> struct ArgType<'n'> { using type = wl_proxy*; };
-template<> struct ArgType<'a'> { using type = wl_array*; };
-template<> struct ArgType<'f'> { using type = wl_fixed_t; };
-template<> struct ArgType<'h'> { using type = int32_t; }; // fd?
+template<char>
+struct ArgType;
+template<>
+struct ArgType<'s'> {
+  using type = const char*;
+};
+template<>
+struct ArgType<'u'> {
+  using type = uint32_t;
+};
+template<>
+struct ArgType<'i'> {
+  using type = int32_t;
+};
+template<>
+struct ArgType<'o'> {
+  using type = wl_proxy*;
+};
+template<>
+struct ArgType<'n'> {
+  using type = wl_proxy*;
+};
+template<>
+struct ArgType<'a'> {
+  using type = wl_array*;
+};
+template<>
+struct ArgType<'f'> {
+  using type = wl_fixed_t;
+};
+template<>
+struct ArgType<'h'> {
+  using type = int32_t;
+}; // fd?
 
 template<char... Signature>
 static uint64_t WaylandAllocateHostTrampolineForGuestListener(void (*callback)()) {
@@ -57,8 +82,7 @@ static uint64_t WaylandAllocateHostTrampolineForGuestListener(void (*callback)()
 
 #define WL_CLOSURE_MAX_ARGS 20
 
-extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
-      void (**callback)(void), void *data) {
+extern "C" int wl_proxy_add_listener(wl_proxy* proxy, void (**callback)(void), void* data) {
   // Replace guest-provided callback table with host-callable function pointers
   // NOTE: A reference to this table is stored in the wl_proxy, so the data
   //       must remain valid until the proxy is destroyed (or another listener
@@ -69,12 +93,12 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
   for (int i = 0; i < fex_wl_get_interface_event_count(proxy); ++i) {
     char event_signature[16];
     fex_wl_get_interface_event_signature(proxy, i, event_signature);
-    auto signature2 = std::string_view { event_signature };
+    auto signature2 = std::string_view {event_signature};
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
     auto [ptr, res] = std::from_chars(signature2.begin(), signature2.end(), since_version, 10);
-    auto signature = std::string { signature2.substr(ptr - signature2.begin()) };
+    auto signature = std::string {signature2.substr(ptr - signature2.begin())};
 
     // ? just indicates that the argument may be null, so it doesn't change the signature
     signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
@@ -178,20 +202,19 @@ extern "C" int wl_proxy_add_listener(wl_proxy *proxy,
     }
   }
 
-  return fexfn_pack_wl_proxy_add_listener(proxy, (void(**)())host_callbacks, data);
+  return fexfn_pack_wl_proxy_add_listener(proxy, (void (**)())host_callbacks, data);
 }
 
-extern "C" void wl_proxy_destroy(wl_proxy *proxy) {
+extern "C" void wl_proxy_destroy(wl_proxy* proxy) {
   // Delete substitute callback table (if any), then the proxy itself
   delete[] (uint64_t*)wl_proxy_get_listener(proxy);
   fexfn_pack_wl_proxy_destroy(proxy);
 }
 
 // Adapted from the Wayland sources
-static const char* get_next_argument_type(const char *signature, char &type)
-{
+static const char* get_next_argument_type(const char* signature, char& type) {
   for (; *signature; ++signature) {
-    switch(*signature) {
+    switch (*signature) {
     case 'i':
     case 'u':
     case 'f':
@@ -199,20 +222,16 @@ static const char* get_next_argument_type(const char *signature, char &type)
     case 'o':
     case 'n':
     case 'a':
-    case 'h':
-      type = *signature;
-      return signature + 1;
+    case 'h': type = *signature; return signature + 1;
 
-    default:
-      continue;
+    default: continue;
     }
   }
   type = 0;
   return signature;
 }
 
-static void wl_argument_from_va_list(const char *signature, wl_argument *args,
-                                     int count, va_list ap) {
+static void wl_argument_from_va_list(const char* signature, wl_argument* args, int count, va_list ap) {
 
   auto sig_iter = signature;
   for (int i = 0; i < count; i++) {
@@ -220,37 +239,20 @@ static void wl_argument_from_va_list(const char *signature, wl_argument *args,
     sig_iter = get_next_argument_type(sig_iter, arg_type);
 
     switch (arg_type) {
-    case 'i':
-      args[i].i = va_arg(ap, int32_t);
-      break;
-    case 'u':
-      args[i].u = va_arg(ap, uint32_t);
-      break;
-    case 'f':
-      args[i].f = va_arg(ap, wl_fixed_t);
-      break;
-    case 's':
-      args[i].s = va_arg(ap, const char *);
-      break;
-    case 'o':
-      args[i].o = va_arg(ap, struct wl_object *);
-      break;
-    case 'n':
-      args[i].o = va_arg(ap, struct wl_object *);
-      break;
-    case 'a':
-      args[i].a = va_arg(ap, struct wl_array *);
-      break;
-    case 'h':
-      args[i].h = va_arg(ap, int32_t);
-      break;
-    case '\0':
-      return;
+    case 'i': args[i].i = va_arg(ap, int32_t); break;
+    case 'u': args[i].u = va_arg(ap, uint32_t); break;
+    case 'f': args[i].f = va_arg(ap, wl_fixed_t); break;
+    case 's': args[i].s = va_arg(ap, const char*); break;
+    case 'o': args[i].o = va_arg(ap, struct wl_object*); break;
+    case 'n': args[i].o = va_arg(ap, struct wl_object*); break;
+    case 'a': args[i].a = va_arg(ap, struct wl_array*); break;
+    case 'h': args[i].h = va_arg(ap, int32_t); break;
+    case '\0': return;
     }
   }
 }
 
-extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
+extern "C" void wl_proxy_marshal(wl_proxy* proxy, uint32_t opcode, ...) {
   wl_argument args[WL_CLOSURE_MAX_ARGS];
   va_list ap;
 
@@ -265,8 +267,7 @@ extern "C" void wl_proxy_marshal(wl_proxy *proxy, uint32_t opcode, ...) {
   wl_proxy_marshal_array(proxy, opcode, args);
 }
 
-extern "C" wl_proxy *wl_proxy_marshal_constructor(wl_proxy *proxy, uint32_t opcode,
-           const wl_interface *interface, ...) {
+extern "C" wl_proxy* wl_proxy_marshal_constructor(wl_proxy* proxy, uint32_t opcode, const wl_interface* interface, ...) {
   wl_argument args[WL_CLOSURE_MAX_ARGS];
   va_list ap;
 
@@ -281,8 +282,7 @@ extern "C" wl_proxy *wl_proxy_marshal_constructor(wl_proxy *proxy, uint32_t opco
   return wl_proxy_marshal_array_constructor(proxy, opcode, args, interface);
 }
 
-extern "C" wl_proxy *wl_proxy_marshal_constructor_versioned(wl_proxy *proxy, uint32_t opcode,
-           const wl_interface *interface, uint32_t version, ...) {
+extern "C" wl_proxy* wl_proxy_marshal_constructor_versioned(wl_proxy* proxy, uint32_t opcode, const wl_interface* interface, uint32_t version, ...) {
   wl_argument args[WL_CLOSURE_MAX_ARGS];
   va_list ap;
 
@@ -297,10 +297,7 @@ extern "C" wl_proxy *wl_proxy_marshal_constructor_versioned(wl_proxy *proxy, uin
   return wl_proxy_marshal_array_constructor_versioned(proxy, opcode, args, interface, version);
 }
 
-extern "C" wl_proxy *wl_proxy_marshal_flags(wl_proxy *proxy, uint32_t opcode,
-           const wl_interface *interface,
-           uint32_t version,
-           uint32_t flags, ...) {
+extern "C" wl_proxy* wl_proxy_marshal_flags(wl_proxy* proxy, uint32_t opcode, const wl_interface* interface, uint32_t version, uint32_t flags, ...) {
   wl_argument args[WL_CLOSURE_MAX_ARGS];
   va_list ap;
 
@@ -340,4 +337,4 @@ void OnInit() {
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_callback_interface), "wl_callback_interface");
 }
 
-LOAD_LIB_INIT(libwayland-client, OnInit)
+LOAD_LIB_INIT(libwayland - client, OnInit)
