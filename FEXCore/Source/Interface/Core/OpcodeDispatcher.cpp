@@ -3115,16 +3115,15 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     // Calculated value gets stored in dst (order is important if dst is same as src)
     StoreResult(GPRClass, Op, Result, -1);
 
-    GenerateFlags_ADD(Op, Result, Dest, Src);
+    GenerateFlags_ADD(Op, Dest, Src);
   }
   else {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
-    Result = _Add(OpSize, Before, Src); // Seperate result just for flags
 
-    GenerateFlags_ADD(Op, Result, Before, Src);
+    GenerateFlags_ADD(Op, Before, Src);
   }
 }
 
@@ -3558,7 +3557,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  GenerateFlags_ADD(Op, Result, Dest, OneConst, false);
+  GenerateFlags_ADD(Op, Dest, OneConst, false);
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
@@ -5181,7 +5180,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   // Flags set
   switch (ALUIROp) {
   case FEXCore::IR::IROps::OP_ADD:
-    GenerateFlags_ADD(Op, Result, Dest, Src);
+    Result = CalculateFlags_ADD(Size, Dest, Src);
   break;
   case FEXCore::IR::IROps::OP_SUB:
     Result = CalculateFlags_SUB(Size, Dest, Src);

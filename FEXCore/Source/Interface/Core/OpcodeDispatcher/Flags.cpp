@@ -336,7 +336,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     case FlagsGenerationType::TYPE_ADD:
       CalculateFlags_ADD(
         CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2,
         CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
@@ -577,19 +576,29 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode 
   return Res;
 }
 
-void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  CalculateAF(Src1, Src2);
-  CalculatePF(Res);
-
+OrderedNode *OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   HandleNZCVWrite();
-  _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+
+  CalculateAF(Src1, Src2);
+
+  OrderedNode *Res;
+  if (SrcSize >= 4) {
+    Res = _AddWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
+  } else {
+    _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    Res = _Add(OpSize::i32Bit, Src1, Src2);
+  }
+
+  CalculatePF(Res);
 
   // We stomped over CF while calculation flags, restore it.
   if (!UpdateCF)
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+
+  return Res;
 }
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {

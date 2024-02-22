@@ -1750,7 +1750,7 @@ private:
   void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
   void CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
   OrderedNode *CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
+  OrderedNode *CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
   void CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
   void CalculateFlags_UMUL(OrderedNode *High);
   void CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
@@ -1829,7 +1829,7 @@ private:
     };
   }
 
-  void GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
+  void GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
     if (!UpdateCF) {
       // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
       CalculateDeferredFlags();
@@ -1837,7 +1837,6 @@ private:
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_ADD,
       .SrcSize = GetSrcSize(Op),
-      .Res = Res,
       .Sources = {
         .TwoSrcImmediate = {
           .Src1 = Src1,
