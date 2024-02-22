@@ -3102,20 +3102,15 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Result;
 
-  const auto Size = GetSrcBitSize(Op);
-  const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
-
   if (Op->Dest.IsGPR()) {
     // If this is a GPR then we can just do an Add
-    Result = _Add(OpSize, Dest, Src);
+    Result = CalculateFlags_ADD(GetSrcSize(Op), Dest, Src);
 
     // Previous value in dest gets stored in src
     StoreResult(GPRClass, Op, Op->Src[0], Dest, -1);
 
     // Calculated value gets stored in dst (order is important if dst is same as src)
     StoreResult(GPRClass, Op, Result, -1);
-
-    GenerateFlags_ADD(Op, Dest, Src);
   }
   else {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
@@ -3123,7 +3118,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
 
-    GenerateFlags_ADD(Op, Before, Src);
+    CalculateFlags_ADD(GetSrcSize(Op), Before, Src);
   }
 }
 
