@@ -835,7 +835,7 @@
         "mov x20, #0xffffffffffffffff",
         "mov x21, x4",
         "sub x4, x21, #0x1 (1)",
-        "eor x27, x21, x20",
+        "eor w27, w21, w20",
         "mov x26, x4",
         "cmn x21, x20"
       ]
@@ -883,7 +883,7 @@
         "add x21, x20, x21",
         "mov x22, x4",
         "add x4, x22, x21",
-        "eor x27, x22, x20",
+        "eor w27, w22, w20",
         "mov x26, x4",
         "adcs xzr, x22, x20"
       ]
@@ -913,7 +913,7 @@
         "add x21, x20, x21",
         "mov x22, x4",
         "sub x4, x22, x21",
-        "eor x27, x22, x20",
+        "eor w27, w22, w20",
         "mov x26, x4",
         "cfinv",
         "sbcs xzr, x22, x20",
@@ -958,7 +958,7 @@
         "mov x20, #0xffffffffffffffff",
         "mov x21, x4",
         "sub x4, x21, x20",
-        "eor x27, x21, x20",
+        "eor w27, w21, w20",
         "mov x26, x4",
         "cmp x21, x20",
         "cfinv"
@@ -1001,7 +1001,7 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
         "sub x26, x4, x20",
-        "eor x27, x4, x20",
+        "eor w27, w4, w20",
         "cmp x4, x20",
         "cfinv"
       ]

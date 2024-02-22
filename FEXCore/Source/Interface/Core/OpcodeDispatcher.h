@@ -1744,7 +1744,7 @@ private:
   OrderedNode *LoadAF();
   void FixupAF();
   void CalculatePF(OrderedNode *Res);
-  void CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateAF(OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
   void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);

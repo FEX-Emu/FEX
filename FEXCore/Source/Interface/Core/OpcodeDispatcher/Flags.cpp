@@ -282,7 +282,7 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
   SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Res);
 }
 
-void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::CalculateAF(OrderedNode *Src1, OrderedNode *Src2) {
   // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
   // there's no sense XOR'ing at all. This affects INC.
   uint64_t Const;
@@ -294,7 +294,7 @@ void OpDispatchBuilder::CalculateAF(OpSize OpSize, OrderedNode *Res, OrderedNode
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit.
-  OrderedNode *XorRes = _Xor(OpSize, Src1, Src2);
+  OrderedNode *XorRes = _Xor(OpSize::i32Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
@@ -491,7 +491,7 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  CalculateAF(OpSize, Res, Src1, Src2);
+  CalculateAF(Src1, Src2);
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
@@ -520,7 +520,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  CalculateAF(OpSize, Res, Src1, Src2);
+  CalculateAF(Src1, Src2);
   CalculatePF(Res);
 
   if (SrcSize >= 4) {
@@ -551,9 +551,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-
-  CalculateAF(OpSize, Res, Src1, Src2);
+  CalculateAF(Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
@@ -571,9 +569,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-
-  CalculateAF(OpSize, Res, Src1, Src2);
+  CalculateAF(Src1, Src2);
   CalculatePF(Res);
 
   // Stash CF before stomping over it
