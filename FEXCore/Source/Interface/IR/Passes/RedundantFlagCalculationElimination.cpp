@@ -128,6 +128,13 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .Replacement = OP_AND,
       };
 
+    case OP_ADDWITHFLAGS:
+      return {
+        .Write = FLAG_NZCV,
+        .CanReplace = true,
+        .Replacement = OP_ADD,
+      };
+
     case OP_SUBWITHFLAGS:
       return {
         .Write = FLAG_NZCV,

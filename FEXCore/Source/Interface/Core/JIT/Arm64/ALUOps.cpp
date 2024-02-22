@@ -85,6 +85,21 @@ DEF_OP(Add) {
   }
 }
 
+DEF_OP(AddWithFlags) {
+  auto Op = IROp->C<IR::IROp_AddWithFlags>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    adds(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), Const);
+  } else {
+    adds(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+  }
+}
+
 DEF_OP(AddShift) {
   auto Op = IROp->C<IR::IROp_AddShift>();
   const uint8_t OpSize = IROp->Size;
