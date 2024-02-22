@@ -16,21 +16,22 @@
 #include <thread>
 
 namespace FEX::AOT {
-void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection &Section) {
+void AOTGenSection(FEXCore::Context::Context* CTX, ELFCodeLoader::LoadedSection& Section) {
   // Make sure this section is executable and big enough
-  if (!Section.Executable || Section.Size < 16)
+  if (!Section.Executable || Section.Size < 16) {
     return;
+  }
 
   fextl::set<uintptr_t> InitialBranchTargets;
 
   // Load the ELF again with symbol parsing this time
-  ELFLoader::ELFContainer container{Section.Filename, "", true};
+  ELFLoader::ELFContainer container {Section.Filename, "", true};
 
   // Add symbols to the branch targets list
   container.AddSymbols([&](ELFLoader::ELFSymbol* sym) {
     auto Destination = sym->Address + Section.ElfBase;
 
-    if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+    if (!(Destination >= Section.Base && Destination <= (Section.Base + Section.Size))) {
       return; // outside of current section, unlikely to be real code
     }
 
@@ -43,7 +44,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
   container.AddUnwindEntries([&](uintptr_t Entry) {
     auto Destination = Entry + Section.ElfBase;
 
-    if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+    if (!(Destination >= Section.Base && Destination <= (Section.Base + Section.Size))) {
       return; // outside of current section, unlikely to be real code
     }
 
@@ -54,7 +55,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
   // Scan the executable section and try to find function entries
   for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
-    uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
+    uint8_t* pCode = (uint8_t*)(Section.Base + Offset);
 
     // Possible CALL <disp32>
     if (*pCode == 0xE8) {
@@ -63,11 +64,13 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
       auto DestinationPtr = (uint8_t*)Destination;
 
-      if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+      if (!(Destination >= Section.Base && Destination <= (Section.Base + Section.Size))) {
         continue; // outside of current section, unlikely to be real code
+      }
 
-      if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0)
+      if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0) {
         continue; // add al, [rax], unlikely to be real code
+      }
 
       InitialBranchTargets.insert(Destination);
     }
@@ -88,7 +91,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
   // Setup BranchTargets, Compiled sets from InitiaBranchTargets
 
   Compiled.insert(InitialBranchTargets.begin(), InitialBranchTargets.end());
-  for (auto BranchTarget: InitialBranchTargets) {
+  for (auto BranchTarget : InitialBranchTargets) {
     BranchTargets.push(BranchTarget);
   }
 
@@ -132,12 +135,14 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
         if (ExternalBranchesLocal.size() > 0) {
           // Add them to the "to process" list
           QueueMutex.lock();
-          for(auto Destination: ExternalBranchesLocal) {
-              if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
-                continue;
-              if (Compiled.contains(Destination))
-                continue;
-              Compiled.insert(Destination);
+          for (auto Destination : ExternalBranchesLocal) {
+            if (!(Destination >= Section.Base && Destination <= (Section.Base + Section.Size))) {
+              continue;
+            }
+            if (Compiled.contains(Destination)) {
+              continue;
+            }
+            Compiled.insert(Destination);
             BranchTargets.push(Destination);
           }
           QueueMutex.unlock();
@@ -156,7 +161,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
   }
 
   // Make sure all threads are finished
-  for (auto & Thread: ThreadPool) {
+  for (auto& Thread : ThreadPool) {
     Thread.join();
   }
 
@@ -164,4 +169,4 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
   LogMan::Msg::IFmt("\nAll Done: {}", counter.load());
 }
-}
+} // namespace FEX::AOT

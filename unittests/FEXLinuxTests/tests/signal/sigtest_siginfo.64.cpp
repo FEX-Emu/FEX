@@ -11,8 +11,7 @@
 extern "C" void IntInstruction();
 
 #pragma GCC diagnostic ignored "-Wattributes" // Suppress warning in case control-flow checks aren't enabled
-__attribute__((naked, nocf_check))
-static void CauseInt() {
+__attribute__((naked, nocf_check)) static void CauseInt() {
   __asm volatile(R"(
   IntInstruction:
   int 1;
@@ -30,7 +29,7 @@ TEST_CASE("siginfo") {
   // On x86-64, the signal handler receives siginfo even if SA_SIGINFO isn't set.
   // This flag is effectively a no-op, not changing behaviour.
   capturing_handler_skip = 2;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = 0;
   sigaction(SIGSEGV, &act, nullptr);

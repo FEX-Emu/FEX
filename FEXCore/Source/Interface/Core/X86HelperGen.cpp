@@ -39,15 +39,15 @@ X86GeneratedCode::X86GeneratedCode() {
   // Falling back to this generated code segment still allows a backtrace to work, just might not show
   // the symbol as VDSO since there is no ELF to parse.
   constexpr std::array<uint8_t, 9> sigreturn_32_code = {
-    0x58, // pop eax
+    0x58,                         // pop eax
     0xb8, 0x77, 0x00, 0x00, 0x00, // mov eax, 0x77
-    0xcd, 0x80, // int 0x80
-    0x90, // nop
+    0xcd, 0x80,                   // int 0x80
+    0x90,                         // nop
   };
 
   constexpr std::array<uint8_t, 7> rt_sigreturn_32_code = {
     0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, 0xad
-    0xcd, 0x80, // int 0x80
+    0xcd, 0x80,                   // int 0x80
   };
 
   CallbackReturn = reinterpret_cast<uint64_t>(CodePtr);
@@ -84,10 +84,9 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
   // We need to have the sigret handler in the lower 32bits of memory space
   // Scan top down and try to allocate a location
   for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= 0x1000) {
-    void *Ptr = ::mmap(reinterpret_cast<void*>(Location), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void* Ptr = ::mmap(reinterpret_cast<void*>(Location), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-    if (Ptr != MAP_FAILED &&
-        reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
+    if (Ptr != MAP_FAILED && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
       // Failed to map in the lower 32bits
       // Try again
       // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
@@ -108,5 +107,4 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
 #endif
 }
 
-}
-
+} // namespace FEXCore

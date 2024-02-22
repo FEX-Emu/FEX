@@ -19,37 +19,37 @@ $end_info$
 #include <unistd.h>
 
 namespace SignalDelegator {
-  struct GuestSigAction;
+struct GuestSigAction;
 }
 
 namespace FEX::HLE {
-  void RegisterSignals(FEX::HLE::SyscallHandler *Handler) {
-    REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame *Frame, int how, const uint64_t *set, uint64_t *oldset) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
-    });
+void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
+  });
 
-    REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, size_t sigsetsize) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(set, sigsetsize);
-    });
+  REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, size_t sigsetsize) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(set, sigsetsize);
+  });
 
-    REGISTER_SYSCALL_IMPL(rt_sigsuspend, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *unewset, size_t sigsetsize) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(unewset, sigsetsize);
-    });
+  REGISTER_SYSCALL_IMPL(rt_sigsuspend, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* unewset, size_t sigsetsize) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(unewset, sigsetsize);
+  });
 
-    REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
-      // Disable userfaultfd until we can properly emulate it
-      // This is okay because the kernel configuration allows you to disable it at compile time
-      return -ENOSYS;
-      uint64_t Result = ::syscall(SYSCALL_DEF(userfaultfd), flags);
-      SYSCALL_ERRNO();
-    });
+  REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::CpuStateFrame* Frame, int flags) -> uint64_t {
+    // Disable userfaultfd until we can properly emulate it
+    // This is okay because the kernel configuration allows you to disable it at compile time
+    return -ENOSYS;
+    uint64_t Result = ::syscall(SYSCALL_DEF(userfaultfd), flags);
+    SYSCALL_ERRNO();
+  });
 
-    REGISTER_SYSCALL_IMPL(signalfd, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const uint64_t *mask, size_t sigsetsize) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, 0);
-    });
+  REGISTER_SYSCALL_IMPL(signalfd, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, 0);
+  });
 
-    REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const uint64_t *mask, size_t sigsetsize, int flags) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
-    });
-  }
+  REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize, int flags) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
+  });
 }
+} // namespace FEX::HLE

@@ -25,79 +25,78 @@
 #include <unistd.h>
 
 namespace Logging {
-  void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-    const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
-    write(STDOUT_FILENO, Output.c_str(), Output.size());
-  }
-
-  void AssertHandler(char const *Message) {
-    const auto Output = fmt::format("[ASSERT] {}\n", Message);
-    write(STDOUT_FILENO, Output.c_str(), Output.size());
-  }
-
-  void ClientMsgHandler(int FD, uint64_t Timestamp, uint32_t PID, uint32_t TID, uint32_t Level, const char* Msg) {
-    const auto Output = fmt::format("[{}][{}][{}.{}] {}\n", LogMan::DebugLevelStr(Level), Timestamp, PID, TID, Msg);
-    write(STDERR_FILENO, Output.c_str(), Output.size());
-  }
+void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+  const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
+  write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
+
+void AssertHandler(const char* Message) {
+  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  write(STDOUT_FILENO, Output.c_str(), Output.size());
+}
+
+void ClientMsgHandler(int FD, uint64_t Timestamp, uint32_t PID, uint32_t TID, uint32_t Level, const char* Msg) {
+  const auto Output = fmt::format("[{}][{}][{}.{}] {}\n", LogMan::DebugLevelStr(Level), Timestamp, PID, TID, Msg);
+  write(STDERR_FILENO, Output.c_str(), Output.size());
+}
+} // namespace Logging
 
 namespace {
-  void ActionHandler(int sig, siginfo_t *info, void *context) {
-    // FEX_TODO("Fix this");
-    if (sig == SIGINT) {
-      // Someone trying to kill us. Shutdown.
-      ProcessPipe::Shutdown();
-      return;
-    }
-    _exit(1);
+void ActionHandler(int sig, siginfo_t* info, void* context) {
+  // FEX_TODO("Fix this");
+  if (sig == SIGINT) {
+    // Someone trying to kill us. Shutdown.
+    ProcessPipe::Shutdown();
+    return;
   }
-
-  void ActionIgnore(int sig, siginfo_t *info, void *context) {
-  }
-
-  void SetupSignals() {
-    // Setup our signal handlers now so we can capture some events
-    struct sigaction act{};
-    act.sa_sigaction = ActionHandler;
-    act.sa_flags = SA_SIGINFO;
-
-    // SIGTERM if something is trying to terminate us
-    sigaction(SIGTERM, &act, nullptr);
-    // SIGINT if something is trying to terminate us
-    sigaction(SIGINT, &act, nullptr);
-
-    // SIGUSR1 just to interrupt syscalls
-    act.sa_sigaction = ActionIgnore;
-    sigaction(SIGUSR1, &act, nullptr);
-
-    // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
-    signal(SIGPIPE, SIG_IGN);
-    // SIGCHLD if squashfuse exits early.
-    // Ignore it for now
-    signal(SIGCHLD, SIG_IGN);
-  }
-
-  /**
-   * @brief Deparents itself by forking and terminating the parent process.
-   */
-  void DeparentSelf() {
-    auto SystemdEnv = getenv("INVOCATION_ID");
-    if (SystemdEnv) {
-      // If FEXServer was launched through systemd then don't deparent, otherwise systemd kills the entire server.
-      return;
-    }
-
-    pid_t pid = fork();
-
-    if (pid != 0) {
-      // Parent is leaving to force this process to deparent itself
-      // This lets this process become the child of whatever the reaper parent is
-      _exit(0);
-    }
-  }
+  _exit(1);
 }
 
-int main(int argc, char **argv, char **const envp) {
+void ActionIgnore(int sig, siginfo_t* info, void* context) {}
+
+void SetupSignals() {
+  // Setup our signal handlers now so we can capture some events
+  struct sigaction act {};
+  act.sa_sigaction = ActionHandler;
+  act.sa_flags = SA_SIGINFO;
+
+  // SIGTERM if something is trying to terminate us
+  sigaction(SIGTERM, &act, nullptr);
+  // SIGINT if something is trying to terminate us
+  sigaction(SIGINT, &act, nullptr);
+
+  // SIGUSR1 just to interrupt syscalls
+  act.sa_sigaction = ActionIgnore;
+  sigaction(SIGUSR1, &act, nullptr);
+
+  // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
+  signal(SIGPIPE, SIG_IGN);
+  // SIGCHLD if squashfuse exits early.
+  // Ignore it for now
+  signal(SIGCHLD, SIG_IGN);
+}
+
+/**
+ * @brief Deparents itself by forking and terminating the parent process.
+ */
+void DeparentSelf() {
+  auto SystemdEnv = getenv("INVOCATION_ID");
+  if (SystemdEnv) {
+    // If FEXServer was launched through systemd then don't deparent, otherwise systemd kills the entire server.
+    return;
+  }
+
+  pid_t pid = fork();
+
+  if (pid != 0) {
+    // Parent is leaving to force this process to deparent itself
+    // This lets this process become the child of whatever the reaper parent is
+    _exit(0);
+  }
+}
+} // namespace
+
+int main(int argc, char** argv, char** const envp) {
   auto Options = FEXServer::Config::Load(argc, argv);
 
   SetupSignals();
@@ -115,12 +114,7 @@ int main(int argc, char **argv, char **const envp) {
     DeparentSelf();
   }
 
-  FEX::Config::LoadConfig(
-    true,
-    false,
-    argc, argv, envp,
-    false, {}
-  );
+  FEX::Config::LoadConfig(true, false, argc, argv, envp, false, {});
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
@@ -139,7 +133,8 @@ int main(int argc, char **argv, char **const envp) {
         PollFD.events = POLLIN | POLLOUT | POLLRDHUP | POLLERR | POLLHUP | POLLNVAL;
 
         // Wait for a result on the pipe that isn't EINTR
-        while (poll(&PollFD, 1, -1) == -1 && errno == EINTR);
+        while (poll(&PollFD, 1, -1) == -1 && errno == EINTR)
+          ;
 
         LogMan::Msg::IFmt("[FEXServer] FEXServer shutdown");
       }

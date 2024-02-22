@@ -35,9 +35,9 @@ std::atomic<bool> waiting_for_modification;
 std::atomic<bool> thread_unblocked;
 std::atomic<int> thread_counter;
 
-char *code;
+char* code;
 
-void *thread(void *) {
+void* thread(void*) {
   printf("Generating code on thread\n");
   code[0] = 0xB8;
   code[1] = 0xAA;
@@ -57,8 +57,9 @@ void *thread(void *) {
   while (!waiting_for_modification)
     ;
 
-  while (fn() == 0xDDCCBBAA)
+  while (fn() == 0xDDCCBBAA) {
     thread_counter++;
+  }
 
   thread_unblocked = true;
   printf("Thread exiting\n");
@@ -68,7 +69,7 @@ void *thread(void *) {
 
 void RunIteration() {
   printf("Starting Iteration\n");
-  code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
+  code = (char*)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
   ready_for_modification = false;
   waiting_for_modification = false;
   thread_unblocked = false;
@@ -105,7 +106,7 @@ void RunIteration() {
   }
 
   printf("Iteration should finish now\n");
-  void *rv;
+  void* rv;
   pthread_join(tid, &rv);
   printf("Iteration done\n");
   munmap(code, 4096);

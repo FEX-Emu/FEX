@@ -8,7 +8,7 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
   LOGMAN_THROW_AA_FMT(Op->Header.Size == 4 || Op->Header.Size == 8, "Invalid size");
@@ -43,5 +43,4 @@ DEF_OP(CreateElementPair) {
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU
