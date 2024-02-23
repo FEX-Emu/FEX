@@ -29,6 +29,7 @@ namespace FEXCore::CPU {
 // TODO: Allow x18 register allocation on Linux in the future to gain one more register.
 
 namespace x64 {
+#ifndef _M_ARM_64EC
   // All but x19 and x29 are caller saved
   constexpr std::array<FEXCore::ARMEmitter::Register, 18> SRA = {
     FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
@@ -82,6 +83,54 @@ namespace x64 {
     FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
     FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
   };
+#else
+   constexpr std::array<FEXCore::ARMEmitter::Register, 18> SRA = {
+    FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r0,
+    FEXCore::ARMEmitter::Reg::r1, FEXCore::ARMEmitter::Reg::r27,
+    // SP's register location isn't specified by the ARM64EC ABI, we choose to use r23
+    FEXCore::ARMEmitter::Reg::r23, FEXCore::ARMEmitter::Reg::r29,
+    FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r26,
+    FEXCore::ARMEmitter::Reg::r2, FEXCore::ARMEmitter::Reg::r3,
+    FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
+    FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r20,
+    FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22,
+    REG_PF, REG_AF,
+  };
+
+  constexpr std::array<FEXCore::ARMEmitter::Register, 7> RA = {
+    FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
+    FEXCore::ARMEmitter::Reg::r14,FEXCore::ARMEmitter::Reg::r15,
+    FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+    FEXCore::ARMEmitter::Reg::r30,
+  };
+
+  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
+    {FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7},
+    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
+    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
+  }};
+
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
+    FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+    FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
+    FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
+    FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+    FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
+    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11,
+    FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
+    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+  };
+
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 14> RAFPR = {
+    FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
+    FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21,
+    FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
+    FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
+    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
+    FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
+  };
+#endif
 
   // I wish this could get constexpr generated from SRA's definition but impossible until libstdc++12, libc++15.
   // SRA GPRs that need to be spilled when calling a function with `preserve_all` ABI.
@@ -370,6 +419,9 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr
     GeneralPairRegisters = x64::RAPair;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
+#ifdef _M_ARM_64EC
+    ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
+#endif
   }
   else {
     ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
@@ -931,7 +983,9 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   // Push the general registers.
   PushGeneralRegisters(TmpReg, ConfiguredDynamicRegisterBase);
 
+#ifndef _M_ARM_64EC
   str(ARMEmitter::XReg::lr, TmpReg, 0);
+#endif
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
@@ -943,7 +997,9 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
   // Pop GPRs second
   PopGeneralRegisters(ConfiguredDynamicRegisterBase);
 
+#ifndef _M_ARM_64EC
   ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+#endif
 }
 
 void Arm64Emitter::SpillForPreserveAllABICall(FEXCore::ARMEmitter::Register TmpReg, bool FPRs) {
