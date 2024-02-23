@@ -1395,9 +1395,15 @@ DEF_OP(Bfe) {
   const auto Src = GetReg(Op->Src.ID());
 
   if (Op->lsb == 0 && Op->Width == 32) {
+    if (Dst == Src) {
+      return; // nop
+    }
     mov(ARMEmitter::Size::i32Bit, Dst, Src);
   } else if (Op->lsb == 0 && Op->Width == 64) {
     LOGMAN_THROW_AA_FMT(OpSize == 8, "Must be 64-bit wide register");
+    if (Dst == Src) {
+      return; // nop
+    }
     mov(ARMEmitter::Size::i64Bit, Dst, Src);
   } else {
     ubfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
