@@ -33,7 +33,7 @@ IRValidation::~IRValidation() {
   NodeIsLive.Free();
 }
 
-bool IRValidation::Run(IREmitter *IREmit) {
+bool IRValidation::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::IRValidation");
 
   bool HadError = false;
@@ -58,7 +58,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 #endif
 
-  IR::RegisterAllocationData * RAData{};
+  IR::RegisterAllocationData* RAData {};
   if (Manager->HasPass("RA")) {
     RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
   }
@@ -74,7 +74,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
     }
 
     const auto BlockID = CurrentIR.GetID(BlockNode);
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
+    BlockInfo* CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto ID = CurrentIR.GetID(CodeNode);
@@ -98,7 +98,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           auto PhyReg = RAData->GetNodeRegister(ID);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
-          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{PhyReg.Class};
+          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType {PhyReg.Class};
 
           // If no register class was assigned
           if (AssignedClass == IR::InvalidClass) {
@@ -113,10 +113,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
           }
 
           // Assigned class wasn't the expected class and it is a non-complex op
-          if (AssignedClass != ExpectedClass &&
-              ExpectedClass != IR::ComplexClass) {
+          if (AssignedClass != ExpectedClass && ExpectedClass != IR::ComplexClass) {
             HadWarning |= true;
-            Warnings << "%" << ID << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
+            Warnings << "%" << ID << ": Destination had register class " << AssignedClass.Val << " When register class "
+                     << ExpectedClass.Val << " Was expected" << std::endl;
           }
         }
       }
@@ -146,60 +146,57 @@ bool IRValidation::Run(IREmitter *IREmit) {
       NodeIsLive.Set(ID.Value);
 
       switch (IROp->Op) {
-        case IR::OP_EXITFUNCTION: {
-          CurrentBlock->HasExit = true;
+      case IR::OP_EXITFUNCTION: {
+        CurrentBlock->HasExit = true;
         break;
+      }
+      case IR::OP_CONDJUMP: {
+        auto Op = IROp->C<IR::IROp_CondJump>();
+
+        OrderedNode* TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
+        OrderedNode* FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
+
+        CurrentBlock->Successors.emplace_back(TrueTargetNode);
+        CurrentBlock->Successors.emplace_back(FalseTargetNode);
+
+        const FEXCore::IR::IROp_Header* TrueTargetOp = CurrentIR.GetOp<IROp_Header>(TrueTargetNode);
+        const FEXCore::IR::IROp_Header* FalseTargetOp = CurrentIR.GetOp<IROp_Header>(FalseTargetNode);
+
+        if (TrueTargetOp->Op != OP_CODEBLOCK) {
+          HadError |= true;
+          Errors << "CondJump %" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
+        } else {
+          auto Block = OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first;
+          Block->second.Predecessors.emplace_back(BlockNode);
         }
-        case IR::OP_CONDJUMP: {
-          auto Op = IROp->C<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
-
-          CurrentBlock->Successors.emplace_back(TrueTargetNode);
-          CurrentBlock->Successors.emplace_back(FalseTargetNode);
-
-          FEXCore::IR::IROp_Header const *TrueTargetOp = CurrentIR.GetOp<IROp_Header>(TrueTargetNode);
-          FEXCore::IR::IROp_Header const *FalseTargetOp = CurrentIR.GetOp<IROp_Header>(FalseTargetNode);
-
-          if (TrueTargetOp->Op != OP_CODEBLOCK) {
-            HadError |= true;
-            Errors << "CondJump %" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
-          }
-          else {
-            auto Block = OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first;
-            Block->second.Predecessors.emplace_back(BlockNode);
-          }
-
-          if (FalseTargetOp->Op != OP_CODEBLOCK) {
-            HadError |= true;
-            Errors << "CondJump %" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
-          }
-          else {
-            auto Block = OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first;
-            Block->second.Predecessors.emplace_back(BlockNode);
-          }
-
-          break;
+        if (FalseTargetOp->Op != OP_CODEBLOCK) {
+          HadError |= true;
+          Errors << "CondJump %" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
+        } else {
+          auto Block = OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first;
+          Block->second.Predecessors.emplace_back(BlockNode);
         }
-        case IR::OP_JUMP: {
-          auto Op = IROp->C<IR::IROp_Jump>();
-          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
-          CurrentBlock->Successors.emplace_back(TargetNode);
 
-          FEXCore::IR::IROp_Header const *TargetOp = CurrentIR.GetOp<IROp_Header>(TargetNode);
-          if (TargetOp->Op != OP_CODEBLOCK) {
-            HadError |= true;
-            Errors << "Jump %" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
-          }
-          else {
-            auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
-            Block->second.Predecessors.emplace_back(BlockNode);
-          }
-          break;
+        break;
+      }
+      case IR::OP_JUMP: {
+        auto Op = IROp->C<IR::IROp_Jump>();
+        OrderedNode* TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
+        CurrentBlock->Successors.emplace_back(TargetNode);
+
+        const FEXCore::IR::IROp_Header* TargetOp = CurrentIR.GetOp<IROp_Header>(TargetNode);
+        if (TargetOp->Op != OP_CODEBLOCK) {
+          HadError |= true;
+          Errors << "Jump %" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
+        } else {
+          auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
+          Block->second.Predecessors.emplace_back(BlockNode);
         }
-        default:
-          // LOGMAN_MSG_A_FMT("Unknown IR Op: {}({})", IROp->Op, FEXCore::IR::GetName(IROp->Op));
+        break;
+      }
+      default:
+        // LOGMAN_MSG_A_FMT("Unknown IR Op: {}({})", IROp->Op, FEXCore::IR::GetName(IROp->Op));
         break;
       }
     }
@@ -242,7 +239,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   }
 
   for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
-    auto [Node, IROp] = CurrentIR.at(IR::NodeID{i})();
+    auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
     if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
       HadError |= true;
       Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
@@ -276,4 +273,4 @@ bool IRValidation::Run(IREmitter *IREmit) {
 fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation() {
   return fextl::make_unique<IRValidation>();
 }
-}
+} // namespace FEXCore::IR::Validation

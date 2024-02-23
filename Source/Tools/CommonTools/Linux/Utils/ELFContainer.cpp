@@ -26,31 +26,27 @@ $end_info$
 
 namespace ELFLoader {
 
-  static ELFContainer::ELFType CheckELFType(uint8_t* Data) {
-    if (Data[EI_MAG0] != ELFMAG0 ||
-        Data[EI_MAG1] != ELFMAG1 ||
-        Data[EI_MAG2] != ELFMAG2 ||
-        Data[EI_MAG3] != ELFMAG3) {
-      return ELFContainer::ELFType::TYPE_NONE;
-    }
-
-    if (Data[EI_CLASS] == ELFCLASS32) {
-      Elf32_Ehdr *Header = reinterpret_cast<Elf32_Ehdr *>(Data);
-      if (Header->e_machine == EM_386) {
-        return ELFContainer::ELFType::TYPE_X86_32;
-      }
-    }
-    else if (Data[EI_CLASS] == ELFCLASS64) {
-      Elf64_Ehdr *Header = reinterpret_cast<Elf64_Ehdr *>(Data);
-      if (Header->e_machine == EM_X86_64) {
-        return ELFContainer::ELFType::TYPE_X86_64;
-      }
-    }
-
-    return ELFContainer::ELFType::TYPE_OTHER_ELF;
+static ELFContainer::ELFType CheckELFType(uint8_t* Data) {
+  if (Data[EI_MAG0] != ELFMAG0 || Data[EI_MAG1] != ELFMAG1 || Data[EI_MAG2] != ELFMAG2 || Data[EI_MAG3] != ELFMAG3) {
+    return ELFContainer::ELFType::TYPE_NONE;
   }
 
-ELFContainer::ELFType ELFContainer::GetELFType(fextl::string const &Filename) {
+  if (Data[EI_CLASS] == ELFCLASS32) {
+    Elf32_Ehdr* Header = reinterpret_cast<Elf32_Ehdr*>(Data);
+    if (Header->e_machine == EM_386) {
+      return ELFContainer::ELFType::TYPE_X86_32;
+    }
+  } else if (Data[EI_CLASS] == ELFCLASS64) {
+    Elf64_Ehdr* Header = reinterpret_cast<Elf64_Ehdr*>(Data);
+    if (Header->e_machine == EM_X86_64) {
+      return ELFContainer::ELFType::TYPE_X86_64;
+    }
+  }
+
+  return ELFContainer::ELFType::TYPE_OTHER_ELF;
+}
+
+ELFContainer::ELFType ELFContainer::GetELFType(const fextl::string& Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -69,7 +65,7 @@ ELFContainer::ELFType ELFContainer::GetELFType(int FD) {
   // We can't use dup since that makes the FD have the same underlying state backing both FDs.
 
   // We need to first determine the file size through fstat.
-  struct stat buf{};
+  struct stat buf {};
   if (fstat(FD, &buf) == -1) {
     // Couldn't get size.
     return ELFType::TYPE_NONE;
@@ -94,7 +90,7 @@ ELFContainer::ELFType ELFContainer::GetELFType(int FD) {
   return CheckELFType(reinterpret_cast<uint8_t*>(&RawFile.at(0)));
 }
 
-ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &RootFS, bool CustomInterpreter) {
+ELFContainer::ELFContainer(const fextl::string& Filename, const fextl::string& RootFS, bool CustomInterpreter) {
   Loaded = true;
   if (!LoadELF(Filename)) {
     LogMan::Msg::EFmt("Couldn't Load ELF file");
@@ -106,16 +102,15 @@ ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &R
     // If we we are dynamic application then we have an interpreter program header
     // We need to load that ELF instead if it exists
     // We are no longer dynamic since we are executing the interpreter
-    const char *RawString{};
+    const char* RawString {};
     if (Mode == MODE_32BIT) {
       RawString = &RawFile.at(InterpreterHeader._32->p_offset);
-    }
-    else {
+    } else {
       RawString = &RawFile.at(InterpreterHeader._64->p_offset);
     }
     fextl::string RootFSLink = RootFS + RawString;
     char Filename[PATH_MAX];
-    while(FHU::Symlinks::IsSymlink(RootFSLink)) {
+    while (FHU::Symlinks::IsSymlink(RootFSLink)) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
@@ -123,22 +118,19 @@ ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &R
       if (FHU::Filesystem::IsAbsolute(SymlinkTarget)) {
         RootFSLink = RootFS;
         RootFSLink += SymlinkTarget;
-      }
-      else {
+      } else {
         break;
       }
     }
     if (LoadELF(RootFSLink)) {
       // Found the interpreter in the rootfs
-    }
-    else if (!LoadELF(RawString)) {
+    } else if (!LoadELF(RawString)) {
       LogMan::Msg::EFmt("Failed to find guest ELF's interpter '{}'", RawString);
       LogMan::Msg::EFmt("Did you forget to set an x86 rootfs? Currently '{}'", RootFS);
       Loaded = false;
       return;
     }
-  }
-  else if (InterpreterHeader._64) {
+  } else if (InterpreterHeader._64) {
     GetDynamicLibs();
   }
 
@@ -148,14 +140,14 @@ ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &R
 
   // Print Information
   // PrintHeader();
-  //PrintSectionHeaders();
-  //PrintProgramHeaders();
-  //PrintSymbolTable();
-  //PrintRelocationTable();
-  //PrintInitArray();
-  //PrintDynamicTable();
+  // PrintSectionHeaders();
+  // PrintProgramHeaders();
+  // PrintSymbolTable();
+  // PrintRelocationTable();
+  // PrintInitArray();
+  // PrintDynamicTable();
 
-  //LOGMAN_THROW_AA_FMT(InterpreterHeader == nullptr, "Can only handle static programs");
+  // LOGMAN_THROW_AA_FMT(InterpreterHeader == nullptr, "Can only handle static programs");
 }
 
 ELFContainer::~ELFContainer() {
@@ -168,7 +160,7 @@ ELFContainer::~ELFContainer() {
   RawFile.clear();
 }
 
-bool ELFContainer::LoadELF(fextl::string const &Filename) {
+bool ELFContainer::LoadELF(const fextl::string& Filename) {
   if (!FEXCore::FileLoading::LoadFile(RawFile, Filename)) {
     return false;
   }
@@ -178,20 +170,16 @@ bool ELFContainer::LoadELF(fextl::string const &Filename) {
   SectionHeaders.clear();
   ProgramHeaders.clear();
 
-  uint8_t *Ident = reinterpret_cast<uint8_t*>(&RawFile.at(0));
+  uint8_t* Ident = reinterpret_cast<uint8_t*>(&RawFile.at(0));
 
-  if (Ident[EI_MAG0] != ELFMAG0 ||
-      Ident[EI_MAG1] != ELFMAG1 ||
-      Ident[EI_MAG2] != ELFMAG2 ||
-      Ident[EI_MAG3] != ELFMAG3) {
+  if (Ident[EI_MAG0] != ELFMAG0 || Ident[EI_MAG1] != ELFMAG1 || Ident[EI_MAG2] != ELFMAG2 || Ident[EI_MAG3] != ELFMAG3) {
     LogMan::Msg::EFmt("ELF missing magic cookie");
     return false;
   }
 
   if (Ident[EI_CLASS] == ELFCLASS32) {
     return LoadELF_32();
-  }
-  else if (Ident[EI_CLASS] == ELFCLASS64) {
+  } else if (Ident[EI_CLASS] == ELFCLASS64) {
     return LoadELF_64();
   }
 
@@ -202,8 +190,7 @@ bool ELFContainer::LoadELF(fextl::string const &Filename) {
 bool ELFContainer::LoadELF_32() {
   Mode = MODE_32BIT;
 
-  memcpy(&Header, reinterpret_cast<Elf32_Ehdr *>(&RawFile.at(0)),
-         sizeof(Elf32_Ehdr));
+  memcpy(&Header, reinterpret_cast<Elf32_Ehdr*>(&RawFile.at(0)), sizeof(Elf32_Ehdr));
   LOGMAN_THROW_AA_FMT(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
   LOGMAN_THROW_AA_FMT(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
 
@@ -215,10 +202,8 @@ bool ELFContainer::LoadELF_32() {
   SectionHeaders.resize(Header._32.e_shnum);
   ProgramHeaders.resize(Header._32.e_phnum);
 
-  Elf32_Shdr *RawShdrs =
-      reinterpret_cast<Elf32_Shdr *>(&RawFile.at(Header._32.e_shoff));
-  Elf32_Phdr *RawPhdrs =
-      reinterpret_cast<Elf32_Phdr *>(&RawFile.at(Header._32.e_phoff));
+  Elf32_Shdr* RawShdrs = reinterpret_cast<Elf32_Shdr*>(&RawFile.at(Header._32.e_shoff));
+  Elf32_Phdr* RawPhdrs = reinterpret_cast<Elf32_Phdr*>(&RawFile.at(Header._32.e_phoff));
 
   for (uint32_t i = 0; i < Header._32.e_shnum; ++i) {
     SectionHeaders[i]._32 = &RawShdrs[i];
@@ -228,7 +213,7 @@ bool ELFContainer::LoadELF_32() {
     ProgramHeaders[i]._32 = &RawPhdrs[i];
     if (ProgramHeaders[i]._32->p_type == PT_INTERP) {
       InterpreterHeader = ProgramHeaders[i];
-      DynamicLinker = reinterpret_cast<char const*>(&RawFile.at(InterpreterHeader._32->p_offset));
+      DynamicLinker = reinterpret_cast<const char*>(&RawFile.at(InterpreterHeader._32->p_offset));
     }
   }
 
@@ -243,8 +228,7 @@ bool ELFContainer::LoadELF_32() {
 bool ELFContainer::LoadELF_64() {
   Mode = MODE_64BIT;
 
-  memcpy(&Header, reinterpret_cast<Elf64_Ehdr *>(&RawFile.at(0)),
-         sizeof(Elf64_Ehdr));
+  memcpy(&Header, reinterpret_cast<Elf64_Ehdr*>(&RawFile.at(0)), sizeof(Elf64_Ehdr));
   LOGMAN_THROW_AA_FMT(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
   LOGMAN_THROW_AA_FMT(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
 
@@ -256,10 +240,8 @@ bool ELFContainer::LoadELF_64() {
   SectionHeaders.resize(Header._64.e_shnum);
   ProgramHeaders.resize(Header._64.e_phnum);
 
-  Elf64_Shdr *RawShdrs =
-      reinterpret_cast<Elf64_Shdr *>(&RawFile.at(Header._64.e_shoff));
-  Elf64_Phdr *RawPhdrs =
-      reinterpret_cast<Elf64_Phdr *>(&RawFile.at(Header._64.e_phoff));
+  Elf64_Shdr* RawShdrs = reinterpret_cast<Elf64_Shdr*>(&RawFile.at(Header._64.e_shoff));
+  Elf64_Phdr* RawPhdrs = reinterpret_cast<Elf64_Phdr*>(&RawFile.at(Header._64.e_phoff));
 
   for (uint32_t i = 0; i < Header._64.e_shnum; ++i) {
     SectionHeaders[i]._64 = &RawShdrs[i];
@@ -269,7 +251,7 @@ bool ELFContainer::LoadELF_64() {
     ProgramHeaders[i]._64 = &RawPhdrs[i];
     if (ProgramHeaders[i]._64->p_type == PT_INTERP) {
       InterpreterHeader = ProgramHeaders[i];
-      DynamicLinker = reinterpret_cast<char const*>(&RawFile.at(InterpreterHeader._64->p_offset));
+      DynamicLinker = reinterpret_cast<const char*>(&RawFile.at(InterpreterHeader._64->p_offset));
     }
   }
 
@@ -284,9 +266,9 @@ bool ELFContainer::LoadELF_64() {
 void ELFContainer::WriteLoadableSections(MemoryWriter Writer, uint64_t Offset) {
   if (Mode == MODE_32BIT) {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf32_Phdr const *hdr = ProgramHeaders.at(i)._32;
+      const Elf32_Phdr* hdr = ProgramHeaders.at(i)._32;
       if (hdr->p_type == PT_LOAD) {
-        //LogMan::Msg::DFmt("PT_LOAD: Base: {} Offset: [0x{:x}, 0x{:x})", Offset, hdr->p_paddr, hdr->p_filesz);
+        // LogMan::Msg::DFmt("PT_LOAD: Base: {} Offset: [0x{:x}, 0x{:x})", Offset, hdr->p_paddr, hdr->p_filesz);
         Writer(&RawFile.at(hdr->p_offset), Offset + hdr->p_paddr, hdr->p_filesz);
       }
 
@@ -294,10 +276,9 @@ void ELFContainer::WriteLoadableSections(MemoryWriter Writer, uint64_t Offset) {
         Writer(&RawFile.at(hdr->p_offset), Offset + hdr->p_paddr, hdr->p_filesz);
       }
     }
-  }
-  else {
+  } else {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf64_Phdr const *hdr = ProgramHeaders.at(i)._64;
+      const Elf64_Phdr* hdr = ProgramHeaders.at(i)._64;
       if (hdr->p_type == PT_LOAD) {
         Writer(&RawFile.at(hdr->p_offset), Offset + hdr->p_paddr, hdr->p_filesz);
       }
@@ -309,27 +290,32 @@ void ELFContainer::WriteLoadableSections(MemoryWriter Writer, uint64_t Offset) {
   }
 }
 
-ELFSymbol const *ELFContainer::GetSymbol(char const *Name) {
+const ELFSymbol* ELFContainer::GetSymbol(const char* Name) {
   auto Sym = SymbolMap.find(Name);
-  if (Sym == SymbolMap.end())
+  if (Sym == SymbolMap.end()) {
     return nullptr;
+  }
   return Sym->second;
 }
-ELFSymbol const *ELFContainer::GetSymbol(uint64_t Address) {
+const ELFSymbol* ELFContainer::GetSymbol(uint64_t Address) {
   auto Sym = SymbolMapByAddress.find(Address);
-  if (Sym == SymbolMapByAddress.end())
+  if (Sym == SymbolMapByAddress.end()) {
     return nullptr;
+  }
   return Sym->second;
 }
-ELFSymbol const *ELFContainer::GetSymbolInRange(RangeType Address) {
+const ELFSymbol* ELFContainer::GetSymbolInRange(RangeType Address) {
   auto Sym = SymbolMapByAddress.upper_bound(Address.first);
-  if (Sym != SymbolMapByAddress.begin())
+  if (Sym != SymbolMapByAddress.begin()) {
     --Sym;
-  if (Sym == SymbolMapByAddress.end())
+  }
+  if (Sym == SymbolMapByAddress.end()) {
     return nullptr;
+  }
 
-  if ((Sym->second->Address + Sym->second->Size) < Address.first)
+  if ((Sym->second->Address + Sym->second->Size) < Address.first) {
     return nullptr;
+  }
 
   return Sym->second;
 }
@@ -341,7 +327,7 @@ void ELFContainer::CalculateMemoryLayouts() {
 
   if (Mode == MODE_32BIT) {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf32_Phdr *hdr = ProgramHeaders.at(i)._32;
+      Elf32_Phdr* hdr = ProgramHeaders.at(i)._32;
       if (hdr->p_memsz > 0) {
         MinPhysAddr = std::min(MinPhysAddr, static_cast<uint64_t>(hdr->p_paddr));
         MaxPhysAddr = std::max(MaxPhysAddr, static_cast<uint64_t>(hdr->p_paddr) + hdr->p_memsz);
@@ -350,10 +336,9 @@ void ELFContainer::CalculateMemoryLayouts() {
         TLSHeader._32 = hdr;
       }
     }
-  }
-  else {
+  } else {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf64_Phdr *hdr = ProgramHeaders.at(i)._64;
+      Elf64_Phdr* hdr = ProgramHeaders.at(i)._64;
 
       // Many elfs have program region labeled .GNU_STACK which is empty and has a null address.
       // It's used to mark the memory protection flags of the stack.
@@ -384,16 +369,16 @@ void ELFContainer::CalculateMemoryLayouts() {
 void ELFContainer::CalculateSymbols() {
   // Find the symbol table
   if (Mode == MODE_32BIT) {
-    Elf32_Shdr const *SymTabHeader{nullptr};
-    Elf32_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+    const Elf32_Shdr* SymTabHeader {nullptr};
+    const Elf32_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
 
-    Elf32_Shdr const *DynSymTabHeader{nullptr};
-    Elf32_Shdr const *DynStringTableHeader{nullptr};
-    char const *DynStrTab{nullptr};
+    const Elf32_Shdr* DynSymTabHeader {nullptr};
+    const Elf32_Shdr* DynStringTableHeader {nullptr};
+    const char* DynStrTab {nullptr};
 
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
         break;
@@ -401,7 +386,7 @@ void ELFContainer::CalculateSymbols() {
     }
 
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_DYNSYM) {
         DynSymTabHeader = hdr;
         break;
@@ -416,10 +401,8 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumSymTabSymbols = 0;
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
-      LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(),
-                         "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
-                         "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
       StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -427,10 +410,8 @@ void ELFContainer::CalculateSymbols() {
     }
 
     if (DynSymTabHeader) {
-      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(),
-                         "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym),
-                         "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._32;
       DynStrTab = &RawFile.at(DynStringTableHeader->sh_offset);
@@ -442,13 +423,11 @@ void ELFContainer::CalculateSymbols() {
     Symbols.resize(NumSymbols);
     for (uint64_t i = 0; i < NumSymTabSymbols; ++i) {
       uint64_t offset = SymTabHeader->sh_offset + i * SymTabHeader->sh_entsize;
-      Elf32_Sym const *Symbol =
-          reinterpret_cast<Elf32_Sym const *>(&RawFile.at(offset));
-      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN &&
-          Symbol->st_value != 0) {
-        char const * Name = &StrTab[Symbol->st_name];
+      const Elf32_Sym* Symbol = reinterpret_cast< const Elf32_Sym*>(&RawFile.at(offset));
+      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
+        const char* Name = &StrTab[Symbol->st_name];
         if (Name[0] != '\0') {
-          ELFSymbol *DefinedSymbol = &Symbols.at(i);
+          ELFSymbol* DefinedSymbol = &Symbols.at(i);
           DefinedSymbol->FileOffset = offset;
           DefinedSymbol->Address = Symbol->st_value;
           DefinedSymbol->Size = Symbol->st_size;
@@ -465,13 +444,11 @@ void ELFContainer::CalculateSymbols() {
 
     for (uint64_t i = 0; i < NumDynSymSymbols; ++i) {
       uint64_t offset = DynSymTabHeader->sh_offset + i * DynSymTabHeader->sh_entsize;
-      Elf32_Sym const *Symbol =
-          reinterpret_cast<Elf32_Sym const *>(&RawFile.at(offset));
-      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN &&
-          Symbol->st_value != 0) {
-        char const * Name = &DynStrTab[Symbol->st_name];
+      const Elf32_Sym* Symbol = reinterpret_cast< const Elf32_Sym*>(&RawFile.at(offset));
+      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
+        const char* Name = &DynStrTab[Symbol->st_name];
         if (Name[0] != '\0') {
-          ELFSymbol *DefinedSymbol = &Symbols.at(NumSymTabSymbols + i);
+          ELFSymbol* DefinedSymbol = &Symbols.at(NumSymTabSymbols + i);
           DefinedSymbol->FileOffset = offset;
           DefinedSymbol->Address = Symbol->st_value;
           DefinedSymbol->Size = Symbol->st_size;
@@ -486,10 +463,10 @@ void ELFContainer::CalculateSymbols() {
       }
     }
 
-    Elf32_Shdr const *StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    const Elf32_Shdr* StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
+    const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (strcmp(&SHStrings[hdr->sh_name], ".eh_frame_hdr") == 0) {
         auto eh_frame_hdr = &RawFile.at(hdr->sh_offset);
         // we only handle this specific unwind table encoding
@@ -506,7 +483,7 @@ void ELFContainer::CalculateSymbols() {
             int32_t fde;
           };
 
-          entry *Table = (entry*)(eh_frame_hdr+12);
+          entry* Table = (entry*)(eh_frame_hdr + 12);
           for (int f = 0; f < fde_count; f++) {
             uintptr_t Entry = (uintptr_t)(Table[f].pc + hdr->sh_offset);
             UnwindEntries.push_back(Entry);
@@ -515,18 +492,17 @@ void ELFContainer::CalculateSymbols() {
         break;
       }
     }
-  }
-  else {
-    Elf64_Shdr const *SymTabHeader{nullptr};
-    Elf64_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+  } else {
+    const Elf64_Shdr* SymTabHeader {nullptr};
+    const Elf64_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
 
-    Elf64_Shdr const *DynSymTabHeader{nullptr};
-    Elf64_Shdr const *DynStringTableHeader{nullptr};
-    char const *DynStrTab{nullptr};
+    const Elf64_Shdr* DynSymTabHeader {nullptr};
+    const Elf64_Shdr* DynStringTableHeader {nullptr};
+    const char* DynStrTab {nullptr};
 
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
         break;
@@ -534,7 +510,7 @@ void ELFContainer::CalculateSymbols() {
     }
 
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_DYNSYM) {
         DynSymTabHeader = hdr;
         break;
@@ -549,10 +525,8 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumSymTabSymbols = 0;
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
-      LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(),
-                         "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
-                         "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
       StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -560,10 +534,8 @@ void ELFContainer::CalculateSymbols() {
     }
 
     if (DynSymTabHeader) {
-      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(),
-                         "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym),
-                         "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._64;
       DynStrTab = &RawFile.at(DynStringTableHeader->sh_offset);
@@ -575,13 +547,11 @@ void ELFContainer::CalculateSymbols() {
     Symbols.resize(NumSymbols);
     for (uint64_t i = 0; i < NumSymTabSymbols; ++i) {
       uint64_t offset = SymTabHeader->sh_offset + i * SymTabHeader->sh_entsize;
-      Elf64_Sym const *Symbol =
-          reinterpret_cast<Elf64_Sym const *>(&RawFile.at(offset));
-      if (ELF64_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN &&
-          Symbol->st_value != 0) {
-        char const * Name = &StrTab[Symbol->st_name];
+      const Elf64_Sym* Symbol = reinterpret_cast< const Elf64_Sym*>(&RawFile.at(offset));
+      if (ELF64_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
+        const char* Name = &StrTab[Symbol->st_name];
         if (Name[0] != '\0') {
-          ELFSymbol *DefinedSymbol = &Symbols.at(i);
+          ELFSymbol* DefinedSymbol = &Symbols.at(i);
           DefinedSymbol->FileOffset = offset;
           DefinedSymbol->Address = Symbol->st_value;
           DefinedSymbol->Size = Symbol->st_size;
@@ -598,13 +568,11 @@ void ELFContainer::CalculateSymbols() {
 
     for (uint64_t i = 0; i < NumDynSymSymbols; ++i) {
       uint64_t offset = DynSymTabHeader->sh_offset + i * DynSymTabHeader->sh_entsize;
-      Elf64_Sym const *Symbol =
-          reinterpret_cast<Elf64_Sym const *>(&RawFile.at(offset));
-      if (ELF64_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN &&
-          Symbol->st_value != 0) {
-        char const * Name = &DynStrTab[Symbol->st_name];
+      const Elf64_Sym* Symbol = reinterpret_cast< const Elf64_Sym*>(&RawFile.at(offset));
+      if (ELF64_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
+        const char* Name = &DynStrTab[Symbol->st_name];
         if (Name[0] != '\0') {
-          ELFSymbol *DefinedSymbol = &Symbols.at(NumSymTabSymbols + i);
+          ELFSymbol* DefinedSymbol = &Symbols.at(NumSymTabSymbols + i);
           DefinedSymbol->FileOffset = offset;
           DefinedSymbol->Address = Symbol->st_value;
           DefinedSymbol->Size = Symbol->st_size;
@@ -619,10 +587,10 @@ void ELFContainer::CalculateSymbols() {
       }
     }
 
-    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    const Elf64_Shdr* StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
+    const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (strcmp(&SHStrings[hdr->sh_name], ".eh_frame_hdr") == 0) {
         auto eh_frame_hdr = &RawFile.at(hdr->sh_offset);
         // we only handle this specific unwind table encoding
@@ -639,7 +607,7 @@ void ELFContainer::CalculateSymbols() {
             int32_t fde;
           };
 
-          entry *Table = (entry*)(eh_frame_hdr+12);
+          entry* Table = (entry*)(eh_frame_hdr + 12);
           for (int f = 0; f < fde_count; f++) {
             uintptr_t Entry = (uintptr_t)(Table[f].pc + hdr->sh_offset);
             UnwindEntries.push_back(Entry);
@@ -654,33 +622,36 @@ void ELFContainer::CalculateSymbols() {
 void ELFContainer::GetDynamicLibs() {
   if (Mode == MODE_32BIT) {
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        Elf32_Shdr const *StrHeader = SectionHeaders.at(hdr->sh_link)._32;
-        char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+        const Elf32_Shdr* StrHeader = SectionHeaders.at(hdr->sh_link)._32;
+        const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          Elf32_Dyn const *Dynamic = reinterpret_cast<Elf32_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-          if (Dynamic->d_tag == DT_NULL) break;
+          const Elf32_Dyn* Dynamic = reinterpret_cast< const Elf32_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+          if (Dynamic->d_tag == DT_NULL) {
+            break;
+          }
           if (Dynamic->d_tag == DT_NEEDED) {
             NecessaryLibs.emplace_back(&SHStrings[Dynamic->d_un.d_val]);
           }
         }
       }
     }
-  }
-  else {
+  } else {
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        Elf64_Shdr const *StrHeader = SectionHeaders.at(hdr->sh_link)._64;
-        char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+        const Elf64_Shdr* StrHeader = SectionHeaders.at(hdr->sh_link)._64;
+        const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          Elf64_Dyn const *Dynamic = reinterpret_cast<Elf64_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-          if (Dynamic->d_tag == DT_NULL) break;
+          const Elf64_Dyn* Dynamic = reinterpret_cast< const Elf64_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+          if (Dynamic->d_tag == DT_NULL) {
+            break;
+          }
           if (Dynamic->d_tag == DT_NEEDED) {
             NecessaryLibs.emplace_back(&SHStrings[Dynamic->d_un.d_val]);
           }
@@ -691,7 +662,7 @@ void ELFContainer::GetDynamicLibs() {
 }
 
 void ELFContainer::AddSymbols(SymbolAdder Adder) {
-  for (auto &Sym : Symbols) {
+  for (auto& Sym : Symbols) {
     if (Sym.FileOffset) {
       Adder(&Sym);
     }
@@ -718,8 +689,7 @@ void ELFContainer::PrintHeader() const {
     LogMan::Msg::IFmt("PH Entry Size: {}", Header._32.e_phentsize);
     LogMan::Msg::IFmt("SH Entry Size: {}", Header._32.e_shentsize);
     LogMan::Msg::IFmt("SH Str Index: {}", Header._32.e_shstrndx);
-  }
-  else {
+  } else {
     LogMan::Msg::IFmt("Type: {}", Header._64.e_type);
     LogMan::Msg::IFmt("Machine: {}", Header._64.e_machine);
     LogMan::Msg::IFmt("Version: {}", Header._64.e_version);
@@ -738,12 +708,11 @@ void ELFContainer::PrintHeader() const {
 
 void ELFContainer::PrintSectionHeaders() const {
   if (Mode == MODE_32BIT) {
-    LOGMAN_THROW_A_FMT(Header._32.e_shstrndx < SectionHeaders.size(),
-                       "String index section is wrong index!");
-    Elf32_Shdr const *StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    LOGMAN_THROW_A_FMT(Header._32.e_shstrndx < SectionHeaders.size(), "String index section is wrong index!");
+    const Elf32_Shdr* StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
+    const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders[i]._32;
+      const Elf32_Shdr* hdr = SectionHeaders[i]._32;
       LogMan::Msg::IFmt("Index: {}", i);
       LogMan::Msg::IFmt("Name:       {}", &SHStrings[hdr->sh_name]);
       LogMan::Msg::IFmt("Type:       {}", hdr->sh_type);
@@ -756,14 +725,12 @@ void ELFContainer::PrintSectionHeaders() const {
       LogMan::Msg::IFmt("AddrAlign:  {}", hdr->sh_addralign);
       LogMan::Msg::IFmt("Entry Size: {}", hdr->sh_entsize);
     }
-  }
-  else {
-    LOGMAN_THROW_A_FMT(Header._64.e_shstrndx < SectionHeaders.size(),
-                       "String index section is wrong index!");
-    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+  } else {
+    LOGMAN_THROW_A_FMT(Header._64.e_shstrndx < SectionHeaders.size(), "String index section is wrong index!");
+    const Elf64_Shdr* StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
+    const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders[i]._64;
+      const Elf64_Shdr* hdr = SectionHeaders[i]._64;
       LogMan::Msg::IFmt("Index: {}", i);
       LogMan::Msg::IFmt("Name:       {}", &SHStrings[hdr->sh_name]);
       LogMan::Msg::IFmt("Type:       {}", hdr->sh_type);
@@ -781,10 +748,9 @@ void ELFContainer::PrintSectionHeaders() const {
 
 void ELFContainer::PrintProgramHeaders() const {
   if (Mode == MODE_32BIT) {
-    LOGMAN_THROW_A_FMT(Header._32.e_shstrndx < SectionHeaders.size(),
-                       "String index section is wrong index!");
+    LOGMAN_THROW_A_FMT(Header._32.e_shstrndx < SectionHeaders.size(), "String index section is wrong index!");
     for (size_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf32_Phdr const *hdr = ProgramHeaders[i]._32;
+      const Elf32_Phdr* hdr = ProgramHeaders[i]._32;
       LogMan::Msg::IFmt("Type:    {}", hdr->p_type);
       LogMan::Msg::IFmt("Flags:   {}", hdr->p_flags);
       LogMan::Msg::IFmt("Offset:  {}", hdr->p_offset);
@@ -794,12 +760,10 @@ void ELFContainer::PrintProgramHeaders() const {
       LogMan::Msg::IFmt("MemSize: {}", hdr->p_memsz);
       LogMan::Msg::IFmt("Align:   {}", hdr->p_align);
     }
-  }
-  else {
-    LOGMAN_THROW_A_FMT(Header._64.e_shstrndx < SectionHeaders.size(),
-                       "String index section is wrong index!");
+  } else {
+    LOGMAN_THROW_A_FMT(Header._64.e_shstrndx < SectionHeaders.size(), "String index section is wrong index!");
     for (size_t i = 0; i < ProgramHeaders.size(); ++i) {
-      Elf64_Phdr const *hdr = ProgramHeaders[i]._64;
+      const Elf64_Phdr* hdr = ProgramHeaders[i]._64;
       LogMan::Msg::IFmt("Type:    {}", hdr->p_type);
       LogMan::Msg::IFmt("Flags:   {}", hdr->p_flags);
       LogMan::Msg::IFmt("Offset:  {}", hdr->p_offset);
@@ -815,11 +779,11 @@ void ELFContainer::PrintProgramHeaders() const {
 void ELFContainer::PrintSymbolTable() const {
   if (Mode == MODE_32BIT) {
     // Find the symbol table
-    Elf32_Shdr const *SymTabHeader{nullptr};
-    Elf32_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+    const Elf32_Shdr* SymTabHeader {nullptr};
+    const Elf32_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
         break;
@@ -830,10 +794,8 @@ void ELFContainer::PrintSymbolTable() const {
       return;
     }
 
-    LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(),
-                       "Symbol table string table section is wrong");
-    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
-                       "Entry size doesn't match symbol entry");
+    LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
     StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -841,20 +803,18 @@ void ELFContainer::PrintSymbolTable() const {
     const uint64_t NumSymbols = SymTabHeader->sh_size / SymTabHeader->sh_entsize;
     for (uint64_t i = 0; i < NumSymbols; ++i) {
       const uint64_t offset = SymTabHeader->sh_offset + i * SymTabHeader->sh_entsize;
-      const auto *Symbol = reinterpret_cast<const Elf32_Sym *>(&RawFile.at(offset));
+      const auto* Symbol = reinterpret_cast<const Elf32_Sym*>(&RawFile.at(offset));
 
-      LogMan::Msg::IFmt("{} : {:x} {} {} {} {} {}", i, Symbol->st_value, Symbol->st_size,
-                        uint32_t(Symbol->st_info), uint32_t(Symbol->st_other),
-                        Symbol->st_shndx, &StrTab[Symbol->st_name]);
+      LogMan::Msg::IFmt("{} : {:x} {} {} {} {} {}", i, Symbol->st_value, Symbol->st_size, uint32_t(Symbol->st_info),
+                        uint32_t(Symbol->st_other), Symbol->st_shndx, &StrTab[Symbol->st_name]);
     }
-  }
-  else {
+  } else {
     // Find the symbol table
-    Elf64_Shdr const *SymTabHeader{nullptr};
-    Elf64_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+    const Elf64_Shdr* SymTabHeader {nullptr};
+    const Elf64_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
         break;
@@ -865,10 +825,8 @@ void ELFContainer::PrintSymbolTable() const {
       return;
     }
 
-    LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(),
-                       "Symbol table string table section is wrong");
-    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
-                       "Entry size doesn't match symbol entry");
+    LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
+    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
     StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -876,34 +834,31 @@ void ELFContainer::PrintSymbolTable() const {
     const uint64_t NumSymbols = SymTabHeader->sh_size / SymTabHeader->sh_entsize;
     for (uint64_t i = 0; i < NumSymbols; ++i) {
       const uint64_t offset = SymTabHeader->sh_offset + i * SymTabHeader->sh_entsize;
-      const auto *Symbol = reinterpret_cast<const Elf64_Sym *>(&RawFile.at(offset));
+      const auto* Symbol = reinterpret_cast<const Elf64_Sym*>(&RawFile.at(offset));
 
-      LogMan::Msg::IFmt("{} : {:x} {} {} {} {} {}", i, Symbol->st_value, Symbol->st_size,
-                        uint32_t(Symbol->st_info), uint32_t(Symbol->st_other),
-                        Symbol->st_shndx, &StrTab[Symbol->st_name]);
+      LogMan::Msg::IFmt("{} : {:x} {} {} {} {} {}", i, Symbol->st_value, Symbol->st_size, uint32_t(Symbol->st_info),
+                        uint32_t(Symbol->st_other), Symbol->st_shndx, &StrTab[Symbol->st_name]);
     }
   }
 }
 
 void ELFContainer::PrintRelocationTable() const {
   if (Mode == MODE_32BIT) {
-  }
-  else {
-    Elf64_Shdr const *RelaHeader{nullptr};
-    Elf64_Shdr const *DynSymHeader {nullptr};
+  } else {
+    const Elf64_Shdr* RelaHeader {nullptr};
+    const Elf64_Shdr* DynSymHeader {nullptr};
 
-    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    const Elf64_Shdr* StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
+    const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
-    Elf64_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+    const Elf64_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
 
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_REL) {
         LogMan::Msg::DFmt("Unhandled REL section");
-      }
-      else if (hdr->sh_type == SHT_RELA) {
+      } else if (hdr->sh_type == SHT_RELA) {
         RelaHeader = hdr;
         LogMan::Msg::DFmt("Relocation Section: '{}'", &SHStrings[RelaHeader->sh_name]);
 
@@ -920,10 +875,10 @@ void ELFContainer::PrintRelocationTable() const {
         }
 
         const size_t EntryCount = RelaHeader->sh_size / RelaHeader->sh_entsize;
-        const auto *Entries = reinterpret_cast<const Elf64_Rela *>(&RawFile.at(RelaHeader->sh_offset));
+        const auto* Entries = reinterpret_cast<const Elf64_Rela*>(&RawFile.at(RelaHeader->sh_offset));
 
         for (size_t j = 0; j < EntryCount; ++j) {
-          const auto *Entry = &Entries[j];
+          const auto* Entry = &Entries[j];
           const uint32_t Sym = Entry->r_info >> 32;
           const uint32_t Type = Entry->r_info & ~0U;
           LogMan::Msg::DFmt("RELA Entry {}", j);
@@ -933,7 +888,7 @@ void ELFContainer::PrintRelocationTable() const {
             LOGMAN_THROW_AA_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             const uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
-            const auto *Symbol = reinterpret_cast<const Elf64_Sym *>(&RawFile.at(offset));
+            const auto* Symbol = reinterpret_cast<const Elf64_Sym*>(&RawFile.at(offset));
             LogMan::Msg::DFmt("\tSym Name: '{}'", &StrTab[Symbol->st_name]);
           }
 
@@ -941,29 +896,21 @@ void ELFContainer::PrintRelocationTable() const {
           LogMan::Msg::DFmt("\tadded:  0x{:x}", Entry->r_addend);
           if (Type == R_X86_64_IRELATIVE) { // 37/0x25
             LogMan::Msg::DFmt("\tR_x86_64_IRELATIVE");
-          }
-          else if (Type == R_X86_64_64) {
+          } else if (Type == R_X86_64_64) {
             LogMan::Msg::DFmt("\tR_X86_64_64");
-          }
-          else if (Type == R_X86_64_RELATIVE) {
+          } else if (Type == R_X86_64_RELATIVE) {
             LogMan::Msg::DFmt("\tR_X86_64_RELATIVE");
-          }
-          else if (Type == R_X86_64_GLOB_DAT) {
+          } else if (Type == R_X86_64_GLOB_DAT) {
             LogMan::Msg::DFmt("\tR_X86_64_GLOB_DAT");
-          }
-          else if (Type == R_X86_64_JUMP_SLOT) {
+          } else if (Type == R_X86_64_JUMP_SLOT) {
             LogMan::Msg::DFmt("\tR_X86_64_JUMP_SLOT");
-          }
-          else if (Type == R_X86_64_DTPMOD64) {
+          } else if (Type == R_X86_64_DTPMOD64) {
             LogMan::Msg::DFmt("\tR_X86_64_DTPMOD64");
-          }
-          else if (Type == R_X86_64_DTPOFF64) {
+          } else if (Type == R_X86_64_DTPOFF64) {
             LogMan::Msg::DFmt("\tR_X86_64_DTPOFF64");
-          }
-          else if (Type == R_X86_64_TPOFF64) {
+          } else if (Type == R_X86_64_TPOFF64) {
             LogMan::Msg::DFmt("\tR_X86_64_TPOFF64");
-          }
-          else {
+          } else {
             LogMan::Msg::DFmt("Unknown relocation type: {}(0x{:x})", Type, Type);
           }
         }
@@ -972,22 +919,20 @@ void ELFContainer::PrintRelocationTable() const {
   }
 }
 
-void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, SymbolGetter Getter) {
+void ELFContainer::FixupRelocations(void* ELFBase, uint64_t GuestELFBase, SymbolGetter Getter) {
   if (Mode == MODE_32BIT) {
-  }
-  else {
-    Elf64_Shdr const *RelaHeader{nullptr};
-    Elf64_Shdr const *DynSymHeader {nullptr};
+  } else {
+    const Elf64_Shdr* RelaHeader {nullptr};
+    const Elf64_Shdr* DynSymHeader {nullptr};
 
-    Elf64_Shdr const *StringTableHeader{nullptr};
-    char const *StrTab{nullptr};
+    const Elf64_Shdr* StringTableHeader {nullptr};
+    const char* StrTab {nullptr};
 
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      const auto *hdr = SectionHeaders[i]._64;
+      const auto* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_REL) {
         LogMan::Msg::DFmt("Unhandled REL section");
-      }
-      else if (hdr->sh_type == SHT_RELA) {
+      } else if (hdr->sh_type == SHT_RELA) {
         RelaHeader = hdr;
 
         if (RelaHeader->sh_info != 0) {
@@ -1003,52 +948,47 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
         }
 
         const size_t EntryCount = RelaHeader->sh_size / RelaHeader->sh_entsize;
-        const auto *Entries = reinterpret_cast<const Elf64_Rela *>(&RawFile.at(RelaHeader->sh_offset));
+        const auto* Entries = reinterpret_cast<const Elf64_Rela*>(&RawFile.at(RelaHeader->sh_offset));
 
         for (size_t j = 0; j < EntryCount; ++j) {
-          const auto *Entry = &Entries[j];
+          const auto* Entry = &Entries[j];
           const uint32_t Sym = Entry->r_info >> 32;
           const uint32_t Type = Entry->r_info & ~0U;
-          const Elf64_Sym *EntrySymbol{nullptr};
-          const char *EntrySymbolName{nullptr};
+          const Elf64_Sym* EntrySymbol {nullptr};
+          const char* EntrySymbolName {nullptr};
           if (DynSymHeader && Sym != 0) {
             LOGMAN_THROW_AA_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             const uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
-            EntrySymbol = reinterpret_cast<const Elf64_Sym *>(&RawFile.at(offset));
+            EntrySymbol = reinterpret_cast<const Elf64_Sym*>(&RawFile.at(offset));
             EntrySymbolName = &StrTab[EntrySymbol->st_name];
           }
 
           if (Type == R_X86_64_IRELATIVE) { // 37/0x25
             // Indirect (B + A)
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             *Location = GuestELFBase + Entry->r_addend;
-          }
-          else if (Type == R_X86_64_64) {
+          } else if (Type == R_X86_64_64) {
             // S + A
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             if (EntrySymbol != nullptr) {
               auto ELFSym = Getter(EntrySymbolName, 0);
               if (ELFSym != nullptr) {
                 *Location = ELFSym->Address + Entry->r_addend;
-              }
-              else {
+              } else {
                 *Location = 0xDEADBEEFBAD0DAD2ULL;
               }
-            }
-            else {
+            } else {
               *Location = 0xDEADBEEFBAD0DAD2ULL;
             }
-          }
-          else if (Type == R_X86_64_RELATIVE) {
+          } else if (Type == R_X86_64_RELATIVE) {
             // B + A
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             *Location = GuestELFBase + Entry->r_addend;
-          }
-          else if (Type == R_X86_64_GLOB_DAT) {
+          } else if (Type == R_X86_64_GLOB_DAT) {
             // XXX: This is way wrong
             // S
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             if (EntrySymbol != nullptr) {
               auto ELFSym = Getter(EntrySymbolName, 2); // Leave out Symbols from the main executable and only grab non-weak
 
@@ -1061,20 +1001,17 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
 
               if (ELFSym != nullptr) {
                 *Location = ELFSym->Address;
-              }
-              else {
+              } else {
                 // XXX: This seems to be a loader edge case that if the symbol doesn't exist
                 // and it is a weakly defined GLOB_DAT type then it is allowed to continue?
                 // If we set Location to a value then apps crash
               }
-            }
-            else {
+            } else {
               *Location = 0xDEADBEEFBAD0DAD1ULL;
             }
-          }
-          else if (Type == R_X86_64_JUMP_SLOT) {
+          } else if (Type == R_X86_64_JUMP_SLOT) {
             // S
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             if (EntrySymbol != nullptr) {
               auto ELFSym = Getter(EntrySymbolName, 0);
               if (!ELFSym) { // XXX: Try again
@@ -1083,53 +1020,43 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
 
               if (ELFSym != nullptr) {
                 *Location = ELFSym->Address;
-              }
-              else {
+              } else {
                 // XXX: This seems to be a loader edge case that if the symbol doesn't exist
                 // and it is a weakly defined GLOB_DAT type then it is allowed to continue?
                 *Location = 0xDEADBEEFBAD0DAD5ULL;
               }
-            }
-            else {
+            } else {
               *Location = 0xDEADBEEFBAD0DAD4ULL;
             }
-          }
-          else if (Type == R_X86_64_DTPMOD64) {
+          } else if (Type == R_X86_64_DTPMOD64) {
             // XXX: This is supposed to be the ID of the module that the symbol comes from for TLS purposes?
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             *Location = 0;
-          }
-          else if (Type == R_X86_64_DTPOFF64) {
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+          } else if (Type == R_X86_64_DTPOFF64) {
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             if (EntrySymbol != nullptr) {
               *Location = EntrySymbol->st_value + Entry->r_addend;
-            }
-            else {
+            } else {
               *Location = 0xDEADBEEFBAD0DAD6ULL;
             }
-          }
-          else if (Type == R_X86_64_TPOFF64) {
-            uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
+          } else if (Type == R_X86_64_TPOFF64) {
+            uint64_t* Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
             if (EntrySymbol != nullptr) {
               // XXX: This is supposed to be a symbol with a TLS offset?
               *Location = EntrySymbol->st_value + Entry->r_addend;
-            }
-            else {
+            } else {
               // If we set Location to a value then apps crash
               // *Location = 0xDEADBEEFBAD0DAD3ULL;
               LogMan::Msg::DFmt("TPOFF without Entry? {:x} + {:x} + {:x}", GuestELFBase, TLSHeader._64->p_paddr, Entry->r_addend);
               if (1) {
                 *Location = TLSHeader._64->p_paddr + Entry->r_addend;
-              }
-              else if (Entry->r_offset == 0x1e3dc8) {
+              } else if (Entry->r_offset == 0x1e3dc8) {
                 *Location = 0xDEADBEEFBAD0DAD8ULL;
-              }
-              else {
+              } else {
                 *Location = Entry->r_addend - 0xb00'0;
               }
             }
-          }
-          else {
+          } else {
             LogMan::Msg::DFmt("Unknown relocation type: {}(0x{:x})", Type, Type);
           }
         }
@@ -1141,24 +1068,23 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
 void ELFContainer::PrintInitArray() const {
   if (Mode == MODE_32BIT) {
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      const auto *hdr = SectionHeaders[i]._32;
+      const auto* hdr = SectionHeaders[i]._32;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         const size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
           LogMan::Msg::DFmt("init_array[{}]", j);
-          LogMan::Msg::DFmt("\t{}", *reinterpret_cast<uint64_t const*>(&RawFile.at(hdr->sh_offset+ j * hdr->sh_entsize)));
+          LogMan::Msg::DFmt("\t{}", *reinterpret_cast< const uint64_t*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize)));
         }
       }
     }
-  }
-  else {
+  } else {
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      const auto *hdr = SectionHeaders[i]._64;
+      const auto* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         const size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
           LogMan::Msg::DFmt("init_array[{}]", j);
-          LogMan::Msg::DFmt("\t{}", *reinterpret_cast<uint64_t const*>(&RawFile.at(hdr->sh_offset+ j * hdr->sh_entsize)));
+          LogMan::Msg::DFmt("\t{}", *reinterpret_cast< const uint64_t*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize)));
         }
       }
     }
@@ -1168,22 +1094,20 @@ void ELFContainer::PrintInitArray() const {
 void ELFContainer::PrintDynamicTable() const {
   if (Mode == MODE_32BIT) {
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      const auto *hdr = SectionHeaders[i]._32;
+      const auto* hdr = SectionHeaders[i]._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        const auto *StrHeader = SectionHeaders.at(hdr->sh_link)._32;
-        const char *SHStrings = &RawFile.at(StrHeader->sh_offset);
+        const auto* StrHeader = SectionHeaders.at(hdr->sh_link)._32;
+        const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         const size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          const auto *Dynamic = reinterpret_cast<const Elf32_Dyn *>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-#define PRINT(x, y, z) x (Dynamic->d_tag == DT_##y ) LogMan::Msg::DFmt("Dyn {}: (" #y ") 0x{:x}", j, Dynamic->d_un.z);
+          const auto* Dynamic = reinterpret_cast<const Elf32_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+#define PRINT(x, y, z) x(Dynamic->d_tag == DT_##y) LogMan::Msg::DFmt("Dyn {}: (" #y ") 0x{:x}", j, Dynamic->d_un.z);
           if (Dynamic->d_tag == DT_NULL) {
             break;
-          }
-          else if (Dynamic->d_tag == DT_NEEDED) {
+          } else if (Dynamic->d_tag == DT_NEEDED) {
             LogMan::Msg::DFmt("Dyn {}: (NEEDED) '{}'", j, &SHStrings[Dynamic->d_un.d_val]);
-          }
-          else if (Dynamic->d_tag == DT_SONAME) {
+          } else if (Dynamic->d_tag == DT_SONAME) {
             LogMan::Msg::DFmt("Dyn {}: (SONAME) '{}'", j, &SHStrings[Dynamic->d_un.d_val]);
           }
           PRINT(else if, HASH, d_val)
@@ -1220,31 +1144,27 @@ void ELFContainer::PrintDynamicTable() const {
           PRINT(else if, VERDEF, d_val)
           PRINT(else if, VERDEFNUM, d_val)
           PRINT(else if, FLAGS, d_val)
-          else
-            LogMan::Msg::DFmt("Unknown dynamic section: {}(0x{:x})", Dynamic->d_tag, Dynamic->d_tag);
+          else LogMan::Msg::DFmt("Unknown dynamic section: {}(0x{:x})", Dynamic->d_tag, Dynamic->d_tag);
 #undef PRINT
         }
       }
     }
-  }
-  else {
+  } else {
     for (size_t i = 0; i < SectionHeaders.size(); ++i) {
-      const auto *hdr = SectionHeaders[i]._64;
+      const auto* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        const auto *StrHeader = SectionHeaders.at(hdr->sh_link)._64;
-        const char *SHStrings = &RawFile.at(StrHeader->sh_offset);
+        const auto* StrHeader = SectionHeaders.at(hdr->sh_link)._64;
+        const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         const size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          const auto *Dynamic = reinterpret_cast<const Elf64_Dyn *>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-#define PRINT(x, y, z) x (Dynamic->d_tag == DT_##y ) LogMan::Msg::DFmt("Dyn {}: (" #y ") 0x{:x}", j, Dynamic->d_un.z);
+          const auto* Dynamic = reinterpret_cast<const Elf64_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+#define PRINT(x, y, z) x(Dynamic->d_tag == DT_##y) LogMan::Msg::DFmt("Dyn {}: (" #y ") 0x{:x}", j, Dynamic->d_un.z);
           if (Dynamic->d_tag == DT_NULL) {
             break;
-          }
-          else if (Dynamic->d_tag == DT_NEEDED) {
+          } else if (Dynamic->d_tag == DT_NEEDED) {
             LogMan::Msg::DFmt("Dyn {}: (NEEDED) '{}'", j, &SHStrings[Dynamic->d_un.d_val]);
-          }
-          else if (Dynamic->d_tag == DT_SONAME) {
+          } else if (Dynamic->d_tag == DT_SONAME) {
             LogMan::Msg::DFmt("Dyn {}: (SONAME) '{}'", j, &SHStrings[Dynamic->d_un.d_val]);
           }
           PRINT(else if, HASH, d_val)
@@ -1281,8 +1201,7 @@ void ELFContainer::PrintDynamicTable() const {
           PRINT(else if, VERDEF, d_val)
           PRINT(else if, VERDEFNUM, d_val)
           PRINT(else if, FLAGS, d_val)
-          else
-            LogMan::Msg::DFmt("Unknown dynamic section: {}(0x{:x})", Dynamic->d_tag, Dynamic->d_tag);
+          else LogMan::Msg::DFmt("Unknown dynamic section: {}(0x{:x})", Dynamic->d_tag, Dynamic->d_tag);
 #undef PRINT
         }
       }
@@ -1290,16 +1209,18 @@ void ELFContainer::PrintDynamicTable() const {
   }
 }
 
-void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_t> *Locations) {
+void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_t>* Locations) {
   if (Mode == MODE_32BIT) {
     // If INIT exists then add that first
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          Elf32_Dyn const *Dynamic = reinterpret_cast<Elf32_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-          if (Dynamic->d_tag == DT_NULL) break;
+          const Elf32_Dyn* Dynamic = reinterpret_cast< const Elf32_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+          if (Dynamic->d_tag == DT_NULL) {
+            break;
+          }
           if (Dynamic->d_tag == DT_INIT) {
             Locations->emplace_back(GuestELFBase + Dynamic->d_un.d_val);
           }
@@ -1309,24 +1230,25 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
 
     // Fill init_array
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
-          Locations->emplace_back(GuestELFBase + *reinterpret_cast<uint64_t const*>(&RawFile.at(hdr->sh_offset+ j * hdr->sh_entsize)));
+          Locations->emplace_back(GuestELFBase + *reinterpret_cast< const uint64_t*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize)));
         }
       }
     }
-  }
-  else {
+  } else {
     // If INIT exists then add that first
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
-          Elf64_Dyn const *Dynamic = reinterpret_cast<Elf64_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
-          if (Dynamic->d_tag == DT_NULL) break;
+          const Elf64_Dyn* Dynamic = reinterpret_cast< const Elf64_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
+          if (Dynamic->d_tag == DT_NULL) {
+            break;
+          }
           if (Dynamic->d_tag == DT_INIT) {
             Locations->emplace_back(GuestELFBase + Dynamic->d_un.d_val);
           }
@@ -1336,11 +1258,11 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
 
     // Fill init_array
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
-          Locations->emplace_back(GuestELFBase + *reinterpret_cast<uint64_t const*>(&RawFile.at(hdr->sh_offset+ j * hdr->sh_entsize)));
+          Locations->emplace_back(GuestELFBase + *reinterpret_cast< const uint64_t*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize)));
         }
       }
     }

@@ -25,13 +25,13 @@
 
 namespace FEXCore::CPU {
 
-static void SleepThread(FEXCore::Context::ContextImpl *CTX, FEXCore::Core::CpuStateFrame *Frame) {
+static void SleepThread(FEXCore::Context::ContextImpl* CTX, FEXCore::Core::CpuStateFrame* Frame) {
   CTX->SyscallHandler->SleepThread(CTX, Frame);
 }
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
-Dispatcher::Dispatcher(FEXCore::Context::ContextImpl *ctx)
+Dispatcher::Dispatcher(FEXCore::Context::ContextImpl* ctx)
   : Arm64Emitter(ctx, FEXCore::Allocator::VirtualAlloc(MAX_DISPATCHER_CODE_SIZE, true), MAX_DISPATCHER_CODE_SIZE)
   , CTX {ctx} {
   EmitDispatcher();
@@ -82,9 +82,9 @@ void Dispatcher::EmitDispatcher() {
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
-  ARMEmitter::BiDirectionalLabel FullLookup{};
-  ARMEmitter::BiDirectionalLabel CallBlock{};
-  ARMEmitter::BackwardLabel LoopTop{};
+  ARMEmitter::BiDirectionalLabel FullLookup {};
+  ARMEmitter::BiDirectionalLabel CallBlock {};
+  ARMEmitter::BackwardLabel LoopTop {};
 
   Bind(&LoopTop);
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
@@ -99,7 +99,7 @@ void Dispatcher::EmitDispatcher() {
   ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
   and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL , 4);
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL, 4);
   ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP1, TMP1, 0);
   sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, RipReg);
   cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
@@ -117,8 +117,7 @@ void Dispatcher::EmitDispatcher() {
   uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
   if (std::popcount(VirtualMemorySize) == 1) {
     and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
-  }
-  else {
+  } else {
     LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
     and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
   }
@@ -193,9 +192,8 @@ void Dispatcher::EmitDispatcher() {
 
     ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(ARMEmitter::Reg::r2);
-    }
-    else {
+      GenerateIndirectRuntimeCall<uintptr_t, void*, void*>(ARMEmitter::Reg::r2);
+    } else {
       blr(ARMEmitter::Reg::r2);
     }
 
@@ -237,9 +235,8 @@ void Dispatcher::EmitDispatcher() {
     ldr(ARMEmitter::XReg::x4, &l_CompileBlock);
 
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uintptr_t, void *, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
-    }
-    else {
+      GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+    } else {
       blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
     }
 
@@ -285,7 +282,7 @@ void Dispatcher::EmitDispatcher() {
   {
     // Guest SIGTRAP handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    GuestSignal_SIGTRAP  = GetCursorAddress<uint64_t>();
+    GuestSignal_SIGTRAP = GetCursorAddress<uint64_t>();
 
     SpillStaticRegs(TMP1);
 
@@ -308,8 +305,7 @@ void Dispatcher::EmitDispatcher() {
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::r0, 0);
       PopCalleeSavedRegisters();
       ret();
-    }
-    else {
+    } else {
       LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
       ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
     }
@@ -328,9 +324,8 @@ void Dispatcher::EmitDispatcher() {
     mov(ARMEmitter::XReg::x1, STATE);
     ldr(ARMEmitter::XReg::x2, &l_Sleep);
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<void, void *, void *>(ARMEmitter::Reg::r2);
-    }
-    else {
+      GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+    } else {
       blr(ARMEmitter::Reg::r2);
     }
 
@@ -405,8 +400,7 @@ void Dispatcher::EmitDispatcher() {
     ldr(ARMEmitter::XReg::x3, R, Offset);
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
       GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-    }
-    else {
+    } else {
       blr(ARMEmitter::Reg::r3);
     }
     // Result is now in x0
@@ -463,23 +457,23 @@ void Dispatcher::EmitDispatcher() {
 }
 
 #ifdef VIXL_SIMULATOR
-void Dispatcher::ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
+void Dispatcher::ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
   Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
-  Simulator.RunFrom(reinterpret_cast<vixl::aarch64::Instruction const*>(DispatchPtr));
+  Simulator.RunFrom(reinterpret_cast< const vixl::aarch64::Instruction*>(DispatchPtr));
 }
 
-void Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
+void Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP) {
   Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
   Simulator.WriteXRegister(1, RIP);
-  Simulator.RunFrom(reinterpret_cast<vixl::aarch64::Instruction const*>(CallbackPtr));
+  Simulator.RunFrom(reinterpret_cast< const vixl::aarch64::Instruction*>(CallbackPtr));
 }
 
 #endif
 
-void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
+void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) {
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Common = Thread->CurrentFrame->Pointers.Common;
+    auto& Common = Thread->CurrentFrame->Pointers.Common;
 
     Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
     Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
@@ -492,7 +486,7 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) 
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
     Common.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
 
-    auto &AArch64 = Thread->CurrentFrame->Pointers.AArch64;
+    auto& AArch64 = Thread->CurrentFrame->Pointers.AArch64;
     AArch64.LUDIVHandler = LUDIVHandlerAddress;
     AArch64.LDIVHandler = LDIVHandlerAddress;
     AArch64.LUREMHandler = LUREMHandlerAddress;
@@ -500,8 +494,8 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) 
   }
 }
 
-fextl::unique_ptr<Dispatcher> Dispatcher::Create(FEXCore::Context::ContextImpl *CTX) {
+fextl::unique_ptr<Dispatcher> Dispatcher::Create(FEXCore::Context::ContextImpl* CTX) {
   return fextl::make_unique<Dispatcher>(CTX);
 }
 
-}
+} // namespace FEXCore::CPU

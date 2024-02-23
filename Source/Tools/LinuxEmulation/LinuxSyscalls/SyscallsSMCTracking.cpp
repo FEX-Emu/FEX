@@ -24,7 +24,7 @@ $end_info$
 namespace FEX::HLE {
 
 /// Helpers ///
-auto SyscallHandler::VMAProt::fromProt (int Prot) -> VMAProt {
+auto SyscallHandler::VMAProt::fromProt(int Prot) -> VMAProt {
   return VMAProt {
     .Readable = (Prot & PROT_READ) != 0,
     .Writable = (Prot & PROT_WRITE) != 0,
@@ -32,7 +32,7 @@ auto SyscallHandler::VMAProt::fromProt (int Prot) -> VMAProt {
   };
 }
 
-auto SyscallHandler::VMAProt::fromSHM (int SHMFlg) -> VMAProt {
+auto SyscallHandler::VMAProt::fromSHM(int SHMFlg) -> VMAProt {
   return VMAProt {
     .Readable = true,
     .Writable = SHMFlg & SHM_RDONLY ? false : true,
@@ -47,8 +47,8 @@ auto SyscallHandler::VMAFlags::fromFlags(int Flags) -> VMAFlags {
 }
 
 // SMC interactions
-bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-  const auto FaultAddress = (uintptr_t)((siginfo_t *)info)->si_addr;
+bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
+  const auto FaultAddress = (uintptr_t)((siginfo_t*)info)->si_addr;
 
   {
     // Can't use the deferred signal lock in the SIGSEGV handler.
@@ -81,7 +81,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 
           if (VMA->Prot.Writable) {
             _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
-              auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
+              auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
@@ -91,7 +91,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
       _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
-        auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
+        auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
         LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
     }
@@ -100,7 +100,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
   }
 }
 
-void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
   const auto Base = Start & FHU::FEX_PAGE_MASK;
   const auto Top = FEXCore::AlignUp(Start + Length, FHU::FEX_PAGE_SIZE);
 
@@ -147,13 +147,13 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
               const auto MirroredBase = std::max(VMAOffsetBase, OffsetBase);
               const auto MirroredSize = std::min(OffsetTop, VMAOffsetTop) - MirroredBase;
 
-              auto rv = mprotect((void *)(MirroredBase - VMAOffsetBase + VMABase), MirroredSize, PROT_READ);
+              auto rv = mprotect((void*)(MirroredBase - VMAOffsetBase + VMABase), MirroredSize, PROT_READ);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", MirroredBase, MirroredSize);
             }
           } while ((VMA = VMA->ResourceNextVMA));
 
         } else if (Mapping->second.Prot.Writable) {
-          int rv = mprotect((void *)ProtectBase, ProtectSize, PROT_READ);
+          int rv = mprotect((void*)ProtectBase, ProtectSize, PROT_READ);
 
           LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", ProtectBase, ProtectSize);
         }
@@ -163,7 +163,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
 }
 
 // Used for AOT
-FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) {
+FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
 
   // Get the first mapping after GuestAddr, or end
@@ -174,14 +174,12 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
     return {nullptr, 0};
   }
 
-  return {
-    Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr,
-    Entry->second.Base - Entry->second.Offset
-  };
+  return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
 }
 
 // MMan Tracking
-void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
+void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd,
+                               off_t Offset) {
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
@@ -196,7 +194,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
 
     static uint64_t AnonSharedId = 1;
 
-    MappedResource *Resource = nullptr;
+    MappedResource* Resource = nullptr;
 
     if (!(Flags & MAP_ANONYMOUS)) {
       struct stat64 buf;
@@ -217,9 +215,9 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
         }
       }
     } else if (Flags & MAP_SHARED) {
-      MRID mrid{SpecialDev::Anon, AnonSharedId++};
+      MRID mrid {SpecialDev::Anon, AnonSharedId++};
 
-      auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource{nullptr, nullptr, 0});
+      auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource {nullptr, nullptr, 0});
       LOGMAN_THROW_AA_FMT(Inserted == true, "VMA tracking error");
       Resource = &Iter->second;
       Resource->Iterator = Iter;
@@ -236,7 +234,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
   }
 }
 
-void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size) {
+void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size) {
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
@@ -253,7 +251,7 @@ void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uin
   }
 }
 
-void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot) {
+void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot) {
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
@@ -267,7 +265,8 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, u
   }
 }
 
-void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
+void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState* Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize,
+                                 int flags, uintptr_t NewAddress) {
   OldSize = FEXCore::AlignUp(OldSize, FHU::FEX_PAGE_SIZE);
   NewSize = FEXCore::AlignUp(NewSize, FHU::FEX_PAGE_SIZE);
 
@@ -319,7 +318,7 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uin
   }
 }
 
-void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int shmid, uintptr_t Base, int shmflg) {
+void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uintptr_t Base, int shmflg) {
   CTX->MarkMemoryShared(Thread);
 
   shmid_ds stat;
@@ -333,7 +332,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int 
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
 
     // TODO
-    MRID mrid{SpecialDev::SHM, static_cast<uint64_t>(shmid)};
+    MRID mrid {SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
     auto ResourceInserted = VMATracking.MappedResources.insert({mrid, {nullptr, nullptr, Length}});
     auto Resource = &ResourceInserted.first->second;
@@ -341,15 +340,14 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int 
       Resource->Iterator = ResourceInserted.first;
     }
     VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED),
-      VMAProt::fromProt((shmflg & SHM_RDONLY) ? PROT_READ : (PROT_READ | PROT_WRITE))
-    );
+                          VMAProt::fromProt((shmflg & SHM_RDONLY) ? PROT_READ : (PROT_READ | PROT_WRITE)));
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
   }
 }
 
-void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base) {
+void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base) {
   uintptr_t Length = 0;
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -363,7 +361,7 @@ void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uint
   }
 }
 
-void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int advice) {
+void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice) {
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -371,4 +369,4 @@ void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState *Thread, ui
   }
 }
 
-}
+} // namespace FEX::HLE

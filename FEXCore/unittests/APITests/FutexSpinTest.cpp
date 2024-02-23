@@ -6,7 +6,7 @@
 constexpr auto SleepAmount = std::chrono::milliseconds(250);
 
 TEST_CASE("FutexSpin-Timed-8bit") {
-  uint8_t Test{};
+  uint8_t Test {};
 
   auto now = std::chrono::high_resolution_clock::now();
   FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
@@ -20,8 +20,8 @@ TEST_CASE("FutexSpin-Timed-8bit") {
 TEST_CASE("FutexSpin-Sleep-8bit") {
   constexpr auto SleepAmount = std::chrono::seconds(1);
 
-  uint8_t Test{};
-  std::atomic<uint8_t> ActualSpinLoop{};
+  uint8_t Test {};
+  std::atomic<uint8_t> ActualSpinLoop {};
   std::chrono::nanoseconds SleptAmount;
 
   std::thread t([&Test, &SleptAmount, &ActualSpinLoop]() {
@@ -33,7 +33,8 @@ TEST_CASE("FutexSpin-Sleep-8bit") {
   });
 
   // Wait until the second thread lets us know to stop waiting sleeping.
-  while(ActualSpinLoop.load() == 0);
+  while (ActualSpinLoop.load() == 0)
+    ;
 
   // sleep this thread for the sleep amount.
   std::this_thread::sleep_for(SleepAmount);
@@ -49,7 +50,7 @@ TEST_CASE("FutexSpin-Sleep-8bit") {
 }
 
 TEST_CASE("FutexSpin-Timed-16bit") {
-  uint16_t Test{};
+  uint16_t Test {};
 
   auto now = std::chrono::high_resolution_clock::now();
   FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
@@ -61,7 +62,7 @@ TEST_CASE("FutexSpin-Timed-16bit") {
 }
 
 TEST_CASE("FutexSpin-Timed-32bit") {
-  uint32_t Test{};
+  uint32_t Test {};
 
   auto now = std::chrono::high_resolution_clock::now();
   FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);
@@ -73,7 +74,7 @@ TEST_CASE("FutexSpin-Timed-32bit") {
 }
 
 TEST_CASE("FutexSpin-Timed-64bit") {
-  uint64_t Test{};
+  uint64_t Test {};
 
   auto now = std::chrono::high_resolution_clock::now();
   FEXCore::Utils::SpinWaitLock::Wait(&Test, 1, SleepAmount);

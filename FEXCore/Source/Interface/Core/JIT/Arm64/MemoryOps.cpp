@@ -15,7 +15,7 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(LoadContext) {
   const auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -25,49 +25,26 @@ DEF_OP(LoadContext) {
     auto Dst = GetReg(Node);
 
     switch (OpSize) {
-    case 1:
-      ldrb(Dst, STATE, Op->Offset);
-      break;
-    case 2:
-      ldrh(Dst, STATE, Op->Offset);
-      break;
-    case 4:
-      ldr(Dst.W(), STATE, Op->Offset);
-      break;
-    case 8:
-      ldr(Dst.X(), STATE, Op->Offset);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
-      break;
+    case 1: ldrb(Dst, STATE, Op->Offset); break;
+    case 2: ldrh(Dst, STATE, Op->Offset); break;
+    case 4: ldr(Dst.W(), STATE, Op->Offset); break;
+    case 8: ldr(Dst.X(), STATE, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     auto Dst = GetVReg(Node);
 
     switch (OpSize) {
-    case 1:
-      ldrb(Dst, STATE, Op->Offset);
-      break;
-    case 2:
-      ldrh(Dst, STATE, Op->Offset);
-      break;
-    case 4:
-      ldr(Dst.S(), STATE, Op->Offset);
-      break;
-    case 8:
-      ldr(Dst.D(), STATE, Op->Offset);
-      break;
-    case 16:
-      ldr(Dst.Q(), STATE, Op->Offset);
-      break;
+    case 1: ldrb(Dst, STATE, Op->Offset); break;
+    case 2: ldrh(Dst, STATE, Op->Offset); break;
+    case 4: ldr(Dst.S(), STATE, Op->Offset); break;
+    case 8: ldr(Dst.D(), STATE, Op->Offset); break;
+    case 16: ldr(Dst.Q(), STATE, Op->Offset); break;
     case 32:
       mov(TMP1, Op->Offset);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), STATE, TMP1);
       break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize); break;
     }
   }
 }
@@ -77,52 +54,29 @@ DEF_OP(StoreContext) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto Src =  GetReg(Op->Value.ID());
+    auto Src = GetReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 1:
-      strb(Src, STATE, Op->Offset);
-      break;
-    case 2:
-      strh(Src, STATE, Op->Offset);
-      break;
-    case 4:
-      str(Src.W(), STATE, Op->Offset);
-      break;
-    case 8:
-      str(Src.X(), STATE, Op->Offset);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
-      break;
+    case 1: strb(Src, STATE, Op->Offset); break;
+    case 2: strh(Src, STATE, Op->Offset); break;
+    case 4: str(Src.W(), STATE, Op->Offset); break;
+    case 8: str(Src.X(), STATE, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 1:
-      strb(Src, STATE, Op->Offset);
-      break;
-    case 2:
-      strh(Src, STATE, Op->Offset);
-      break;
-    case 4:
-      str(Src.S(), STATE, Op->Offset);
-      break;
-    case 8:
-      str(Src.D(), STATE, Op->Offset);
-      break;
-    case 16:
-      str(Src.Q(), STATE, Op->Offset);
-      break;
+    case 1: strb(Src, STATE, Op->Offset); break;
+    case 2: strh(Src, STATE, Op->Offset); break;
+    case 4: str(Src.S(), STATE, Op->Offset); break;
+    case 8: str(Src.D(), STATE, Op->Offset); break;
+    case 16: str(Src.Q(), STATE, Op->Offset); break;
     case 32:
       mov(TMP1, Op->Offset);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, STATE, TMP1);
       break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize); break;
     }
   }
 }
@@ -132,10 +86,11 @@ DEF_OP(LoadRegister) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    const auto regId =
-      Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ? (StaticRegisters.size() - 2) :
-      Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ? (StaticRegisters.size() - 1) :
-      (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+    const auto regId = Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ?
+                         (StaticRegisters.size() - 2) :
+                       Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ?
+                         (StaticRegisters.size() - 1) :
+                         (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
 
     const auto regOffs = Op->Offset & 7;
 
@@ -144,27 +99,24 @@ DEF_OP(LoadRegister) {
     const auto reg = StaticRegisters[regId];
 
     switch (OpSize) {
-      case 4:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (GetReg(Node).Idx() != reg.Idx())
-          mov(GetReg(Node).W(), reg.W());
-        break;
+    case 4:
+      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+      if (GetReg(Node).Idx() != reg.Idx()) {
+        mov(GetReg(Node).W(), reg.W());
+      }
+      break;
 
-      case 8:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (GetReg(Node).Idx() != reg.Idx()) {
-          mov(GetReg(Node).X(), reg.X());
-        }
-        break;
+    case 8:
+      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+      if (GetReg(Node).Idx() != reg.Idx()) {
+        mov(GetReg(Node).X(), reg.X());
+      }
+      break;
 
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadRegister GPR size: {}", OpSize);
-        break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister GPR size: {}", OpSize); break;
     }
-  }
-  else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
-                                            : Core::CPUState::XMM_SSE_REG_SIZE;
+  } else if (Op->Class == IR::FPRClass) {
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
@@ -192,116 +144,112 @@ DEF_OP(LoadRegister) {
       };
 
       switch (OpSize) {
-        case 1: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
-          break;
-        }
-        case 2: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          fmov(host.H(), guest.H());
-          break;
-        }
-        case 4: {
-          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-          if (regOffs == 0) {
-            if (host.Idx() != guest.Idx()) {
-              fmov(host.S(), guest.S());
-            }
-          } else {
-            const auto Predicate = LoadPredicate();
-
-            dup(FEXCore::ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
-            mov(FEXCore::ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
-
-            EmitData(1U << regOffs);
-          }
-          break;
-        }
-
-        case 8: {
-          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-          if (regOffs == 0) {
-            if (host.Idx() != guest.Idx()) {
-              dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
-            }
-          } else {
-            const auto Predicate = LoadPredicate();
-
-            dup(FEXCore::ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
-            mov(FEXCore::ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
-
-            EmitData(1U << regOffs);
-          }
-          break;
-        }
-
-        case 16: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+      case 1: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
+        break;
+      }
+      case 2: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        fmov(host.H(), guest.H());
+        break;
+      }
+      case 4: {
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+        if (regOffs == 0) {
           if (host.Idx() != guest.Idx()) {
-            mov(host.Q(), guest.Q());
+            fmov(host.S(), guest.S());
           }
-          break;
-        }
+        } else {
+          const auto Predicate = LoadPredicate();
 
-        case 32: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          dup(FEXCore::ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
+          mov(FEXCore::ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
+
+          EmitData(1U << regOffs);
+        }
+        break;
+      }
+
+      case 8: {
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+        if (regOffs == 0) {
           if (host.Idx() != guest.Idx()) {
-            mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
+            dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
           }
-          break;
-        }
+        } else {
+          const auto Predicate = LoadPredicate();
 
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize);
-          break;
+          dup(FEXCore::ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
+          mov(FEXCore::ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
+
+          EmitData(1U << regOffs);
+        }
+        break;
+      }
+
+      case 16: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (host.Idx() != guest.Idx()) {
+          mov(host.Q(), guest.Q());
+        }
+        break;
+      }
+
+      case 32: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (host.Idx() != guest.Idx()) {
+          mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
+        }
+        break;
+      }
+
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize); break;
       }
     } else {
       const auto regOffs = Op->Offset & 15;
 
       switch (OpSize) {
-        case 1:
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
-          break;
+      case 1:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
+        break;
 
-        case 2:
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          fmov(host.H(), guest.H());
-          break;
+      case 2:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        fmov(host.H(), guest.H());
+        break;
 
-        case 4:
-          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-          if (regOffs == 0) {
-            if (host.Idx() != guest.Idx()) {
-              fmov(host.S(), guest.S());
-            }
-          } else {
-            ins(ARMEmitter::SubRegSize::i32Bit, host, 0, guest, regOffs/4);
-          }
-          break;
-
-        case 8:
-          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-          if (regOffs == 0) {
-            if (host.Idx() != guest.Idx()) {
-              dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
-            }
-          } else {
-            ins(ARMEmitter::SubRegSize::i64Bit, host, 0, guest, regOffs/8);
-          }
-          break;
-
-        case 16:
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+      case 4:
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+        if (regOffs == 0) {
           if (host.Idx() != guest.Idx()) {
-            mov(host.Q(), guest.Q());
+            fmov(host.S(), guest.S());
           }
-          break;
+        } else {
+          ins(ARMEmitter::SubRegSize::i32Bit, host, 0, guest, regOffs / 4);
+        }
+        break;
 
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize);
-          break;
+      case 8:
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+        if (regOffs == 0) {
+          if (host.Idx() != guest.Idx()) {
+            dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
+          }
+        } else {
+          ins(ARMEmitter::SubRegSize::i64Bit, host, 0, guest, regOffs / 8);
+        }
+        break;
+
+      case 16:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (host.Idx() != guest.Idx()) {
+          mov(host.Q(), guest.Q());
+        }
+        break;
+
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize); break;
       }
     }
   } else {
@@ -316,10 +264,11 @@ DEF_OP(StoreRegister) {
   if (Op->Class == IR::GPRClass) {
     const auto regOffs = Op->Offset & 7;
 
-    const auto regId =
-      Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ? (StaticRegisters.size() - 2) :
-      Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ? (StaticRegisters.size() - 1) :
-      (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+    const auto regId = Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ?
+                         (StaticRegisters.size() - 2) :
+                       Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ?
+                         (StaticRegisters.size() - 1) :
+                         (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
 
     LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
 
@@ -327,26 +276,23 @@ DEF_OP(StoreRegister) {
     const auto Src = GetReg(Op->Value.ID());
 
     switch (OpSize) {
-      case 4:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (Src.Idx() != reg.Idx()) {
-          mov(ARMEmitter::Size::i32Bit, reg, Src);
-        }
-        break;
-      case 8:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (Src.Idx() != reg.Idx()) {
-          mov(ARMEmitter::Size::i64Bit, reg, Src);
-        }
-        break;
+    case 4:
+      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+      if (Src.Idx() != reg.Idx()) {
+        mov(ARMEmitter::Size::i32Bit, reg, Src);
+      }
+      break;
+    case 8:
+      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+      if (Src.Idx() != reg.Idx()) {
+        mov(ARMEmitter::Size::i64Bit, reg, Src);
+      }
+      break;
 
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize);
-        break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize); break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
-                                            : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
@@ -385,107 +331,101 @@ DEF_OP(StoreRegister) {
       };
 
       switch (OpSize) {
-        case 1: {
-          LOGMAN_THROW_AA_FMT(regOffs <= 31, "unexpected reg index: {}", regOffs);
+      case 1: {
+        LOGMAN_THROW_AA_FMT(regOffs <= 31, "unexpected reg index: {}", regOffs);
 
-          const auto Predicate = LoadPredicate();
-          dup(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), host.Z(), 0);
-          mov(ARMEmitter::SubRegSize::i8Bit, guest.Z(), Predicate, VTMP1.Z());
+        const auto Predicate = LoadPredicate();
+        dup(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), host.Z(), 0);
+        mov(ARMEmitter::SubRegSize::i8Bit, guest.Z(), Predicate, VTMP1.Z());
 
-          EmitData(1U << regOffs);
-          break;
+        EmitData(1U << regOffs);
+        break;
+      }
+
+      case 2: {
+        LOGMAN_THROW_AA_FMT((regOffs / 2) <= 15, "unexpected reg index: {}", regOffs / 2);
+
+        const auto Predicate = LoadPredicate();
+        dup(ARMEmitter::SubRegSize::i16Bit, VTMP1.Z(), host.Z(), 0);
+        mov(ARMEmitter::SubRegSize::i16Bit, guest.Z(), Predicate, VTMP1.Z());
+
+        EmitData(1U << regOffs);
+        break;
+      }
+
+      case 4: {
+        LOGMAN_THROW_AA_FMT((regOffs / 4) <= 7, "unexpected reg index: {}", regOffs / 4);
+
+        const auto Predicate = LoadPredicate();
+
+        dup(ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
+        mov(ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
+
+        EmitData(1U << regOffs);
+        break;
+      }
+
+      case 8: {
+        LOGMAN_THROW_AA_FMT((regOffs / 8) <= 3, "unexpected reg index: {}", regOffs / 8);
+
+        const auto Predicate = LoadPredicate();
+
+        dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
+        mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
+
+        EmitData(1U << regOffs);
+        break;
+      }
+
+      case 16: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (guest.Idx() != host.Idx()) {
+          mov(guest.Q(), host.Q());
         }
+        break;
+      }
 
-        case 2: {
-          LOGMAN_THROW_AA_FMT((regOffs / 2) <= 15, "unexpected reg index: {}", regOffs / 2);
-
-          const auto Predicate = LoadPredicate();
-          dup(ARMEmitter::SubRegSize::i16Bit, VTMP1.Z(), host.Z(), 0);
-          mov(ARMEmitter::SubRegSize::i16Bit, guest.Z(), Predicate, VTMP1.Z());
-
-          EmitData(1U << regOffs);
-          break;
+      case 32: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (guest.Idx() != host.Idx()) {
+          mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
         }
+        break;
+      }
 
-        case 4: {
-          LOGMAN_THROW_AA_FMT((regOffs / 4) <= 7, "unexpected reg index: {}", regOffs / 4);
-
-          const auto Predicate = LoadPredicate();
-
-          dup(ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
-          mov(ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
-
-          EmitData(1U << regOffs);
-          break;
-        }
-
-        case 8: {
-          LOGMAN_THROW_AA_FMT((regOffs / 8) <= 3, "unexpected reg index: {}", regOffs / 8);
-
-          const auto Predicate = LoadPredicate();
-
-          dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
-          mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
-
-          EmitData(1U << regOffs);
-          break;
-        }
-
-        case 16: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          if (guest.Idx() != host.Idx()) {
-            mov(guest.Q(), host.Q());
-          }
-          break;
-        }
-
-        case 32: {
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          if (guest.Idx() != host.Idx()) {
-            mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
-          }
-          break;
-        }
-
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize);
-          break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize); break;
       }
     } else {
       const auto regOffs = Op->Offset & 15;
 
       switch (OpSize) {
-        case 1:
-          ins(ARMEmitter::SubRegSize::i8Bit, guest, regOffs, host, 0);
-          break;
+      case 1: ins(ARMEmitter::SubRegSize::i8Bit, guest, regOffs, host, 0); break;
 
-        case 2:
-          LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs: {}", regOffs);
-          ins(ARMEmitter::SubRegSize::i16Bit, guest, regOffs / 2, host, 0);
-          break;
+      case 2:
+        LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs: {}", regOffs);
+        ins(ARMEmitter::SubRegSize::i16Bit, guest, regOffs / 2, host, 0);
+        break;
 
-        case 4:
-          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-          // XXX: This had a bug with insert of size 16bit
-          ins(ARMEmitter::SubRegSize::i32Bit, guest, regOffs / 4, host, 0);
-          break;
+      case 4:
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+        // XXX: This had a bug with insert of size 16bit
+        ins(ARMEmitter::SubRegSize::i32Bit, guest, regOffs / 4, host, 0);
+        break;
 
-        case 8:
-          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-          // XXX: This had a bug with insert of size 16bit
-          ins(ARMEmitter::SubRegSize::i64Bit, guest, regOffs / 8, host, 0);
-          break;
+      case 8:
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+        // XXX: This had a bug with insert of size 16bit
+        ins(ARMEmitter::SubRegSize::i64Bit, guest, regOffs / 8, host, 0);
+        break;
 
-        case 16:
-          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-          if (guest.Idx() != host.Idx()) {
-            mov(guest.Q(), host.Q());
-          }
-          break;
+      case 16:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        if (guest.Idx() != host.Idx()) {
+          mov(guest.Q(), host.Q());
+        }
+        break;
 
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize);
-          break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize); break;
       }
     }
   } else {
@@ -508,33 +448,18 @@ DEF_OP(LoadContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetReg(Node);
       switch (OpSize) {
-      case 1:
-        ldrb(Dst, TMP1, Op->BaseOffset);
-        break;
-      case 2:
-        ldrh(Dst, TMP1, Op->BaseOffset);
-        break;
-      case 4:
-        ldr(Dst.W(), TMP1, Op->BaseOffset);
-        break;
-      case 8:
-        ldr(Dst.X(), TMP1, Op->BaseOffset);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
-        break;
+      case 1: ldrb(Dst, TMP1, Op->BaseOffset); break;
+      case 2: ldrh(Dst, TMP1, Op->BaseOffset); break;
+      case 4: ldr(Dst.W(), TMP1, Op->BaseOffset); break;
+      case 8: ldr(Dst.X(), TMP1, Op->BaseOffset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize); break;
       }
       break;
     }
-    case 16:
-      LOGMAN_MSG_A_FMT("Invalid Class load of size 16");
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride);
-      break;
+    case 16: LOGMAN_MSG_A_FMT("Invalid Class load of size 16"); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride); break;
     }
-  }
-  else {
+  } else {
     switch (Op->Stride) {
     case 1:
     case 2:
@@ -546,18 +471,10 @@ DEF_OP(LoadContextIndexed) {
       const auto Dst = GetVReg(Node);
 
       switch (OpSize) {
-      case 1:
-        ldrb(Dst, TMP1, Op->BaseOffset);
-        break;
-      case 2:
-        ldrh(Dst, TMP1, Op->BaseOffset);
-        break;
-      case 4:
-        ldr(Dst.S(), TMP1, Op->BaseOffset);
-        break;
-      case 8:
-        ldr(Dst.D(), TMP1, Op->BaseOffset);
-        break;
+      case 1: ldrb(Dst, TMP1, Op->BaseOffset); break;
+      case 2: ldrh(Dst, TMP1, Op->BaseOffset); break;
+      case 4: ldr(Dst.S(), TMP1, Op->BaseOffset); break;
+      case 8: ldr(Dst.D(), TMP1, Op->BaseOffset); break;
       case 16:
         if (Op->BaseOffset % 16 == 0) {
           ldr(Dst.Q(), TMP1, Op->BaseOffset);
@@ -570,15 +487,11 @@ DEF_OP(LoadContextIndexed) {
         mov(TMP2, Op->BaseOffset);
         ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, TMP2);
         break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
-        break;
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize); break;
       }
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride); break;
     }
   }
 }
@@ -600,33 +513,18 @@ DEF_OP(StoreContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
-      case 1:
-        strb(Value, TMP1, Op->BaseOffset);
-        break;
-      case 2:
-        strh(Value, TMP1, Op->BaseOffset);
-        break;
-      case 4:
-        str(Value.W(), TMP1, Op->BaseOffset);
-        break;
-      case 8:
-        str(Value.X(), TMP1, Op->BaseOffset);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
-        break;
+      case 1: strb(Value, TMP1, Op->BaseOffset); break;
+      case 2: strh(Value, TMP1, Op->BaseOffset); break;
+      case 4: str(Value.W(), TMP1, Op->BaseOffset); break;
+      case 8: str(Value.X(), TMP1, Op->BaseOffset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize); break;
       }
       break;
     }
-    case 16:
-      LOGMAN_MSG_A_FMT("Invalid Class store of size 16");
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride);
-      break;
+    case 16: LOGMAN_MSG_A_FMT("Invalid Class store of size 16"); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride); break;
     }
-  }
-  else {
+  } else {
     const auto Value = GetVReg(Op->Value.ID());
 
     switch (Op->Stride) {
@@ -639,18 +537,10 @@ DEF_OP(StoreContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
-      case 1:
-        strb(Value, TMP1, Op->BaseOffset);
-        break;
-      case 2:
-        strh(Value, TMP1, Op->BaseOffset);
-        break;
-      case 4:
-        str(Value.S(), TMP1, Op->BaseOffset);
-        break;
-      case 8:
-        str(Value.D(), TMP1, Op->BaseOffset);
-        break;
+      case 1: strb(Value, TMP1, Op->BaseOffset); break;
+      case 2: strh(Value, TMP1, Op->BaseOffset); break;
+      case 4: str(Value.S(), TMP1, Op->BaseOffset); break;
+      case 8: str(Value.D(), TMP1, Op->BaseOffset); break;
       case 16:
         if (Op->BaseOffset % 16 == 0) {
           str(Value.Q(), TMP1, Op->BaseOffset);
@@ -663,15 +553,11 @@ DEF_OP(StoreContextIndexed) {
         mov(TMP2, Op->BaseOffset);
         st1b<ARMEmitter::SubRegSize::i8Bit>(Value.Z(), PRED_TMP_32B, TMP1, TMP2);
         break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
-        break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize); break;
       }
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride); break;
     }
   }
 }
@@ -688,8 +574,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strb(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         strb(Src, ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -698,8 +583,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strh(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         strh(Src, ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -708,8 +592,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         str(Src.W(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -718,15 +601,12 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         str(Src.X(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     const auto Src = GetVReg(Op->Value.ID());
@@ -736,8 +616,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         str(Src.S(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -746,8 +625,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         str(Src.D(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -756,8 +634,7 @@ DEF_OP(SpillRegister) {
       if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         str(Src.Q(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -767,9 +644,7 @@ DEF_OP(SpillRegister) {
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, ARMEmitter::Reg::rsp, TMP3);
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
@@ -788,8 +663,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrb(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldrb(Dst, ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -798,8 +672,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrh(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldrh(Dst, ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -808,8 +681,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldr(Dst.W(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -818,15 +690,12 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldr(Dst.X(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     const auto Dst = GetVReg(Node);
@@ -836,8 +705,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldr(Dst.S(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -846,8 +714,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldr(Dst.D(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -856,8 +723,7 @@ DEF_OP(FillRegister) {
       if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
-      }
-      else {
+      } else {
         ldr(Dst.Q(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
@@ -867,9 +733,7 @@ DEF_OP(FillRegister) {
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), ARMEmitter::Reg::rsp, TMP3);
       break;
     }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
-      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);
@@ -892,9 +756,8 @@ DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
   auto Dst = GetReg(Node);
 
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC &&
-                     Op->Flag != X86State::RFLAG_AF_RAW_LOC,
-                     "PF/AF must be accessed as registers");
+  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
+                                                                                                       "registers");
 
   ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
@@ -902,18 +765,14 @@ DEF_OP(LoadFlag) {
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
 
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC &&
-                     Op->Flag != X86State::RFLAG_AF_RAW_LOC,
-                     "PF/AF must be accessed as registers");
+  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
+                                                                                                       "registers");
 
   strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
-FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize,
-                                            FEXCore::ARMEmitter::Register Base,
-                                            IR::OrderedNodeWrapper Offset,
-                                            IR::MemOffsetType OffsetType,
-                                            uint8_t OffsetScale) {
+FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
+  uint8_t AccessSize, FEXCore::ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, 0);
   } else {
@@ -925,11 +784,14 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t
       return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, Const);
     } else {
       auto RegOffset = GetReg(Offset.ID());
-      switch(OffsetType.Val) {
-        case IR::MEM_OFFSET_SXTX.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale) );
-        case IR::MEM_OFFSET_UXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale) );
-        case IR::MEM_OFFSET_SXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale) );
-        default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
+      switch (OffsetType.Val) {
+      case IR::MEM_OFFSET_SXTX.Val:
+        return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale));
+      case IR::MEM_OFFSET_UXTW.Val:
+        return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale));
+      case IR::MEM_OFFSET_SXTW.Val:
+        return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
+      default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
       }
     }
   }
@@ -937,16 +799,14 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t
   FEX_UNREACHABLE;
 }
 
-FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize,
-                                                  FEXCore::ARMEmitter::Register Base,
-                                                  IR::OrderedNodeWrapper Offset,
-                                                  IR::MemOffsetType OffsetType,
-                                                  [[maybe_unused]] uint8_t OffsetScale) {
+FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize, FEXCore::ARMEmitter::Register Base,
+                                                                       IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType,
+                                                                       [[maybe_unused]] uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), 0);
   }
 
-  uint64_t Const{};
+  uint64_t Const {};
   if (IsInlineConstant(Offset, &Const)) {
     if (Const == 0) {
       return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), 0);
@@ -985,8 +845,7 @@ FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t A
   // Note that we do nothing with the offset type and offset scale,
   // since SVE loads and stores don't have the ability to perform an
   // optional extension or shift as part of their behavior.
-  LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val,
-                     "Currently only the default offset type (SXTX) is supported.");
+  LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val, "Currently only the default offset type (SXTX) is supported.");
 
   const auto RegOffset = GetReg(Offset.ID());
   return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), RegOffset.X());
@@ -1003,50 +862,27 @@ DEF_OP(LoadMem) {
     const auto Dst = GetReg(Node);
 
     switch (OpSize) {
-      case 1:
-        ldrb(Dst, MemSrc);
-        break;
-      case 2:
-        ldrh(Dst, MemSrc);
-        break;
-      case 4:
-        ldr(Dst.W(), MemSrc);
-        break;
-      case 8:
-        ldr(Dst.X(), MemSrc);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
-        break;
+    case 1: ldrb(Dst, MemSrc); break;
+    case 2: ldrh(Dst, MemSrc); break;
+    case 4: ldr(Dst.W(), MemSrc); break;
+    case 8: ldr(Dst.X(), MemSrc); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
-      case 1:
-        ldrb(Dst, MemSrc);
-        break;
-      case 2:
-        ldrh(Dst, MemSrc);
-        break;
-      case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
-      case 8:
-        ldr(Dst.D(), MemSrc);
-        break;
-      case 16:
-        ldr(Dst.Q(), MemSrc);
-        break;
-      case 32: {
-        const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
-        ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), Operand);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
-        break;
+    case 1: ldrb(Dst, MemSrc); break;
+    case 2: ldrh(Dst, MemSrc); break;
+    case 4: ldr(Dst.S(), MemSrc); break;
+    case 8: ldr(Dst.D(), MemSrc); break;
+    case 16: ldr(Dst.Q(), MemSrc); break;
+    case 32: {
+      const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), Operand);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize); break;
     }
   }
 }
@@ -1068,103 +904,61 @@ DEF_OP(LoadMemTSO) {
       // 8bit load is always aligned to natural alignment
       const auto Dst = GetReg(Node);
       ldapurb(Dst, MemReg, Offset);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          ldapurh(Dst, MemReg, Offset);
-          break;
-        case 4:
-          ldapur(Dst.W(), MemReg, Offset);
-          break;
-        case 8:
-          ldapur(Dst.X(), MemReg, Offset);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
-          break;
+      case 2: ldapurh(Dst, MemReg, Offset); break;
+      case 4: ldapur(Dst.W(), MemReg, Offset); break;
+      case 8: ldapur(Dst.X(), MemReg, Offset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
       nop();
     }
-  }
-  else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       ldaprb(Dst.W(), MemReg);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          ldaprh(Dst.W(), MemReg);
-          break;
-        case 4:
-          ldapr(Dst.W(), MemReg);
-          break;
-        case 8:
-          ldapr(Dst.X(), MemReg);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
-          break;
+      case 2: ldaprh(Dst.W(), MemReg); break;
+      case 4: ldapr(Dst.W(), MemReg); break;
+      case 8: ldapr(Dst.X(), MemReg); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
       nop();
     }
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       ldarb(Dst, MemReg);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          ldarh(Dst, MemReg);
-          break;
-        case 4:
-          ldar(Dst.W(), MemReg);
-          break;
-        case 8:
-          ldar(Dst.X(), MemReg);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
-          break;
+      case 2: ldarh(Dst, MemReg); break;
+      case 4: ldar(Dst.W(), MemReg); break;
+      case 8: ldar(Dst.X(), MemReg); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
       nop();
     }
-  }
-  else {
+  } else {
     const auto Dst = GetVReg(Node);
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
-      case 1:
-        ldrb(Dst, MemSrc);
-        break;
-      case 2:
-        ldrh(Dst, MemSrc);
-        break;
-      case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
-      case 8:
-        ldr(Dst.D(), MemSrc);
-        break;
-      case 16:
-        ldr(Dst.Q(), MemSrc);
-        break;
-      case 32: {
-        const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
-        ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemSrc);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
-        break;
+    case 1: ldrb(Dst, MemSrc); break;
+    case 2: ldrh(Dst, MemSrc); break;
+    case 4: ldr(Dst.S(), MemSrc); break;
+    case 8: ldr(Dst.D(), MemSrc); break;
+    case 16: ldr(Dst.Q(), MemSrc); break;
+    case 32: {
+      const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemSrc);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
     }
     // Half-barrier.
     dmb(FEXCore::ARMEmitter::BarrierScope::ISHLD);
@@ -1189,35 +983,33 @@ DEF_OP(VLoadVectorMasked) {
   const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+                                             ARMEmitter::SubRegSize::i8Bit;
 
   // Check if the sign bit is set for the given element size.
   cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
   switch (ElementSize) {
-    case 1: {
-      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-      break;
-    }
-    case 2: {
-      ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-      break;
-    }
-    case 4: {
-      ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-      break;
-    }
-    case 8: {
-      ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled VLoadVectorMasked size: {}", ElementSize);
-      break;
+  case 1: {
+    ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+    break;
+  }
+  case 2: {
+    ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+    break;
+  }
+  case 4: {
+    ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+    break;
+  }
+  case 8: {
+    ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled VLoadVectorMasked size: {}", ElementSize); break;
   }
 }
 
@@ -1239,35 +1031,33 @@ DEF_OP(VStoreVectorMasked) {
   const auto MemDst = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize =
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+                                             ARMEmitter::SubRegSize::i8Bit;
 
   // Check if the sign bit is set for the given element size.
   cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
   switch (ElementSize) {
-    case 1: {
-      st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-      break;
-    }
-    case 2: {
-      st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-      break;
-    }
-    case 4: {
-      st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-      break;
-    }
-    case 8: {
-      st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled VStoreVectorMasked size: {}", ElementSize);
-      break;
+  case 1: {
+    st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+    break;
+  }
+  case 2: {
+    st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+    break;
+  }
+  case 4: {
+    st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+    break;
+  }
+  case 8: {
+    st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled VStoreVectorMasked size: {}", ElementSize); break;
   }
 }
 
@@ -1282,9 +1072,8 @@ DEF_OP(VLoadVectorElement) {
   const auto DstSrc = GetVReg(Op->DstSrc.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 ||
-                      ElementSize == 4 || ElementSize == 8 ||
-                      ElementSize == 16, "Invalid element size");
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
+                                                                                                                         "size");
 
   if (Is256Bit) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit VLoadVectorElement");
@@ -1293,24 +1082,12 @@ DEF_OP(VLoadVectorElement) {
       mov(Dst.Q(), DstSrc.Q());
     }
     switch (ElementSize) {
-    case 1:
-      ld1<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), Op->Index, MemReg);
-      break;
-    case 2:
-      ld1<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), Op->Index, MemReg);
-      break;
-    case 4:
-      ld1<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), Op->Index, MemReg);
-      break;
-    case 8:
-      ld1<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), Op->Index, MemReg);
-      break;
-    case 16:
-      ldr(Dst.Q(), MemReg);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize);
-      return;
+    case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case 16: ldr(Dst.Q(), MemReg); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); return;
     }
   }
 
@@ -1330,9 +1107,8 @@ DEF_OP(VStoreVectorElement) {
   const auto Value = GetVReg(Op->Value.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 ||
-                      ElementSize == 4 || ElementSize == 8 ||
-                      ElementSize == 16, "Invalid element size");
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
+                                                                                                                         "size");
 
   // Emit a half-barrier if TSO is enabled.
   if (CTX->IsAtomicTSOEnabled()) {
@@ -1343,24 +1119,12 @@ DEF_OP(VStoreVectorElement) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit {}", __func__);
   } else {
     switch (ElementSize) {
-    case 1:
-      st1<ARMEmitter::SubRegSize::i8Bit>(Value.Q(), Op->Index, MemReg);
-      break;
-    case 2:
-      st1<ARMEmitter::SubRegSize::i16Bit>(Value.Q(), Op->Index, MemReg);
-      break;
-    case 4:
-      st1<ARMEmitter::SubRegSize::i32Bit>(Value.Q(), Op->Index, MemReg);
-      break;
-    case 8:
-      st1<ARMEmitter::SubRegSize::i64Bit>(Value.Q(), Op->Index, MemReg);
-      break;
-    case 16:
-      str(Value.Q(), MemReg);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize);
-      return;
+    case 1: st1<ARMEmitter::SubRegSize::i8Bit>(Value.Q(), Op->Index, MemReg); break;
+    case 2: st1<ARMEmitter::SubRegSize::i16Bit>(Value.Q(), Op->Index, MemReg); break;
+    case 4: st1<ARMEmitter::SubRegSize::i32Bit>(Value.Q(), Op->Index, MemReg); break;
+    case 8: st1<ARMEmitter::SubRegSize::i64Bit>(Value.Q(), Op->Index, MemReg); break;
+    case 16: str(Value.Q(), MemReg); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); return;
     }
   }
 }
@@ -1375,9 +1139,8 @@ DEF_OP(VBroadcastFromMem) {
   const auto Dst = GetVReg(Node);
   const auto MemReg = GetReg(Op->Address.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 ||
-                      ElementSize == 4 || ElementSize == 8 ||
-                      ElementSize == 16, "Invalid element size");
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
+                                                                                                                         "size");
 
   if (Is256Bit && !HostSupportsSVE256) {
     LOGMAN_MSG_A_FMT("{}: 256-bit vectors must support SVE256", __func__);
@@ -1388,49 +1151,24 @@ DEF_OP(VBroadcastFromMem) {
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
 
     switch (ElementSize) {
-    case 1:
-      ld1rb(ARMEmitter::SubRegSize::i8Bit, Dst.Z(),
-            GoverningPredicate, MemReg);
-      break;
-    case 2:
-      ld1rh(ARMEmitter::SubRegSize::i16Bit, Dst.Z(),
-            GoverningPredicate, MemReg);
-      break;
-    case 4:
-      ld1rw(ARMEmitter::SubRegSize::i32Bit, Dst.Z(),
-            GoverningPredicate, MemReg);
-      break;
-    case 8:
-      ld1rd(Dst.Z(), GoverningPredicate, MemReg);
-      break;
-    case 16:
-      ld1rqb(Dst.Z(), GoverningPredicate, MemReg);
-      break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
-      return;
+    case 1: ld1rb(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case 2: ld1rh(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case 4: ld1rw(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case 8: ld1rd(Dst.Z(), GoverningPredicate, MemReg); break;
+    case 16: ld1rqb(Dst.Z(), GoverningPredicate, MemReg); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize); return;
     }
   } else {
     switch (ElementSize) {
-    case 1:
-      ld1r<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), MemReg);
-      break;
-    case 2:
-      ld1r<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), MemReg);
-      break;
-    case 4:
-      ld1r<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), MemReg);
-      break;
-    case 8:
-      ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg);
-      break;
+    case 1: ld1r<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), MemReg); break;
+    case 2: ld1r<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), MemReg); break;
+    case 4: ld1r<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), MemReg); break;
+    case 8: ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg); break;
     case 16:
       // Normal load, like ld1rqb with 128-bit regs.
       ldr(Dst.Q(), MemReg);
       break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize);
-      return;
+    default: LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize); return;
     }
   }
 
@@ -1452,8 +1190,7 @@ DEF_OP(Push) {
     if (Dst == Src) {
       NeedsMoveAfterwards = true;
       // Need to be careful here, incoming source might be reused afterwards.
-    }
-    else {
+    } else {
       // RA constraints would let this always be true.
       mov(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc);
     }
@@ -1477,52 +1214,51 @@ DEF_OP(Push) {
 
   if (NeedsMoveAfterwards) {
     switch (ValueSize) {
-      case 1: {
-        sturb(Src.W(), AddrSrc, -ValueSize);
-        break;
-      }
-      case 2: {
-        sturh(Src.W(), AddrSrc, -ValueSize);
-        break;
-      }
-      case 4: {
-        stur(Src.W(), AddrSrc, -ValueSize);
-        break;
-      }
-      case 8: {
-        stur(Src.X(), AddrSrc, -ValueSize);
-        break;
-      }
-      default: {
-        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
-        break;
-      }
+    case 1: {
+      sturb(Src.W(), AddrSrc, -ValueSize);
+      break;
+    }
+    case 2: {
+      sturh(Src.W(), AddrSrc, -ValueSize);
+      break;
+    }
+    case 4: {
+      stur(Src.W(), AddrSrc, -ValueSize);
+      break;
+    }
+    case 8: {
+      stur(Src.X(), AddrSrc, -ValueSize);
+      break;
+    }
+    default: {
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+      break;
+    }
     }
 
     sub(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc, ValueSize);
-  }
-  else {
+  } else {
     switch (ValueSize) {
-      case 1: {
-        strb<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
-        break;
-      }
-      case 2: {
-        strh<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
-        break;
-      }
-      case 4: {
-        str<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
-        break;
-      }
-      case 8: {
-        str<ARMEmitter::IndexType::PRE>(Src.X(), Dst, -ValueSize);
-        break;
-      }
-      default: {
-        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
-        break;
-      }
+    case 1: {
+      strb<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+      break;
+    }
+    case 2: {
+      strh<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+      break;
+    }
+    case 4: {
+      str<ARMEmitter::IndexType::PRE>(Src.W(), Dst, -ValueSize);
+      break;
+    }
+    case 8: {
+      str<ARMEmitter::IndexType::PRE>(Src.X(), Dst, -ValueSize);
+      break;
+    }
+    default: {
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+      break;
+    }
     }
   }
 }
@@ -1537,55 +1273,42 @@ DEF_OP(StoreMem) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
-      case 1:
-        strb(Src, MemSrc);
-        break;
-      case 2:
-        strh(Src, MemSrc);
-        break;
-      case 4:
-        str(Src.W(), MemSrc);
-        break;
-      case 8:
-        str(Src.X(), MemSrc);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
-        break;
+    case 1: strb(Src, MemSrc); break;
+    case 2: strh(Src, MemSrc); break;
+    case 4: str(Src.W(), MemSrc); break;
+    case 8: str(Src.X(), MemSrc); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-      case 1: {
-        strb(Src, MemSrc);
-        break;
-      }
-      case 2: {
-        strh(Src, MemSrc);
-        break;
-      }
-      case 4: {
-        str(Src.S(), MemSrc);
-        break;
-      }
-      case 8: {
-        str(Src.D(), MemSrc);
-        break;
-      }
-      case 16: {
-        str(Src.Q(), MemSrc);
-        break;
-      }
-      case 32: {
-        const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
-        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemSrc);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
-        break;
+    case 1: {
+      strb(Src, MemSrc);
+      break;
+    }
+    case 2: {
+      strh(Src, MemSrc);
+      break;
+    }
+    case 4: {
+      str(Src.S(), MemSrc);
+      break;
+    }
+    case 8: {
+      str(Src.D(), MemSrc);
+      break;
+    }
+    case 16: {
+      str(Src.Q(), MemSrc);
+      break;
+    }
+    case 32: {
+      const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemSrc);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
     }
   }
 }
@@ -1606,81 +1329,49 @@ DEF_OP(StoreMemTSO) {
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlurb(Src, MemReg, Offset);
-    }
-    else {
+    } else {
       // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
-        case 2:
-          stlurh(Src, MemReg, Offset);
-          break;
-        case 4:
-          stlur(Src.W(), MemReg, Offset);
-          break;
-        case 8:
-          stlur(Src.X(), MemReg, Offset);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
-          break;
+      case 2: stlurh(Src, MemReg, Offset); break;
+      case 4: stlur(Src.W(), MemReg, Offset); break;
+      case 8: stlur(Src.X(), MemReg, Offset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
       }
     }
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
 
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(Src, MemReg);
-    }
-    else {
+    } else {
       // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
-        case 2:
-          stlrh(Src, MemReg);
-          break;
-        case 4:
-          stlr(Src.W(), MemReg);
-          break;
-        case 8:
-          stlr(Src.X(), MemReg);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
-          break;
+      case 2: stlrh(Src, MemReg); break;
+      case 4: stlr(Src.W(), MemReg); break;
+      case 8: stlr(Src.X(), MemReg); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
       }
     }
-  }
-  else {
+  } else {
     // Half-Barrier.
     dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
     const auto Src = GetVReg(Op->Value.ID());
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
-      case 1:
-        strb(Src, MemSrc);
-        break;
-      case 2:
-        strh(Src, MemSrc);
-        break;
-      case 4:
-        str(Src.S(), MemSrc);
-        break;
-      case 8:
-        str(Src.D(), MemSrc);
-        break;
-      case 16:
-        str(Src.Q(), MemSrc);
-        break;
-      case 32: {
-        const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
-        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Operand);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
-        break;
+    case 1: strb(Src, MemSrc); break;
+    case 2: strh(Src, MemSrc); break;
+    case 4: str(Src.S(), MemSrc); break;
+    case 8: str(Src.D(), MemSrc); break;
+    case 16: str(Src.Q(), MemSrc); break;
+    case 32: {
+      const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Operand);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
     }
   }
 }
@@ -1715,14 +1406,13 @@ DEF_OP(MemSet) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::SingleUseForwardLabel BackwardImpl{};
-  ARMEmitter::SingleUseForwardLabel Done{};
+  ARMEmitter::SingleUseForwardLabel BackwardImpl {};
+  ARMEmitter::SingleUseForwardLabel Done {};
 
   mov(TMP1, Length.X());
   if (Op->Prefix.IsInvalid()) {
     mov(TMP2, MemReg.X());
-  }
-  else {
+  } else {
     const auto Prefix = GetReg(Op->Prefix.ID());
     add(TMP2, Prefix.X(), MemReg.X());
   }
@@ -1734,21 +1424,11 @@ DEF_OP(MemSet) {
 
   auto MemStore = [this](auto Value, uint32_t OpSize, int32_t Size) {
     switch (OpSize) {
-      case 1:
-        strb<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
-        break;
-      case 2:
-        strh<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
-        break;
-      case 4:
-        str<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
-        break;
-      case 8:
-        str<ARMEmitter::IndexType::POST>(Value.X(), TMP2, Size);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-        break;
+    case 1: strb<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size); break;
+    case 2: strh<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size); break;
+    case 4: str<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size); break;
+    case 8: str<ARMEmitter::IndexType::POST>(Value.X(), TMP2, Size); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
     }
   };
 
@@ -1756,30 +1436,20 @@ DEF_OP(MemSet) {
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(Value.W(), TMP2);
-    }
-    else {
+    } else {
       nop();
       switch (OpSize) {
-        case 2:
-          stlrh(Value.W(), TMP2);
-          break;
-        case 4:
-          stlr(Value.W(), TMP2);
-          break;
-        case 8:
-          stlr(Value.X(), TMP2);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-          break;
+      case 2: stlrh(Value.W(), TMP2); break;
+      case 4: stlr(Value.W(), TMP2); break;
+      case 8: stlr(Value.X(), TMP2); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
       }
       nop();
     }
 
     if (Size >= 0) {
       add(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
-    }
-    else {
+    } else {
       sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
     }
   };
@@ -1788,8 +1458,8 @@ DEF_OP(MemSet) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
-    ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::SingleUseForwardLabel DoneInternal{};
+    ARMEmitter::BackwardLabel AgainInternal {};
+    ARMEmitter::SingleUseForwardLabel DoneInternal {};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
@@ -1797,8 +1467,7 @@ DEF_OP(MemSet) {
     Bind(&AgainInternal);
     if (Op->IsAtomic) {
       MemStoreTSO(Value, OpSize, SizeDirection);
-    }
-    else {
+    } else {
       MemStore(Value, OpSize, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
@@ -1808,40 +1477,19 @@ DEF_OP(MemSet) {
 
     if (SizeDirection >= 0) {
       switch (OpSize) {
-        case 1:
-          add(Dst.X(), MemReg.X(), Length.X());
-          break;
-        case 2:
-          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1);
-          break;
-        case 4:
-          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2);
-          break;
-        case 8:
-          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-          break;
+      case 1: add(Dst.X(), MemReg.X(), Length.X()); break;
+      case 2: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
+      case 4: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
+      case 8: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 1:
-          sub(Dst.X(), MemReg.X(), Length.X());
-          break;
-        case 2:
-          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1);
-          break;
-        case 4:
-          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2);
-          break;
-        case 8:
-          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-          break;
+      case 1: sub(Dst.X(), MemReg.X(), Length.X()); break;
+      case 2: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
+      case 4: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
+      case 8: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
     }
   };
@@ -1849,10 +1497,9 @@ DEF_OP(MemSet) {
   if (DirectionIsInline) {
     // If the direction constant is set then the direction is negative.
     EmitMemset(DirectionConstant ? -1 : 1);
-  }
-  else {
+  } else {
     // Emit forward direction memset then backward direction memset.
-    for (int32_t Direction :  { 1, -1 }) {
+    for (int32_t Direction : {1, -1}) {
       EmitMemset(Direction);
 
       if (Direction == 1) {
@@ -1895,22 +1542,20 @@ DEF_OP(MemCpy) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::SingleUseForwardLabel BackwardImpl{};
-  ARMEmitter::SingleUseForwardLabel Done{};
+  ARMEmitter::SingleUseForwardLabel BackwardImpl {};
+  ARMEmitter::SingleUseForwardLabel Done {};
 
   mov(TMP1, Length.X());
   if (Op->PrefixDest.IsInvalid()) {
     mov(TMP2, MemRegDest.X());
-  }
-  else {
+  } else {
     const auto Prefix = GetReg(Op->PrefixDest.ID());
     add(TMP2, Prefix.X(), MemRegDest.X());
   }
 
   if (Op->PrefixSrc.IsInvalid()) {
     mov(TMP3, MemRegSrc.X());
-  }
-  else {
+  } else {
     const auto Prefix = GetReg(Op->PrefixSrc.ID());
     add(TMP3, Prefix.X(), MemRegSrc.X());
   }
@@ -1927,25 +1572,23 @@ DEF_OP(MemCpy) {
 
   auto MemCpy = [this](uint32_t OpSize, int32_t Size) {
     switch (OpSize) {
-      case 1:
-        ldrb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
-        strb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
-        break;
-      case 2:
-        ldrh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
-        strh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
-        break;
-      case 4:
-        ldr<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
-        str<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
-        break;
-      case 8:
-        ldr<ARMEmitter::IndexType::POST>(TMP4, TMP3, Size);
-        str<ARMEmitter::IndexType::POST>(TMP4, TMP2, Size);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-        break;
+    case 1:
+      ldrb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+      strb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+      break;
+    case 2:
+      ldrh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+      strh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+      break;
+    case 4:
+      ldr<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+      str<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+      break;
+    case 8:
+      ldr<ARMEmitter::IndexType::POST>(TMP4, TMP3, Size);
+      str<ARMEmitter::IndexType::POST>(TMP4, TMP2, Size);
+      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
     }
   };
 
@@ -1955,81 +1598,46 @@ DEF_OP(MemCpy) {
         // 8bit load is always aligned to natural alignment
         ldaprb(TMP4.W(), TMP3);
         stlrb(TMP4.W(), TMP2);
-      }
-      else {
+      } else {
         nop();
         switch (OpSize) {
-          case 2:
-            ldaprh(TMP4.W(), TMP3);
-            break;
-          case 4:
-            ldapr(TMP4.W(), TMP3);
-            break;
-          case 8:
-            ldapr(TMP4, TMP3);
-            break;
-          default:
-            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-            break;
+        case 2: ldaprh(TMP4.W(), TMP3); break;
+        case 4: ldapr(TMP4.W(), TMP3); break;
+        case 8: ldapr(TMP4, TMP3); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
         nop();
 
         nop();
         switch (OpSize) {
-          case 2:
-            stlrh(TMP4.W(), TMP2);
-            break;
-          case 4:
-            stlr(TMP4.W(), TMP2);
-            break;
-          case 8:
-            stlr(TMP4, TMP2);
-            break;
-          default:
-            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-            break;
+        case 2: stlrh(TMP4.W(), TMP2); break;
+        case 4: stlr(TMP4.W(), TMP2); break;
+        case 8: stlr(TMP4, TMP2); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
         nop();
       }
-    }
-    else {
+    } else {
       if (OpSize == 1) {
         // 8bit load is always aligned to natural alignment
         ldarb(TMP4.W(), TMP3);
         stlrb(TMP4.W(), TMP2);
-      }
-      else {
+      } else {
         nop();
         switch (OpSize) {
-          case 2:
-            ldarh(TMP4.W(), TMP3);
-            break;
-          case 4:
-            ldar(TMP4.W(), TMP3);
-            break;
-          case 8:
-            ldar(TMP4, TMP3);
-            break;
-          default:
-            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-            break;
+        case 2: ldarh(TMP4.W(), TMP3); break;
+        case 4: ldar(TMP4.W(), TMP3); break;
+        case 8: ldar(TMP4, TMP3); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
         nop();
 
         nop();
         switch (OpSize) {
-          case 2:
-            stlrh(TMP4.W(), TMP2);
-            break;
-          case 4:
-            stlr(TMP4.W(), TMP2);
-            break;
-          case 8:
-            stlr(TMP4, TMP2);
-            break;
-          default:
-            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
-            break;
+        case 2: stlrh(TMP4.W(), TMP2); break;
+        case 4: stlr(TMP4.W(), TMP2); break;
+        case 8: stlr(TMP4, TMP2); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
         nop();
       }
@@ -2038,8 +1646,7 @@ DEF_OP(MemCpy) {
     if (Size >= 0) {
       add(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
       add(ARMEmitter::Size::i64Bit, TMP3, TMP3, OpSize);
-    }
-    else {
+    } else {
       sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
       sub(ARMEmitter::Size::i64Bit, TMP3, TMP3, OpSize);
     }
@@ -2049,8 +1656,8 @@ DEF_OP(MemCpy) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
-    ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::SingleUseForwardLabel DoneInternal{};
+    ARMEmitter::BackwardLabel AgainInternal {};
+    ARMEmitter::SingleUseForwardLabel DoneInternal {};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
@@ -2058,8 +1665,7 @@ DEF_OP(MemCpy) {
     Bind(&AgainInternal);
     if (Op->IsAtomic) {
       MemCpyTSO(OpSize, SizeDirection);
-    }
-    else {
+    } else {
       MemCpy(OpSize, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
@@ -2074,48 +1680,43 @@ DEF_OP(MemCpy) {
 
     if (SizeDirection >= 0) {
       switch (OpSize) {
-        case 1:
-          add(Dst.first.X(), TMP1, TMP3);
-          add(Dst.second.X(), TMP2, TMP3);
-          break;
-        case 2:
-          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
-          break;
-        case 4:
-          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
-          break;
-        case 8:
-          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-          break;
+      case 1:
+        add(Dst.first.X(), TMP1, TMP3);
+        add(Dst.second.X(), TMP2, TMP3);
+        break;
+      case 2:
+        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        break;
+      case 4:
+        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        break;
+      case 8:
+        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 1:
-          sub(Dst.first.X(), TMP1, TMP3);
-          sub(Dst.second.X(), TMP2, TMP3);
-          break;
-        case 2:
-          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
-          break;
-        case 4:
-          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
-          break;
-        case 8:
-          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
-          break;
+      case 1:
+        sub(Dst.first.X(), TMP1, TMP3);
+        sub(Dst.second.X(), TMP2, TMP3);
+        break;
+      case 2:
+        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        break;
+      case 4:
+        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        break;
+      case 8:
+        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
     }
   };
@@ -2123,10 +1724,9 @@ DEF_OP(MemCpy) {
   if (DirectionIsInline) {
     // If the direction constant is set then the direction is negative.
     EmitMemcpy(DirectionConstant ? -1 : 1);
-  }
-  else {
+  } else {
     // Emit forward direction memset then backward direction memset.
-    for (int32_t Direction :  { 1, -1 }) {
+    for (int32_t Direction : {1, -1}) {
       EmitMemcpy(Direction);
       if (Direction == 1) {
         b(&Done);
@@ -2155,100 +1755,67 @@ DEF_OP(ParanoidLoadMemTSO) {
       // 8bit load is always aligned to natural alignment
       const auto Dst = GetReg(Node);
       ldapurb(Dst, MemReg, Offset);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          ldapurh(Dst, MemReg, Offset);
-          break;
-        case 4:
-          ldapur(Dst.W(), MemReg, Offset);
-          break;
-        case 8:
-          ldapur(Dst.X(), MemReg, Offset);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
-          break;
+      case 2: ldapurh(Dst, MemReg, Offset); break;
+      case 4: ldapur(Dst.W(), MemReg, Offset); break;
+      case 8: ldapur(Dst.X(), MemReg, Offset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
-  }
-  else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       ldaprb(Dst.W(), MemReg);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          ldaprh(Dst.W(), MemReg);
-          break;
-        case 4:
-          ldapr(Dst.W(), MemReg);
-          break;
-        case 8:
-          ldapr(Dst.X(), MemReg);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
-          break;
+      case 2: ldaprh(Dst.W(), MemReg); break;
+      case 4: ldapr(Dst.W(), MemReg); break;
+      case 8: ldapr(Dst.X(), MemReg); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
-      case 1:
-        ldarb(Dst, MemReg);
-        break;
-      case 2:
-        ldarh(Dst, MemReg);
-        break;
-      case 4:
-        ldar(Dst.W(), MemReg);
-        break;
-      case 8:
-        ldar(Dst.X(), MemReg);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
-        break;
+    case 1: ldarb(Dst, MemReg); break;
+    case 2: ldarh(Dst, MemReg); break;
+    case 4: ldar(Dst.W(), MemReg); break;
+    case 8: ldar(Dst.X(), MemReg); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     const auto Dst = GetVReg(Node);
     switch (OpSize) {
-      case 1:
-        ldarb(TMP1, MemReg);
-        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
-        break;
-      case 2:
-        ldarh(TMP1, MemReg);
-        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
-        break;
-      case 4:
-        ldar(TMP1.W(), MemReg);
-        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
-        break;
-      case 8:
-        ldar(TMP1, MemReg);
-        fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP1);
-        break;
-      case 16:
-        ldaxp(ARMEmitter::Size::i64Bit, TMP1, TMP2, MemReg);
-        clrex();
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
-        break;
-      case 32:
-        dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
-        dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
-        break;
+    case 1:
+      ldarb(TMP1, MemReg);
+      fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
+      break;
+    case 2:
+      ldarh(TMP1, MemReg);
+      fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
+      break;
+    case 4:
+      ldar(TMP1.W(), MemReg);
+      fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
+      break;
+    case 8:
+      ldar(TMP1, MemReg);
+      fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP1);
+      break;
+    case 16:
+      ldaxp(ARMEmitter::Size::i64Bit, TMP1, TMP2, MemReg);
+      clrex();
+      ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
+      ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
+      break;
+    case 32:
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
     }
   }
 }
@@ -2269,86 +1836,63 @@ DEF_OP(ParanoidStoreMemTSO) {
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlurb(Src, MemReg, Offset);
-    }
-    else {
+    } else {
       switch (OpSize) {
-        case 2:
-          stlurh(Src, MemReg, Offset);
-          break;
-        case 4:
-          stlur(Src.W(), MemReg, Offset);
-          break;
-        case 8:
-          stlur(Src.X(), MemReg, Offset);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize);
-          break;
+      case 2: stlurh(Src, MemReg, Offset); break;
+      case 4: stlur(Src.W(), MemReg, Offset); break;
+      case 8: stlur(Src.X(), MemReg, Offset); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
       }
     }
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
-      case 1:
-        stlrb(Src, MemReg);
-        break;
-      case 2:
-        stlrh(Src, MemReg);
-        break;
-      case 4:
-        stlr(Src.W(), MemReg);
-        break;
-      case 8:
-        stlr(Src.X(), MemReg);
-        break;
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize);
-        break;
+    case 1: stlrb(Src, MemReg); break;
+    case 2: stlrh(Src, MemReg); break;
+    case 4: stlr(Src.W(), MemReg); break;
+    case 8: stlr(Src.X(), MemReg); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
     }
-  }
-  else {
+  } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-      case 1:
-        umov<ARMEmitter::SubRegSize::i8Bit>(TMP1, Src, 0);
-        stlrb(TMP1, MemReg);
-        break;
-      case 2:
-        umov<ARMEmitter::SubRegSize::i16Bit>(TMP1, Src, 0);
-        stlrh(TMP1, MemReg);
-        break;
-      case 4:
-        umov<ARMEmitter::SubRegSize::i32Bit>(TMP1, Src, 0);
-        stlr(TMP1.W(), MemReg);
-        break;
-      case 8:
-        umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
-        stlr(TMP1, MemReg);
-        break;
-      case 16: {
-        // Move vector to GPRs
-        umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
-        umov<ARMEmitter::SubRegSize::i64Bit>(TMP2, Src, 1);
-        ARMEmitter::BackwardLabel B;
-        Bind(&B);
+    case 1:
+      umov<ARMEmitter::SubRegSize::i8Bit>(TMP1, Src, 0);
+      stlrb(TMP1, MemReg);
+      break;
+    case 2:
+      umov<ARMEmitter::SubRegSize::i16Bit>(TMP1, Src, 0);
+      stlrh(TMP1, MemReg);
+      break;
+    case 4:
+      umov<ARMEmitter::SubRegSize::i32Bit>(TMP1, Src, 0);
+      stlr(TMP1.W(), MemReg);
+      break;
+    case 8:
+      umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
+      stlr(TMP1, MemReg);
+      break;
+    case 16: {
+      // Move vector to GPRs
+      umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
+      umov<ARMEmitter::SubRegSize::i64Bit>(TMP2, Src, 1);
+      ARMEmitter::BackwardLabel B;
+      Bind(&B);
 
-        // ldaxp must not have both the destination registers be the same
-        ldaxp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::zr, TMP3, MemReg); // <- Can hit SIGBUS. Overwritten with DMB
-        stlxp(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP2, MemReg); // <- Can also hit SIGBUS
-        cbnz(ARMEmitter::Size::i64Bit, TMP3, &B); // < Overwritten with DMB
-        break;
-      }
-      case 32: {
-        dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
-        dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize);
-        break;
+      // ldaxp must not have both the destination registers be the same
+      ldaxp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::zr, TMP3, MemReg); // <- Can hit SIGBUS. Overwritten with DMB
+      stlxp(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP2, MemReg);          // <- Can also hit SIGBUS
+      cbnz(ARMEmitter::Size::i64Bit, TMP3, &B);                           // < Overwritten with DMB
+      break;
+    }
+    case 32: {
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
     }
   }
 }
@@ -2362,8 +1906,7 @@ DEF_OP(CacheLineClear) {
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
   if (CTX->HostFeatures.DCacheLineSize >= 64U) {
     dc(ARMEmitter::DataCacheOperation::CIVAC, MemReg);
-  }
-  else {
+  } else {
     auto CurrentWorkingReg = MemReg.X();
     for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
       dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
@@ -2386,8 +1929,7 @@ DEF_OP(CacheLineClean) {
   // Clean dcache only
   if (CTX->HostFeatures.DCacheLineSize >= 64U) {
     dc(ARMEmitter::DataCacheOperation::CVAC, MemReg);
-  }
-  else {
+  } else {
     auto CurrentWorkingReg = MemReg.X();
     for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
       dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
@@ -2405,8 +1947,7 @@ DEF_OP(CacheLineZero) {
   if (CTX->HostFeatures.SupportsCLZERO) {
     // We can use this instruction directly
     dc(ARMEmitter::DataCacheOperation::ZVA, MemReg);
-  }
-  else {
+  } else {
     // We must walk the cacheline ourselves
     // Force cacheline alignment
     and_(ARMEmitter::Size::i64Bit, TMP1, MemReg, ~(CPUIDEmu::CACHELINE_SIZE - 1));
@@ -2420,5 +1961,4 @@ DEF_OP(CacheLineZero) {
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

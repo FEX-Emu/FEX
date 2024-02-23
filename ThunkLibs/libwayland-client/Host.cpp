@@ -84,7 +84,7 @@ static void repack_guest_wl_interface_to_host(guest_layout<const wl_interface*> 
   auto& guest_interface = *guest_interface_ptr.get_pointer();
   static_assert(sizeof(guest_interface) == 24);
 
-  *host_interface = host_layout<wl_interface> { guest_interface }.data;
+  *host_interface = host_layout<wl_interface> {guest_interface}.data;
   fex_apply_custom_repacking_entry(reinterpret_cast<host_layout<wl_interface>&>(*host_interface), guest_interface);
 }
 
@@ -111,7 +111,7 @@ static const wl_interface* lookup_wl_interface(guest_layout<const wl_interface*>
   return host_interface_it->second;
 }
 
-void fex_custom_repack_entry(host_layout<wl_interface>& into, guest_layout<wl_interface> const& from) {
+void fex_custom_repack_entry(host_layout<wl_interface>& into, const guest_layout<wl_interface>& from) {
   // NOTE: These arrays are complements to global symbols in the guest, so we
   //       never explicitly free this memory
   auto& host_interface = into.data;
@@ -120,28 +120,28 @@ void fex_custom_repack_entry(host_layout<wl_interface>& into, guest_layout<wl_in
 
   memset((void*)host_interface.methods, 0, sizeof(wl_message) * host_interface.method_count);
   for (int i = 0; i < host_interface.method_count; ++i) {
-    const auto& guest_method { from.data.methods.get_pointer()[i] };
-    host_layout<wl_message> host_method { guest_method };
+    const auto& guest_method {from.data.methods.get_pointer()[i]};
+    host_layout<wl_message> host_method {guest_method};
     fex_apply_custom_repacking_entry(host_method, guest_method);
     memcpy((void*)&host_interface.methods[i], &host_method, sizeof(host_method));
   }
 
   memset((void*)host_interface.events, 0, sizeof(wl_message) * host_interface.event_count);
   for (int i = 0; i < host_interface.event_count; ++i) {
-    const auto& guest_event { from.data.events.get_pointer()[i] };
-    host_layout<wl_message> host_event { guest_event };
+    const auto& guest_event {from.data.events.get_pointer()[i]};
+    host_layout<wl_message> host_event {guest_event};
     fex_apply_custom_repacking_entry(host_event, guest_event);
     memcpy((void*)&host_interface.events[i], &host_event, sizeof(host_event));
   }
 }
 
-bool fex_custom_repack_exit(guest_layout<wl_interface>&, host_layout<wl_interface> const&) {
+bool fex_custom_repack_exit(guest_layout<wl_interface>&, const host_layout<wl_interface>&) {
   fprintf(stderr, "Should not be called: %s\n", __PRETTY_FUNCTION__);
   std::abort();
 }
-void fex_custom_repack_entry(host_layout<wl_message>& into, guest_layout<wl_message> const& from) {
+void fex_custom_repack_entry(host_layout<wl_message>& into, const guest_layout<wl_message>& from) {
   auto& host_method = into.data;
-  auto num_types = std::ranges::count_if(std::string_view { host_method.signature }, isalpha);
+  auto num_types = std::ranges::count_if(std::string_view {host_method.signature}, isalpha);
   if (num_types) {
     host_method.types = new const wl_interface*[num_types];
     for (int type = 0; type < num_types; ++type) {
@@ -150,7 +150,7 @@ void fex_custom_repack_entry(host_layout<wl_message>& into, guest_layout<wl_mess
     }
   }
 }
-bool fex_custom_repack_exit(guest_layout<wl_message>&, host_layout<wl_message> const&) {
+bool fex_custom_repack_exit(guest_layout<wl_message>&, const host_layout<wl_message>&) {
   fprintf(stderr, "Should not be called: %s\n", __PRETTY_FUNCTION__);
   std::abort();
 }
@@ -166,16 +166,15 @@ static wl_proxy* fexfn_impl_libwayland_client_wl_proxy_create(wl_proxy* proxy, g
 }
 
 #define WL_CLOSURE_MAX_ARGS 20
-static auto
-fex_wl_remap_argument_list(guest_layout<wl_argument*> args, const wl_message& message) {
+static auto fex_wl_remap_argument_list(guest_layout<wl_argument*> args, const wl_message& message) {
 #ifndef IS_32BIT_THUNK
   // Cast to host layout and return as std::span
-  wl_argument* host_args = host_layout<wl_argument*> { args }.data;
-  return std::span<wl_argument, WL_CLOSURE_MAX_ARGS> { host_args, WL_CLOSURE_MAX_ARGS };
+  wl_argument* host_args = host_layout<wl_argument*> {args}.data;
+  return std::span<wl_argument, WL_CLOSURE_MAX_ARGS> {host_args, WL_CLOSURE_MAX_ARGS};
 #else
   // Return a new array of elements zero-extended to 64-bit
   std::array<wl_argument, WL_CLOSURE_MAX_ARGS> host_args;
-  int arg_count = std::ranges::count_if(std::string_view { message.signature }, isalpha);
+  int arg_count = std::ranges::count_if(std::string_view {message.signature}, isalpha);
   for (int i = 0; i < arg_count; ++i) {
     // NOTE: wl_argument can store a pointer argument, so for 32-bit guests
     //       we need to make sure the upper 32-bits are explicitly zeroed
@@ -186,22 +185,15 @@ fex_wl_remap_argument_list(guest_layout<wl_argument*> args, const wl_message& me
 #endif
 }
 
-extern "C" void
-fexfn_impl_libwayland_client_wl_proxy_marshal_array(
-            wl_proxy *proxy, uint32_t opcode,
-            guest_layout<wl_argument*> args) {
+extern "C" void fexfn_impl_libwayland_client_wl_proxy_marshal_array(wl_proxy* proxy, uint32_t opcode, guest_layout<wl_argument*> args) {
   auto host_args = fex_wl_remap_argument_list(args, get_proxy_interface(proxy)->methods[opcode]);
   fexldr_ptr_libwayland_client_wl_proxy_marshal_array(proxy, opcode, host_args.data());
 }
 
-static wl_proxy*
-fex_wl_proxy_marshal_array(
-            wl_proxy *proxy, uint32_t opcode,
-            guest_layout<wl_argument*> args,
-            guest_layout<const wl_interface*> guest_interface,
-            bool constructor, // Call the _constructor variant of the native wayland function
-            std::optional<uint32_t> version,
-            std::optional<uint32_t> flags) {
+static wl_proxy* fex_wl_proxy_marshal_array(wl_proxy* proxy, uint32_t opcode, guest_layout<wl_argument*> args,
+                                            guest_layout<const wl_interface*> guest_interface,
+                                            bool constructor, // Call the _constructor variant of the native wayland function
+                                            std::optional<uint32_t> version, std::optional<uint32_t> flags) {
   auto interface = lookup_wl_interface(guest_interface);
 
   assert_is_valid_host_interface(get_proxy_interface(proxy));
@@ -229,29 +221,19 @@ fex_wl_proxy_marshal_array(
   }
 }
 
-extern "C" wl_proxy*
-fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor_versioned(
-            wl_proxy *proxy, uint32_t opcode,
-            guest_layout<wl_argument*> args,
-            guest_layout<const wl_interface*> interface,
-            uint32_t version) {
+extern "C" wl_proxy* fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor_versioned(
+  wl_proxy* proxy, uint32_t opcode, guest_layout<wl_argument*> args, guest_layout<const wl_interface*> interface, uint32_t version) {
   return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, true, version, std::nullopt);
 }
 
-extern "C" wl_proxy*
-fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor(
-            wl_proxy *proxy, uint32_t opcode,
-            guest_layout<wl_argument*> args,
-            guest_layout<const wl_interface*> interface) {
+extern "C" wl_proxy* fexfn_impl_libwayland_client_wl_proxy_marshal_array_constructor(
+  wl_proxy* proxy, uint32_t opcode, guest_layout<wl_argument*> args, guest_layout<const wl_interface*> interface) {
   return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, true, std::nullopt, std::nullopt);
 }
 
-extern "C" wl_proxy*
-fexfn_impl_libwayland_client_wl_proxy_marshal_array_flags(
-            wl_proxy *proxy, uint32_t opcode,
-            guest_layout<const wl_interface*> interface,
-            uint32_t version, uint32_t flags,
-            guest_layout<wl_argument*> args) {
+extern "C" wl_proxy* fexfn_impl_libwayland_client_wl_proxy_marshal_array_flags(wl_proxy* proxy, uint32_t opcode,
+                                                                               guest_layout<const wl_interface*> interface, uint32_t version,
+                                                                               uint32_t flags, guest_layout<wl_argument*> args) {
   return fex_wl_proxy_marshal_array(proxy, opcode, args, interface, false, version, flags);
 }
 
@@ -264,8 +246,8 @@ template<typename Result, typename... Args>
 const auto CallGuestPtrWithWaylandArray = CallbackUnpack<Result(Args..., wl_array*)>::CallGuestPtr;
 #else
 template<typename Result, typename... Args>
-static auto CallGuestPtrWithWaylandArray(Args... args, wl_array *array) -> Result {
-  GuestcallInfo *guestcall;
+static auto CallGuestPtrWithWaylandArray(Args... args, wl_array* array) -> Result {
+  GuestcallInfo* guestcall;
   LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
 
   using PackedArgumentsType = PackedArguments<Result, guest_layout<Args>..., guest_layout<wl_array*>>;
@@ -273,11 +255,9 @@ static auto CallGuestPtrWithWaylandArray(Args... args, wl_array *array) -> Resul
   GuestStackBumpAllocator GuestStack;
 
   auto* guest_array = GuestStack.New<guest_layout<wl_array>>(to_guest(to_host_layout(*array)));
-  guest_layout<wl_array*> guest_array_ptr = { .data = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(guest_array)) };
+  guest_layout<wl_array*> guest_array_ptr = {.data = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(guest_array))};
 
-  auto& packed_args =  *GuestStack.New<PackedArgumentsType>(
-    to_guest(to_host_layout(args))..., guest_array_ptr
-  );
+  auto& packed_args = *GuestStack.New<PackedArgumentsType>(to_guest(to_host_layout(args))..., guest_array_ptr);
 
   guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
 
@@ -288,15 +268,40 @@ static auto CallGuestPtrWithWaylandArray(Args... args, wl_array *array) -> Resul
 #endif
 
 // See wayland-util.h for documentation on protocol message signatures
-template<char> struct ArgType;
-template<> struct ArgType<'s'> { using type = const char*; };
-template<> struct ArgType<'u'> { using type = uint32_t; };
-template<> struct ArgType<'i'> { using type = int32_t; };
-template<> struct ArgType<'o'> { using type = wl_proxy*; };
-template<> struct ArgType<'n'> { using type = wl_proxy*; };
-template<> struct ArgType<'a'> { using type = wl_array*; };
-template<> struct ArgType<'f'> { using type = wl_fixed_t; };
-template<> struct ArgType<'h'> { using type = int32_t; }; // fd?
+template<char>
+struct ArgType;
+template<>
+struct ArgType<'s'> {
+  using type = const char*;
+};
+template<>
+struct ArgType<'u'> {
+  using type = uint32_t;
+};
+template<>
+struct ArgType<'i'> {
+  using type = int32_t;
+};
+template<>
+struct ArgType<'o'> {
+  using type = wl_proxy*;
+};
+template<>
+struct ArgType<'n'> {
+  using type = wl_proxy*;
+};
+template<>
+struct ArgType<'a'> {
+  using type = wl_array*;
+};
+template<>
+struct ArgType<'f'> {
+  using type = wl_fixed_t;
+};
+template<>
+struct ArgType<'h'> {
+  using type = int32_t;
+}; // fd?
 
 template<char... Signature>
 static void WaylandFinalizeHostTrampolineForGuestListener(void (*callback)()) {
@@ -304,8 +309,8 @@ static void WaylandFinalizeHostTrampolineForGuestListener(void (*callback)()) {
   FinalizeHostTrampolineForGuestFunction((cb*)callback);
 }
 
-extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy *proxy,
-      guest_layout<void (**)(void)> callback_table_raw, void* data) {
+extern "C" int
+fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest_layout<void (**)(void)> callback_table_raw, void* data) {
   auto interface = get_proxy_interface(proxy);
 
   assert_is_valid_host_interface(interface);
@@ -313,12 +318,12 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
   auto callback_table = callback_table_raw.force_get_host_pointer();
 
   for (int i = 0; i < interface->event_count; ++i) {
-    auto signature_view = std::string_view { interface->events[i].signature };
+    auto signature_view = std::string_view {interface->events[i].signature};
 
     // A leading number indicates the minimum protocol version
     uint32_t since_version = 0;
     auto [ptr, res] = std::from_chars(signature_view.begin(), signature_view.end(), since_version, 10);
-    auto signature = std::string { signature_view.substr(ptr - signature_view.begin()) };
+    auto signature = std::string {signature_view.substr(ptr - signature_view.begin())};
 
     // ? just indicates that the argument may be null, so it doesn't change the signature
     signature.erase(std::remove(signature.begin(), signature.end(), '?'), signature.end());
@@ -330,9 +335,8 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<>(callback);
     } else if (signature == "a") {
       // E.g. xdg_toplevel::wm_capabilities
-      FEXCore::FinalizeHostTrampolineForGuestFunction(
-          (FEXCore::HostToGuestTrampolinePtr*)callback,
-          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
+      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
+                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
     } else if (signature == "hu") {
       // E.g. zwp_linux_dmabuf_feedback_v1::format_table
       WaylandFinalizeHostTrampolineForGuestListener<'h', 'u'>(callback);
@@ -350,9 +354,8 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i'>(callback);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
-      FEXCore::FinalizeHostTrampolineForGuestFunction(
-          (FEXCore::HostToGuestTrampolinePtr*)callback,
-          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
+      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
+                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
     } else if (signature == "iiiiissi") {
       // E.g. wl_output_listener::geometry
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'i', 'i', 'i', 's', 's', 'i'>(callback);
@@ -385,9 +388,8 @@ extern "C" int fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_prox
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o'>(callback);
     } else if (signature == "uoa") {
       // E.g. wl_keyboard_listener::enter
-      FEXCore::FinalizeHostTrampolineForGuestFunction(
-          (FEXCore::HostToGuestTrampolinePtr*)callback,
-          (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, uint32_t, wl_surface*>);
+      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
+                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, uint32_t, wl_surface*>);
     } else if (signature == "uoff") {
       // E.g. wl_pointer_listener::enter
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback);
@@ -447,7 +449,7 @@ void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout
   // them into the rodata section of the application itself instead of the
   // library. To copy the host information to them on startup, we must
   // temporarily disable write-protection on this data hence.
-  auto page_begin = reinterpret_cast<uintptr_t>(guest_interface_raw.force_get_host_pointer()) & ~uintptr_t { 0xfff };
+  auto page_begin = reinterpret_cast<uintptr_t>(guest_interface_raw.force_get_host_pointer()) & ~uintptr_t {0xfff};
   if (0 != mprotect((void*)page_begin, 0x1000, PROT_READ | PROT_WRITE)) {
     fprintf(stderr, "ERROR: %s\n", strerror(errno));
     std::abort();
@@ -460,21 +462,21 @@ void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout
 
   // NOTE: These arrays are complements to global symbols in the guest, so we
   //       never explicitly free this memory
-  guest_interface.data.methods.data = (uintptr_t)new guest_layout<wl_message>[host_interface->method_count];
+  guest_interface.data.methods.data = (uintptr_t) new guest_layout<wl_message>[host_interface->method_count];
   for (int i = 0; i < host_interface->method_count; ++i) {
     guest_interface.data.methods.get_pointer()[i] = to_guest(to_host_layout(host_interface->methods[i]));
     guest_interface.data.methods.get_pointer()[i].data.types = to_guest(to_host_layout(host_interface->methods[i].types));
   }
 
-  guest_interface.data.events.data = (uintptr_t)new guest_layout<wl_message>[host_interface->event_count];
+  guest_interface.data.events.data = (uintptr_t) new guest_layout<wl_message>[host_interface->event_count];
   for (int i = 0; i < host_interface->event_count; ++i) {
     guest_interface.data.events.get_pointer()[i] = to_guest(to_host_layout(host_interface->events[i]));
     guest_interface.data.events.get_pointer()[i].data.types = to_guest(to_host_layout(host_interface->events[i].types));
   }
 #endif
 
-// TODO: Disabled until we ensure the interface data is indeed stored in rodata
-//  mprotect((void*)page_begin, 0x1000, PROT_READ);
+  // TODO: Disabled until we ensure the interface data is indeed stored in rodata
+  //  mprotect((void*)page_begin, 0x1000, PROT_READ);
 }
 
 void fexfn_impl_libwayland_client_fex_wl_get_method_signature(wl_proxy* proxy, uint32_t opcode, char* out) {

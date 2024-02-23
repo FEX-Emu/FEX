@@ -14,18 +14,18 @@ $end_info$
 #include "thunkgen_host_libfex_thunk_test.inl"
 
 static uint32_t fexfn_impl_libfex_thunk_test_QueryOffsetOf(guest_layout<ReorderingType*> data, int index) {
-    if (index == 0) {
-        return offsetof(guest_layout<ReorderingType>::type, a);
-    } else {
-        return offsetof(guest_layout<ReorderingType>::type, b);
-    }
+  if (index == 0) {
+    return offsetof(guest_layout<ReorderingType>::type, a);
+  } else {
+    return offsetof(guest_layout<ReorderingType>::type, b);
+  }
 }
 
-void fex_custom_repack_entry(host_layout<CustomRepackedType>& to, guest_layout<CustomRepackedType> const& from) {
+void fex_custom_repack_entry(host_layout<CustomRepackedType>& to, const guest_layout<CustomRepackedType>& from) {
   to.data.custom_repack_invoked = 1;
 }
 
-bool fex_custom_repack_exit(guest_layout<CustomRepackedType>& to, host_layout<CustomRepackedType> const& from) {
+bool fex_custom_repack_exit(guest_layout<CustomRepackedType>& to, const host_layout<CustomRepackedType>& from) {
   return false;
 }
 

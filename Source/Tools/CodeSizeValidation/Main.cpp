@@ -10,207 +10,208 @@
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 namespace CodeSize {
-  class CodeSizeValidation final {
-    public:
-      struct InstructionStats {
-        uint64_t GuestCodeInstructions{};
-        uint64_t HostCodeInstructions{};
+class CodeSizeValidation final {
+public:
+  struct InstructionStats {
+    uint64_t GuestCodeInstructions {};
+    uint64_t HostCodeInstructions {};
 
-        uint64_t HeaderSize{};
-        uint64_t TailSize{};
-      };
-
-      using CodeLines = fextl::vector<fextl::string>;
-      using InstructionData = std::pair<InstructionStats, CodeLines>;
-
-      bool ParseMessage(char const *Message);
-
-      InstructionData *GetDataForRIP(uint64_t RIP) {
-        return &RIPToStats[RIP];
-      }
-
-      bool InfoPrintingDisabled() const {
-        return SetupInfoDisabled;
-      }
-
-      void CalculateBaseStats(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-    private:
-      void ClearStats() {
-        RIPToStats.clear();
-      }
-
-      void SetBaseStats(InstructionStats const &NewBase) {
-        BaseStats = NewBase;
-      }
-
-      void CalculateDifferenceBetweenStats(InstructionData *Nop, InstructionData *Fence);
-
-      uint64_t CurrentRIPParse{};
-      bool ConsumingDisassembly{};
-      InstructionData *CurrentStats{};
-      InstructionStats BaseStats{};
-
-      fextl::unordered_map<uint64_t, InstructionData> RIPToStats;
-      bool SetupInfoDisabled{};
+    uint64_t HeaderSize {};
+    uint64_t TailSize {};
   };
 
-  constexpr std::string_view RIPMessage = "RIP: 0x";
-  constexpr std::string_view GuestCodeMessage = "Guest Code instructions: ";
-  constexpr std::string_view HostCodeMessage = "Host Code instructions: ";
-  constexpr std::string_view DisassembleBeginMessage = "Disassemble Begin";
-  constexpr std::string_view DisassembleEndMessage = "Disassemble End";
-  constexpr std::string_view BlowUpMsg = "Blow-up Amt: ";
+  using CodeLines = fextl::vector<fextl::string>;
+  using InstructionData = std::pair<InstructionStats, CodeLines>;
 
-  static std::string_view SanitizeDisassembly(std::string_view Message) {
-    auto it = Message.find(" (addr");
-    // If it contains an address calculation, strip it out.
-    Message = Message.substr(0, it);
-    if (Message.find("adrp ") != std::string_view::npos ||
-        Message.find("adr ") != std::string_view::npos) {
-      Message = Message.substr(0, Message.find(" #"));
-    }
-    return Message;
+  bool ParseMessage(const char* Message);
+
+  InstructionData* GetDataForRIP(uint64_t RIP) {
+    return &RIPToStats[RIP];
   }
 
-  bool CodeSizeValidation::ParseMessage(char const *Message) {
-    // std::string_view doesn't have contains until c++23.
-    std::string_view MessageView {Message};
-    if (MessageView.find(RIPMessage) != MessageView.npos) {
-      // New RIP found
-      std::string_view RIPView = std::string_view{Message + RIPMessage.size()};
-      std::from_chars(RIPView.data(), RIPView.end(), CurrentRIPParse, 16);
-      CurrentStats = &RIPToStats[CurrentRIPParse];
-      return false;
-    }
-
-    if (MessageView.find(GuestCodeMessage) != MessageView.npos) {
-      std::string_view CodeSizeView = std::string_view{Message + GuestCodeMessage.size()};
-      std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.GuestCodeInstructions);
-      return false;
-    }
-    if (MessageView.find(HostCodeMessage) != MessageView.npos) {
-      std::string_view CodeSizeView = std::string_view{Message + HostCodeMessage.size()};
-      std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.HostCodeInstructions);
-
-      CurrentStats->first.HostCodeInstructions -= BaseStats.HostCodeInstructions;
-      return false;
-    }
-    if (MessageView.find(DisassembleBeginMessage) != MessageView.npos) {
-      ConsumingDisassembly = true;
-      // Just so the output isn't a mess.
-      return false;
-    }
-    if (MessageView.find(DisassembleEndMessage) != MessageView.npos) {
-      ConsumingDisassembly = false;
-      // Just so the output isn't a mess.
-
-      // Remove the header and tails.
-      if (BaseStats.HeaderSize) {
-        CurrentStats->second.erase(CurrentStats->second.begin(), CurrentStats->second.begin() + BaseStats.HeaderSize);
-      }
-      if (BaseStats.TailSize) {
-        CurrentStats->second.erase(CurrentStats->second.end() - BaseStats.TailSize, CurrentStats->second.end());
-      }
-      return false;
-    }
-
-    if (MessageView.find(BlowUpMsg) != MessageView.npos) {
-      return false;
-    }
-
-    if (ConsumingDisassembly) {
-      // Currently consuming disassembly. Each line will be a single line of disassembly.
-      CurrentStats->second.push_back(fextl::string(SanitizeDisassembly(Message)));
-      return false;
-    }
-
-    return true;
+  bool InfoPrintingDisabled() const {
+    return SetupInfoDisabled;
   }
 
-  void CodeSizeValidation::CalculateDifferenceBetweenStats(InstructionData *Nop, InstructionData *Fence) {
-    // Expected format.
-    // adr x0, #-0x4 (addr 0x7fffe9880054)
-    // str x0, [x28, #184]
-    // dmb sy
-    // ldr x0, pc+8 (addr 0x7fffe988006c)
-    // blr x0
-    // unallocated (Unallocated)
-    // udf #0x7fff
-    // unallocated (Unallocated)
-    // udf #0x0
-    //
-    // First two lines are the header.
-    // Next comes the implementation (0 instruction size for nop, 1 instruction for fence)
-    // After that is the tail.
-
-    const auto &NOPCode = Nop->second;
-    const auto &FENCECode = Fence->second;
-
-    LOGMAN_THROW_A_FMT(NOPCode.size() < FENCECode.size(), "NOP code must be smaller than fence!");
-    for (size_t i = 0; i < NOPCode.size(); ++i) {
-      const auto &NOPLine = NOPCode.at(i);
-      const auto &FENCELine = FENCECode.at(i);
-
-      const auto NOPmnemonic = std::string_view(NOPLine.data(), NOPLine.find(' '));
-      const auto FENCEmnemonic = std::string_view(FENCELine.data(), FENCELine.find(' '));
-
-      if (NOPmnemonic != FENCEmnemonic) {
-        // Headersize of a block is now `i` number of instructions.
-        Nop->first.HeaderSize = i;
-
-        // Tail size is going to be the remaining size
-        Nop->first.TailSize = NOPCode.size() - i;
-        break;
-      }
-    }
-
-    SetBaseStats(Nop->first);
+  void CalculateBaseStats(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread);
+private:
+  void ClearStats() {
+    RIPToStats.clear();
   }
 
-  void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    SetupInfoDisabled = true;
-
-    // Known hardcoded instructions that will generate blocks of particular sizes.
-    // NOP will never generate any instructions.
-    constexpr static uint8_t NOP[] = {
-      0x90,
-    };
-
-    // MFENCE will always generate a block with one instruction.
-    constexpr static uint8_t MFENCE[] = {
-      0x0f, 0xae, 0xf0,
-    };
-
-    // Compile the NOP.
-    CTX->CompileRIP(Thread, (uint64_t)NOP);
-    // Gather the stats for the NOP.
-    auto NOPStats = GetDataForRIP((uint64_t)NOP);
-
-    // Compile MFence
-    CTX->CompileRIP(Thread, (uint64_t)MFENCE);
-
-    // Get MFence stats.
-    auto MFENCEStats = GetDataForRIP((uint64_t)MFENCE);
-
-    // Now scan the difference in disasembly between NOP and MFENCE to remove the header and tail.
-    // Just searching for first instruction change.
-
-    CalculateDifferenceBetweenStats(NOPStats, MFENCEStats);
-    // Now that the stats have been cleared. Clear our currentStats.
-    ClearStats();
-
-    // Invalidate the code ranges to be safe.
-    auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
-    CTX->InvalidateGuestCodeRange(Thread, (uint64_t)NOP, sizeof(NOP));
-    CTX->InvalidateGuestCodeRange(Thread, (uint64_t)MFENCE, sizeof(MFENCE));
-    SetupInfoDisabled = false;
+  void SetBaseStats(const InstructionStats& NewBase) {
+    BaseStats = NewBase;
   }
 
-  static CodeSizeValidation Validation{};
+  void CalculateDifferenceBetweenStats(InstructionData* Nop, InstructionData* Fence);
+
+  uint64_t CurrentRIPParse {};
+  bool ConsumingDisassembly {};
+  InstructionData* CurrentStats {};
+  InstructionStats BaseStats {};
+
+  fextl::unordered_map<uint64_t, InstructionData> RIPToStats;
+  bool SetupInfoDisabled {};
+};
+
+constexpr std::string_view RIPMessage = "RIP: 0x";
+constexpr std::string_view GuestCodeMessage = "Guest Code instructions: ";
+constexpr std::string_view HostCodeMessage = "Host Code instructions: ";
+constexpr std::string_view DisassembleBeginMessage = "Disassemble Begin";
+constexpr std::string_view DisassembleEndMessage = "Disassemble End";
+constexpr std::string_view BlowUpMsg = "Blow-up Amt: ";
+
+static std::string_view SanitizeDisassembly(std::string_view Message) {
+  auto it = Message.find(" (addr");
+  // If it contains an address calculation, strip it out.
+  Message = Message.substr(0, it);
+  if (Message.find("adrp ") != std::string_view::npos || Message.find("adr ") != std::string_view::npos) {
+    Message = Message.substr(0, Message.find(" #"));
+  }
+  return Message;
 }
 
-void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-  const char *CharLevel{LogMan::DebugLevelStr(Level)};
+bool CodeSizeValidation::ParseMessage(const char* Message) {
+  // std::string_view doesn't have contains until c++23.
+  std::string_view MessageView {Message};
+  if (MessageView.find(RIPMessage) != MessageView.npos) {
+    // New RIP found
+    std::string_view RIPView = std::string_view {Message + RIPMessage.size()};
+    std::from_chars(RIPView.data(), RIPView.end(), CurrentRIPParse, 16);
+    CurrentStats = &RIPToStats[CurrentRIPParse];
+    return false;
+  }
+
+  if (MessageView.find(GuestCodeMessage) != MessageView.npos) {
+    std::string_view CodeSizeView = std::string_view {Message + GuestCodeMessage.size()};
+    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.GuestCodeInstructions);
+    return false;
+  }
+  if (MessageView.find(HostCodeMessage) != MessageView.npos) {
+    std::string_view CodeSizeView = std::string_view {Message + HostCodeMessage.size()};
+    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.HostCodeInstructions);
+
+    CurrentStats->first.HostCodeInstructions -= BaseStats.HostCodeInstructions;
+    return false;
+  }
+  if (MessageView.find(DisassembleBeginMessage) != MessageView.npos) {
+    ConsumingDisassembly = true;
+    // Just so the output isn't a mess.
+    return false;
+  }
+  if (MessageView.find(DisassembleEndMessage) != MessageView.npos) {
+    ConsumingDisassembly = false;
+    // Just so the output isn't a mess.
+
+    // Remove the header and tails.
+    if (BaseStats.HeaderSize) {
+      CurrentStats->second.erase(CurrentStats->second.begin(), CurrentStats->second.begin() + BaseStats.HeaderSize);
+    }
+    if (BaseStats.TailSize) {
+      CurrentStats->second.erase(CurrentStats->second.end() - BaseStats.TailSize, CurrentStats->second.end());
+    }
+    return false;
+  }
+
+  if (MessageView.find(BlowUpMsg) != MessageView.npos) {
+    return false;
+  }
+
+  if (ConsumingDisassembly) {
+    // Currently consuming disassembly. Each line will be a single line of disassembly.
+    CurrentStats->second.push_back(fextl::string(SanitizeDisassembly(Message)));
+    return false;
+  }
+
+  return true;
+}
+
+void CodeSizeValidation::CalculateDifferenceBetweenStats(InstructionData* Nop, InstructionData* Fence) {
+  // Expected format.
+  // adr x0, #-0x4 (addr 0x7fffe9880054)
+  // str x0, [x28, #184]
+  // dmb sy
+  // ldr x0, pc+8 (addr 0x7fffe988006c)
+  // blr x0
+  // unallocated (Unallocated)
+  // udf #0x7fff
+  // unallocated (Unallocated)
+  // udf #0x0
+  //
+  // First two lines are the header.
+  // Next comes the implementation (0 instruction size for nop, 1 instruction for fence)
+  // After that is the tail.
+
+  const auto& NOPCode = Nop->second;
+  const auto& FENCECode = Fence->second;
+
+  LOGMAN_THROW_A_FMT(NOPCode.size() < FENCECode.size(), "NOP code must be smaller than fence!");
+  for (size_t i = 0; i < NOPCode.size(); ++i) {
+    const auto& NOPLine = NOPCode.at(i);
+    const auto& FENCELine = FENCECode.at(i);
+
+    const auto NOPmnemonic = std::string_view(NOPLine.data(), NOPLine.find(' '));
+    const auto FENCEmnemonic = std::string_view(FENCELine.data(), FENCELine.find(' '));
+
+    if (NOPmnemonic != FENCEmnemonic) {
+      // Headersize of a block is now `i` number of instructions.
+      Nop->first.HeaderSize = i;
+
+      // Tail size is going to be the remaining size
+      Nop->first.TailSize = NOPCode.size() - i;
+      break;
+    }
+  }
+
+  SetBaseStats(Nop->first);
+}
+
+void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread) {
+  SetupInfoDisabled = true;
+
+  // Known hardcoded instructions that will generate blocks of particular sizes.
+  // NOP will never generate any instructions.
+  constexpr static uint8_t NOP[] = {
+    0x90,
+  };
+
+  // MFENCE will always generate a block with one instruction.
+  constexpr static uint8_t MFENCE[] = {
+    0x0f,
+    0xae,
+    0xf0,
+  };
+
+  // Compile the NOP.
+  CTX->CompileRIP(Thread, (uint64_t)NOP);
+  // Gather the stats for the NOP.
+  auto NOPStats = GetDataForRIP((uint64_t)NOP);
+
+  // Compile MFence
+  CTX->CompileRIP(Thread, (uint64_t)MFENCE);
+
+  // Get MFence stats.
+  auto MFENCEStats = GetDataForRIP((uint64_t)MFENCE);
+
+  // Now scan the difference in disasembly between NOP and MFENCE to remove the header and tail.
+  // Just searching for first instruction change.
+
+  CalculateDifferenceBetweenStats(NOPStats, MFENCEStats);
+  // Now that the stats have been cleared. Clear our currentStats.
+  ClearStats();
+
+  // Invalidate the code ranges to be safe.
+  auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
+  CTX->InvalidateGuestCodeRange(Thread, (uint64_t)NOP, sizeof(NOP));
+  CTX->InvalidateGuestCodeRange(Thread, (uint64_t)MFENCE, sizeof(MFENCE));
+  SetupInfoDisabled = false;
+}
+
+static CodeSizeValidation Validation {};
+} // namespace CodeSize
+
+void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+  const char* CharLevel {LogMan::DebugLevelStr(Level)};
 
   if (Level == LogMan::INFO) {
     // Disassemble information is sent through the Info log level.
@@ -225,7 +226,7 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   fextl::fmt::print("[{}] {}\n", CharLevel, Message);
 }
 
-void AssertHandler(char const *Message) {
+void AssertHandler(const char* Message) {
   fextl::fmt::print("[ASSERT] {}\n", Message);
 
   // make sure buffers are flushed
@@ -243,7 +244,7 @@ struct TestInfo {
 
 struct TestHeader {
   uint64_t Bitness;
-  uint64_t NumTests{};
+  uint64_t NumTests {};
   uint64_t EnabledHostFeatures;
   uint64_t DisabledHostFeatures;
   uint64_t EnvironmentVariableCount;
@@ -251,15 +252,15 @@ struct TestHeader {
 };
 
 static fextl::vector<char> TestData;
-static TestHeader const *TestHeaderData{};
-static TestInfo const *TestsStart{};
-static fextl::vector<std::pair<std::string_view, std::string_view>> EnvironmentVariables{};
+static const TestHeader* TestHeaderData {};
+static const TestInfo* TestsStart {};
+static fextl::vector<std::pair<std::string_view, std::string_view>> EnvironmentVariables {};
 
-static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, const char *UpdatedInstructionCountsPath) {
+static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread, const char* UpdatedInstructionCountsPath) {
   LogMan::Msg::IFmt("Compiling code");
 
   // Tell FEXCore to compile all the instructions upfront.
-  TestInfo const *CurrentTest = TestsStart;
+  const TestInfo* CurrentTest = TestsStart;
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
     uint64_t CodeRIP = (uint64_t)&CurrentTest->Code[0];
     LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
@@ -268,7 +269,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
     CTX->CompileRIPCount(Thread, CodeRIP, CurrentTest->x86InstCount);
 
     // Go to the next test.
-    CurrentTest = reinterpret_cast<TestInfo const*>(&CurrentTest->Code[CurrentTest->CodeSize]);
+    CurrentTest = reinterpret_cast< const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
   }
 
   bool TestsPassed {true};
@@ -283,8 +284,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
     LogMan::Msg::IFmt("Testing instruction '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
 
     // Show the code if the count of instructions changed to something we didn't expect.
-    bool ShouldShowCode =
-      INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount;
+    bool ShouldShowCode = INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount;
 
     if (ShouldShowCode) {
       for (auto Line : INSTStats->second) {
@@ -294,21 +294,23 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
 
     if (INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount) {
       LogMan::Msg::EFmt("Fail: '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
-      LogMan::Msg::EFmt("Fail: Test took {} instructions but we expected {} instructions!", INSTStats->first.HostCodeInstructions, CurrentTest->ExpectedInstructionCount);
+      LogMan::Msg::EFmt("Fail: Test took {} instructions but we expected {} instructions!", INSTStats->first.HostCodeInstructions,
+                        CurrentTest->ExpectedInstructionCount);
 
       // Fail the test if the instruction count has changed at all.
       TestsPassed = false;
     }
 
     // Go to the next test.
-    CurrentTest = reinterpret_cast<TestInfo const*>(&CurrentTest->Code[CurrentTest->CodeSize]);
+    CurrentTest = reinterpret_cast< const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
   }
 
   if (UpdatedInstructionCountsPath) {
     // Unlink the file.
     unlink(UpdatedInstructionCountsPath);
 
-    FEXCore::File::File FD(UpdatedInstructionCountsPath, FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
+    FEXCore::File::File FD(UpdatedInstructionCountsPath,
+                           FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
 
     if (!FD.IsValid()) {
       // If we couldn't open the file then early exit this.
@@ -332,7 +334,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
 
       FD.Write(fextl::fmt::format("\t\t\"ExpectedArm64ASM\": [\n", INSTStats->first.HostCodeInstructions));
       for (auto it = INSTStats->second.begin(); it != INSTStats->second.end(); ++it) {
-        const auto &Line = *it;
+        const auto& Line = *it;
         const auto NextIt = it + 1;
         FD.Write(fextl::fmt::format("\t\t\t\"{}\"{}\n", Line, NextIt != INSTStats->second.end() ? "," : ""));
       }
@@ -341,7 +343,7 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
       FD.Write(fextl::fmt::format("\t}},\n", CurrentTest->TestInst));
 
       // Go to the next test.
-      CurrentTest = reinterpret_cast<TestInfo const*>(&CurrentTest->Code[CurrentTest->CodeSize]);
+      CurrentTest = reinterpret_cast< const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
     }
 
     // Print a null member
@@ -352,15 +354,15 @@ static bool TestInstructions(FEXCore::Context::Context *CTX, FEXCore::Core::Inte
   return TestsPassed;
 }
 
-bool LoadTests(const char *Path) {
+bool LoadTests(const char* Path) {
   if (!FEXCore::FileLoading::LoadFile(TestData, Path)) {
     return false;
   }
 
-  TestHeaderData = reinterpret_cast<TestHeader const*>(TestData.data());
+  TestHeaderData = reinterpret_cast< const TestHeader*>(TestData.data());
 
   // Need to walk past the environment variables to get to the actual tests.
-  const uint8_t *Data = TestHeaderData->Data;
+  const uint8_t* Data = TestHeaderData->Data;
   for (size_t i = 0; i < TestHeaderData->EnvironmentVariableCount; ++i) {
     // Environment variables are a pair of null terminated strings.
     Data += strlen(reinterpret_cast<const char*>(Data)) + 1;
@@ -386,7 +388,7 @@ public:
 
   void Load() override {
     fextl::unordered_map<std::string_view, std::string> EnvMap;
-    const uint8_t *Data = TestHeaderData->Data;
+    const uint8_t* Data = TestHeaderData->Data;
     for (size_t i = 0; i < TestHeaderData->EnvironmentVariableCount; ++i) {
       // Environment variables are a pair of null terminated strings.
       const std::string_view Key = reinterpret_cast<const char*>(Data);
@@ -401,21 +403,21 @@ public:
 
       if (Value) {
         EnvMap.insert_or_assign(Key, *Value);
-      }
-      else {
+      } else {
         EnvMap.insert_or_assign(Key, Value_View);
       }
     }
 
     auto GetVar = [&](const std::string_view id) -> std::optional<std::string_view> {
       const auto it = EnvMap.find(id);
-      if (it == EnvMap.end())
+      if (it == EnvMap.end()) {
         return std::nullopt;
+      }
 
       return it->second;
     };
 
-    for (auto &it : EnvConfigLookup) {
+    for (auto& it : EnvConfigLookup) {
       if (auto Value = GetVar(it.first); Value) {
         Set(it.second, *Value);
       }
@@ -425,9 +427,9 @@ public:
 private:
   fextl::vector<std::pair<std::string_view, std::string_view>> Env;
 };
-}
+} // namespace
 
-int main(int argc, char **argv, char **const envp) {
+int main(int argc, char** argv, char** const envp) {
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -453,7 +455,9 @@ int main(int argc, char **argv, char **const envp) {
   // IRJIT. Only works on JITs.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::CONFIG_IRJIT)));
   // Enable block disassembly.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISASSEMBLE, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::Disassemble::BLOCKS | FEXCore::Config::Disassemble::STATS)));
+  FEXCore::Config::EraseSet(
+    FEXCore::Config::CONFIG_DISASSEMBLE,
+    fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::Disassemble::BLOCKS | FEXCore::Config::Disassemble::STATS)));
   // Choose bitness.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
   // Disable telemetry, it can affect instruction counts.
@@ -466,18 +470,18 @@ int main(int argc, char **argv, char **const envp) {
     FEATURE_SVE128 = (1U << 0),
     FEATURE_SVE256 = (1U << 1),
     FEATURE_CLZERO = (1U << 2),
-    FEATURE_RNG    = (1U << 3),
-    FEATURE_FCMA   = (1U << 4),
-    FEATURE_CSSC   = (1U << 5),
-    FEATURE_AFP    = (1U << 6),
-    FEATURE_RPRES  = (1U << 7),
-    FEATURE_FLAGM  = (1U << 8),
+    FEATURE_RNG = (1U << 3),
+    FEATURE_FCMA = (1U << 4),
+    FEATURE_CSSC = (1U << 5),
+    FEATURE_AFP = (1U << 6),
+    FEATURE_RPRES = (1U << 7),
+    FEATURE_FLAGM = (1U << 8),
     FEATURE_FLAGM2 = (1U << 9),
     FEATURE_CRYPTO = (1U << 10),
   };
 
   uint64_t SVEWidth = 0;
-  uint64_t HostFeatureControl{};
+  uint64_t HostFeatureControl {};
   if (TestHeaderData->EnabledHostFeatures & FEATURE_SVE128) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLESVE);
     SVEWidth = 128;

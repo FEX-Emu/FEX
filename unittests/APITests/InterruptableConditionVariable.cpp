@@ -10,7 +10,7 @@
 // Test that ensures the Reentrant mutex will timeout without signaling
 TEST_CASE("SimpleWait") {
   auto Dur = std::chrono::seconds(1);
-  FEXCore::InterruptableConditionVariable Mutex{};
+  FEXCore::InterruptableConditionVariable Mutex {};
 
   auto Now = std::chrono::high_resolution_clock::now();
   bool Signaled = Mutex.WaitFor(Dur);
@@ -23,15 +23,15 @@ TEST_CASE("SimpleWait") {
   REQUIRE((End - Now) >= Dur);
 }
 
-void WaitThread(FEXCore::InterruptableConditionVariable *Mutex, bool *Signaled) {
+void WaitThread(FEXCore::InterruptableConditionVariable* Mutex, bool* Signaled) {
   auto Dur = std::chrono::seconds(5);
   *Signaled = Mutex->WaitFor(Dur);
 }
 
 // Test that ensure the Reentrant mutex will signal without timing out
 TEST_CASE("SignaledWait") {
-  bool Signaled{};
-  FEXCore::InterruptableConditionVariable Mutex{};
+  bool Signaled {};
+  FEXCore::InterruptableConditionVariable Mutex {};
 
   std::thread t(WaitThread, &Mutex, &Signaled);
 
@@ -48,26 +48,23 @@ TEST_CASE("SignaledWait") {
   REQUIRE((End - Now) < Dur);
 }
 
-static jmp_buf LongJump{};
-static int32_t NumberOfJumps{};
-FEXCore::InterruptableConditionVariable WaitMutex{};
+static jmp_buf LongJump {};
+static int32_t NumberOfJumps {};
+FEXCore::InterruptableConditionVariable WaitMutex {};
 
 void SignalHandler(int Signal) {
   ++NumberOfJumps;
   longjmp(LongJump, 1);
 }
 
-void WaitThreadLongJump(
-  FEXCore::InterruptableConditionVariable *Mutex,
-  FEXCore::InterruptableConditionVariable *ThreadReadyMutex,
-  bool *Signaled,
-  int32_t *TID) {
+void WaitThreadLongJump(FEXCore::InterruptableConditionVariable* Mutex, FEXCore::InterruptableConditionVariable* ThreadReadyMutex,
+                        bool* Signaled, int32_t* TID) {
 
   // Store the TID
   *TID = FHU::Syscalls::gettid();
 
   // Setup a long jump signal handler
-  struct sigaction sa{};
+  struct sigaction sa {};
   sa.sa_flags = SA_RESTART | SA_NODEFER;
   sigemptyset(&sa.sa_mask);
   sa.sa_handler = SignalHandler;
@@ -92,10 +89,10 @@ void WaitThreadLongJump(
 // Test that ensures the Reentrant mutex survives over a long jump
 // Without signaling the mutex
 TEST_CASE("SignaledWaitLongJumpNoSignal") {
-  int32_t TID{};
-  bool Signaled{};
-  FEXCore::InterruptableConditionVariable Mutex{};
-  FEXCore::InterruptableConditionVariable ThreadReadyMutex{};
+  int32_t TID {};
+  bool Signaled {};
+  FEXCore::InterruptableConditionVariable Mutex {};
+  FEXCore::InterruptableConditionVariable ThreadReadyMutex {};
 
   NumberOfJumps = 0;
   std::thread t(WaitThreadLongJump, &Mutex, &ThreadReadyMutex, &Signaled, &TID);
@@ -123,10 +120,10 @@ TEST_CASE("SignaledWaitLongJumpNoSignal") {
 // Test that ensures the Reentrant mutex survives over a long jump
 // With signaling the mutex
 TEST_CASE("SignaledWaitLongJumpSignal") {
-  int32_t TID{};
-  bool Signaled{};
-  FEXCore::InterruptableConditionVariable Mutex{};
-  FEXCore::InterruptableConditionVariable ThreadReadyMutex{};
+  int32_t TID {};
+  bool Signaled {};
+  FEXCore::InterruptableConditionVariable Mutex {};
+  FEXCore::InterruptableConditionVariable ThreadReadyMutex {};
 
   NumberOfJumps = 0;
   std::thread t(WaitThreadLongJump, &Mutex, &ThreadReadyMutex, &Signaled, &TID);

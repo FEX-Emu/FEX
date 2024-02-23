@@ -21,11 +21,11 @@ namespace FEXCore::IR::Validation {
 
 // Hold the mapping of physical registers to the SSA id it holds at any given point in the IR
 struct RegState {
-  static constexpr IR::NodeID UninitializedValue{0};
-  static constexpr IR::NodeID InvalidReg        {0xffff'ffff};
-  static constexpr IR::NodeID CorruptedPair     {0xffff'fffe};
-  static constexpr IR::NodeID ClobberedValue    {0xffff'fffd};
-  static constexpr IR::NodeID StaticAssigned    {0xffff'ff00};
+  static constexpr IR::NodeID UninitializedValue {0};
+  static constexpr IR::NodeID InvalidReg {0xffff'ffff};
+  static constexpr IR::NodeID CorruptedPair {0xffff'fffe};
+  static constexpr IR::NodeID ClobberedValue {0xffff'fffd};
+  static constexpr IR::NodeID StaticAssigned {0xffff'ff00};
 
   // This class makes some assumptions about how the host registers are arranged and mapped to virtual registers:
   // 1. There will be less than 32 GPRs and 32 FPRs
@@ -42,24 +42,20 @@ struct RegState {
     // PhysicalRegisters aren't fully mapped until assembly emission
     // We need to apply a generic mapping here to catch any aliasing
     switch (Reg.Class) {
-    case GPRClass:
-      GPRs[Reg.Reg] = ssa;
-      return true;
+    case GPRClass: GPRs[Reg.Reg] = ssa; return true;
     case GPRFixedClass:
       // On arm64, there are 16 Fixed and 9 normal
       GPRsFixed[Reg.Reg] = ssa;
       return true;
-    case FPRClass:
-      FPRs[Reg.Reg] = ssa;
-      return true;
+    case FPRClass: FPRs[Reg.Reg] = ssa; return true;
     case FPRFixedClass:
       // On arm64, there are 16 Fixed and 12 normal
       FPRsFixed[Reg.Reg] = ssa;
       return true;
     case GPRPairClass:
       // Alias paired registers onto both
-      GPRs[Reg.Reg*2] = ssa;
-      GPRs[Reg.Reg*2 + 1] = ssa;
+      GPRs[Reg.Reg * 2] = ssa;
+      GPRs[Reg.Reg * 2 + 1] = ssa;
       return true;
     }
     return false;
@@ -69,18 +65,14 @@ struct RegState {
   // Or an error value there isn't a (sane) SSA id
   IR::NodeID Get(PhysicalRegister Reg) const {
     switch (Reg.Class) {
-    case GPRClass:
-      return GPRs[Reg.Reg];
-    case GPRFixedClass:
-      return GPRsFixed[Reg.Reg];
-    case FPRClass:
-      return FPRs[Reg.Reg];
-    case FPRFixedClass:
-      return FPRsFixed[Reg.Reg];
+    case GPRClass: return GPRs[Reg.Reg];
+    case GPRFixedClass: return GPRsFixed[Reg.Reg];
+    case FPRClass: return FPRs[Reg.Reg];
+    case FPRFixedClass: return FPRsFixed[Reg.Reg];
     case GPRPairClass:
       // Make sure both halves of the Pair contain the same SSA
-      if (GPRs[Reg.Reg*2] == GPRs[Reg.Reg*2 + 1]) {
-        return GPRs[Reg.Reg*2];
+      if (GPRs[Reg.Reg * 2] == GPRs[Reg.Reg * 2 + 1]) {
+        return GPRs[Reg.Reg * 2];
       }
       return CorruptedPair;
     }
@@ -148,25 +140,25 @@ struct RegState {
   // Mark them as Clobbered.
   // Useful for backwards edges, where using an SSA from before the
   void Filter(IR::NodeID MaxSSA) {
-    for (auto &gpr : GPRs) {
+    for (auto& gpr : GPRs) {
       if (gpr > MaxSSA) {
         gpr = ClobberedValue;
       }
     }
 
-    for (auto &gpr : GPRsFixed) {
+    for (auto& gpr : GPRsFixed) {
       if (gpr > MaxSSA) {
         gpr = ClobberedValue;
       }
     }
 
-    for (auto &fpr : FPRs) {
+    for (auto& fpr : FPRs) {
       if (fpr > MaxSSA) {
         fpr = ClobberedValue;
       }
     }
 
-    for (auto &fpr : FPRsFixed) {
+    for (auto& fpr : FPRsFixed) {
       if (fpr > MaxSSA) {
         fpr = ClobberedValue;
       }
@@ -189,13 +181,13 @@ private:
   fextl::unordered_map<uint32_t, IR::NodeID> Spills;
 
 public:
-  uint32_t Version{}; // Used to force regeneration of RegStates after following backward edges
+  uint32_t Version {}; // Used to force regeneration of RegStates after following backward edges
 };
 
 class RAValidation final : public FEXCore::IR::Pass {
 public:
   ~RAValidation() {}
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 
 private:
   // Holds the calculated RegState at the exit of each block
@@ -206,8 +198,10 @@ private:
 };
 
 
-bool RAValidation::Run(IREmitter *IREmit) {
-  if (!Manager->HasPass("RA")) return false;
+bool RAValidation::Run(IREmitter* IREmit) {
+  if (!Manager->HasPass("RA")) {
+    return false;
+  }
 
   FEXCORE_PROFILE_SCOPED("PassManager::RAValidation");
 
@@ -230,8 +224,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
   auto CurrentIR = IREmit->ViewIR();
   uint32_t CurrentVersion = 1; // Incremented every backwards edge
 
-  while (!BlocksToVisit.empty())
-  {
+  while (!BlocksToVisit.empty()) {
     auto BlockNode = BlocksToVisit.front();
     const auto BlockID = CurrentIR.GetID(BlockNode);
     auto& BlockInfo = OffsetToBlockMap[BlockID];
@@ -276,7 +269,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
     auto& BlockRegState = BlockExitState.try_emplace(BlockID).first->second;
     bool EmptyRegState = true;
-    auto Intersect = [&] (RegState& Other) {
+    auto Intersect = [&](RegState& Other) {
       if (EmptyRegState) {
         BlockRegState = Other;
         EmptyRegState = false;
@@ -307,8 +300,9 @@ bool RAValidation::Run(IREmitter *IREmit) {
         const auto ArgID = Arg.ID();
         const auto PhyReg = RAData->GetNodeRegister(ArgID);
 
-        if (PhyReg.IsInvalid())
+        if (PhyReg.IsInvalid()) {
           return;
+        }
 
         auto CurrentSSAAtReg = BlockRegState.Get(PhyReg);
         if (CurrentSSAAtReg == RegState::InvalidReg) {
@@ -317,30 +311,28 @@ bool RAValidation::Run(IREmitter *IREmit) {
         } else if (CurrentSSAAtReg == RegState::CorruptedPair) {
           HadError |= true;
 
-          auto Lower = BlockRegState.Get(PhysicalRegister(GPRClass, uint8_t(PhyReg.Reg*2) + 1));
-          auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg*2 + 1));
+          auto Lower = BlockRegState.Get(PhysicalRegister(GPRClass, uint8_t(PhyReg.Reg * 2) + 1));
+          auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg * 2 + 1));
 
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects paired reg{} to contain %{}, but it actually contains {{%{}, %{}}}\n",
-                                ID, i, PhyReg.Reg, ArgID, Lower, Upper);
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects paired reg{} to contain %{}, but it actually contains {{%{}, %{}}}\n", ID, i,
+                                       PhyReg.Reg, ArgID, Lower, Upper);
         } else if (CurrentSSAAtReg == RegState::UninitializedValue) {
           HadError |= true;
 
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it is uninitialized\n",
-                                ID, i, PhyReg.Reg, ArgID);
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it is uninitialized\n", ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg == RegState::ClobberedValue) {
           HadError |= true;
 
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but contents vary depending on control flow\n",
-                                ID, i, PhyReg.Reg, ArgID);
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but contents vary depending on control flow\n", ID, i,
+                                       PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg != ArgID) {
           HadError |= true;
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it actually contains %{}\n",
-                                ID, i, PhyReg.Reg, ArgID, CurrentSSAAtReg);
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it actually contains %{}\n", ID, i, PhyReg.Reg,
+                                       ArgID, CurrentSSAAtReg);
         }
       };
 
-      switch (IROp->Op)
-      {
+      switch (IROp->Op) {
       case OP_SPILLREGISTER: {
         auto SpillRegister = IROp->C<IROp_SpillRegister>();
         CheckArg(0, SpillRegister->Value);
@@ -360,15 +352,15 @@ bool RAValidation::Run(IREmitter *IREmit) {
         if (Value == RegState::UninitializedValue) {
           HadError |= true;
           Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but was undefined in at least one control flow path\n",
-                                ID, ExpectedValue, FillRegister->Slot);
+                                       ID, ExpectedValue, FillRegister->Slot);
         } else if (Value == RegState::ClobberedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but contents vary depending on control flow\n",
-                                ID, ExpectedValue, FillRegister->Slot);
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but contents vary depending on control flow\n", ID,
+                                       ExpectedValue, FillRegister->Slot);
         } else if (Value != ExpectedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but it actually contains %{}\n",
-                                ID, ExpectedValue, FillRegister->Slot, Value);
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but it actually contains %{}\n", ID, ExpectedValue,
+                                       FillRegister->Slot, Value);
         }
         break;
       }
@@ -445,7 +437,6 @@ bool RAValidation::Run(IREmitter *IREmit) {
             Errors << "(Backwards): ";
           }
           Errors << fextl::fmt::format("Block {} ", SuccessorID);
-
         }
 
         Errors << "\n\n";
@@ -453,7 +444,6 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
       break;
     }
-
   }
 
   if (HadError) {
@@ -472,4 +462,4 @@ bool RAValidation::Run(IREmitter *IREmit) {
 fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation() {
   return fextl::make_unique<RAValidation>();
 }
-}
+} // namespace FEXCore::IR::Validation

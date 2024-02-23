@@ -9,103 +9,93 @@
 #include <stdio.h>
 #include <cstdlib>
 
-__attribute__((naked))
-  static void InvalidINT_SetPF() {
+__attribute__((naked)) static void InvalidINT_SetPF() {
   __asm volatile(R"(
   mov eax, 0x80
   inc eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_ClearPF() {
+__attribute__((naked)) static void InvalidINT_ClearPF() {
   __asm volatile(R"(
   mov eax, 0
   inc eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_SetCF() {
+__attribute__((naked)) static void InvalidINT_SetCF() {
   __asm volatile(R"(
   stc
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_ClearCF() {
+__attribute__((naked)) static void InvalidINT_ClearCF() {
   __asm volatile(R"(
   clc
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_SetZF() {
+__attribute__((naked)) static void InvalidINT_SetZF() {
   __asm volatile(R"(
   mov eax, 1
   dec eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_ClearZF() {
+__attribute__((naked)) static void InvalidINT_ClearZF() {
   __asm volatile(R"(
   mov eax, 2
   dec eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_SetSF() {
+__attribute__((naked)) static void InvalidINT_SetSF() {
   __asm volatile(R"(
   mov eax, 0
   dec eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_ClearSF() {
+__attribute__((naked)) static void InvalidINT_ClearSF() {
   __asm volatile(R"(
   mov eax, 1
   dec eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_SetOF() {
+__attribute__((naked)) static void InvalidINT_SetOF() {
   __asm volatile(R"(
   mov eax, 0x7fffffff
   inc eax
   int3;
   ret;
   )");
-  }
+}
 
-__attribute__((naked))
-  static void InvalidINT_ClearOF() {
+__attribute__((naked)) static void InvalidINT_ClearOF() {
   __asm volatile(R"(
   mov eax, 0
   inc eax
   int3;
   ret;
   )");
-  }
+}
 
 constexpr int EXPECTED_TRAPNO = 3;
 constexpr int EXPECTED_ERR = 0;
@@ -122,10 +112,10 @@ constexpr uint32_t EFL_OF = 11;
 #define REG_RIP REG_EIP
 #endif
 
-using FunctionPtr = void(*)();
+using FunctionPtr = void (*)();
 void SetupAndCallTest(FunctionPtr Func, uint32_t FlagOffset, uint32_t ExpectedFlag) {
   capturing_handler_skip = 0;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);

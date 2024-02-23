@@ -87,5 +87,5 @@ TEST_CASE_METHOD(Fixture, "Assisted struct repacking") {
 }
 
 TEST_CASE_METHOD(Fixture, "Function signature with differing parameter sizes") {
-  CHECK(FunctionWithDivergentSignature(DivType{1}, DivType{2}, DivType{3}, DivType{4}) == 0x01020304);
+  CHECK(FunctionWithDivergentSignature(DivType {1}, DivType {2}, DivType {3}, DivType {4}) == 0x01020304);
 }

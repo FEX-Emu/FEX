@@ -13,14 +13,14 @@ $end_info$
 #include <unistd.h>
 
 namespace FEXCore::Core {
-  struct CpuStateFrame;
+struct CpuStateFrame;
 }
 
 namespace FEX::HLE::x64 {
-  void RegisterSched(FEX::HLE::SyscallHandler *Handler) {
-    REGISTER_SYSCALL_IMPL_X64_PASS(sched_rr_get_interval, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct timespec *tp) -> uint64_t {
-      uint64_t Result = ::sched_rr_get_interval(pid, tp);
-      SYSCALL_ERRNO();
-    });
-  }
+void RegisterSched(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL_X64_PASS(sched_rr_get_interval, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, struct timespec* tp) -> uint64_t {
+    uint64_t Result = ::sched_rr_get_interval(pid, tp);
+    SYSCALL_ERRNO();
+  });
 }
+} // namespace FEX::HLE::x64

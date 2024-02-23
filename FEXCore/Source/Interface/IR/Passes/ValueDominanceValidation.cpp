@@ -25,19 +25,19 @@ $end_info$
 #include <utility>
 
 namespace {
-  struct BlockInfo {
-    fextl::vector<FEXCore::IR::OrderedNode *> Predecessors;
-    fextl::vector<FEXCore::IR::OrderedNode *> Successors;
-  };
-}
+struct BlockInfo {
+  fextl::vector<FEXCore::IR::OrderedNode*> Predecessors;
+  fextl::vector<FEXCore::IR::OrderedNode*> Successors;
+};
+} // namespace
 
 namespace FEXCore::IR::Validation {
 class ValueDominanceValidation final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 };
 
-bool ValueDominanceValidation::Run(IREmitter *IREmit) {
+bool ValueDominanceValidation::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::ValueDominanceValidation");
 
   bool HadError = false;
@@ -48,43 +48,43 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
+    BlockInfo* CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       switch (IROp->Op) {
-        case IR::OP_CONDJUMP: {
-          auto Op = IROp->CW<IR::IROp_CondJump>();
+      case IR::OP_CONDJUMP: {
+        auto Op = IROp->CW<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
+        OrderedNode* TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
+        OrderedNode* FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
 
-          CurrentBlock->Successors.emplace_back(TrueTargetNode);
-          CurrentBlock->Successors.emplace_back(FalseTargetNode);
+        CurrentBlock->Successors.emplace_back(TrueTargetNode);
+        CurrentBlock->Successors.emplace_back(FalseTargetNode);
 
-          {
-            auto Block = &OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first->second;
-            Block->Predecessors.emplace_back(BlockNode);
-          }
-
-          {
-            auto Block = &OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first->second;
-            Block->Predecessors.emplace_back(BlockNode);
-          }
-
-          break;
+        {
+          auto Block = &OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first->second;
+          Block->Predecessors.emplace_back(BlockNode);
         }
-        case IR::OP_JUMP: {
-          auto Op = IROp->CW<IR::IROp_Jump>();
-          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
-          CurrentBlock->Successors.emplace_back(TargetNode);
 
-          {
-            auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
-            Block->second.Predecessors.emplace_back(BlockNode);
-          }
-          break;
+        {
+          auto Block = &OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first->second;
+          Block->Predecessors.emplace_back(BlockNode);
         }
-        default: break;
+
+        break;
+      }
+      case IR::OP_JUMP: {
+        auto Op = IROp->CW<IR::IROp_Jump>();
+        OrderedNode* TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
+        CurrentBlock->Successors.emplace_back(TargetNode);
+
+        {
+          auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
+          Block->second.Predecessors.emplace_back(BlockNode);
+        }
+        break;
+      }
+      default: break;
       }
     }
   }
@@ -97,14 +97,17 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
       const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
-        if (IROp->Args[i].IsInvalid()) continue;
-        if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
+        if (IROp->Args[i].IsInvalid()) {
+          continue;
+        }
+        if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) {
+          continue;
+        }
 
         OrderedNodeWrapper Arg = IROp->Args[i];
 
         // We must ensure domininance of all SSA arguments
-        if (Arg.ID() >= BlockIROp->Begin.ID() &&
-            Arg.ID() < BlockIROp->Last.ID()) {
+        if (Arg.ID() >= BlockIROp->Begin.ID() && Arg.ID() < BlockIROp->Last.ID()) {
           // If the SSA argument is defined INSIDE this block
           // then it must only be declared prior to this instruction
           // Eg: Valid
@@ -122,8 +125,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
             HadError |= true;
             Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition does not dominate this use!" << std::endl;
           }
-        }
-        else if (Arg.ID() < BlockIROp->Begin.ID()) {
+        } else if (Arg.ID() < BlockIROp->Begin.ID()) {
           // If the SSA argument is defined BEFORE this block
           // then THIS block needs to be dominated by the flow of blocks up until this point
 
@@ -149,13 +151,13 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // ...
 
           // We need to walk the predecessors to see if the value comes from there
-          fextl::set<IR::OrderedNode *> Predecessors { BlockNode };
+          fextl::set<IR::OrderedNode*> Predecessors {BlockNode};
           // Recursively gather all predecessors of BlockNode
           for (auto NodeIt = Predecessors.begin(); NodeIt != Predecessors.end();) {
             auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(*NodeIt)).first->second;
             ++NodeIt;
 
-            for (auto *Pred : PredBlock->Predecessors) {
+            for (auto* Pred : PredBlock->Predecessors) {
               if (Predecessors.insert(Pred).second) {
                 // New blocks added, so repeat from the beginning to pull in their predecessors
                 NodeIt = Predecessors.begin();
@@ -168,8 +170,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           for (auto* Pred : Predecessors) {
             auto PredIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Pred);
 
-            if (Arg.ID() >= PredIROp->Begin.ID() &&
-                Arg.ID() < PredIROp->Last.ID()) {
+            if (Arg.ID() >= PredIROp->Begin.ID() && Arg.ID() < PredIROp->Last.ID()) {
               FoundPredDefine = true;
               break;
             }
@@ -178,10 +179,10 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
           if (!FoundPredDefine) {
             HadError |= true;
-            Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
+            Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID()
+                   << " definition does not dominate this use! But was defined before this block!" << std::endl;
           }
-        }
-        else if (Arg.ID() > BlockIROp->Last.ID()) {
+        } else if (Arg.ID() > BlockIROp->Last.ID()) {
           // If this SSA argument is defined AFTER this block then it is just completely broken
           // Eg: Invalid
           // CodeBlock_1:
@@ -212,4 +213,4 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation() {
   return fextl::make_unique<ValueDominanceValidation>();
 }
 
-}
+} // namespace FEXCore::IR::Validation

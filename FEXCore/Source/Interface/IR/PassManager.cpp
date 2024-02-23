@@ -66,7 +66,7 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants) {
+void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool InlineConstants) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
@@ -105,16 +105,16 @@ void PassManager::InsertRegisterAllocationPass(bool SupportsAVX) {
   InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), SupportsAVX), "RA");
 }
 
-bool PassManager::Run(IREmitter *IREmit) {
+bool PassManager::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::Run");
 
   bool Changed = false;
-  for (auto const &Pass : Passes) {
+  for (const auto& Pass : Passes) {
     Changed |= Pass->Run(IREmit);
   }
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  for (auto const &Pass : ValidationPasses) {
+  for (const auto& Pass : ValidationPasses) {
     Changed |= Pass->Run(IREmit);
   }
 #endif
@@ -122,4 +122,4 @@ bool PassManager::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-}
+} // namespace FEXCore::IR

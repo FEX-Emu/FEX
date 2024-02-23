@@ -65,7 +65,7 @@ static bool SilentLog;
 static int OutputFD {STDERR_FILENO};
 static bool ExecutedWithFD {false};
 
-void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
+void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   if (SilentLog) {
     return;
   }
@@ -75,7 +75,7 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   fsync(OutputFD);
 }
 
-void AssertHandler(char const *Message) {
+void AssertHandler(const char* Message) {
   if (SilentLog) {
     return;
   }
@@ -88,53 +88,53 @@ void AssertHandler(char const *Message) {
 } // Anonymous namespace
 
 namespace FEXServerLogging {
-  int FEXServerFD{};
-  void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-    FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
-  }
-
-  void AssertHandler(char const *Message) {
-    FEXServerClient::AssertHandler(FEXServerFD, Message);
-  }
+int FEXServerFD {};
+void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+  FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
 }
+
+void AssertHandler(const char* Message) {
+  FEXServerClient::AssertHandler(FEXServerFD, Message);
+}
+} // namespace FEXServerLogging
 
 namespace AOTIR {
-  class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriter {
-    public:
-      AOTIRWriterFD(const fextl::string &Path) {
-        // Create and truncate if exists.
-        constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-        FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
-      }
+class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriter {
+public:
+  AOTIRWriterFD(const fextl::string& Path) {
+    // Create and truncate if exists.
+    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+  }
 
-      operator bool() const {
-        return FD != -1;
-      }
+  operator bool() const {
+    return FD != -1;
+  }
 
-      void Write(const void* Data, size_t Size) override {
-        write(FD, Data, Size);
-      }
+  void Write(const void* Data, size_t Size) override {
+    write(FD, Data, Size);
+  }
 
-      size_t Offset() override {
-        return lseek(FD, 0, SEEK_CUR);
-      }
+  size_t Offset() override {
+    return lseek(FD, 0, SEEK_CUR);
+  }
 
-      void Close() override {
-        if (FD != -1) {
-          close(FD);
-          FD = -1;
-        }
-      }
+  void Close() override {
+    if (FD != -1) {
+      close(FD);
+      FD = -1;
+    }
+  }
 
-      virtual ~AOTIRWriterFD() {
-        Close();
-      }
-    private:
-      int FD{-1};
-  };
-}
+  virtual ~AOTIRWriterFD() {
+    Close();
+  }
+private:
+  int FD {-1};
+};
+} // namespace AOTIR
 
-void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
+void InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -154,13 +154,10 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
   }
 
   // Handle shebang files
-  if (Data[0] == '#' &&
-      Data[1] == '!') {
-    fextl::string InterpreterLine {
-        Data.begin() + 2, // strip off "#!" prefix
-        std::find(Data.begin(), Data.end(), '\n')
-    };
-    fextl::vector<fextl::string> ShebangArguments{};
+  if (Data[0] == '#' && Data[1] == '!') {
+    fextl::string InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
+                                   std::find(Data.begin(), Data.end(), '\n')};
+    fextl::vector<fextl::string> ShebangArguments {};
 
     // Shebang line can have a single argument
     fextl::istringstream InterpreterSS(InterpreterLine);
@@ -173,7 +170,7 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
     }
 
     // Executable argument
-    fextl::string &ShebangProgram = ShebangArguments[0];
+    fextl::string& ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -188,7 +185,7 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
   close(FD);
 }
 
-void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
+void RootFSRedirect(fextl::string* Filename, const fextl::string& RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
   if (FHU::Filesystem::Exists(RootFSLink)) {
@@ -196,7 +193,7 @@ void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   }
 }
 
-bool RanAsInterpreter(const char *Program) {
+bool RanAsInterpreter(const char* Program) {
   return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
 }
 
@@ -204,14 +201,12 @@ bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
   // Or if we were originally executed with FD. Which means the interpreter is installed
 
-  return ExecutedWithFD ||
-         (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 &&
-          access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
+  return ExecutedWithFD || (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 && access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
 }
 
 namespace FEX::TSO {
-  void SetupTSOEmulation(FEXCore::Context::Context *CTX) {
-    // We need to check if these are defined or not. This is a very fresh feature.
+void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
+  // We need to check if these are defined or not. This is a very fresh feature.
 #ifndef PR_GET_MEM_MODEL
 #define PR_GET_MEM_MODEL 0x6d4d444c
 #endif
@@ -224,50 +219,45 @@ namespace FEX::TSO {
 #ifndef PR_SET_MEM_MODEL_TSO
 #define PR_SET_MEM_MODEL_TSO 1
 #endif
-    // Check to see if this is supported.
-    auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
-    if (Result == -1) {
-      // Unsupported, early exit.
-      return;
-    }
+  // Check to see if this is supported.
+  auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
+  if (Result == -1) {
+    // Unsupported, early exit.
+    return;
+  }
 
-    FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
 
-    if (!TSOEnabled()) {
-      // TSO emulation isn't even enabled, early exit.
-      return;
-    }
+  if (!TSOEnabled()) {
+    // TSO emulation isn't even enabled, early exit.
+    return;
+  }
 
-    if (Result == PR_SET_MEM_MODEL_DEFAULT) {
-      // Try to set the TSO mode if we are currently default.
-      Result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
-      if (Result == 0) {
-        // TSO mode successfully enabled. Tell the context to disable TSO emulation through atomics.
-        // This flag gets inherited on thread creation, so FEX only needs to set it at the start.
-        CTX->SetHardwareTSOSupport(true);
-      }
+  if (Result == PR_SET_MEM_MODEL_DEFAULT) {
+    // Try to set the TSO mode if we are currently default.
+    Result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
+    if (Result == 0) {
+      // TSO mode successfully enabled. Tell the context to disable TSO emulation through atomics.
+      // This flag gets inherited on thread creation, so FEX only needs to set it at the start.
+      CTX->SetHardwareTSOSupport(true);
     }
   }
 }
+} // namespace FEX::TSO
 
-int main(int argc, char **argv, char **const envp) {
+int main(int argc, char** argv, char** const envp) {
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
   const char* FEXFD = getenv("FEX_EXECVEFD");
-  const std::string_view FEXFDView = FEXFD ? std::string_view{FEXFD} : std::string_view{};
+  const std::string_view FEXFDView = FEXFD ? std::string_view {FEXFD} : std::string_view {};
 
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  auto Program = FEX::Config::LoadConfig(
-    IsInterpreter,
-    true,
-    argc, argv, envp,
-    ExecutedWithFD,
-    FEXFDView);
+  auto Program = FEX::Config::LoadConfig(IsInterpreter, true, argc, argv, envp, ExecutedWithFD, FEXFDView);
 
   if (Program.ProgramPath.empty() && !FEXFD) {
     // Early exit if we weren't passed an argument
@@ -315,8 +305,7 @@ int main(int argc, char **argv, char **const envp) {
   if (::SilentLog) {
     LogMan::Throw::UnInstallHandlers();
     LogMan::Msg::UnInstallHandlers();
-  }
-  else {
+  } else {
     auto LogFile = OutputLog();
     // If stderr or stdout then we need to dup the FD
     // In some cases some applications will close stderr and stdout
@@ -327,11 +316,9 @@ int main(int argc, char **argv, char **const envp) {
     // can run in to problems of writing to some file
     if (LogFile == "stderr") {
       OutputFD = dup(STDERR_FILENO);
-    }
-    else if (LogFile == "stdout") {
+    } else if (LogFile == "stdout") {
       OutputFD = dup(STDOUT_FILENO);
-    }
-    else if (LogFile == "server") {
+    } else if (LogFile == "server") {
       LogMan::Throw::UnInstallHandlers();
       LogMan::Msg::UnInstallHandlers();
 
@@ -340,8 +327,7 @@ int main(int argc, char **argv, char **const envp) {
         LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
         LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
       }
-    }
-    else if (!LogFile.empty()) {
+    } else if (!LogFile.empty()) {
       OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
     }
   }
@@ -366,13 +352,13 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   // Before we go any further, set all of our host environment variables that the config has provided
-  for (auto &HostEnv : HostEnvironment.All()) {
+  for (auto& HostEnv : HostEnvironment.All()) {
     // We are going to keep these alive in memory.
     // No need to split the string with setenv
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader Loader {Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
@@ -380,8 +366,7 @@ int main(int argc, char **argv, char **const envp) {
 #ifdef _M_ARM_64
     fextl::fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
     fextl::fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
-    if (LDPath().empty() ||
-        FHU::Filesystem::Exists(LDPath()) == false) {
+    if (LDPath().empty() || FHU::Filesystem::Exists(LDPath()) == false) {
       fextl::fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
       fextl::fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
@@ -393,16 +378,14 @@ int main(int argc, char **argv, char **const envp) {
     // Don't need to canonicalize Program.ProgramPath, Config loader will have resolved this already.
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
-  }
-  else if (FEXFD) {
+  } else if (FEXFD) {
     // Anonymous program.
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
-  }
-  else {
+  } else {
     {
       char ExistsTempPath[PATH_MAX];
-      char *RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
+      char* RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
       if (RealPath) {
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
       }
@@ -447,8 +430,8 @@ int main(int argc, char **argv, char **const envp) {
 
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName);
 
-  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
-                                             : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
+                                               FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
   {
     // Load VDSO in to memory prior to mapping our ELFs.
@@ -492,7 +475,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
   // There might already be an exit handler, leave it installed
-  if(!CTX->GetExitHandler()) {
+  if (!CTX->GetExitHandler()) {
     CTX->SetExitHandler([&](uint64_t thread, FEXCore::Context::ExitReason reason) {
       if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
         ShutdownReason = reason;
@@ -506,7 +489,7 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
 
-    CTX->SetAOTIRLoader([](const fextl::string &fileid) -> int {
+    CTX->SetAOTIRLoader([](const fextl::string& fileid) -> int {
       const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
       return open(filepath.c_str(), O_RDONLY);
     });
@@ -534,7 +517,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTIRGenerate()) {
-    for(auto &Section: Loader.Sections) {
+    for (auto& Section : Loader.Sections) {
       FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
@@ -586,8 +569,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
-  }
-  else {
+  } else {
     return -64 | ShutdownReason;
   }
 }

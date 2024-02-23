@@ -226,7 +226,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
     CHECK(DisassembleEncoding(0) == 0xb000081e);
     CHECK(DisassembleEncoding(1) == 0x910013de);
   }
-
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Add/subtract immediate") {
   TEST_SINGLE(add(Size::i32Bit, Reg::r29, Reg::r28, 0, false), "add w29, w28, #0x0 (0)");
@@ -371,9 +370,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Logical immediate") {
   TEST_SINGLE(eor(Size::i64Bit, Reg::r29, Reg::r28, 1), "eor x29, x28, #0x1");
   TEST_SINGLE(eor(Size::i64Bit, Reg::r29, Reg::r28, -2), "eor x29, x28, #0xfffffffffffffffe");
 
-  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, 1),  "tst w28, #0x1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, 1), "tst w28, #0x1");
   TEST_SINGLE(tst(Size::i32Bit, Reg::r28, -2), "tst w28, #0xfffffffe");
-  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, 1),  "tst x28, #0x1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, 1), "tst x28, #0x1");
   TEST_SINGLE(tst(Size::i64Bit, Reg::r28, -2), "tst x28, #0xfffffffffffffffe");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Move wide immediate") {
@@ -442,28 +441,28 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Bitfield") {
   TEST_SINGLE(asr(Size::i32Bit, Reg::r29, Reg::r28, 17), "asr w29, w28, #17");
   TEST_SINGLE(asr(Size::i64Bit, Reg::r29, Reg::r28, 17), "asr x29, x28, #17");
 
-  TEST_SINGLE(bfc(Size::i32Bit, Reg::r29, 4, 3),  "bfc w29, #4, #3");
+  TEST_SINGLE(bfc(Size::i32Bit, Reg::r29, 4, 3), "bfc w29, #4, #3");
   TEST_SINGLE(bfc(Size::i32Bit, Reg::r29, 27, 3), "bfc w29, #27, #3");
 
-  TEST_SINGLE(bfc(Size::i64Bit, Reg::r29, 4, 3),  "bfc x29, #4, #3");
+  TEST_SINGLE(bfc(Size::i64Bit, Reg::r29, 4, 3), "bfc x29, #4, #3");
   TEST_SINGLE(bfc(Size::i64Bit, Reg::r29, 57, 3), "bfc x29, #57, #3");
 
-  TEST_SINGLE(bfxil(Size::i32Bit, Reg::r29, Reg::r28, 4, 3),  "bfxil w29, w28, #4, #3");
+  TEST_SINGLE(bfxil(Size::i32Bit, Reg::r29, Reg::r28, 4, 3), "bfxil w29, w28, #4, #3");
   TEST_SINGLE(bfxil(Size::i32Bit, Reg::r29, Reg::r28, 27, 3), "bfxil w29, w28, #27, #3");
-  
-  TEST_SINGLE(bfxil(Size::i64Bit, Reg::r29, Reg::r28, 4, 3),  "bfxil x29, x28, #4, #3");
+
+  TEST_SINGLE(bfxil(Size::i64Bit, Reg::r29, Reg::r28, 4, 3), "bfxil x29, x28, #4, #3");
   TEST_SINGLE(bfxil(Size::i64Bit, Reg::r29, Reg::r28, 57, 3), "bfxil x29, x28, #57, #3");
 
-  TEST_SINGLE(sbfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3),  "sbfiz w29, w28, #5, #3");
+  TEST_SINGLE(sbfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3), "sbfiz w29, w28, #5, #3");
   TEST_SINGLE(sbfiz(Size::i32Bit, Reg::r29, Reg::r28, 27, 3), "sbfiz w29, w28, #27, #3");
 
-  TEST_SINGLE(sbfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3),  "sbfiz x29, x28, #5, #3");
+  TEST_SINGLE(sbfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3), "sbfiz x29, x28, #5, #3");
   TEST_SINGLE(sbfiz(Size::i64Bit, Reg::r29, Reg::r28, 54, 3), "sbfiz x29, x28, #54, #3");
 
-  TEST_SINGLE(ubfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3),  "ubfiz w29, w28, #5, #3");
+  TEST_SINGLE(ubfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3), "ubfiz w29, w28, #5, #3");
   TEST_SINGLE(ubfiz(Size::i32Bit, Reg::r29, Reg::r28, 27, 3), "ubfiz w29, w28, #27, #3");
 
-  TEST_SINGLE(ubfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3),  "ubfiz x29, x28, #5, #3");
+  TEST_SINGLE(ubfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3), "ubfiz x29, x28, #5, #3");
   TEST_SINGLE(ubfiz(Size::i64Bit, Reg::r29, Reg::r28, 54, 3), "ubfiz x29, x28, #54, #3");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Extract") {
@@ -1691,8 +1690,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - with carry") {
   TEST_SINGLE(sbcs(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27), "sbcs w29, w28, w27");
   TEST_SINGLE(sbcs(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27), "sbcs x29, x28, x27");
 
-  TEST_SINGLE(ngc(Size::i32Bit, Reg::r29, Reg::r27),  "ngc w29, w27");
-  TEST_SINGLE(ngc(Size::i64Bit, Reg::r29, Reg::r27),  "ngc x29, x27");
+  TEST_SINGLE(ngc(Size::i32Bit, Reg::r29, Reg::r27), "ngc w29, w27");
+  TEST_SINGLE(ngc(Size::i64Bit, Reg::r29, Reg::r27), "ngc x29, x27");
 
   TEST_SINGLE(ngcs(Size::i32Bit, Reg::r29, Reg::r27), "ngcs w29, w27");
   TEST_SINGLE(ngcs(Size::i64Bit, Reg::r29, Reg::r27), "ngcs x29, x27");
@@ -1706,7 +1705,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Rotate right into flags") {
   TEST_SINGLE(rmif(XReg::x30, 63, 0b1111), "rmif x30, #63, #NZCV");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Evaluate into flags") {
-  TEST_SINGLE(setf8(WReg::w30),  "setf8 w30");
+  TEST_SINGLE(setf8(WReg::w30), "setf8 w30");
   TEST_SINGLE(setf16(WReg::w30), "setf16 w30");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Carry flag invert") {

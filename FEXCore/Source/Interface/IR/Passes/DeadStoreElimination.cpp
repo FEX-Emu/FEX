@@ -26,9 +26,10 @@ constexpr int PropagationRounds = 5;
 
 class DeadStoreElimination final : public FEXCore::IR::Pass {
 public:
-  explicit DeadStoreElimination(bool SupportsAVX_) : SupportsAVX{SupportsAVX_} {}
+  explicit DeadStoreElimination(bool SupportsAVX_)
+    : SupportsAVX {SupportsAVX_} {}
 
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 
 private:
   bool SupportsAVX;
@@ -36,29 +37,28 @@ private:
   bool IsFPR(uint32_t Offset) const {
     const auto [begin, end] = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
       if (SupportsAVX) {
-        return {
-          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[0][0]),
-          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[16][0])
-        };
+        return {offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[0][0]),
+                offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[16][0])};
       } else {
-        return {
-          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]),
-          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[16][0])
-        };
+        return {offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]),
+                offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[16][0])};
       }
     }();
 
-    if (Offset < begin || Offset >= end)
+    if (Offset < begin || Offset >= end) {
       return false;
+    }
 
     return true;
   }
 
   bool IsTrackedWriteFPR(uint32_t Offset, uint8_t Size) const {
-    if (Size != 16 && Size != 8 && Size != 4)
+    if (Size != 16 && Size != 8 && Size != 4) {
       return false;
-    if (Offset & 15)
+    }
+    if (Offset & 15) {
       return false;
+    }
 
     return IsFPR(Offset);
   }
@@ -70,56 +70,61 @@ private:
 
     const auto begin = offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0]);
 
-    const auto regSize = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
-                                     : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regn = (Offset - begin) / regSize;
     const auto bitn = regn * 3;
 
-    if (!IsTrackedWriteFPR(Offset, Size))
+    if (!IsTrackedWriteFPR(Offset, Size)) {
       return 7UL << (bitn);
+    }
 
-    if (Size == 16)
-      return  7UL << (bitn);
-    else if (Size == 8)
-      return  3UL << (bitn);
-    else if (Size == 4)
-      return  1UL << (bitn);
-    else
+    if (Size == 16) {
+      return 7UL << (bitn);
+    } else if (Size == 8) {
+      return 3UL << (bitn);
+    } else if (Size == 4) {
+      return 1UL << (bitn);
+    } else {
       LOGMAN_MSG_A_FMT("Unexpected FPR size {}", Size);
+    }
 
     return 7UL << (bitn); // Return maximum on failure case
   }
 };
 
 struct FlagInfo {
-  uint64_t reads { 0 };
-  uint64_t writes { 0 };
-  uint64_t kill { 0 };
+  uint64_t reads {0};
+  uint64_t writes {0};
+  uint64_t kill {0};
 };
 
 
 struct GPRInfo {
-  uint32_t reads { 0 };
-  uint32_t writes { 0 };
-  uint32_t kill { 0 };
+  uint32_t reads {0};
+  uint32_t writes {0};
+  uint32_t kill {0};
 };
 
 bool IsFullGPR(uint32_t Offset, uint8_t Size) {
-  if (Size != 8)
+  if (Size != 8) {
     return false;
-  if (Offset & 7)
+  }
+  if (Offset & 7) {
     return false;
+  }
 
-  if (Offset < 8 || Offset >= (17 * 8))
+  if (Offset < 8 || Offset >= (17 * 8)) {
     return false;
+  }
 
   return true;
 }
 
 bool IsGPR(uint32_t Offset) {
 
-  if (Offset < 8 || Offset >= (17 * 8))
+  if (Offset < 8 || Offset >= (17 * 8)) {
     return false;
+  }
 
   return true;
 }
@@ -129,13 +134,13 @@ uint32_t GPRBit(uint32_t Offset) {
     return 0;
   }
 
-  return  1 << ((Offset - 8)/8);
+  return 1 << ((Offset - 8) / 8);
 }
 
 struct FPRInfo {
-  uint64_t reads { 0 };
-  uint64_t writes { 0 };
-  uint64_t kill { 0 };
+  uint64_t reads {0};
+  uint64_t writes {0};
+  uint64_t kill {0};
 };
 
 struct Info {
@@ -155,7 +160,7 @@ struct Info {
  * Third pass removes the dead stores.
  *
  */
-bool DeadStoreElimination::Run(IREmitter *IREmit) {
+bool DeadStoreElimination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DSE");
 
   fextl::unordered_map<OrderedNode*, Info> InfoMap;
@@ -170,21 +175,23 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
-        auto ClassifyRegisterStore = [this](Info &BlockInfo, uint32_t Offset, uint8_t Size) {
+        auto ClassifyRegisterStore = [this](Info& BlockInfo, uint32_t Offset, uint8_t Size) {
           //// GPR ////
-          if (IsFullGPR(Offset, Size))
+          if (IsFullGPR(Offset, Size)) {
             BlockInfo.gpr.writes |= GPRBit(Offset);
-          else
+          } else {
             BlockInfo.gpr.reads |= GPRBit(Offset);
+          }
 
           //// FPR ////
-          if (IsTrackedWriteFPR(Offset, Size))
+          if (IsTrackedWriteFPR(Offset, Size)) {
             BlockInfo.fpr.writes |= FPRBit(Offset, Size);
-          else
+          } else {
             BlockInfo.fpr.reads |= FPRBit(Offset, Size);
+          }
         };
 
-        auto ClassifyRegisterLoad = [this](Info &BlockInfo, uint32_t Offset, uint8_t Size) {
+        auto ClassifyRegisterLoad = [this](Info& BlockInfo, uint32_t Offset, uint8_t Size) {
           //// GPR ////
           BlockInfo.gpr.reads |= GPRBit(Offset);
 
@@ -199,7 +206,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.writes |= 1UL << Op->Flag;
-        } else if  (IROp->Op == OP_INVALIDATEFLAGS) {
+        } else if (IROp->Op == OP_INVALIDATEFLAGS) {
           auto Op = IROp->C<IR::IROp_InvalidateFlags>();
 
           auto& BlockInfo = InfoMap[BlockNode];
@@ -229,8 +236,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   // Pass 2
   // Compute flags/gprs/fprs that are stored, but always ovewritten in the next blocks
   // Propagate the information a few times to eliminate more
-  for (int i = 0; i < PropagationRounds; i++)
-  {
+  for (int i = 0; i < PropagationRounds; i++) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       auto CodeBlock = BlockIROp->C<IROp_CodeBlock>();
 
@@ -238,7 +244,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
 
       if (IROp->Op == OP_JUMP) {
         auto Op = IROp->C<IR::IROp_Jump>();
-        OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
+        OrderedNode* TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
 
         auto& BlockInfo = InfoMap[BlockNode];
         auto& TargetInfo = InfoMap[TargetNode];
@@ -272,8 +278,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
       } else if (IROp->Op == OP_CONDJUMP) {
         auto Op = IROp->C<IR::IROp_CondJump>();
 
-        OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-        OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
+        OrderedNode* TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
+        OrderedNode* FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
 
         auto& BlockInfo = InfoMap[BlockNode];
         auto& TrueTargetInfo = InfoMap[TrueTargetNode];
@@ -317,8 +323,9 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
-        auto RemoveDeadRegisterStore = [this](FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode *CodeNode, Info &BlockInfo, uint32_t Offset, uint8_t Size) -> bool {
-          bool Changed{};
+        auto RemoveDeadRegisterStore = [this](FEXCore::IR::IREmitter* IREmit, FEXCore::IR::OrderedNode* CodeNode, Info& BlockInfo,
+                                              uint32_t Offset, uint8_t Size) -> bool {
+          bool Changed {};
           //// GPRs ////
           // If this OP_STOREREGISTER is never read, remove it
           if (BlockInfo.gpr.kill & GPRBit(Offset)) {
@@ -365,4 +372,4 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX
   return fextl::make_unique<DeadStoreElimination>(SupportsAVX);
 }
 
-}
+} // namespace FEXCore::IR

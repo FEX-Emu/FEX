@@ -11,7 +11,7 @@ struct CPUState {
   uint32_t eflags;
 };
 
-CPUState CapturedState{};
+CPUState CapturedState {};
 
 enum RegNums {
   TEST_REG_EAX = 0,
@@ -24,10 +24,10 @@ enum RegNums {
   TEST_REG_EBP,
 };
 
-__attribute__((naked))
-void DoZeroRegSyscallFault(CPUState State) {
+__attribute__((naked)) void DoZeroRegSyscallFault(CPUState State) {
   // i386 stores arguments on the stack.
-  __asm volatile(R"(
+  __asm volatile(
+    R"(
     // Load flags
     push dword [esp + %[FlagsOffset]]
     popfd
@@ -53,23 +53,19 @@ void DoZeroRegSyscallFault(CPUState State) {
 
     // We long jump from the signal handler, so this won't continue.
   )"
-  :
-  // integers are offset by 8 for some reason.
-  // But the stack is also offset by 4-bytes due to the call.
-  : [RAXOffset] "i" (offsetof(CPUState, Registers[TEST_REG_EAX]) - 4)
-  , [RDXOffset] "i" (offsetof(CPUState, Registers[TEST_REG_EDX]) - 4)
-  , [RSIOffset] "i" (offsetof(CPUState, Registers[TEST_REG_ESI]) - 4)
-  , [RDIOffset] "i" (offsetof(CPUState, Registers[TEST_REG_EDI]) - 4)
-  , [RBXOffset] "i" (offsetof(CPUState, Registers[TEST_REG_EBX]) - 4)
-  , [RCXOffset] "i" (offsetof(CPUState, Registers[TEST_REG_ECX]) - 4)
-  , [RBPOffset] "i" (offsetof(CPUState, Registers[TEST_REG_EBP]) - 4)
-  , [FlagsOffset] "i" (offsetof(CPUState, eflags) - 4)
+    :
+    // integers are offset by 8 for some reason.
+    // But the stack is also offset by 4-bytes due to the call.
+    : [RAXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EAX]) - 4), [RDXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDX]) - 4),
+      [RSIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ESI]) - 4), [RDIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDI]) - 4),
+      [RBXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBX]) - 4), [RCXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ECX]) - 4),
+      [RBPOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBP]) - 4), [FlagsOffset] "i"(offsetof(CPUState, eflags) - 4)
 
-  : "memory");
+    : "memory");
 }
 
-static jmp_buf LongJump{};
-static void CapturingHandler(int signal, siginfo_t *siginfo, void* context) {
+static jmp_buf LongJump {};
+static void CapturingHandler(int signal, siginfo_t* siginfo, void* context) {
   ucontext_t* _context = (ucontext_t*)context;
 
   auto RAX = _context->uc_mcontext.gregs[REG_EAX];
@@ -79,7 +75,7 @@ static void CapturingHandler(int signal, siginfo_t *siginfo, void* context) {
     _exit(1);
   }
 
-  CPUState &State = CapturedState;
+  CPUState& State = CapturedState;
 
   // These aren't 1:1 mapped
 #define COPY(REG) State.Registers[TEST_REG_##REG] = _context->uc_mcontext.gregs[REG_##REG];
@@ -98,31 +94,31 @@ static void CapturingHandler(int signal, siginfo_t *siginfo, void* context) {
 
 TEST_CASE("getppid: State") {
   // Set up a signal handler for SIGSEGV
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);
 
   CPUState Object = {
-    .Registers = {
-      0x1011'1213ULL,
-      0x2022'2223ULL,
-      0x3033'3233ULL,
-      0x4044'4243ULL,
-      0x5055'5253ULL,
-      0x6066'6263ULL,
-      0x7077'7273ULL,
-      0x8088'8283ULL,
-    },
-    .eflags =
-      (1U << 0) | // CF
-      (1U << 1) | // RA1
-      (1U << 2) | // PF
-      (1U << 4) | // AF
-      (1U << 6) | // ZF
-      (1U << 7) | // CF
-      (1U << 9) | // IF (Is always 1 in userspace)
-      (1U << 11) // OF
+    .Registers =
+      {
+        0x1011'1213ULL,
+        0x2022'2223ULL,
+        0x3033'3233ULL,
+        0x4044'4243ULL,
+        0x5055'5253ULL,
+        0x6066'6263ULL,
+        0x7077'7273ULL,
+        0x8088'8283ULL,
+      },
+    .eflags = (1U << 0) | // CF
+              (1U << 1) | // RA1
+              (1U << 2) | // PF
+              (1U << 4) | // AF
+              (1U << 6) | // ZF
+              (1U << 7) | // CF
+              (1U << 9) | // IF (Is always 1 in userspace)
+              (1U << 11)  // OF
   };
 
   constexpr uint64_t SyscallNum = SYS_sched_yield;
@@ -144,5 +140,4 @@ TEST_CASE("getppid: State") {
   // Syscall success return
   CHECK(CapturedState.Registers[TEST_REG_EAX] == 0);
   // RSP is untested here.
-
 }

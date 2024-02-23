@@ -12,7 +12,7 @@ $end_info$
 namespace FEX::HLE {
 /// List Operations ///
 
-inline void SyscallHandler::VMATracking::ListCheckVMALinks(VMAEntry *VMA) {
+inline void SyscallHandler::VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
   if (VMA) {
     LOGMAN_THROW_A_FMT(VMA->ResourceNextVMA != VMA, "VMA tracking error");
     LOGMAN_THROW_A_FMT(VMA->ResourcePrevVMA != VMA, "VMA tracking error");
@@ -21,7 +21,7 @@ inline void SyscallHandler::VMATracking::ListCheckVMALinks(VMAEntry *VMA) {
 
 // Removes a VMA from corresponding MappedResource list
 // Returns true if list is empty
-bool SyscallHandler::VMATracking::ListRemove(VMAEntry *VMA) {
+bool SyscallHandler::VMATracking::ListRemove(VMAEntry* VMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   // if it has prev, make prev to next
@@ -55,7 +55,7 @@ bool SyscallHandler::VMATracking::ListRemove(VMAEntry *VMA) {
 
 // Replaces a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListReplace(VMAEntry *VMA, VMAEntry *NewVMA) {
+void SyscallHandler::VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(VMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -84,7 +84,7 @@ void SyscallHandler::VMATracking::ListReplace(VMAEntry *VMA, VMAEntry *NewVMA) {
 
 // Inserts a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListInsertAfter(VMAEntry *AfterVMA, VMAEntry *NewVMA) {
+void SyscallHandler::VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(NewVMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(AfterVMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -105,7 +105,7 @@ void SyscallHandler::VMATracking::ListInsertAfter(VMAEntry *AfterVMA, VMAEntry *
 
 // Prepends a VMA
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListPrepend(MappedResource *Resource, VMAEntry *NewVMA) {
+void SyscallHandler::VMATracking::ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(NewVMA->Resource == Resource, "VMA tracking error");
@@ -142,13 +142,13 @@ SyscallHandler::VMATracking::VMACIterator SyscallHandler::VMATracking::LookupVMA
 }
 
 // Set or Replace mappings in a range with a new mapping
-void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context *CTX, MappedResource *MappedResource, uintptr_t Base,
+void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, MappedResource* MappedResource, uintptr_t Base,
                                             uintptr_t Offset, uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
   ClearUnsafe(CTX, Base, Length, MappedResource);
 
   auto [Iter, Inserted] = VMAs.emplace(
-      Base, VMAEntry{MappedResource, nullptr, MappedResource ? MappedResource->FirstVMA : nullptr, Base, Offset, Length, Flags, Prot});
-      
+    Base, VMAEntry {MappedResource, nullptr, MappedResource ? MappedResource->FirstVMA : nullptr, Base, Offset, Length, Flags, Prot});
+
   LOGMAN_THROW_A_FMT(Inserted == true, "VMA Tracking corruption");
 
   if (MappedResource) {
@@ -157,10 +157,10 @@ void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context *CTX, Mapp
   }
 }
 
-// Remove mappings in a range, possibly splitting them if needed and 
+// Remove mappings in a range, possibly splitting them if needed and
 // freeing their associated MappedResource unless it is equal to PreservedMappedResource
-void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length,
-                                              MappedResource *PreservedMappedResource) {
+void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base, uintptr_t Length,
+                                              MappedResource* PreservedMappedResource) {
   const auto Top = Base + Length;
 
   // find the first Mapping at or after the Range ends, or ::end()
@@ -219,8 +219,8 @@ void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context *CTX, ui
         auto NewOffset = OffsetDiff + Top;
         auto NewLength = MapTop - Top;
 
-        auto [Iter, Inserted] = VMAs.emplace(
-            Top, VMAEntry{Current->Resource, ReplaceAndErase ?  Current->ResourcePrevVMA : Current, Current->ResourceNextVMA, Top, NewOffset, NewLength, Current->Flags, Current->Prot});
+        auto [Iter, Inserted] = VMAs.emplace(Top, VMAEntry {Current->Resource, ReplaceAndErase ? Current->ResourcePrevVMA : Current,
+                                                            Current->ResourceNextVMA, Top, NewOffset, NewLength, Current->Flags, Current->Prot});
         LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
         auto TrailingPart = &Iter->second;
         if (Current->Resource) {
@@ -284,7 +284,7 @@ void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length,
         auto NewLength = Top - Base;
 
         auto [Iter, Inserted] =
-            VMAs.emplace(Base, VMAEntry{Current->Resource, Current, Current->ResourceNextVMA, Base, NewOffset, NewLength, MapFlags, NewProt});
+          VMAs.emplace(Base, VMAEntry {Current->Resource, Current, Current->ResourceNextVMA, Base, NewOffset, NewLength, MapFlags, NewProt});
         LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
         auto RestOfMapping = &Iter->second;
 
@@ -311,7 +311,7 @@ void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length,
         auto NewLength = MapTop - Top;
 
         auto [Iter, Inserted] =
-            VMAs.emplace(Top, VMAEntry{Current->Resource, Current, Current->ResourceNextVMA, Top, NewOffset, NewLength, MapFlags, MapProt});
+          VMAs.emplace(Top, VMAEntry {Current->Resource, Current, Current->ResourceNextVMA, Top, NewOffset, NewLength, MapFlags, MapProt});
         LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
         auto TrailingMapping = &Iter->second;
 
@@ -324,7 +324,7 @@ void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length,
 }
 
 // This matches the peculiarities algorithm used in linux ksys_shmdt (linux kernel 5.16, ipc/shm.c)
-uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context *CTX, uintptr_t Base) {
+uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base) {
 
   // Find first VMA at or after Base
   // Iterate until first SHM VMA, with matching offset, get length
@@ -337,7 +337,7 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context 
     LOGMAN_THROW_A_FMT(Entry->second.Base >= Base, "VMA tracking corruption");
     if (Entry->second.Base - Base == Entry->second.Offset && Entry->second.Resource &&
         Entry->second.Resource->Iterator->first.dev == SpecialDev::SHM) {
-        break;
+      break;
     }
   }
 
@@ -364,4 +364,4 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context 
 
   return ShmLength;
 }
-}
+} // namespace FEX::HLE

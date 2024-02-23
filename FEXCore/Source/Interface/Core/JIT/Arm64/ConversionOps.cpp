@@ -9,7 +9,7 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(VInsGPR) {
   const auto Op = IROp->C<IR::IROp_VInsGPR>();
   const auto OpSize = IROp->Size;
@@ -20,9 +20,10 @@ DEF_OP(VInsGPR) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1, "Unexpected {} size", __func__);
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                           ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                                              ARMEmitter::SubRegSize::i8Bit;
   const auto ElementsPer128Bit = 16 / ElementSize;
 
   const auto Dst = GetVReg(Node);
@@ -94,21 +95,17 @@ DEF_OP(VCastFromGPR) {
   auto Src = GetReg(Op->Src.ID());
 
   switch (Op->Header.ElementSize) {
-    case 1:
-      uxtb(ARMEmitter::Size::i32Bit, TMP1, Src);
-      fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1);
-      break;
-    case 2:
-      uxth(ARMEmitter::Size::i32Bit, TMP1, Src);
-      fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1);
-      break;
-    case 4:
-      fmov(ARMEmitter::Size::i32Bit, Dst.S(), Src);
-      break;
-    case 8:
-      fmov(ARMEmitter::Size::i64Bit, Dst.D(), Src);
-      break;
-    default: LOGMAN_MSG_A_FMT("Unknown castGPR element size: {}", Op->Header.ElementSize);
+  case 1:
+    uxtb(ARMEmitter::Size::i32Bit, TMP1, Src);
+    fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1);
+    break;
+  case 2:
+    uxth(ARMEmitter::Size::i32Bit, TMP1, Src);
+    fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1);
+    break;
+  case 4: fmov(ARMEmitter::Size::i32Bit, Dst.S(), Src); break;
+  case 8: fmov(ARMEmitter::Size::i64Bit, Dst.D(), Src); break;
+  default: LOGMAN_MSG_A_FMT("Unknown castGPR element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -122,14 +119,14 @@ DEF_OP(VDupFromGPR) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto ElementSize = IROp->ElementSize;
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1,
-                      "Unexpected {} element size: {}", __func__, ElementSize);
+  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1, "Unexpected {} element size: {}",
+                      __func__, ElementSize);
 
-  const auto SubEmitSize =
-    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                           ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+                                              ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     dup(SubEmitSize, Dst.Z(), Src);
@@ -148,34 +145,33 @@ DEF_OP(Float_FromGPR_S) {
   auto Src = GetReg(Op->Src.ID());
 
   switch (Conv) {
-    case 0x0204: { // Half <- int32_t
-      scvtf(ARMEmitter::Size::i32Bit, Dst.H(), Src);
-      break;
-    }
-    case 0x0208: { // Half <- int64_t
-      scvtf(ARMEmitter::Size::i64Bit, Dst.H(), Src);
-      break;
-    }
-    case 0x0404: { // Float <- int32_t
-      scvtf(ARMEmitter::Size::i32Bit, Dst.S(), Src);
-      break;
-    }
-    case 0x0408: { // Float <- int64_t
-      scvtf(ARMEmitter::Size::i64Bit, Dst.S(), Src);
-      break;
-    }
-    case 0x0804: { // Double <- int32_t
-      scvtf(ARMEmitter::Size::i32Bit, Dst.D(), Src);
-      break;
-    }
-    case 0x0808: { // Double <- int64_t
-      scvtf(ARMEmitter::Size::i64Bit, Dst.D(), Src);
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled conversion mask: Mask=0x{:04x}, ElementSize={}, SrcElementSize={}",
-                       Conv, ElementSize, Op->SrcElementSize);
-      break;
+  case 0x0204: { // Half <- int32_t
+    scvtf(ARMEmitter::Size::i32Bit, Dst.H(), Src);
+    break;
+  }
+  case 0x0208: { // Half <- int64_t
+    scvtf(ARMEmitter::Size::i64Bit, Dst.H(), Src);
+    break;
+  }
+  case 0x0404: { // Float <- int32_t
+    scvtf(ARMEmitter::Size::i32Bit, Dst.S(), Src);
+    break;
+  }
+  case 0x0408: { // Float <- int64_t
+    scvtf(ARMEmitter::Size::i64Bit, Dst.S(), Src);
+    break;
+  }
+  case 0x0804: { // Double <- int32_t
+    scvtf(ARMEmitter::Size::i32Bit, Dst.D(), Src);
+    break;
+  }
+  case 0x0808: { // Double <- int64_t
+    scvtf(ARMEmitter::Size::i64Bit, Dst.D(), Src);
+    break;
+  }
+  default:
+    LOGMAN_MSG_A_FMT("Unhandled conversion mask: Mask=0x{:04x}, ElementSize={}, SrcElementSize={}", Conv, ElementSize, Op->SrcElementSize);
+    break;
   }
 }
 
@@ -187,31 +183,31 @@ DEF_OP(Float_FToF) {
   auto Src = GetVReg(Op->Scalar.ID());
 
   switch (Conv) {
-    case 0x0204: { // Half <- Float
-      fcvt(Dst.H(), Src.S());
-      break;
-    }
-    case 0x0208: { // Half <- Double
-      fcvt(Dst.H(), Src.D());
-      break;
-    }
-    case 0x0402: { // Float <- Half
-      fcvt(Dst.S(), Src.H());
-      break;
-    }
-    case 0x0802: { // Double <- Half
-      fcvt(Dst.D(), Src.H());
-      break;
-    }
-    case 0x0804: { // Double <- Float
-      fcvt(Dst.D(), Src.S());
-      break;
-    }
-    case 0x0408: { // Float <- Double
-      fcvt(Dst.S(), Src.D());
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
+  case 0x0204: { // Half <- Float
+    fcvt(Dst.H(), Src.S());
+    break;
+  }
+  case 0x0208: { // Half <- Double
+    fcvt(Dst.H(), Src.D());
+    break;
+  }
+  case 0x0402: { // Float <- Half
+    fcvt(Dst.S(), Src.H());
+    break;
+  }
+  case 0x0802: { // Double <- Half
+    fcvt(Dst.D(), Src.H());
+    break;
+  }
+  case 0x0804: { // Double <- Float
+    fcvt(Dst.D(), Src.S());
+    break;
+  }
+  case 0x0408: { // Float <- Double
+    fcvt(Dst.S(), Src.D());
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
   }
 }
 
@@ -224,8 +220,9 @@ DEF_OP(Vector_SToF) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i16Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -236,19 +233,15 @@ DEF_OP(Vector_SToF) {
     if (OpSize == ElementSize) {
       if (ElementSize == 8) {
         scvtf(ARMEmitter::ScalarRegSize::i64Bit, Dst.D(), Vector.D());
-      }
-      else if (ElementSize == 4) {
+      } else if (ElementSize == 4) {
         scvtf(ARMEmitter::ScalarRegSize::i32Bit, Dst.S(), Vector.S());
-      }
-      else {
+      } else {
         scvtf(ARMEmitter::ScalarRegSize::i16Bit, Dst.H(), Vector.H());
       }
-    }
-    else {
+    } else {
       if (OpSize == 8) {
         scvtf(SubEmitSize, Dst.D(), Vector.D());
-      }
-      else {
+      } else {
         scvtf(SubEmitSize, Dst.Q(), Vector.Q());
       }
     }
@@ -264,8 +257,9 @@ DEF_OP(Vector_FToZS) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i16Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -276,19 +270,15 @@ DEF_OP(Vector_FToZS) {
     if (OpSize == ElementSize) {
       if (ElementSize == 8) {
         fcvtzs(ARMEmitter::ScalarRegSize::i64Bit, Dst.D(), Vector.D());
-      }
-      else if (ElementSize == 4) {
+      } else if (ElementSize == 4) {
         fcvtzs(ARMEmitter::ScalarRegSize::i32Bit, Dst.S(), Vector.S());
-      }
-      else {
+      } else {
         fcvtzs(ARMEmitter::ScalarRegSize::i16Bit, Dst.H(), Vector.H());
       }
-    }
-    else {
+    } else {
       if (OpSize == 8) {
         fcvtzs(SubEmitSize, Dst.D(), Vector.D());
-      }
-      else {
+      } else {
         fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
       }
     }
@@ -304,8 +294,9 @@ DEF_OP(Vector_FToS) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i16Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -320,8 +311,7 @@ DEF_OP(Vector_FToS) {
     if (OpSize == 8) {
       frinti(SubEmitSize, Dst.D(), Vector.D());
       fcvtzs(SubEmitSize, Dst.D(), Dst.D());
-    }
-    else {
+    } else {
       frinti(SubEmitSize, Dst.Q(), Vector.Q());
       fcvtzs(SubEmitSize, Dst.Q(), Dst.Q());
     }
@@ -338,8 +328,9 @@ DEF_OP(Vector_FToF) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i16Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -361,45 +352,41 @@ DEF_OP(Vector_FToF) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (Conv) {
-      case 0x0402: { // Float <- Half
-        zip1(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Vector.Z(), Vector.Z());
-        fcvtlt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Dst.Z());
-        break;
-      }
-      case 0x0804: { // Double <- Float
-        zip1(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Vector.Z(), Vector.Z());
-        fcvtlt(FEXCore::ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Dst.Z());
-        break;
-      }
-      case 0x0204: { // Half <- Float
-        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Mask, Vector.Z());
-        uzp2(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Dst.Z(), Dst.Z());
-        break;
-      }
-      case 0x0408: { // Float <- Double
-        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
-        uzp2(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv);
-        break;
+    case 0x0402: { // Float <- Half
+      zip1(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Vector.Z(), Vector.Z());
+      fcvtlt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Dst.Z());
+      break;
+    }
+    case 0x0804: { // Double <- Float
+      zip1(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Vector.Z(), Vector.Z());
+      fcvtlt(FEXCore::ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Dst.Z());
+      break;
+    }
+    case 0x0204: { // Half <- Float
+      fcvtnt(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Mask, Vector.Z());
+      uzp2(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Dst.Z(), Dst.Z());
+      break;
+    }
+    case 0x0408: { // Float <- Double
+      fcvtnt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+      uzp2(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;
     }
   } else {
     switch (Conv) {
-      case 0x0402: // Float <- Half
-      case 0x0804: { // Double <- Float
-        fcvtl(SubEmitSize, Dst.D(), Vector.D());
-        break;
-      }
-      case 0x0204: // Half <- Float
-      case 0x0408: { // Float <- Double
-        fcvtn(SubEmitSize, Dst.D(), Vector.D());
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv);
-        break;
+    case 0x0402:   // Float <- Half
+    case 0x0804: { // Double <- Float
+      fcvtl(SubEmitSize, Dst.D(), Vector.D());
+      break;
+    }
+    case 0x0204:   // Half <- Float
+    case 0x0408: { // Float <- Double
+      fcvtn(SubEmitSize, Dst.D(), Vector.D());
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;
     }
   }
 }
@@ -413,8 +400,9 @@ DEF_OP(Vector_FToI) {
   LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
 
   const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i16Bit;
+                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -423,82 +411,51 @@ DEF_OP(Vector_FToI) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (Op->Round) {
-      case FEXCore::IR::Round_Nearest.Val:
-        frintn(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-        break;
-      case FEXCore::IR::Round_Negative_Infinity.Val:
-        frintm(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-        break;
-      case FEXCore::IR::Round_Positive_Infinity.Val:
-        frintp(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-        break;
-      case FEXCore::IR::Round_Towards_Zero.Val:
-        frintz(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-        break;
-      case FEXCore::IR::Round_Host.Val:
-        frinti(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-        break;
+    case FEXCore::IR::Round_Nearest.Val: frintn(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case FEXCore::IR::Round_Negative_Infinity.Val: frintm(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case FEXCore::IR::Round_Positive_Infinity.Val: frintp(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case FEXCore::IR::Round_Towards_Zero.Val: frintz(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
     }
   } else {
     const auto IsScalar = ElementSize == OpSize;
 
     if (IsScalar) {
-      // Since we have multiple overloads of the same name (e.g.
-      // frinti having AdvSIMD, AdvSIMD scalar, and an SVE version),
-      // we can't just use a lambda without some seriously ugly casting.
-      // This is fairly self-contained otherwise.
-      #define ROUNDING_FN(name)          \
-        if (ElementSize == 2) {          \
-            name(Dst.H(), Vector.H());   \
-          } else if (ElementSize == 4) { \
-            name(Dst.S(), Vector.S());   \
-          } else if (ElementSize == 8) { \
-            name(Dst.D(), Vector.D());   \
-          } else {                       \
-            FEX_UNREACHABLE;             \
-          }
+// Since we have multiple overloads of the same name (e.g.
+// frinti having AdvSIMD, AdvSIMD scalar, and an SVE version),
+// we can't just use a lambda without some seriously ugly casting.
+// This is fairly self-contained otherwise.
+#define ROUNDING_FN(name) \
+  if (ElementSize == 2) { \
+    name(Dst.H(), Vector.H()); \
+  } else if (ElementSize == 4) { \
+    name(Dst.S(), Vector.S()); \
+  } else if (ElementSize == 8) { \
+    name(Dst.D(), Vector.D()); \
+  } else { \
+    FEX_UNREACHABLE; \
+  }
 
       switch (Op->Round) {
-        case IR::Round_Nearest.Val:
-          ROUNDING_FN(frintn);
-          break;
-        case IR::Round_Negative_Infinity.Val:
-          ROUNDING_FN(frintm);
-          break;
-        case IR::Round_Positive_Infinity.Val:
-          ROUNDING_FN(frintp);
-          break;
-        case IR::Round_Towards_Zero.Val:
-          ROUNDING_FN(frintz);
-          break;
-        case IR::Round_Host.Val:
-          ROUNDING_FN(frinti);
-          break;
+      case IR::Round_Nearest.Val: ROUNDING_FN(frintn); break;
+      case IR::Round_Negative_Infinity.Val: ROUNDING_FN(frintm); break;
+      case IR::Round_Positive_Infinity.Val: ROUNDING_FN(frintp); break;
+      case IR::Round_Towards_Zero.Val: ROUNDING_FN(frintz); break;
+      case IR::Round_Host.Val: ROUNDING_FN(frinti); break;
       }
 
-      #undef ROUNDING_FN
+#undef ROUNDING_FN
     } else {
       switch (Op->Round) {
-        case FEXCore::IR::Round_Nearest.Val:
-          frintn(SubEmitSize, Dst.Q(), Vector.Q());
-          break;
-        case FEXCore::IR::Round_Negative_Infinity.Val:
-          frintm(SubEmitSize, Dst.Q(), Vector.Q());
-          break;
-        case FEXCore::IR::Round_Positive_Infinity.Val:
-          frintp(SubEmitSize, Dst.Q(), Vector.Q());
-          break;
-        case FEXCore::IR::Round_Towards_Zero.Val:
-          frintz(SubEmitSize, Dst.Q(), Vector.Q());
-          break;
-        case FEXCore::IR::Round_Host.Val:
-          frinti(SubEmitSize, Dst.Q(), Vector.Q());
-          break;
+      case FEXCore::IR::Round_Nearest.Val: frintn(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case FEXCore::IR::Round_Negative_Infinity.Val: frintm(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case FEXCore::IR::Round_Positive_Infinity.Val: frintp(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case FEXCore::IR::Round_Towards_Zero.Val: frintz(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Q(), Vector.Q()); break;
       }
     }
   }
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

@@ -44,11 +44,11 @@ $end_info$
 #include <sys/types.h>
 #include <utility>
 
-void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
+void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   fextl::fmt::print("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
 }
 
-void AssertHandler(char const *Message) {
+void AssertHandler(const char* Message) {
   fextl::fmt::print("[ASSERT] {}\n", Message);
 
   // make sure buffers are flushed
@@ -72,7 +72,7 @@ public:
 
   void Load() override {
     fextl::unordered_map<std::string_view, std::string> EnvMap;
-    for (auto &Option : Env) {
+    for (auto& Option : Env) {
       std::string_view Key = Option.first;
       std::string_view Value_View = Option.second;
       std::optional<fextl::string> Value;
@@ -82,21 +82,21 @@ public:
 
       if (Value) {
         EnvMap.insert_or_assign(Key, *Value);
-      }
-      else {
+      } else {
         EnvMap.insert_or_assign(Key, Value_View);
       }
     }
 
     auto GetVar = [&](const std::string_view id) -> std::optional<std::string_view> {
       const auto it = EnvMap.find(id);
-      if (it == EnvMap.end())
+      if (it == EnvMap.end()) {
         return std::nullopt;
+      }
 
       return it->second;
     };
 
-    for (auto &it : EnvConfigLookup) {
+    for (auto& it : EnvConfigLookup) {
       if (auto Value = GetVar(it.first); Value) {
         Set(it.second, *Value);
       }
@@ -106,85 +106,85 @@ public:
 private:
   fextl::vector<std::pair<std::string_view, std::string_view>> Env;
 };
-}
+} // namespace
 
 namespace LongJumpHandler {
-  static jmp_buf LongJump{};
-  static bool DidFault{};
+static jmp_buf LongJump {};
+static bool DidFault {};
 
 #ifndef _WIN32
-  void RegisterLongJumpHandler(FEX::HLE::SignalDelegator *Handler) {
-    Handler->RegisterFrontendHostSignalHandler(SIGSEGV, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-      constexpr uint8_t HLT = 0xF4;
-      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-        DidFault = true;
-        return false;
-      }
-
-      longjmp(LongJumpHandler::LongJump, 1);
+void RegisterLongJumpHandler(FEX::HLE::SignalDelegator* Handler) {
+  Handler->RegisterFrontendHostSignalHandler(
+    SIGSEGV,
+    [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
+    constexpr uint8_t HLT = 0xF4;
+    if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+      DidFault = true;
       return false;
-    }, true);
-  }
-#else
-  FEX::DummyHandlers::DummySignalDelegator *Handler;
-
-  static void LongJumpHandler() {
-    longjmp(LongJump, 1);
-  }
-
-  LONG WINAPI
-  VectoredExceptionHandler(struct _EXCEPTION_POINTERS *ExceptionInfo) {
-    auto Thread = Handler->GetBackingTLSThread();
-    PCONTEXT Context;
-    Context = ExceptionInfo->ContextRecord;
-
-    switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
-      case STATUS_DATATYPE_MISALIGNMENT: {
-        const auto PC = FEX::ArchHelpers::Context::GetPc(Context);
-        if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
-          // Wasn't a sigbus in JIT code
-          return EXCEPTION_CONTINUE_SEARCH;
-        }
-
-        const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, FEX::ArchHelpers::Context::GetArmGPRs(Context));
-        FEX::ArchHelpers::Context::SetPc(Context, PC + Result.second);
-        return Result.first ?
-          EXCEPTION_CONTINUE_EXECUTION :
-          EXCEPTION_CONTINUE_SEARCH;
-      }
-      case STATUS_ACCESS_VIOLATION: {
-        constexpr uint8_t HLT = 0xF4;
-        if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-          DidFault = true;
-          return EXCEPTION_CONTINUE_SEARCH;
-        }
-
-        FEX::ArchHelpers::Context::SetPc(Context, reinterpret_cast<uint64_t>(LongJumpHandler));
-        return EXCEPTION_CONTINUE_EXECUTION;
-      }
-      default: break;
     }
 
-    printf("!Fault!\n");
-    printf("\tExceptionCode: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-    printf("\tExceptionFlags: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionFlags);
-    printf("\tExceptionRecord: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionRecord);
-    printf("\tExceptionAddress: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
-    printf("\tNumberParameters: 0x%lx\n", ExceptionInfo->ExceptionRecord->NumberParameters);
+    longjmp(LongJumpHandler::LongJump, 1);
+    return false;
+  },
+    true);
+}
+#else
+FEX::DummyHandlers::DummySignalDelegator* Handler;
 
-    return EXCEPTION_CONTINUE_SEARCH;
-  }
-
-  void RegisterLongJumpHandler(FEX::DummyHandlers::DummySignalDelegator *Handler) {
-    // Install VEH handler.
-    AddVectoredExceptionHandler(0, VectoredExceptionHandler);
-
-    LongJumpHandler::Handler = Handler;
-  }
-#endif
+static void LongJumpHandler() {
+  longjmp(LongJump, 1);
 }
 
-int main(int argc, char **argv, char **const envp) {
+LONG WINAPI VectoredExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
+  auto Thread = Handler->GetBackingTLSThread();
+  PCONTEXT Context;
+  Context = ExceptionInfo->ContextRecord;
+
+  switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
+  case STATUS_DATATYPE_MISALIGNMENT: {
+    const auto PC = FEX::ArchHelpers::Context::GetPc(Context);
+    if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
+      // Wasn't a sigbus in JIT code
+      return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, FEX::ArchHelpers::Context::GetArmGPRs(Context));
+    FEX::ArchHelpers::Context::SetPc(Context, PC + Result.second);
+    return Result.first ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+  }
+  case STATUS_ACCESS_VIOLATION: {
+    constexpr uint8_t HLT = 0xF4;
+    if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+      DidFault = true;
+      return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    FEX::ArchHelpers::Context::SetPc(Context, reinterpret_cast<uint64_t>(LongJumpHandler));
+    return EXCEPTION_CONTINUE_EXECUTION;
+  }
+  default: break;
+  }
+
+  printf("!Fault!\n");
+  printf("\tExceptionCode: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
+  printf("\tExceptionFlags: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionFlags);
+  printf("\tExceptionRecord: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionRecord);
+  printf("\tExceptionAddress: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+  printf("\tNumberParameters: 0x%lx\n", ExceptionInfo->ExceptionRecord->NumberParameters);
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void RegisterLongJumpHandler(FEX::DummyHandlers::DummySignalDelegator* Handler) {
+  // Install VEH handler.
+  AddVectoredExceptionHandler(0, VectoredExceptionHandler);
+
+  LongJumpHandler::Handler = Handler;
+}
+#endif
+} // namespace LongJumpHandler
+
+int main(int argc, char** argv, char** const envp) {
 #ifndef _WIN32
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
 #endif
@@ -217,7 +217,7 @@ int main(int argc, char **argv, char **const envp) {
     return -1;
   }
 
-  FEX::HarnessHelper::HarnessCodeLoader Loader{Filename, ConfigFile};
+  FEX::HarnessHelper::HarnessCodeLoader Loader {Filename, ConfigFile};
 
   // Adds in environment options from the test harness config
   FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
@@ -264,20 +264,14 @@ int main(int argc, char **argv, char **const envp) {
   SupportsAVX = HostFeatures.SupportsAVX;
   SupportsAVX2 = HostFeatures.SupportsAVX2;
 
-  bool TestUnsupported =
-    (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) ||
-    (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
-    (!SupportsAVX && Loader.RequiresAVX()) ||
-    (!SupportsAVX2 && Loader.RequiresAVX2()) ||
-    (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
-    (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) ||
-    (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
-    (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
-    (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
-    (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
+  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) || (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
+                         (!SupportsAVX && Loader.RequiresAVX()) || (!SupportsAVX2 && Loader.RequiresAVX2()) ||
+                         (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) || (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) ||
+                         (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) || (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
+                         (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) || (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
 #ifdef _WIN32
-    TestUnsupported |= Loader.RequiresLinux();
+  TestUnsupported |= Loader.RequiresLinux();
 #endif
 
   if (TestUnsupported) {
@@ -286,8 +280,8 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
 #ifndef _WIN32
-    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
-                                               : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
+    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
+                                                 FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
 #else
     auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
@@ -362,4 +356,3 @@ int main(int argc, char **argv, char **const envp) {
 
   return Passed ? 0 : -1;
 }
-

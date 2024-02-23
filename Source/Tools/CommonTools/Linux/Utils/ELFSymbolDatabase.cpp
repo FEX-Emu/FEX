@@ -2,8 +2,8 @@
 /*
 $info$
 tags: glue|elf-parsing
-desc: Part of our now defunct ld-linux replacement, keeps tracks of all symbols, loads elfs, handles relocations. Small parts of this are used.
-$end_info$
+desc: Part of our now defunct ld-linux replacement, keeps tracks of all symbols, loads elfs, handles relocations. Small parts of this are
+used. $end_info$
 */
 
 #include "Linux/Utils/ELFSymbolDatabase.h"
@@ -33,8 +33,7 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
     LibrarySearchPaths.emplace_back("/usr/local/lib/x86_64-linux-gnu");
     LibrarySearchPaths.emplace_back("/lib/x86_64-linux-gnu");
     LibrarySearchPaths.emplace_back("/usr/lib/x86_64-linux-gnu");
-  }
-  else {
+  } else {
     LibrarySearchPaths.emplace_back("/usr/local/lib/i386-linux-gnu");
     LibrarySearchPaths.emplace_back("/lib/i386-linux-gnu");
     LibrarySearchPaths.emplace_back("/usr/lib/i386-linux-gnu");
@@ -52,8 +51,8 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
   }
 }
 
-bool ELFSymbolDatabase::FindLibraryFile(fextl::string *Result, const char *Library) {
-  for (auto &Path : LibrarySearchPaths) {
+bool ELFSymbolDatabase::FindLibraryFile(fextl::string* Result, const char* Library) {
+  for (auto& Path : LibrarySearchPaths) {
     const fextl::string TmpPath = fextl::fmt::format("{}/{}", Path, Library);
     if (FHU::Filesystem::Exists(TmpPath)) {
       *Result = TmpPath;
@@ -63,7 +62,7 @@ bool ELFSymbolDatabase::FindLibraryFile(fextl::string *Result, const char *Libra
   return false;
 }
 
-ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
+ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer* file)
   : File {file} {
   FillLibrarySearchPaths();
 
@@ -75,8 +74,8 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   fextl::vector<fextl::string> UnfilledDependencies;
   fextl::vector<ELFInfo*> NewLibraries;
 
-  auto FillDependencies = [&UnfilledDependencies, this](ELFInfo *ELF) {
-    for (auto &Lib : *ELF->Container->GetNecessaryLibs()) {
+  auto FillDependencies = [&UnfilledDependencies, this](ELFInfo* ELF) {
+    for (auto& Lib : *ELF->Container->GetNecessaryLibs()) {
       if (NameToELF.find(Lib) == NameToELF.end()) {
         UnfilledDependencies.emplace_back(Lib);
       }
@@ -84,15 +83,15 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   };
 
   auto LoadDependencies = [&UnfilledDependencies, &NewLibraries, this]() {
-    for (auto &Lib : UnfilledDependencies) {
+    for (auto& Lib : UnfilledDependencies) {
       if (NameToELF.find(Lib) == NameToELF.end()) {
         fextl::string LibraryPath;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
         bool Found =
 #endif
-        FindLibraryFile(&LibraryPath, Lib.c_str());
+          FindLibraryFile(&LibraryPath, Lib.c_str());
         LOGMAN_THROW_A_FMT(Found, "Couldn't find library '{}'", Lib);
-        auto Info = DynamicELFInfo.emplace_back(new ELFInfo{});
+        auto Info = DynamicELFInfo.emplace_back(new ELFInfo {});
         Info->Name = Lib;
         Info->Container = new ::ELFLoader::ELFContainer(LibraryPath, {}, true);
         NewLibraries.emplace_back(Info);
@@ -141,8 +140,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
   if (!DefinedBase) {
     if (File->GetMode() == ELFContainer::MODE_64BIT) {
       ELFBases = 0x1'0000'0000;
-    }
-    else {
+    } else {
       // 32bit we will just load at the lowest memory address we can
       // Which on Linux is at 0x1'0000
       ELFBases = 0x1'0000;
@@ -166,8 +164,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
 
     ELFBases += CurrentELFAlignedSize;
     ELFMemorySize += CurrentELFAlignedSize;
-  }
-  else {
+  } else {
     LocalInfo.CustomLayout = File->GetLayout();
     uint64_t CurrentELFBase = std::get<0>(LocalInfo.CustomLayout);
     uint64_t CurrentELFAlignedSize = FEXCore::AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
@@ -207,16 +204,18 @@ void ELFSymbolDatabase::FillInitializationOrder() {
   std::set<fextl::string> AlreadyInList;
 
   while (true) {
-    if (InitializationOrder.size() == DynamicELFInfo.size())
+    if (InitializationOrder.size() == DynamicELFInfo.size()) {
       break;
+    }
 
-    for (auto &ELF : DynamicELFInfo) {
+    for (auto& ELF : DynamicELFInfo) {
       // If this ELF is already in the list then skip it
-      if (AlreadyInList.find(ELF->Name) != AlreadyInList.end())
+      if (AlreadyInList.find(ELF->Name) != AlreadyInList.end()) {
         continue;
+      }
 
       bool AllLibsLoaded = true;
-      for (auto &Lib : *ELF->Container->GetNecessaryLibs()) {
+      for (auto& Lib : *ELF->Container->GetNecessaryLibs()) {
         if (AlreadyInList.find(Lib) == AlreadyInList.end()) {
           AllLibsLoaded = false;
           break;
@@ -232,7 +231,7 @@ void ELFSymbolDatabase::FillInitializationOrder() {
 }
 
 void ELFSymbolDatabase::FillSymbols() {
-  auto LocalSymbolFiller = [this](ELFLoader::ELFSymbol *Symbol) {
+  auto LocalSymbolFiller = [this](ELFLoader::ELFSymbol* Symbol) {
     Symbols.emplace_back(Symbol);
     Symbol->Address += LocalInfo.GuestBase;
     SymbolMap[Symbol->Name] = Symbol;
@@ -249,7 +248,7 @@ void ELFSymbolDatabase::FillSymbols() {
 
   // Let us fill symbols based on initialization order
   for (auto ELF : InitializationOrder) {
-    auto SymbolFiller = [this, &ELF](ELFLoader::ELFSymbol *Symbol) {
+    auto SymbolFiller = [this, &ELF](ELFLoader::ELFSymbol* Symbol) {
       Symbols.emplace_back(Symbol);
       // Offset the address by the guest base
       Symbol->Address += ELF->GuestBase;
@@ -267,7 +266,6 @@ void ELFSymbolDatabase::FillSymbols() {
 
     ELF->Container->AddSymbols(SymbolFiller);
   }
-
 }
 
 void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool)> Mapper) {
@@ -279,7 +277,7 @@ void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t,
   };
 
   Map(LocalInfo);
-  for (auto *ELF : DynamicELFInfo) {
+  for (auto* ELF : DynamicELFInfo) {
     Map(*ELF);
   }
 }
@@ -297,22 +295,24 @@ void ELFSymbolDatabase::WriteLoadableSections(::ELFLoader::ELFContainer::MemoryW
 }
 
 void ELFSymbolDatabase::HandleRelocations() {
-  auto SymbolGetter = [this](char const *SymbolName, uint8_t Table) -> ELFLoader::ELFSymbol* {
-    SymbolTableType &TablePtr = SymbolMap;
-    if (Table == 0)
+  auto SymbolGetter = [this](const char* SymbolName, uint8_t Table) -> ELFLoader::ELFSymbol* {
+    SymbolTableType& TablePtr = SymbolMap;
+    if (Table == 0) {
       TablePtr = SymbolMap;
-    else if (Table == 1) // Global
+    } else if (Table == 1) { // Global
       TablePtr = SymbolMapGlobalOnly;
-    else if (Table == 2) // NoWeak
+    } else if (Table == 2) { // NoWeak
       TablePtr = SymbolMapNoWeak;
-    else if (Table == 3) // No Main
+    } else if (Table == 3) { // No Main
       TablePtr = SymbolMapNoMain;
-    else if (Table == 4) // No Main No Weak
+    } else if (Table == 4) { // No Main No Weak
       TablePtr = SymbolMapNoMainNoWeak;
+    }
 
     auto Sym = TablePtr.find(SymbolName);
-    if (Sym == TablePtr.end())
+    if (Sym == TablePtr.end()) {
       return nullptr;
+    }
     return Sym->second;
   };
 
@@ -331,27 +331,31 @@ uint64_t ELFSymbolDatabase::DefaultRIP() const {
   return File->GetEntryPoint() + LocalInfo.GuestBase;
 }
 
-ELFSymbol const *ELFSymbolDatabase::GetSymbolInRange(RangeType Address) {
+const ELFSymbol* ELFSymbolDatabase::GetSymbolInRange(RangeType Address) {
   auto Sym = SymbolMapByAddress.upper_bound(Address.first);
-  if (Sym != SymbolMapByAddress.begin())
+  if (Sym != SymbolMapByAddress.begin()) {
     --Sym;
-  if (Sym == SymbolMapByAddress.end())
+  }
+  if (Sym == SymbolMapByAddress.end()) {
     return nullptr;
+  }
 
-  if ((Sym->second->Address + Sym->second->Size) < Address.first)
+  if ((Sym->second->Address + Sym->second->Size) < Address.first) {
     return nullptr;
+  }
 
-  if (Sym->second->Address > Address.first)
+  if (Sym->second->Address > Address.first) {
     return nullptr;
+  }
 
   return Sym->second;
 }
 
-void ELFSymbolDatabase::GetInitLocations(fextl::vector<uint64_t> *Locations) {
+void ELFSymbolDatabase::GetInitLocations(fextl::vector<uint64_t>* Locations) {
   // Walk the initialization order and fill the locations for initializations
   for (auto ELF : InitializationOrder) {
     ELF->Container->GetInitLocations(ELF->GuestBase, Locations);
   }
 }
 
-}
+} // namespace ELFLoader

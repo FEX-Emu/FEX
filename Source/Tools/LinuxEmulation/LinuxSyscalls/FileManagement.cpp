@@ -43,23 +43,23 @@ $end_info$
 #include <tiny-json.h>
 
 namespace JSON {
-  struct JsonAllocator {
-    jsonPool_t PoolObject;
-    fextl::unique_ptr<fextl::list<json_t>> json_objects;
-  };
-  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
+struct JsonAllocator {
+  jsonPool_t PoolObject;
+  fextl::unique_ptr<fextl::list<json_t>> json_objects;
+};
+static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
-  json_t* PoolInit(jsonPool_t* Pool) {
-    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
-  }
-
-  json_t* PoolAlloc(jsonPool_t* Pool) {
-    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
-  }
+json_t* PoolInit(jsonPool_t* Pool) {
+  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+  alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
+  return &*alloc->json_objects->emplace(alloc->json_objects->end());
 }
+
+json_t* PoolAlloc(jsonPool_t* Pool) {
+  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+  return &*alloc->json_objects->emplace(alloc->json_objects->end());
+}
+} // namespace JSON
 
 namespace FEX::HLE {
 bool FileManager::RootFSPathExists(const char* Filepath) {
@@ -74,10 +74,9 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
     FileData.push_back(0);
 
     // If the thunksDB file exists then we need to check if the rootfs supports multi-arch or not.
-    const bool RootFSIsMultiarch = RootFSPathExists("/usr/lib/x86_64-linux-gnu/") ||
-      RootFSPathExists("/usr/lib/i386-linux-gnu/");
+    const bool RootFSIsMultiarch = RootFSPathExists("/usr/lib/x86_64-linux-gnu/") || RootFSPathExists("/usr/lib/i386-linux-gnu/");
 
-    fextl::vector<fextl::string> PathPrefixes{};
+    fextl::vector<fextl::string> PathPrefixes {};
     if (RootFSIsMultiarch) {
       // Multi-arch debian distros have a fairly complex arrangement of filepaths.
       // These fractal out to the combination of library prefixes with arch suffixes.
@@ -89,15 +88,12 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
       };
 
       // We only need to generate 32-bit or 64-bit depending on the operating mode.
-      const auto ArchPrefix = Is64BitMode() ?
-        "x86_64-linux-gnu" :
-        "i386-linux-gnu";
+      const auto ArchPrefix = Is64BitMode() ? "x86_64-linux-gnu" : "i386-linux-gnu";
 
       for (auto Prefix : LibPrefixes) {
         PathPrefixes.emplace_back(fextl::fmt::format("{}/{}", Prefix, ArchPrefix));
       }
-    }
-    else {
+    } else {
       // Non multi-arch supporting distros like Fedora and Debian have a much more simple layout.
       // lib/ folders refer to 32-bit library folders.
       // li64/ folders refer to 64-bit library folders.
@@ -109,9 +105,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
       };
 
       // We only need to generate 32-bit or 64-bit depending on the operating mode.
-      const auto ArchPrefix = Is64BitMode() ?
-        "lib64" :
-        "lib";
+      const auto ArchPrefix = Is64BitMode() ? "lib64" : "lib";
 
       for (auto Prefix : LibPrefixes) {
         PathPrefixes.emplace_back(fextl::fmt::format("{}/{}", Prefix, ArchPrefix));
@@ -119,58 +113,57 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
     }
 
     JSON::JsonAllocator Pool {
-      .PoolObject = {
-        .init = JSON::PoolInit,
-        .alloc = JSON::PoolAlloc,
-      },
+      .PoolObject =
+        {
+          .init = JSON::PoolInit,
+          .alloc = JSON::PoolAlloc,
+        },
     };
 
-    json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+    const json_t* json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
 
-    json_t const* DB = json_getProperty( json, "DB" );
-    if ( !DB || JSON_OBJ != json_getType( DB ) ) {
+    const json_t* DB = json_getProperty(json, "DB");
+    if (!DB || JSON_OBJ != json_getType(DB)) {
       return;
     }
 
     std::string_view HomeDirectory = FEX::Config::GetHomeDirectory();
 
-    for( json_t const* Library = json_getChild( DB ); Library != nullptr; Library = json_getSibling( Library )) {
+    for (const json_t* Library = json_getChild(DB); Library != nullptr; Library = json_getSibling(Library)) {
       // Get the user defined name for the library
       const char* LibraryName = json_getName(Library);
-      auto DBObject = ThunkDB.insert_or_assign(LibraryName, ThunkDBObject{}).first;
+      auto DBObject = ThunkDB.insert_or_assign(LibraryName, ThunkDBObject {}).first;
 
       // Walk the libraries items to get the data
-      for (json_t const* LibraryItem = json_getChild(Library); LibraryItem != nullptr; LibraryItem = json_getSibling(LibraryItem)) {
+      for (const json_t* LibraryItem = json_getChild(Library); LibraryItem != nullptr; LibraryItem = json_getSibling(LibraryItem)) {
         std::string_view ItemName = json_getName(LibraryItem);
 
         if (ItemName == "Library") {
           // "Library": "libGL-guest.so"
           DBObject->second.LibraryName = json_getValue(LibraryItem);
-        }
-        else if (ItemName == "Depends") {
+        } else if (ItemName == "Depends") {
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
             DBObject->second.Depends.insert(json_getValue(LibraryItem));
-          }
-          else if (PropertyType == JSON_ARRAY) {
-            for (json_t const* Depend = json_getChild(LibraryItem); Depend != nullptr; Depend = json_getSibling(Depend)) {
+          } else if (PropertyType == JSON_ARRAY) {
+            for (const json_t* Depend = json_getChild(LibraryItem); Depend != nullptr; Depend = json_getSibling(Depend)) {
               DBObject->second.Depends.insert(json_getValue(Depend));
             }
           }
-        }
-        else if (ItemName == "Overlay") {
+        } else if (ItemName == "Overlay") {
           auto AddWithReplacement = [HomeDirectory, &PathPrefixes](ThunkDBObject& DBObject, fextl::string LibraryItem) {
             // Walk through template string and fill in prefixes from right to left
 
             using namespace std::string_view_literals;
-            const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
-            const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
+            const std::pair PrefixHome {"@HOME@"sv, LibraryItem.find("@HOME@")};
+            const std::pair PrefixLib {"@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@")};
 
             fextl::string::size_type PrefixPositions[] = {
-              PrefixHome.second, PrefixLib.second,
+              PrefixHome.second,
+              PrefixLib.second,
             };
             // Sort offsets in descending order to enable safe in-place replacement
-            std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
+            std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<> {});
 
             for (auto& LibPrefix : PathPrefixes) {
               fextl::string Replacement = LibraryItem;
@@ -195,9 +188,8 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
             AddWithReplacement(DBObject->second, json_getValue(LibraryItem));
-          }
-          else if (PropertyType == JSON_ARRAY) {
-            for (json_t const* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
+          } else if (PropertyType == JSON_ARRAY) {
+            for (const json_t* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
               AddWithReplacement(DBObject->second, json_getValue(Overlay));
             }
           }
@@ -207,7 +199,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
   }
 }
 
-FileManager::FileManager(FEXCore::Context::Context *ctx)
+FileManager::FileManager(FEXCore::Context::Context* ctx)
   : EmuFD {ctx} {
   auto ThunkConfigFile = ThunkConfig();
 
@@ -239,8 +231,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, false));
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
-  }
-  else {
+  } else {
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
@@ -256,25 +247,26 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   LoadThunkDatabase(ThunkDB, true);
   LoadThunkDatabase(ThunkDB, false);
 
-  for (const auto &Path : ConfigPaths) {
+  for (const auto& Path : ConfigPaths) {
     fextl::vector<char> FileData;
     if (FEXCore::FileLoading::LoadFile(FileData, Path)) {
       JSON::JsonAllocator Pool {
-        .PoolObject = {
-          .init = JSON::PoolInit,
-          .alloc = JSON::PoolAlloc,
-        },
+        .PoolObject =
+          {
+            .init = JSON::PoolInit,
+            .alloc = JSON::PoolAlloc,
+          },
       };
 
       // If a thunks DB property exists then we pull in data from the thunks database
-      json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
-      json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
+      const json_t* json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+      const json_t* ThunksDB = json_getProperty(json, "ThunksDB");
       if (!ThunksDB) {
         continue;
       }
 
-      for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
-        const char *LibraryName = json_getName(Item);
+      for (const json_t* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+        const char* LibraryName = json_getName(Item);
         bool LibraryEnabled = json_getInteger(Item) != 0;
         // If the library is enabled then find it in the DB
         auto DBObject = ThunkDB.find(LibraryName);
@@ -286,8 +278,8 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   }
 
   // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
-  auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() ;
-  for (auto const &DBObject : ThunkDB) {
+  auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32();
+  for (const auto& DBObject : ThunkDB) {
     if (!DBObject.second.Enabled) {
       continue;
     }
@@ -301,23 +293,23 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
       bool Is64BitMode;
 
       void SetupOverlay(const ThunkDBObject& DBDepend) {
-          auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
-          if (!FHU::Filesystem::Exists(ThunkPath)) {
-            if (!Is64BitMode) {
-              // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
-              return;
-            }
-            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath);
+        auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
+        if (!FHU::Filesystem::Exists(ThunkPath)) {
+          if (!Is64BitMode) {
+            // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
+            return;
           }
+          ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath);
+        }
 
-          for (const auto& Overlay : DBDepend.Overlays) {
-            // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, ThunkPath);
-          }
+        for (const auto& Overlay : DBDepend.Overlays) {
+          // Direct full path in guest RootFS to our overlay file
+          ThunkOverlays.emplace(Overlay, ThunkPath);
+        }
       };
 
-      void InsertDependencies(const fextl::unordered_set<fextl::string> &Depends) {
-        for (auto const &Depend : Depends) {
+      void InsertDependencies(const fextl::unordered_set<fextl::string>& Depends) {
+        for (const auto& Depend : Depends) {
           auto& DBDepend = ThunkDB.at(Depend);
           if (DBDepend.Enabled) {
             continue;
@@ -330,7 +322,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
           InsertDependencies(DBDepend.Depends);
         }
       };
-    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode() };
+    } DBObjectHandler {ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode()};
 
     DBObjectHandler.SetupOverlay(DBObject.second);
     DBObjectHandler.InsertDependencies(DBObject.second.Depends);
@@ -379,9 +371,9 @@ FileManager::~FileManager() {
   close(RootFSFD);
 }
 
-fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
-  if (!pathname || // If no pathname
-      pathname[0] != '/' || // If relative
+fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
+  if (!pathname ||                  // If no pathname
+      pathname[0] != '/' ||         // If relative
       strcmp(pathname, "/") == 0) { // If we are getting root
     return {};
   }
@@ -399,13 +391,12 @@ fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSyml
   fextl::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
     char Filename[PATH_MAX];
-    while(FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
+    while (FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
       auto SymlinkSize = FEX::HLE::GetSymlink(AT_FDCWD, Path.c_str(), Filename, PATH_MAX - 1);
       if (SymlinkSize > 0 && Filename[0] == '/') {
         Path = RootFSPath;
         Path += std::string_view(Filename, SymlinkSize);
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -413,7 +404,7 @@ fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSyml
   return Path;
 }
 
-std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename) {
+std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) {
   constexpr auto NoEntry = std::make_pair(-1, nullptr);
 
   if (!pathname) {
@@ -427,8 +418,8 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   }
 
   if (pathname[0] != '/' || // If relative
-      pathname[1] == 0 || // If we are getting root
-      dirfd != AT_FDCWD) { // If dirfd isn't special FDCWD
+      pathname[1] == 0 ||   // If we are getting root
+      dirfd != AT_FDCWD) {  // If dirfd isn't special FDCWD
     return NoEntry;
   }
 
@@ -443,22 +434,22 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   }
 
   // Starting subpath is the pathname passed in.
-  const char *SubPath = pathname;
+  const char* SubPath = pathname;
 
   // Current index for the temporary path to use.
-  uint32_t CurrentIndex{};
+  uint32_t CurrentIndex {};
 
   // The two temporary paths.
-  const std::array<char*, 2> TmpPaths ={
+  const std::array<char*, 2> TmpPaths = {
     TmpFilename[0],
     TmpFilename[1],
   };
 
   if (FollowSymlink) {
     // Check if the combination of RootFS FD and subpath with the front '/' stripped off is a symlink.
-    bool HadAtLeastOne{};
-    struct stat Buffer{};
-    for(;;) {
+    bool HadAtLeastOne {};
+    struct stat Buffer {};
+    for (;;) {
       // We need to check if the filepath exists and is a symlink.
       // If the initial filepath doesn't exist then early exit.
       // If it did exist at some state then trace it all all the way to the final link.
@@ -488,15 +479,13 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
           CurrentTmp[SymlinkSize] = 0;
           SubPath = CurrentTmp;
           CurrentIndex ^= 1;
-        }
-        else {
+        } else {
           // If the path wasn't a symlink or wasn't absolute.
           // 1) Break early, returning the previous found result.
           // 2) If first iteration then we return `pathname`.
           break;
         }
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -506,7 +495,7 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   return std::make_pair(RootFSFD, &SubPath[1]);
 }
 
-std::optional<std::string_view> FileManager::GetSelf(const char *Pathname) {
+std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) {
   if (SupportsProcFSInterpreter) {
     // FEX doesn't need to track procfs/exe if this is supported.
     return Pathname;
@@ -519,9 +508,7 @@ std::optional<std::string_view> FileManager::GetSelf(const char *Pathname) {
   char PidSelfPath[50];
   snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-  if (strcmp(Pathname, "/proc/self/exe") == 0 ||
-      strcmp(Pathname, "/proc/thread-self/exe") == 0 ||
-      strcmp(Pathname, PidSelfPath) == 0) {
+  if (strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, "/proc/thread-self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0) {
     return Filename();
   }
 
@@ -547,9 +534,9 @@ static bool ShouldSkipOpenInEmu(int flags) {
   return false;
 }
 
-uint64_t FileManager::Open(const char *pathname, int flags, uint32_t mode) {
+uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
   int fd = -1;
 
   if (!ShouldSkipOpenInEmu(flags)) {
@@ -581,92 +568,95 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
   return ::syscall(SYSCALL_DEF(close_range), first, last, flags);
 }
 
-uint64_t FileManager::Stat(const char *pathname, void *buf) {
+uint64_t FileManager::Stat(const char* pathname, void* buf) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   // Stat follows symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::fstatat(Path.first, Path.second, reinterpret_cast<struct stat*>(buf), 0);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return ::stat(SelfPath, reinterpret_cast<struct stat*>(buf));
 }
 
-uint64_t FileManager::Lstat(const char *pathname, void *buf) {
+uint64_t FileManager::Lstat(const char* pathname, void* buf) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   // lstat does not follow symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::fstatat(Path.first, Path.second, reinterpret_cast<struct stat*>(buf), AT_SYMLINK_NOFOLLOW);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
 
   return ::lstat(pathname, reinterpret_cast<struct stat*>(buf));
 }
 
-uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
+uint64_t FileManager::Access(const char* pathname, [[maybe_unused]] int mode) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   // Access follows symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::faccessat(Path.first, Path.second, mode, 0);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return ::access(SelfPath, mode);
 }
 
-uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
+uint64_t FileManager::FAccessat(int dirfd, const char* pathname, int mode) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, true, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::syscall(SYSCALL_DEF(faccessat), Path.first, Path.second, mode);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
 
   return ::syscall(SYS_faccessat, dirfd, SelfPath, mode);
 }
 
-uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int flags) {
+uint64_t FileManager::FAccessat2(int dirfd, const char* pathname, int mode, int flags) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path.first, Path.second, mode, flags);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
 
   return ::syscall(SYSCALL_DEF(faccessat2), dirfd, SelfPath, mode, flags);
 }
 
-uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
+uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
   if (!SupportsProcFSInterpreter) {
     // calculate the non-self link to exe
     // Some executables do getpid, stat("/proc/$pid/exe")
     char PidSelfPath[50];
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-    if (strcmp(pathname, "/proc/self/exe") == 0 ||
-        strcmp(pathname, "/proc/thread-self/exe") == 0 ||
-        strcmp(pathname, PidSelfPath) == 0) {
+    if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
       auto App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
@@ -677,11 +667,11 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   auto Path = GetEmulatedFDPath(AT_FDCWD, pathname, false, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
 
-    if (Result == -1 &&
-        errno == EINVAL) {
+    if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
       return -errno;
@@ -691,30 +681,31 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   return ::readlink(pathname, buf, bufsiz);
 }
 
-uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
+uint64_t FileManager::Chmod(const char* pathname, mode_t mode) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::fchmodat(Path.first, Path.second, mode, 0);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return ::chmod(SelfPath, mode);
 }
 
-uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz) {
+uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, size_t bufsiz) {
   // calculate the non-self link to exe
   // Some executables do getpid, stat("/proc/$pid/exe")
   // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
   // Self is always a symlink and isn't expected to fail
 
-  fextl::string Path{};
+  fextl::string Path {};
   if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
-        !pathname) &&
-        dirfd != AT_FDCWD) {
+       !pathname) &&
+      dirfd != AT_FDCWD) {
     // Passed in a dirfd that isn't magic FDCWD
     // We need to get the path from the fd now
     char Tmp[PATH_MAX] = "";
@@ -730,12 +721,10 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
       }
       Path += pathname;
     }
-  }
-  else {
+  } else {
     if (!pathname || strlen(pathname) == 0) {
       return -1;
-    }
-    else if (pathname) {
+    } else if (pathname) {
       Path = pathname;
     }
   }
@@ -744,9 +733,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
     char PidSelfPath[50];
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-    if (Path == "/proc/self/exe" ||
-        Path == "/proc/thread-self/exe" ||
-        Path == PidSelfPath) {
+    if (Path == "/proc/self/exe" || Path == "/proc/thread-self/exe" || Path == PidSelfPath) {
       auto App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
@@ -757,11 +744,11 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   auto NewPath = GetEmulatedFDPath(dirfd, pathname, false, TmpFilename);
   if (NewPath.first != -1) {
     uint64_t Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
 
-    if (Result == -1 &&
-        errno == EINVAL) {
+    if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
       return -errno;
@@ -771,9 +758,9 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   return ::readlinkat(dirfd, pathname, buf, bufsiz);
 }
 
-uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
+uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, int flags, uint32_t mode) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   int32_t fd = -1;
 
@@ -795,9 +782,9 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   return fd;
 }
 
-uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_how *how, size_t usize) {
+uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_how* how, size_t usize) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   int32_t fd = -1;
 
@@ -817,50 +804,52 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
   }
 
   return fd;
-
 }
 
-uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {
+uint64_t FileManager::Statx(int dirfd, const char* pathname, int flags, uint32_t mask, struct statx* statxbuf) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = FHU::Syscalls::statx(Path.first, Path.second, flags, mask, statxbuf);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return FHU::Syscalls::statx(dirfd, SelfPath, flags, mask, statxbuf);
 }
 
-uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
+uint64_t FileManager::Mknod(const char* pathname, mode_t mode, dev_t dev) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
   if (Path.first != -1) {
     uint64_t Result = ::mknodat(Path.first, Path.second, mode, dev);
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return ::mknod(SelfPath, mode, dev);
 }
 
-uint64_t FileManager::Statfs(const char *path, void *buf) {
+uint64_t FileManager::Statfs(const char* path, void* buf) {
   auto Path = GetEmulatedPath(path);
   if (!Path.empty()) {
     uint64_t Result = ::statfs(Path.c_str(), reinterpret_cast<struct statfs*>(buf));
-    if (Result != -1)
+    if (Result != -1) {
       return Result;
+    }
   }
   return ::statfs(path, reinterpret_cast<struct statfs*>(buf));
 }
 
-uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag) {
+uint64_t FileManager::NewFSStatAt(int dirfd, const char* pathname, struct stat* buf, int flag) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
@@ -873,9 +862,9 @@ uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *
   return ::fstatat(dirfd, SelfPath, buf, flag);
 }
 
-uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat64 *buf, int flag) {
+uint64_t FileManager::NewFSStatAt64(int dirfd, const char* pathname, struct stat64* buf, int flag) {
   auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
@@ -888,9 +877,9 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
   return ::fstatat64(dirfd, SelfPath, buf, flag);
 }
 
-uint64_t FileManager::Setxattr(const char *path, const char *name, const void *value, size_t size, int flags) {
+uint64_t FileManager::Setxattr(const char* path, const char* name, const void* value, size_t size, int flags) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
@@ -903,9 +892,9 @@ uint64_t FileManager::Setxattr(const char *path, const char *name, const void *v
   return ::setxattr(SelfPath, name, value, size, flags);
 }
 
-uint64_t FileManager::LSetxattr(const char *path, const char *name, const void *value, size_t size, int flags) {
+uint64_t FileManager::LSetxattr(const char* path, const char* name, const void* value, size_t size, int flags) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
@@ -918,9 +907,9 @@ uint64_t FileManager::LSetxattr(const char *path, const char *name, const void *
   return ::lsetxattr(SelfPath, name, value, size, flags);
 }
 
-uint64_t FileManager::Getxattr(const char *path, const char *name, void *value, size_t size) {
+uint64_t FileManager::Getxattr(const char* path, const char* name, void* value, size_t size) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
@@ -933,9 +922,9 @@ uint64_t FileManager::Getxattr(const char *path, const char *name, void *value, 
   return ::getxattr(SelfPath, name, value, size);
 }
 
-uint64_t FileManager::LGetxattr(const char *path, const char *name, void *value, size_t size) {
+uint64_t FileManager::LGetxattr(const char* path, const char* name, void* value, size_t size) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
@@ -948,9 +937,9 @@ uint64_t FileManager::LGetxattr(const char *path, const char *name, void *value,
   return ::lgetxattr(SelfPath, name, value, size);
 }
 
-uint64_t FileManager::Listxattr(const char *path, char *list, size_t size) {
+uint64_t FileManager::Listxattr(const char* path, char* list, size_t size) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
@@ -963,9 +952,9 @@ uint64_t FileManager::Listxattr(const char *path, char *list, size_t size) {
   return ::listxattr(SelfPath, list, size);
 }
 
-uint64_t FileManager::LListxattr(const char *path, char *list, size_t size) {
+uint64_t FileManager::LListxattr(const char* path, char* list, size_t size) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
@@ -978,9 +967,9 @@ uint64_t FileManager::LListxattr(const char *path, char *list, size_t size) {
   return ::llistxattr(SelfPath, list, size);
 }
 
-uint64_t FileManager::Removexattr(const char *path, const char *name) {
+uint64_t FileManager::Removexattr(const char* path, const char* name) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
@@ -993,9 +982,9 @@ uint64_t FileManager::Removexattr(const char *path, const char *name) {
   return ::removexattr(SelfPath, name);
 }
 
-uint64_t FileManager::LRemovexattr(const char *path, const char *name) {
+uint64_t FileManager::LRemovexattr(const char* path, const char* name) {
   auto NewPath = GetSelf(path);
-  const char *SelfPath = NewPath ? NewPath->data() : nullptr;
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
   auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
@@ -1008,4 +997,4 @@ uint64_t FileManager::LRemovexattr(const char *path, const char *name) {
   return ::lremovexattr(SelfPath, name);
 }
 
-}
+} // namespace FEX::HLE

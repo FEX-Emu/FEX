@@ -14,13 +14,13 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterTime(FEX::HLE::SyscallHandler *Handler) {
-    using namespace FEXCore::IR;
+void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
+  using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pause, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      uint64_t Result = ::pause();
-      SYSCALL_ERRNO();
-    });
-  }
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(pause, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+    uint64_t Result = ::pause();
+    SYSCALL_ERRNO();
+  });
 }
+} // namespace FEX::HLE

@@ -36,9 +36,9 @@ struct HandledSignal_ERR {
 static std::optional<HandledSignal> handled_signal;
 static std::optional<HandledSignal_ERR> handled_signal_err;
 
-static void handler(int sig, siginfo_t *si, void *context) {
+static void handler(int sig, siginfo_t* si, void* context) {
   printf("Got %d at address: 0x%lx\n", sig, (long)si->si_addr);
-  handled_signal = { sig, reinterpret_cast<uintptr_t>(si->si_addr) };
+  handled_signal = {sig, reinterpret_cast<uintptr_t>(si->si_addr)};
   siglongjmp(jmpbuf, 1);
 }
 
@@ -103,11 +103,11 @@ std::optional<HandledSignal> CheckIfSignalHandlerCalled(F&& f) {
   return handled_signal;
 }
 
-static void handler_read(int sig, siginfo_t *si, void *context) {
+static void handler_read(int sig, siginfo_t* si, void* context) {
   ucontext_t* _context = (ucontext_t*)context;
   auto mcontext = &_context->uc_mcontext;
   printf("Got %d at address: 0x%lx with 0x%zx\n", sig, (long)si->si_addr, (size_t)mcontext->gregs[REG_ERR]);
-  handled_signal_err = { sig, (size_t)mcontext->gregs[REG_ERR] };
+  handled_signal_err = {sig, (size_t)mcontext->gregs[REG_ERR]};
   siglongjmp(jmpbuf, 1);
 }
 
@@ -143,7 +143,7 @@ std::optional<HandledSignal> CheckIfSignalHandlerCalledWithRegERR(F&& f) {
 TEST_CASE("Signals: Error Flag - Read") {
   // Check that the signal handler is delayed until unmasking.
   auto handled_signal = CheckIfSignalHandlerCalledWithRegERR([&]() {
-    uint8_t *Code = (uint8_t*)mmap(nullptr, 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    uint8_t* Code = (uint8_t*)mmap(nullptr, 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     printf("Read: %d\n", Code[0]);
   });
   REQUIRE(handled_signal_err.has_value());
@@ -155,7 +155,7 @@ TEST_CASE("Signals: Error Flag - Read") {
 TEST_CASE("Signals: Error Flag - Write") {
   // Check that the signal handler is delayed until unmasking.
   auto handled_signal = CheckIfSignalHandlerCalledWithRegERR([&]() {
-    uint8_t *Code = (uint8_t*)mmap(nullptr, 4096, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    uint8_t* Code = (uint8_t*)mmap(nullptr, 4096, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     Code[0] = 1;
   });
   REQUIRE(handled_signal_err.has_value());
@@ -183,7 +183,7 @@ TEST_CASE("Signals: sill") {
 // sbus and abus fail on arm because of sigbus handling
 TEST_CASE("Signals: sbus") {
   auto map1 = mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
-  auto map2 = (char *)mremap(map1, 4096, 8192, MREMAP_MAYMOVE);
+  auto map2 = (char*)mremap(map1, 4096, 8192, MREMAP_MAYMOVE);
 
   auto status = CheckIfExitsFromSignal([&]() { map2[4096] = 2; });
   REQUIRE(status.has_value());
@@ -211,7 +211,7 @@ TEST_CASE("Signals: asynchronous") {
   // Check that the signal handler is delayed until unmasking.
   bool handled_asynchronously = false;
   auto handled_signal = CheckIfSignalHandlerCalled([&]() {
-    GuardedSignalMask guard{};
+    GuardedSignalMask guard {};
     raise(tested_signal);
 
     // Verify the rest of this function is still executed

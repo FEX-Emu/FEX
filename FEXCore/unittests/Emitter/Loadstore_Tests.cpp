@@ -31,8 +31,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, Reg::r30), "ld1 {v26.2d}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, Reg::r30), "ld1 {v26.1d}, [x30]");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30), "ld1 {v31.16b, v0.16b}, [x30]");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30), "ld1 {v31.8b, v0.8b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30), "ld1 {v31.16b, v0.16b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30), "ld1 {v31.8b, v0.8b}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30), "ld1 {v26.16b, v27.16b}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30), "ld1 {v26.8b, v27.8b}, [x30]");
 
@@ -45,8 +45,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30), "ld1 {v26.2d, v27.2d}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30), "ld1 {v26.1d, v27.1d}, [x30]");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30), "ld1 {v31.16b, v0.16b, v1.16b}, [x30]");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30), "ld1 {v31.8b, v0.8b, v1.8b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30), "ld1 {v31.16b, v0.16b, v1.16b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30), "ld1 {v31.8b, v0.8b, v1.8b}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld1 {v26.16b, v27.16b, v28.16b}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld1 {v26.8b, v27.8b, v28.8b}, [x30]");
 
@@ -59,9 +59,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld1 {v26.2d, v27.2d, v28.2d}, [x30]");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld1 {v26.1d, v27.1d, v28.1d}, [x30]");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld1 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                            "[x30]");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30]");
 
   TEST_SINGLE(ld1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30]");
@@ -85,8 +86,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, Reg::r30), "st1 {v26.2d}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, Reg::r30), "st1 {v26.1d}, [x30]");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30), "st1 {v31.16b, v0.16b}, [x30]");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30), "st1 {v31.8b, v0.8b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30), "st1 {v31.16b, v0.16b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30), "st1 {v31.8b, v0.8b}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30), "st1 {v26.16b, v27.16b}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30), "st1 {v26.8b, v27.8b}, [x30]");
 
@@ -99,8 +100,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30), "st1 {v26.2d, v27.2d}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30), "st1 {v26.1d, v27.1d}, [x30]");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30), "st1 {v31.16b, v0.16b, v1.16b}, [x30]");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30), "st1 {v31.8b, v0.8b, v1.8b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30), "st1 {v31.16b, v0.16b, v1.16b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30), "st1 {v31.8b, v0.8b, v1.8b}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "st1 {v26.16b, v27.16b, v28.16b}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "st1 {v26.8b, v27.8b, v28.8b}, [x30]");
 
@@ -113,9 +114,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "st1 {v26.2d, v27.2d, v28.2d}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "st1 {v26.1d, v27.1d, v28.1d}, [x30]");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st1 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                            "[x30]");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "st1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30]");
 
   TEST_SINGLE(st1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30]");
@@ -127,8 +129,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st1 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "st1 {v26.1d, v27.1d, v28.1d, v29.1d}, [x30]");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30), "ld2 {v31.16b, v0.16b}, [x30]");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30), "ld2 {v31.8b, v0.8b}, [x30]");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30), "ld2 {v31.16b, v0.16b}, [x30]");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30), "ld2 {v31.8b, v0.8b}, [x30]");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2 {v26.16b, v27.16b}, [x30]");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30), "ld2 {v26.8b, v27.8b}, [x30]");
 
@@ -141,8 +143,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2 {v26.2d, v27.2d}, [x30]");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30), "unallocated (NEONLoadStoreMultiStruct)");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30), "st2 {v31.16b, v0.16b}, [x30]");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30), "st2 {v31.8b, v0.8b}, [x30]");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30), "st2 {v31.16b, v0.16b}, [x30]");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30), "st2 {v31.8b, v0.8b}, [x30]");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30), "st2 {v26.16b, v27.16b}, [x30]");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30), "st2 {v26.8b, v27.8b}, [x30]");
 
@@ -155,8 +157,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30), "st2 {v26.2d, v27.2d}, [x30]");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30), "unallocated (NEONLoadStoreMultiStruct)");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30), "ld3 {v31.16b, v0.16b, v1.16b}, [x30]");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30), "ld3 {v31.8b, v0.8b, v1.8b}, [x30]");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30), "ld3 {v31.16b, v0.16b, v1.16b}, [x30]");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30), "ld3 {v31.8b, v0.8b, v1.8b}, [x30]");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3 {v26.16b, v27.16b, v28.16b}, [x30]");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld3 {v26.8b, v27.8b, v28.8b}, [x30]");
 
@@ -169,8 +171,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3 {v26.2d, v27.2d, v28.2d}, [x30]");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "unallocated (NEONLoadStoreMultiStruct)");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30), "st3 {v31.16b, v0.16b, v1.16b}, [x30]");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30), "st3 {v31.8b, v0.8b, v1.8b}, [x30]");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30), "st3 {v31.16b, v0.16b, v1.16b}, [x30]");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30), "st3 {v31.8b, v0.8b, v1.8b}, [x30]");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "st3 {v26.16b, v27.16b, v28.16b}, [x30]");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "st3 {v26.8b, v27.8b, v28.8b}, [x30]");
 
@@ -183,9 +185,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "st3 {v26.2d, v27.2d, v28.2d}, [x30]");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "unallocated (NEONLoadStoreMultiStruct)");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                            "[x30]");
   TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30]");
 
   TEST_SINGLE(ld4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30]");
@@ -197,9 +200,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30]");
   TEST_SINGLE(ld4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "unallocated (NEONLoadStoreMultiStruct)");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st4 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                            "[x30]");
   TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "st4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30]");
 
   TEST_SINGLE(st4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "st4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30]");
@@ -237,8 +241,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, Reg::r30, 16), "ld1 {v26.2d}, [x30], #16");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, Reg::r30, 8), "ld1 {v26.1d}, [x30], #8");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld1 {v26.16b, v27.16b}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld1 {v26.8b, v27.8b}, [x30], x29");
 
@@ -251,8 +255,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld1 {v26.2d, v27.2d}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld1 {v26.1d, v27.1d}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, 32), "ld1 {v31.16b, v0.16b}, [x30], #32");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, 16), "ld1 {v31.8b, v0.8b}, [x30], #16");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, 32), "ld1 {v31.16b, v0.16b}, [x30], #32");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, 16), "ld1 {v31.8b, v0.8b}, [x30], #16");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "ld1 {v26.16b, v27.16b}, [x30], #32");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "ld1 {v26.8b, v27.8b}, [x30], #16");
 
@@ -265,8 +269,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "ld1 {v26.2d, v27.2d}, [x30], #32");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "ld1 {v26.1d, v27.1d}, [x30], #16");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b, v1.16b}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b, v1.8b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b, v1.16b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b, v1.8b}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld1 {v26.16b, v27.16b, v28.16b}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld1 {v26.8b, v27.8b, v28.8b}, [x30], x29");
 
@@ -279,8 +283,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld1 {v26.2d, v27.2d, v28.2d}, [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld1 {v26.1d, v27.1d, v28.1d}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, 48), "ld1 {v31.16b, v0.16b, v1.16b}, [x30], #48");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, 24), "ld1 {v31.8b, v0.8b, v1.8b}, [x30], #24");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, 48), "ld1 {v31.16b, v0.16b, v1.16b}, [x30], #48");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 24), "ld1 {v31.8b, v0.8b, v1.8b}, [x30], #24");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "ld1 {v26.16b, v27.16b, v28.16b}, [x30], #48");
   TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "ld1 {v26.8b, v27.8b, v28.8b}, [x30], #24");
 
@@ -293,33 +297,53 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "ld1 {v26.2d, v27.2d, v28.2d}, [x30], #48");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "ld1 {v26.1d, v27.1d, v28.1d}, [x30], #24");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, Reg::r29), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, Reg::r29), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.16b, v27.16b, v28.16b, "
+                                                                                                      "v29.16b}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.8b, v27.8b, v28.8b, "
+                                                                                                      "v29.8b}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.8h, v27.8h, v28.8h, "
+                                                                                                       "v29.8h}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.4h, v27.4h, v28.4h, "
+                                                                                                       "v29.4h}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.4s, v27.4s, v28.4s, "
+                                                                                                       "v29.4s}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.2s, v27.2s, v28.2s, "
+                                                                                                       "v29.2s}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], x29");
-  TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld1 {v26.2d, v27.2d, v28.2d, "
+                                                                                                       "v29.2d}, [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld1 {v26.1d, v27.1d, v28.1d, "
+                                                                                                       "v29.1d}, [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, 64), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], #64");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, 32), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], #32");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], #64");
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], #32");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, 64), "ld1 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                             "[x30], #64");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, 32), "ld1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], "
+                                                                                             "#32");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                                "[x30], #64");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                                "[x30], #32");
 
-  TEST_SINGLE(ld1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], #64");
-  TEST_SINGLE(ld1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], #32");
+  TEST_SINGLE(ld1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(ld1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], #64");
-  TEST_SINGLE(ld1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], #32");
+  TEST_SINGLE(ld1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], #64");
-  TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], #32");
+  TEST_SINGLE(ld1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld1 {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld1 {v26.1d, v27.1d, v28.1d, v29.1d}, "
+                                                                                                 "[x30], #32");
 
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, Reg::r30, Reg::r29), "st1 {v26.16b}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, Reg::r30, Reg::r29), "st1 {v26.8b}, [x30], x29");
@@ -345,8 +369,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, Reg::r30, 16), "st1 {v26.2d}, [x30], #16");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, Reg::r30, 8), "st1 {v26.1d}, [x30], #8");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "st1 {v26.16b, v27.16b}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "st1 {v26.8b, v27.8b}, [x30], x29");
 
@@ -359,8 +383,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "st1 {v26.2d, v27.2d}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "st1 {v26.1d, v27.1d}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, 32), "st1 {v31.16b, v0.16b}, [x30], #32");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, 16), "st1 {v31.8b, v0.8b}, [x30], #16");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, 32), "st1 {v31.16b, v0.16b}, [x30], #32");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, 16), "st1 {v31.8b, v0.8b}, [x30], #16");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "st1 {v26.16b, v27.16b}, [x30], #32");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "st1 {v26.8b, v27.8b}, [x30], #16");
 
@@ -373,8 +397,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "st1 {v26.2d, v27.2d}, [x30], #32");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "st1 {v26.1d, v27.1d}, [x30], #16");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b, v1.16b}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b, v1.8b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b, v1.16b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b, v1.8b}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "st1 {v26.16b, v27.16b, v28.16b}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "st1 {v26.8b, v27.8b, v28.8b}, [x30], x29");
 
@@ -387,8 +411,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "st1 {v26.2d, v27.2d, v28.2d}, [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "st1 {v26.1d, v27.1d, v28.1d}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, 48), "st1 {v31.16b, v0.16b, v1.16b}, [x30], #48");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, 24), "st1 {v31.8b, v0.8b, v1.8b}, [x30], #24");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, 48), "st1 {v31.16b, v0.16b, v1.16b}, [x30], #48");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 24), "st1 {v31.8b, v0.8b, v1.8b}, [x30], #24");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "st1 {v26.16b, v27.16b, v28.16b}, [x30], #48");
   TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "st1 {v26.8b, v27.8b, v28.8b}, [x30], #24");
 
@@ -401,36 +425,56 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "st1 {v26.2d, v27.2d, v28.2d}, [x30], #48");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "st1 {v26.1d, v27.1d, v28.1d}, [x30], #24");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, Reg::r29), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, Reg::r29), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.16b, v27.16b, v28.16b, "
+                                                                                                      "v29.16b}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.8b, v27.8b, v28.8b, "
+                                                                                                      "v29.8b}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.8h, v27.8h, v28.8h, "
+                                                                                                       "v29.8h}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.4h, v27.4h, v28.4h, "
+                                                                                                       "v29.4h}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.4s, v27.4s, v28.4s, "
+                                                                                                       "v29.4s}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.2s, v27.2s, v28.2s, "
+                                                                                                       "v29.2s}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], x29");
-  TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st1 {v26.2d, v27.2d, v28.2d, "
+                                                                                                       "v29.2d}, [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st1 {v26.1d, v27.1d, v28.1d, "
+                                                                                                       "v29.1d}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, 64), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], #64");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, 32), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], #32");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], #64");
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], #32");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, 64), "st1 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                             "[x30], #64");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, 32), "st1 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], "
+                                                                                             "#32");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                                "[x30], #64");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                                "[x30], #32");
 
-  TEST_SINGLE(st1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], #64");
-  TEST_SINGLE(st1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], #32");
+  TEST_SINGLE(st1<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st1<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(st1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], #64");
-  TEST_SINGLE(st1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], #32");
+  TEST_SINGLE(st1<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st1<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], #64");
-  TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], #32");
+  TEST_SINGLE(st1<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st1 {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st1<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st1 {v26.1d, v27.1d, v28.1d, v29.1d}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, Reg::r29), "ld2 {v31.16b, v0.16b}, [x30], x29");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, Reg::r29), "ld2 {v31.8b, v0.8b}, [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, Reg::r29), "ld2 {v31.16b, v0.16b}, [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, Reg::r29), "ld2 {v31.8b, v0.8b}, [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2 {v26.16b, v27.16b}, [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld2 {v26.8b, v27.8b}, [x30], x29");
 
@@ -443,8 +487,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2 {v26.2d, v27.2d}, [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, 32), "ld2 {v31.16b, v0.16b}, [x30], #32");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, 16), "ld2 {v31.8b, v0.8b}, [x30], #16");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, 32), "ld2 {v31.16b, v0.16b}, [x30], #32");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, 16), "ld2 {v31.8b, v0.8b}, [x30], #16");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "ld2 {v26.16b, v27.16b}, [x30], #32");
   TEST_SINGLE(ld2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "ld2 {v26.8b, v27.8b}, [x30], #16");
 
@@ -457,8 +501,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "ld2 {v26.2d, v27.2d}, [x30], #32");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, Reg::r29), "st2 {v31.16b, v0.16b}, [x30], x29");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, Reg::r29), "st2 {v31.8b, v0.8b}, [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, Reg::r29), "st2 {v31.16b, v0.16b}, [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, Reg::r29), "st2 {v31.8b, v0.8b}, [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "st2 {v26.16b, v27.16b}, [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "st2 {v26.8b, v27.8b}, [x30], x29");
 
@@ -471,8 +515,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "st2 {v26.2d, v27.2d}, [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30, 32), "st2 {v31.16b, v0.16b}, [x30], #32");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30, 16), "st2 {v31.8b, v0.8b}, [x30], #16");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, 32), "st2 {v31.16b, v0.16b}, [x30], #32");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, 16), "st2 {v31.8b, v0.8b}, [x30], #16");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "st2 {v26.16b, v27.16b}, [x30], #32");
   TEST_SINGLE(st2<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "st2 {v26.8b, v27.8b}, [x30], #16");
 
@@ -485,8 +529,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st2<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, 32), "st2 {v26.2d, v27.2d}, [x30], #32");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, Reg::r29), "ld3 {v31.16b, v0.16b, v1.16b}, [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, Reg::r29), "ld3 {v31.8b, v0.8b, v1.8b}, [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, Reg::r29), "ld3 {v31.16b, v0.16b, v1.16b}, [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, Reg::r29), "ld3 {v31.8b, v0.8b, v1.8b}, [x30], x29");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3 {v26.16b, v27.16b, v28.16b}, [x30], x29");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3 {v26.8b, v27.8b, v28.8b}, [x30], x29");
 
@@ -497,10 +541,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3 {v26.2s, v27.2s, v28.2s}, [x30], x29");
 
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3 {v26.2d, v27.2d, v28.2d}, [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(ld3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "unallocated "
+                                                                                            "(NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, 48), "ld3 {v31.16b, v0.16b, v1.16b}, [x30], #48");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, 24), "ld3 {v31.8b, v0.8b, v1.8b}, [x30], #24");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, 48), "ld3 {v31.16b, v0.16b, v1.16b}, [x30], #48");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 24), "ld3 {v31.8b, v0.8b, v1.8b}, [x30], #24");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "ld3 {v26.16b, v27.16b, v28.16b}, [x30], #48");
   TEST_SINGLE(ld3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "ld3 {v26.8b, v27.8b, v28.8b}, [x30], #24");
 
@@ -513,8 +558,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "ld3 {v26.2d, v27.2d, v28.2d}, [x30], #48");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, Reg::r29), "st3 {v31.16b, v0.16b, v1.16b}, [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, Reg::r29), "st3 {v31.8b, v0.8b, v1.8b}, [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, Reg::r29), "st3 {v31.16b, v0.16b, v1.16b}, [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, Reg::r29), "st3 {v31.8b, v0.8b, v1.8b}, [x30], x29");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "st3 {v26.16b, v27.16b, v28.16b}, [x30], x29");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "st3 {v26.8b, v27.8b, v28.8b}, [x30], x29");
 
@@ -525,10 +570,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st3<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "st3 {v26.2s, v27.2s, v28.2s}, [x30], x29");
 
   TEST_SINGLE(st3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "st3 {v26.2d, v27.2d, v28.2d}, [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(st3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "unallocated "
+                                                                                            "(NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30, 48), "st3 {v31.16b, v0.16b, v1.16b}, [x30], #48");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30, 24), "st3 {v31.8b, v0.8b, v1.8b}, [x30], #24");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, 48), "st3 {v31.16b, v0.16b, v1.16b}, [x30], #48");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 24), "st3 {v31.8b, v0.8b, v1.8b}, [x30], #24");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "st3 {v26.16b, v27.16b, v28.16b}, [x30], #48");
   TEST_SINGLE(st3<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "st3 {v26.8b, v27.8b, v28.8b}, [x30], #24");
 
@@ -541,64 +587,106 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st3<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 48), "st3 {v26.2d, v27.2d, v28.2d}, [x30], #48");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "unallocated (NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, Reg::r29), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, Reg::r29), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, Reg::r29), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, Reg::r29), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.16b, v27.16b, v28.16b, "
+                                                                                                      "v29.16b}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.8b, v27.8b, v28.8b, "
+                                                                                                      "v29.8b}, [x30], x29");
 
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.8h, v27.8h, v28.8h, "
+                                                                                                       "v29.8h}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.4h, v27.4h, v28.4h, "
+                                                                                                       "v29.4h}, [x30], x29");
 
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.4s, v27.4s, v28.4s, "
+                                                                                                       "v29.4s}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4 {v26.2s, v27.2s, v28.2s, "
+                                                                                                       "v29.2s}, [x30], x29");
 
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4 {v26.2d, v27.2d, v28.2d, "
+                                                                                                       "v29.2d}, [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "unallocated "
+                                                                                                       "(NEONLoadStoreMultiStructPostIndex"
+                                                                                                       ")");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, 64), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], #64");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, 32), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], #32");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], #64");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], #32");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, 64), "ld4 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                             "[x30], #64");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, 32), "ld4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], "
+                                                                                             "#32");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                                "[x30], #64");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                                "[x30], #32");
 
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], #64");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], #32");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], #64");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], #32");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4 {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], #64");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "ld4 {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "unallocated "
+                                                                                                 "(NEONLoadStoreMultiStructPostIndex)");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, Reg::r29), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, Reg::r29), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, Reg::r29), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, Reg::r29), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, "
+                                                                                                   "[x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.16b, v27.16b, v28.16b, "
+                                                                                                      "v29.16b}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.8b, v27.8b, v28.8b, "
+                                                                                                      "v29.8b}, [x30], x29");
 
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.8h, v27.8h, v28.8h, "
+                                                                                                       "v29.8h}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.4h, v27.4h, v28.4h, "
+                                                                                                       "v29.4h}, [x30], x29");
 
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.4s, v27.4s, v28.4s, "
+                                                                                                       "v29.4s}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "st4 {v26.2s, v27.2s, v28.2s, "
+                                                                                                       "v29.2s}, [x30], x29");
 
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "st4 {v26.2d, v27.2d, v28.2d, "
+                                                                                                       "v29.2d}, [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "unallocated "
+                                                                                                       "(NEONLoadStoreMultiStructPostIndex"
+                                                                                                       ")");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, 64), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], #64");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, 32), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], #32");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], #64");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], #32");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, 64), "st4 {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                             "[x30], #64");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, 32), "st4 {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], "
+                                                                                             "#32");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                                "[x30], #64");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                                "[x30], #32");
 
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], #64");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], #32");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], #64");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], #32");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "st4 {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                                 "[x30], #32");
 
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], #64");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "unallocated (NEONLoadStoreMultiStructPostIndex)");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 64), "st4 {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                                 "[x30], #64");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "unallocated "
+                                                                                                 "(NEONLoadStoreMultiStructPostIndex)");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single") {
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30),  "ld1 {v26.b}[0], [x30]");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30), "ld1 {v26.b}[0], [x30]");
   TEST_SINGLE(ld1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30), "ld1 {v26.h}[0], [x30]");
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30), "ld1 {v26.s}[0], [x30]");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30), "ld1 {v26.d}[0], [x30]");
@@ -608,17 +696,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30), "ld1 {v26.s}[3], [x30]");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30), "ld1 {v26.d}[1], [x30]");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30),  "ld1r {v26.8b}, [x30]");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30), "ld1r {v26.8b}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(DReg::d26, Reg::r30), "ld1r {v26.4h}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(DReg::d26, Reg::r30), "ld1r {v26.2s}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(DReg::d26, Reg::r30), "ld1r {v26.1d}, [x30]");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30),  "ld1r {v26.16b}, [x30]");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30), "ld1r {v26.16b}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(QReg::q26, Reg::r30), "ld1r {v26.8h}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(QReg::q26, Reg::r30), "ld1r {v26.4s}, [x30]");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(QReg::q26, Reg::r30), "ld1r {v26.2d}, [x30]");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30),  "st1 {v26.b}[0], [x30]");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30), "st1 {v26.b}[0], [x30]");
   TEST_SINGLE(st1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30), "st1 {v26.h}[0], [x30]");
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30), "st1 {v26.s}[0], [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30), "st1 {v26.d}[0], [x30]");
@@ -628,8 +716,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30), "st1 {v26.s}[3], [x30]");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30), "st1 {v26.d}[1], [x30]");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  0, Reg::r30),  "ld2 {v31.b, v0.b}[0], [x30]");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30),  "ld2 {v26.b, v27.b}[0], [x30]");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30), "ld2 {v31.b, v0.b}[0], [x30]");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "ld2 {v26.b, v27.b}[0], [x30]");
   TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "ld2 {v26.h, v27.h}[0], [x30]");
   TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "ld2 {v26.s, v27.s}[0], [x30]");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "ld2 {v26.d, v27.d}[0], [x30]");
@@ -639,20 +727,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30), "ld2 {v26.s, v27.s}[3], [x30]");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30), "ld2 {v26.d, v27.d}[1], [x30]");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  Reg::r30),  "ld2r {v31.8b, v0.8b}, [x30]");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30),  "ld2r {v26.8b, v27.8b}, [x30]");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30), "ld2r {v31.8b, v0.8b}, [x30]");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30), "ld2r {v26.8b, v27.8b}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, Reg::r30), "ld2r {v26.4h, v27.4h}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, Reg::r30), "ld2r {v26.2s, v27.2s}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30), "ld2r {v26.1d, v27.1d}, [x30]");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  Reg::r30),  "ld2r {v31.16b, v0.16b}, [x30]");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30),  "ld2r {v26.16b, v27.16b}, [x30]");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30), "ld2r {v31.16b, v0.16b}, [x30]");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2r {v26.16b, v27.16b}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2r {v26.8h, v27.8h}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2r {v26.4s, v27.4s}, [x30]");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30), "ld2r {v26.2d, v27.2d}, [x30]");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  0, Reg::r30),  "st2 {v31.b, v0.b}[0], [x30]");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30),  "st2 {v26.b, v27.b}[0], [x30]");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30), "st2 {v31.b, v0.b}[0], [x30]");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "st2 {v26.b, v27.b}[0], [x30]");
   TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "st2 {v26.h, v27.h}[0], [x30]");
   TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "st2 {v26.s, v27.s}[0], [x30]");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30), "st2 {v26.d, v27.d}[0], [x30]");
@@ -662,8 +750,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30), "st2 {v26.s, v27.s}[3], [x30]");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30), "st2 {v26.d, v27.d}[1], [x30]");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  VReg::v1,  0, Reg::r30),  "ld3 {v31.b, v0.b, v1.b}[0], [x30]");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30),  "ld3 {v26.b, v27.b, v28.b}[0], [x30]");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30), "ld3 {v31.b, v0.b, v1.b}[0], [x30]");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "ld3 {v26.b, v27.b, v28.b}[0], [x30]");
   TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "ld3 {v26.h, v27.h, v28.h}[0], [x30]");
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "ld3 {v26.s, v27.s, v28.s}[0], [x30]");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "ld3 {v26.d, v27.d, v28.d}[0], [x30]");
@@ -673,20 +761,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30), "ld3 {v26.s, v27.s, v28.s}[3], [x30]");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30), "ld3 {v26.d, v27.d, v28.d}[1], [x30]");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  Reg::r30),  "ld3r {v31.8b, v0.8b, v1.8b}, [x30]");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30),  "ld3r {v26.8b, v27.8b, v28.8b}, [x30]");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30), "ld3r {v31.8b, v0.8b, v1.8b}, [x30]");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld3r {v26.8b, v27.8b, v28.8b}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld3r {v26.4h, v27.4h, v28.4h}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld3r {v26.2s, v27.2s, v28.2s}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30), "ld3r {v26.1d, v27.1d, v28.1d}, [x30]");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  Reg::r30),  "ld3r {v31.16b, v0.16b, v1.16b}, [x30]");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30),  "ld3r {v26.16b, v27.16b, v28.16b}, [x30]");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30), "ld3r {v31.16b, v0.16b, v1.16b}, [x30]");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3r {v26.16b, v27.16b, v28.16b}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3r {v26.8h, v27.8h, v28.8h}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3r {v26.4s, v27.4s, v28.4s}, [x30]");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30), "ld3r {v26.2d, v27.2d, v28.2d}, [x30]");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  VReg::v1,  0, Reg::r30),  "st3 {v31.b, v0.b, v1.b}[0], [x30]");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30),  "st3 {v26.b, v27.b, v28.b}[0], [x30]");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30), "st3 {v31.b, v0.b, v1.b}[0], [x30]");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "st3 {v26.b, v27.b, v28.b}[0], [x30]");
   TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "st3 {v26.h, v27.h, v28.h}[0], [x30]");
   TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "st3 {v26.s, v27.s, v28.s}[0], [x30]");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30), "st3 {v26.d, v27.d, v28.d}[0], [x30]");
@@ -696,42 +784,66 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: ASIMD loadstore single")
   TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30), "st3 {v26.s, v27.s, v28.s}[3], [x30]");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30), "st3 {v26.d, v27.d, v28.d}[1], [x30]");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30),  "ld4 {v31.b, v0.b, v1.b, v2.b}[0], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30),  "ld4 {v26.b, v27.b, v28.b, v29.b}[0], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.h, v27.h, v28.h, v29.h}[0], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.s, v27.s, v28.s, v29.s}[0], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.d, v27.d, v28.d, v29.d}[0], [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30), "ld4 {v31.b, v0.b, v1.b, v2.b}[0], [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.b, v27.b, v28.b, v29.b}[0], "
+                                                                                               "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.h, v27.h, v28.h, v29.h}[0], "
+                                                                                                "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.s, v27.s, v28.s, v29.s}[0], "
+                                                                                                "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "ld4 {v26.d, v27.d, v28.d, v29.d}[0], "
+                                                                                                "[x30]");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30),  "ld4 {v26.b, v27.b, v28.b, v29.b}[15], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30), "ld4 {v26.h, v27.h, v28.h, v29.h}[7], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30), "ld4 {v26.s, v27.s, v28.s, v29.s}[3], [x30]");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30), "ld4 {v26.d, v27.d, v28.d, v29.d}[1], [x30]");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30), "ld4 {v26.b, v27.b, v28.b, v29.b}[15], "
+                                                                                                "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30), "ld4 {v26.h, v27.h, v28.h, v29.h}[7], "
+                                                                                                "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30), "ld4 {v26.s, v27.s, v28.s, v29.s}[3], "
+                                                                                                "[x30]");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30), "ld4 {v26.d, v27.d, v28.d, v29.d}[1], "
+                                                                                                "[x30]");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31, DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30),  "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30),  "ld4r {v26.8b, v27.8b, v28.8b, v29.8b}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.4h, v27.4h, v28.4h, v29.4h}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.2s, v27.2s, v28.2s, v29.2s}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.1d, v27.1d, v28.1d, v29.1d}, [x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30), "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, [x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                             "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                              "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                              "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30), "ld4r {v26.1d, v27.1d, v28.1d, v29.1d}, "
+                                                                                              "[x30]");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30),  "ld4r {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30),  "ld4r {v26.16b, v27.16b, v28.16b, v29.16b}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.8h, v27.8h, v28.8h, v29.8h}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.4s, v27.4s, v28.4s, v29.4s}, [x30]");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.2d, v27.2d, v28.2d, v29.2d}, [x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30), "ld4r {v31.16b, v0.16b, v1.16b, v2.16b}, [x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.16b, v27.16b, v28.16b, v29.16b}, "
+                                                                                             "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                              "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                              "[x30]");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30), "ld4r {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                              "[x30]");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31, VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30),  "st4 {v31.b, v0.b, v1.b, v2.b}[0], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30),  "st4 {v26.b, v27.b, v28.b, v29.b}[0], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.h, v27.h, v28.h, v29.h}[0], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.s, v27.s, v28.s, v29.s}[0], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.d, v27.d, v28.d, v29.d}[0], [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30), "st4 {v31.b, v0.b, v1.b, v2.b}[0], [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.b, v27.b, v28.b, v29.b}[0], "
+                                                                                               "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.h, v27.h, v28.h, v29.h}[0], "
+                                                                                                "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.s, v27.s, v28.s, v29.s}[0], "
+                                                                                                "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30), "st4 {v26.d, v27.d, v28.d, v29.d}[0], "
+                                                                                                "[x30]");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30), "st4 {v26.b, v27.b, v28.b, v29.b}[15], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30), "st4 {v26.h, v27.h, v28.h, v29.h}[7], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30), "st4 {v26.s, v27.s, v28.s, v29.s}[3], [x30]");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30), "st4 {v26.d, v27.d, v28.d, v29.d}[1], [x30]");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30), "st4 {v26.b, v27.b, v28.b, v29.b}[15], "
+                                                                                                "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30), "st4 {v26.h, v27.h, v28.h, v29.h}[7], "
+                                                                                                "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30), "st4 {v26.s, v27.s, v28.s, v29.s}[3], "
+                                                                                                "[x30]");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30), "st4 {v26.d, v27.d, v28.d, v29.d}[1], "
+                                                                                                "[x30]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store single structure (post-indexed)") {
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, 1),  "ld1 {v26.b}[0], [x30], #1");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, 1), "ld1 {v26.b}[0], [x30], #1");
   TEST_SINGLE(ld1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30, 2), "ld1 {v26.h}[0], [x30], #2");
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30, 4), "ld1 {v26.s}[0], [x30], #4");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30, 8), "ld1 {v26.d}[0], [x30], #8");
@@ -741,17 +853,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30, 4), "ld1 {v26.s}[3], [x30], #4");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30, 8), "ld1 {v26.d}[1], [x30], #8");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30, 1),  "ld1r {v26.8b}, [x30], #1");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30, 1), "ld1r {v26.8b}, [x30], #1");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(DReg::d26, Reg::r30, 2), "ld1r {v26.4h}, [x30], #2");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(DReg::d26, Reg::r30, 4), "ld1r {v26.2s}, [x30], #4");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(DReg::d26, Reg::r30, 8), "ld1r {v26.1d}, [x30], #8");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30, 1),  "ld1r {v26.16b}, [x30], #1");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30, 1), "ld1r {v26.16b}, [x30], #1");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(QReg::q26, Reg::r30, 2), "ld1r {v26.8h}, [x30], #2");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(QReg::q26, Reg::r30, 4), "ld1r {v26.4s}, [x30], #4");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(QReg::q26, Reg::r30, 8), "ld1r {v26.2d}, [x30], #8");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, 1),  "st1 {v26.b}[0], [x30], #1");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, 1), "st1 {v26.b}[0], [x30], #1");
   TEST_SINGLE(st1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30, 2), "st1 {v26.h}[0], [x30], #2");
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30, 4), "st1 {v26.s}[0], [x30], #4");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30, 8), "st1 {v26.d}[0], [x30], #8");
@@ -761,239 +873,295 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30, 4), "st1 {v26.s}[3], [x30], #4");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30, 8), "st1 {v26.d}[1], [x30], #8");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  0, Reg::r30, 2),  "ld2 {v31.b, v0.b}[0], [x30], #2");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 0, Reg::r30, 2),  "ld2 {v26.b, v27.b}[0], [x30], #2");
-  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 4),  "ld2 {v26.h, v27.h}[0], [x30], #4");
-  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 8),  "ld2 {v26.s, v27.s}[0], [x30], #8");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30, 2), "ld2 {v31.b, v0.b}[0], [x30], #2");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 2), "ld2 {v26.b, v27.b}[0], [x30], #2");
+  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 4), "ld2 {v26.h, v27.h}[0], [x30], #4");
+  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 8), "ld2 {v26.s, v27.s}[0], [x30], #8");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 16), "ld2 {v26.d, v27.d}[0], [x30], #16");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 15, Reg::r30, 2),  "ld2 {v26.b, v27.b}[15], [x30], #2");
-  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7, Reg::r30, 4),  "ld2 {v26.h, v27.h}[7], [x30], #4");
-  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30, 8),  "ld2 {v26.s, v27.s}[3], [x30], #8");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 15, Reg::r30, 2), "ld2 {v26.b, v27.b}[15], [x30], #2");
+  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7, Reg::r30, 4), "ld2 {v26.h, v27.h}[7], [x30], #4");
+  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30, 8), "ld2 {v26.s, v27.s}[3], [x30], #8");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30, 16), "ld2 {v26.d, v27.d}[1], [x30], #16");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  Reg::r30, 2),  "ld2r {v31.8b, v0.8b}, [x30], #2");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, Reg::r30, 2),  "ld2r {v26.8b, v27.8b}, [x30], #2");
-  TEST_SINGLE(ld2r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, Reg::r30, 4),  "ld2r {v26.4h, v27.4h}, [x30], #4");
-  TEST_SINGLE(ld2r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, Reg::r30, 8),  "ld2r {v26.2s, v27.2s}, [x30], #8");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, 2), "ld2r {v31.8b, v0.8b}, [x30], #2");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, 2), "ld2r {v26.8b, v27.8b}, [x30], #2");
+  TEST_SINGLE(ld2r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, Reg::r30, 4), "ld2r {v26.4h, v27.4h}, [x30], #4");
+  TEST_SINGLE(ld2r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, Reg::r30, 8), "ld2r {v26.2s, v27.2s}, [x30], #8");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, 16), "ld2r {v26.1d, v27.1d}, [x30], #16");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  Reg::r30, 2),  "ld2r {v31.16b, v0.16b}, [x30], #2");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, Reg::r30, 2),  "ld2r {v26.16b, v27.16b}, [x30], #2");
-  TEST_SINGLE(ld2r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, Reg::r30, 4),  "ld2r {v26.8h, v27.8h}, [x30], #4");
-  TEST_SINGLE(ld2r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, Reg::r30, 8),  "ld2r {v26.4s, v27.4s}, [x30], #8");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, 2), "ld2r {v31.16b, v0.16b}, [x30], #2");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, 2), "ld2r {v26.16b, v27.16b}, [x30], #2");
+  TEST_SINGLE(ld2r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, Reg::r30, 4), "ld2r {v26.8h, v27.8h}, [x30], #4");
+  TEST_SINGLE(ld2r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, Reg::r30, 8), "ld2r {v26.4s, v27.4s}, [x30], #8");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, 16), "ld2r {v26.2d, v27.2d}, [x30], #16");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  0, Reg::r30, 2),  "st2 {v31.b, v0.b}[0], [x30], #2");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 0, Reg::r30, 2),  "st2 {v26.b, v27.b}[0], [x30], #2");
-  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 4),  "st2 {v26.h, v27.h}[0], [x30], #4");
-  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 8),  "st2 {v26.s, v27.s}[0], [x30], #8");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30, 2), "st2 {v31.b, v0.b}[0], [x30], #2");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 2), "st2 {v26.b, v27.b}[0], [x30], #2");
+  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 4), "st2 {v26.h, v27.h}[0], [x30], #4");
+  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 8), "st2 {v26.s, v27.s}[0], [x30], #8");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30, 16), "st2 {v26.d, v27.d}[0], [x30], #16");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 15, Reg::r30, 2),  "st2 {v26.b, v27.b}[15], [x30], #2");
-  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7,  Reg::r30, 4),  "st2 {v26.h, v27.h}[7], [x30], #4");
-  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3,  Reg::r30, 8),  "st2 {v26.s, v27.s}[3], [x30], #8");
-  TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1,  Reg::r30, 16), "st2 {v26.d, v27.d}[1], [x30], #16");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 15, Reg::r30, 2), "st2 {v26.b, v27.b}[15], [x30], #2");
+  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7, Reg::r30, 4), "st2 {v26.h, v27.h}[7], [x30], #4");
+  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30, 8), "st2 {v26.s, v27.s}[3], [x30], #8");
+  TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30, 16), "st2 {v26.d, v27.d}[1], [x30], #16");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  0, Reg::r30, 3),  "ld3 {v31.b, v0.b, v1.b}[0], [x30], #3");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 0, Reg::r30, 3),  "ld3 {v26.b, v27.b, v28.b}[0], [x30], #3");
-  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 6),  "ld3 {v26.h, v27.h, v28.h}[0], [x30], #6");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30, 3), "ld3 {v31.b, v0.b, v1.b}[0], [x30], #3");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 3), "ld3 {v26.b, v27.b, v28.b}[0], [x30], #3");
+  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 6), "ld3 {v26.h, v27.h, v28.h}[0], [x30], #6");
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 12), "ld3 {v26.s, v27.s, v28.s}[0], [x30], #12");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 24), "ld3 {v26.d, v27.d, v28.d}[0], [x30], #24");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 15, Reg::r30, 1), "ld3 {v26.b, v27.b, v28.b}[15], [x30], #3");
-  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7,  Reg::r30, 2), "ld3 {v26.h, v27.h, v28.h}[7], [x30], #6");
-  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3,  Reg::r30, 4), "ld3 {v26.s, v27.s, v28.s}[3], [x30], #12");
-  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1,  Reg::r30, 8), "ld3 {v26.d, v27.d, v28.d}[1], [x30], #24");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, 1), "ld3 {v26.b, v27.b, v28.b}[15], [x30], #3");
+  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, 2), "ld3 {v26.h, v27.h, v28.h}[7], [x30], #6");
+  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, 4), "ld3 {v26.s, v27.s, v28.s}[3], [x30], #12");
+  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, 8), "ld3 {v26.d, v27.d, v28.d}[1], [x30], #24");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  DReg::d1,  Reg::r30, 3),  "ld3r {v31.8b, v0.8b, v1.8b}, [x30], #3");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, DReg::d28, Reg::r30, 3),  "ld3r {v26.8b, v27.8b, v28.8b}, [x30], #3");
-  TEST_SINGLE(ld3r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 6),  "ld3r {v26.4h, v27.4h, v28.4h}, [x30], #6");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 3), "ld3r {v31.8b, v0.8b, v1.8b}, [x30], #3");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 3), "ld3r {v26.8b, v27.8b, v28.8b}, [x30], #3");
+  TEST_SINGLE(ld3r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 6), "ld3r {v26.4h, v27.4h, v28.4h}, [x30], #6");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 12), "ld3r {v26.2s, v27.2s, v28.2s}, [x30], #12");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 24), "ld3r {v26.1d, v27.1d, v28.1d}, [x30], #24");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  QReg::q1,  Reg::r30, 3),  "ld3r {v31.16b, v0.16b, v1.16b}, [x30], #3");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, QReg::q28, Reg::r30, 3),  "ld3r {v26.16b, v27.16b, v28.16b}, [x30], #3");
-  TEST_SINGLE(ld3r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 6),  "ld3r {v26.8h, v27.8h, v28.8h}, [x30], #6");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, 3), "ld3r {v31.16b, v0.16b, v1.16b}, [x30], #3");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 3), "ld3r {v26.16b, v27.16b, v28.16b}, [x30], #3");
+  TEST_SINGLE(ld3r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 6), "ld3r {v26.8h, v27.8h, v28.8h}, [x30], #6");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 12), "ld3r {v26.4s, v27.4s, v28.4s}, [x30], #12");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, 24), "ld3r {v26.2d, v27.2d, v28.2d}, [x30], #24");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  0, Reg::r30, 3),  "st3 {v31.b, v0.b, v1.b}[0], [x30], #3");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 0, Reg::r30, 3),  "st3 {v26.b, v27.b, v28.b}[0], [x30], #3");
-  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 6),  "st3 {v26.h, v27.h, v28.h}[0], [x30], #6");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30, 3), "st3 {v31.b, v0.b, v1.b}[0], [x30], #3");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 3), "st3 {v26.b, v27.b, v28.b}[0], [x30], #3");
+  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 6), "st3 {v26.h, v27.h, v28.h}[0], [x30], #6");
   TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 12), "st3 {v26.s, v27.s, v28.s}[0], [x30], #12");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 24), "st3 {v26.d, v27.d, v28.d}[0], [x30], #24");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 15, Reg::r30, 3),  "st3 {v26.b, v27.b, v28.b}[15], [x30], #3");
-  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7,  Reg::r30, 6),  "st3 {v26.h, v27.h, v28.h}[7], [x30], #6");
-  TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3,  Reg::r30, 12), "st3 {v26.s, v27.s, v28.s}[3], [x30], #12");
-  TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1,  Reg::r30, 24), "st3 {v26.d, v27.d, v28.d}[1], [x30], #24");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, 3), "st3 {v26.b, v27.b, v28.b}[15], [x30], #3");
+  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, 6), "st3 {v26.h, v27.h, v28.h}[7], [x30], #6");
+  TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, 12), "st3 {v26.s, v27.s, v28.s}[3], [x30], #12");
+  TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, 24), "st3 {v26.d, v27.d, v28.d}[1], [x30], #24");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30, 4),  "ld4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], #4");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 4),  "ld4 {v26.b, v27.b, v28.b, v29.b}[0], [x30], #4");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 8),  "ld4 {v26.h, v27.h, v28.h, v29.h}[0], [x30], #8");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 16), "ld4 {v26.s, v27.s, v28.s, v29.s}[0], [x30], #16");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 32), "ld4 {v26.d, v27.d, v28.d, v29.d}[0], [x30], #32");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30, 4), "ld4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], "
+                                                                                               "#4");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 4), "ld4 {v26.b, v27.b, v28.b, v29.b}[0], "
+                                                                                                  "[x30], #4");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 8), "ld4 {v26.h, v27.h, v28.h, v29.h}[0], "
+                                                                                                   "[x30], #8");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 16), "ld4 {v26.s, v27.s, v28.s, v29.s}[0], "
+                                                                                                    "[x30], #16");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 32), "ld4 {v26.d, v27.d, v28.d, v29.d}[0], "
+                                                                                                    "[x30], #32");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, 4),  "ld4 {v26.b, v27.b, v28.b, v29.b}[15], [x30], #4");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7,  Reg::r30, 8),  "ld4 {v26.h, v27.h, v28.h, v29.h}[7], [x30], #8");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3,  Reg::r30, 16), "ld4 {v26.s, v27.s, v28.s, v29.s}[3], [x30], #16");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1,  Reg::r30, 32), "ld4 {v26.d, v27.d, v28.d, v29.d}[1], [x30], #32");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, 4), "ld4 {v26.b, v27.b, v28.b, v29.b}[15], "
+                                                                                                   "[x30], #4");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30, 8), "ld4 {v26.h, v27.h, v28.h, v29.h}[7], "
+                                                                                                   "[x30], #8");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30, 16), "ld4 {v26.s, v27.s, v28.s, v29.s}[3], "
+                                                                                                    "[x30], #16");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30, 32), "ld4 {v26.d, v27.d, v28.d, v29.d}[1], "
+                                                                                                    "[x30], #32");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, 4),  "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], #4");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, DReg::d28, DReg::d29, Reg::r30, 4),  "ld4r {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], #4");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 8),  "ld4r {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], #8");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 16), "ld4r {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], #16");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4r {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], #32");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, 4), "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], "
+                                                                                             "#4");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 4), "ld4r {v26.8b, v27.8b, v28.8b, v29.8b}, "
+                                                                                                "[x30], #4");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 8), "ld4r {v26.4h, v27.4h, v28.4h, v29.4h}, "
+                                                                                                 "[x30], #8");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 16), "ld4r {v26.2s, v27.2s, v28.2s, v29.2s}, "
+                                                                                                  "[x30], #16");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, 32), "ld4r {v26.1d, v27.1d, v28.1d, v29.1d}, "
+                                                                                                  "[x30], #32");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, 4),  "ld4r {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], #4");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, QReg::q28, QReg::q29, Reg::r30, 4),  "ld4r {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], #4");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 8),  "ld4r {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], #8");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 16), "ld4r {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], #16");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 32), "ld4r {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], #32");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, 4), "ld4r {v31.16b, v0.16b, v1.16b, v2.16b}, "
+                                                                                             "[x30], #4");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 4), "ld4r {v26.16b, v27.16b, v28.16b, "
+                                                                                                "v29.16b}, [x30], #4");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 8), "ld4r {v26.8h, v27.8h, v28.8h, v29.8h}, "
+                                                                                                 "[x30], #8");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 16), "ld4r {v26.4s, v27.4s, v28.4s, v29.4s}, "
+                                                                                                  "[x30], #16");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, 32), "ld4r {v26.2d, v27.2d, v28.2d, v29.2d}, "
+                                                                                                  "[x30], #32");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30, 4),  "st4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], #4");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 4),  "st4 {v26.b, v27.b, v28.b, v29.b}[0], [x30], #4");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 8),  "st4 {v26.h, v27.h, v28.h, v29.h}[0], [x30], #8");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 16), "st4 {v26.s, v27.s, v28.s, v29.s}[0], [x30], #16");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 32), "st4 {v26.d, v27.d, v28.d, v29.d}[0], [x30], #32");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30, 4), "st4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], "
+                                                                                               "#4");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 4), "st4 {v26.b, v27.b, v28.b, v29.b}[0], "
+                                                                                                  "[x30], #4");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 8), "st4 {v26.h, v27.h, v28.h, v29.h}[0], "
+                                                                                                   "[x30], #8");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 16), "st4 {v26.s, v27.s, v28.s, v29.s}[0], "
+                                                                                                    "[x30], #16");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, 32), "st4 {v26.d, v27.d, v28.d, v29.d}[0], "
+                                                                                                    "[x30], #32");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, 4),  "st4 {v26.b, v27.b, v28.b, v29.b}[15], [x30], #4");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7,  Reg::r30, 8),  "st4 {v26.h, v27.h, v28.h, v29.h}[7], [x30], #8");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3,  Reg::r30, 16), "st4 {v26.s, v27.s, v28.s, v29.s}[3], [x30], #16");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1,  Reg::r30, 32), "st4 {v26.d, v27.d, v28.d, v29.d}[1], [x30], #32");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, 4), "st4 {v26.b, v27.b, v28.b, v29.b}[15], "
+                                                                                                   "[x30], #4");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30, 8), "st4 {v26.h, v27.h, v28.h, v29.h}[7], "
+                                                                                                   "[x30], #8");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30, 16), "st4 {v26.s, v27.s, v28.s, v29.s}[3], "
+                                                                                                    "[x30], #16");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30, 32), "st4 {v26.d, v27.d, v28.d, v29.d}[1], "
+                                                                                                    "[x30], #32");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, Reg::r29),  "ld1 {v26.b}[0], [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "ld1 {v26.b}[0], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "ld1 {v26.h}[0], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "ld1 {v26.s}[0], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "ld1 {v26.d}[0], [x30], x29");
 
-  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 15, Reg::r30, Reg::r29),  "ld1 {v26.b}[15], [x30], x29");
+  TEST_SINGLE(ld1<SubRegSize::i8Bit>(VReg::v26, 15, Reg::r30, Reg::r29), "ld1 {v26.b}[15], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i16Bit>(VReg::v26, 7, Reg::r30, Reg::r29), "ld1 {v26.h}[7], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30, Reg::r29), "ld1 {v26.s}[3], [x30], x29");
   TEST_SINGLE(ld1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30, Reg::r29), "ld1 {v26.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30, Reg::r29),  "ld1r {v26.8b}, [x30], x29");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(DReg::d26, Reg::r30, Reg::r29), "ld1r {v26.8b}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(DReg::d26, Reg::r30, Reg::r29), "ld1r {v26.4h}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(DReg::d26, Reg::r30, Reg::r29), "ld1r {v26.2s}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(DReg::d26, Reg::r30, Reg::r29), "ld1r {v26.1d}, [x30], x29");
 
-  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30, Reg::r29),  "ld1r {v26.16b}, [x30], x29");
+  TEST_SINGLE(ld1r<SubRegSize::i8Bit>(QReg::q26, Reg::r30, Reg::r29), "ld1r {v26.16b}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i16Bit>(QReg::q26, Reg::r30, Reg::r29), "ld1r {v26.8h}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i32Bit>(QReg::q26, Reg::r30, Reg::r29), "ld1r {v26.4s}, [x30], x29");
   TEST_SINGLE(ld1r<SubRegSize::i64Bit>(QReg::q26, Reg::r30, Reg::r29), "ld1r {v26.2d}, [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, Reg::r29),  "st1 {v26.b}[0], [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "st1 {v26.b}[0], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i16Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "st1 {v26.h}[0], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "st1 {v26.s}[0], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 0, Reg::r30, Reg::r29), "st1 {v26.d}[0], [x30], x29");
 
-  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 15, Reg::r30, Reg::r29),  "st1 {v26.b}[15], [x30], x29");
+  TEST_SINGLE(st1<SubRegSize::i8Bit>(VReg::v26, 15, Reg::r30, Reg::r29), "st1 {v26.b}[15], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i16Bit>(VReg::v26, 7, Reg::r30, Reg::r29), "st1 {v26.h}[7], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i32Bit>(VReg::v26, 3, Reg::r30, Reg::r29), "st1 {v26.s}[3], [x30], x29");
   TEST_SINGLE(st1<SubRegSize::i64Bit>(VReg::v26, 1, Reg::r30, Reg::r29), "st1 {v26.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  0, Reg::r30, Reg::r29), "ld2 {v31.b, v0.b}[0], [x30], x29");
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 0, Reg::r30, Reg::r29), "ld2 {v26.b, v27.b}[0], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30, Reg::r29), "ld2 {v31.b, v0.b}[0], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "ld2 {v26.b, v27.b}[0], [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "ld2 {v26.h, v27.h}[0], [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "ld2 {v26.s, v27.s}[0], [x30], x29");
   TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "ld2 {v26.d, v27.d}[0], [x30], x29");
 
-  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 15, Reg::r30, Reg::r29),  "ld2 {v26.b, v27.b}[15], [x30], x29");
-  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7,  Reg::r30, Reg::r29),  "ld2 {v26.h, v27.h}[7], [x30], x29");
-  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3,  Reg::r30, Reg::r29),  "ld2 {v26.s, v27.s}[3], [x30], x29");
-  TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1,  Reg::r30, Reg::r29),  "ld2 {v26.d, v27.d}[1], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 15, Reg::r30, Reg::r29), "ld2 {v26.b, v27.b}[15], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7, Reg::r30, Reg::r29), "ld2 {v26.h, v27.h}[7], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30, Reg::r29), "ld2 {v26.s, v27.s}[3], [x30], x29");
+  TEST_SINGLE(ld2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30, Reg::r29), "ld2 {v26.d, v27.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  Reg::r30, Reg::r29), "ld2r {v31.8b, v0.8b}, [x30], x29");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, Reg::r30, Reg::r29), "ld2r {v26.8b, v27.8b}, [x30], x29");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, Reg::r30, Reg::r29), "ld2r {v31.8b, v0.8b}, [x30], x29");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld2r {v26.8b, v27.8b}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld2r {v26.4h, v27.4h}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld2r {v26.2s, v27.2s}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, Reg::r30, Reg::r29), "ld2r {v26.1d, v27.1d}, [x30], x29");
 
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  Reg::r30, Reg::r29), "ld2r {v31.16b, v0.16b}, [x30], x29");
-  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, Reg::r30, Reg::r29), "ld2r {v26.16b, v27.16b}, [x30], x29");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, Reg::r30, Reg::r29), "ld2r {v31.16b, v0.16b}, [x30], x29");
+  TEST_SINGLE(ld2r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2r {v26.16b, v27.16b}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2r {v26.8h, v27.8h}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2r {v26.4s, v27.4s}, [x30], x29");
   TEST_SINGLE(ld2r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, Reg::r30, Reg::r29), "ld2r {v26.2d, v27.2d}, [x30], x29");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  0, Reg::r30, Reg::r29), "st2 {v31.b, v0.b}[0], [x30], x29");
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 0, Reg::r30, Reg::r29), "st2 {v26.b, v27.b}[0], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v31, VReg::v0, 0, Reg::r30, Reg::r29), "st2 {v31.b, v0.b}[0], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "st2 {v26.b, v27.b}[0], [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "st2 {v26.h, v27.h}[0], [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "st2 {v26.s, v27.s}[0], [x30], x29");
   TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 0, Reg::r30, Reg::r29), "st2 {v26.d, v27.d}[0], [x30], x29");
 
-  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, 15, Reg::r30, Reg::r29), "st2 {v26.b, v27.b}[15], [x30], x29");
-  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7,  Reg::r30, Reg::r29), "st2 {v26.h, v27.h}[7], [x30], x29");
-  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3,  Reg::r30, Reg::r29), "st2 {v26.s, v27.s}[3], [x30], x29");
-  TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1,  Reg::r30, Reg::r29), "st2 {v26.d, v27.d}[1], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i8Bit>(VReg::v26, VReg::v27, 15, Reg::r30, Reg::r29), "st2 {v26.b, v27.b}[15], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i16Bit>(VReg::v26, VReg::v27, 7, Reg::r30, Reg::r29), "st2 {v26.h, v27.h}[7], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i32Bit>(VReg::v26, VReg::v27, 3, Reg::r30, Reg::r29), "st2 {v26.s, v27.s}[3], [x30], x29");
+  TEST_SINGLE(st2<SubRegSize::i64Bit>(VReg::v26, VReg::v27, 1, Reg::r30, Reg::r29), "st2 {v26.d, v27.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  0, Reg::r30, Reg::r29), "ld3 {v31.b, v0.b, v1.b}[0], [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "ld3 {v26.b, v27.b, v28.b}[0], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30, Reg::r29), "ld3 {v31.b, v0.b, v1.b}[0], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "ld3 {v26.b, v27.b, v28.b}[0], [x30], x29");
   TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "ld3 {v26.h, v27.h, v28.h}[0], [x30], x29");
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "ld3 {v26.s, v27.s, v28.s}[0], [x30], x29");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "ld3 {v26.d, v27.d, v28.d}[0], [x30], x29");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 15, Reg::r30, Reg::r29), "ld3 {v26.b, v27.b, v28.b}[15], [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7,  Reg::r30, Reg::r29), "ld3 {v26.h, v27.h, v28.h}[7], [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3,  Reg::r30, Reg::r29), "ld3 {v26.s, v27.s, v28.s}[3], [x30], x29");
-  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1,  Reg::r30, Reg::r29), "ld3 {v26.d, v27.d, v28.d}[1], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, Reg::r29), "ld3 {v26.b, v27.b, v28.b}[15], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, Reg::r29), "ld3 {v26.h, v27.h, v28.h}[7], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, Reg::r29), "ld3 {v26.s, v27.s, v28.s}[3], [x30], x29");
+  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, Reg::r29), "ld3 {v26.d, v27.d, v28.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  DReg::d1,  Reg::r30, Reg::r29), "ld3r {v31.8b, v0.8b, v1.8b}, [x30], x29");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3r {v26.8b, v27.8b, v28.8b}, [x30], x29");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, Reg::r29), "ld3r {v31.8b, v0.8b, v1.8b}, [x30], x29");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3r {v26.8b, v27.8b, v28.8b}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3r {v26.4h, v27.4h, v28.4h}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3r {v26.2s, v27.2s, v28.2s}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, Reg::r29), "ld3r {v26.1d, v27.1d, v28.1d}, [x30], x29");
 
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  QReg::q1,  Reg::r30, Reg::r29), "ld3r {v31.16b, v0.16b, v1.16b}, [x30], x29");
-  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3r {v26.16b, v27.16b, v28.16b}, [x30], x29");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, Reg::r30, Reg::r29), "ld3r {v31.16b, v0.16b, v1.16b}, [x30], x29");
+  TEST_SINGLE(ld3r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3r {v26.16b, v27.16b, v28.16b}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3r {v26.8h, v27.8h, v28.8h}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3r {v26.4s, v27.4s, v28.4s}, [x30], x29");
   TEST_SINGLE(ld3r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, Reg::r30, Reg::r29), "ld3r {v26.2d, v27.2d, v28.2d}, [x30], x29");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  0, Reg::r30, Reg::r29), "st3 {v31.b, v0.b, v1.b}[0], [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "st3 {v26.b, v27.b, v28.b}[0], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, 0, Reg::r30, Reg::r29), "st3 {v31.b, v0.b, v1.b}[0], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "st3 {v26.b, v27.b, v28.b}[0], [x30], x29");
   TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "st3 {v26.h, v27.h, v28.h}[0], [x30], x29");
   TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "st3 {v26.s, v27.s, v28.s}[0], [x30], x29");
   TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, Reg::r29), "st3 {v26.d, v27.d, v28.d}[0], [x30], x29");
 
-  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, 15, Reg::r30, Reg::r29), "st3 {v26.b, v27.b, v28.b}[15], [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7,  Reg::r30, Reg::r29), "st3 {v26.h, v27.h, v28.h}[7], [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3,  Reg::r30, Reg::r29), "st3 {v26.s, v27.s, v28.s}[3], [x30], x29");
-  TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1,  Reg::r30, Reg::r29), "st3 {v26.d, v27.d, v28.d}[1], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, Reg::r29), "st3 {v26.b, v27.b, v28.b}[15], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, Reg::r29), "st3 {v26.h, v27.h, v28.h}[7], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, Reg::r29), "st3 {v26.s, v27.s, v28.s}[3], [x30], x29");
+  TEST_SINGLE(st3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, Reg::r29), "st3 {v26.d, v27.d, v28.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30, Reg::r29), "ld4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.b, v27.b, v28.b, v29.b}[0], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.h, v27.h, v28.h, v29.h}[0], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.s, v27.s, v28.s, v29.s}[0], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.d, v27.d, v28.d, v29.d}[0], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30, Reg::r29), "ld4 {v31.b, v0.b, v1.b, v2.b}[0], "
+                                                                                                      "[x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.b, v27.b, v28.b, "
+                                                                                                         "v29.b}[0], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.h, v27.h, v28.h, "
+                                                                                                          "v29.h}[0], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.s, v27.s, v28.s, "
+                                                                                                          "v29.s}[0], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "ld4 {v26.d, v27.d, v28.d, "
+                                                                                                          "v29.d}[0], [x30], x29");
 
-  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, Reg::r29), "ld4 {v26.b, v27.b, v28.b, v29.b}[15], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7,  Reg::r30, Reg::r29), "ld4 {v26.h, v27.h, v28.h, v29.h}[7], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3,  Reg::r30, Reg::r29), "ld4 {v26.s, v27.s, v28.s, v29.s}[3], [x30], x29");
-  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1,  Reg::r30, Reg::r29), "ld4 {v26.d, v27.d, v28.d, v29.d}[1], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, Reg::r29), "ld4 {v26.b, v27.b, v28.b, "
+                                                                                                          "v29.b}[15], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30, Reg::r29), "ld4 {v26.h, v27.h, v28.h, "
+                                                                                                          "v29.h}[7], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30, Reg::r29), "ld4 {v26.s, v27.s, v28.s, "
+                                                                                                          "v29.s}[3], [x30], x29");
+  TEST_SINGLE(ld4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30, Reg::r29), "ld4 {v26.d, v27.d, v28.d, "
+                                                                                                          "v29.d}[1], [x30], x29");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31,  DReg::d0,  DReg::d1,  DReg::d2,  Reg::r30, Reg::r29), "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26,  DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.8b, v27.8b, v28.8b, v29.8b}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.4h, v27.4h, v28.4h, v29.4h}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.2s, v27.2s, v28.2s, v29.2s}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.1d, v27.1d, v28.1d, v29.1d}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, DReg::d2, Reg::r30, Reg::r29), "ld4r {v31.8b, v0.8b, v1.8b, v2.8b}, "
+                                                                                                    "[x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.8b, v27.8b, v28.8b, "
+                                                                                                       "v29.8b}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.4h, v27.4h, v28.4h, "
+                                                                                                        "v29.4h}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.2s, v27.2s, v28.2s, "
+                                                                                                        "v29.2s}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(DReg::d26, DReg::d27, DReg::d28, DReg::d29, Reg::r30, Reg::r29), "ld4r {v26.1d, v27.1d, v28.1d, "
+                                                                                                        "v29.1d}, [x30], x29");
 
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31,  QReg::q0,  QReg::q1,  QReg::q2,  Reg::r30, Reg::r29), "ld4r {v31.16b, v0.16b, v1.16b, v2.16b}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26,  QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.16b, v27.16b, v28.16b, v29.16b}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.8h, v27.8h, v28.8h, v29.8h}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.4s, v27.4s, v28.4s, v29.4s}, [x30], x29");
-  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.2d, v27.2d, v28.2d, v29.2d}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q31, QReg::q0, QReg::q1, QReg::q2, Reg::r30, Reg::r29), "ld4r {v31.16b, v0.16b, v1.16b, "
+                                                                                                    "v2.16b}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i8Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.16b, v27.16b, v28.16b, "
+                                                                                                       "v29.16b}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i16Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.8h, v27.8h, v28.8h, "
+                                                                                                        "v29.8h}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i32Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.4s, v27.4s, v28.4s, "
+                                                                                                        "v29.4s}, [x30], x29");
+  TEST_SINGLE(ld4r<SubRegSize::i64Bit>(QReg::q26, QReg::q27, QReg::q28, QReg::q29, Reg::r30, Reg::r29), "ld4r {v26.2d, v27.2d, v28.2d, "
+                                                                                                        "v29.2d}, [x30], x29");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31,  VReg::v0,  VReg::v1,  VReg::v2,  0, Reg::r30, Reg::r29), "st4 {v31.b, v0.b, v1.b, v2.b}[0], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.b, v27.b, v28.b, v29.b}[0], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.h, v27.h, v28.h, v29.h}[0], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.s, v27.s, v28.s, v29.s}[0], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.d, v27.d, v28.d, v29.d}[0], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v31, VReg::v0, VReg::v1, VReg::v2, 0, Reg::r30, Reg::r29), "st4 {v31.b, v0.b, v1.b, v2.b}[0], "
+                                                                                                      "[x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.b, v27.b, v28.b, "
+                                                                                                         "v29.b}[0], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.h, v27.h, v28.h, "
+                                                                                                          "v29.h}[0], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.s, v27.s, v28.s, "
+                                                                                                          "v29.s}[0], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 0, Reg::r30, Reg::r29), "st4 {v26.d, v27.d, v28.d, "
+                                                                                                          "v29.d}[0], [x30], x29");
 
-  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26,  VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, Reg::r29), "st4 {v26.b, v27.b, v28.b, v29.b}[15], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7,  Reg::r30, Reg::r29), "st4 {v26.h, v27.h, v28.h, v29.h}[7], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3,  Reg::r30, Reg::r29), "st4 {v26.s, v27.s, v28.s, v29.s}[3], [x30], x29");
-  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1,  Reg::r30, Reg::r29), "st4 {v26.d, v27.d, v28.d, v29.d}[1], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 15, Reg::r30, Reg::r29), "st4 {v26.b, v27.b, v28.b, "
+                                                                                                          "v29.b}[15], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 7, Reg::r30, Reg::r29), "st4 {v26.h, v27.h, v28.h, "
+                                                                                                          "v29.h}[7], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 3, Reg::r30, Reg::r29), "st4 {v26.s, v27.s, v28.s, "
+                                                                                                          "v29.s}[3], [x30], x29");
+  TEST_SINGLE(st4<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, VReg::v29, 1, Reg::r30, Reg::r29), "st4 {v26.d, v27.d, v28.d, "
+                                                                                                          "v29.d}[1], [x30], x29");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore exclusive pair") {
   TEST_SINGLE(stxp(Size::i32Bit, Reg::r28, Reg::r29, Reg::r30, Reg::r28), "stxp w28, w29, w30, [x28]");
@@ -1115,41 +1283,41 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Compare and swap") {
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: LDAPR/STLR unscaled immediate") {
   TEST_SINGLE(stlurb(Reg::r30, Reg::r29, -256), "stlurb w30, [x29, #-256]");
-  TEST_SINGLE(stlurb(Reg::r30, Reg::r29, 255),  "stlurb w30, [x29, #255]");
+  TEST_SINGLE(stlurb(Reg::r30, Reg::r29, 255), "stlurb w30, [x29, #255]");
 
   TEST_SINGLE(ldapurb(Reg::r30, Reg::r29, -256), "ldapurb w30, [x29, #-256]");
-  TEST_SINGLE(ldapurb(Reg::r30, Reg::r29, 255),  "ldapurb w30, [x29, #255]");
+  TEST_SINGLE(ldapurb(Reg::r30, Reg::r29, 255), "ldapurb w30, [x29, #255]");
 
   TEST_SINGLE(ldapursb(WReg::w30, Reg::r29, -256), "ldapursb w30, [x29, #-256]");
-  TEST_SINGLE(ldapursb(WReg::w30, Reg::r29, 255),  "ldapursb w30, [x29, #255]");
+  TEST_SINGLE(ldapursb(WReg::w30, Reg::r29, 255), "ldapursb w30, [x29, #255]");
   TEST_SINGLE(ldapursb(XReg::x30, Reg::r29, -256), "ldapursb x30, [x29, #-256]");
-  TEST_SINGLE(ldapursb(XReg::x30, Reg::r29, 255),  "ldapursb x30, [x29, #255]");
+  TEST_SINGLE(ldapursb(XReg::x30, Reg::r29, 255), "ldapursb x30, [x29, #255]");
 
   TEST_SINGLE(stlurh(Reg::r30, Reg::r29, -256), "stlurh w30, [x29, #-256]");
-  TEST_SINGLE(stlurh(Reg::r30, Reg::r29, 255),  "stlurh w30, [x29, #255]");
+  TEST_SINGLE(stlurh(Reg::r30, Reg::r29, 255), "stlurh w30, [x29, #255]");
 
   TEST_SINGLE(ldapurh(Reg::r30, Reg::r29, -256), "ldapurh w30, [x29, #-256]");
-  TEST_SINGLE(ldapurh(Reg::r30, Reg::r29, 255),  "ldapurh w30, [x29, #255]");
+  TEST_SINGLE(ldapurh(Reg::r30, Reg::r29, 255), "ldapurh w30, [x29, #255]");
 
   TEST_SINGLE(ldapursh(WReg::w30, Reg::r29, -256), "ldapursh w30, [x29, #-256]");
-  TEST_SINGLE(ldapursh(WReg::w30, Reg::r29, 255),  "ldapursh w30, [x29, #255]");
+  TEST_SINGLE(ldapursh(WReg::w30, Reg::r29, 255), "ldapursh w30, [x29, #255]");
   TEST_SINGLE(ldapursh(XReg::x30, Reg::r29, -256), "ldapursh x30, [x29, #-256]");
-  TEST_SINGLE(ldapursh(XReg::x30, Reg::r29, 255),  "ldapursh x30, [x29, #255]");
+  TEST_SINGLE(ldapursh(XReg::x30, Reg::r29, 255), "ldapursh x30, [x29, #255]");
 
   TEST_SINGLE(stlur(WReg::w30, Reg::r29, -256), "stlur w30, [x29, #-256]");
-  TEST_SINGLE(stlur(WReg::w30, Reg::r29, 255),  "stlur w30, [x29, #255]");
+  TEST_SINGLE(stlur(WReg::w30, Reg::r29, 255), "stlur w30, [x29, #255]");
 
   TEST_SINGLE(ldapur(WReg::w30, Reg::r29, -256), "ldapur w30, [x29, #-256]");
-  TEST_SINGLE(ldapur(WReg::w30, Reg::r29, 255),  "ldapur w30, [x29, #255]");
+  TEST_SINGLE(ldapur(WReg::w30, Reg::r29, 255), "ldapur w30, [x29, #255]");
 
   TEST_SINGLE(ldapursw(XReg::x30, Reg::r29, -256), "ldapursw x30, [x29, #-256]");
-  TEST_SINGLE(ldapursw(XReg::x30, Reg::r29, 255),  "ldapursw x30, [x29, #255]");
+  TEST_SINGLE(ldapursw(XReg::x30, Reg::r29, 255), "ldapursw x30, [x29, #255]");
 
   TEST_SINGLE(stlur(XReg::x30, Reg::r29, -256), "stlur x30, [x29, #-256]");
-  TEST_SINGLE(stlur(XReg::x30, Reg::r29, 255),  "stlur x30, [x29, #255]");
+  TEST_SINGLE(stlur(XReg::x30, Reg::r29, 255), "stlur x30, [x29, #255]");
 
   TEST_SINGLE(ldapur(XReg::x30, Reg::r29, -256), "ldapur x30, [x29, #-256]");
-  TEST_SINGLE(ldapur(XReg::x30, Reg::r29, 255),  "ldapur x30, [x29, #255]");
+  TEST_SINGLE(ldapur(XReg::x30, Reg::r29, 255), "ldapur x30, [x29, #255]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") {
   {
@@ -1283,34 +1451,34 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Memory copy/set") {
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore no-allocate pair") {
   TEST_SINGLE(stnp(WReg::w30, WReg::w28, Reg::r29, -256), "stnp w30, w28, [x29, #-256]");
-  TEST_SINGLE(stnp(WReg::w30, WReg::w28, Reg::r29, 252),  "stnp w30, w28, [x29, #252]");
+  TEST_SINGLE(stnp(WReg::w30, WReg::w28, Reg::r29, 252), "stnp w30, w28, [x29, #252]");
 
   TEST_SINGLE(ldnp(WReg::w30, WReg::w28, Reg::r29, -256), "ldnp w30, w28, [x29, #-256]");
-  TEST_SINGLE(ldnp(WReg::w30, WReg::w28, Reg::r29, 252),  "ldnp w30, w28, [x29, #252]");
+  TEST_SINGLE(ldnp(WReg::w30, WReg::w28, Reg::r29, 252), "ldnp w30, w28, [x29, #252]");
 
   TEST_SINGLE(stnp(SReg::s30, SReg::s28, Reg::r29, -256), "stnp s30, s28, [x29, #-256]");
-  TEST_SINGLE(stnp(SReg::s30, SReg::s28, Reg::r29, 252),  "stnp s30, s28, [x29, #252]");
+  TEST_SINGLE(stnp(SReg::s30, SReg::s28, Reg::r29, 252), "stnp s30, s28, [x29, #252]");
 
   TEST_SINGLE(ldnp(SReg::s30, SReg::s28, Reg::r29, -256), "ldnp s30, s28, [x29, #-256]");
-  TEST_SINGLE(ldnp(SReg::s30, SReg::s28, Reg::r29, 252),  "ldnp s30, s28, [x29, #252]");
+  TEST_SINGLE(ldnp(SReg::s30, SReg::s28, Reg::r29, 252), "ldnp s30, s28, [x29, #252]");
 
   TEST_SINGLE(stnp(XReg::x30, XReg::x28, Reg::r29, -512), "stnp x30, x28, [x29, #-512]");
-  TEST_SINGLE(stnp(XReg::x30, XReg::x28, Reg::r29, 504),  "stnp x30, x28, [x29, #504]");
+  TEST_SINGLE(stnp(XReg::x30, XReg::x28, Reg::r29, 504), "stnp x30, x28, [x29, #504]");
 
   TEST_SINGLE(ldnp(XReg::x30, XReg::x28, Reg::r29, -512), "ldnp x30, x28, [x29, #-512]");
-  TEST_SINGLE(ldnp(XReg::x30, XReg::x28, Reg::r29, 504),  "ldnp x30, x28, [x29, #504]");
+  TEST_SINGLE(ldnp(XReg::x30, XReg::x28, Reg::r29, 504), "ldnp x30, x28, [x29, #504]");
 
   TEST_SINGLE(stnp(DReg::d30, DReg::d28, Reg::r29, -512), "stnp d30, d28, [x29, #-512]");
-  TEST_SINGLE(stnp(DReg::d30, DReg::d28, Reg::r29, 504),  "stnp d30, d28, [x29, #504]");
+  TEST_SINGLE(stnp(DReg::d30, DReg::d28, Reg::r29, 504), "stnp d30, d28, [x29, #504]");
 
   TEST_SINGLE(ldnp(DReg::d30, DReg::d28, Reg::r29, -512), "ldnp d30, d28, [x29, #-512]");
-  TEST_SINGLE(ldnp(DReg::d30, DReg::d28, Reg::r29, 504),  "ldnp d30, d28, [x29, #504]");
+  TEST_SINGLE(ldnp(DReg::d30, DReg::d28, Reg::r29, 504), "ldnp d30, d28, [x29, #504]");
 
   TEST_SINGLE(stnp(QReg::q30, QReg::q28, Reg::r29, -1024), "stnp q30, q28, [x29, #-1024]");
-  TEST_SINGLE(stnp(QReg::q30, QReg::q28, Reg::r29, 1008),  "stnp q30, q28, [x29, #1008]");
+  TEST_SINGLE(stnp(QReg::q30, QReg::q28, Reg::r29, 1008), "stnp q30, q28, [x29, #1008]");
 
   TEST_SINGLE(ldnp(QReg::q30, QReg::q28, Reg::r29, -1024), "ldnp q30, q28, [x29, #-1024]");
-  TEST_SINGLE(ldnp(QReg::q30, QReg::q28, Reg::r29, 1008),  "ldnp q30, q28, [x29, #1008]");
+  TEST_SINGLE(ldnp(QReg::q30, QReg::q28, Reg::r29, 1008), "ldnp q30, q28, [x29, #1008]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register pair post-indexed") {
   TEST_SINGLE(stp<IndexType::POST>(WReg::w30, WReg::w28, Reg::r29, -256), "stp w30, w28, [x29], #-256");
@@ -1574,162 +1742,162 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register unpri
   }
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Atomic memory operations") {
-  TEST_SINGLE(stadd(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddb w30, [x29]");
+  TEST_SINGLE(stadd(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddb w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddh w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stadd w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stadd x30, [x29]");
 
-  TEST_SINGLE(staddl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddlb w30, [x29]");
+  TEST_SINGLE(staddl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddlb w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddlh w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "staddl w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "staddl x30, [x29]");
 
-  TEST_SINGLE(stadda(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddab w30, [x29]");
+  TEST_SINGLE(stadda(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddab w30, [x29]");
   TEST_SINGLE(stadda(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddah w30, [x29]");
   TEST_SINGLE(stadda(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stadda w30, [x29]");
   TEST_SINGLE(stadda(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stadda x30, [x29]");
 
-  TEST_SINGLE(staddal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddalb w30, [x29]");
+  TEST_SINGLE(staddal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddalb w30, [x29]");
   TEST_SINGLE(staddal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddalh w30, [x29]");
   TEST_SINGLE(staddal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "staddal w30, [x29]");
   TEST_SINGLE(staddal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "staddal x30, [x29]");
 
-  TEST_SINGLE(stclr(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrb w30, [x29]");
+  TEST_SINGLE(stclr(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclrb w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrh w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclr w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclr x30, [x29]");
 
-  TEST_SINGLE(stclrl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrlb w30, [x29]");
+  TEST_SINGLE(stclrl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclrlb w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrlh w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclrl w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclrl x30, [x29]");
 
-  TEST_SINGLE(stclra(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrab w30, [x29]");
+  TEST_SINGLE(stclra(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclrab w30, [x29]");
   TEST_SINGLE(stclra(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrah w30, [x29]");
   TEST_SINGLE(stclra(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclra w30, [x29]");
   TEST_SINGLE(stclra(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclra x30, [x29]");
 
-  TEST_SINGLE(stclral(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclralb w30, [x29]");
+  TEST_SINGLE(stclral(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclralb w30, [x29]");
   TEST_SINGLE(stclral(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclralh w30, [x29]");
   TEST_SINGLE(stclral(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclral w30, [x29]");
   TEST_SINGLE(stclral(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclral x30, [x29]");
 
-  TEST_SINGLE(stset(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetb w30, [x29]");
+  TEST_SINGLE(stset(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetb w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stseth w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stset w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stset x30, [x29]");
 
-  TEST_SINGLE(stsetl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetlb w30, [x29]");
+  TEST_SINGLE(stsetl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetlb w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetlh w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsetl w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsetl x30, [x29]");
 
-  TEST_SINGLE(stseta(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetab w30, [x29]");
+  TEST_SINGLE(stseta(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetab w30, [x29]");
   TEST_SINGLE(stseta(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetah w30, [x29]");
   TEST_SINGLE(stseta(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stseta w30, [x29]");
   TEST_SINGLE(stseta(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stseta x30, [x29]");
 
-  TEST_SINGLE(stsetal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetalb w30, [x29]");
+  TEST_SINGLE(stsetal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetalb w30, [x29]");
   TEST_SINGLE(stsetal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetalh w30, [x29]");
   TEST_SINGLE(stsetal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsetal w30, [x29]");
   TEST_SINGLE(stsetal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsetal x30, [x29]");
 
-  TEST_SINGLE(steor(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorb w30, [x29]");
+  TEST_SINGLE(steor(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steorb w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorh w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steor w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steor x30, [x29]");
 
-  TEST_SINGLE(steorl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorlb w30, [x29]");
+  TEST_SINGLE(steorl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steorlb w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorlh w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steorl w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steorl x30, [x29]");
 
-  TEST_SINGLE(steora(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorab w30, [x29]");
+  TEST_SINGLE(steora(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steorab w30, [x29]");
   TEST_SINGLE(steora(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorah w30, [x29]");
   TEST_SINGLE(steora(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steora w30, [x29]");
   TEST_SINGLE(steora(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steora x30, [x29]");
 
-  TEST_SINGLE(steoral(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steoralb w30, [x29]");
+  TEST_SINGLE(steoral(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steoralb w30, [x29]");
   TEST_SINGLE(steoral(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steoralh w30, [x29]");
   TEST_SINGLE(steoral(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steoral w30, [x29]");
   TEST_SINGLE(steoral(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steoral x30, [x29]");
 
-  TEST_SINGLE(stsmax(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxb w30, [x29]");
+  TEST_SINGLE(stsmax(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsmaxb w30, [x29]");
   TEST_SINGLE(stsmax(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxh w30, [x29]");
   TEST_SINGLE(stsmax(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmax w30, [x29]");
   TEST_SINGLE(stsmax(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmax x30, [x29]");
 
-  TEST_SINGLE(stsmaxl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxlb w30, [x29]");
+  TEST_SINGLE(stsmaxl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsmaxlb w30, [x29]");
   TEST_SINGLE(stsmaxl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxlh w30, [x29]");
   TEST_SINGLE(stsmaxl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxl w30, [x29]");
   TEST_SINGLE(stsmaxl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxl x30, [x29]");
 
-  TEST_SINGLE(stsmaxa(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxab w30, [x29]");
+  TEST_SINGLE(stsmaxa(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsmaxab w30, [x29]");
   TEST_SINGLE(stsmaxa(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxah w30, [x29]");
   TEST_SINGLE(stsmaxa(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxa w30, [x29]");
   TEST_SINGLE(stsmaxa(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxa x30, [x29]");
 
-  TEST_SINGLE(stsmaxal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxalb w30, [x29]");
+  TEST_SINGLE(stsmaxal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsmaxalb w30, [x29]");
   TEST_SINGLE(stsmaxal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxalh w30, [x29]");
   TEST_SINGLE(stsmaxal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxal w30, [x29]");
   TEST_SINGLE(stsmaxal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxal x30, [x29]");
 
-  TEST_SINGLE(stsmin(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminb w30, [x29]");
+  TEST_SINGLE(stsmin(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsminb w30, [x29]");
   TEST_SINGLE(stsmin(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminh w30, [x29]");
   TEST_SINGLE(stsmin(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmin w30, [x29]");
   TEST_SINGLE(stsmin(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmin x30, [x29]");
 
-  TEST_SINGLE(stsminl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminlb w30, [x29]");
+  TEST_SINGLE(stsminl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsminlb w30, [x29]");
   TEST_SINGLE(stsminl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminlh w30, [x29]");
   TEST_SINGLE(stsminl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsminl w30, [x29]");
   TEST_SINGLE(stsminl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsminl x30, [x29]");
 
-  TEST_SINGLE(stsmina(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminab w30, [x29]");
+  TEST_SINGLE(stsmina(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsminab w30, [x29]");
   TEST_SINGLE(stsmina(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminah w30, [x29]");
   TEST_SINGLE(stsmina(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmina w30, [x29]");
   TEST_SINGLE(stsmina(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmina x30, [x29]");
 
-  TEST_SINGLE(stsminal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminalb w30, [x29]");
+  TEST_SINGLE(stsminal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsminalb w30, [x29]");
   TEST_SINGLE(stsminal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminalh w30, [x29]");
   TEST_SINGLE(stsminal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsminal w30, [x29]");
   TEST_SINGLE(stsminal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsminal x30, [x29]");
 
-  TEST_SINGLE(stumax(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxb w30, [x29]");
+  TEST_SINGLE(stumax(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stumaxb w30, [x29]");
   TEST_SINGLE(stumax(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxh w30, [x29]");
   TEST_SINGLE(stumax(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumax w30, [x29]");
   TEST_SINGLE(stumax(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumax x30, [x29]");
 
-  TEST_SINGLE(stumaxl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxlb w30, [x29]");
+  TEST_SINGLE(stumaxl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stumaxlb w30, [x29]");
   TEST_SINGLE(stumaxl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxlh w30, [x29]");
   TEST_SINGLE(stumaxl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxl w30, [x29]");
   TEST_SINGLE(stumaxl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxl x30, [x29]");
 
-  TEST_SINGLE(stumaxa(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxab w30, [x29]");
+  TEST_SINGLE(stumaxa(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stumaxab w30, [x29]");
   TEST_SINGLE(stumaxa(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxah w30, [x29]");
   TEST_SINGLE(stumaxa(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxa w30, [x29]");
   TEST_SINGLE(stumaxa(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxa x30, [x29]");
 
-  TEST_SINGLE(stumaxal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxalb w30, [x29]");
+  TEST_SINGLE(stumaxal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stumaxalb w30, [x29]");
   TEST_SINGLE(stumaxal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxalh w30, [x29]");
   TEST_SINGLE(stumaxal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxal w30, [x29]");
   TEST_SINGLE(stumaxal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxal x30, [x29]");
 
-  TEST_SINGLE(stumin(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminb w30, [x29]");
+  TEST_SINGLE(stumin(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stuminb w30, [x29]");
   TEST_SINGLE(stumin(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminh w30, [x29]");
   TEST_SINGLE(stumin(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumin w30, [x29]");
   TEST_SINGLE(stumin(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumin x30, [x29]");
 
-  TEST_SINGLE(stuminl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminlb w30, [x29]");
+  TEST_SINGLE(stuminl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stuminlb w30, [x29]");
   TEST_SINGLE(stuminl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminlh w30, [x29]");
   TEST_SINGLE(stuminl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stuminl w30, [x29]");
   TEST_SINGLE(stuminl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stuminl x30, [x29]");
 
-  TEST_SINGLE(stumina(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminab w30, [x29]");
+  TEST_SINGLE(stumina(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stuminab w30, [x29]");
   TEST_SINGLE(stumina(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminah w30, [x29]");
   TEST_SINGLE(stumina(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumina w30, [x29]");
   TEST_SINGLE(stumina(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumina x30, [x29]");
 
-  TEST_SINGLE(stuminal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminalb w30, [x29]");
+  TEST_SINGLE(stuminal(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stuminalb w30, [x29]");
   TEST_SINGLE(stuminal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminalh w30, [x29]");
   TEST_SINGLE(stuminal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stuminal w30, [x29]");
   TEST_SINGLE(stuminal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stuminal x30, [x29]");
