@@ -52,7 +52,9 @@ namespace FEX::HLE {
     auto CTX = Handler->CTX;
     auto Thread = Handler->Thread;
     FEXCore::Allocator::free(Handler);
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
     CTX->ExecutionThread(Thread);
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
     FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
     return nullptr;
   }
@@ -221,9 +223,13 @@ namespace FEX::HLE {
       FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
     }
 
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
+
     // Start exuting the thread directly
     // Our host clone starts in a new stack space, so it can't return back to the JIT space
     CTX->ExecutionThread(Thread);
+
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
 
     // The rest of the context remains as is and the thread will continue executing
     return Thread->StatusCode;

@@ -348,7 +348,6 @@ namespace FEXCore::Context {
     Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
 
-    SignalDelegation->RegisterTLSState(Thread);
     if (ThunkHandler) {
       ThunkHandler->RegisterTLSState(Thread);
     }
@@ -428,7 +427,6 @@ namespace FEXCore::Context {
 #ifndef _WIN32
       Alloc::OSAllocator::UninstallTLSData(Thread);
 #endif
-      SignalDelegation->UninstallTLSState(Thread);
     }
 
     FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096);
@@ -915,7 +913,6 @@ namespace FEXCore::Context {
 #ifndef _WIN32
     Alloc::OSAllocator::UninstallTLSData(Thread);
 #endif
-    SignalDelegation->UninstallTLSState(Thread);
   }
 
   static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {

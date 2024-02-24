@@ -484,6 +484,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
   SyscallHandler->TM.TrackThread(ParentThread);
+  SignalDelegation->RegisterTLSState(ParentThread);
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
@@ -561,6 +562,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto ProgramStatus = ParentThread->StatusCode;
 
+  SignalDelegation->UninstallTLSState(ParentThread);
   CTX->DestroyThread(ParentThread);
 
   DebugServer.reset();
