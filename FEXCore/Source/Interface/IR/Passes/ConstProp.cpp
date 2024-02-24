@@ -965,6 +965,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       case OP_SUB:
       case OP_ADDNZCV:
       case OP_SUBNZCV:
+      case OP_ADDWITHFLAGS:
+      case OP_SUBWITHFLAGS:
       {
         auto Op = IROp->C<IR::IROp_Add>();
 
@@ -979,8 +981,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
             Changed = true;
           }
-        } else if (IROp->Op == OP_SUBNZCV) {
-          // If the first source is zero, we can use a NEGS instruction.
+        } else if (IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS || IROp->Op == OP_SUB) {
+          // TODO: Generalize this
           uint64_t Constant1{};
           if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
             if (Constant1 == 0) {

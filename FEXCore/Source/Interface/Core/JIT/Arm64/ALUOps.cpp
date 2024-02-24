@@ -85,6 +85,21 @@ DEF_OP(Add) {
   }
 }
 
+DEF_OP(AddWithFlags) {
+  auto Op = IROp->C<IR::IROp_AddWithFlags>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    adds(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), Const);
+  } else {
+    adds(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+  }
+}
+
 DEF_OP(AddShift) {
   auto Op = IROp->C<IR::IROp_AddShift>();
   const uint8_t OpSize = IROp->Size;
@@ -186,7 +201,7 @@ DEF_OP(Sub) {
   if (IsInlineConstant(Op->Src2, &Const)) {
     sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), Const);
   } else {
-    sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+    sub(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
   }
 }
 
@@ -198,6 +213,21 @@ DEF_OP(SubShift) {
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   sub(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+}
+
+DEF_OP(SubWithFlags) {
+  auto Op = IROp->C<IR::IROp_SubWithFlags>();
+  const uint8_t OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    subs(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), Const);
+  } else {
+    subs(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
+  }
 }
 
 DEF_OP(SubNZCV) {
@@ -212,18 +242,13 @@ DEF_OP(SubNZCV) {
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
   } else {
     unsigned Shift = OpSize < 4 ? (32 - (8 * OpSize)) : 0;
-    ARMEmitter::Register ShiftedSrc1 = ARMEmitter::Reg::zr;
+    ARMEmitter::Register ShiftedSrc1 = GetZeroableReg(Op->Src1);
 
-    if (IsInlineConstant(Op->Src1, &Const)) {
-      LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
-      // Any shift of zero is still zero
-    } else {
-      ShiftedSrc1 = GetReg(Op->Src1.ID());
-
-      if (OpSize < 4) {
-        lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
-        ShiftedSrc1 = TMP1;
-      }
+    // Shift to fix flags for <32-bit ops.
+    // Any shift of zero is still zero so optimize out silly zero shifts.
+    if (OpSize < 4 && ShiftedSrc1 != ARMEmitter::Reg::zr) {
+      lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
+      ShiftedSrc1 = TMP1;
     }
 
     if (OpSize < 4) {
@@ -288,9 +313,7 @@ DEF_OP(CondAddNZCV) {
 
   ARMEmitter::StatusFlags Flags = (ARMEmitter::StatusFlags)Op->FalseNZCV;
   uint64_t Const = 0;
-  auto Src1 = IsInlineConstant(Op->Src1, &Const) ? ARMEmitter::Reg::zr :
-                                                   GetReg(Op->Src1.ID());
-  LOGMAN_THROW_A_FMT(Const == 0, "Unsupported inline constant");
+  auto Src1 = GetZeroableReg(Op->Src1);
 
   if (IsInlineConstant(Op->Src2, &Const)) {
     ccmn(EmitSize, Src1, Const, Flags, MapSelectCC(Op->Cond));
@@ -1494,11 +1517,8 @@ DEF_OP(NZCVSelect) {
       csetm(EmitSize, Dst, cc);
     else
       cset(EmitSize, Dst, cc);
-  } else if (is_const_false) {
-    LOGMAN_THROW_A_FMT(const_false == 0, "NZCVSelect: unsupported constant");
-    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), ARMEmitter::Reg::zr, cc);
   } else {
-    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetReg(Op->FalseVal.ID()), cc);
+    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), cc);
   }
 }
 

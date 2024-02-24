@@ -116,6 +116,16 @@ private:
     return PhyReg;
   }
 
+  [[nodiscard]] FEXCore::ARMEmitter::Register GetZeroableReg(IR::OrderedNodeWrapper Src) const {
+    uint64_t Const;
+    if (IsInlineConstant(Src, &Const)) {
+      LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
+      return ARMEmitter::Reg::zr;
+    } else {
+      return GetReg(Src.ID());
+    }
+  }
+
   // Converts IR-base shift type to ARMEmitter shift type.
   // Will be a no-op, only a type conversion since the two definitions match.
   [[nodiscard]] ARMEmitter::ShiftType ConvertIRShiftType(IR::ShiftType Shift) const {
