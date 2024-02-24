@@ -171,6 +171,67 @@
         "cmp w20, #0x1 (1)",
         "cfinv"
       ]
+    },
+    "Scalar vector add loop": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Saw this in bytemark"
+      ],
+      "x86Insts": [
+        "movdqu  xmm0, [r12+rax]",
+        "paddq   xmm0, xmm1",
+        "movups  [r12+rax], xmm0",
+        "add     rax, 0x10",
+        "cmp     rsi, rax"
+      ],
+      "ExpectedArm64ASM": [
+        "add x20, x16, x4",
+        "ldr q16, [x20]",
+        "add v16.2d, v16.2d, v17.2d",
+        "add x20, x16, x4",
+        "str q16, [x20]",
+        "add x4, x4, #0x10 (16)",
+        "sub x26, x10, x4",
+        "eor w27, w10, w4",
+        "cmp x10, x4",
+        "cfinv"
+      ]
+    },
+    "bytemark data xor loop": {
+      "ExpectedInstructionCount": 17,
+      "Comment": [
+        "Saw this in bytemark"
+      ],
+      "x86Insts": [
+        "mov     rdx, rax",
+        "mov     rcx, rax",
+        "mov     r14, rsi",
+        "add     rax, 0x1",
+        "shr     rdx, 0x6",
+        "and     ecx, 0x3f",
+        "shl     r14, cl",
+        "xor     qword [rbx+rdx*8], r14",
+        "cmp     rdi, rax"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x4",
+        "mov x6, x20",
+        "mov x5, x20",
+        "mov x19, x10",
+        "add x4, x20, #0x1 (1)",
+        "lsr x6, x20, #6",
+        "and w5, w20, #0x3f",
+        "lsl x19, x19, x5",
+        "add x20, x7, x6, lsl #3",
+        "ldr x20, [x20]",
+        "eor x20, x20, x19",
+        "add x21, x7, x6, lsl #3",
+        "str x20, [x21]",
+        "sub x26, x11, x4",
+        "eor w27, w11, w4",
+        "cmp x11, x4",
+        "cfinv"
+      ]
     }
   }
 }
