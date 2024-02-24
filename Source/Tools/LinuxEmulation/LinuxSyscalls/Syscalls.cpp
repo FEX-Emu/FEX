@@ -975,7 +975,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     fextl::istringstream Stream(SourceData);
 
     constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-    int IndexStream = ::open(GuestSourceFile.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+    int IndexStream = ::open(GuestIndexFile.c_str(), O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC, USER_PERMS);
 
     if (IndexStream == -1) {
       LogMan::Msg::DFmt("GenerateMap: Failed to open '{}' for writing", GuestIndexFile);
