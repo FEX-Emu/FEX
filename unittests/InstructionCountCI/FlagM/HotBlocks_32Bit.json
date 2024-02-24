@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 17,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
         "movzx   edx, byte [esi+ecx]",
@@ -41,14 +41,13 @@
         "orr w20, w20, w6",
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
-        "sub w26, w10, w7",
         "eor w27, w10, w7",
-        "cmp w10, w7",
+        "subs w26, w10, w7",
         "cfinv"
       ]
     },
     "wine mscrt.dll memmove": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 20,
       "Comment": "Hot in Sonic Mania",
       "x86Insts": [
         "movdqu  xmm0, [esi]",
@@ -82,9 +81,8 @@
         "add w10, w10, #0x40 (64)",
         "add w11, w11, #0x40 (64)",
         "sub w5, w5, #0x40 (64)",
-        "sub w26, w5, #0x40 (64)",
         "mov w27, w5",
-        "cmp w5, #0x40 (64)",
+        "subs w26, w5, #0x40 (64)",
         "cfinv"
       ]
     }

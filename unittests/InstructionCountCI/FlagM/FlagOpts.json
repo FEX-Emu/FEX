@@ -30,15 +30,13 @@
       ]
     },
     "Chained sub": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rdx"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "sub x4, x20, x7",
-        "cmp x20, x7",
+        "subs x4, x4, x7",
         "cfinv",
         "cset w20, hs",
         "add x20, x6, x20",
@@ -73,16 +71,14 @@
       ]
     },
     "Inverted sub": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rcx",
         "cmc"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "sub x4, x20, x7",
-        "cmp x20, x7",
+        "subs x4, x4, x7",
         "cfinv",
         "mov x20, x5",
         "cset w21, hs",
@@ -129,23 +125,19 @@
       ]
     },
     "DEC consumed": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "sub rax, rbx",
         "dec rax"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "sub x21, x20, x7",
-        "mov x4, x21",
-        "sub x4, x21, #0x1 (1)",
-        "cmp x20, x7",
+        "subs x4, x4, x7",
         "cfinv",
-        "mov x27, x21",
-        "mov x26, x4",
         "cset w20, hs",
-        "cmp x21, #0x1 (1)",
-        "rmif x20, #63, #nzCv"
+        "mov x27, x4",
+        "subs x26, x4, #0x1 (1)",
+        "rmif x20, #63, #nzCv",
+        "mov x4, x26"
       ]
     },
     "DEC dead": {
@@ -205,7 +197,7 @@
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "cmp x4, x7",
+        "subs x20, x4, x7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
         "mov x26, x5",
