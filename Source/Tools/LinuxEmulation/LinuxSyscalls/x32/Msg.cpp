@@ -45,16 +45,6 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedsend_time64, mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedsend), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedreceive_time64, mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec *abs_timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedreceive), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X32(mq_open, [](FEXCore::Core::CpuStateFrame *Frame, const char *name, int oflag, mode_t mode, compat_ptr<FEX::HLE::x32::mq_attr32> attr) -> uint64_t {
       mq_attr HostAttr{};
       mq_attr *HostAttr_p{};

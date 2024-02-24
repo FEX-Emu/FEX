@@ -24,21 +24,15 @@ namespace FEX::HLE {
   void RegisterTimer(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(alarm, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_FLAGS(alarm, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, unsigned int seconds) -> uint64_t {
       uint64_t Result = ::alarm(seconds);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(timer_getoverrun, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(timer_getoverrun), timerid);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(timer_delete, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(timer_delete), timerid);
+    REGISTER_SYSCALL_IMPL_FLAGS(pause, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+      uint64_t Result = ::pause();
       SYSCALL_ERRNO();
     });
   }

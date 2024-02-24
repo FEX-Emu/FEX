@@ -385,11 +385,6 @@ namespace FEX::HLE::x32 {
   void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(ipc, _ipc);
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(semtimedop_time64, semtimedop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(semtimedop), semid, sops, nsops, timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X32(semctl, [](FEXCore::Core::CpuStateFrame *Frame, int semid, int semnum, int cmd, semun_32 *semun) -> uint64_t {
       uint64_t Result{};
       bool IPC64 = cmd & 0x100;

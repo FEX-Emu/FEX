@@ -197,36 +197,6 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(clock_gettime64, clock_gettime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clk_id, timespec *tp) -> uint64_t {
-      uint64_t Result = ::clock_gettime(clk_id, tp);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(clock_adjtime64, clock_adjtime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clk_id, struct timex *buf) -> uint64_t {
-      uint64_t Result = ::clock_adjtime(clk_id, buf);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(clock_settime64, clock_settime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, const struct timespec *tp) -> uint64_t {
-      uint64_t Result = ::clock_settime(clockid, tp);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(clock_getres_time64, clock_getres, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clk_id, timespec *tp) -> uint64_t {
-      uint64_t Result = ::clock_getres(clk_id, tp);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(clock_nanosleep_time64, clock_nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain) -> uint64_t {
-      uint64_t Result = ::clock_nanosleep(clockid, flags, request, remain);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(utimensat_time64, utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
-      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X32(utimes, [](FEXCore::Core::CpuStateFrame *Frame, const char *filename, const timeval32 times[2]) -> uint64_t {
       uint64_t Result = 0;
       if (times) {

@@ -57,40 +57,6 @@ namespace FEX::HLE::x64 {
       return CloneHandler(Frame, &args);
     }));
 
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(futex, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
-      uint64_t Result = syscall(SYSCALL_DEF(futex),
-        uaddr,
-        futex_op,
-        val,
-        timeout,
-        uaddr2,
-        val3);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(set_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {
-      auto Thread = Frame->Thread;
-      Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
-#ifdef TERMUX_BUILD
-      // Termux/Android doesn't support `set_robust_list` syscall.
-      // The seccomp filter that the OS installs explicitly blocks this syscall from working
-      // glibc uses this syscall for tls and thread data so almost every application uses it
-      // Return success since we have stored the pointer ourselves.
-      return 0;
-#else
-      uint64_t Result = ::syscall(SYSCALL_DEF(set_robust_list), head, len);
-      SYSCALL_ERRNO();
-#endif
-    });
-
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(get_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(get_robust_list), pid, head, len_ptr);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame *Frame, const stack_t *ss, stack_t *old_ss) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
     });
@@ -156,17 +122,5 @@ namespace FEX::HLE::x64 {
       auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
       return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
     }));
-
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(wait4, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(wait4), pid, wstatus, options, rusage);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(waitid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, infop, options, rusage);
-      SYSCALL_ERRNO();
-    });
   }
 }

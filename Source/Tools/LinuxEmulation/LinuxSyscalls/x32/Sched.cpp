@@ -29,10 +29,5 @@ namespace FEX::HLE::x32 {
       }
       SYSCALL_ERRNO();
     });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS(sched_rr_get_interval_time64, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct timespec *tp) -> uint64_t {
-      uint64_t Result = ::sched_rr_get_interval(pid, tp);
-      SYSCALL_ERRNO();
-    });
   }
 }

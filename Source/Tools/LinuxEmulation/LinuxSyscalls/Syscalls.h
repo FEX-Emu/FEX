@@ -65,19 +65,10 @@ class SignalDelegator;
   void RegisterFS(FEX::HLE::SyscallHandler *Handler);
   void RegisterInfo(FEX::HLE::SyscallHandler *Handler);
   void RegisterIO(FEX::HLE::SyscallHandler *Handler);
-  void RegisterIOUring(FEX::HLE::SyscallHandler *Handler);
-  void RegisterKey(FEX::HLE::SyscallHandler *Handler);
   void RegisterMemory(FEX::HLE::SyscallHandler *Handler);
-  void RegisterMsg(FEX::HLE::SyscallHandler *Handler);
-  void RegisterNamespace(FEX::HLE::SyscallHandler *Handler);
   void RegisterNuma(FEX::HLE::SyscallHandler *Handler);
-  void RegisterSched(FEX::HLE::SyscallHandler *Handler);
-  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler);
-  void RegisterSHM(FEX::HLE::SyscallHandler *Handler);
   void RegisterSignals(FEX::HLE::SyscallHandler *Handler);
-  void RegisterSocket(FEX::HLE::SyscallHandler *Handler);
   void RegisterThread(FEX::HLE::SyscallHandler *Handler);
-  void RegisterTime(FEX::HLE::SyscallHandler *Handler);
   void RegisterTimer(FEX::HLE::SyscallHandler *Handler);
   void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler);
   void RegisterStubs(FEX::HLE::SyscallHandler *Handler);
@@ -635,9 +626,6 @@ bool IsFaultLocation(uint64_t PC);
 // Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL(name, lambda) \
   REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, lambda)
-
-#define REGISTER_SYSCALL_IMPL_PASS(name, lambda) \
-  REGISTER_SYSCALL_IMPL_INTERNAL(name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
 #define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) \
   REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, flags, lambda)
