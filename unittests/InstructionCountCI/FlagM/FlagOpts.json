@@ -80,6 +80,19 @@
         "cfinv"
       ]
     },
+    "ADC dead": {
+      "ExpectedInstructionCount": 3,
+      "x86Insts": [
+        "add rax, rbx",
+        "adc rcx, rcx",
+        "test rcx, rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "adds x4, x4, x7",
+        "adc x5, x5, x5",
+        "ands x26, x5, x5"
+      ]
+    },
     "INC consumed": {
       "ExpectedInstructionCount": 6,
       "x86Insts": [
