@@ -23,12 +23,13 @@ DEF_OP(CASPair) {
 
   const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(EmitSize, TMP3, Expected.first);
-    mov(EmitSize, TMP4, Expected.second);
+    if (Dst.first != Expected.first)
+      mov(EmitSize, Dst.first, Expected.first);
 
-    caspal(EmitSize, TMP3, TMP4, Desired.first, Desired.second, MemSrc);
-    mov(EmitSize, Dst.first, TMP3.R());
-    mov(EmitSize, Dst.second, TMP4.R());
+    if (Dst.second != Expected.second)
+      mov(EmitSize, Dst.second, Expected.second);
+
+    caspal(EmitSize, Dst.first, Dst.second, Desired.first, Desired.second, MemSrc);
   }
   else {
     ARMEmitter::BackwardLabel LoopTop;
