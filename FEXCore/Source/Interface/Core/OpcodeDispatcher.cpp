@@ -387,7 +387,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
