@@ -78,7 +78,6 @@ friend class FEXCore::IR::PassManager;
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
-    TYPE_ADC,
     TYPE_SBB,
     TYPE_SUB,
     TYPE_MUL,
@@ -1646,7 +1645,7 @@ private:
         OrderedNode *Src2;
       } TwoSource;
 
-      // ADC, SBB
+      // SBB
       struct {
         OrderedNode *Src1;
         OrderedNode *Src2;
@@ -1746,7 +1745,7 @@ private:
   void CalculateAF(OrderedNode *Src1, OrderedNode *Src2);
 
   void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
-  void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  OrderedNode *CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
   OrderedNode *CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
   OrderedNode *CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
@@ -1780,21 +1779,6 @@ private:
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
    * @{ */
-  void GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ADC,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .ThreeSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-          .Src3 = CF,
-        },
-      },
-    };
-  }
-
   void GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_SBB,

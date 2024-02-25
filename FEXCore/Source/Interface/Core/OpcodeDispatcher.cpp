@@ -391,27 +391,22 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-  auto ALUOp = _Add(OpSize, Src, CF);
-
-  OrderedNode *Result{};
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
+    auto ALUOp = _Adc(OpSize, _Constant(0), Src);
+
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
-    Result = _Add(OpSize, Before, ALUOp);
   }
   else {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    Result = _Add(OpSize, Before, ALUOp);
-    StoreResult(GPRClass, Op, Result, -1);
   }
 
-  if (Size < 4)
-    Result = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, 0, Result);
-  GenerateFlags_ADC(Op, Result, Before, Src, CF);
+  OrderedNode *Result = CalculateFlags_ADC(Size, Before, Src);
+  if (!DestIsLockedMem(Op))
+    StoreResult(GPRClass, Op, Result, -1);
 }
 
 template<uint32_t SrcIndex, bool SetFlags>
