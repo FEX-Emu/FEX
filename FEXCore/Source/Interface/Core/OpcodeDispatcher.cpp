@@ -5138,8 +5138,9 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
     Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
     Op->Dest.Data.GPR == Op->Src[SrcIdx].Data.GPR) {
 
-    StoreResult(GPRClass, Op, _Constant(0), -1);
-    ZeroNZCV();
+    auto Result = _Constant(0);
+    StoreResult(GPRClass, Op, Result, -1);
+    GenerateFlags_Logical(Op, Result, Result, Result);
     return;
   }
 
