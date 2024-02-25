@@ -776,7 +776,7 @@
       ]
     },
     "cmpxchg8b [rbp]": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -789,11 +789,9 @@
         "mov w25, w24",
         "mov w24, w21",
         "mrs x21, nzcv",
-        "mov w2, w22",
-        "mov w3, w23",
-        "caspal w2, w3, w24, w25, [x20]",
-        "mov w24, w2",
-        "mov w25, w3",
+        "mov w24, w22",
+        "mov w25, w23",
+        "caspal w24, w25, w24, w25, [x20]",
         "mov w20, w24",
         "mov w30, w25",
         "cmp x24, x22",
@@ -807,7 +805,7 @@
       ]
     },
     "cmpxchg16b [rbp]": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -816,11 +814,9 @@
         "mov x24, x7",
         "mov x25, x5",
         "mrs x21, nzcv",
-        "mov x2, x22",
-        "mov x3, x23",
-        "caspal x2, x3, x24, x25, [x20]",
-        "mov x24, x2",
-        "mov x25, x3",
+        "mov x24, x22",
+        "mov x25, x23",
+        "caspal x24, x25, x24, x25, [x20]",
         "mov x20, x24",
         "mov x30, x25",
         "cmp x24, x22",

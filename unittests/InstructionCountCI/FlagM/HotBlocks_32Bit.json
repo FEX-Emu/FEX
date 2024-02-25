@@ -87,7 +87,7 @@
       ]
     },
     "dxvk hotblock from MGRR": {
-      "ExpectedInstructionCount": 55,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "Hottest block in Metal Gear Rising: Revengeance render thread"
       ],
@@ -148,11 +148,9 @@
         "mov w24, w21",
         "mov w25, w5",
         "mrs x21, nzcv",
-        "mov w2, w22",
-        "mov w3, w23",
-        "caspal w2, w3, w24, w25, [x20]",
-        "mov w24, w2",
-        "mov w25, w3",
+        "mov w24, w22",
+        "mov w25, w23",
+        "caspal w24, w25, w24, w25, [x20]",
         "mov w20, w24",
         "mov w12, w25",
         "cmp x24, x22",
