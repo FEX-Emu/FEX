@@ -418,16 +418,15 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   auto Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-  auto ALUOp = _Add(OpSize, Src, CF);
-
   OrderedNode *Result{};
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    Before = _AtomicFetchSub(IR::SizeToOpSize(Size), ALUOp, DestMem);
+
+    auto SrcPlusCF = _Adc(OpSize, _Constant(0), Src);
+    Before = _AtomicFetchSub(IR::SizeToOpSize(Size), SrcPlusCF, DestMem);
   }
   else {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
