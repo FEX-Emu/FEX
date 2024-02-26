@@ -401,7 +401,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
   }
   else {
-    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
   OrderedNode *Result = CalculateFlags_ADC(Size, Before, Src);
