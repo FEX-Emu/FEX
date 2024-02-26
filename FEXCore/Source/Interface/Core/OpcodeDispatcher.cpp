@@ -437,10 +437,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   }
 
   if (SetFlags) {
-    if (Size < 4) {
-      Result = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, Size)), Size * 8, 0, Result);
-    }
-    GenerateFlags_SBB(Op, Result, Before, Src, CF);
+    CalculateFlags_SBB(Size, Before, Src);
   }
 }
 

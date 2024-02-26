@@ -78,7 +78,6 @@ friend class FEXCore::IR::PassManager;
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
-    TYPE_SBB,
     TYPE_SUB,
     TYPE_MUL,
     TYPE_UMUL,
@@ -1645,13 +1644,6 @@ private:
         OrderedNode *Src2;
       } TwoSource;
 
-      // SBB
-      struct {
-        OrderedNode *Src1;
-        OrderedNode *Src2;
-        OrderedNode *Src3;
-      } ThreeSource;
-
       // LSHLI, LSHRI, ASHRI, RORI, ROLI
       struct {
         OrderedNode *Src1;
@@ -1746,7 +1738,7 @@ private:
 
   void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
   OrderedNode *CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  OrderedNode *CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2);
   OrderedNode *CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
   OrderedNode *CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
   void CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
@@ -1779,21 +1771,6 @@ private:
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
    * @{ */
-  void GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_SBB,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .ThreeSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-          .Src3 = CF,
-        },
-      },
-    };
-  }
-
   void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
     if (!UpdateCF) {
       // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
