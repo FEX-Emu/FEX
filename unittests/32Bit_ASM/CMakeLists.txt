@@ -117,4 +117,6 @@ add_custom_target(
   32bit_asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
+  DEPENDS 32bit_asm_files
+  DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*32Bit\.*.asm$$")
