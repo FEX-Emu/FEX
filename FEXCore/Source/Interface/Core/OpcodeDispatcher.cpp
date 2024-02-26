@@ -414,7 +414,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
@@ -429,7 +429,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), SrcPlusCF, DestMem);
   }
   else {
-    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
   if (SetFlags) {
