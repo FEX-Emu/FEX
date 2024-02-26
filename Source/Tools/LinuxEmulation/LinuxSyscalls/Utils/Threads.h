@@ -20,8 +20,10 @@ namespace FEX::LinuxEmulation::Threads {
    * Will not free the memory immediately, instead saving for reuse temporarily to solve race conditions on stack usage while stack tears down.
    *
    * @param Ptr The stack base from `AllocateStackObject`
+   * @param Status The status to pass to the exit syscall.
    */
-  void DeallocateStackObject(void *Ptr);
+  [[noreturn]]
+  void DeallocateStackObjectAndExit(void *Ptr, int Status);
 
   /**
    * @brief Registers thread creation handlers with FEXCore.

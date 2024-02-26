@@ -30,8 +30,6 @@ struct InternalThreadState;
 }
 
 namespace FEX::HLE::x64 {
-#include "SyscallsEnum.h"
-
 class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
   public:
     x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);

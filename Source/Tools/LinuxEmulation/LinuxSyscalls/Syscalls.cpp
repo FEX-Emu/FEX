@@ -394,21 +394,26 @@ struct StackFramePlusRet {
 };
 
 [[noreturn]]
+static void CloneBody(StackFrameData *Data, bool NeedsDataFree) {
+  uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
+  auto Stack = Data->GuestArgs.NewStack;
+  if (NeedsDataFree) {
+    FEXCore::Allocator::free(Data);
+  }
+
+  FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(Stack, Result);
+  FEX_UNREACHABLE;
+}
+
+[[noreturn]]
 static void Clone3HandlerRet() {
   StackFrameData *Data = (StackFrameData*)alloca(0);
-  uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->GuestArgs.NewStack);
-  // To behave like a real clone, we now just need to call exit here
-  exit(Result);
-  FEX_UNREACHABLE;
+  CloneBody(Data, false);
 }
 
 static int Clone2HandlerRet(void *arg) {
   StackFrameData *Data = (StackFrameData*)arg;
-  uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->GuestArgs.NewStack);
-  FEXCore::Allocator::free(arg);
-  return Result;
+  CloneBody(Data, true);
 }
 
 // Clone3 flags
