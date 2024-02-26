@@ -183,6 +183,11 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
       return {.Read = FlagsForCondClassType(Op->Cond)};
     }
 
+    case OP_NEG: {
+      auto Op = IROp->CW<IR::IROp_Neg>();
+      return {.Read = FlagsForCondClassType(Op->Cond)};
+    }
+
     case OP_CONDJUMP: {
       auto Op = IROp->CW<IR::IROp_CondJump>();
       if (!Op->FromNZCV)
