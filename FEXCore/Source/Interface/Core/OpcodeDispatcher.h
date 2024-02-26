@@ -268,8 +268,9 @@ public:
   void SecondaryALUOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void ADCOp(OpcodeArgs);
-  template<uint32_t SrcIndex, bool SetFlags>
+  template<uint32_t SrcIndex>
   void SBBOp(OpcodeArgs);
+  void SALCOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void PUSHREGOp(OpcodeArgs);
   void PUSHAOp(OpcodeArgs);
