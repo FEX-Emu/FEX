@@ -428,17 +428,21 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), ALUOp, DestMem);
-    Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Before, ALUOp);
   }
   else {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Before, ALUOp);
-    StoreResult(GPRClass, Op, Result, -1);
   }
 
   if (SetFlags) {
-    CalculateFlags_SBB(Size, Before, Src);
+    Result = CalculateFlags_SBB(Size, Before, Src);
+  } else {
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+    auto ALUOp = _Add(OpSize, Src, CF);
+    Result = _Sub(Size == 8 ? OpSize::i64Bit : OpSize::i32Bit, Before, ALUOp);
   }
+
+  if (!DestIsLockedMem(Op))
+    StoreResult(GPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
