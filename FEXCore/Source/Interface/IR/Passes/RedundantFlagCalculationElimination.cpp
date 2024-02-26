@@ -142,6 +142,14 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .Replacement = OP_SUB,
       };
 
+    case OP_ADCWITHFLAGS:
+      return {
+        .Read = FLAG_C,
+        .Write = FLAG_NZCV,
+        .CanReplace = true,
+        .Replacement = OP_ADC,
+      };
+
     case OP_ADDNZCV:
     case OP_SUBNZCV:
     case OP_TESTNZ:
@@ -170,6 +178,9 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
     case OP_LOADNZCV:
       return {.Read = FLAG_NZCV};
 
+    case OP_ADC:
+      return {.Read = FLAG_C};
+ 
     case OP_ADCNZCV:
     case OP_SBBNZCV:
       return {

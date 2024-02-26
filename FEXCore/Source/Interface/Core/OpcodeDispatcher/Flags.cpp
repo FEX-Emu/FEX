@@ -310,14 +310,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   }
 
   switch (CurrentDeferredFlags.Type) {
-    case FlagsGenerationType::TYPE_ADC:
-      CalculateFlags_ADC(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.ThreeSource.Src1,
-        CurrentDeferredFlags.Sources.ThreeSource.Src2,
-        CurrentDeferredFlags.Sources.ThreeSource.Src3);
-      break;
     case FlagsGenerationType::TYPE_SBB:
       CalculateFlags_SBB(
         CurrentDeferredFlags.SrcSize,
@@ -477,18 +469,22 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   NZCVDirty = false;
 }
 
-void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
+OrderedNode *OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  OrderedNode *Res;
 
   CalculateAF(Src1, Src2);
-  CalculatePF(Res);
 
   if (SrcSize >= 4) {
     HandleNZCV_RMW();
-    _AdcNZCV(OpSize, Src1, Src2);
+    Res = _AdcWithFlags(OpSize, Src1, Src2);
   } else {
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+    Res = _Add(OpSize, _Add(OpSize, Src1, Src2), CF);
+    Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
+
     // SF/ZF
     SetNZ_ZeroCV(SrcSize, Res);
 
@@ -504,6 +500,9 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
     // Signed
     CalculateOF(SrcSize, Res, Src1, Src2, false);
   }
+
+  CalculatePF(Res);
+  return Res;
 }
 
 void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {

@@ -11,20 +11,16 @@
   },
   "Instructions": {
     "Chained add": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rcx"
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "mov x20, x5",
-        "cset w21, hs",
-        "add x21, x20, x21",
-        "add x5, x20, x21",
         "mov w27, #0x0",
-        "mov x26, x5",
-        "adcs xzr, x20, x20"
+        "adcs x26, x5, x5",
+        "mov x5, x26"
       ]
     },
     "Chained sub": {
@@ -48,7 +44,7 @@
       ]
     },
     "Inverted add": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 5,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rdx",
@@ -56,13 +52,9 @@
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "cset w20, hs",
-        "add x20, x6, x20",
-        "mov x21, x5",
-        "add x5, x21, x20",
-        "eor w27, w21, w6",
-        "mov x26, x5",
-        "adcs xzr, x21, x6",
+        "eor w27, w5, w6",
+        "adcs x26, x5, x6",
+        "mov x5, x26",
         "cfinv"
       ]
     },
@@ -86,6 +78,19 @@
         "sbcs xzr, x20, x20",
         "cfinv",
         "cfinv"
+      ]
+    },
+    "ADC dead": {
+      "ExpectedInstructionCount": 3,
+      "x86Insts": [
+        "add rax, rbx",
+        "adc rcx, rcx",
+        "test rcx, rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "adds x4, x4, x7",
+        "adc x5, x5, x5",
+        "ands x26, x5, x5"
       ]
     },
     "INC consumed": {
