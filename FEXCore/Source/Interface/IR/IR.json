@@ -960,6 +960,15 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = Sbb OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": [ "Integer Subtract with carry/borrow",
+                  "Will truncate to 64 or 32bits"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = AddShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer Add with shifted register",
                   "Will truncate to 64 or 32bits"
@@ -1005,6 +1014,14 @@
       },
       "GPR = AdcWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Adds and set NZCV for the sum of two GPRs and carry-in given as NZCV"],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "GPR = SbbWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Subtracts and set NZCV for the difference of two GPRs and carry-in given as NZCV"],
         "HasSideEffects": true,
         "DestSize": "Size",
         "EmitValidation": [
