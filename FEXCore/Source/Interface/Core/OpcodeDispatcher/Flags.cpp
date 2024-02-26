@@ -474,7 +474,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode 
     Res = _AdcWithFlags(OpSize, Src1, Src2);
   } else {
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    Res = _Add(OpSize, _Add(OpSize, Src1, Src2), CF);
+    Res = _Adc(OpSize, Src1, Src2);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
     // SF/ZF
