@@ -24,7 +24,7 @@
       ]
     },
     "Chained sub": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rdx"
@@ -32,15 +32,11 @@
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
         "cfinv",
-        "cset w20, hs",
-        "add x20, x6, x20",
-        "mov x21, x5",
-        "sub x5, x21, x20",
-        "eor w27, w21, w6",
-        "mov x26, x5",
+        "eor w27, w5, w6",
         "cfinv",
-        "sbcs xzr, x21, x6",
-        "cfinv"
+        "sbcs x26, x5, x6",
+        "cfinv",
+        "mov x5, x26"
       ]
     },
     "Inverted add": {
@@ -59,7 +55,7 @@
       ]
     },
     "Inverted sub": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 8,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rcx",
@@ -68,15 +64,11 @@
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
         "cfinv",
-        "mov x20, x5",
-        "cset w21, hs",
-        "add x21, x20, x21",
-        "sub x5, x20, x21",
         "mov w27, #0x0",
-        "mov x26, x5",
         "cfinv",
-        "sbcs xzr, x20, x20",
+        "sbcs x26, x5, x5",
         "cfinv",
+        "mov x5, x26",
         "cfinv"
       ]
     },

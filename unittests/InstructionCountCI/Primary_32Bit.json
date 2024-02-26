@@ -484,14 +484,10 @@
       ]
     },
     "salc": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xd6",
       "ExpectedArm64ASM": [
-        "uxtb w20, w4",
-        "cset w21, hs",
-        "add w20, w20, w21",
-        "uxtb w21, w4",
-        "sub w20, w21, w20",
+        "csetm w20, hs",
         "bfxil w4, w20, #0, #8"
       ]
     }
