@@ -103,25 +103,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(ustat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, dev_t dev, struct ustat *ubuf) -> uint64_t {
-      // Doesn't exist on AArch64, will return -ENOSYS
-      // Since version 2.28 of GLIBC it has stopped providing a wrapper for this syscall
-      uint64_t Result = syscall(SYSCALL_DEF(ustat), dev, ubuf);
-      SYSCALL_ERRNO();
-    });
-
-    /*
-      arg1 is one of: void, unsigned int fs_index, const char *fsname
-      arg2 is one of: void, char *buf
-    */
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(sysfs, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int option,  uint64_t arg1,  uint64_t arg2) -> uint64_t {
-      // Doesn't exist on AArch64, will return -ENOSYS
-      uint64_t Result = syscall(SYSCALL_DEF(sysfs), option, arg1, arg2);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(truncate, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, off_t length) -> uint64_t {
       uint64_t Result = ::truncate(path, length);
