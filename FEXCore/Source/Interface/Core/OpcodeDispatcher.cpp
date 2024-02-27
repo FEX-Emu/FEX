@@ -3916,7 +3916,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
     Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
     GenerateFlags_SUB(Op, Src1, Src2);
@@ -3967,7 +3967,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
       GenerateFlags_SUB(Op, Src1, Src2);
