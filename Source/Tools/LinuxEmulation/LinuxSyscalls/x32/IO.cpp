@@ -40,17 +40,5 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::syscall(SYSCALL_DEF(io_pgetevents), ctx_id, min_nr, nr, events, timeout_ptr, usig);
       SYSCALL_ERRNO();
     });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS(io_pgetevents_time64,
-      [](FEXCore::Core::CpuStateFrame *Frame,
-        aio_context_t ctx_id,
-        long min_nr,
-        long nr,
-        struct io_event *events,
-        struct timespec *timeout,
-        const struct io_sigset  *usig) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(io_pgetevents), ctx_id, min_nr, nr, events, timeout, usig);
-      SYSCALL_ERRNO();
-    });
   }
 }

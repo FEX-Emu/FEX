@@ -54,16 +54,6 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(timer_settime64, timer_settime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(timer_settime), timerid, flags, new_value, old_value);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(timer_gettime64, timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(timer_gettime), timerid, curr_value);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X32(getitimer, [](FEXCore::Core::CpuStateFrame *Frame, int which, FEX::HLE::x32::itimerval32 *curr_value) -> uint64_t {
       itimerval val{};
       itimerval *val_p{};

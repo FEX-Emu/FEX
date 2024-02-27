@@ -23,16 +23,6 @@ ARG_TO_STR(FEX::HLE::x64::semun, "%lx")
 
 namespace FEX::HLE::x64 {
   void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler) {
-   REGISTER_SYSCALL_IMPL_X64_PASS(semop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(semop), semid, sops, nsops);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X64_PASS(semtimedop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(semtimedop), semid, sops, nsops, timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL_X64(semctl, [](FEXCore::Core::CpuStateFrame *Frame, int semid, int semnum, int cmd, FEX::HLE::x64::semun semun) -> uint64_t {
       uint64_t Result{};
       switch (cmd) {
