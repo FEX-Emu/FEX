@@ -1458,6 +1458,18 @@ private:
     }
   }
 
+  // Returns (DF ? -Size : Size)
+  OrderedNode *LoadDir(const unsigned Size) {
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto SizeConst = _Constant(Size);
+    return _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
+  }
+
+  // Returns DF ? (X - Size) : (X + Size)
+  OrderedNode *OffsetByDir(OrderedNode *X, const unsigned Size) {
+    return _Add(OpSize::i64Bit, X, LoadDir(Size));
+  }
+
   // Set SSE comparison flags based on the result set by Arm FCMP. This converts
   // NZCV from the Arm representation to an eXternal representation that's
   // totally not a euphemism for x86 or anything, nuh-uh.
