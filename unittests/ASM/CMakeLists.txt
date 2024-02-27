@@ -83,7 +83,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     list(GET TEST_ARGS ${TEST_NAME_INDEX} TEST_DESC)
     list(GET TEST_ARGS ${TEST_TYPE_INDEX} TEST_TYPE)
 
-    set(TEST_NAME "${TEST_DESC}/Test_${REL_TEST_ASM}")
+    set(TEST_NAME "${TEST_DESC}/Test_64Bit_${REL_TEST_ASM}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
 
     if (TEST_NAME MATCHES "SelfModifyingCode")
@@ -121,7 +121,18 @@ execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
 
 add_custom_target(
+  64bit_asm_tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  USES_TERMINAL
+  DEPENDS asm_files
+  DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*64Bit\.*.asm$$")
+
+add_custom_target(
   asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
+  DEPENDS asm_files
+  DEPENDS 32bit_asm_files
+  DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.asm$$")
