@@ -1252,7 +1252,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
 
-          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant & 1));
+          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant));
 
           Changed = true;
         }
@@ -1266,7 +1266,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
 
-          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant & 1));
+          IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant));
 
           Changed = true;
         }
