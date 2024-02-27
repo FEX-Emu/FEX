@@ -888,6 +888,14 @@ DEF_OP(StoreNZCV) {
   msr(ARMEmitter::SystemRegister::NZCV, GetReg(Op->Value.ID()));
 }
 
+DEF_OP(LoadDF) {
+  auto Dst = GetReg(Node);
+  auto Flag = X86State::RFLAG_DF_RAW_LOC;
+
+  // DF needs sign extension to turn 0x1/0xFF into 1/-1
+  ldrsb(Dst.X(), STATE, offsetof(FEXCore::Core::CPUState, flags[Flag]));
+}
+
 DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
   auto Dst = GetReg(Node);

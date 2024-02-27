@@ -1379,10 +1379,10 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xFC: // CLD
-    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_LOC);
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
   break;
   case 0xFD: // STD
-    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_LOC);
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_RAW_LOC);
   break;
   }
 }
