@@ -1479,7 +1479,9 @@ private:
 
   // Returns DF ? (X - Size) : (X + Size)
   OrderedNode *OffsetByDir(OrderedNode *X, const unsigned Size) {
-    return _Add(OpSize::i64Bit, X, LoadDir(Size));
+    auto Shift = FEXCore::ilog2(Size);
+
+    return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
   }
 
   // Set SSE comparison flags based on the result set by Arm FCMP. This converts
