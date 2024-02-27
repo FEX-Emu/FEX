@@ -297,6 +297,12 @@ namespace FEXCore::Allocator {
         if (c == ' ') {
           STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
+          if (RegionEnd >= End) {
+            // Early return if we are completely beyond the allocation space.
+            close(MapsFD);
+            return Regions;
+          }
+
           State = ScanEnd;
 
           // If the previous map's ending and the region we just parsed overlap the stack then we need to save the stack mapping.
