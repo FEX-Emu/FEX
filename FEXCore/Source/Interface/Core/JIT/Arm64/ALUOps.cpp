@@ -163,6 +163,16 @@ DEF_OP(Adc) {
   adc(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
 }
 
+DEF_OP(SbbWithFlags) {
+  auto Op = IROp->C<IR::IROp_SbbWithFlags>();
+  const auto OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  sbcs(EmitSize, GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+}
+
 DEF_OP(SbbNZCV) {
   auto Op = IROp->C<IR::IROp_SbbNZCV>();
   const auto OpSize = IROp->Size;
@@ -171,6 +181,16 @@ DEF_OP(SbbNZCV) {
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   sbcs(EmitSize, ARMEmitter::Reg::zr, GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
+}
+
+DEF_OP(Sbb) {
+  auto Op = IROp->C<IR::IROp_Sbb>();
+  const auto OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  sbc(EmitSize, GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
 }
 
 DEF_OP(TestNZ) {
