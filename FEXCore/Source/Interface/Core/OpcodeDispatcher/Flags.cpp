@@ -27,7 +27,7 @@ constexpr std::array<uint32_t, 17> FlagOffsets = {
   FEXCore::X86State::RFLAG_SF_RAW_LOC,
   FEXCore::X86State::RFLAG_TF_LOC,
   FEXCore::X86State::RFLAG_IF_LOC,
-  FEXCore::X86State::RFLAG_DF_LOC,
+  FEXCore::X86State::RFLAG_DF_RAW_LOC,
   FEXCore::X86State::RFLAG_OF_RAW_LOC,
   FEXCore::X86State::RFLAG_IOPL_LOC,
   FEXCore::X86State::RFLAG_NT_LOC,

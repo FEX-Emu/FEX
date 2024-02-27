@@ -456,6 +456,13 @@
         "DestSize": "4"
       },
 
+      "GPR = LoadDF": {
+        "Desc": ["Loads the decimal flag from the context object in -1/1",
+                  "representation for easy consumption"
+                ],
+        "DestSize": "8"
+      },
+
       "GPR = LoadFlag u32:$Flag": {
         "Desc": ["Loads an x86-64 flag from the context object",
                  "Specialized to allow flexible implementation of flag handling"

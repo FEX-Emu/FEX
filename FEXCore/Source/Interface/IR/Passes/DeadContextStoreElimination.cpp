@@ -11,6 +11,7 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/EnumOperators.h>
@@ -483,6 +484,8 @@ private:
   ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);
   ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);
 
+  bool HandleLoadFlag(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::OrderedNode *CodeNode, unsigned Flag);
+
   // Classify context loads and stores.
   bool ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::NodeIterator BlockEnd);
   bool ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode);
@@ -548,6 +551,28 @@ bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *Lo
                CodeNode);
   // TODO: Optimize redundant stores.
   // ContextMemberInfo PreviousMemberInfoCopy = *Info;
+  return false;
+}
+
+bool RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::OrderedNode *CodeNode, unsigned Flag) {
+  const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[Flag]);
+  auto Info = FindMemberInfo(LocalInfo, FlagOffset, 1);
+  LastAccessType LastAccess = Info->Accessed;
+  auto LastValueNode = Info->ValueNode;
+
+  if (IsWriteAccess(LastAccess)) { // 1 byte so always a full write
+    // If the last store matches this load value then we can replace the loaded value with the previous valid one
+    IREmit->SetWriteCursor(CodeNode);
+    IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
+    RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
+    return true;
+  }
+  else if (IsReadAccess(LastAccess)) {
+    IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
+    RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
+    return true;
+  }
+
   return false;
 }
 
@@ -660,23 +685,11 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       }
       else if (IROp->Op == OP_LOADFLAG) {
         const auto Op = IROp->CW<IR::IROp_LoadFlag>();
-        const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
-        auto Info = FindMemberInfo(&LocalInfo, FlagOffset, 1);
-        LastAccessType LastAccess = Info->Accessed;
-        OrderedNode *LastValueNode = Info->ValueNode;
 
-        if (IsWriteAccess(LastAccess)) { // 1 byte so always a full write
-          // If the last store matches this load value then we can replace the loaded value with the previous valid one
-          IREmit->SetWriteCursor(CodeNode);
-          IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
-          RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
-          Changed = true;
-        }
-        else if (IsReadAccess(LastAccess)) {
-          IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
-          RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
-          Changed = true;
-        }
+        Changed |= HandleLoadFlag(IREmit, &LocalInfo, CodeNode, Op->Flag);
+      }
+      else if (IROp->Op == OP_LOADDF) {
+        Changed |= HandleLoadFlag(IREmit, &LocalInfo, CodeNode, X86State::RFLAG_DF_RAW_LOC);
       }
       else if (IROp->Op == OP_SYSCALL ||
                IROp->Op == OP_INLINESYSCALL) {
