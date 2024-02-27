@@ -1708,7 +1708,7 @@ DEF_OP(MemSet) {
     DirectionReg = GetReg(Op->Direction.ID());
   }
 
-  // If Direction == 0 then:
+  // If Direction > 0 then:
   //   MemReg is incremented (by size)
   // else:
   //   MemReg is decremented (by size)
@@ -1729,7 +1729,7 @@ DEF_OP(MemSet) {
 
   if (!DirectionIsInline) {
     // Backward or forwards implementation depends on flag
-    cbnz(ARMEmitter::Size::i64Bit, DirectionReg, &BackwardImpl);
+    tbnz(DirectionReg, 1, &BackwardImpl);
   }
 
   auto MemStore = [this](auto Value, uint32_t OpSize, int32_t Size) {
@@ -1847,8 +1847,8 @@ DEF_OP(MemSet) {
   };
 
   if (DirectionIsInline) {
-    // If the direction constant is set then the direction is negative.
-    EmitMemset(DirectionConstant ? -1 : 1);
+    LOGMAN_THROW_AA_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
+    EmitMemset(DirectionConstant);
   }
   else {
     // Emit forward direction memset then backward direction memset.
@@ -1886,7 +1886,7 @@ DEF_OP(MemCpy) {
   }
 
   auto Dst = GetRegPair(Node);
-  // If Direction == 0 then:
+  // If Direction > 0 then:
   //   MemRegDest is incremented (by size)
   //   MemRegSrc is incremented (by size)
   // else:
@@ -1922,7 +1922,7 @@ DEF_OP(MemCpy) {
 
   if (!DirectionIsInline) {
     // Backward or forwards implementation depends on flag
-    cbnz(ARMEmitter::Size::i64Bit, DirectionReg, &BackwardImpl);
+    tbnz(DirectionReg, 1, &BackwardImpl);
   }
 
   auto MemCpy = [this](uint32_t OpSize, int32_t Size) {
@@ -2121,8 +2121,8 @@ DEF_OP(MemCpy) {
   };
 
   if (DirectionIsInline) {
-    // If the direction constant is set then the direction is negative.
-    EmitMemcpy(DirectionConstant ? -1 : 1);
+    LOGMAN_THROW_AA_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
+    EmitMemcpy(DirectionConstant);
   }
   else {
     // Emit forward direction memset then backward direction memset.

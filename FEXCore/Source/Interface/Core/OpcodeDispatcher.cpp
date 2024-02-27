@@ -3651,9 +3651,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     auto Segment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
 
-    auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, DF);
+    auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, LoadDir(1));
     StoreGPRRegister(X86State::REG_RCX, _Constant(0));
     StoreGPRRegister(X86State::REG_RDI, Result);
   }
@@ -3677,11 +3676,11 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto DstSegment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     auto SrcSegment = GetSegment(Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
     auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size,
         DstSegment ?: InvalidNode,
         SrcSegment ?: InvalidNode,
-        DstAddr, SrcAddr, Counter, DF);
+        DstAddr, SrcAddr, Counter,
+        LoadDir(1));
 
     OrderedNode *Result_Dst = _ExtractElementPair(OpSize::i64Bit, Result, 0);
     OrderedNode *Result_Src = _ExtractElementPair(OpSize::i64Bit, Result, 1);
