@@ -4102,7 +4102,7 @@
         "Map 3 0b01 0x44 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v17.1d, v18.1d"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 00001b": {
@@ -4112,7 +4112,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v0.2d, v17.d[1]",
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v0.1d, v18.1d"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 10000b": {
@@ -4122,7 +4122,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v0.2d, v18.d[1]",
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v0.1d, v17.1d"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 10001b": {
@@ -4131,7 +4131,7 @@
         "Map 3 0b01 0x44 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "unallocated (Unallocated)"
+        "pmull2 v16.1q, v17.2d, v18.2d"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00000b": {

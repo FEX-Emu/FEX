@@ -17,7 +17,7 @@
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v16.1d, v17.1d"
       ]
     },
     "pclmulqdq xmm0, xmm1, 00001b": {
@@ -27,7 +27,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v0.2d, v16.d[1]",
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v0.1d, v17.1d"
       ]
     },
     "pclmulqdq xmm0, xmm1, 10000b": {
@@ -37,7 +37,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v0.2d, v17.d[1]",
-        "unallocated (Unallocated)"
+        "pmull v16.1q, v0.1d, v16.1d"
       ]
     },
     "pclmulqdq xmm0, xmm1, 10001b": {
@@ -46,7 +46,7 @@
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "unallocated (Unallocated)"
+        "pmull2 v16.1q, v16.2d, v17.2d"
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0": {
