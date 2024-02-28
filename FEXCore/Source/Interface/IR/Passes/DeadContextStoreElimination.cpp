@@ -726,6 +726,7 @@ bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::RCLSE");
   bool Changed = false;
 
+  return false;
   // Run up to 5 times
   for( int i = 0; i < 5 && RedundantStoreLoadElimination(IREmit); i++) {
     Changed = true;
