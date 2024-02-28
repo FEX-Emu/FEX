@@ -1712,9 +1712,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  if (Size != 64) {
-    Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
-  }
+  // No need to mask result, upper garbage is ignored in the flag calc
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
 }
 
