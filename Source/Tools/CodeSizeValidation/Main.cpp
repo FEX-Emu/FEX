@@ -551,8 +551,8 @@ int main(int argc, char **argv, char **const envp) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECRYPTO);
   }
 
-  // Always disable preserve_all abi.
-  HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEPRESERVEALLABI);
+  // Always enable preserve_all abi.
+  HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEPRESERVEALLABI);
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));
