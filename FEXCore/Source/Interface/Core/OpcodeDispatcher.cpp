@@ -3986,9 +3986,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, PtrDir);
       StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       CalculateDeferredFlags();
-      InternalCondJump = CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
+      InternalCondJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
 
       // Jump back to the start if we have more work to do
       SetTrueJumpTarget(InternalCondJump, LoopStart);
