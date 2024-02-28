@@ -41,7 +41,7 @@
 	url = https://github.com/FEX-Emu/drm-headers.git
 [submodule "External/xxhash"]
 	path = External/xxhash
-	url = https://github.com/FEX-Emu/xxHash.git
+	url = https://github.com/Cyan4973/xxHash.git
 [submodule "External/Catch2"]
 	path = External/Catch2
 	url = https://github.com/catchorg/Catch2.git

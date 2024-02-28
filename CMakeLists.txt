@@ -237,8 +237,10 @@ endif()
 find_package(PkgConfig REQUIRED)
 find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
 
-add_subdirectory(External/xxhash/)
-include_directories(External/xxhash/)
+set(XXHASH_BUNDLED_MODE TRUE)
+set(XXHASH_BUILD_XXHSUM FALSE)
+set(BUILD_SHARED_LIBS OFF)
+add_subdirectory(External/xxhash/cmake_unofficial/)
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
