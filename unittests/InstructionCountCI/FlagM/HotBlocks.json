@@ -169,7 +169,7 @@
       ]
     },
     "Scalar vector add loop": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -181,11 +181,9 @@
         "cmp     rsi, rax"
       ],
       "ExpectedArm64ASM": [
-        "add x20, x16, x4",
-        "ldr q16, [x20]",
+        "ldr q16, [x16, x4, sxtx]",
         "add v16.2d, v16.2d, v17.2d",
-        "add x20, x16, x4",
-        "str q16, [x20]",
+        "str q16, [x16, x4, sxtx]",
         "add x4, x4, #0x10 (16)",
         "eor w27, w10, w4",
         "subs x26, x10, x4",
