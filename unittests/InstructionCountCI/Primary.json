@@ -2810,11 +2810,11 @@
         "0xa4"
       ],
       "ExpectedArm64ASM": [
+        "ldrb w20, [x10]",
+        "strb w20, [x11]",
         "ldrb w20, [x28, #714]",
         "mov w21, #0x1",
         "sub x20, x21, x20, lsl #1",
-        "ldrb w21, [x10]",
-        "strb w21, [x11]",
         "add x10, x10, x20",
         "add x11, x11, x20"
       ]
@@ -2825,11 +2825,11 @@
         "0xa5"
       ],
       "ExpectedArm64ASM": [
+        "ldrh w20, [x10]",
+        "strh w20, [x11]",
         "ldrb w20, [x28, #714]",
         "mov w21, #0x2",
         "sub x20, x21, x20, lsl #2",
-        "ldrh w21, [x10]",
-        "strh w21, [x11]",
         "add x10, x10, x20",
         "add x11, x11, x20"
       ]
@@ -2840,11 +2840,11 @@
         "0xa5"
       ],
       "ExpectedArm64ASM": [
+        "ldr w20, [x10]",
+        "str w20, [x11]",
         "ldrb w20, [x28, #714]",
         "mov w21, #0x4",
         "sub x20, x21, x20, lsl #3",
-        "ldr w21, [x10]",
-        "str w21, [x11]",
         "add x10, x10, x20",
         "add x11, x11, x20"
       ]
@@ -2855,24 +2855,26 @@
         "0xa5"
       ],
       "ExpectedArm64ASM": [
+        "ldr x20, [x10]",
+        "str x20, [x11]",
         "ldrb w20, [x28, #714]",
         "mov w21, #0x8",
         "sub x20, x21, x20, lsl #4",
-        "ldr x21, [x10]",
-        "str x21, [x11]",
         "add x10, x10, x20",
         "add x11, x11, x20"
       ]
     },
     "rep movsb": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": "0xa4",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "sub x20, x21, x20, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbnz x20, #+0x30",
+        "tbnz w20, #1, #+0x30",
         "cbz x0, #+0x14",
         "ldrb w3, [x2], #1",
         "strb w3, [x1], #1",
@@ -2900,14 +2902,16 @@
       ]
     },
     "rep movsw": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": "0xa5",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "sub x20, x21, x20, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbnz x20, #+0x30",
+        "tbnz w20, #1, #+0x30",
         "cbz x0, #+0x14",
         "ldrh w3, [x2], #2",
         "strh w3, [x1], #2",
@@ -2935,14 +2939,16 @@
       ]
     },
     "rep movsd": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": "0xa5",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "sub x20, x21, x20, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbnz x20, #+0x30",
+        "tbnz w20, #1, #+0x30",
         "cbz x0, #+0x14",
         "ldr w3, [x2], #4",
         "str w3, [x1], #4",
@@ -2970,14 +2976,16 @@
       ]
     },
     "rep movsq": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": "0xa5",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "sub x20, x21, x20, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbnz x20, #+0x30",
+        "tbnz w20, #1, #+0x30",
         "cbz x0, #+0x14",
         "ldr x3, [x2], #8",
         "str x3, [x1], #8",
@@ -3372,14 +3380,16 @@
       ]
     },
     "rep stosb": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Comment": "0xaa",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "ldrb w21, [x28, #714]",
+        "mov w22, #0x1",
+        "sub x21, x22, x21, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
-        "cbnz x21, #+0x1c",
+        "tbnz w21, #1, #+0x1c",
         "cbz x0, #+0x10",
         "strb w20, [x1], #1",
         "sub x0, x0, #0x1 (1)",
@@ -3395,14 +3405,16 @@
       ]
     },
     "rep stosw": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Comment": "0xab",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "ldrb w21, [x28, #714]",
+        "mov w22, #0x1",
+        "sub x21, x22, x21, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
-        "cbnz x21, #+0x1c",
+        "tbnz w21, #1, #+0x1c",
         "cbz x0, #+0x10",
         "strh w20, [x1], #2",
         "sub x0, x0, #0x1 (1)",
@@ -3418,14 +3430,16 @@
       ]
     },
     "rep stosd": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Comment": "0xab",
       "ExpectedArm64ASM": [
         "mov w20, w4",
         "ldrb w21, [x28, #714]",
+        "mov w22, #0x1",
+        "sub x21, x22, x21, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
-        "cbnz x21, #+0x1c",
+        "tbnz w21, #1, #+0x1c",
         "cbz x0, #+0x10",
         "str w20, [x1], #4",
         "sub x0, x0, #0x1 (1)",
@@ -3441,7 +3455,7 @@
       ]
     },
     "rep stosq": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "Unrolling the loop for faster memset can be done.",
         "Taking advantage of ARM MOPs instructions can be done",
@@ -3449,9 +3463,11 @@
       ],
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "sub x20, x21, x20, lsl #1",
         "mov x0, x5",
         "mov x1, x11",
-        "cbnz x20, #+0x1c",
+        "tbnz w20, #1, #+0x1c",
         "cbz x0, #+0x10",
         "str x4, [x1], #8",
         "sub x0, x0, #0x1 (1)",
