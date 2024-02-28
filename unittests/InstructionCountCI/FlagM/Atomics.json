@@ -357,7 +357,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
         "ldaddalb w20, w21, [x4]",
-        "eor w27, w21, #0xff",
+        "mvn w27, w21",
         "lsl w0, w21, #24",
         "cmn w0, w20, lsl #24",
         "add w26, w21, #0xff (255)"
@@ -380,7 +380,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "ldaddalh w20, w21, [x4]",
-        "eor w27, w21, #0xffff",
+        "mvn w27, w21",
         "lsl w0, w21, #16",
         "cmn w0, w20, lsl #16",
         "add w26, w21, w20"
@@ -401,7 +401,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldaddal w20, w21, [x4]",
-        "eor w27, w21, w20",
+        "mvn w27, w21",
         "adds w26, w21, w20"
       ]
     },
@@ -591,7 +591,7 @@
         "mov w20, #0xff",
         "adc w21, wzr, w20",
         "ldaddalb w21, w21, [x4]",
-        "eor w27, w21, #0xff",
+        "mvn w27, w21",
         "cset w22, hs",
         "adc w20, w21, w20",
         "uxtb w26, w20",
@@ -636,7 +636,7 @@
         "mov w20, #0xffff",
         "adc w21, wzr, w20",
         "ldaddalh w21, w21, [x4]",
-        "eor w27, w21, #0xffff",
+        "mvn w27, w21",
         "cset w22, hs",
         "adc w23, w21, w20",
         "uxth w26, w23",
@@ -669,7 +669,7 @@
         "mov w20, #0xffffffff",
         "adc w21, wzr, w20",
         "ldaddal w21, w21, [x4]",
-        "eor w27, w21, w20",
+        "mvn w27, w21",
         "adcs w26, w21, w20"
       ]
     },
@@ -767,7 +767,7 @@
         "adc w21, wzr, w20",
         "neg w1, w21",
         "ldaddalb w1, w21, [x4]",
-        "eor w27, w21, #0xff",
+        "mvn w27, w21",
         "cset w22, hs",
         "add w20, w20, w22",
         "sub w20, w21, w20",
@@ -816,7 +816,7 @@
         "adc w21, wzr, w20",
         "neg w1, w21",
         "ldaddalh w1, w21, [x4]",
-        "eor w27, w21, #0xffff",
+        "mvn w27, w21",
         "cset w22, hs",
         "add w20, w20, w22",
         "sub w20, w21, w20",
@@ -854,7 +854,7 @@
         "adc w21, wzr, w20",
         "neg w1, w21",
         "ldaddal w1, w21, [x4]",
-        "eor w27, w21, w20",
+        "mvn w27, w21",
         "cfinv",
         "sbcs w26, w21, w20",
         "cfinv"
@@ -1071,7 +1071,7 @@
         "mov w20, #0xff",
         "neg w1, w20",
         "ldaddalb w1, w21, [x4]",
-        "eor w27, w21, #0xff",
+        "mvn w27, w21",
         "lsl w0, w21, #24",
         "cmp w0, w20, lsl #24",
         "sub w26, w21, #0xff (255)",
@@ -1098,7 +1098,7 @@
         "mov w20, #0xffff",
         "neg w1, w20",
         "ldaddalh w1, w21, [x4]",
-        "eor w27, w21, #0xffff",
+        "mvn w27, w21",
         "lsl w0, w21, #16",
         "cmp w0, w20, lsl #16",
         "sub w26, w21, w20",
@@ -1123,7 +1123,7 @@
         "mov w20, #0xffffffff",
         "neg w1, w20",
         "ldaddal w1, w21, [x4]",
-        "eor w27, w21, w20",
+        "mvn w27, w21",
         "subs w26, w21, w20",
         "cfinv"
       ]
