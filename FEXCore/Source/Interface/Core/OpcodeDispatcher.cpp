@@ -5288,11 +5288,11 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     CalculateDeferredFlags();
 
     // If condition doesn't hold then keep going
-    auto CondJump_ = CondJump(Flag, {COND_EQ});
+    // COND_FNU means OF == 0
+    auto CondJump_ = CondJumpNZCV({COND_FNU});
     auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(CondJump_, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
