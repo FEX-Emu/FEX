@@ -4757,7 +4757,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
     if (!IsVSIB && Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
       auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
       auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-      Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
+      if (Operand.Data.SIB.Scale == 1) {
+        Tmp = _Add(IR::SizeToOpSize(GPRSize), Base, Index);
+      }
+      else {
+        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
+      }
     }
     else {
       // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
@@ -5011,7 +5016,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
       auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
       auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-      Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
+      if (Operand.Data.SIB.Scale == 1) {
+        Tmp = _Add(IR::SizeToOpSize(GPRSize), Base, Index);
+      }
+      else {
+        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
+      }
     }
     else {
       if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
