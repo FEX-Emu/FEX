@@ -4063,17 +4063,15 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   auto ZeroConst = _Constant(0);
 
-  OrderedNode *Dest{};
-
   if (DestIsLockedMem(Op)) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
+    OrderedNode *Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     CalculateFlags_SUB(Size, ZeroConst, Dest);
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
     OrderedNode *Result = CalculateFlags_SUB(Size, ZeroConst, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
