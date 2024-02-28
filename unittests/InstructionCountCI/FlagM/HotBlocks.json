@@ -27,7 +27,7 @@
         "mov w4, #0x1",
         "ldaddal x4, x4, [x5]",
         "mov x6, x4",
-        "and w6, w4, #0x1f",
+        "and w6, w6, #0x1f",
         "add x6, x6, #0x1 (1)",
         "lsl x6, x6, #6",
         "eor w27, w6, w5",
@@ -163,7 +163,7 @@
         "sub x20, x4, #0x4 (4)",
         "str s18, [x20]",
         "mov x27, x10",
-        "subs w26, w10, #0x1 (1)",
+        "subs w26, w27, #0x1 (1)",
         "cfinv",
         "mov x10, x26"
       ]
@@ -191,7 +191,7 @@
       ]
     },
     "bytemark data xor loop": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -207,13 +207,12 @@
         "cmp     rdi, rax"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "mov x6, x20",
-        "mov x5, x20",
+        "mov x6, x4",
+        "mov x5, x4",
         "mov x19, x10",
-        "add x4, x20, #0x1 (1)",
-        "lsr x6, x20, #6",
-        "and w5, w20, #0x3f",
+        "add x4, x4, #0x1 (1)",
+        "lsr x6, x6, #6",
+        "and w5, w5, #0x3f",
         "lsl x19, x19, x5",
         "add x20, x7, x6, lsl #3",
         "ldr x20, [x20]",

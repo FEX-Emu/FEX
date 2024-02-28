@@ -1080,7 +1080,7 @@
       "ExpectedArm64ASM": [
         "mov x20, x4",
         "mov x1, x20",
-        "casal x1, x7, [x20]",
+        "casal x1, x7, [x4]",
         "mov x4, x1",
         "eor w27, w20, w4",
         "subs x26, x20, x4",
@@ -1152,11 +1152,12 @@
       ]
     },
     "cmpxchg eax, ebx": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "mov w21, w4",
+        "mov x21, x4",
+        "mov w21, w21",
         "mov w22, w4",
         "eor w27, w22, w21",
         "subs w26, w22, w21",
@@ -1165,28 +1166,30 @@
       ]
     },
     "cmpxchg [rax], ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "mov w21, w4",
-        "mov w1, w21",
+        "mov x21, x4",
+        "mov w22, w21",
+        "mov w1, w22",
         "casal w1, w20, [x4]",
         "mov w20, w1",
-        "cmp w20, w21",
-        "csel x4, x4, x20, eq",
-        "eor w27, w21, w20",
-        "subs w26, w21, w20",
+        "cmp w20, w22",
+        "csel x4, x21, x20, eq",
+        "eor w27, w22, w20",
+        "subs w26, w22, w20",
         "cfinv"
       ]
     },
     "cmpxchg rax, rbx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov x20, x7",
-        "mov w27, #0x0",
-        "subs x26, x4, x4",
+        "mov x21, x4",
+        "eor w27, w4, w21",
+        "subs x26, x4, x21",
         "cfinv",
         "mov x4, x20"
       ]

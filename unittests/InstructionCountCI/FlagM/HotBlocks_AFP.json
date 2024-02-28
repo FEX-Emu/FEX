@@ -124,7 +124,7 @@
         "sub x20, x4, #0x4 (4)",
         "str s18, [x20]",
         "mov x27, x10",
-        "subs w26, w10, #0x1 (1)",
+        "subs w26, w27, #0x1 (1)",
         "cfinv",
         "mov x10, x26"
       ]

@@ -11,15 +11,16 @@
   },
   "Instructions": {
     "Chained add": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rcx"
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "mov w27, #0x0",
-        "adcs x26, x5, x5",
+        "mov x20, x5",
+        "eor w27, w5, w20",
+        "adcs x26, x5, x20",
         "mov x5, x26"
       ]
     },
@@ -55,7 +56,7 @@
       ]
     },
     "Inverted sub": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rcx",
@@ -64,16 +65,17 @@
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
         "cfinv",
-        "mov w27, #0x0",
+        "mov x20, x5",
+        "eor w27, w5, w20",
         "cfinv",
-        "sbcs x26, x5, x5",
+        "sbcs x26, x5, x20",
         "cfinv",
         "mov x5, x26",
         "cfinv"
       ]
     },
     "ADC dead": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rcx",
@@ -81,8 +83,10 @@
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "adc x5, x5, x5",
-        "ands x26, x5, x5"
+        "mov x20, x5",
+        "adc x5, x5, x20",
+        "mov x20, x5",
+        "ands x26, x5, x20"
       ]
     },
     "INC consumed": {
@@ -93,9 +97,9 @@
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "cset w20, hs",
         "mov x27, x4",
-        "adds x26, x4, #0x1 (1)",
+        "cset w20, hs",
+        "adds x26, x27, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x4, x26"
       ]
@@ -122,9 +126,9 @@
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
         "cfinv",
-        "cset w20, hs",
         "mov x27, x4",
-        "subs x26, x4, #0x1 (1)",
+        "cset w20, hs",
+        "subs x26, x27, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x4, x26"
       ]
@@ -179,7 +183,7 @@
       ]
     },
     "Partial NZCV select (cmp)": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "cmp rax, rbx",
         "setz cl",
@@ -189,12 +193,13 @@
         "subs x20, x4, x7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "mov x20, x5",
+        "and w26, w5, w20",
         "cmn wzr, w26, lsl #24"
       ]
     },
     "Partial NZCV select (add)": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "add rax, rbx",
         "setz cl",
@@ -204,12 +209,13 @@
         "adds x4, x4, x7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "mov x20, x5",
+        "and w26, w5, w20",
         "cmn wzr, w26, lsl #24"
       ]
     },
     "AND use only ZF": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "and eax, ebx",
         "setz cl",
@@ -219,26 +225,29 @@
         "ands w4, w4, w7",
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "mov x20, x5",
+        "and w26, w5, w20",
         "cmn wzr, w26, lsl #24"
       ]
     },
     "AND use only PF": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "and eax, ebx",
         "setp cl",
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "and w4, w4, w7",
-        "fmov s2, w4",
+        "and w26, w4, w7",
+        "mov x4, x26",
+        "fmov s2, w26",
         "cnt v2.16b, v2.16b",
         "umov w20, v2.b[0]",
         "mvn w20, w20",
         "and x20, x20, #0x1",
         "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "mov x20, x5",
+        "and w26, w5, w20",
         "cmn wzr, w26, lsl #24"
       ]
     }

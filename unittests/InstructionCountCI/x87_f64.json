@@ -4091,7 +4091,7 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "0xda 11b 0xe9 /5"
       ],
@@ -4121,6 +4121,7 @@
         "strb w22, [x28, #1026]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
+        "ldrb w22, [x28, #1026]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
         "strb w21, [x28, #1026]",
@@ -6856,7 +6857,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 335,
+      "ExpectedInstructionCount": 337,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -6865,8 +6866,10 @@
         "ldrh w21, [x28, #1024]",
         "str w21, [x4]",
         "mov w21, #0x0",
-        "mov x22, x21",
-        "bfi x22, x20, #11, #3",
+        "ldrb w22, [x28, #747]",
+        "mov x0, x21",
+        "bfi x0, x22, #11, #3",
+        "mov x22, x0",
         "ldrb w23, [x28, #744]",
         "ldrb w24, [x28, #745]",
         "ldrb w25, [x28, #746]",
@@ -8707,7 +8710,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "0xde 11b 0xd9 /3"
       ],
@@ -8737,6 +8740,7 @@
         "strb w22, [x28, #1026]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
+        "ldrb w22, [x28, #1026]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
         "strb w21, [x28, #1026]",

@@ -330,11 +330,12 @@
       ]
     },
     "packsswb xmm0, xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0x63",
       "ExpectedArm64ASM": [
+        "mov v2.16b, v16.16b",
         "mov v0.16b, v16.16b",
-        "sqxtn v16.8b, v16.8h",
+        "sqxtn v16.8b, v2.8h",
         "sqxtn2 v16.16b, v0.8h"
       ]
     },

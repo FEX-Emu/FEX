@@ -329,33 +329,39 @@
       ]
     },
     "pblendvb xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x66 0x0f 0x38 0x10"
       ],
       "ExpectedArm64ASM": [
-        "sshr v2.16b, v16.16b, #7",
-        "bit v16.16b, v17.16b, v2.16b"
+        "mov v2.16b, v16.16b",
+        "sshr v3.16b, v16.16b, #7",
+        "mov v16.16b, v3.16b",
+        "bsl v16.16b, v17.16b, v2.16b"
       ]
     },
     "blendvps xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x66 0x0f 0x38 0x14"
       ],
       "ExpectedArm64ASM": [
-        "sshr v2.4s, v16.4s, #31",
-        "bit v16.16b, v17.16b, v2.16b"
+        "mov v2.16b, v16.16b",
+        "sshr v3.4s, v16.4s, #31",
+        "mov v16.16b, v3.16b",
+        "bsl v16.16b, v17.16b, v2.16b"
       ]
     },
     "blendvpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x66 0x0f 0x38 0x15"
       ],
       "ExpectedArm64ASM": [
-        "sshr v2.2d, v16.2d, #63",
-        "bit v16.16b, v17.16b, v2.16b"
+        "mov v2.16b, v16.16b",
+        "sshr v3.2d, v16.2d, #63",
+        "mov v16.16b, v3.16b",
+        "bsl v16.16b, v17.16b, v2.16b"
       ]
     },
     "pblendvb xmm1, xmm2": {
@@ -684,9 +690,10 @@
         "0x66 0x0f 0x38 0xcb"
       ],
       "ExpectedArm64ASM": [
+        "mov v2.16b, v16.16b",
         "mov w20, v17.s[1]",
         "mov w21, v17.s[0]",
-        "mov w22, v16.s[1]",
+        "mov w22, v2.s[1]",
         "and w23, w20, w21",
         "bic w22, w22, w20",
         "eor w22, w23, w22",
@@ -696,11 +703,11 @@
         "add w22, w22, w23",
         "mov w23, v16.s[0]",
         "add w22, w22, w23",
-        "mov w23, v16.s[0]",
+        "mov w23, v2.s[0]",
         "add w22, w22, w23",
         "mov w23, v17.s[3]",
         "mov w24, v17.s[2]",
-        "mov w25, v16.s[3]",
+        "mov w25, v2.s[3]",
         "and w30, w24, w25",
         "orr w25, w24, w25",
         "and w25, w23, w25",
@@ -710,7 +717,7 @@
         "eor w30, w30, w23, ror #13",
         "eor w30, w30, w23, ror #22",
         "add w25, w25, w30",
-        "mov w30, v16.s[2]",
+        "mov w30, v2.s[2]",
         "add w22, w22, w30",
         "and w20, w22, w20",
         "bic w21, w21, w22",
@@ -721,7 +728,7 @@
         "add w20, w20, w21",
         "mov w21, v16.s[1]",
         "add w20, w20, w21",
-        "mov w21, v16.s[1]",
+        "mov w21, v2.s[1]",
         "add w20, w20, w21",
         "and w21, w23, w24",
         "orr w23, w23, w24",
@@ -732,9 +739,8 @@
         "eor w23, w23, w25, ror #13",
         "eor w23, w23, w25, ror #22",
         "add w21, w21, w23",
-        "mov w23, v16.s[3]",
+        "mov w23, v2.s[3]",
         "add w20, w20, w23",
-        "mov v2.16b, v16.16b",
         "mov v2.s[3], w21",
         "mov v2.s[2], w25",
         "mov v2.s[1], w20",
