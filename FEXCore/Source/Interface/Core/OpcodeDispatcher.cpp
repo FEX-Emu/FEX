@@ -4073,7 +4073,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
     CalculateFlags_SUB(Size, ZeroConst, Dest);
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
     OrderedNode *Result = CalculateFlags_SUB(Size, ZeroConst, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
