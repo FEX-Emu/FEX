@@ -1792,15 +1792,74 @@ DEF_OP(MemSet) {
     }
   };
 
+  const auto SubRegSize =
+    Size == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    Size == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    Size == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    Size == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
   auto EmitMemset = [&](int32_t Direction) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
-    ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::SingleUseForwardLabel DoneInternal{};
+    ARMEmitter::BiDirectionalLabel AgainInternal{};
+    ARMEmitter::ForwardLabel DoneInternal{};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+    if (!Op->IsAtomic) {
+      ARMEmitter::ForwardLabel AgainInternal256Exit{};
+      ARMEmitter::BackwardLabel AgainInternal256{};
+      ARMEmitter::ForwardLabel AgainInternal128Exit{};
+      ARMEmitter::BackwardLabel AgainInternal128{};
+
+      // Fallback to byte by byte loop if not 4 byte aligned
+      and_(ARMEmitter::Size::i64Bit, TMP4, TMP2, 0x3);
+      cbnz(ARMEmitter::Size::i64Bit, TMP4, &AgainInternal);
+
+      if (Direction == -1) {
+        sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
+      }
+
+      // Keep the counter one copy ahead, so that underflow can be used to detect when to fallback
+      // to the copy unit size copy loop for the last chunk.
+      // Do this in two parts, to fallback to the byte by byte loop if size < 32, and to the
+      // single copy loop if size < 64.
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal128Exit);
+
+      // Fill VTMP2 with the set pattern
+      dup(SubRegSize, VTMP2.Q(), Value);
+
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal256Exit);
+
+      Bind(&AgainInternal256);
+      stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
+      stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
+      tbz(TMP1, 63, &AgainInternal256);
+
+      Bind(&AgainInternal256Exit);
+      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal128Exit);
+      Bind(&AgainInternal128);
+      stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbz(TMP1, 63, &AgainInternal128);
+
+      Bind(&AgainInternal128Exit);
+      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+      if (Direction == -1) {
+        add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
+      }
+    }
 
     Bind(&AgainInternal);
     if (Op->IsAtomic) {
@@ -1951,6 +2010,10 @@ DEF_OP(MemCpy) {
         ldr<ARMEmitter::IndexType::POST>(TMP4, TMP3, Size);
         str<ARMEmitter::IndexType::POST>(TMP4, TMP2, Size);
         break;
+      case 32:
+        ldp<ARMEmitter::IndexType::POST>(VTMP1.Q(), VTMP2.Q(), TMP3, Size);
+        stp<ARMEmitter::IndexType::POST>(VTMP1.Q(), VTMP2.Q(), TMP2, Size);
+        break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
         break;
@@ -2057,11 +2120,63 @@ DEF_OP(MemCpy) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
 
-    ARMEmitter::BackwardLabel AgainInternal{};
-    ARMEmitter::SingleUseForwardLabel DoneInternal{};
+    ARMEmitter::BiDirectionalLabel AgainInternal{};
+    ARMEmitter::ForwardLabel DoneInternal{};
 
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+    if (!Op->IsAtomic) {
+      ARMEmitter::ForwardLabel AgainInternal256Exit{};
+      ARMEmitter::ForwardLabel AgainInternal128Exit{};
+      ARMEmitter::BackwardLabel AgainInternal128{};
+      ARMEmitter::BackwardLabel AgainInternal256{};
+
+      // Fallback to byte by byte loop if either of start/end are not 4 byte aligned
+      orr(ARMEmitter::Size::i64Bit, TMP4, TMP2, TMP3);
+      and_(ARMEmitter::Size::i64Bit, TMP4, TMP4, 0x3);
+      cbnz(ARMEmitter::Size::i64Bit, TMP4, &AgainInternal);
+
+      if (Direction == -1) {
+        sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
+        sub(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32 - Size);
+      }
+
+      // Keep the counter one copy ahead, so that underflow can be used to detect when to fallback
+      // to the copy unit size copy loop for the last chunk.
+      // Do this in two parts, to fallback to the byte by byte loop if size < 32, and to the
+      // single copy loop if size < 64.
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal128Exit);
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal256Exit);
+
+      Bind(&AgainInternal256);
+      MemCpy(32, 32 * Direction);
+      MemCpy(32, 32 * Direction);
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
+      tbz(TMP1, 63, &AgainInternal256);
+
+      Bind(&AgainInternal256Exit);
+      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbnz(TMP1, 63, &AgainInternal128Exit);
+      Bind(&AgainInternal128);
+      MemCpy(32, 32 * Direction);
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      tbz(TMP1, 63, &AgainInternal128);
+
+      Bind(&AgainInternal128Exit);
+      add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+      if (Direction == -1) {
+        add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
+        add(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32 - Size);
+      }
+    }
 
     Bind(&AgainInternal);
     if (Op->IsAtomic) {
