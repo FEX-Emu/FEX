@@ -310,8 +310,7 @@ DEF_OP(AtomicSwap) {
     OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(EmitSize, TMP2, Src);
-    ldswpal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
+    ldswpal(SubEmitSize, Src, GetReg(Node), MemSrc);
   }
   else {
     ARMEmitter::BackwardLabel LoopTop;
