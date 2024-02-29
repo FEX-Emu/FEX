@@ -3571,7 +3571,9 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchSub(OpSizeFromSrc(Op), OneConst, DestAddress);
+
+    // Use Add instead of Sub to avoid a NEG
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), _Constant(Size, -1), DestAddress);
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
