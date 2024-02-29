@@ -284,10 +284,16 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
 
 void OpDispatchBuilder::CalculateAF(OrderedNode *Src1, OrderedNode *Src2) {
   // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
-  // there's no sense XOR'ing at all. This affects INC.
+  // there's no sense XOR'ing at all. If we'll XOR with 1, that's just
+  // inverting.
   uint64_t Const;
-  if (IsValueConstant(WrapNode(Src2), &Const) && (Const & (1u << 4)) == 0) {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Src1);
+  if (IsValueConstant(WrapNode(Src2), &Const)) {
+    if (Const & (1u << 4)) {
+      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Not(OpSize::i32Bit, Src1));
+    } else {
+      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Src1);
+    }
+
     return;
   }
 

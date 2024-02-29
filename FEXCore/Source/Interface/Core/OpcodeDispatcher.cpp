@@ -1712,9 +1712,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  if (Size != 64) {
-    Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
-  }
+  // No need to mask result, upper garbage is ignored in the flag calc
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
 }
 
@@ -3787,9 +3785,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, PtrDir);
       StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       CalculateDeferredFlags();
-      InternalCondJump = CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
+      InternalCondJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
 
       // Jump back to the start if we have more work to do
       SetTrueJumpTarget(InternalCondJump, LoopStart);
@@ -3916,7 +3913,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
     Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
     GenerateFlags_SUB(Op, Src1, Src2);
@@ -3967,7 +3964,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
       GenerateFlags_SUB(Op, Src1, Src2);
@@ -3988,9 +3985,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, PtrDir);
       StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       CalculateDeferredFlags();
-      InternalCondJump = CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
+      InternalCondJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
 
       // Jump back to the start if we have more work to do
       SetTrueJumpTarget(InternalCondJump, LoopStart);
@@ -4063,17 +4059,15 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   auto ZeroConst = _Constant(0);
 
-  OrderedNode *Dest{};
-
   if (DestIsLockedMem(Op)) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
-    Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
+    OrderedNode *Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     CalculateFlags_SUB(Size, ZeroConst, Dest);
   }
   else {
-    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
     OrderedNode *Result = CalculateFlags_SUB(Size, ZeroConst, Dest);
 
     StoreResult(GPRClass, Op, Result, -1);
@@ -5294,11 +5288,11 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     CalculateDeferredFlags();
 
     // If condition doesn't hold then keep going
-    auto CondJump_ = CondJump(Flag, {COND_EQ});
+    // COND_FNU means OF == 0
+    auto CondJump_ = CondJumpNZCV({COND_FNU});
     auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(CondJump_, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);

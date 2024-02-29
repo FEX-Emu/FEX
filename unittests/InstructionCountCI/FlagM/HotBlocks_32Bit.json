@@ -123,7 +123,7 @@
         "mov w20, #0xffffffff",
         "adds w21, w4, w20",
         "mov w5, w21",
-        "eor w27, w6, w20",
+        "mvn w27, w6",
         "adcs w26, w6, w20",
         "mov w7, w26",
         "mov w20, #0xffffffd8",
