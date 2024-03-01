@@ -3544,7 +3544,23 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
   }
 
   CalculateDeferredFlags();
-  Result = CalculateFlags_ADD(OpSizeFromSrc(Op), Dest, OneConst, false);
+
+  if (Size < 32 && CTX->HostFeatures.SupportsFlagM) {
+    // Addition producing upper garbage
+    Result = _Add(OpSize::i32Bit, Dest, OneConst);
+    CalculatePF(Result);
+    CalculateAF(Dest, OneConst);
+
+    // Correctly set NZ flags, preserving C
+    HandleNZCV_RMW();
+    _SetSmallNZV(OpSizeFromSrc(Op), Result);
+
+    // Fix up V flag. INC overflows only when incrementing a positive and
+    // getting a negative. So compare the sign bits to calculate V.
+    _RmifNZCV(_Andn(OpSize::i32Bit, Result, Dest), Size - 1, 1);
+  } else {
+    Result = CalculateFlags_ADD(OpSizeFromSrc(Op), Dest, OneConst, false);
+  }
 
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
