@@ -3593,7 +3593,24 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   }
 
   CalculateDeferredFlags();
-  Result = CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, OneConst, false);
+
+  if (Size < 32 && CTX->HostFeatures.SupportsFlagM) {
+    // Subtraction producing upper garbage
+    Result = _Sub(OpSize::i32Bit, Dest, OneConst);
+    CalculatePF(Result);
+    CalculateAF(Dest, OneConst);
+
+    // Correctly set NZ flags, preserving C
+    HandleNZCV_RMW();
+    _SetSmallNZV(OpSizeFromSrc(Op), Result);
+
+    // Fix up V flag. DEC overflows only when decrementing a negative and
+    // getting a positive. So compare the sign bits to calculate V.
+    _RmifNZCV(_Andn(OpSize::i32Bit, Dest, Result), Size - 1, 1);
+  } else {
+    Result = CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, OneConst, false);
+  }
+
   if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
   }
