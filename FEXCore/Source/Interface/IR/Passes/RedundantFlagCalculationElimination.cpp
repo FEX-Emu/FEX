@@ -183,6 +183,12 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .CanEliminate = true,
       };
 
+    case OP_SETSMALLNZV:
+      return {
+        .Write = FLAG_N | FLAG_Z | FLAG_V,
+        .CanEliminate = true,
+      };
+
     case OP_LOADNZCV:
       return {.Read = FLAG_NZCV};
 
