@@ -311,6 +311,20 @@ DEF_OP(RmifNZCV) {
   rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
 }
 
+DEF_OP(SetSmallNZV) {
+  auto Op = IROp->C<IR::IROp_SetSmallNZV>();
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
+
+  const uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 1 || OpSize == 2, "Unsupported {} size: {}", __func__, OpSize);
+
+  if (OpSize == 1) {
+    setf8(GetReg(Op->Src.ID()).W());
+  } else {
+    setf16(GetReg(Op->Src.ID()).W());
+  }
+}
+
 DEF_OP(AXFlag) {
   LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM2, "Unsupported flagm2 op");
   axflag();

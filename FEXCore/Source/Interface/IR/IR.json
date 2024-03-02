@@ -992,6 +992,14 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
+      "SetSmallNZV OpSize:#Size, GPR:$Src": {
+        "Desc": ["Set NZV with a SETF instruction. Preserves CF."],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit"
+        ]
+      },
       "CarryInvert": {
         "Desc": ["Invert carry flag in NZCV"],
         "HasSideEffects": true
