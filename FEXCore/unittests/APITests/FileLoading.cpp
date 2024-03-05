@@ -1,5 +1,5 @@
 #include <FEXCore/Utils/FileLoading.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("LoadFile-Doesn'tExist") {
   fextl::string MapsFile;

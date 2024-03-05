@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
@@ -122,7 +122,7 @@ public:
  * libclang ASTMatcher API.
  */
 template<typename ClangMatcher>
-class HasASTMatching : public Catch::MatcherBase<SourceWithAST> {
+class HasASTMatching : public Catch::Matchers::MatcherBase<SourceWithAST> {
     ClangMatcher matcher;
     MatchCallback callback;
 
@@ -733,7 +733,7 @@ TEST_CASE_METHOD(Fixture, "Mapping guest integers to fixed-size") {
         if (!ptr.empty() && guest_abi == GuestABI::X86_32 && !passthrough_guest_type) {
             // Guest points to a 32-bit integer, but the host to a 64-bit one.
             // This should be detected as a failure.
-            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Contains("initialization of 'host_layout", Catch::CaseSensitive::No));
+            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Matchers::ContainsSubstring("initialization of 'host_layout", Catch::CaseSensitive::No));
         } else {
             const auto output = run_thunkgen_host("", code, guest_abi);
             std::string expected_type = "guest_layout<";
@@ -868,7 +868,7 @@ TEST_CASE_METHOD(Fixture, "StructRepacking") {
             "struct A { B* a; };\n";
 
         // Unannotated
-        REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Contains("incomplete type"));
+        REQUIRE_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi), Catch::Matchers::ContainsSubstring("incomplete type"));
 
         // Annotated as opaque_type
         CHECK_NOTHROW(run_thunkgen_host(prelude,
@@ -887,7 +887,7 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
             "template<> struct fex_gen_config<func> {};\n";
         if (guest_abi == GuestABI::X86_32) {
             // TODO: Currently not considered an error
-//            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Contains("unsupported parameter type", Catch::CaseSensitive::No));
+//            CHECK_THROWS_WITH(run_thunkgen_host("", code, guest_abi, true), Catch::Matchers::ContainsSubstring("unsupported parameter type", Catch::CaseSensitive::No));
         } else {
             // Pointee data is assumed to be compatible on 64-bit
             CHECK_NOTHROW(run_thunkgen_host("", code, guest_abi));
@@ -920,7 +920,7 @@ TEST_CASE_METHOD(Fixture, "VoidPointerParameter") {
             "void func(A*);\n"
             "template<> struct fex_gen_config<func> {};\n";
         if (guest_abi == GuestABI::X86_32) {
-            CHECK_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi, true), Catch::Contains("unsupported parameter type", Catch::CaseSensitive::No));
+            CHECK_THROWS_WITH(run_thunkgen_host(prelude, code, guest_abi, true), Catch::Matchers::ContainsSubstring("unsupported parameter type", Catch::CaseSensitive::No));
         } else {
             CHECK_NOTHROW(run_thunkgen_host(prelude, code, guest_abi));
         }

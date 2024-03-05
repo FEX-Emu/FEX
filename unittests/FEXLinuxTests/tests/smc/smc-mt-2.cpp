@@ -28,7 +28,7 @@
 
 #include <atomic>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 std::atomic<bool> ready_for_modification;
 std::atomic<bool> waiting_for_modification;

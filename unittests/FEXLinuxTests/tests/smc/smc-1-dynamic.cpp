@@ -13,7 +13,7 @@ char text_sym[16384] __attribute__((section(".text")));
 
 #include "smc-common.h"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("SMC: Changes in stack") {
   // stack, depends on -z execstack or mprotect

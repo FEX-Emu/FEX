@@ -10,7 +10,7 @@
 #include <time.h>
 #include <stdio.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 using time_type = int (*) (time_t* tloc);
 time_type time_vdso = (time_type)::time;
