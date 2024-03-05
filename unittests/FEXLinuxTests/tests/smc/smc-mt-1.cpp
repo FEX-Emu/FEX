@@ -3,7 +3,7 @@
 
   creates 10 threads
   each thread does an smc test 10 times
-  
+
 */
 #include <cstdio>
 #include <pthread.h>
@@ -11,7 +11,7 @@
 
 #include <atomic>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 std::atomic<int> result;
 std::atomic<bool> go;

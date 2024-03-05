@@ -1,11 +1,12 @@
 #include <atomic>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <fstream>
+#include <functional>
+#include <optional>
+#include <signal.h>
+#include <thread>
 #include <sys/syscall.h>
 #include <linux/futex.h>
-#include <signal.h>
-#include <optional>
-#include <thread>
 
 #if __SIZEOF_POINTER__ == 4
 #define DO_ASM(x, y) \

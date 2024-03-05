@@ -1,6 +1,6 @@
 // Simple test of timer_create + SIGEV_THREAD, glibc implements it via SIG32
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>

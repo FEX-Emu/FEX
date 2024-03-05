@@ -1,6 +1,6 @@
 #include "TestDisassembler.h"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <fcntl.h>
 
 using namespace FEXCore::ARMEmitter;
@@ -1177,7 +1177,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element 
   TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "inch z30.h, pow2");
   TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "inch z30.h, vl256, mul #7");
   TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "inch z30.h, all, mul #16");
-  
+
   TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "dech z30.h, pow2");
   TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "dech z30.h, vl256, mul #7");
   TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "dech z30.h, all, mul #16");
@@ -1185,7 +1185,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element 
   TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incw z30.s, pow2");
   TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incw z30.s, vl256, mul #7");
   TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incw z30.s, all, mul #16");
-  
+
   TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decw z30.s, pow2");
   TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decw z30.s, vl256, mul #7");
   TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decw z30.s, all, mul #16");
@@ -1193,7 +1193,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element 
   TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incd z30.d, pow2");
   TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incd z30.d, vl256, mul #7");
   TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incd z30.d, all, mul #16");
-  
+
   TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decd z30.d, pow2");
   TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decd z30.d, vl256, mul #7");
   TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decd z30.d, all, mul #16");
@@ -1203,7 +1203,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by elemen
   TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incb x30, pow2");
   TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incb x30, vl256, mul #7");
   TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incb x30, all, mul #16");
-  
+
   TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decb x30, pow2");
   TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decb x30, vl256, mul #7");
   TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decb x30, all, mul #16");
@@ -1211,7 +1211,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by elemen
   TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "inch x30, pow2");
   TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_VL256, 7),  "inch x30, vl256, mul #7");
   TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_ALL  , 16), "inch x30, all, mul #16");
-  
+
   TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "dech x30, pow2");
   TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_VL256, 7),  "dech x30, vl256, mul #7");
   TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_ALL  , 16), "dech x30, all, mul #16");
@@ -1219,7 +1219,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by elemen
   TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incw x30, pow2");
   TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incw x30, vl256, mul #7");
   TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incw x30, all, mul #16");
-  
+
   TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decw x30, pow2");
   TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decw x30, vl256, mul #7");
   TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decw x30, all, mul #16");
@@ -1227,7 +1227,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by elemen
   TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incd x30, pow2");
   TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incd x30, vl256, mul #7");
   TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incd x30, all, mul #16");
-  
+
   TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decd x30, pow2");
   TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decd x30, vl256, mul #7");
   TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decd x30, all, mul #16");
@@ -1507,7 +1507,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Predicate") {
   TEST_SINGLE(rev(SubRegSize::i16Bit, PReg::p15, PReg::p14), "rev p15.h, p14.h");
   TEST_SINGLE(rev(SubRegSize::i32Bit, PReg::p15, PReg::p14), "rev p15.s, p14.s");
   TEST_SINGLE(rev(SubRegSize::i64Bit, PReg::p15, PReg::p14), "rev p15.d, p14.d");
-  
+
   TEST_SINGLE(punpklo(PReg::p15, PReg::p14), "punpklo p15.h, p14.b");
   TEST_SINGLE(punpkhi(PReg::p15, PReg::p14), "punpkhi p15.h, p14.b");
 
@@ -3469,15 +3469,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ad
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
-  
+
   // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
-  
+
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
-  
+
   // TEST_SINGLE(bfmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslt z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslt z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslt z30.s, z29.h, z28.h");

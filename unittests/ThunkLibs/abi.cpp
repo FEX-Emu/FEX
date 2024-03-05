@@ -1,5 +1,5 @@
 #include <clang/Frontend/CompilerInstance.h>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <data_layout.h>
 #include <interface.h>
@@ -8,6 +8,8 @@
 #include <fmt/format.h>
 
 #include <string_view>
+
+using Catch::Matchers::ContainsSubstring;
 
 // run_tool will leak memory when the ToolAction throws an exception, so
 // disable AddressSanitizer's leak detection
@@ -462,7 +464,7 @@ TEST_CASE_METHOD(Fixture, "DataLayout") {
                 "union B { int32_t a; uint32_t b; };\n"
                 "struct A { B a; };\n"
                 "template<> struct fex_gen_type<A> {};\n", guest_abi),
-                Catch::Contains("unannotated member") && Catch::Contains("union type"));
+                ContainsSubstring("unannotated member") && ContainsSubstring("union type"));
         }
 
         SECTION("with annotation") {
@@ -530,7 +532,7 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
             "struct B;\n"
             "struct A { B* a; };\n"
             "template<> struct fex_gen_type<A> {};\n", guest_abi),
-            Catch::Contains("incomplete type"));
+            ContainsSubstring("incomplete type"));
     }
 
     SECTION("Unannotated pointer to repackable type") {
@@ -630,7 +632,7 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
             "union B { int32_t a; uint32_t b; };\n"
             "struct A { B* a; };\n"
             "template<> struct fex_gen_type<A> {};\n", guest_abi),
-            Catch::Contains("unannotated member") && Catch::Contains("union type"));
+            ContainsSubstring("unannotated member") && ContainsSubstring("union type"));
     }
 
     SECTION("Pointer to union type with assume_compatible_data_layout annotation") {
@@ -735,7 +737,7 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
         INFO(FormatDataLayout(action->host_layout));
 
         REQUIRE(action->guest_layout->contains("A"));
-        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), Catch::Contains("recursive reference"));
+        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), ContainsSubstring("recursive reference"));
 
         // With annotation
         if (guest_abi == GuestABI::X86_64) {
@@ -766,8 +768,8 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
 
         REQUIRE(action->guest_layout->contains("A"));
         REQUIRE(action->guest_layout->contains("B"));
-        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), Catch::Contains("recursive reference"));
-        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct B"), Catch::Contains("recursive reference"));
+        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct A"), ContainsSubstring("recursive reference"));
+        CHECK_THROWS_WITH(action->GetTypeCompatibility("struct B"), ContainsSubstring("recursive reference"));
 
         // With annotation
         if (guest_abi == GuestABI::X86_64) {

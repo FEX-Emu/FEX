@@ -19,7 +19,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 static jmp_buf jmpbuf;
 
