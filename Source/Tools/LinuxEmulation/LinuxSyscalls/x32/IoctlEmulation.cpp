@@ -360,6 +360,8 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
 #include "LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+        // Let's hope NVIF is arch agnostic.
+        case DRM_COMMAND_BASE + DRM_NOUVEAU_NVIF:
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
