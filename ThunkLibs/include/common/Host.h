@@ -368,7 +368,7 @@ T* unwrap_host(repack_wrapper<T*, T2>& val) {
 
 template<typename T>
 struct host_to_guest_convertible {
-  const host_layout<T> from;
+  const host_layout<T>& from;
 
   // Conversion from host to guest layout for non-pointers
   operator guest_layout<T>() const requires(!std::is_pointer_v<T>) {
