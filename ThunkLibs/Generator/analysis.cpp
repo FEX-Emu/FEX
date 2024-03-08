@@ -436,17 +436,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                             check_struct_type(param_type.getTypePtr());
                             types.emplace(context.getCanonicalType(param_type.getTypePtr()), RepackedType { });
                         } else if (param_type->isPointerType()) {
-                            auto pointee_type = param_type->getPointeeType();
-
-                            if (pointee_type->isIntegerType()) {
-                                // Add builtin pointee type to type list
-                                if (!pointee_type->isEnumeralType()) {
-                                    types.emplace(pointee_type.getTypePtr(), RepackedType { });
-                                } else {
-                                    types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType { });
-                                }
-                            }
-
+                            auto pointee_type = param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
                             if (data.param_annotations[param_idx].assume_compatible) {
                                 // Nothing to do
                             } else if (types.contains(context.getCanonicalType(pointee_type.getTypePtr())) && LookupType(context, pointee_type.getTypePtr()).assumed_compatible) {
@@ -519,12 +509,6 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 }
 
 void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
-    // Add common fixed-size integer types explicitly
-    for (unsigned size : { 8, 32, 64 }) {
-        types.emplace(context.getIntTypeForBitwidth(size, false).getTypePtr(), RepackedType {});
-        types.emplace(context.getIntTypeForBitwidth(size, true).getTypePtr(), RepackedType {});
-    }
-
     // Repeat until no more children are appended
     for (bool changed = true; std::exchange(changed, false);) {
         for ( auto next_type_it = types.begin(), type_it = next_type_it;
