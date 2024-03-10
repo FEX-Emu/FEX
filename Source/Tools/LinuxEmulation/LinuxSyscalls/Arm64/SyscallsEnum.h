@@ -339,6 +339,15 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_set_mempolicy_home_node = 450,
   SYSCALL_Arm64_cachestat = 451,
   SYSCALL_Arm64_fchmodat2 = 452,
+  SYSCALL_Arm64_map_shadow_stack = 453,
+  SYSCALL_Arm64_futex_wake = 454,
+  SYSCALL_Arm64_futex_wait = 455,
+  SYSCALL_Arm64_futex_requeue = 456,
+  SYSCALL_Arm64_statmount = 457,
+  SYSCALL_Arm64_listmount = 458,
+  SYSCALL_Arm64_lsm_get_self_attr = 459,
+  SYSCALL_Arm64_lsm_set_self_attr = 460,
+  SYSCALL_Arm64_lsm_list_modules = 461,
   SYSCALL_Arm64_MAX = 512,
 
   // Unsupported syscalls on this host
@@ -466,6 +475,5 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_epoll_ctl_old = ~0,
   SYSCALL_Arm64_epoll_wait_old = ~0,
   SYSCALL_Arm64_newfstatat = ~0,
-  SYSCALL_Arm64_map_shadow_stack = ~0,
 };
 }
