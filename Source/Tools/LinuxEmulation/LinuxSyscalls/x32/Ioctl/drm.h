@@ -21,7 +21,9 @@ extern "C" {
 #include "fex-drm/radeon_drm.h"
 #include "fex-drm/vc4_drm.h"
 #include "fex-drm/v3d_drm.h"
+#include "fex-drm/pvr_drm.h"
 #include "fex-drm/virtgpu_drm.h"
+#include "fex-drm/xe_drm.h"
 }
 #include <sys/ioctl.h>
 
@@ -1422,7 +1424,8 @@ fex_drm_v3d_submit_csd {
 #include "LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
-
+#include "LinuxSyscalls/x32/Ioctl/pvr_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/xe_drm.inl"
 }
 #undef CPYT
 #undef CPYF

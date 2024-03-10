@@ -765,6 +765,8 @@ namespace FEX::HLE::x32 {
 #include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/pvr_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/xe_drm.inl"
 
 #undef _BASIC_META
 #undef _BASIC_META_VAR
