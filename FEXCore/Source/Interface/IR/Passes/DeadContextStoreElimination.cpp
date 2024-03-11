@@ -544,10 +544,20 @@ bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter *IREmit, ContextInfo *Loc
 
 bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
+  ContextMemberInfo PreviousMemberInfoCopy = *Info;
   RecordAccess(Info, Class, Offset, Size, LastAccessType::WRITE, ValueNode,
                CodeNode);
-  // TODO: Optimize redundant stores.
-  // ContextMemberInfo PreviousMemberInfoCopy = *Info;
+
+  if (PreviousMemberInfoCopy.AccessRegClass == Info->AccessRegClass &&
+      PreviousMemberInfoCopy.AccessOffset == Info->AccessOffset &&
+      PreviousMemberInfoCopy.AccessSize == Size &&
+      PreviousMemberInfoCopy.Accessed == LastAccessType::WRITE) {
+    // This optimizes redundant stores with no intervening load
+    IREmit->Remove(PreviousMemberInfoCopy.StoreNode);
+    return true;
+  }
+
+  // TODO: Optimize the case of partial stores.
   return false;
 }
 
