@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "FEXCore/Core/X86Enums.h"
 #include "FEXCore/IR/IR.h"
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -147,8 +148,8 @@ namespace FEXCore::Core {
       }
 #endif
 
-      flags[1] = 1; ///< Reserved - Always 1.
-      flags[9] = 1; ///< Interrupt flag - Always 1.
+      flags[X86State::RFLAG_RESERVED_LOC] = 1; ///< Reserved - Always 1.
+      flags[X86State::RFLAG_IF_LOC] = 1; ///< Interrupt flag - Always 1.
     }
   };
   static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
