@@ -14,7 +14,7 @@
   ],
   "Instructions": {
     "push ax, bx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Mergable 16-bit pushes. May or may not be an optimization."
       ],
@@ -23,12 +23,14 @@
         "push bx"
       ],
       "ExpectedArm64ASM": [
-        "strh w4, [x8, #-2]!",
+        "mov x20, x8",
+        "strh w4, [x20, #-2]!",
+        "mov x8, x20",
         "strh w7, [x8, #-2]!"
       ]
     },
     "push rax, rbx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Mergable 64-bit pushes"
       ],
@@ -37,12 +39,14 @@
         "push rbx"
       ],
       "ExpectedArm64ASM": [
-        "str x4, [x8, #-8]!",
+        "mov x20, x8",
+        "str x4, [x20, #-8]!",
+        "mov x8, x20",
         "str x7, [x8, #-8]!"
       ]
     },
     "adds xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Redundant scalar adds that can get eliminated without AFP."
       ],
@@ -51,9 +55,11 @@
         "addss xmm0, xmm2"
       ],
       "ExpectedArm64ASM": [
+        "mov v2.16b, v16.16b",
         "fadd s0, s16, s17",
-        "mov v16.s[0], v0.s[0]",
-        "fadd s0, s16, s18",
+        "mov v2.s[0], v0.s[0]",
+        "mov v16.16b, v2.16b",
+        "fadd s0, s2, s18",
         "mov v16.s[0], v0.s[0]"
       ]
     },
