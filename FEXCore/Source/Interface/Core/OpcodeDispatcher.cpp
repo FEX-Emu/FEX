@@ -3627,7 +3627,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    // Src is used only for a store of the same size so allow garbage
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
