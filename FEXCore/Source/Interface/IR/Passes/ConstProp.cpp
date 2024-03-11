@@ -27,6 +27,7 @@ $end_info$
 #include <bit>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string.h>
 #include <tuple>
 #include <utility>
@@ -90,58 +91,111 @@ static bool IsTSOImm9(uint64_t imm) {
   }
 }
 
-static std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
+using MemExtendedAddrResult =
+    std::tuple<MemOffsetType, uint8_t, OrderedNode *, OrderedNode *>;
+
+// If this optimization doesn't succeed, it will return the nullopt
+static std::optional<MemExtendedAddrResult>
+MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,
+                      IROp_Header *AddressHeader) {
+  LOGMAN_THROW_A_FMT(AddressHeader->Op == OP_ADD, "Invalid address Op");
   auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
   if (Src0Header->Size == 8) {
-    //Try to optimize: Base + MUL(Offset, Scale)
+    // Try to optimize: Base + MUL(Offset, Scale)
     if (Src0Header->Op == OP_MUL) {
       uint64_t Scale;
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Scale)) {
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove mul as it can be folded to the mem op
-          return { MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+          return std::make_optional(
+              std::make_tuple(MEM_OFFSET_SXTX, (uint8_t)Scale,
+                              IREmit->UnwrapNode(AddressHeader->Args[1]),
+                              IREmit->UnwrapNode(Src0Header->Args[0])));
         } else if (Scale == 1) {
           // remove nop mul
-          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+          return std::make_optional(std::make_tuple(
+              MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]),
+              IREmit->UnwrapNode(Src0Header->Args[0])));
         }
       }
     }
-    //Try to optimize: Base + LSHL(Offset, Scale)
+    // Try to optimize: Base + LSHL(Offset, Scale)
     else if (Src0Header->Op == OP_LSHL) {
       uint64_t Constant2;
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
         uint64_t Scale = 1<<Constant2;
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove shift as it can be folded to the mem op
-          return { MEM_OFFSET_SXTX, Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+          return std::make_optional(
+              std::make_tuple(MEM_OFFSET_SXTX, Scale,
+                              IREmit->UnwrapNode(AddressHeader->Args[1]),
+                              IREmit->UnwrapNode(Src0Header->Args[0])));
         } else if (Scale == 1) {
           // remove nop shift
-          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+          return std::make_optional(std::make_tuple(
+              MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]),
+              IREmit->UnwrapNode(Src0Header->Args[0])));
         }
       }
     }
 #if defined(_M_ARM_64) // x86 can't sext or zext on mem ops
-    //Try to optimize: Base + (u32)Offset
+    // Try to optimize: Base + (u32)Offset
     else if (Src0Header->Op == OP_BFE) {
       auto Bfe = Src0Header->C<IROp_Bfe>();
       if (Bfe->lsb == 0 && Bfe->Width == 32) {
         //todo: arm can also scale here
-        return { MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        return std::make_optional(std::make_tuple(
+            MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]),
+            IREmit->UnwrapNode(Src0Header->Args[0])));
       }
     }
-    //Try to optimize: Base + (s32)Offset
+    // Try to optimize: Base + (s32)Offset
     else if (Src0Header->Op == OP_SBFE) {
       auto Sbfe = Src0Header->C<IROp_Sbfe>();
       if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
-        //todo: arm can also scale here
-        return { MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        // todo: arm can also scale here
+        return std::make_optional(std::make_tuple(
+            MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]),
+            IREmit->UnwrapNode(Src0Header->Args[0])));
       }
     }
 #endif
   }
 
   // no match anywhere, just add
-  return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
+  // However, if we have one 32bit negative constant, we need to sign extend it
+  auto Arg0_ = AddressHeader->Args[0];
+  auto Arg1_ = AddressHeader->Args[1];
+  auto Arg1H = IREmit->GetOpHeader(Arg1_);
+  auto Arg0 = IREmit->UnwrapNode(Arg0_);
+  auto Arg1 = IREmit->UnwrapNode(Arg1_);
+
+  uint64_t ConstVal = 0;
+  // Only optimize in 32bits reg+const where const < 16Kb.
+  if (Arg1H->Size == 4 && IREmit->IsValueConstant(Arg1_, &ConstVal)) {
+    // Base is Arg0, Constant (Displacement in Arg1)
+    OrderedNode *Base = Arg0;
+    OrderedNode *Cnt = Arg1;
+    int32_t Val32 = (int32_t)ConstVal;
+
+    if (Val32 > -16384 && Val32 < 0) {
+      return std::make_optional(std::make_tuple(MEM_OFFSET_SXTW, 1, Base, Cnt));
+    } else if (Val32 >= 0 && Val32 < 16384) {
+      return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, 1, Base, Cnt));
+    }
+  } else if (AddressHeader->Size == 4) {
+    // Do not optimize 32bit reg+reg.
+    // Something like :
+    //   add w20, w7, w5
+    //   ldr w7, [x20]
+    //
+    // cannot be simplified to (or any other single load instruction)
+    // ldr w7, [x5, w7, sxtx]
+    return std::nullopt;
+  } else {
+    return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, 1, Arg0, Arg1));
+  }
+  return std::nullopt;
 }
 
 static OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
@@ -184,9 +238,10 @@ static bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  explicit ConstProp(bool DoInlineConstants, bool SupportsTSOImm9)
-    : InlineConstants(DoInlineConstants)
-    , SupportsTSOImm9 {SupportsTSOImm9} { }
+  explicit ConstProp(bool DoInlineConstants, bool SupportsTSOImm9,
+                     bool Is64BitMode)
+      : InlineConstants(DoInlineConstants), SupportsTSOImm9{SupportsTSOImm9},
+        Is64BitMode(Is64BitMode) {}
 
   bool Run(IREmitter *IREmit) override;
 
@@ -219,6 +274,7 @@ private:
     return Result.first->second;
   }
   bool SupportsTSOImm9{};
+  bool Is64BitMode;
   // This is a heuristic to limit constant pool live ranges to reduce RA interference pressure.
   // If the range is unbounded then RA interference pressure seems to increase to the point
   // that long blocks of constant usage can slow to a crawl.
@@ -490,8 +546,12 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
         // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
         // Support once hardware is available to use this.
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
-
+        auto MaybeMemAddr =
+            MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+        if (!MaybeMemAddr) {
+          break;
+        }
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
         IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
@@ -509,8 +569,12 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
         // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
         // Support once hardware is available to use this.
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
-
+        auto MaybeMemAddr =
+            MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+        if (!MaybeMemAddr) {
+          break;
+        }
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
         IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
@@ -525,12 +589,19 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+      if (AddressHeader->Op == OP_ADD &&
+          ((Is64BitMode && AddressHeader->Size == 8) ||
+           (!Is64BitMode && AddressHeader->Size == 4))) {
+        auto MaybeMemAddr =
+            MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+        if (!MaybeMemAddr) {
+          break;
+        }
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
-        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
         IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
 
         Changed = true;
@@ -542,8 +613,15 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto Op = IROp->CW<IR::IROp_StoreMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+      if (AddressHeader->Op == OP_ADD &&
+          ((Is64BitMode && AddressHeader->Size == 8) ||
+           (!Is64BitMode && AddressHeader->Size == 4))) {
+        auto MaybeMemAddr =
+            MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+        if (!MaybeMemAddr) {
+          break;
+        }
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
@@ -1311,8 +1389,9 @@ bool ConstProp::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9) {
-  return fextl::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9);
+fextl::unique_ptr<FEXCore::IR::Pass>
+CreateConstProp(bool InlineConstants, bool SupportsTSOImm9, bool Is64BitMode) {
+  return fextl::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9,
+                                       Is64BitMode);
 }
-
 }

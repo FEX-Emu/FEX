@@ -80,7 +80,8 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool Inli
 
     InsertPass(CreateDeadStoreElimination(ctx->HostFeatures.SupportsAVX));
     InsertPass(CreatePassDeadCodeElimination());
-    InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9));
+    InsertPass(CreateConstProp(
+        InlineConstants, ctx->HostFeatures.SupportsTSOImm9, Is64BitMode()));
 
     InsertPass(CreateDeadFlagCalculationEliminination());
 
@@ -121,5 +122,4 @@ bool PassManager::Run(IREmitter *IREmit) {
 
   return Changed;
 }
-
 }
