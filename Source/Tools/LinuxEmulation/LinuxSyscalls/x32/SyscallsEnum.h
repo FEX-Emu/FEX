@@ -275,6 +275,7 @@ enum Syscalls_x86 {
   SYSCALL_x86_io_cancel = 249,
   SYSCALL_x86_fadvise64 = 250,
   SYSCALL_x86_exit_group = 252,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_lookup_dcookie = 253,
   SYSCALL_x86_epoll_create = 254,
   SYSCALL_x86_epoll_ctl = 255,
@@ -468,6 +469,15 @@ enum Syscalls_x86 {
   SYSCALL_x86_set_mempolicy_home_node = 450,
   SYSCALL_x86_cachestat = 451,
   SYSCALL_x86_fchmodat2 = 452,
+  SYSCALL_x86_map_shadow_stack = 453,
+  SYSCALL_x86_futex_wake = 454,
+  SYSCALL_x86_futex_wait = 455,
+  SYSCALL_x86_futex_requeue = 456,
+  SYSCALL_x86_statmount = 457,
+  SYSCALL_x86_listmount = 458,
+  SYSCALL_x86_lsm_get_self_attr = 459,
+  SYSCALL_x86_lsm_set_self_attr = 460,
+  SYSCALL_x86_lsm_list_modules = 461,
   SYSCALL_x86_MAX = 512,
 };
 

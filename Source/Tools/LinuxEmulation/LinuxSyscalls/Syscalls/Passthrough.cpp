@@ -635,6 +635,35 @@ uint64_t SyscallPassthrough7(FEXCore::Core::CpuStateFrame *Frame, uint64_t arg1,
     else {
       REGISTER_SYSCALL_IMPL(set_mempolicy_home_node, UnimplementedSyscallSafe);
     }
+
+    if (Handler->IsHostKernelVersionAtLeast(6, 8, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(futex_wake, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(futex_wake)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(futex_wait, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough6<SYSCALL_DEF(futex_wait)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(futex_requeue, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(futex_requeue)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(statmount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(statmount)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(listmount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(listmount)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(lsm_get_self_attr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(lsm_get_self_attr)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(lsm_set_self_attr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough4<SYSCALL_DEF(lsm_set_self_attr)>);
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(lsm_list_modules, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+          SyscallPassthrough3<SYSCALL_DEF(lsm_list_modules)>);
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(futex_wake, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(futex_wait, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(futex_requeue, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(statmount, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(listmount, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(lsm_get_self_attr, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(lsm_set_self_attr, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(lsm_list_modules, UnimplementedSyscallSafe);
+    }
   }
 
   namespace x64 {

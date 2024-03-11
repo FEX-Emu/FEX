@@ -161,5 +161,16 @@ namespace FEX::HLE::x32 {
       *usage = usage64;
       SYSCALL_ERRNO();
     });
+
+    if (Handler->IsHostKernelVersionAtLeast(6, 8, 0)) {
+      REGISTER_SYSCALL_IMPL_X32(map_shadow_stack,
+        [](FEXCore::Core::CpuStateFrame *Frame, uint64_t addr, uint64_t size, uint32_t flags) -> uint64_t {
+        // Claim that shadow stack isn't supported.
+        return -EOPNOTSUPP;
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL_X32(map_shadow_stack, UnimplementedSyscallSafe);
+    }
   }
 }

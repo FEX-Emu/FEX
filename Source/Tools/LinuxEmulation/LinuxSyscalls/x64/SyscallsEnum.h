@@ -233,6 +233,7 @@ enum Syscalls_x64 {
   SYSCALL_x64_io_cancel = 210,
   // No entrypoint. -ENOSYS
   SYSCALL_x64_get_thread_area = 211,
+  // No entrypoint. -ENOSYS
   SYSCALL_x64_lookup_dcookie = 212,
   SYSCALL_x64_epoll_create = 213,
   // No entrypoint. -ENOSYS
@@ -389,6 +390,14 @@ enum Syscalls_x64 {
   SYSCALL_x64_cachestat = 451,
   SYSCALL_x64_fchmodat2 = 452,
   SYSCALL_x64_map_shadow_stack = 453,
+  SYSCALL_x64_futex_wake = 454,
+  SYSCALL_x64_futex_wait = 455,
+  SYSCALL_x64_futex_requeue = 456,
+  SYSCALL_x64_statmount = 457,
+  SYSCALL_x64_listmount = 458,
+  SYSCALL_x64_lsm_get_self_attr = 459,
+  SYSCALL_x64_lsm_set_self_attr = 460,
+  SYSCALL_x64_lsm_list_modules = 461,
   SYSCALL_x64_MAX = 512,
 
   // Unsupported syscalls on this host
