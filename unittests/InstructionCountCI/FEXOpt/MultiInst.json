@@ -68,7 +68,7 @@
         "movsb"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
+        "mov w20, #0x1",
         "strb w20, [x28, #714]",
         "ldrb w20, [x10]",
         "strb w20, [x11]",
@@ -87,7 +87,7 @@
         "movsw"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
+        "mov w20, #0x1",
         "strb w20, [x28, #714]",
         "ldrh w20, [x10]",
         "strh w20, [x11]",
@@ -106,7 +106,7 @@
         "movsd"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
+        "mov w20, #0x1",
         "strb w20, [x28, #714]",
         "ldr w20, [x10]",
         "str w20, [x11]",
@@ -125,7 +125,7 @@
         "movsq"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
+        "mov w20, #0x1",
         "strb w20, [x28, #714]",
         "ldr x20, [x10]",
         "str x20, [x11]",
@@ -144,7 +144,7 @@
         "movsb"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "ldrb w20, [x10]",
         "strb w20, [x11]",
@@ -163,7 +163,7 @@
         "movsw"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "ldrh w20, [x10]",
         "strh w20, [x11]",
@@ -182,7 +182,7 @@
         "movsd"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "ldr w20, [x10]",
         "str w20, [x11]",
@@ -201,7 +201,7 @@
         "movsq"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "ldr x20, [x10]",
         "str x20, [x11]",
@@ -210,7 +210,7 @@
       ]
     },
     "positive rep movsb": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -221,7 +221,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -241,7 +242,7 @@
       ]
     },
     "positive rep movsw": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -252,7 +253,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -272,7 +274,7 @@
       ]
     },
     "positive rep movsd": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -283,7 +285,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -303,7 +306,7 @@
       ]
     },
     "positive rep movsq": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -314,7 +317,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -344,7 +348,7 @@
         "rep movsb"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
@@ -375,7 +379,7 @@
         "rep movsw"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
@@ -406,7 +410,7 @@
         "rep movsd"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
@@ -437,7 +441,7 @@
         "rep movsq"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
@@ -458,7 +462,7 @@
       ]
     },
     "positive rep stosb": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -469,7 +473,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "uxtb w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -482,7 +487,7 @@
       ]
     },
     "positive rep stosw": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -493,7 +498,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "uxth w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -506,7 +512,7 @@
       ]
     },
     "positive rep stosd": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -517,7 +523,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -530,7 +537,7 @@
       ]
     },
     "positive rep stosq": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -541,7 +548,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
-        "strb w20, [x28, #714]",
+        "mov w21, #0x1",
+        "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x10",
@@ -563,7 +571,7 @@
         "rep stosb"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "uxtb w20, w4",
         "mov x0, x5",
@@ -587,7 +595,7 @@
         "rep stosw"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "uxth w20, w4",
         "mov x0, x5",
@@ -611,7 +619,7 @@
         "rep stosd"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov w20, w4",
         "mov x0, x5",
@@ -635,7 +643,7 @@
         "rep stosq"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
+        "mov x20, #0xffffffffffffffff",
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
