@@ -198,7 +198,6 @@ namespace FEXCore::Allocator {
   fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD) {
     fextl::vector<MemoryRegion> Regions;
 
-    uintptr_t RegionBegin = 0;
     uintptr_t RegionEnd = 0;
 
     char Buffer[2048];
@@ -216,15 +215,10 @@ namespace FEXCore::Allocator {
       if (line_end == Cursor + Remaining) {
         if (EndOfFileReached) {
           // No more data to buffer. Add remaining memory and return.
-          STEAL_LOG("[%d] EndOfFile; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
-
           const auto MapBegin = std::max(RegionEnd, Begin);
-          const auto MapEnd = End;
-
-          STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
-
-          if (MapEnd > MapBegin) {
-            Regions.push_back({(void*)MapBegin, MapEnd - MapBegin});
+          STEAL_LOG("[%d] EndOfFile; MapBegin: %016lX MapEnd: %016lX\n", __LINE__, MapBegin, End);
+          if (End > MapBegin) {
+            Regions.push_back({(void*)MapBegin, End - MapBegin});
           }
 
           return Regions;
@@ -247,35 +241,25 @@ namespace FEXCore::Allocator {
         continue;
       }
 
-      // Formerly ParseBegin
+      // Parse mapped region in the format "fffff7cc3000-fffff7cc4000 r--p ..."
       {
+        uintptr_t RegionBegin;
         auto result = std::from_chars(Cursor, line_end, RegionBegin, 16);
         LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == '-', "Unexpected line format");
         Cursor = result.ptr + 1;
 
-        STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
-
         // Add gap between the previous region and the current one
         const auto MapBegin = std::max(RegionEnd, Begin);
         const auto MapEnd = std::min(RegionBegin, End);
-
-        STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
-
         if (MapEnd > MapBegin) {
           Regions.push_back({(void*)MapBegin, MapEnd - MapBegin});
         }
 
-        RegionBegin = 0;
-        RegionEnd = 0;
-      }
-
-      // Formerly ParseEnd
-      {
-        auto result = std::from_chars(Cursor, line_end, RegionEnd, 16);
+        result = std::from_chars(Cursor, line_end, RegionEnd, 16);
         LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == ' ', "Unexpected line format");
         Cursor = result.ptr + 1;
 
-        STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+        STEAL_LOG("[%d] parsed line: RegionBegin=%016lX RegionEnd=%016lX\n", __LINE__, RegionBegin, RegionEnd);
 
         if (RegionEnd >= End) {
           // Early return if we are completely beyond the allocation space.
