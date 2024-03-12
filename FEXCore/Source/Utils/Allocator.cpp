@@ -238,7 +238,7 @@ namespace FEXCore::Allocator {
           auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
           LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-          LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
+          LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap returned {} instead of {:#x}", Alloc, MapBegin);
 
           Regions.push_back({(void*)MapBegin, MapSize});
         }
@@ -278,7 +278,7 @@ namespace FEXCore::Allocator {
             auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
             LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-            LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
+            LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap returned {} instead of {:#x}", Alloc, MapBegin);
 
             Regions.push_back({(void*)MapBegin, MapSize});
           }
@@ -316,7 +316,7 @@ namespace FEXCore::Allocator {
             auto Alloc = mmap(BelowStackRegion.Ptr, BelowStackRegion.Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
             LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", BelowStackRegion.Ptr, BelowStackRegion.Size);
-            LogMan::Throw::AFmt(Alloc == BelowStackRegion.Ptr, "mmap({},{:x}) returned {} instead of {:x}", Alloc, BelowStackRegion.Ptr);
+            LogMan::Throw::AFmt(Alloc == BelowStackRegion.Ptr, "mmap returned {} instead of {:#x}", Alloc, BelowStackRegion.Ptr);
 
             Regions.pop_back();
           }
