@@ -194,23 +194,13 @@ namespace FEXCore::Allocator {
 
   #define STEAL_LOG(...) // fprintf(stderr, __VA_ARGS__)
 
-  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End, std::optional<int> MapsFDOpt, void* (*MmapOverride)(void*, size_t, int, int, int, __off_t), void* const StackLocation) {
-    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(StackLocation);
+  fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD) {
     fextl::vector<MemoryRegion> Regions;
-
-    if (!MmapOverride) {
-      MmapOverride = mmap;
-    }
-
-    const int MapsFD = MapsFDOpt.has_value() ? *MapsFDOpt : open("/proc/self/maps", O_RDONLY);
-    LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
 
     enum {ParseBegin, ParseEnd, ScanEnd} State = ParseBegin;
 
     uintptr_t RegionBegin = 0;
     uintptr_t RegionEnd = 0;
-
-    uintptr_t PreviousMapEnd = 0;
 
     char Buffer[2048];
     const char *Cursor;
@@ -236,17 +226,10 @@ namespace FEXCore::Allocator {
 
         if (MapEnd > MapBegin) {
           STEAL_LOG("     Reserving\n");
-
           auto MapSize = MapEnd - MapBegin;
-          auto Alloc = MmapOverride((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-
-          LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-          LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap returned {} instead of {:#x}", Alloc, MapBegin);
-
           Regions.push_back({(void*)MapBegin, MapSize});
         }
 
-        close(MapsFD);
         return Regions;
       }
 
@@ -269,20 +252,11 @@ namespace FEXCore::Allocator {
           const auto MapBegin = std::max(RegionEnd, Begin);
           const auto MapEnd = std::min(RegionBegin, End);
 
-          // Store the location we are going to map.
-          PreviousMapEnd = MapEnd;
-
           STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
 
           if (MapEnd > MapBegin) {
             STEAL_LOG("     Reserving\n");
-
             auto MapSize = MapEnd - MapBegin;
-            auto Alloc = MmapOverride((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-
-            LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-            LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap returned {} instead of {:#x}", Alloc, MapBegin);
-
             Regions.push_back({(void*)MapBegin, MapSize});
           }
 
@@ -302,27 +276,10 @@ namespace FEXCore::Allocator {
 
           if (RegionEnd > End) {
             // Early return if we are completely beyond the allocation space.
-            close(MapsFD);
             return Regions;
           }
 
           State = ScanEnd;
-
-          // If the previous map's ending and the region we just parsed overlap the stack then we need to save the stack mapping.
-          // Otherwise we will have severely limited stack size which crashes quickly.
-          if (PreviousMapEnd <= StackLocation_u64 && RegionEnd > StackLocation_u64) {
-            auto BelowStackRegion = Regions.back();
-            LOGMAN_THROW_AA_FMT(reinterpret_cast<uint64_t>(BelowStackRegion.Ptr) + BelowStackRegion.Size == PreviousMapEnd,
-              "This needs to match");
-
-            // Allocate the region under the stack as READ | WRITE so the stack can still grow
-            auto Alloc = MmapOverride(BelowStackRegion.Ptr, BelowStackRegion.Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
-
-            LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", BelowStackRegion.Ptr, BelowStackRegion.Size);
-            LogMan::Throw::AFmt(Alloc == BelowStackRegion.Ptr, "mmap returned {} instead of {:#x}", Alloc, BelowStackRegion.Ptr);
-
-            Regions.pop_back();
-          }
           continue;
         } else {
           LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseEnd", c);
@@ -332,6 +289,59 @@ namespace FEXCore::Allocator {
     }
 
     ERROR_AND_DIE_FMT("unreachable");
+  }
+
+  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End, std::optional<int> MapsFDOpt, void* (*MmapOverride)(void*, size_t, int, int, int, __off_t), void* const StackLocation) {
+    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(StackLocation);
+
+    if (!MmapOverride) {
+      MmapOverride = mmap;
+    }
+
+    const int MapsFD = MapsFDOpt.has_value() ? *MapsFDOpt : open("/proc/self/maps", O_RDONLY);
+    LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
+
+    auto Regions = CollectMemoryGaps(Begin, End, MapsFD);
+    close(MapsFD);
+
+    // If the memory bounds include the stack, blocking all memory regions will
+    // limit the stack size to the current value. To allow some stack growth,
+    // we don't block the memory gap directly below the stack memory but
+    // instead map it as readable+writable.
+    {
+      auto StackRegionIt =
+            std::find_if(Regions.begin(), Regions.end(),
+                          [StackLocation_u64](auto& Region) {
+                              return reinterpret_cast<uintptr_t>(Region.Ptr) + Region.Size > StackLocation_u64;
+                          });
+
+      // If no gap crossing the stack pointer was found but the SP is within
+      // the given bounds, the stack mapping is right after the last gap.
+      bool IsStackMapping = StackRegionIt != Regions.end() || StackLocation_u64 <= End;
+
+      if (IsStackMapping && StackRegionIt != Regions.begin() &&
+          reinterpret_cast<uintptr_t>(std::prev(StackRegionIt)->Ptr) + std::prev(StackRegionIt)->Size <= End) {
+        // Allocate the region under the stack as READ | WRITE so the stack can still grow
+        --StackRegionIt;
+
+        auto Alloc = MmapOverride(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
+
+        LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", StackRegionIt->Ptr, StackRegionIt->Size);
+        LogMan::Throw::AFmt(Alloc == StackRegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(StackRegionIt->Ptr));
+
+        Regions.erase(StackRegionIt);
+      }
+    }
+
+    // Block remaining memory gaps
+    for (auto RegionIt = Regions.begin(); RegionIt != Regions.end(); ++RegionIt) {
+      auto Alloc = MmapOverride(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+
+      LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", RegionIt->Ptr, RegionIt->Size);
+      LogMan::Throw::AFmt(Alloc == RegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(RegionIt->Ptr));
+    }
+
+    return Regions;
   }
 
   fextl::vector<MemoryRegion> Steal48BitVA() {

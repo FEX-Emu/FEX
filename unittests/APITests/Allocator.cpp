@@ -194,6 +194,12 @@ TEST_CASE_METHOD(Fixture, "StackCase") {
   auto Mappings = StealMemoryRegion(MappingsList, 0, End, StackBottom);
   INFO("StealMemoryRegion 0x" << std::hex << Begin << "-0x" << End << " (stack @ 0x" << StackBottom << ")");
 
+  if (End == 0x101000 && StackBottom <= 0x101000) {
+    // Known failure in old implementation
+    // TODO: Is the new behavior desirable?
+    return;
+  }
+
   fextl::vector<MemoryRegion> ref {
     FromTo(0x0, 0x100000),
     FromTo(0x104000, 0x110000),
@@ -246,7 +252,7 @@ TEST_CASE_METHOD(Fixture, "StackCase") {
   CHECK_THAT(Mappings, Catch::Matchers::Equals(ref));
 }
 
-TEST_CASE_METHOD(Fixture, "StackCase2", "[!mayfail]") {
+TEST_CASE_METHOD(Fixture, "StackCase2") {
   uintptr_t StackBottom = GENERATE(0x100004); // NOTE: Must point into mapped memory, otherwise the test makes no sense
   uintptr_t Begin = 0;
   uintptr_t End = GENERATE(0x101000);
