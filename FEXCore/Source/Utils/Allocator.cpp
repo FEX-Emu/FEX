@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <cstdio>
 #include <fcntl.h>
 #ifndef _WIN32
@@ -248,18 +249,9 @@ namespace FEXCore::Allocator {
 
       // Formerly ParseBegin
       {
-        auto separator = std::find(Cursor, line_end, '-');
-        // TODO: Assert separator != line_end
-
-        Remaining -= separator + 1 - Cursor;
-
-        for (; Cursor != separator; ++Cursor) {
-          // TODO: std::from_chars
-          auto c = *Cursor;
-          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseBegin", c);
-          RegionBegin = (RegionBegin << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
-        }
-        ++Cursor;
+        auto result = std::from_chars(Cursor, line_end, RegionBegin, 16);
+        LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == '-', "Unexpected line format");
+        Cursor = result.ptr + 1;
 
         STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
@@ -279,16 +271,9 @@ namespace FEXCore::Allocator {
 
       // Formerly ParseEnd
       {
-        auto separator = std::find(Cursor, line_end, ' ');
-        Remaining -= separator + 1 - Cursor;
-        // TODO: Assert separator != line_end
-        for (; Cursor != separator; ++Cursor) {
-          // TODO: std::from_chars
-          auto c = *Cursor;
-          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseEnd", c);
-          RegionEnd = (RegionEnd << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
-        }
-        ++Cursor;
+        auto result = std::from_chars(Cursor, line_end, RegionEnd, 16);
+        LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == ' ', "Unexpected line format");
+        Cursor = result.ptr + 1;
 
         STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
@@ -298,7 +283,7 @@ namespace FEXCore::Allocator {
         }
       }
 
-      Remaining -= line_end + 1 - Cursor;
+      Remaining -= line_end + 1 - line_begin;
       Cursor = line_end + 1;
     }
     FEX_UNREACHABLE;
