@@ -273,14 +273,10 @@ namespace FEXCore::Allocator {
     FEX_UNREACHABLE;
   }
 
-  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End, std::optional<int> MapsFDOpt, void* (*MmapOverride)(void*, size_t, int, int, int, __off_t), void* const StackLocation) {
-    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(StackLocation);
+  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
+    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(alloca(0));
 
-    if (!MmapOverride) {
-      MmapOverride = mmap;
-    }
-
-    const int MapsFD = MapsFDOpt.has_value() ? *MapsFDOpt : open("/proc/self/maps", O_RDONLY);
+    const int MapsFD = open("/proc/self/maps", O_RDONLY);
     LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
 
     auto Regions = CollectMemoryGaps(Begin, End, MapsFD);
@@ -306,7 +302,7 @@ namespace FEXCore::Allocator {
         // Allocate the region under the stack as READ | WRITE so the stack can still grow
         --StackRegionIt;
 
-        auto Alloc = MmapOverride(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
+        auto Alloc = mmap(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
         LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", StackRegionIt->Ptr, StackRegionIt->Size);
         LogMan::Throw::AFmt(Alloc == StackRegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(StackRegionIt->Ptr));
@@ -317,7 +313,7 @@ namespace FEXCore::Allocator {
 
     // Block remaining memory gaps
     for (auto RegionIt = Regions.begin(); RegionIt != Regions.end(); ++RegionIt) {
-      auto Alloc = MmapOverride(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+      auto Alloc = mmap(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
       LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", RegionIt->Ptr, RegionIt->Size);
       LogMan::Throw::AFmt(Alloc == RegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(RegionIt->Ptr));

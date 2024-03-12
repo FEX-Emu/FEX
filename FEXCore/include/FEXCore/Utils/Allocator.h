@@ -74,7 +74,7 @@ namespace FEXCore::Allocator {
   };
 
   FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD);
-  FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End, std::optional<int> MapsFD = std::nullopt, void* (*MmapOverride)(void*, size_t, int, int, int, __off_t) = nullptr, void * const StackLocation = alloca(0));
+  FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End);
   FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const fextl::vector<MemoryRegion> & Regions);
   // When running a 64-bit executable on ARM then userspace guest only gets 47 bits of VA
   // This is a feature of x86-64 where the kernel gets a full 128TB of VA space
