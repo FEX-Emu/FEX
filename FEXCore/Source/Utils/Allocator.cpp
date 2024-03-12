@@ -274,7 +274,7 @@ namespace FEXCore::Allocator {
         if (c == ' ') {
           STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
-          if (RegionEnd > End) {
+          if (RegionEnd >= End) {
             // Early return if we are completely beyond the allocation space.
             return Regions;
           }
