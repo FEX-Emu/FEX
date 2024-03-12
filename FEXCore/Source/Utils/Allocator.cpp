@@ -197,98 +197,111 @@ namespace FEXCore::Allocator {
   fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD) {
     fextl::vector<MemoryRegion> Regions;
 
-    enum {ParseBegin, ParseEnd, ScanEnd} State = ParseBegin;
-
     uintptr_t RegionBegin = 0;
     uintptr_t RegionEnd = 0;
 
     char Buffer[2048];
-    const char *Cursor;
+    const char *Cursor = Buffer;
     ssize_t Remaining = 0;
 
-    for(;;) {
+    bool EndOfFileReached = false;
 
-      if (Remaining == 0) {
-        do {
-          Remaining = read(MapsFD, Buffer, sizeof(Buffer));
-        } while ( Remaining == -1 && errno == EAGAIN);
+    while (true) {
+      const auto line_begin = Cursor;
+      auto line_end = std::find(line_begin, Cursor + Remaining, '\n');
 
-        Cursor = Buffer;
-      }
-
-      if (Remaining == 0 && State == ParseBegin) {
-        STEAL_LOG("[%d] EndOfFile; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
-
-        const auto MapBegin = std::max(RegionEnd, Begin);
-        const auto MapEnd = End;
-
-        STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
-
-        if (MapEnd > MapBegin) {
-          STEAL_LOG("     Reserving\n");
-          auto MapSize = MapEnd - MapBegin;
-          Regions.push_back({(void*)MapBegin, MapSize});
-        }
-
-        return Regions;
-      }
-
-      LogMan::Throw::AFmt(Remaining > 0, "Failed to parse /proc/self/maps");
-
-      auto c = *Cursor++;
-      Remaining--;
-
-      if (State == ScanEnd) {
-        if (c == '\n') {
-          State = ParseBegin;
-        }
-        continue;
-      }
-
-      if (State == ParseBegin) {
-        if (c == '-') {
-          STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+      // Check if the buffered data covers the entire line.
+      // If not, try buffering more data.
+      if (line_end == Cursor + Remaining) {
+        if (EndOfFileReached) {
+          // No more data to buffer. Add remaining memory and return.
+          STEAL_LOG("[%d] EndOfFile; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
           const auto MapBegin = std::max(RegionEnd, Begin);
-          const auto MapEnd = std::min(RegionBegin, End);
+          const auto MapEnd = End;
 
           STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
 
           if (MapEnd > MapBegin) {
-            STEAL_LOG("     Reserving\n");
-            auto MapSize = MapEnd - MapBegin;
-            Regions.push_back({(void*)MapBegin, MapSize});
+            Regions.push_back({(void*)MapBegin, MapEnd - MapBegin});
           }
 
-          RegionBegin = 0;
-          RegionEnd = 0;
-          State = ParseEnd;
-          continue;
-        } else {
+          return Regions;
+        }
+
+        // Move pending content back to the beginning, then buffer more data.
+        std::copy(Cursor, Cursor + Remaining, std::begin(Buffer));
+        auto PendingBytes = Remaining;
+        do {
+          Remaining = read(MapsFD, Buffer + PendingBytes, sizeof(Buffer) - PendingBytes);
+        } while (Remaining == -1 && errno == EAGAIN);
+
+        if (Remaining < sizeof(Buffer) - PendingBytes) {
+          EndOfFileReached = true;
+        }
+
+        Remaining += PendingBytes;
+
+        Cursor = Buffer;
+        continue;
+      }
+
+      // Formerly ParseBegin
+      {
+        auto separator = std::find(Cursor, line_end, '-');
+        // TODO: Assert separator != line_end
+
+        Remaining -= separator + 1 - Cursor;
+
+        for (; Cursor != separator; ++Cursor) {
+          // TODO: std::from_chars
+          auto c = *Cursor;
           LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseBegin", c);
           RegionBegin = (RegionBegin << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
         }
+        ++Cursor;
+
+        STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+
+        // Add gap between the previous region and the current one
+        const auto MapBegin = std::max(RegionEnd, Begin);
+        const auto MapEnd = std::min(RegionBegin, End);
+
+        STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
+
+        if (MapEnd > MapBegin) {
+          Regions.push_back({(void*)MapBegin, MapEnd - MapBegin});
+        }
+
+        RegionBegin = 0;
+        RegionEnd = 0;
       }
 
-      if (State == ParseEnd) {
-        if (c == ' ') {
-          STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
-
-          if (RegionEnd >= End) {
-            // Early return if we are completely beyond the allocation space.
-            return Regions;
-          }
-
-          State = ScanEnd;
-          continue;
-        } else {
+      // Formerly ParseEnd
+      {
+        auto separator = std::find(Cursor, line_end, ' ');
+        Remaining -= separator + 1 - Cursor;
+        // TODO: Assert separator != line_end
+        for (; Cursor != separator; ++Cursor) {
+          // TODO: std::from_chars
+          auto c = *Cursor;
           LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseEnd", c);
           RegionEnd = (RegionEnd << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
         }
-      }
-    }
+        ++Cursor;
 
-    ERROR_AND_DIE_FMT("unreachable");
+        STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+
+        if (RegionEnd >= End) {
+          // Early return if we are completely beyond the allocation space.
+          return Regions;
+        }
+      }
+
+      Remaining -= line_end + 1 - Cursor;
+      Cursor = line_end + 1;
+    }
+    FEX_UNREACHABLE;
   }
 
   fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End, std::optional<int> MapsFDOpt, void* (*MmapOverride)(void*, size_t, int, int, int, __off_t), void* const StackLocation) {
