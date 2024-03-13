@@ -868,6 +868,9 @@ public:
   void CLZeroOp(OpcodeArgs);
   void RDTSCPOp(OpcodeArgs);
 
+  template<bool ForStore, bool Stream, uint8_t Level>
+  void Prefetch(OpcodeArgs);
+
   void PSADBW(OpcodeArgs);
 
   OrderedNode *BitwiseAtLeastTwo(OrderedNode *A, OrderedNode *B, OrderedNode *C);

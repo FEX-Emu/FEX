@@ -5439,6 +5439,12 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
   _CacheLineZero(DestMem);
 }
 
+template<bool ForStore, bool Stream, uint8_t Level>
+void OpDispatchBuilder::Prefetch(OpcodeArgs) {
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+  Prefetch(ForStore, Stream, Level, DestMem);
+}
+
 void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   // RDTSCP is slightly different than RDTSC
   // IA32_TSC_AUX is returned in RCX
@@ -6648,13 +6654,36 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 7), 1, &OpDispatchBuilder::CLFLUSHOPT},
 
     // GROUP 16
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 8, &OpDispatchBuilder::NOPOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 0), 8, &OpDispatchBuilder::NOPOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 0), 8, &OpDispatchBuilder::NOPOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 0), 8, &OpDispatchBuilder::NOPOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 4), 4, &OpDispatchBuilder::NOPOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 4), 4, &OpDispatchBuilder::NOPOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 4), 4, &OpDispatchBuilder::NOPOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 4), 4, &OpDispatchBuilder::NOPOp},
 
     // GROUP P
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 8, &OpDispatchBuilder::NOPOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 3), 5, &OpDispatchBuilder::NOPOp},
+
     {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F3, 0), 8, &OpDispatchBuilder::NOPOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_66, 0), 8, &OpDispatchBuilder::NOPOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F2, 0), 8, &OpDispatchBuilder::NOPOp},
