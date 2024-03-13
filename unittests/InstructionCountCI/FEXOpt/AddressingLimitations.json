@@ -855,6 +855,71 @@
         "mov w20, w20",
         "ldr d16, [x20]"
       ]
+    },
+    "prefetch [rcx - 257]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "sub x20, x5, #0x101 (257)",
+        "prfm pldl1keep, [x20]"
+      ]
+    },
+    "prefetch [rcx - 256]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "sub x20, x5, #0x100 (256)",
+        "prfm pldl1keep, [x20]"
+      ]
+    },
+    "prefetch [rcx + 255]": {
+      "ExpectedInstructionCount": 1,
+      "ExpectedArm64ASM": [
+        "prfum pldl1keep, [x5, #255]"
+      ]
+    },
+    "prefetch [rcx + 256]": {
+      "ExpectedInstructionCount": 1,
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x5, #256]"
+      ]
+    },
+    "prefetch [rcx + 32760]": {
+      "ExpectedInstructionCount": 1,
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x5, #32760]"
+      ]
+    },
+    "prefetch [rcx + 32761]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "mov w20, #0x7ff9",
+        "prfm pldl1keep, [x5, x20, sxtx]"
+      ]
+    },
+    "prefetch [rax + rcx*1]": {
+      "ExpectedInstructionCount": 1,
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x4, x5, sxtx]"
+      ]
+    },
+    "prefetch [rax + rcx*2]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "add x20, x4, x5, lsl #1",
+        "prfm pldl1keep, [x20]"
+      ]
+    },
+    "prefetch [rax + rcx*4]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "add x20, x4, x5, lsl #2",
+        "prfm pldl1keep, [x20]"
+      ]
+    },
+    "prefetch [rax + rcx*8]": {
+      "ExpectedInstructionCount": 1,
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x5, x4, sxtx #3]"
+      ]
     }
   }
 }
