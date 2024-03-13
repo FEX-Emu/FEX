@@ -596,6 +596,15 @@
                  "Ensures the memory operations are globally visible"
                 ],
         "HasSideEffects": true
+      },
+      "Prefetch i1:$ForStore, i1:$Stream, i8:$CacheLevel, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+        "Desc": ["Does a cacheline prefetch operation"
+                ],
+        "EmitValidation": [
+          "_CacheLevel > 0 && _CacheLevel < 4"
+        ],
+        "HasSideEffects": true,
+        "DestSize": "8"
       }
     },
     "Atomic": {

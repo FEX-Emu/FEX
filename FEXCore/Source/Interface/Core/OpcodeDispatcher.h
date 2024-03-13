@@ -2145,6 +2145,10 @@ private:
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
 
+  OrderedNode* Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, OrderedNode *ssa0) {
+    return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
+  }
+
   void InstallHostSpecificOpcodeHandlers();
 
   ///< Segment telemetry tracking
