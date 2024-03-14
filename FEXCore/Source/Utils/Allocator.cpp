@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <cstdio>
 #include <fcntl.h>
 #ifndef _WIN32
@@ -194,141 +195,131 @@ namespace FEXCore::Allocator {
 
   #define STEAL_LOG(...) // fprintf(stderr, __VA_ARGS__)
 
-  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
-    void * const StackLocation = alloca(0);
-    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(StackLocation);
+  fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD) {
     fextl::vector<MemoryRegion> Regions;
 
-    int MapsFD = open("/proc/self/maps", O_RDONLY);
-    LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
-
-    enum {ParseBegin, ParseEnd, ScanEnd} State = ParseBegin;
-
-    uintptr_t RegionBegin = 0;
     uintptr_t RegionEnd = 0;
 
-    uintptr_t PreviousMapEnd = 0;
-
     char Buffer[2048];
-    const char *Cursor;
+    const char *Cursor = Buffer;
     ssize_t Remaining = 0;
 
-    for(;;) {
+    bool EndOfFileReached = false;
 
-      if (Remaining == 0) {
+    while (true) {
+      const auto line_begin = Cursor;
+      auto line_end = std::find(line_begin, Cursor + Remaining, '\n');
+
+      // Check if the buffered data covers the entire line.
+      // If not, try buffering more data.
+      if (line_end == Cursor + Remaining) {
+        if (EndOfFileReached) {
+          // No more data to buffer. Add remaining memory and return.
+          const auto MapBegin = std::max(RegionEnd, Begin);
+          STEAL_LOG("[%d] EndOfFile; MapBegin: %016lX MapEnd: %016lX\n", __LINE__, MapBegin, End);
+          if (End > MapBegin) {
+            Regions.push_back({(void*)MapBegin, End - MapBegin});
+          }
+
+          return Regions;
+        }
+
+        // Move pending content back to the beginning, then buffer more data.
+        std::copy(Cursor, Cursor + Remaining, std::begin(Buffer));
+        auto PendingBytes = Remaining;
         do {
-          Remaining = read(MapsFD, Buffer, sizeof(Buffer));
-        } while ( Remaining == -1 && errno == EAGAIN);
+          Remaining = read(MapsFD, Buffer + PendingBytes, sizeof(Buffer) - PendingBytes);
+        } while (Remaining == -1 && errno == EAGAIN);
+
+        if (Remaining < sizeof(Buffer) - PendingBytes) {
+          EndOfFileReached = true;
+        }
+
+        Remaining += PendingBytes;
 
         Cursor = Buffer;
-      }
-
-      if (Remaining == 0 && State == ParseBegin) {
-        STEAL_LOG("[%d] EndOfFile; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
-
-        const auto MapBegin = std::max(RegionEnd, Begin);
-        const auto MapEnd = End;
-
-        STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
-
-        if (MapEnd > MapBegin) {
-          STEAL_LOG("     Reserving\n");
-
-          auto MapSize = MapEnd - MapBegin;
-          auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-
-          LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-          LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
-
-          Regions.push_back({(void*)MapBegin, MapSize});
-        }
-
-        close(MapsFD);
-        return Regions;
-      }
-
-      LogMan::Throw::AFmt(Remaining > 0, "Failed to parse /proc/self/maps");
-
-      auto c = *Cursor++;
-      Remaining--;
-
-      if (State == ScanEnd) {
-        if (c == '\n') {
-          State = ParseBegin;
-        }
         continue;
       }
 
-      if (State == ParseBegin) {
-        if (c == '-') {
-          STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+      // Parse mapped region in the format "fffff7cc3000-fffff7cc4000 r--p ..."
+      {
+        uintptr_t RegionBegin;
+        auto result = std::from_chars(Cursor, line_end, RegionBegin, 16);
+        LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == '-', "Unexpected line format");
+        Cursor = result.ptr + 1;
 
-          const auto MapBegin = std::max(RegionEnd, Begin);
-          const auto MapEnd = std::min(RegionBegin, End);
+        // Add gap between the previous region and the current one
+        const auto MapBegin = std::max(RegionEnd, Begin);
+        const auto MapEnd = std::min(RegionBegin, End);
+        if (MapEnd > MapBegin) {
+          Regions.push_back({(void*)MapBegin, MapEnd - MapBegin});
+        }
 
-          // Store the location we are going to map.
-          PreviousMapEnd = MapEnd;
+        result = std::from_chars(Cursor, line_end, RegionEnd, 16);
+        LogMan::Throw::AFmt(result.ec == std::errc{} && *result.ptr == ' ', "Unexpected line format");
+        Cursor = result.ptr + 1;
 
-          STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
+        STEAL_LOG("[%d] parsed line: RegionBegin=%016lX RegionEnd=%016lX\n", __LINE__, RegionBegin, RegionEnd);
 
-          if (MapEnd > MapBegin) {
-            STEAL_LOG("     Reserving\n");
-
-            auto MapSize = MapEnd - MapBegin;
-            auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
-
-            LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
-            LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
-
-            Regions.push_back({(void*)MapBegin, MapSize});
-          }
-
-          RegionBegin = 0;
-          RegionEnd = 0;
-          State = ParseEnd;
-          continue;
-        } else {
-          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseBegin", c);
-          RegionBegin = (RegionBegin << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
+        if (RegionEnd >= End) {
+          // Early return if we are completely beyond the allocation space.
+          return Regions;
         }
       }
 
-      if (State == ParseEnd) {
-        if (c == ' ') {
-          STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+      Remaining -= line_end + 1 - line_begin;
+      Cursor = line_end + 1;
+    }
+    FEX_UNREACHABLE;
+  }
 
-          if (RegionEnd > End) {
-            // Early return if we are completely beyond the allocation space.
-            close(MapsFD);
-            return Regions;
-          }
+  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
+    const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(alloca(0));
 
-          State = ScanEnd;
+    const int MapsFD = open("/proc/self/maps", O_RDONLY);
+    LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
 
-          // If the previous map's ending and the region we just parsed overlap the stack then we need to save the stack mapping.
-          // Otherwise we will have severely limited stack size which crashes quickly.
-          if (PreviousMapEnd <= StackLocation_u64 && RegionEnd > StackLocation_u64) {
-            auto BelowStackRegion = Regions.back();
-            LOGMAN_THROW_AA_FMT(reinterpret_cast<uint64_t>(BelowStackRegion.Ptr) + BelowStackRegion.Size == PreviousMapEnd,
-              "This needs to match");
+    auto Regions = CollectMemoryGaps(Begin, End, MapsFD);
+    close(MapsFD);
 
-            // Allocate the region under the stack as READ | WRITE so the stack can still grow
-            auto Alloc = mmap(BelowStackRegion.Ptr, BelowStackRegion.Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    // If the memory bounds include the stack, blocking all memory regions will
+    // limit the stack size to the current value. To allow some stack growth,
+    // we don't block the memory gap directly below the stack memory but
+    // instead map it as readable+writable.
+    {
+      auto StackRegionIt =
+            std::find_if(Regions.begin(), Regions.end(),
+                          [StackLocation_u64](auto& Region) {
+                              return reinterpret_cast<uintptr_t>(Region.Ptr) + Region.Size > StackLocation_u64;
+                          });
 
-            LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", BelowStackRegion.Ptr, BelowStackRegion.Size);
-            LogMan::Throw::AFmt(Alloc == BelowStackRegion.Ptr, "mmap({},{:x}) returned {} instead of {:x}", Alloc, BelowStackRegion.Ptr);
+      // If no gap crossing the stack pointer was found but the SP is within
+      // the given bounds, the stack mapping is right after the last gap.
+      bool IsStackMapping = StackRegionIt != Regions.end() || StackLocation_u64 <= End;
 
-            Regions.pop_back();
-          }
-          continue;
-        } else {
-          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseEnd", c);
-          RegionEnd = (RegionEnd << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
-        }
+      if (IsStackMapping && StackRegionIt != Regions.begin() &&
+          reinterpret_cast<uintptr_t>(std::prev(StackRegionIt)->Ptr) + std::prev(StackRegionIt)->Size <= End) {
+        // Allocate the region under the stack as READ | WRITE so the stack can still grow
+        --StackRegionIt;
+
+        auto Alloc = mmap(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
+
+        LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", StackRegionIt->Ptr, StackRegionIt->Size);
+        LogMan::Throw::AFmt(Alloc == StackRegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(StackRegionIt->Ptr));
+
+        Regions.erase(StackRegionIt);
       }
     }
 
-    ERROR_AND_DIE_FMT("unreachable");
+    // Block remaining memory gaps
+    for (auto RegionIt = Regions.begin(); RegionIt != Regions.end(); ++RegionIt) {
+      auto Alloc = mmap(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+
+      LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", RegionIt->Ptr, RegionIt->Size);
+      LogMan::Throw::AFmt(Alloc == RegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(RegionIt->Ptr));
+    }
+
+    return Regions;
   }
 
   fextl::vector<MemoryRegion> Steal48BitVA() {

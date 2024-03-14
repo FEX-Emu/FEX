@@ -1,4 +1,5 @@
 set (TESTS
+  Allocator
   InterruptableConditionVariable
   Filesystem
   )

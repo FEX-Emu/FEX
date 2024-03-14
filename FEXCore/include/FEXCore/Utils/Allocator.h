@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <sys/types.h>
 
 namespace FEXCore::Allocator {
@@ -72,6 +73,7 @@ namespace FEXCore::Allocator {
     size_t Size;
   };
 
+  FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, int MapsFD);
   FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End);
   FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const fextl::vector<MemoryRegion> & Regions);
   // When running a 64-bit executable on ARM then userspace guest only gets 47 bits of VA
