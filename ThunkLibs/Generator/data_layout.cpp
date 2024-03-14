@@ -191,10 +191,10 @@ static std::array<uint8_t, 32> GetSha256(const std::string& function_name) {
 };
 
 std::string GetTypeNameWithFixedSizeIntegers(clang::ASTContext& context, clang::QualType type) {
-    if (type->isBuiltinType()) {
+    if (type->isBuiltinType() && type->isIntegerType()) {
         auto size = context.getTypeSize(type);
         return fmt::format("uint{}_t", size);
-    } else if (type->isPointerType() && type->getPointeeType()->isBuiltinType() && context.getTypeSize(type->getPointeeType()) > 8) {
+    } else if (type->isPointerType() && type->getPointeeType()->isBuiltinType() && type->getPointeeType()->isIntegerType() && context.getTypeSize(type->getPointeeType()) > 8) {
         // TODO: Also apply this path to char-like types
         auto size = context.getTypeSize(type->getPointeeType());
         return fmt::format("uint{}_t*", size);
