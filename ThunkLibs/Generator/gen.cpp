@@ -551,10 +551,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
             }
 
             auto get_guest_type_name = [this](clang::QualType type) {
-                if (type->isBuiltinType() && !type->isFloatingType()) {
+                if (type->isBuiltinType() && type->isIntegerType()) {
                     auto size = guest_abi.at(type.getUnqualifiedType().getAsString()).get_if_simple_or_struct()->size_bits;
                     return get_fixed_size_int_name(type.getTypePtr(), size);
-                } else if (type->isPointerType() && type->getPointeeType()->isIntegerType() && !type->getPointeeType()->isEnumeralType() && !type->getPointeeType()->isVoidType()) {
+                } else if (type->isPointerType() && type->getPointeeType()->isBuiltinType() && type->getPointeeType()->isIntegerType() && !type->getPointeeType()->isVoidType()) {
                     auto size = guest_abi.at(type->getPointeeType().getUnqualifiedType().getAsString()).get_if_simple_or_struct()->size_bits;
                     return fmt::format("{}{}*", type->getPointeeType().isConstQualified() ? "const " : "", get_fixed_size_int_name(type->getPointeeType().getTypePtr(), size));
                 } else {
