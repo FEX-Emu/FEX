@@ -201,7 +201,7 @@ DEF_OP(VSha256U0) {
   else {
     mov(VTMP1.Q(), Src1.Q());
     sha256su0(VTMP1, Src2);
-    mov(Dst.Q(), Src1.Q());
+    mov(Dst.Q(), VTMP1.Q());
   }
 }
 
