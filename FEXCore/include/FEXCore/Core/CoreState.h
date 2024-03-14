@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "FEXCore/Core/X86Enums.h"
 #include "FEXCore/IR/IR.h"
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -147,8 +148,13 @@ namespace FEXCore::Core {
       }
 #endif
 
-      flags[1] = 1; ///< Reserved - Always 1.
-      flags[9] = 1; ///< Interrupt flag - Always 1.
+      flags[X86State::RFLAG_RESERVED_LOC] = 1; ///< Reserved - Always 1.
+      flags[X86State::RFLAG_IF_LOC] = 1; ///< Interrupt flag - Always 1.
+
+      // DF needs to be initialized to 0 to comply with the Linux ABI. However,
+      // we encode DF as 1/-1 within the JIT, so we have to write 0x1 here to
+      // zero DF.
+      flags[X86State::RFLAG_DF_RAW_LOC] = 0x1;
     }
   };
   static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");

@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -211,6 +212,10 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.reads |= 1UL << Op->Flag;
+        } else if (IROp->Op == OP_LOADDF) {
+          auto& BlockInfo = InfoMap[BlockNode];
+
+          BlockInfo.flag.reads |= 1UL << X86State::RFLAG_DF_RAW_LOC;
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
 

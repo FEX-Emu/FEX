@@ -1401,6 +1401,11 @@ private:
       if (ValueOffset || MustMask)
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
 
+      // For DF, we need to transform 0/1 into 1/-1
+      if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
+        Value = _SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1);
+      }
+
       _StoreFlag(Value, BitOffset);
     }
   }
@@ -1453,9 +1458,30 @@ private:
       return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
       return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+    } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
+      // Recover the sign bit, it is the logical DF value
+      return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
     } else {
       return _LoadFlag(BitOffset);
     }
+  }
+
+  // Returns (DF ? -Size : Size)
+  OrderedNode *LoadDir(const unsigned Size) {
+    auto Dir = _LoadDF();
+    auto Shift = FEXCore::ilog2(Size);
+
+    if (Shift)
+      return _Lshl(IR::SizeToOpSize(CTX->GetGPRSize()), Dir, _Constant(Shift));
+    else
+      return Dir;
+  }
+
+  // Returns DF ? (X - Size) : (X + Size)
+  OrderedNode *OffsetByDir(OrderedNode *X, const unsigned Size) {
+    auto Shift = FEXCore::ilog2(Size);
+
+    return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
   }
 
   // Set SSE comparison flags based on the result set by Arm FCMP. This converts

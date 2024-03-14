@@ -167,6 +167,7 @@ namespace FEXCore::Context {
         case X86State::RFLAG_ZF_RAW_LOC:
         case X86State::RFLAG_SF_RAW_LOC:
         case X86State::RFLAG_OF_RAW_LOC:
+        case X86State::RFLAG_DF_RAW_LOC:
           // Intentionally do nothing.
           // These contain multiple bits which can corrupt other members when compacted.
           break;
@@ -215,6 +216,11 @@ namespace FEXCore::Context {
     uint32_t AF = ((Frame->State.af_raw ^ PFByte) & (1 << 4)) ? 1 : 0;
     EFLAGS |= AF << X86State::RFLAG_AF_RAW_LOC;
 
+    // DF is pretransformed, undo the transform from 1/-1 back to 0/1
+    uint8_t DFByte = Frame->State.flags[X86State::RFLAG_DF_RAW_LOC];
+    if (DFByte & 0x80)
+      EFLAGS |= 1 << X86State::RFLAG_DF_RAW_LOC;
+
     return EFLAGS;
   }
 
@@ -237,6 +243,10 @@ namespace FEXCore::Context {
         case X86State::RFLAG_PF_RAW_LOC:
           // PF is inverted in our internal representation.
           Frame->State.pf_raw = (EFLAGS & (1U << i)) ? 0 : 1;
+          break;
+        case X86State::RFLAG_DF_RAW_LOC:
+          // DF is encoded as 1/-1
+          Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 0xff : 1;
           break;
         default:
           Frame->State.flags[i] = (EFLAGS & (1U << i)) ? 1 : 0;

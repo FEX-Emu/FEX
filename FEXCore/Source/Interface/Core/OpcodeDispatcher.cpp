@@ -1379,10 +1379,10 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_CF_RAW_LOC);
   break;
   case 0xFC: // CLD
-    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_LOC);
+    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
   break;
   case 0xFD: // STD
-    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_LOC);
+    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_RAW_LOC);
   break;
   }
 }
@@ -3627,7 +3627,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    // Src is used only for a store of the same size so allow garbage
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
@@ -3636,16 +3637,9 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // Store to memory where RDI points
     _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
 
-    // Calculate direction.
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
-
     // Offset the pointer
     OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
-    TailDest = _Add(OpSize::i64Bit, TailDest, PtrDir);
-
-    StoreGPRRegister(X86State::REG_RDI, TailDest);
+    StoreGPRRegister(X86State::REG_RDI, OffsetByDir(TailDest, Size));
   }
   else {
     // FEX doesn't support partial faulting REP instructions.
@@ -3658,9 +3652,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     auto Segment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
 
-    auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, DF);
+    auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, LoadDir(1));
     StoreGPRRegister(X86State::REG_RCX, _Constant(0));
     StoreGPRRegister(X86State::REG_RDI, Result);
   }
@@ -3676,9 +3669,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   // RA now can handle these to be here, to avoid DF accesses
   const auto Size = GetSrcSize(Op);
 
-  // Calculate direction.
-  auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-
   if (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) {
     auto SrcAddr = LoadGPRRegister(X86State::REG_RSI);
     auto DstAddr = LoadGPRRegister(X86State::REG_RDI);
@@ -3690,7 +3680,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size,
         DstSegment ?: InvalidNode,
         SrcSegment ?: InvalidNode,
-        DstAddr, SrcAddr, Counter, DF);
+        DstAddr, SrcAddr, Counter,
+        LoadDir(1));
 
     OrderedNode *Result_Dst = _ExtractElementPair(OpSize::i64Bit, Result, 0);
     OrderedNode *Result_Src = _ExtractElementPair(OpSize::i64Bit, Result, 1);
@@ -3700,9 +3691,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RSI, Result_Src);
   }
   else {
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
-
     OrderedNode *RSI = LoadGPRRegister(X86State::REG_RSI);
     OrderedNode *RDI = LoadGPRRegister(X86State::REG_RDI);
     RDI= AppendSegmentOffset(RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3713,6 +3701,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     // Store to memory where RDI points
     _StoreMemAutoTSO(GPRClass, Size, RDI, Src, Size);
 
+    auto PtrDir = LoadDir(Size);
     RSI = _Add(OpSize::i64Bit, RSI, PtrDir);
     RDI = _Add(OpSize::i64Bit, RDI, PtrDir);
 
@@ -3745,9 +3734,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     GenerateFlags_SUB(Op, Src2, Src1);
 
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
+    auto PtrDir = LoadDir(Size);
 
     // Offset the pointer
     Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, PtrDir);
@@ -3764,9 +3751,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
     // read DF once
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
+    auto PtrDir = LoadDir(Size);
 
     auto JumpStart = Jump();
     // Make sure to start a new block after ending this one
@@ -3856,15 +3841,9 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Src, -1);
 
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
-
     // Offset the pointer
     OrderedNode *TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
-
-    TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, PtrDir);
-    StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
+    StoreGPRRegister(X86State::REG_RSI, OffsetByDir(TailDest_RSI, Size));
   }
   else {
     // Calculate flags early. because end of block
@@ -3877,9 +3856,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     // May or may not matter
 
     // Read DF once
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
+    auto PtrDir = LoadDir(Size);
 
     auto JumpStart = Jump();
     // Make sure to start a new block after ending this one
@@ -3953,15 +3930,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
     GenerateFlags_SUB(Op, Src1, Src2);
 
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
-
     // Offset the pointer
     OrderedNode *TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
-
-    TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, PtrDir);
-    StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
+    StoreGPRRegister(X86State::REG_RDI, OffsetByDir(TailDest_RDI, Size));
   }
   else {
     // Calculate flags early. because end of block
@@ -3970,9 +3941,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
     // read DF once
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto SizeConst = _Constant(Size);
-    auto PtrDir = _SubShift(IR::SizeToOpSize(CTX->GetGPRSize()), SizeConst, DF, ShiftType::LSL, FEXCore::ilog2(Size) + 1);
+    auto PtrDir = LoadDir(Size);
 
     auto JumpStart = Jump();
     // Make sure to start a new block after ending this one
