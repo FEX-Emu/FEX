@@ -86,3 +86,6 @@ Test_VEX/vroundss.asm
 
 # Simulator doesn't support cycle counter reading
 Test_TwoByte/0F_31.asm
+
+# Simulator doesn't support executing a syscall
+Test_Secondary/09_F3_07.asm

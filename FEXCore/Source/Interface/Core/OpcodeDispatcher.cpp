@@ -5426,6 +5426,10 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RDX, Counter.CounterHigh);
 }
 
+void OpDispatchBuilder::RDPIDOp(OpcodeArgs) {
+  StoreResult(GPRClass, Op, _ProcessorID(), -1);
+}
+
 void OpDispatchBuilder::CRC32(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -6572,6 +6576,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F2, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 7), 1, &OpDispatchBuilder::RDPIDOp},
 
     // GROUP 12
     {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<2>},
