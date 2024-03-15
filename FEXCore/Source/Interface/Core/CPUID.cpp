@@ -694,7 +694,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
       (0 << 19) | // MPX MAWAU
       (0 << 20) | // MPX MAWAU
       (0 << 21) | // MPX MAWAU
-      (0 << 22) | // RDPID Read Processor ID
+      (1 << 22) | // RDPID Read Processor ID
       (0 << 23) | // Reserved
       (0 << 24) | // Reserved
       (0 << 25) | // CLDEMOTE

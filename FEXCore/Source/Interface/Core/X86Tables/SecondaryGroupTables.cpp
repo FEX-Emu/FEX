@@ -162,7 +162,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_9, PF_F3, 4), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 5), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 6), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_F3, 7), 1, X86InstInfo{"RDPID",      TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_F3, 7), 1, X86InstInfo{"RDPID",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
     {OPD(TYPE_GROUP_9, PF_66, 0), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_66, 1), 1, X86InstInfo{"CMPXCHG8B/16B", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
