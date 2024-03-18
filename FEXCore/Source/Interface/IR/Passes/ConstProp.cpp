@@ -98,6 +98,27 @@ using MemExtendedAddrResult =
 static std::optional<MemExtendedAddrResult>
 MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,
                       IROp_Header *AddressHeader) {
+  // Try to optimize: AddShift Base, LSHL(Offset, Scale)
+  if (AddressHeader->Op == OP_ADDSHIFT) {
+    auto AddShift = AddressHeader->C<IROp_AddShift>();
+    if (AddShift->Shift == IR::ShiftType::LSL) {
+      auto Scale = 1U << AddShift->ShiftAmount;
+      if (IsMemoryScale(Scale, AccessSize)) {
+        // remove shift as it can be folded to the mem op
+        return std::make_optional(
+            std::make_tuple(MEM_OFFSET_SXTX, (uint8_t)Scale,
+                            IREmit->UnwrapNode(AddShift->Src2),
+                            IREmit->UnwrapNode(AddShift->Src1)));
+      } else if (Scale == 1) {
+        return std::make_optional(std::make_tuple(
+            MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src2),
+            IREmit->UnwrapNode(AddShift->Src1)));
+      }
+    }
+
+    return std::nullopt;
+  }
+
   LOGMAN_THROW_A_FMT(AddressHeader->Op == OP_ADD, "Invalid address Op");
   auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
   if (Src0Header->Size == 8) {
@@ -626,6 +647,34 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
         IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+
+        Changed = true;
+      }
+      break;
+    }
+
+    case OP_PREFETCH: {
+      auto Op = IROp->CW<IR::IROp_Prefetch>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
+
+      const bool SupportedOp =
+        AddressHeader->Op == OP_ADD ||
+        AddressHeader->Op == OP_ADDSHIFT;
+
+      if (SupportedOp &&
+          ((Is64BitMode && AddressHeader->Size == 8) ||
+           (!Is64BitMode && AddressHeader->Size == 4))) {
+        auto MaybeMemAddr =
+            MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+        if (!MaybeMemAddr) {
+          break;
+        }
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
         IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
 
         Changed = true;
@@ -1351,6 +1400,22 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         break;
       }
 
+      case OP_PREFETCH:
+      {
+        auto Op = IROp->CW<IR::IROp_Prefetch>();
+
+        uint64_t Constant2{};
+        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+          if (IsImmMemory(Constant2, IROp->Size)) {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
+
+            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
+
+            Changed = true;
+          }
+        }
+        break;
+      }
       default:
         break;
     }

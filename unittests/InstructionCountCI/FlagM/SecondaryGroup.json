@@ -1639,36 +1639,40 @@
       ]
     },
     "prefetchnta [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUP16 0x0F 0x18 /0",
-        "NOP implementation"
+        "GROUP16 0x0F 0x18 /0"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pldl1strm, [x4]"
+      ]
     },
     "prefetcht0 [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUP16 0x0F 0x18 /1",
-        "NOP implementation"
+        "GROUP16 0x0F 0x18 /1"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x4]"
+      ]
     },
     "prefetcht1 [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUP16 0x0F 0x18 /2",
-        "NOP implementation"
+        "GROUP16 0x0F 0x18 /2"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pldl2keep, [x4]"
+      ]
     },
     "prefetcht2 [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUP16 0x0F 0x18 /3",
-        "NOP implementation"
+        "GROUP16 0x0F 0x18 /3"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pldl3keep, [x4]"
+      ]
     },
     "db 0x0f, 0x18, 0x20;": {
       "ExpectedInstructionCount": 0,
@@ -1680,29 +1684,32 @@
       "ExpectedArm64ASM": []
     },
     "db 0x0f, 0x0d, 0x00": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "GROUPP 0x0F 0x0D /0",
-        "prefetch_exclusive [rax]",
-        "NOP implementation"
+        "prefetch_exclusive [rax]"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pldl1keep, [x4]"
+      ]
     },
     "prefetchw [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUPP 0x0F 0x0D /1",
-        "NOP implementation"
+        "GROUPP 0x0F 0x0D /1"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pstl1keep, [x4]"
+      ]
     },
     "prefetchwt1 [rax]": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "GROUPP 0x0F 0x0D /2",
-        "NOP implementation"
+        "GROUPP 0x0F 0x0D /2"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "prfm pstl1keep, [x4]"
+      ]
     }
   }
 }

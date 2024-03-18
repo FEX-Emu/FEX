@@ -2427,6 +2427,47 @@ DEF_OP(CacheLineZero) {
   }
 }
 
+DEF_OP(Prefetch) {
+  auto Op = IROp->C<IR::IROp_Prefetch>();
+  const auto MemReg = GetReg(Op->Addr.ID());
+
+  // Access size is only ever handled as 8-byte. Even though it is accesssed as a cacheline.
+  const auto MemSrc = GenerateMemOperand(8, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+  size_t LUT =
+    (Op->Stream ? 1 : 0) |
+    ((Op->CacheLevel - 1) << 1) |
+    (Op->ForStore ? 1U << 3 : 0);
+
+  constexpr static std::array<ARMEmitter::Prefetch, 14> PrefetchType = {
+    ARMEmitter::Prefetch::PLDL1KEEP,
+    ARMEmitter::Prefetch::PLDL1STRM,
+
+    ARMEmitter::Prefetch::PLDL2KEEP,
+    ARMEmitter::Prefetch::PLDL2STRM,
+
+    ARMEmitter::Prefetch::PLDL3KEEP,
+    ARMEmitter::Prefetch::PLDL3STRM,
+
+    // Gap of two.
+    // 0b0'11'0
+    ARMEmitter::Prefetch::PLDL1STRM,
+    // 0b0'11'1
+    ARMEmitter::Prefetch::PLDL1STRM,
+
+    ARMEmitter::Prefetch::PSTL1KEEP,
+    ARMEmitter::Prefetch::PSTL1STRM,
+
+    ARMEmitter::Prefetch::PSTL2KEEP,
+    ARMEmitter::Prefetch::PSTL2STRM,
+
+    ARMEmitter::Prefetch::PSTL3KEEP,
+    ARMEmitter::Prefetch::PSTL3STRM,
+  };
+
+  prfm(PrefetchType[LUT], MemSrc);
+}
+
 #undef DEF_OP
 }
 

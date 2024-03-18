@@ -3762,7 +3762,12 @@ public:
     }
     else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
-        prfm(prfop, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
+        if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
+          prfum<IndexType::OFFSET>(prfop, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
+        }
+        else {
+          prfm(prfop, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
+        }
       }
       else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
