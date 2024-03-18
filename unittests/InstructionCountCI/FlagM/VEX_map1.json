@@ -67,16 +67,12 @@
       ]
     },
     "vpmovmskb rax, xmm0": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0x201",
-        "movk x20, #0x804, lsl #16",
-        "movk x20, #0x2010, lsl #32",
-        "movk x20, #0x8040, lsl #48",
-        "dup v2.2d, x20",
+        "ldr q2, [x28, #2208]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",
@@ -86,16 +82,13 @@
       ]
     },
     "vpmovmskb rax, ymm0": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0x201",
-        "movk x20, #0x804, lsl #16",
-        "movk x20, #0x2010, lsl #32",
-        "movk x20, #0x8040, lsl #48",
-        "mov z2.d, x20",
+        "ldr x0, [x28, #1672]",
+        "ld1b {z2.b}, p7/z, [x0]",
         "mrs x0, nzcv",
         "mov z0.d, #0",
         "cmplt p0.b, p7/z, z16.b, #0",
