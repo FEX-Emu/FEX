@@ -1104,7 +1104,7 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   const auto ExtractSize = Is256Bit ? 4 : 2;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode *VMask = _VDupFromGPR(SrcSize, 8, _Constant(0x80'40'20'10'08'04'02'01ULL));
+  OrderedNode *VMask = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_MOVMASKB);
 
   auto VCMP = _VCMPLTZ(SrcSize, 1, Src);
   auto VAnd = _VAnd(SrcSize, 1, VCMP, VMask);
