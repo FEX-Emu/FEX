@@ -209,41 +209,6 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
-  auto ThunkConfigFile = ThunkConfig();
-
-  // We try to load ThunksDB from:
-  // - FEX global config
-  // - FEX user config
-  // - Defined ThunksConfig option
-  // - Steam AppConfig Global
-  // - AppConfig Global
-  // - Steam AppConfig Local
-  // - AppConfig Local
-  // This doesn't support the classic thunks interface.
-
-  auto AppName = AppConfigName();
-  fextl::vector<fextl::string> ConfigPaths {
-    FEXCore::Config::GetConfigFileLocation(true),
-    FEXCore::Config::GetConfigFileLocation(false),
-    ThunkConfigFile,
-  };
-
-  auto SteamID = getenv("SteamAppId");
-  if (SteamID) {
-    // If a SteamID exists then let's search for Steam application configs as well.
-    // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-    fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, AppName);
-
-    // Steam application configs interleaved with non-steam for priority sorting.
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, false));
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
-  }
-  else {
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
-    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
-  }
 
   if (!LDPath().empty()) {
     RootFSFD = open(LDPath().c_str(), O_DIRECTORY | O_PATH | O_CLOEXEC);
@@ -252,96 +217,141 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     }
   }
 
-  fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
-  LoadThunkDatabase(ThunkDB, true);
-  LoadThunkDatabase(ThunkDB, false);
+  // Only enable 32-bit thunks if explicitly asked. Until X11 thunking is stable.
+  bool ThunksEnabled = true;
+  if (!Is64BitMode()) {
+    FEX_CONFIG_OPT(Thunks32BitEnabled, THUNKS32BITENABLED);
+    ThunksEnabled = Thunks32BitEnabled();
+  }
 
-  for (const auto &Path : ConfigPaths) {
-    fextl::vector<char> FileData;
-    if (FEXCore::FileLoading::LoadFile(FileData, Path)) {
-      JSON::JsonAllocator Pool {
-        .PoolObject = {
-          .init = JSON::PoolInit,
-          .alloc = JSON::PoolAlloc,
-        },
-      };
+  if (ThunksEnabled) {
+    auto ThunkConfigFile = ThunkConfig();
 
-      // If a thunks DB property exists then we pull in data from the thunks database
-      json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
-      json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
-      if (!ThunksDB) {
+    // We try to load ThunksDB from:
+    // - FEX global config
+    // - FEX user config
+    // - Defined ThunksConfig option
+    // - Steam AppConfig Global
+    // - AppConfig Global
+    // - Steam AppConfig Local
+    // - AppConfig Local
+    // This doesn't support the classic thunks interface.
+
+    auto AppName = AppConfigName();
+    fextl::vector<fextl::string> ConfigPaths {
+      FEXCore::Config::GetConfigFileLocation(true),
+      FEXCore::Config::GetConfigFileLocation(false),
+      ThunkConfigFile,
+    };
+
+    auto SteamID = getenv("SteamAppId");
+    if (SteamID) {
+      // If a SteamID exists then let's search for Steam application configs as well.
+      // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
+      fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, AppName);
+
+      // Steam application configs interleaved with non-steam for priority sorting.
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, false));
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
+    }
+    else {
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
+      ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
+    }
+
+    fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
+    LoadThunkDatabase(ThunkDB, true);
+    LoadThunkDatabase(ThunkDB, false);
+
+    for (const auto &Path : ConfigPaths) {
+      fextl::vector<char> FileData;
+      if (FEXCore::FileLoading::LoadFile(FileData, Path)) {
+        JSON::JsonAllocator Pool {
+          .PoolObject = {
+            .init = JSON::PoolInit,
+            .alloc = JSON::PoolAlloc,
+          },
+        };
+
+        // If a thunks DB property exists then we pull in data from the thunks database
+        json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+        json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
+        if (!ThunksDB) {
+          continue;
+        }
+
+        for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+          const char *LibraryName = json_getName(Item);
+          bool LibraryEnabled = json_getInteger(Item) != 0;
+          // If the library is enabled then find it in the DB
+          auto DBObject = ThunkDB.find(LibraryName);
+          if (DBObject != ThunkDB.end()) {
+            DBObject->second.Enabled = LibraryEnabled;
+          }
+        }
+      }
+    }
+
+    // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
+    auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() ;
+    for (auto const &DBObject : ThunkDB) {
+      if (!DBObject.second.Enabled) {
         continue;
       }
 
-      for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
-        const char *LibraryName = json_getName(Item);
-        bool LibraryEnabled = json_getInteger(Item) != 0;
-        // If the library is enabled then find it in the DB
-        auto DBObject = ThunkDB.find(LibraryName);
-        if (DBObject != ThunkDB.end()) {
-          DBObject->second.Enabled = LibraryEnabled;
-        }
-      }
-    }
-  }
+      // Recursively add paths for this thunk library and its dependencies to ThunkOverlays.
+      // Using a local struct for this is slightly less ugly than using self-capturing lambdas
+      struct {
+        decltype(FileManager::ThunkOverlays)& ThunkOverlays;
+        decltype(ThunkDB)& ThunkDB;
+        const fextl::string& ThunkGuestPath;
+        bool Is64BitMode;
 
-  // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
-  auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() ;
-  for (auto const &DBObject : ThunkDB) {
-    if (!DBObject.second.Enabled) {
-      continue;
-    }
-
-    // Recursively add paths for this thunk library and its dependencies to ThunkOverlays.
-    // Using a local struct for this is slightly less ugly than using self-capturing lambdas
-    struct {
-      decltype(FileManager::ThunkOverlays)& ThunkOverlays;
-      decltype(ThunkDB)& ThunkDB;
-      const fextl::string& ThunkGuestPath;
-      bool Is64BitMode;
-
-      void SetupOverlay(const ThunkDBObject& DBDepend) {
-          auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
-          if (!FHU::Filesystem::Exists(ThunkPath)) {
-            if (!Is64BitMode) {
-              // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
-              return;
+        void SetupOverlay(const ThunkDBObject& DBDepend) {
+            auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
+            if (!FHU::Filesystem::Exists(ThunkPath)) {
+              if (!Is64BitMode) {
+                // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
+                return;
+              }
+              ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath);
             }
-            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath);
+
+            for (const auto& Overlay : DBDepend.Overlays) {
+              // Direct full path in guest RootFS to our overlay file
+              ThunkOverlays.emplace(Overlay, ThunkPath);
+            }
+        };
+
+        void InsertDependencies(const fextl::unordered_set<fextl::string> &Depends) {
+          for (auto const &Depend : Depends) {
+            auto& DBDepend = ThunkDB.at(Depend);
+            if (DBDepend.Enabled) {
+              continue;
+            }
+
+            SetupOverlay(DBDepend);
+
+            // Mark enabled and recurse into dependencies
+            DBDepend.Enabled = true;
+            InsertDependencies(DBDepend.Depends);
           }
+        };
+      } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode() };
 
-          for (const auto& Overlay : DBDepend.Overlays) {
-            // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, ThunkPath);
-          }
-      };
+      DBObjectHandler.SetupOverlay(DBObject.second);
+      DBObjectHandler.InsertDependencies(DBObject.second.Depends);
+    }
 
-      void InsertDependencies(const fextl::unordered_set<fextl::string> &Depends) {
-        for (auto const &Depend : Depends) {
-          auto& DBDepend = ThunkDB.at(Depend);
-          if (DBDepend.Enabled) {
-            continue;
-          }
-
-          SetupOverlay(DBDepend);
-
-          // Mark enabled and recurse into dependencies
-          DBDepend.Enabled = true;
-          InsertDependencies(DBDepend.Depends);
+    if (false) {
+      // Useful for debugging
+      if (ThunkOverlays.size()) {
+        LogMan::Msg::IFmt("Thunk Overlays:");
+        for (const auto& [Overlay, ThunkPath] : ThunkOverlays) {
+          LogMan::Msg::IFmt("\t{} -> {}", Overlay, ThunkPath);
         }
-      };
-    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode() };
-
-    DBObjectHandler.SetupOverlay(DBObject.second);
-    DBObjectHandler.InsertDependencies(DBObject.second.Depends);
-  }
-
-  if (false) {
-    // Useful for debugging
-    if (ThunkOverlays.size()) {
-      LogMan::Msg::IFmt("Thunk Overlays:");
-      for (const auto& [Overlay, ThunkPath] : ThunkOverlays) {
-        LogMan::Msg::IFmt("\t{} -> {}", Overlay, ThunkPath);
       }
     }
   }

@@ -185,6 +185,15 @@
           "\teg: $XDG_DATA_HOME/.fex-emu/ThunkConfigs/<ThunkConfig name>"
         ]
       },
+      "Thunks32BitEnabled": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables support for 32-bit thunking",
+          "This feature is currently not fully supported.",
+          "Only enable this if you know what you're doing"
+        ]
+      },
       "Env": {
         "Type": "strarray",
         "Default": "",
