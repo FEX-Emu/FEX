@@ -2123,11 +2123,18 @@ DEF_OP(MemCpy) {
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
     if (!Op->IsAtomic) {
+      ARMEmitter::ForwardLabel AbsPos{};
       ARMEmitter::ForwardLabel AgainInternal256Exit{};
       ARMEmitter::ForwardLabel AgainInternal128Exit{};
       ARMEmitter::BackwardLabel AgainInternal128{};
       ARMEmitter::BackwardLabel AgainInternal256{};
 
+      sub(ARMEmitter::Size::i64Bit, TMP4, TMP2, TMP3);
+      tbz(TMP4, 63, &AbsPos);
+      neg(ARMEmitter::Size::i64Bit, TMP4, TMP4);
+      Bind(&AbsPos);
+      sub(ARMEmitter::Size::i64Bit, TMP4, TMP4, 32);
+      tbnz(TMP4, 63, &AgainInternal);
 
       if (Direction == -1) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
