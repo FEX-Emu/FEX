@@ -1814,10 +1814,6 @@ DEF_OP(MemSet) {
       ARMEmitter::ForwardLabel AgainInternal128Exit{};
       ARMEmitter::BackwardLabel AgainInternal128{};
 
-      // Fallback to byte by byte loop if not 4 byte aligned
-      and_(ARMEmitter::Size::i64Bit, TMP4, TMP2, 0x3);
-      cbnz(ARMEmitter::Size::i64Bit, TMP4, &AgainInternal);
-
       if (Direction == -1) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
       }
@@ -2132,10 +2128,6 @@ DEF_OP(MemCpy) {
       ARMEmitter::BackwardLabel AgainInternal128{};
       ARMEmitter::BackwardLabel AgainInternal256{};
 
-      // Fallback to byte by byte loop if either of start/end are not 4 byte aligned
-      orr(ARMEmitter::Size::i64Bit, TMP4, TMP2, TMP3);
-      and_(ARMEmitter::Size::i64Bit, TMP4, TMP4, 0x3);
-      cbnz(ARMEmitter::Size::i64Bit, TMP4, &AgainInternal);
 
       if (Direction == -1) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
