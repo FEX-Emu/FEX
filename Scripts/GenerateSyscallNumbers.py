@@ -60,12 +60,6 @@ DefinitionRenameDict = {
     "pread64": "pread_64",
     "pwrite64": "pwrite_64",
     "prlimit64": "prlimit_64",
-    # Shm symbols conflict with termux defines and FEX's syscall token pasting.
-    # Underscore at the start to avoid name collision
-    "shmget": "_shmget",
-    "shmctl": "_shmctl",
-    "shmat": "_shmat",
-    "shmdt": "_shmdt",
     # musl/Alpine Linux defines `fstatat64` as a define that points to `fstatat`.
     # Rename it to avoid global define conflicts.
     "fstatat64": "fstatat_64",

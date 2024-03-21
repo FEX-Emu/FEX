@@ -103,7 +103,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(_shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
 
@@ -113,7 +113,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(_shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
       uint64_t Result = ::shmdt(shmaddr);
 

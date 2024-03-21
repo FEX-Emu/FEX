@@ -5,11 +5,6 @@ if (ENABLE_VIXL_SIMULATOR)
   list(APPEND DEFINES -DVIXL_SIMULATOR=1)
 endif()
 
-if (TERMUX_BUILD)
-  # Termux needs android-shmem to get the shm emulation library.
-  list(APPEND LIBS android-shmem)
-endif()
-
 function(GenerateInterpreter NAME AsInterpreter)
   add_executable(${NAME}
     FEXLoader.cpp
