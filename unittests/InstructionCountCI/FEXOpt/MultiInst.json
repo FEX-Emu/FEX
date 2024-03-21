@@ -216,7 +216,7 @@
       ]
     },
     "positive rep movsb": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -232,10 +232,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x70",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x78",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x54",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x44",
         "sub x0, x0, #0x20 (32)",
@@ -271,7 +273,7 @@
       ]
     },
     "positive rep movsw": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -287,10 +289,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x70",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x78",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x54",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x44",
         "sub x0, x0, #0x10 (16)",
@@ -326,7 +330,7 @@
       ]
     },
     "positive rep movsd": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -342,10 +346,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x70",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x78",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x54",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x44",
         "sub x0, x0, #0x8 (8)",
@@ -381,7 +387,7 @@
       ]
     },
     "positive rep movsq": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -397,10 +403,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x70",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x78",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x54",
         "sub x0, x0, #0x4 (4)",
         "tbnz x0, #63, #+0x44",
         "sub x0, x0, #0x4 (4)",
@@ -436,7 +444,7 @@
       ]
     },
     "negative rep movsb": {
-      "ExpectedInstructionCount": 45,
+      "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -451,10 +459,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x80",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x64",
+        "cbz x0, #+0x88",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x64",
         "sub x1, x1, #0x1f (31)",
         "sub x2, x2, #0x1f (31)",
         "sub x0, x0, #0x20 (32)",
@@ -494,7 +504,7 @@
       ]
     },
     "negative rep movsw": {
-      "ExpectedInstructionCount": 45,
+      "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -509,10 +519,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x80",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x64",
+        "cbz x0, #+0x88",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x64",
         "sub x1, x1, #0x1e (30)",
         "sub x2, x2, #0x1e (30)",
         "sub x0, x0, #0x10 (16)",
@@ -552,7 +564,7 @@
       ]
     },
     "negative rep movsd": {
-      "ExpectedInstructionCount": 45,
+      "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -567,10 +579,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x80",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x64",
+        "cbz x0, #+0x88",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x64",
         "sub x1, x1, #0x1c (28)",
         "sub x2, x2, #0x1c (28)",
         "sub x0, x0, #0x8 (8)",
@@ -610,7 +624,7 @@
       ]
     },
     "negative rep movsq": {
-      "ExpectedInstructionCount": 45,
+      "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -625,10 +639,12 @@
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
-        "cbz x0, #+0x80",
-        "orr x3, x1, x2",
-        "and x3, x3, #0x3",
-        "cbnz x3, #+0x64",
+        "cbz x0, #+0x88",
+        "sub x3, x1, x2",
+        "tbz x3, #63, #+0x8",
+        "neg x3, x3",
+        "sub x3, x3, #0x20 (32)",
+        "tbnz x3, #63, #+0x64",
         "sub x1, x1, #0x18 (24)",
         "sub x2, x2, #0x18 (24)",
         "sub x0, x0, #0x4 (4)",
@@ -668,7 +684,7 @@
       ]
     },
     "positive rep stosb": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -684,9 +700,7 @@
         "uxtb w21, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x60",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x4c",
+        "cbz x0, #+0x58",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x3c",
         "dup v1.16b, w21",
@@ -713,7 +727,7 @@
       ]
     },
     "positive rep stosw": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -729,9 +743,7 @@
         "uxth w21, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x60",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x4c",
+        "cbz x0, #+0x58",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x3c",
         "dup v1.8h, w21",
@@ -758,7 +770,7 @@
       ]
     },
     "positive rep stosd": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -774,9 +786,7 @@
         "mov w21, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x60",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x4c",
+        "cbz x0, #+0x58",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x3c",
         "dup v1.4s, w21",
@@ -803,7 +813,7 @@
       ]
     },
     "positive rep stosq": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -818,9 +828,7 @@
         "strb w21, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x60",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x4c",
+        "cbz x0, #+0x58",
         "sub x0, x0, #0x4 (4)",
         "tbnz x0, #63, #+0x3c",
         "dup v1.2d, x4",
@@ -847,7 +855,7 @@
       ]
     },
     "negative rep stosb": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -862,9 +870,7 @@
         "uxtb w20, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x68",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x60",
         "sub x1, x1, #0x1f (31)",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x3c",
@@ -893,7 +899,7 @@
       ]
     },
     "negative rep stosw": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -908,9 +914,7 @@
         "uxth w20, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x68",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x60",
         "sub x1, x1, #0x1e (30)",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x3c",
@@ -939,7 +943,7 @@
       ]
     },
     "negative rep stosd": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -954,9 +958,7 @@
         "mov w20, w4",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x68",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x60",
         "sub x1, x1, #0x1c (28)",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x3c",
@@ -985,7 +987,7 @@
       ]
     },
     "negative rep stosq": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -999,9 +1001,7 @@
         "strb w20, [x28, #714]",
         "mov x0, x5",
         "mov x1, x11",
-        "cbz x0, #+0x68",
-        "and x3, x1, #0x3",
-        "cbnz x3, #+0x54",
+        "cbz x0, #+0x60",
         "sub x1, x1, #0x18 (24)",
         "sub x0, x0, #0x4 (4)",
         "tbnz x0, #63, #+0x3c",
