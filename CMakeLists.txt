@@ -26,7 +26,6 @@ option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
 option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
 option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
-option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALSE)
 option(ENABLE_VIXL_DISASSEMBLER "Enables debug disassembler output with VIXL" FALSE)
 option(COMPILE_VIXL_DISASSEMBLER "Compiles the vixl disassembler in to vixl" FALSE)
@@ -161,18 +160,6 @@ endif()
 if (NOT ENABLE_OFFLINE_TELEMETRY)
   # Disable FEX offline telemetry entirely if asked
   add_definitions(-DFEX_DISABLE_TELEMETRY=1)
-endif()
-
-if(DEFINED ENV{TERMUX_VERSION} OR ENABLE_TERMUX_BUILD)
-  add_definitions(-DTERMUX_BUILD=1)
-  set(TERMUX_BUILD 1)
-
-  # Termux doesn't support Jemalloc due to bad interactions between emutls, jemalloc, and scudo
-  set(ENABLE_JEMALLOC FALSE)
-
-  # Termux builds can't rely on X11 packages
-  # SDL2 isn't even compiled with GL support so our GUIs wouldn't even work
-  set(BUILD_FEXCONFIG FALSE)
 endif()
 
 if (ENABLE_ASAN)

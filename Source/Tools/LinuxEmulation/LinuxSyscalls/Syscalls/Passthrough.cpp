@@ -249,10 +249,10 @@ uint64_t SyscallPassthrough7(FEXCore::Core::CpuStateFrame *Frame, uint64_t arg1,
       SyscallPassthrough3<SYSCALL_DEF(msync)>);
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(mincore, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       SyscallPassthrough3<SYSCALL_DEF(mincore)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(_shmget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      SyscallPassthrough3<SYSCALL_DEF(_shmget)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(_shmctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      SyscallPassthrough3<SYSCALL_DEF(_shmctl)>);
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(shmget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      SyscallPassthrough3<SYSCALL_DEF(shmget)>);
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(shmctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      SyscallPassthrough3<SYSCALL_DEF(shmctl)>);
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       SyscallPassthrough0<SYSCALL_DEF(getpid)>);
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(socket, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

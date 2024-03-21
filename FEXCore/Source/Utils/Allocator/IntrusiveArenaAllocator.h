@@ -9,19 +9,8 @@
 
 #include <bitset>
 #include <cstddef>
-#ifdef TERMUX_BUILD
-#ifdef __has_include
-#if __has_include(<memory_resource>)
-#error Termux <experimental/memory_resource> workaround can be removed
-#endif
-#endif
-#include <experimental/memory_resource>
-#include <experimental/list>
-namespace fex_pmr = std::experimental::pmr;
-#else
 #include <memory_resource>
 namespace fex_pmr = std::pmr;
-#endif
 #include <sys/user.h>
 
 #include <mutex>
