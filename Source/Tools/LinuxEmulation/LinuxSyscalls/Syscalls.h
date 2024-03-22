@@ -308,6 +308,8 @@ public:
   bool NeedXIDCheck() const { return NeedToCheckXID; }
   void DisableXIDCheck() { NeedToCheckXID = false; }
 
+  constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
+
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
 

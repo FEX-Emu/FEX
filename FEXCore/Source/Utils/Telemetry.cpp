@@ -33,6 +33,7 @@ namespace FEXCore::Telemetry {
     "Uses 32-bit Segment SS",
     "Uses 32-bit Segment CS",
     "Uses 32-bit Segment DS",
+    "Non-Canonical 64-bit address access",
   };
 
   static bool Enabled {true};

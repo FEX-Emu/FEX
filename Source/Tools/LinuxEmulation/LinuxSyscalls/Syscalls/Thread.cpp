@@ -449,11 +449,10 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_FLAGS(arch_prctl, SyscallFlags::DEFAULT,
       [](FEXCore::Core::CpuStateFrame *Frame, int code, unsigned long addr) -> uint64_t {
-      constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
       uint64_t Result{};
       switch (code) {
         case 0x1001: // ARCH_SET_GS
-          if (addr >= TASK_MAX) {
+          if (addr >= SyscallHandler::TASK_MAX_64BIT) {
             // Ignore a non-canonical address
             return -EPERM;
           }
@@ -461,7 +460,7 @@ namespace FEX::HLE {
           Result = 0;
         break;
         case 0x1002: // ARCH_SET_FS
-          if (addr >= TASK_MAX) {
+          if (addr >= SyscallHandler::TASK_MAX_64BIT) {
             // Ignore a non-canonical address
             return -EPERM;
           }
