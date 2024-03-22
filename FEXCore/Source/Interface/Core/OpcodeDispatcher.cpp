@@ -1056,41 +1056,32 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   bool CheckZF = Op->OP != 0xE2;
   bool ZFTrue = Op->OP == 0xE1;
 
-  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
-  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
-  OrderedNode *AndCondWith = nullptr;
-  if (CheckZF)
-    AndCondWith = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC, !ZFTrue);
-
   BlockSetRIP = true;
-  auto ZeroConst = _Constant(0);
-  IRPair<IROp_Header> SrcCond;
-
-  IRPair<IROp_Constant> TakeBranch = _Constant(1);
-  IRPair<IROp_Constant> DoNotTakeBranch = _Constant(0);
-
   uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
 
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  CondReg = _Sub(SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, CondReg, _Constant(SrcSize * 8, 1));
+  CondReg = _Sub(OpSize, CondReg, _Constant(SrcSize * 8, 1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
-  SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
-
-  if (AndCondWith)
-    SrcCond = _And(OpSize::i64Bit, SrcCond, AndCondWith);
+  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
+  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
+  //
+  // To handle efficiently, smash RCX to zero if ZF is wrong (1 csel).
+  if (CheckZF) {
+    CondReg = _NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _Constant(0));
+  }
 
   CalculateDeferredFlags();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
   {
-    auto CondJump_ = CondJump(SrcCond);
+    auto CondJump_ = CondJump(CondReg);
 
     // Taking branch block
     if (TrueBlock != JumpTargets.end()) {
