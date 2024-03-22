@@ -62,7 +62,7 @@ $end_info$
 
 namespace {
 static bool SilentLog;
-static int OutputFD {STDERR_FILENO};
+static int OutputFD {-1};
 static bool ExecutedWithFD {false};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
@@ -88,7 +88,7 @@ void AssertHandler(char const *Message) {
 } // Anonymous namespace
 
 namespace FEXServerLogging {
-  int FEXServerFD{};
+  int FEXServerFD{-1};
   void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
   }
@@ -455,6 +455,15 @@ int main(int argc, char **argv, char **const envp) {
 
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
+
+  // Now that we have the syscall handler. Track some FDs that are FEX owned.
+  if (OutputFD != -1) {
+    SyscallHandler->FM.TrackFEXFD(OutputFD);
+  }
+  SyscallHandler->FM.TrackFEXFD(FEXServerClient::GetServerFD());
+  if (FEXServerLogging::FEXServerFD != -1) {
+    SyscallHandler->FM.TrackFEXFD(FEXServerLogging::FEXServerFD);
+  }
 
   {
     // Load VDSO in to memory prior to mapping our ELFs.
