@@ -61,11 +61,11 @@ namespace FEXCore::Telemetry {
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
-    if (FHU::Filesystem::Exists(DataDirectory)) {
-      // If the file exists, retain a single backup
-      auto Backup = DataDirectory + ".1";
-      FHU::Filesystem::CopyFile(DataDirectory, Backup, FHU::Filesystem::CopyOptions::OVERWRITE_EXISTING);
-    }
+    // Retain a single backup if the telemetry already existed.
+    auto Backup = DataDirectory + ".bck";
+
+    // Failure on rename is okay.
+    (void)FHU::Filesystem::RenameFile(DataDirectory, Backup);
 
     auto File = FEXCore::File::File(DataDirectory.c_str(),
          FEXCore::File::FileModes::WRITE |
