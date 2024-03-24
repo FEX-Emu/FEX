@@ -48,6 +48,7 @@ namespace DefaultValues {
     PATH_CONFIG_DIR_GLOBAL,
     PATH_CONFIG_FILE_LOCAL,
     PATH_CONFIG_FILE_GLOBAL,
+    PATH_CONFIG_TELEMETRY_FOLDER,
     PATH_LAST,
   };
   static std::array<fextl::string, Paths::PATH_LAST> Paths;
@@ -62,6 +63,22 @@ namespace DefaultValues {
 
   void SetConfigFileLocation(const std::string_view Path, bool Global) {
     Paths[PATH_CONFIG_FILE_LOCAL + Global] = Path;
+  }
+
+  fextl::string const& GetTelemetryDirectory() {
+    auto &Path = Paths[PATH_CONFIG_TELEMETRY_FOLDER];
+    if (Path.empty()) {
+      FEX_CONFIG_OPT(TelemetryDirectory, TELEMETRYDIRECTORY);
+      if (!TelemetryDirectory().empty()) {
+        Path = TelemetryDirectory;
+        Path += "/";
+      }
+      else {
+        Path = Config::GetDataDirectory() + "Telemetry/";
+      }
+    }
+
+    return Path;
   }
 
   fextl::string const& GetDataDirectory() {
