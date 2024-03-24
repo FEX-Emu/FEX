@@ -77,11 +77,6 @@ namespace FEX::LinuxEmulation::Threads {
     }
   }
 
-  void DeallocateStackObject(void *Ptr) {
-    RemoveStackFromLivePool(Ptr);
-    AddStackToDeadPool(Ptr);
-  }
-
   [[noreturn]]
   void DeallocateStackObjectAndExit(void *Ptr, int Status) {
     RemoveStackFromLivePool(Ptr);
@@ -107,7 +102,62 @@ namespace FEX::LinuxEmulation::Threads {
     FEX_UNREACHABLE;
   }
 
+#ifdef _M_ARM_64
+  __attribute__((naked))
+  void StackPivotAndCall(void *Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
+    // x0: Arg
+    // x1: Function to call
+    // x2: StackPivot
+    __asm volatile(R"(
+    // Stack pivot.
+    mov x3, sp;
+    mov sp, x2;
+
+    // Store stack storage location on to current stack
+    stp x3, lr, [sp, -16]!;
+
+    // x0 already has argument to pass.
+    blr x1
+
+    // Reload stack storage location
+    ldp x2, lr, [sp], 16;
+
+    // Stack pivot back
+    mov sp, x2;
+
+    ret;
+    )"
+    ::: "memory");
+  }
+#else
+  __attribute__((naked))
+  void StackPivotAndCall(void *Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
+    // rdi: Arg
+    // rsi: Function to call
+    // rdx: StackPivot
+    __asm volatile(R"(
+    // Copy original stack in to RSP.
+    movq %%rsp, %%rcx;
+
+    // Store original stack on new stack
+    pushq %%rcx;
+
+    // Store stack pivot on new stack.
+    pushq %%rdx;
+
+    // rdi already contains function argument.
+    callq *%%rsi;
+
+    // Restore original stack
+    popq %%rsp;
+
+    ret;
+
+    )" ::: "memory");
+  }
+#endif
   namespace PThreads {
+    [[noreturn]]
     void *InitializeThread(void *Ptr);
 
     class PThread final : public FEXCore::Threads::Thread {
@@ -121,12 +171,15 @@ namespace FEX::LinuxEmulation::Threads {
         FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
         AddStackToLivePool(Stack);
         pthread_attr_init(&Attr);
-        pthread_attr_setstack(&Attr, Stack, FEX::LinuxEmulation::Threads::STACK_SIZE);
-        // TODO: Thread creation should be using this instead.
-        // Causes Steam to crash early though.
-        // pthread_create(&Thread, &Attr, InitializeThread, this);
-        pthread_create(&Thread, &Attr, Func, Arg);
-
+        // Allocate a minimum size stack through pthreads, then stack pivot to FEX's allocated stack.
+        // This is required due to a race condition with pthread's DTV/TLS regions when a stack is reused before pthreads deletes that thread's
+        // DTV/TLS regions.
+        // This can be seen as a crash when running Steam fairly easily, but is very confusing when debugging.
+        // The cause of this race condition is from glibc associating a DTV/TLS region with a stack region until the kernel clears the
+        // `set_tid_address` address construct. If the stack is reused before the address is set to zero, then glibc won't initialize the new thread's
+        // DTV/TLS region, resulting in TLS usage crashing.
+        pthread_attr_setstacksize(&Attr, PTHREAD_STACK_MIN);
+        pthread_create(&Thread, &Attr, InitializeThread, this);
         pthread_attr_destroy(&Attr);
       }
 
@@ -156,12 +209,16 @@ namespace FEX::LinuxEmulation::Threads {
         return self == Thread;
       }
 
-      void *Execute() {
-        return UserFunc(UserArg);
+      FEXCore::Threads::ThreadFunc GetUserFunc() const {
+        return UserFunc;
       }
 
-      void FreeStack() {
-        DeallocateStackObject(Stack);
+      void *GetUserArg() const {
+        return UserArg;
+      }
+
+      void *GetPivotStack() const {
+        return Stack;
       }
 
       private:
@@ -171,19 +228,24 @@ namespace FEX::LinuxEmulation::Threads {
       void *Stack{};
     };
 
+    [[noreturn]]
     void *InitializeThread(void *Ptr) {
-      PThread *Thread{reinterpret_cast<PThread*>(Ptr)};
+      void *StackBase{};
+      {
+        PThread *Thread{reinterpret_cast<PThread*>(Ptr)};
+        StackBase = Thread->GetPivotStack();
 
-      // Run the user function
-      void *Result = Thread->Execute();
-
-      // Put the stack back in to the stack pool
-      Thread->FreeStack();
+        // Run the user function.
+        // `Thread` object is dead after this function returns.
+        StackPivotAndCall(Thread->GetUserArg(), Thread->GetUserFunc(), reinterpret_cast<uint64_t>(StackBase) + FEX::LinuxEmulation::Threads::STACK_SIZE);
+      }
 
       // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
       FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
 
-      return Result;
+      DeallocateStackObjectAndExit(StackBase, 0);
+
+      FEX_UNREACHABLE;
     }
 
     fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(
