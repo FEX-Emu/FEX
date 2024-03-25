@@ -3117,16 +3117,19 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   GenerateFlags_POPCOUNT(Op, Src);
 }
 
+OrderedNode *OpDispatchBuilder::CalculateAFForDecimal(OrderedNode *A) {
+  auto Nibble = _And(OpSize::i64Bit, A, _Constant(0xF));
+  auto Greater = _Select(FEXCore::IR::COND_UGT, Nibble, _Constant(9),
+                         _Constant(1), _Constant(0));
+
+  return _Or(OpSize::i64Bit, LoadAF(), Greater);
+}
+
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-  auto AF = LoadAF();
-
-  // AF |= ((AL & 0x0F) > 9);
-  AF = _Or(OpSize::i64Bit, AF,
-           _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9),
-                   _Constant(1), _Constant(0)));
+  auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
   CF = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
@@ -3223,13 +3226,8 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AF = LoadAF();
   auto A = LoadGPRRegister(X86State::REG_RAX);
-
-  // AF |= ((AL & 0x0F) > 9);
-  AF = _Or(OpSize::i32Bit, AF,
-           _Select(FEXCore::IR::COND_UGT, _And(OpSize::i32Bit, A, _Constant(0xF)), _Constant(9),
-                   _Constant(1), _Constant(0)));
+  auto AF = CalculateAFForDecimal(A);
 
   // CF = AF, OF/SF/ZF/PF undefined
   ZeroNZCV();
