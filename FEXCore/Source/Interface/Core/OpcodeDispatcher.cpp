@@ -1058,13 +1058,19 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 
   BlockSetRIP = true;
   uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
+  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+
+  if (!CTX->Config.Is64BitMode) {
+    // RCX size is 32-bit or 16-bit when executing in 32-bit mode.
+    SrcSize >>= 1;
+    OpSize = OpSize::i32Bit;
+  }
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
 
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  OrderedNode *CondReg = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   CondReg = _Sub(OpSize, CondReg, _Constant(SrcSize * 8, 1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
