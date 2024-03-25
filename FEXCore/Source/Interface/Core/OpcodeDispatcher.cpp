@@ -3247,41 +3247,22 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AF = LoadAF();
-  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
+  auto A = LoadGPRRegister(X86State::REG_RAX);
+  auto AF = CalculateAFForDecimal(A);
 
-  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
-  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
-  CondJump(Cond, TrueBlock, FalseBlock);
+  // CF = AF, OF/SF/ZF/PF undefined
+  ZeroNZCV();
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(AF);
+  SetAFAndFixup(AF);
+  CalculateDeferredFlags();
 
-  SetCurrentCodeBlock(FalseBlock);
-  StartNewBlock();
-  {
-    auto NewAX = _And(OpSize::i64Bit, AX, _Constant(0xFF0F));
-    StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
-    ZeroNZCV();
-    SetAF(0);
-    CalculateDeferredFlags();
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(TrueBlock);
-  StartNewBlock();
-  {
-    auto NewAX = _Sub(OpSize::i64Bit, AX, _Constant(6));
-    NewAX = _Sub(OpSize::i64Bit, NewAX, _Constant(0x100));
-    auto Result = _And(OpSize::i64Bit, NewAX, _Constant(0xFF0F));
-    StoreGPRRegister(X86State::REG_RAX, Result, 2);
-    ZeroNZCV();
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
-    SetAF(1);
-    CalculateDeferredFlags();
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(EndBlock);
-  StartNewBlock();
+  // AX = CF ? (AX - 0x106) : 0
+  A = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_UGE} /* CF = 1 */,
+                  _Sub(OpSize::i32Bit, A, _Constant(0x106)), A);
+
+  // AL = AL & 0x0F
+  A = _And(OpSize::i32Bit, A, _Constant(0xFF0F));
+  StoreGPRRegister(X86State::REG_RAX, A, 2);
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
