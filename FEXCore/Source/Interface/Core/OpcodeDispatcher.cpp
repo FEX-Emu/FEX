@@ -3286,17 +3286,15 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  auto AH = _Lshr(OpSize::i32Bit, LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
+  auto A = LoadGPRRegister(X86State::REG_RAX);
+  auto AH = _Lshr(OpSize::i32Bit, A, _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
-  auto NewAL = _Add(OpSize::i64Bit, AL, _Mul(OpSize::i64Bit, AH, Imm8));
+  auto NewAL = _Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(OpSize::i64Bit, NewAL, _Constant(0xFF));
   StoreGPRRegister(X86State::REG_RAX, Result, 2);
 
-  // Update Flags
-  AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetNZ_ZeroCV(1, AL);
-  CalculatePF(AL);
+  SetNZ_ZeroCV(1, Result);
+  CalculatePF(Result);
   _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
 }
 
