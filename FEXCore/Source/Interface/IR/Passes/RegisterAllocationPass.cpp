@@ -295,6 +295,8 @@ namespace {
       uint32_t FindSpillSlot(IR::NodeID Node, FEXCore::IR::RegisterClassType RegisterClass);
 
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
+
+      uint64_t OriginalRIP;
   };
 
   ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _SupportsAVX)
@@ -1227,7 +1229,7 @@ namespace {
 
         if (!CurrentNodes.contains(InterferenceNode)) {
           InterferenceIdToSpill = InterferenceNode;
-          LogMan::Msg::DFmt("Panic spilling %{}, Live Range[{}, {})", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+          LogMan::Msg::DFmt("[RIP: 0x{:x}] Panic spilling %{}, Live Range[{}, {})", OriginalRIP, InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
           return true;
         }
         return false;
@@ -1446,6 +1448,8 @@ namespace {
 
     auto IR = IREmit->ViewIR();
 
+    auto HeaderOp = IR.GetHeader();
+    OriginalRIP = HeaderOp->OriginalRIP;
     SpillSlotCount = 0;
     Graph->SpillStack.clear();
 
