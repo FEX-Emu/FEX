@@ -1764,6 +1764,7 @@ private:
   OrderedNode *LoadPFRaw();
   OrderedNode *LoadAF();
   void FixupAF();
+  void SetAFAndFixup(OrderedNode *AF);
   void CalculatePF(OrderedNode *Res);
   void CalculateAF(OrderedNode *Src1, OrderedNode *Src2);
 
