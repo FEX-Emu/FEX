@@ -146,9 +146,9 @@ struct ELFParser {
     }
 
     if (type == ::ELFLoader::ELFContainer::TYPE_X86_32) {
-      Elf32_Phdr phdrs32[ehdr.e_phnum];
+      fextl::vector<Elf32_Phdr> phdrs32(ehdr.e_phnum);
 
-      if (pread(fd, phdrs32, sizeof(Elf32_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
+      if (pread(fd, phdrs32.data(), sizeof(Elf32_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
         LogMan::Msg::EFmt("Failed to read phdr32 from '{}'", fd);
         return false;
       }
