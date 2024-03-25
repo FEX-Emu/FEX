@@ -3152,75 +3152,30 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-  auto AF = LoadAF();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto AF = CalculateAFForDecimal(AL);
 
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
-  CalculateDeferredFlags();
+  // CF |= (AL > 0x99);
+  CF = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
 
-  auto Cond = _Or(OpSize::i64Bit, AF, _Select(FEXCore::IR::COND_UGT, _And(OpSize::i64Bit, AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
-  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
-  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+  // NewCF = CF | (AF && (Borrow from AL - 6))
+  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(FEXCore::IR::COND_ULT, AL, _Constant(6), AF, CF));
 
-  CalculateDeferredFlags();
-  CondJump(Cond, TrueBlock, FalseBlock);
-  SetCurrentCodeBlock(FalseBlock);
-  StartNewBlock();
-  {
-    SetAF(0);
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(TrueBlock);
-  StartNewBlock();
-  {
-    auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x6));
-    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
-    CalculateDeferredFlags();
-    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    // XXX: I don't think this is correct. Needs Investigation.
-    // The `CF` variable is the original CF from the start of the operation
-    // The `NewCF` will be _Constant(0) stored aboved.
-    // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i64Bit, CF, NewCF));
-    SetAF(1);
-    CalculateDeferredFlags();
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(EndBlock);
-  StartNewBlock();
+  // AL = AF ? (AL - 0x6) : AL;
+  AL = _Select(FEXCore::IR::COND_NEQ, AF, _Constant(0),
+               _Sub(OpSize::i64Bit, AL, _Constant(0x6)), AL);
 
-  Cond = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
-  FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-  TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
-  EndBlock = CreateNewCodeBlockAfter(TrueBlock);
-  CondJump(Cond, TrueBlock, FalseBlock);
-  SetCurrentCodeBlock(FalseBlock);
-  StartNewBlock();
-  {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(0));
-    CalculateDeferredFlags();
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(TrueBlock);
-  StartNewBlock();
-  {
-    AL = LoadGPRRegister(X86State::REG_RAX, 1);
-    auto NewAL = _Sub(OpSize::i64Bit, AL, _Constant(0x60));
-    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Constant(1));
-    CalculateDeferredFlags();
-    Jump(EndBlock);
-  }
-  SetCurrentCodeBlock(EndBlock);
-  StartNewBlock();
-  // Update Flags
-  AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_RAW_LOC>(_Select(FEXCore::IR::COND_UGE, _And(OpSize::i64Bit, AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Select(FEXCore::IR::COND_EQ, _And(OpSize::i64Bit, AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  // AL = CF ? (AL - 0x60) : AL;
+  AL = _Select(FEXCore::IR::COND_NEQ, CF, _Constant(0),
+               _Sub(OpSize::i64Bit, AL, _Constant(0x60)), AL);
+
+  // SF, ZF, PF set according to result. CF set per above. OF undefined.
+  StoreGPRRegister(X86State::REG_RAX, AL, 1);
+  SetNZ_ZeroCV(1, AL);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
   CalculatePF(AL);
-  FixupAF();
+  SetAFAndFixup(AF);
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
