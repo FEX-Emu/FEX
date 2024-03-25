@@ -3272,14 +3272,11 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
   auto URemOp = _URem(OpSize::i64Bit, AL, Imm8);
-  auto AH = _Lshl(OpSize::i64Bit, UDivOp, _Constant(8));
-  auto AX = _Add(OpSize::i64Bit, AH, URemOp);
-  StoreGPRRegister(X86State::REG_RAX, AX, 2);
+  auto Res = _AddShift(OpSize::i64Bit, URemOp, UDivOp, ShiftType::LSL, 8);
+  StoreGPRRegister(X86State::REG_RAX, Res, 2);
 
-  // Update Flags
-  AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  SetNZ_ZeroCV(1, AL);
-  CalculatePF(AL);
+  SetNZ_ZeroCV(1, Res);
+  CalculatePF(Res);
   _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
 }
 
