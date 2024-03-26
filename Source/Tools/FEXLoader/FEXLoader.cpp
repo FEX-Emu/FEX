@@ -289,6 +289,7 @@ int main(int argc, char **argv, char **const envp) {
   // Early check for process stall
   // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
   FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
+  FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
   if (StallProcess) {
     while (1) {
       // Stall this process out forever
@@ -344,6 +345,11 @@ int main(int argc, char **argv, char **const envp) {
     else if (!LogFile.empty()) {
       OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
     }
+  }
+
+  if (StartupSleep()) {
+    LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", ::getpid(), Program.ProgramName, StartupSleep());
+    std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
 
   FEXCore::Profiler::Init();
