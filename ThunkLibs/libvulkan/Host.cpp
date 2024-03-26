@@ -39,7 +39,6 @@ static void DoSetupWithInstance(VkInstance instance) {
     }
 
     // Query pointers for functions customized below
-    (void*&)LDR_PTR(vkCreateInstance) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkCreateInstance");
     (void*&)LDR_PTR(vkCreateDevice) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkCreateDevice");
 
     // Only do this lookup once.
