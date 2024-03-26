@@ -171,7 +171,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size="<20M" ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
 
     - name: Remove old SHM regions
       if: ${{ always() }}
