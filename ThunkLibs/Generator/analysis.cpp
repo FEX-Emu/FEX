@@ -301,14 +301,8 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                 if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
                     // Process later
                 } else if (auto annotated_member = llvm::dyn_cast<clang::FieldDecl>(template_args[0].getAsDecl())) {
-                    {
-                        if (decl->getNumBases() != 1 || decl->bases_begin()->getType().getAsString() != "fexgen::custom_repack") {
-                            throw report_error(template_arg_loc, "Unsupported member annotation(s)");
-                        }
-
-                        if (!annotated_member->getType()->isPointerType() && !annotated_member->getType()->isArrayType()) {
-                            throw report_error(template_arg_loc, "custom_repack annotation requires pointer member");
-                        }
+                    if (decl->getNumBases() != 1 || decl->bases_begin()->getType().getAsString() != "fexgen::custom_repack") {
+                        throw report_error(template_arg_loc, "Unsupported member annotation(s)");
                     }
 
                     // Get or add parent type to list of structure types
