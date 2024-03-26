@@ -35,8 +35,6 @@ namespace Handler {
       return "1";
     else if (Value == "full")
       return "2";
-    else if (Value == "mman")
-      return "3";
     return "0";
   }
   static inline std::optional<fextl::string> CacheObjectCodeHandler(std::string_view Value) {
@@ -67,7 +65,6 @@ namespace Handler {
     CONFIG_SMC_NONE,
     CONFIG_SMC_MTRACK,
     CONFIG_SMC_FULL,
-    CONFIG_SMC_MMAN,
   };
 
   enum ConfigObjectCodeHandler {

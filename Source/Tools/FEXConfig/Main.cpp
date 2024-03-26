@@ -568,7 +568,7 @@ namespace {
       }
 
       ImGui::Text("SMC Checks: ");
-      int SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
+      int SMCChecks = FEXCore::Config::CONFIG_SMC_MTRACK;
 
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SMCCHECKS);
       if (Value.has_value()) {
@@ -578,8 +578,6 @@ namespace {
           SMCChecks = FEXCore::Config::CONFIG_SMC_MTRACK;
         } else if (**Value == "2") {
           SMCChecks = FEXCore::Config::CONFIG_SMC_FULL;
-        } else if (**Value == "3") {
-          SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
         }
       }
 
@@ -587,7 +585,6 @@ namespace {
       SMCChanged |= ImGui::RadioButton("None", &SMCChecks, FEXCore::Config::CONFIG_SMC_NONE); ImGui::SameLine();
       SMCChanged |= ImGui::RadioButton("MTrack (Default)", &SMCChecks, FEXCore::Config::CONFIG_SMC_MTRACK); ImGui::SameLine();
       SMCChanged |= ImGui::RadioButton("Full", &SMCChecks, FEXCore::Config::CONFIG_SMC_FULL);
-      SMCChanged |= ImGui::RadioButton("MMan (Deprecated)", &SMCChecks, FEXCore::Config::CONFIG_SMC_MMAN); ImGui::SameLine();
 
       if (SMCChanged) {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SMCCHECKS, std::to_string(SMCChecks));
