@@ -1567,6 +1567,11 @@ namespace FEX::HLE {
       // FEX is hard crashing at this point and won't hit regular shutdown routines.
       // Add the signal to the crash mask.
       CrashMask |= (1ULL << Signal);
+      if (Signal == SIGSEGV &&
+          reinterpret_cast<uint64_t>(SigInfo.si_addr) >= SyscallHandler::TASK_MAX_64BIT) {
+        // Tried accessing invalid non-canonical x86-64 address.
+        UnhandledNonCanonical = true;
+      }
       SaveTelemetry();
 #endif
 

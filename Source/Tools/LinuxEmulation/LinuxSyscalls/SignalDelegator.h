@@ -154,6 +154,7 @@ namespace FEX::HLE {
     FEX_CONFIG_OPT(Core, CORE);
     fextl::string const ApplicationName;
     FEXCORE_TELEMETRY_INIT(CrashMask, TYPE_CRASH_MASK);
+    FEXCORE_TELEMETRY_INIT(UnhandledNonCanonical, TYPE_UNHANDLED_NONCANONICAL_ADDRESS);
 
     enum DefaultBehaviour {
       DEFAULT_TERM,
