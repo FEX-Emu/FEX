@@ -644,7 +644,7 @@
       ]
     },
     "cmpxchg8b [rbp]": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 24,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -669,13 +669,12 @@
         "cset x22, eq",
         "msr nzcv, x21",
         "rmif x22, #62, #nZcv",
-        "cbnz x22, #+0xc",
-        "mov x4, x20",
-        "mov x6, x30"
+        "csel x4, x20, x4, ne",
+        "csel x6, x30, x6, ne"
       ]
     },
     "cmpxchg16b [rbp]": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 20,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -696,9 +695,8 @@
         "cset x22, eq",
         "msr nzcv, x21",
         "rmif x22, #62, #nZcv",
-        "cbnz x22, #+0xc",
-        "mov x4, x20",
-        "mov x6, x30"
+        "csel x4, x20, x4, ne",
+        "csel x6, x30, x6, ne"
       ]
     },
     "rdrand ax": {
