@@ -250,6 +250,9 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     if (RootFSFD == -1) {
       RootFSFD = AT_FDCWD;
     }
+    else {
+      TrackFEXFD(RootFSFD);
+    }
   }
 
   fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
@@ -571,6 +574,13 @@ uint64_t FileManager::Open(const char *pathname, int flags, uint32_t mode) {
 }
 
 uint64_t FileManager::Close(int fd) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  if (CheckIfFDInTrackedSet(fd)) {
+    LogMan::Msg::EFmt("{} closing FEX FD {}", __func__, fd);
+    RemoveFEXFD(fd);
+  }
+#endif
+
   return ::close(fd);
 }
 
@@ -578,6 +588,14 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
 #ifndef CLOSE_RANGE_CLOEXEC
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  if (!(flags & CLOSE_RANGE_CLOEXEC) &&
+      CheckIfFDRangeInTrackedSet(first, last)) {
+    LogMan::Msg::EFmt("{} closing FEX FDs in range ({}, {})", __func__, first, last);
+    RemoveFEXFDRange(first, last);
+  }
+#endif
+
   return ::syscall(SYSCALL_DEF(close_range), first, last, flags);
 }
 

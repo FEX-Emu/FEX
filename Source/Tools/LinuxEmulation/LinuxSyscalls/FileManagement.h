@@ -88,7 +88,53 @@ public:
 
   bool SupportsProcFSInterpreterPath() const { return SupportsProcFSInterpreter; }
 
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  void TrackFEXFD(int FD) noexcept {
+    std::lock_guard lk(FEXTrackingFDMutex);
+    FEXTrackingFDs.emplace(FD);
+  }
+
+  void RemoveFEXFD(int FD) noexcept {
+    std::lock_guard lk(FEXTrackingFDMutex);
+    FEXTrackingFDs.erase(FD);
+  }
+
+  void RemoveFEXFDRange(int begin, int end) noexcept {
+    std::lock_guard lk(FEXTrackingFDMutex);
+
+    std::erase_if(FEXTrackingFDs, [begin, end](int FD) {
+      return FD >= begin && (FD <= end || end == -1);
+    });
+  }
+
+  bool CheckIfFDInTrackedSet(int FD) noexcept {
+    std::lock_guard lk(FEXTrackingFDMutex);
+    return FEXTrackingFDs.contains(FD);
+  }
+
+  bool CheckIfFDRangeInTrackedSet(int begin, int end) noexcept {
+    std::lock_guard lk(FEXTrackingFDMutex);
+    // Just linear scan since the number of tracking FDs is low.
+    for (auto it : FEXTrackingFDs) {
+      if (it >= begin && (it <= end || end == -1)) return true;
+    }
+    return false;
+  }
+
+#else
+  void TrackFEXFD(int FD) const noexcept {}
+  bool CheckIfFDInTrackedSet(int FD) const noexcept { return false; }
+  void RemoveFEXFD(int FD) const noexcept {}
+  void RemoveFEXFDRange(int begin, int end) const noexcept {}
+  bool CheckIfFDRangeInTrackedSet(int begin, int end) const noexcept { return false; }
+#endif
+
 private:
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  std::mutex FEXTrackingFDMutex;
+  fextl::set<int> FEXTrackingFDs;
+#endif
+
   bool RootFSPathExists(const char* Filepath);
 
   struct ThunkDBObject {
