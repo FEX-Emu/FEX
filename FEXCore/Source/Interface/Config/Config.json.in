@@ -379,9 +379,8 @@
         "Desc": [
           "Checks code for modification before execution.",
           "\tnone: No checks",
-          "\tmtrack: Page tracking based invalidation",
-          "\tfull: Validate code before every run (slow)",
-          "\tmman: Invalidate on mmap, mprotect, munmap (deprecated, use mtrack)"
+          "\tmtrack: Page tracking based invalidation (default)",
+          "\tfull: Validate code before every run (slow)"
         ]
       },
       "TSOEnabled": {
