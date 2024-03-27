@@ -547,10 +547,42 @@ namespace {
   void FillHackConfig() {
     if (ImGui::BeginTabItem("Hacks")) {
       auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED);
+      auto VectorTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED);
+      auto MemcpyTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED);
+
       bool TSOEnabled = Value.has_value() && **Value == "1";
+      bool VectorTSOEnabled = VectorTSO.has_value() && **VectorTSO == "1";
+      bool MemcpyTSOEnabled = MemcpyTSO.has_value() && **MemcpyTSO == "1";
+
       if (ImGui::Checkbox("TSO Enabled", &TSOEnabled)) {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, TSOEnabled ? "1" : "0");
         ConfigChanged = true;
+      }
+
+      if (TSOEnabled) {
+        if (ImGui::TreeNodeEx("TSO sub-options", ImGuiTreeNodeFlags_Leaf)) {
+          if (ImGui::Checkbox("Vector TSO Enabled", &VectorTSOEnabled)) {
+            LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, VectorTSOEnabled ? "1" : "0");
+            ConfigChanged = true;
+          }
+          if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Disables TSO emulation on vector load/store instructions");
+            ImGui::EndTooltip();
+          }
+
+          if (ImGui::Checkbox("Memcpy TSO Enabled", &MemcpyTSOEnabled)) {
+            LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, MemcpyTSOEnabled ? "1" : "0");
+            ConfigChanged = true;
+          }
+          if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Disables TSO emulation on memcpy/memset instructions");
+            ImGui::EndTooltip();
+          }
+
+          ImGui::TreePop();
+        }
       }
 
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_PARANOIDTSO);

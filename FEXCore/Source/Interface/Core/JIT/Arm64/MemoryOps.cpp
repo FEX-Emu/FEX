@@ -1174,8 +1174,10 @@ DEF_OP(LoadMemTSO) {
         LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
         break;
     }
-    // Half-barrier.
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISHLD);
+    if (VectorTSOEnabled()) {
+      // Half-barrier.
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISHLD);
+    }
   }
 }
 
@@ -1323,7 +1325,7 @@ DEF_OP(VLoadVectorElement) {
   }
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled()) {
+  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
     dmb(ARMEmitter::BarrierScope::ISHLD);
   }
 }
@@ -1343,7 +1345,7 @@ DEF_OP(VStoreVectorElement) {
                       ElementSize == 16, "Invalid element size");
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled()) {
+  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
     dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
   }
 
@@ -1443,7 +1445,7 @@ DEF_OP(VBroadcastFromMem) {
   }
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled()) {
+  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
     dmb(ARMEmitter::BarrierScope::ISHLD);
   }
 }
@@ -1661,8 +1663,10 @@ DEF_OP(StoreMemTSO) {
     }
   }
   else {
-    // Half-Barrier.
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+    if (VectorTSOEnabled()) {
+      // Half-Barrier.
+      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+    }
     const auto Src = GetVReg(Op->Value.ID());
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
@@ -1703,6 +1707,7 @@ DEF_OP(MemSet) {
   // that the value is zero, we can optimize any operation larger than 8-bit down to 8-bit to use the MOPS implementation.
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
+  const bool IsAtomic = Op->IsAtomic && MemcpySetTSOEnabled();
   const int32_t Size = Op->Size;
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto Value = GetReg(Op->Value.ID());
@@ -1808,7 +1813,7 @@ DEF_OP(MemSet) {
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
-    if (!Op->IsAtomic) {
+    if (!IsAtomic) {
       ARMEmitter::ForwardLabel AgainInternal256Exit{};
       ARMEmitter::BackwardLabel AgainInternal256{};
       ARMEmitter::ForwardLabel AgainInternal128Exit{};
@@ -1858,7 +1863,7 @@ DEF_OP(MemSet) {
     }
 
     Bind(&AgainInternal);
-    if (Op->IsAtomic) {
+    if (IsAtomic) {
       MemStoreTSO(Value, OpSize, SizeDirection);
     }
     else {
@@ -1936,6 +1941,7 @@ DEF_OP(MemCpy) {
   // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
   const auto Op = IROp->C<IR::IROp_MemCpy>();
 
+  const bool IsAtomic = Op->IsAtomic && MemcpySetTSOEnabled();
   const int32_t Size = Op->Size;
   const auto MemRegDest = GetReg(Op->AddrDest.ID());
   const auto MemRegSrc = GetReg(Op->AddrSrc.ID());
@@ -2122,7 +2128,7 @@ DEF_OP(MemCpy) {
     // Early exit if zero count.
     cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
-    if (!Op->IsAtomic) {
+    if (!IsAtomic) {
       ARMEmitter::ForwardLabel AbsPos{};
       ARMEmitter::ForwardLabel AgainInternal256Exit{};
       ARMEmitter::ForwardLabel AgainInternal128Exit{};
@@ -2178,7 +2184,7 @@ DEF_OP(MemCpy) {
     }
 
     Bind(&AgainInternal);
-    if (Op->IsAtomic) {
+    if (IsAtomic) {
       MemCpyTSO(OpSize, SizeDirection);
     }
     else {
