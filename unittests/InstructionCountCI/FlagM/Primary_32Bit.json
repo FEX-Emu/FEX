@@ -1,12 +1,13 @@
 {
   "Features": {
     "Bitness": 32,
-    "EnabledHostFeatures": [],
-    "DisabledHostFeatures": [
-      "SVE128",
-      "SVE256",
+    "EnabledHostFeatures": [
       "FlagM",
       "FlagM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
     ]
   },
   "Instructions": {
@@ -82,7 +83,7 @@
       ]
     },
     "daa": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 21,
       "Comment": "0x27",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -104,14 +105,12 @@
         "csel x26, x23, x20, ne",
         "bfxil w4, w26, #0, #8",
         "cmn wzr, w26, lsl #24",
-        "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
-        "eor w27, w26, w22, lsl #4",
-        "msr nzcv, x20"
+        "rmif x21, #63, #nzCv",
+        "eor w27, w26, w22, lsl #4"
       ]
     },
     "das": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 24,
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -136,10 +135,8 @@
         "csel x26, x24, x20, ne",
         "bfxil w4, w26, #0, #8",
         "cmn wzr, w26, lsl #24",
-        "mrs x20, nzcv",
-        "orr w20, w20, w23, lsl #29",
-        "eor w27, w26, w22, lsl #4",
-        "msr nzcv, x20"
+        "rmif x23, #63, #nzCv",
+        "eor w27, w26, w22, lsl #4"
       ]
     },
     "aaa": {
@@ -183,50 +180,38 @@
       ]
     },
     "inc ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
         "uxth w27, w4",
-        "cset w21, hs",
-        "lsl w0, w27, #16",
-        "cmn w0, w20, lsl #16",
         "add w26, w27, #0x1 (1)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "bfxil w4, w26, #0, #16",
-        "msr nzcv, x20"
+        "setf16 w26",
+        "bic w20, w26, w27",
+        "rmif x20, #15, #nzcV",
+        "bfxil w4, w26, #0, #16"
       ]
     },
     "inc eax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "mov w27, w4",
         "cset w20, hs",
         "adds w26, w27, #0x1 (1)",
-        "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "mov w4, w26",
-        "msr nzcv, x20"
+        "rmif x20, #63, #nzCv",
+        "mov w4, w26"
       ]
     },
     "dec ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
-        "mov w20, #0x1",
         "uxth w27, w4",
-        "cset w21, hs",
-        "lsl w0, w27, #16",
-        "cmp w0, w20, lsl #16",
         "sub w26, w27, #0x1 (1)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "bfxil w4, w26, #0, #16",
-        "msr nzcv, x20"
+        "setf16 w26",
+        "bic w20, w27, w26",
+        "rmif x20, #15, #nzcV",
+        "bfxil w4, w26, #0, #16"
       ]
     },
     "push ax": {
@@ -244,18 +229,14 @@
       ]
     },
     "dec eax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "mov w27, w4",
         "cset w20, hs",
         "subs w26, w27, #0x1 (1)",
-        "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "mov w4, w26",
-        "msr nzcv, x20"
+        "rmif x20, #63, #nzCv",
+        "mov w4, w26"
       ]
     },
     "pusha": {

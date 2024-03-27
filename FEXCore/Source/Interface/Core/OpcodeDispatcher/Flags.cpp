@@ -277,6 +277,19 @@ void OpDispatchBuilder::FixupAF() {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
+void OpDispatchBuilder::SetAFAndFixup(OrderedNode *AF) {
+  // We have a value of AF, we shift into AF[4].  We need to fixup AF[4] so that
+  // we get the right value when we XOR in PF[4] later. The easiest solution is
+  // to XOR by PF[4], since:
+  //
+  //  (AF[4] ^ PF[4]) ^ PF[4] = AF[4]
+
+  auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
+
+  OrderedNode *XorRes = _XorShift(OpSize::i32Bit, PFRaw, AF, ShiftType::LSL, 4);
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
+}
+
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
   // Calculation is entirely deferred until load, just store the 8-bit result.
   SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Res);
