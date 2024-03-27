@@ -7,6 +7,8 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Filesystem.h>
 
+#include "Utils/Config.h"
+
 #include <array>
 #include <stddef.h>
 #include <string_view>
@@ -44,8 +46,7 @@ namespace FEXCore::Telemetry {
       return;
     }
 
-    auto DataDirectory = Config::GetDataDirectory();
-    DataDirectory += "Telemetry/";
+    auto DataDirectory = Config::GetTelemetryDirectory();
 
     // Ensure the folder structure is created for our configuration
     if (!FHU::Filesystem::Exists(DataDirectory) &&
@@ -59,8 +60,7 @@ namespace FEXCore::Telemetry {
       return;
     }
 
-    auto DataDirectory = Config::GetDataDirectory();
-    DataDirectory += "Telemetry/" + ApplicationName + ".telem";
+    auto DataDirectory = Config::GetTelemetryDirectory() + ApplicationName + ".telem";
 
     // Retain a single backup if the telemetry already existed.
     auto Backup = DataDirectory + ".bck";

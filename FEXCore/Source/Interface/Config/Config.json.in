@@ -368,6 +368,14 @@
           "File to write FEX output to.",
           "[stdout, stderr, server, <Filename>]"
         ]
+      },
+      "TelemetryDirectory": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Redirects the telemetry folder that FEX usually writes to.",
+          "By default telemetry data is stored in {$FEX_APP_DATA_LOCATION,{$XDG_DATA_HOME,$HOME}/.fex-emu/Telemetry/}"
+        ]
       }
     },
     "Hacks": {
