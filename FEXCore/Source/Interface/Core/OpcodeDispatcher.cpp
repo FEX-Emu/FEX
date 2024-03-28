@@ -4270,23 +4270,15 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
   CalculateDeferredFlags();
 
-  auto CondJump_ = CondJump(ZFResult);
+  auto UpdateIfNotZF = [this](auto Reg, auto Value) {
+    // Always use 64-bit csel to preserve existing upper bits. If we have a
+    // 32-bit cmpxchg in a 64-bit context, Value will be zeroed in upper bits.
+    StoreGPRRegister(Reg, _NZCVSelect(OpSize::i64Bit, CondClassType{COND_NEQ},
+                                      Value, LoadGPRRegister(Reg)));
+  };
 
-  // Make sure to start a new block after ending this one
-  auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
-  SetFalseJumpTarget(CondJump_, JumpTarget);
-  SetCurrentCodeBlock(JumpTarget);
-  StartNewBlock();
-
-  StoreGPRRegister(X86State::REG_RAX, Result_Lower);
-  StoreGPRRegister(X86State::REG_RDX, Result_Upper);
-
-  auto Jump_ = Jump();
-  auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
-  SetJumpTarget(Jump_, NextJumpTarget);
-  SetTrueJumpTarget(CondJump_, NextJumpTarget);
-  SetCurrentCodeBlock(NextJumpTarget);
-  StartNewBlock();
+  UpdateIfNotZF(X86State::REG_RAX, Result_Lower);
+  UpdateIfNotZF(X86State::REG_RDX, Result_Upper);
 }
 
 void OpDispatchBuilder::CreateJumpBlocks(fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
