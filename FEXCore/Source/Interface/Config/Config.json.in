@@ -461,6 +461,14 @@
           "Hides the hypervisor CPUID bit when set.",
           "Should only be used for applications that have issues with this set."
         ]
+      },
+      "StartupSleep": {
+        "Type": "uint32",
+        "Default": "0",
+        "Desc": [
+          "Sleeps the process at startup for a duration of seconds.",
+          "Useful if an application crashes too quickly to attach a debugger."
+        ]
       }
     },
     "Misc": {
