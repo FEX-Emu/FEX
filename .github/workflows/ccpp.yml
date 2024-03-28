@@ -137,6 +137,8 @@ jobs:
     - name: FEXLinuxTests
       working-directory: ${{runner.workspace}}/build
       shell: bash
+      env:
+        FEX_THUNKS32BITENABLED: "1"
       run: cmake --build . --config $BUILD_TYPE --target fex_linux_tests_all
 
     - name: FEXLinuxTests Results move
