@@ -644,7 +644,7 @@
       ]
     },
     "cmpxchg8b [rbp]": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 22,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -656,25 +656,23 @@
         "mov w24, w5",
         "mov w25, w24",
         "mov w24, w21",
-        "mrs x21, nzcv",
         "mov w2, w22",
         "mov w3, w23",
         "caspal w2, w3, w24, w25, [x20]",
-        "mov w24, w2",
-        "mov w25, w3",
-        "mov w20, w24",
-        "mov w30, w25",
-        "cmp x24, x22",
-        "ccmp x25, x23, #nzcv, eq",
-        "cset x22, eq",
-        "msr nzcv, x21",
-        "rmif x22, #62, #nZcv",
-        "csel x4, x20, x4, ne",
-        "csel x6, x30, x6, ne"
+        "mov w20, w2",
+        "mov w21, w3",
+        "mov w24, w20",
+        "mov w25, w21",
+        "mrs x0, nzcv",
+        "cmp w20, w22",
+        "ccmp w21, w23, #nzcv, eq",
+        "rmif x0, #0, #NzCV",
+        "csel x4, x24, x4, ne",
+        "csel x6, x25, x6, ne"
       ]
     },
     "cmpxchg16b [rbp]": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -682,21 +680,19 @@
         "mov x23, x6",
         "mov x24, x7",
         "mov x25, x5",
-        "mrs x21, nzcv",
         "mov x2, x22",
         "mov x3, x23",
         "caspal x2, x3, x24, x25, [x20]",
-        "mov x24, x2",
-        "mov x25, x3",
-        "mov x20, x24",
-        "mov x30, x25",
-        "cmp x24, x22",
-        "ccmp x25, x23, #nzcv, eq",
-        "cset x22, eq",
-        "msr nzcv, x21",
-        "rmif x22, #62, #nZcv",
-        "csel x4, x20, x4, ne",
-        "csel x6, x30, x6, ne"
+        "mov x20, x2",
+        "mov x21, x3",
+        "mov x24, x20",
+        "mov x25, x21",
+        "mrs x0, nzcv",
+        "cmp w20, w22",
+        "ccmp w21, w23, #nzcv, eq",
+        "rmif x0, #0, #NzCV",
+        "csel x4, x24, x4, ne",
+        "csel x6, x25, x6, ne"
       ]
     },
     "rdrand ax": {
