@@ -22,7 +22,6 @@ $end_info$
 #include "TestHarnessRunner/HostRunner.h"
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
@@ -141,7 +140,7 @@ namespace LongJumpHandler {
     switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
       case STATUS_DATATYPE_MISALIGNMENT: {
         const auto PC = FEX::ArchHelpers::Context::GetPc(Context);
-        if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
+        if (!Thread->CTX->IsAddressInCodeBuffer(Thread, PC)) {
           // Wasn't a sigbus in JIT code
           return EXCEPTION_CONTINUE_SEARCH;
         }

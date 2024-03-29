@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+#include "Interface/Core/CPUBackend.h"
 #include "Utils/SpinWaitLock.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>

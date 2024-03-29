@@ -183,6 +183,9 @@ namespace FEXCore::Context {
       void MarkMemoryShared(FEXCore::Core::InternalThreadState *Thread) override;
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
+
+      bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState *Thread, uintptr_t Address) const override;
+
       // returns false if a handler was already registered
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr);
 

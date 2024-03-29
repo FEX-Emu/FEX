@@ -116,7 +116,8 @@ namespace {
   }
 
   bool IsAddressInJit(uint64_t Address) {
-    return GetTLS().ThreadState()->CPUBackend->IsAddressInCodeBuffer(Address);
+    auto Thread = GetTLS().ThreadState();
+    return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
   }
 }
 
@@ -266,12 +267,13 @@ namespace Context {
   }
 
   bool HandleUnalignedAccess(CONTEXT *Context) {
-    if (!GetTLS().ThreadState()->CPUBackend->IsAddressInCodeBuffer(Context->Pc)) {
+    auto Thread = GetTLS().ThreadState();
+    if (!Thread->CTX->IsAddressInCodeBuffer(Thread, Context->Pc)) {
       return false;
     }
 
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GetTLS().ThreadState(), ParanoidTSO(), Context->Pc, &Context->X0);
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, ParanoidTSO(), Context->Pc, &Context->X0);
     if (!Result.first) {
       return false;
     }

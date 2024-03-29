@@ -66,4 +66,8 @@ namespace FEXCore::Context {
   FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
     return CPUID.RunFunctionName(Function, Leaf, CPU);
   }
+
+  bool FEXCore::Context::ContextImpl::IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState *Thread, uintptr_t Address) const {
+    return Thread->CPUBackend->IsAddressInCodeBuffer(Address);
+  }
 }

@@ -9,13 +9,13 @@ $end_info$
 
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
+#include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include <aarch64/assembler-aarch64.h>
 #include <aarch64/disasm-aarch64.h>
 
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
