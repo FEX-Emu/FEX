@@ -11,7 +11,6 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Profiler.h>
 

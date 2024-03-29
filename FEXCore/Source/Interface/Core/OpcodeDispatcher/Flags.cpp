@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/IR/IR.h>
 
 #include <array>
 #include <cstdint>

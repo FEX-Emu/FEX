@@ -7,7 +7,8 @@ $end_info$
 
 #pragma once
 
-#include <FEXCore/IR/IR.h>
+#include "Interface/IR/IR.h"
+
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 

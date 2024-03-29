@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "Interface/IR/IR.h"
+#include "Interface/IR/IntrusiveIRList.h"
+
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
 #include <FEXCore/Utils/LogManager.h>

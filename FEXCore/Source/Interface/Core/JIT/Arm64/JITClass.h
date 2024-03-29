@@ -10,6 +10,9 @@ $end_info$
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/IR/IR.h"
+#include "Interface/IR/IntrusiveIRList.h"
+#include "Interface/IR/RegisterAllocationData.h"
 
 #include <aarch64/assembler-aarch64.h>
 #include <aarch64/disasm-aarch64.h>
@@ -17,8 +20,6 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>

@@ -9,7 +9,6 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
 #include <FEXCore/Utils/LogManager.h>

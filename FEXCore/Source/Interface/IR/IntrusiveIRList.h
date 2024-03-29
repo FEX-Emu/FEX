@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "FEXCore/IR/IR.h"
+#include "Interface/IR/IR.h"
+
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>

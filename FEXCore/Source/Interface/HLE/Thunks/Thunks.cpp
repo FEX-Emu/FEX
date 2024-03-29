@@ -6,13 +6,13 @@ tags: glue|thunks
 $end_info$
 */
 
+#include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>

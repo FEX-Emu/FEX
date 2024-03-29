@@ -4,8 +4,6 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/SignalDelegator.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>

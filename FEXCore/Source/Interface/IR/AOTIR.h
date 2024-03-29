@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "FEXCore/IR/RegisterAllocationData.h"
+#include "Interface/IR/RegisterAllocationData.h"
+
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
