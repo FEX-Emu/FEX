@@ -1574,10 +1574,6 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   OrderedNode *Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
-  if (Size < 32) {
-    Result = _Bfe(OpSize::i32Bit, Size, 0, Result);
-  }
-
   if constexpr (SHL1Bit) {
     GenerateFlags_ShiftLeftImmediate(Op, Result, Dest, 1);
   }
@@ -1784,9 +1780,6 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  if (Size != 64) {
-    Res = _Bfe(OpSize::i64Bit, Size, 0, Res);
-  }
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
 }
 
