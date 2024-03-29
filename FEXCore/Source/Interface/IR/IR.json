@@ -642,7 +642,6 @@
                 ],
         "HasDest": true,
         "DestSize": "Size",
-        "ImplicitFlagClobber": true,
         "NumElements": "2",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"

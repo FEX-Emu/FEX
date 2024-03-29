@@ -31,6 +31,13 @@ DEF_OP(CASPair) {
     mov(EmitSize, Dst.second, TMP4.R());
   }
   else {
+    // Save NZCV so we don't have to mark this op as clobbering NZCV (the
+    // SupportsAtomics does not clobber atomics and this !SupportsAtomics path
+    // is so slow it's not worth the complexity of splitting the IR op.). We
+    // clobber NZCV inside the hot loop and we can't replace cmp/ccmp/b.ne with
+    // something NZCV-preserving without requiring an extra instruction.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::SingleUseForwardLabel LoopNotExpected;
     ARMEmitter::SingleUseForwardLabel LoopExpected;
@@ -55,6 +62,9 @@ DEF_OP(CASPair) {
       // Might have hit the case where ldaxr was hit but stlxr wasn't
       clrex();
     Bind(&LoopExpected);
+
+    // Restore
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   }
 }
 
