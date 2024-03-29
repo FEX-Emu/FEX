@@ -865,6 +865,17 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+    case OP_NEG: {
+      auto Op = IROp->CW<IR::IROp_Neg>();
+      uint64_t Constant{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
+        uint64_t NewConstant = -Constant;
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+    break;
+    }
     case OP_LSHL: {
       auto Op = IROp->CW<IR::IROp_Lshl>();
       uint64_t Constant1{};
