@@ -6,10 +6,11 @@
 #include <cstdint>
 #include <functional>
 
-namespace FEXCore {
-namespace IR {
+namespace FEXCore::IR {
 class IREmitter;
 }
+
+namespace FEX {
 
 /**
  * @brief Code loader class so the CPU backend can load code in a generic fashion
@@ -45,6 +46,5 @@ public:
 
   virtual uint64_t GetBaseOffset() const { return 0; }
 };
-
 
 }

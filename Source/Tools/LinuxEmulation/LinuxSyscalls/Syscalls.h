@@ -46,8 +46,11 @@ $end_info$
 
 // #define DEBUG_STRACE
 
-namespace FEXCore {
+namespace FEX {
   class CodeLoader;
+}
+
+namespace FEXCore {
   namespace Context {
     class Context;
   }
@@ -243,8 +246,8 @@ public:
   uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
 
   FEX::HLE::FileManager FM;
-  FEXCore::CodeLoader *GetCodeLoader() const override { return LocalLoader; }
-  void SetCodeLoader(FEXCore::CodeLoader *Loader) { LocalLoader = Loader; }
+  FEX::CodeLoader *GetCodeLoader() const { return LocalLoader; }
+  void SetCodeLoader(FEX::CodeLoader *Loader) { LocalLoader = Loader; }
   FEX::HLE::SignalDelegator *GetSignalDelegator() { return SignalDelegation; }
 
   FEX_CONFIG_OPT(IsInterpreter, IS_INTERPRETER);
@@ -334,7 +337,7 @@ private:
 
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
-  FEXCore::CodeLoader *LocalLoader{};
+  FEX::CodeLoader *LocalLoader{};
   bool NeedToCheckXID{true};
 
   #ifdef DEBUG_STRACE

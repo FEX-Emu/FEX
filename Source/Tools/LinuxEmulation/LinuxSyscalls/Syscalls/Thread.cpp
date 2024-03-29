@@ -5,7 +5,8 @@ tags: LinuxSyscalls|syscalls-shared
 $end_info$
 */
 
-#include "FEXCore/IR/IR.h"
+#include "CodeLoader.h"
+
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/Syscalls/Thread.h"
@@ -15,7 +16,6 @@ $end_info$
 #include "LinuxSyscalls/x32/Thread.h"
 
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>

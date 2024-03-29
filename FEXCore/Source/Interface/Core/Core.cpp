@@ -29,7 +29,6 @@ $end_info$
 #include "Utils/Allocator/HostAllocator.h"
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>

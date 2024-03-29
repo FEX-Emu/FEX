@@ -7,6 +7,8 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
+#include "CodeLoader.h"
+
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
@@ -23,7 +25,6 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
