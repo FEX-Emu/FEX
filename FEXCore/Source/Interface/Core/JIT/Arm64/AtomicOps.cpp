@@ -36,6 +36,7 @@ DEF_OP(CASPair) {
     ARMEmitter::SingleUseForwardLabel LoopExpected;
     Bind(&LoopTop);
 
+    // This instruction sequence must be synced with HandleCASPAL_Armv8.
     ldaxp(EmitSize, TMP2, TMP3, MemSrc);
     cmp(EmitSize, TMP2, Expected.first);
     ccmp(EmitSize, TMP3, Expected.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
