@@ -1928,7 +1928,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
   if constexpr (Is1Bit) {
     GenerateFlags_RotateRightImmediate(Op, ALUOp, Dest, 1);
   } else {
-    GenerateFlags_RotateRight(Op, ALUOp, Dest, Src);
+    GenerateFlags_RotateRight(Op, Src);
   }
 }
 
@@ -2005,7 +2005,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   if constexpr (Is1Bit) {
     GenerateFlags_RotateLeftImmediate(Op, ALUOp, Dest, 1);
   } else {
-    GenerateFlags_RotateLeft(Op, ALUOp, Dest, Src);
+    GenerateFlags_RotateLeft(Op, Src);
   }
 }
 

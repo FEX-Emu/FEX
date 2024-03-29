@@ -1669,7 +1669,7 @@ private:
         OrderedNode *Src1;
       } OneSource;
 
-      // Logical, LSHL, LSHR, ASHR, ROR, ROL
+      // Logical, LSHL, LSHR, ASHR
       struct {
         OrderedNode *Src1;
         OrderedNode *Src2;
@@ -1688,6 +1688,12 @@ private:
 
         bool UpdateCF;
       } TwoSrcImmediate;
+
+      // ROL, ROR
+      struct {
+        X86Tables::DecodedOp Op;
+        OrderedNode *Src2;
+      } Decoded;
     } Sources{};
   };
 
@@ -1785,8 +1791,8 @@ private:
   void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_RotateRight(uint8_t SrcSize, X86Tables::DecodedOp Op, OrderedNode *Src2);
+  void CalculateFlags_RotateLeft(uint8_t SrcSize, X86Tables::DecodedOp Op, OrderedNode *Src2);
   void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_BEXTR(OrderedNode *Src);
@@ -1976,34 +1982,32 @@ private:
     };
   }
 
-  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src2) {
     // Doesn't set all the flags, needs to calculate.
     CalculateDeferredFlags();
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_ROR,
       .SrcSize = GetSrcSize(Op),
-      .Res = Res,
       .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
+        .Decoded = {
+          .Op = Op,
           .Src2 = Src2,
         },
       },
     };
   }
 
-  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src2) {
     // Doesn't set all the flags, needs to calculate.
     CalculateDeferredFlags();
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_ROL,
       .SrcSize = GetSrcSize(Op),
-      .Res = Res,
       .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
+        .Decoded = {
+          .Op = Op,
           .Src2 = Src2,
         },
       },

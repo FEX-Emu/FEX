@@ -404,9 +404,8 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     case FlagsGenerationType::TYPE_ROR:
       CalculateFlags_RotateRight(
         CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.TwoSource.Src1,
-        CurrentDeferredFlags.Sources.TwoSource.Src2);
+        CurrentDeferredFlags.Sources.Decoded.Op,
+        CurrentDeferredFlags.Sources.Decoded.Src2);
       break;
     case FlagsGenerationType::TYPE_RORI:
       CalculateFlags_RotateRightImmediate(
@@ -418,9 +417,8 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     case FlagsGenerationType::TYPE_ROL:
       CalculateFlags_RotateLeft(
         CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.TwoSource.Src1,
-        CurrentDeferredFlags.Sources.TwoSource.Src2);
+        CurrentDeferredFlags.Sources.Decoded.Op,
+        CurrentDeferredFlags.Sources.Decoded.Src2);
       break;
     case FlagsGenerationType::TYPE_ROLI:
       CalculateFlags_RotateLeftImmediate(
@@ -835,10 +833,13 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res](){
+void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, X86Tables::DecodedOp Op, OrderedNode *Src2) {
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Op](){
     auto SizeBits = SrcSize * 8;
     const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+
+    // Rematerialize inside block. Only lower SrcSize bits are used.
+    OrderedNode *Res = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
     // Ends up faster overall if we don't have FlagM, slower if we do...
     // If Shift != 1, OF is undefined so we choose to zero here.
@@ -855,10 +856,13 @@ void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode 
   });
 }
 
-void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Res](){
+void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, X86Tables::DecodedOp Op, OrderedNode *Src2) {
+  CalculateFlags_ShiftVariable(Src2, [this, SrcSize, Op](){
     const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
     auto SizeBits = SrcSize * 8;
+
+    // Rematerialize inside block. Only lower SrcSize bits are used.
+    OrderedNode *Res = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
     // Ends up faster overall if we don't have FlagM, slower if we do...
     // If Shift != 1, OF is undefined so we choose to zero here.
@@ -866,8 +870,6 @@ void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *
       ZeroCV();
 
     // Extract the last bit shifted in to CF
-    //auto Size = _Constant(GetSrcSize(Res) * 8);
-    //auto ShiftAmt = _Sub(OpSize::i64Bit, Size, Src2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, 0, true);
 
     // OF is the LSB and MSB XOR'd together.
