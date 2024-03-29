@@ -9,10 +9,10 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <chrono>
 #include <shared_mutex>
@@ -146,7 +146,7 @@ namespace FEXCore::Core {
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
     // Can be reprotected as RO to trigger an interrupt at generated code block entrypoints
-    alignas(FHU::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FHU::FEX_PAGE_SIZE];
+    alignas(FEXCore::Utils::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FEXCore::Utils::FEX_PAGE_SIZE];
   };
   static_assert((offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) -
                  offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) < 4096,

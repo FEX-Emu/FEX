@@ -3,8 +3,8 @@
 #include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
 
@@ -23,8 +23,8 @@ namespace FEX::HLE {
 class MemAllocator32Bit final : public FEX::HLE::MemAllocator {
 private:
   static constexpr uint64_t BASE_KEY = 16;
-  const uint64_t TOP_KEY = 0xFFFF'F000ULL >> FHU::FEX_PAGE_SHIFT;
-  const uint64_t TOP_KEY32BIT = 0x7FFF'F000ULL >> FHU::FEX_PAGE_SHIFT;
+  const uint64_t TOP_KEY = 0xFFFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
+  const uint64_t TOP_KEY32BIT = 0x7FFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
 public:
   MemAllocator32Bit() {
@@ -136,10 +136,10 @@ uint64_t MemAllocator32Bit::FindPageRange_TopDown(uint64_t Start, size_t Pages) 
 
 void *MemAllocator32Bit::Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  size_t PagesLength = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+  size_t PagesLength = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
   uintptr_t Addr = reinterpret_cast<uintptr_t>(addr);
-  uintptr_t PageAddr = Addr >> FHU::FEX_PAGE_SHIFT;
+  uintptr_t PageAddr = Addr >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
   // Define MAP_FIXED_NOREPLACE ourselves to ensure we always parse this flag
   constexpr int FEX_MAP_FIXED_NOREPLACE = 0x100000;
@@ -147,13 +147,13 @@ void *MemAllocator32Bit::Mmap(void *addr, size_t length, int prot, int flags, in
       (flags & FEX_MAP_FIXED_NOREPLACE));
 
   // Both Addr and length must be page aligned
-  if (Addr & ~FHU::FEX_PAGE_MASK) {
+  if (Addr & ~FEXCore::Utils::FEX_PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
   // If we do have an fd then offset must be page aligned
   if (fd != -1 &&
-      offset & ~FHU::FEX_PAGE_MASK) {
+      offset & ~FEXCore::Utils::FEX_PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
@@ -197,7 +197,7 @@ restart:
       {
         // Try and map the range
         void *MappedPtr = ::mmap(
-          reinterpret_cast<void*>(LowerPage << FHU::FEX_PAGE_SHIFT),
+          reinterpret_cast<void*>(LowerPage << FEXCore::Utils::FEX_PAGE_SHIFT),
           length,
           prot,
           flags | FEX_MAP_FIXED_NOREPLACE,
@@ -209,11 +209,11 @@ restart:
           return reinterpret_cast<void*>(-errno);
         }
         else if (MappedPtr == MAP_FAILED ||
-                 MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT)) {
+                 MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT)) {
           // Handles the case where MAP_FIXED_NOREPLACE failed with MAP_FAILED
           // or if the host system's kernel isn't new enough then it returns the wrong pointer
           if (MappedPtr != MAP_FAILED &&
-              MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT)) {
+              MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT)) {
             // Make sure to munmap this so we don't leak memory
             ::munmap(MappedPtr, length);
           }
@@ -259,14 +259,14 @@ restart:
   }
   else {
     void *MappedPtr = ::mmap(
-      reinterpret_cast<void*>(PageAddr << FHU::FEX_PAGE_SHIFT),
-      PagesLength << FHU::FEX_PAGE_SHIFT,
+      reinterpret_cast<void*>(PageAddr << FEXCore::Utils::FEX_PAGE_SHIFT),
+      PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT,
       prot,
       flags,
       fd,
       offset);
 
-    if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT) &&
+    if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT) &&
         (flags & FEX_MAP_FIXED_NOREPLACE)) {
       // Handles the case where MAP_FIXED_NOREPLACE isn't handled by the host system's
       // kernel and returns the wrong pointer
@@ -287,19 +287,19 @@ restart:
 
 int MemAllocator32Bit::Munmap(void *addr, size_t length) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  size_t PagesLength = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+  size_t PagesLength = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
   uintptr_t Addr = reinterpret_cast<uintptr_t>(addr);
-  uintptr_t PageAddr = Addr >> FHU::FEX_PAGE_SHIFT;
+  uintptr_t PageAddr = Addr >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
   uintptr_t PageEnd = PageAddr + PagesLength;
 
   // Both Addr and length must be page aligned
-  if (Addr & ~FHU::FEX_PAGE_MASK) {
+  if (Addr & ~FEXCore::Utils::FEX_PAGE_MASK) {
     return -EINVAL;
   }
 
-  if (length & ~FHU::FEX_PAGE_MASK) {
+  if (length & ~FEXCore::Utils::FEX_PAGE_MASK) {
     return -EINVAL;
   }
 
@@ -315,7 +315,7 @@ int MemAllocator32Bit::Munmap(void *addr, size_t length) {
 
   while (PageAddr != PageEnd) {
     // Always pass to munmap, it may be something allocated we aren't tracking
-    int Result = ::munmap(reinterpret_cast<void*>(PageAddr << FHU::FEX_PAGE_SHIFT), FHU::FEX_PAGE_SIZE);
+    int Result = ::munmap(reinterpret_cast<void*>(PageAddr << FEXCore::Utils::FEX_PAGE_SHIFT), FEXCore::Utils::FEX_PAGE_SIZE);
     if (Result != 0) {
       return -errno;
     }
@@ -331,8 +331,8 @@ int MemAllocator32Bit::Munmap(void *addr, size_t length) {
 }
 
 void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
-  size_t OldPagesLength = FEXCore::AlignUp(old_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
-  size_t NewPagesLength = FEXCore::AlignUp(new_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+  size_t OldPagesLength = FEXCore::AlignUp(old_size, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
+  size_t NewPagesLength = FEXCore::AlignUp(new_size, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
   {
     std::scoped_lock<std::mutex> lk{AllocMutex};
@@ -343,12 +343,12 @@ void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_s
         if (!(flags & MREMAP_DONTUNMAP)) {
           // Unmap the old location
           uintptr_t OldAddr = reinterpret_cast<uintptr_t>(old_address);
-          SetFreePages(OldAddr >> FHU::FEX_PAGE_SHIFT, OldPagesLength);
+          SetFreePages(OldAddr >> FEXCore::Utils::FEX_PAGE_SHIFT, OldPagesLength);
         }
 
         // Map the new pages
         uintptr_t NewAddr = reinterpret_cast<uintptr_t>(MappedPtr);
-        SetUsedPages(NewAddr >> FHU::FEX_PAGE_SHIFT, NewPagesLength);
+        SetUsedPages(NewAddr >> FEXCore::Utils::FEX_PAGE_SHIFT, NewPagesLength);
       }
       else {
         return reinterpret_cast<void*>(-errno);
@@ -356,15 +356,15 @@ void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_s
     }
     else {
       uintptr_t OldAddr = reinterpret_cast<uintptr_t>(old_address);
-      uintptr_t OldPageAddr = OldAddr >> FHU::FEX_PAGE_SHIFT;
+      uintptr_t OldPageAddr = OldAddr >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
       if (NewPagesLength < OldPagesLength) {
         void *MappedPtr = ::mremap(old_address, old_size, new_size, flags & ~MREMAP_MAYMOVE);
 
         if (MappedPtr != MAP_FAILED) {
           // Clear the pages that we just shrunk
-          size_t NewPagesLength = FEXCore::AlignUp(new_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
-          uintptr_t NewPageAddr = reinterpret_cast<uintptr_t>(MappedPtr) >> FHU::FEX_PAGE_SHIFT;
+          size_t NewPagesLength = FEXCore::AlignUp(new_size, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
+          uintptr_t NewPageAddr = reinterpret_cast<uintptr_t>(MappedPtr) >> FEXCore::Utils::FEX_PAGE_SHIFT;
           SetFreePages(NewPageAddr + NewPagesLength, OldPagesLength - NewPagesLength);
           return MappedPtr;
         }
@@ -388,9 +388,9 @@ void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_s
 
           if (MappedPtr != MAP_FAILED) {
             // Map the new pages
-            size_t NewPagesLength = FEXCore::AlignUp(new_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+            size_t NewPagesLength = FEXCore::AlignUp(new_size, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
             uintptr_t NewAddr = reinterpret_cast<uintptr_t>(MappedPtr);
-            SetUsedPages(NewAddr >> FHU::FEX_PAGE_SHIFT, NewPagesLength);
+            SetUsedPages(NewAddr >> FEXCore::Utils::FEX_PAGE_SHIFT, NewPagesLength);
             return MappedPtr;
           }
           else if (!(flags & MREMAP_MAYMOVE)) {
@@ -424,13 +424,13 @@ void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_s
       // If we have both MREMAP_DONTUNMAP not set and the new pointer is at a new location
       // Make sure to clear the old mapping
       uintptr_t OldAddr = reinterpret_cast<uintptr_t>(old_address);
-      SetFreePages(OldAddr >> FHU::FEX_PAGE_SHIFT , OldPagesLength);
+      SetFreePages(OldAddr >> FEXCore::Utils::FEX_PAGE_SHIFT , OldPagesLength);
     }
 
     // Map the new pages
-    size_t NewPagesLength = FEXCore::AlignUp(new_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+    size_t NewPagesLength = FEXCore::AlignUp(new_size, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
     uintptr_t NewAddr = reinterpret_cast<uintptr_t>(MappedPtr);
-    SetUsedPages(NewAddr >> FHU::FEX_PAGE_SHIFT, NewPagesLength);
+    SetUsedPages(NewAddr >> FEXCore::Utils::FEX_PAGE_SHIFT, NewPagesLength);
     return MappedPtr;
   }
 
@@ -453,7 +453,7 @@ uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, ui
       }
 
       uintptr_t NewAddr = reinterpret_cast<uintptr_t>(Result);
-      uintptr_t NewPageAddr = NewAddr >> FHU::FEX_PAGE_SHIFT;
+      uintptr_t NewPageAddr = NewAddr >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
       // Add to the map
       PageToShm[NewPageAddr] = shmid;
@@ -465,7 +465,7 @@ uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, ui
 
       if (shmctl(shmid, IPC_STAT, &buf) == 0) {
         // Map the new pages
-        size_t NewPagesLength = buf.shm_segsz >> FHU::FEX_PAGE_SHIFT;
+        size_t NewPagesLength = buf.shm_segsz >> FEXCore::Utils::FEX_PAGE_SHIFT;
         SetUsedPages(NewPageAddr, NewPagesLength);
       }
 
@@ -483,7 +483,7 @@ uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, ui
     uint64_t PagesLength{};
 
     if (shmctl(shmid, IPC_STAT, &buf) == 0) {
-      PagesLength = FEXCore::AlignUp(buf.shm_segsz, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
+      PagesLength = FEXCore::AlignUp(buf.shm_segsz, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
     }
     else {
       return -EINVAL;
@@ -509,7 +509,7 @@ restart:
         // Try and map the range
         void *MappedPtr = ::shmat(
           shmid,
-          reinterpret_cast<const void*>(LowerPage << FHU::FEX_PAGE_SHIFT),
+          reinterpret_cast<const void*>(LowerPage << FEXCore::Utils::FEX_PAGE_SHIFT),
           shmflg);
 
         if (MappedPtr == MAP_FAILED) {
@@ -554,7 +554,7 @@ restart:
 uint64_t MemAllocator32Bit::Shmdt(const void* shmaddr) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
 
-  uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> FHU::FEX_PAGE_SHIFT;
+  uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> FEXCore::Utils::FEX_PAGE_SHIFT;
   auto it = PageToShm.find(AddrPage);
 
   if (it == PageToShm.end()) {

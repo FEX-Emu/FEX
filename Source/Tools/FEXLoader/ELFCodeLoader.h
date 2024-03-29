@@ -22,11 +22,11 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <elf.h>
@@ -514,12 +514,12 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
           ASLR_Offset &= (1ULL << ASLR_BITS_32) - 1;
         }
 
-        ASLR_Offset <<= FHU::FEX_PAGE_SHIFT;
+        ASLR_Offset <<= FEXCore::Utils::FEX_PAGE_SHIFT;
         ELFLoadHint += ASLR_Offset;
       }
 #endif
       // Align the mapping
-      ELFLoadHint &= FHU::FEX_PAGE_MASK;
+      ELFLoadHint &= FEXCore::Utils::FEX_PAGE_MASK;
     }
 
     // load the main elf
@@ -584,13 +584,13 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       if (!VSyscallEntry) [[unlikely]] {
         // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
         // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
-        auto VSyscallPage = Handler->GuestMmap(nullptr, nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        auto VSyscallPage = Handler->GuestMmap(nullptr, nullptr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         constexpr static uint8_t VSyscallCode[] = {
           0xcd, 0x80, // int 0x80
           0xc3,       // ret
         };
         memcpy(VSyscallPage, VSyscallCode, sizeof(VSyscallCode));
-        mprotect(VSyscallPage, FHU::FEX_PAGE_SIZE, PROT_READ);
+        mprotect(VSyscallPage, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ);
         VSyscallEntry = reinterpret_cast<uint64_t>(VSyscallPage);
       }
 
