@@ -157,7 +157,7 @@ public:
   constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
   constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
 
-  // This needs to be taken before reads or writes to L2, L3, CodePages, Thread::DebugStore,
+  // This needs to be taken before reads or writes to L2, L3, CodePages,
   // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to
   // may only happen during cross thread invalidation (::Erase).
   // All other operations must be done from the owning thread.
