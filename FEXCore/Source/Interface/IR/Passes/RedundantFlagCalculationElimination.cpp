@@ -176,6 +176,12 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .CanEliminate = true,
       };
 
+    case OP_CMPPAIRZ:
+      return {
+        .Write = FLAG_Z,
+        .CanEliminate = true,
+      };
+
     case OP_CARRYINVERT:
       return {
         .Read = FLAG_C,
