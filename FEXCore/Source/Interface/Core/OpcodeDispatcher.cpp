@@ -1974,6 +1974,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   const uint32_t Size = GetSrcBitSize(Op);
+  auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
 
   // Need to negate the shift so we can use ROR instead
   if constexpr (Is1Bit) {
@@ -1983,26 +1984,21 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(OpSize::i64Bit, Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
-  }
+  Src = _And(OpSize, Src, _Constant(Size, Size == 64 ? 0x3F : 0x1F));
 
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
+    Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
     if (Size == 8) {
       // And because the shift size isn't masked to 8 bits, we need to fill the
       // the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
+      Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
     }
   }
 
-  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit,
-    Dest,
-    _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, _Constant(Size, std::max(32U, Size)), Src));
+  // (32 - Size) % 32 = (-Size) % 32. Using Neg over Sub saves a constant.
+  auto ALUOp = _Ror(OpSize, Dest, _Neg(OpSize, Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
