@@ -4258,16 +4258,22 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Result_Lower = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 1);
 
-  // Set ZF if memory result was expected
-  auto OneConst = _Constant(1);
-  auto ZeroConst = _Constant(0);
+  // We want to set ZF if memory result was expected. So save the current flags,
+  // test the result, and merge.
+  SaveNZCV();
+  _SubNZCV(IR::SizeToOpSize(Size * 2), CASResult, Expected);
 
-  OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-    CASResult, Expected,
-    OneConst, ZeroConst);
+  if (CTX->HostFeatures.SupportsFlagM) {
+    // Restore the saved NzCV while keeping the new Z.
+    _RmifNZCV(CachedNZCV, 0, 0xb /* NzCV */);
+    CachedNZCV = nullptr;
+    NZCVDirty = false;
+  } else {
+    auto ZF = _NZCVSelect(OpSize::i32Bit, CondClassType{COND_EQ},
+                             _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZF);
+  }
 
-  // Set ZF
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
   CalculateDeferredFlags();
 
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {

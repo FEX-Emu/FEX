@@ -277,7 +277,14 @@ DEF_OP(SubNZCV) {
   const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
+
+  if (IsGPRPair(Op->Src1.ID())) {
+    const auto PairEmitSize = OpSize == IR::i128Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+    const auto Src1 = GetRegPair(Op->Src1.ID());
+    const auto Src2 = GetRegPair(Op->Src2.ID());
+    cmp(PairEmitSize, Src1.first, Src2.first);
+    ccmp(PairEmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+  } else if (IsInlineConstant(Op->Src2, &Const)) {
     LOGMAN_THROW_AA_FMT(OpSize >= 4, "Constant not allowed here");
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
   } else {

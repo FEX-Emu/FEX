@@ -1095,12 +1095,16 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "SubNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+      "SubNZCV OpSize:#Size, SSA:$Src1, SSA:$Src2": {
         "Desc": ["Set NZCV for the difference of two GPRs. ",
                  "Carry flag uses arm64 definition, inverted x86.",
-                 ""],
+                 "This supports an extension to register pairs for cmpxchg.",
+                 "For register pairs, only Z is defined. N/C/V are UNDEFINED."],
         "DestSize": "Size",
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "WalkFindRegClass($Src1) == WalkFindRegClass($Src2)"
+        ]
       },
       "GPR = Or OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary or"
