@@ -1615,8 +1615,8 @@
         "ror w20, w20, w21",
         "bfxil x4, x20, #0, #8",
         "cbz x21, #+0x10",
-        "rmif x20, #6, #nzCv",
-        "eor w20, w20, w20, lsr #1",
+        "rmif x4, #6, #nzCv",
+        "eor w20, w4, w4, lsr #1",
         "rmif x20, #6, #nzcV"
       ]
     },
@@ -1793,8 +1793,8 @@
         "ror w20, w20, w21",
         "bfxil x4, x20, #0, #16",
         "cbz x21, #+0x10",
-        "rmif x20, #14, #nzCv",
-        "eor w20, w20, w20, lsr #1",
+        "rmif x4, #14, #nzCv",
+        "eor w20, w4, w4, lsr #1",
         "rmif x20, #14, #nzcV"
       ]
     },
@@ -1805,11 +1805,10 @@
         "mov w20, w4",
         "mov w21, w5",
         "and w21, w21, #0x1f",
-        "ror w20, w20, w21",
-        "mov x4, x20",
+        "ror w4, w20, w21",
         "cbz x21, #+0x10",
-        "rmif x20, #30, #nzCv",
-        "eor w20, w20, w20, lsr #1",
+        "rmif x4, #30, #nzCv",
+        "eor w20, w4, w4, lsr #1",
         "rmif x20, #30, #nzcV"
       ]
     },
@@ -1818,11 +1817,10 @@
       "Comment": "GROUP2 0xd3 /1",
       "ExpectedArm64ASM": [
         "and x20, x5, #0x3f",
-        "ror x21, x4, x20",
-        "mov x4, x21",
+        "ror x4, x4, x20",
         "cbz x20, #+0x10",
-        "rmif x21, #62, #nzCv",
-        "eor x20, x21, x21, lsr #1",
+        "rmif x4, #62, #nzCv",
+        "eor x20, x4, x4, lsr #1",
         "rmif x20, #62, #nzcV"
       ]
     },
