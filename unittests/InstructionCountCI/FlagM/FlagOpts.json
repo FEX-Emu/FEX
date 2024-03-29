@@ -284,6 +284,38 @@
         "mov x26, x5",
         "cmn wzr, w26, lsl #24"
       ]
+    },
+    "Dead cmpxchg flags": {
+      "ExpectedInstructionCount": 23,
+      "x86Insts": [
+        "cmpxchg8b [rbp]",
+        "test rax, rax"
+      ],
+      "ExpectedArm64ASM": [
+        "add x20, x9, #0x0 (0)",
+        "mov w21, w4",
+        "mov w22, w6",
+        "mov w23, w22",
+        "mov w22, w21",
+        "mov w21, w7",
+        "mov w24, w5",
+        "mov w25, w24",
+        "mov w24, w21",
+        "mov w2, w22",
+        "mov w3, w23",
+        "caspal w2, w3, w24, w25, [x20]",
+        "mov w20, w2",
+        "mov w21, w3",
+        "mov w24, w20",
+        "mov w25, w21",
+        "cmp x20, x22",
+        "ccmp x21, x23, #nzcv, eq",
+        "cset x20, eq",
+        "rmif x20, #62, #nZcv",
+        "csel x4, x24, x4, ne",
+        "csel x6, x25, x6, ne",
+        "ands x26, x4, x4"
+      ]
     }
   }
 }
