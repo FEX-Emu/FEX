@@ -89,10 +89,6 @@ public:
     TYPE_LSHRDI,
     TYPE_ASHR,
     TYPE_ASHRI,
-    TYPE_ROR,
-    TYPE_RORI,
-    TYPE_ROL,
-    TYPE_ROLI,
     TYPE_BEXTR,
     TYPE_BLSI,
     TYPE_BLSMSK,
@@ -321,12 +317,8 @@ public:
   template<bool SHR1Bit>
   void ASHROp(OpcodeArgs);
   void ASHRImmediateOp(OpcodeArgs);
-  template<bool Is1Bit>
-  void ROROp(OpcodeArgs);
-  void RORImmediateOp(OpcodeArgs);
-  template<bool Is1Bit>
-  void ROLOp(OpcodeArgs);
-  void ROLImmediateOp(OpcodeArgs);
+  template<bool Left, bool IsImmediate, bool Is1Bit>
+  void RotateOp(OpcodeArgs);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
   void RCROp(OpcodeArgs);
@@ -1670,13 +1662,13 @@ private:
         OrderedNode *Src1;
       } OneSource;
 
-      // Logical, LSHL, LSHR, ASHR, ROR, ROL
+      // Logical, LSHL, LSHR, ASHR
       struct {
         OrderedNode *Src1;
         OrderedNode *Src2;
       } TwoSource;
 
-      // LSHLI, LSHRI, ASHRI, RORI, ROLI
+      // LSHLI, LSHRI, ASHRI
       struct {
         OrderedNode *Src1;
         uint64_t Imm;
@@ -1790,10 +1782,6 @@ private:
   void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_BEXTR(OrderedNode *Src);
   void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
   void CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
@@ -1978,78 +1966,6 @@ private:
           .Imm = Shift,
         },
       },
-    };
-  }
-
-  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-    // Doesn't set all the flags, needs to calculate.
-    CalculateDeferredFlags();
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ROR,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-        },
-      },
-    };
-  }
-
-  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-    // Doesn't set all the flags, needs to calculate.
-    CalculateDeferredFlags();
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ROL,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-        },
-      },
-    };
-  }
-
-  void GenerateFlags_RotateRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
-    if (Shift == 0) return;
-
-    // Doesn't set all the flags, needs to calculate.
-    CalculateDeferredFlags();
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_RORI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
-        },
-      },
-    };
-  }
-
-  void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
-    if (Shift == 0) return;
-
-    // Doesn't set all the flags, needs to calculate.
-    CalculateDeferredFlags();
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ROLI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
-        },
-      }
     };
   }
 
