@@ -2466,10 +2466,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
-  // Calculate flags early. Need to get flags outside of
-  // CalculateFlags_ShiftVariable because it will invalidate.
   CalculateDeferredFlags();
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
 
@@ -2479,7 +2476,12 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  CalculateFlags_ShiftVariable(Src, [this, CF, Op, Size, Src](){
+  Calculate_ShiftVariable(Src, [this, Op, Size](){
+    // Rematerialized to avoid crossblock liveness
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
     OrderedNode *Tmp{};
 
@@ -2541,26 +2543,28 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
     // Entire bitfield has been setup
     // Just extract the 8 or 16bits we need
-    OrderedNode *Res = _Lshr(OpSize::i64Bit, Tmp, Src);
+    OrderedNode *Res = _Lshr(OpSize::i32Bit, Tmp, Src);
 
     StoreResult(GPRClass, Op, Res, -1);
 
     uint64_t SrcConst;
     bool IsSrcConst = IsValueConstant(WrapNode(Src), &SrcConst);
+    SrcConst &= 0x1f;
 
-    // Our new CF will be bit (Shift - 1) of the source
+    // Our new CF will be bit (Shift - 1) of the source. 32-bit Lshr masks the
+    // same as x86, but if we constant fold we must mask ourselves.
     if (IsSrcConst) {
       SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Tmp, SrcConst - 1, true);
     } else {
       auto One = _Constant(Size, 1);
-      auto NewCF = _Lshr(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
+      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
       SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
     }
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
     if (!IsSrcConst || SrcConst == 1) {
-      auto NewOF = _XorShift(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Res))), Res, Res, ShiftType::LSR, 1);
+      auto NewOF = _XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 2, true);
     }
   });
