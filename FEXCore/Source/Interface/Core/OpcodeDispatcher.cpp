@@ -2681,10 +2681,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
-  // Calculate flags early. Get CF outside the CalculateFlags_ShiftVariable
-  // since that invalidates flags.
   CalculateDeferredFlags();
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   const auto Size = GetSrcBitSize(Op);
 
@@ -2694,8 +2691,13 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  CalculateFlags_ShiftVariable(Src, [this, CF, Op, Size, Src](){
+  Calculate_ShiftVariable(Src, [this, Op, Size](){
+    // Rematerialized to avoid crossblock liveness
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
     OrderedNode *Tmp = _Constant(64, 0);
 
@@ -2715,7 +2717,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Shift 1 more bit that expected to get our result
     // Shifting to the right will now behave like a rotate to the left
     // Which we emulate with a _Ror
-    OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, _Constant(Size, 64), Src));
+    OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, _Constant(Size, 64), Src));
 
     StoreResult(GPRClass, Op, Res, -1);
 
