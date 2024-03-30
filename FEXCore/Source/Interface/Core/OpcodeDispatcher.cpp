@@ -2717,7 +2717,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Shift 1 more bit that expected to get our result
     // Shifting to the right will now behave like a rotate to the left
     // Which we emulate with a _Ror
-    OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i32Bit, _Constant(Size, 64), Src));
+    OrderedNode *Res = _Ror(OpSize::i64Bit, Tmp, _Neg(OpSize::i32Bit, Src));
 
     StoreResult(GPRClass, Op, Res, -1);
 
