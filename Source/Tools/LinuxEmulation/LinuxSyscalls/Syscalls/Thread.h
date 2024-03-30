@@ -15,7 +15,9 @@ struct CPUState;
 }
 
 namespace FEX::HLE {
-  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
-  uint64_t HandleNewClone(FEXCore::Core::InternalThreadState *Thread, FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *GuestArgs);
-  uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, size_t StackSize, pid_t *parent_tid, pid_t *child_tid, void *tls);
+  struct ThreadStateObject;
+
+  FEX::HLE::ThreadStateObject *CreateNewThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
+  uint64_t HandleNewClone(FEX::HLE::ThreadStateObject *Thread, FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *GuestArgs);
+  uint64_t ForkGuest(FEX::HLE::ThreadStateObject *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, size_t StackSize, pid_t *parent_tid, pid_t *child_tid, void *tls);
 }

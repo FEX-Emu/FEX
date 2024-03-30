@@ -25,7 +25,6 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -381,7 +380,7 @@ static bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
 }
 
 struct StackFrameData {
-  FEXCore::Core::InternalThreadState *Thread{};
+  FEX::HLE::ThreadStateObject *Thread{};
   FEXCore::Context::Context *CTX{};
   FEXCore::Core::CpuStateFrame NewFrame{};
   FEX::HLE::clone3_args GuestArgs{};
@@ -460,7 +459,7 @@ static void PrintFlags(uint64_t Flags){
 
 static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
   StackFrameData *Data = (StackFrameData *)FEXCore::Allocator::malloc(sizeof(StackFrameData));
-  Data->Thread = Frame->Thread;
+  Data->Thread = static_cast<FEX::HLE::ThreadStateObject *>(Frame->Thread->FrontendPtr);
   Data->CTX = Frame->Thread->CTX;
   Data->GuestArgs = *args;
 
@@ -488,7 +487,7 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   constexpr size_t Offset = sizeof(StackFramePlusRet);
   StackFramePlusRet *Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(args->NewStack) + args->StackSize - Offset);
   Data->Ret = (uint64_t)Clone3HandlerRet;
-  Data->Data.Thread = Frame->Thread;
+  Data->Data.Thread = static_cast<FEX::HLE::ThreadStateObject *>(Frame->Thread->FrontendPtr);
   Data->Data.CTX = Frame->Thread->CTX;
   Data->Data.GuestArgs = *args;
 
@@ -626,6 +625,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   }
 
   auto Thread = Frame->Thread;
+  auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject *>(Thread->FrontendPtr);
 
   if (AnyFlagsSet(flags, CLONE_PTRACE)) {
     PrintFlags(flags);
@@ -634,27 +634,28 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
   if (!(flags & CLONE_THREAD)) {
     // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
-    return FEX::HLE::ForkGuest(Thread, Frame, flags,
+    return FEX::HLE::ForkGuest(ThreadObject, Frame, flags,
       reinterpret_cast<void*>(args->args.stack),
       args->args.stack_size,
       reinterpret_cast<pid_t*>(args->args.parent_tid),
       reinterpret_cast<pid_t*>(args->args.child_tid),
       reinterpret_cast<void*>(args->args.tls));
   } else {
-    auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
+    auto ThreadObject = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
+    auto Thread = ThreadObject->Thread;
 
     // Return the new threads TID
-    uint64_t Result = NewThread->ThreadManager.GetTID();
+    uint64_t Result = ThreadObject->ThreadManager.GetTID();
 
     // Actually start the thread
-    FEX::HLE::_SyscallHandler->TM.RunThread(NewThread);
+    FEX::HLE::_SyscallHandler->TM.RunThread(ThreadObject);
 
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
-      NewThread->ExecutionThread->join(nullptr);
+      ThreadObject->Thread->ExecutionThread->join(nullptr);
 
       // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
-      Thread->CTX->DestroyThread(NewThread);
+      Thread->CTX->DestroyThread(ThreadObject->Thread);
     }
 
     SYSCALL_ERRNO();

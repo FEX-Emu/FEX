@@ -560,7 +560,7 @@ int main(int argc, char **argv, char **const envp) {
       FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
-    CTX->RunUntilExit(ParentThread);
+    CTX->RunUntilExit(ParentThread->Thread);
   }
 
   if (AOTEnabled) {
@@ -581,10 +581,10 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto ProgramStatus = ParentThread->StatusCode;
+  auto ProgramStatus = ParentThread->Thread->StatusCode;
 
   SignalDelegation->UninstallTLSState(ParentThread);
-  CTX->DestroyThread(ParentThread);
+  SyscallHandler->TM.DestroyThread(ParentThread);
 
   DebugServer.reset();
   SyscallHandler.reset();

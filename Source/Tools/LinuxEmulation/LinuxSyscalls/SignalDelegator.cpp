@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -57,7 +56,7 @@ namespace FEX::HLE {
   static SignalDelegator *GlobalDelegator{};
 
   struct ThreadState {
-    FEXCore::Core::InternalThreadState *Thread{};
+    FEX::HLE::ThreadStateObject *Thread{};
 
     void *AltStackPtr{};
     stack_t GuestAltStack {
@@ -153,12 +152,14 @@ namespace FEX::HLE {
 
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
-    auto Thread = GetTLSThread();
+    auto ThreadDataObject = GetTLSThread();
 
-    if (!Thread) {
+    if (!ThreadDataObject) {
       LogMan::Msg::AFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
     }
     else {
+      auto Thread = ThreadDataObject->Thread;
+
       SignalHandler &Handler = HostHandlers[Signal];
       for (auto &HandlerFunc : Handler.Handlers) {
         if (HandlerFunc(Thread, Signal, Info, UContext)) {
@@ -1387,7 +1388,9 @@ namespace FEX::HLE {
       return;
     }
     Thread->SignalReason.store(Event);
-    FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+    auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject *>(Thread->FrontendPtr);
+
+    FHU::Syscalls::tgkill(ThreadObject->ThreadManager.PID, ThreadObject->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
   }
 
   /**  @} */
@@ -1809,11 +1812,11 @@ namespace FEX::HLE {
     GlobalDelegator = nullptr;
   }
 
-  FEXCore::Core::InternalThreadState *SignalDelegator::GetTLSThread() {
+  FEX::HLE::ThreadStateObject *SignalDelegator::GetTLSThread() {
     return ThreadData.Thread;
   }
 
-  void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
+  void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject *Thread) {
     ThreadData.Thread = Thread;
 
     // Set up our signal alternative stack
@@ -1834,14 +1837,14 @@ namespace FEX::HLE {
     // Get the current host signal mask
     ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadData.CurrentSignalMask.Val, 8);
 
-    if (Thread != (FEXCore::Core::InternalThreadState*)UINTPTR_MAX) {
+    if (Thread->Thread) {
       // Reserve a small amount of deferred signal frames. Usually the stack won't be utilized beyond
       // 1 or 2 signals but add a few more just in case.
-      Thread->DeferredSignalFrames.reserve(8);
+      Thread->Thread->DeferredSignalFrames.reserve(8);
     }
   }
 
-  void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
+  void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject *Thread) {
     FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ * 16);
 
     ThreadData.AltStackPtr = nullptr;
@@ -1944,7 +1947,7 @@ namespace FEX::HLE {
     bool UsingAltStack{};
     uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
     uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
-    uint64_t GuestSP = Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
+    uint64_t GuestSP = Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
 
     if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) &&
         GuestSP >= AltStackBase &&
@@ -2004,7 +2007,7 @@ namespace FEX::HLE {
     if (PendingSignals != 0) {
       for (int i = 0; i < 64; ++i) {
         if (PendingSignals & (1ULL << i)) {
-          FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
+          FHU::Syscalls::tgkill(ThreadData.Thread->ThreadManager.PID, ThreadData.Thread->ThreadManager.TID, i + 1);
           // We might not even return here which is spooky
         }
       }
@@ -2053,7 +2056,7 @@ namespace FEX::HLE {
       *oldset = OldSet;
     }
 
-    CheckForPendingSignals(GetTLSThread());
+    CheckForPendingSignals(GetTLSThread()->Thread);
 
     return 0;
   }
@@ -2116,7 +2119,7 @@ namespace FEX::HLE {
     // then this is safe-ish
     ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
 
-    CheckForPendingSignals(GetTLSThread());
+    CheckForPendingSignals(GetTLSThread()->Thread);
 
     return Result == -1 ? -errno : Result;
 

@@ -38,7 +38,6 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
@@ -354,10 +353,6 @@ namespace FEXCore::Context {
 
 
   void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
-    // Let's do some initial bookkeeping here
-    Thread->ThreadManager.TID = FHU::Syscalls::gettid();
-    Thread->ThreadManager.PID = ::getpid();
-
     if (ThunkHandler) {
       ThunkHandler->RegisterTLSState(Thread);
     }
@@ -402,7 +397,7 @@ namespace FEXCore::Context {
     Thread->PassManager->Finalize();
   }
 
-  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState) {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
@@ -413,8 +408,6 @@ namespace FEXCore::Context {
       memcpy(&Thread->CurrentFrame->State, NewThreadState, sizeof(FEXCore::Core::CPUState));
     }
 
-    // Set up the thread manager state
-    Thread->ThreadManager.parent_tid = ParentTID;
     Thread->CurrentFrame->Thread = Thread;
 
     InitializeCompiler(Thread);
@@ -909,16 +902,6 @@ namespace FEXCore::Context {
 
     // If it is the parent thread that died then just leave
     FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
-
-    if (Thread->ThreadManager.parent_tid == 0) {
-      CoreShuttingDown.store(true);
-      Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-
-      if (CustomExitHandler) {
-        CustomExitHandler(Thread->ThreadManager.TID, Thread->ExitReason);
-      }
-    }
-
 #ifndef _WIN32
     Alloc::OSAllocator::UninstallTLSData(Thread);
 #endif

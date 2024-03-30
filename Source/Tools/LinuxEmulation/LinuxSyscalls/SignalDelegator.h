@@ -35,6 +35,7 @@ namespace Core {
 }
 
 namespace FEX::HLE {
+  struct ThreadStateObject;
   using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
   using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack)>;
 
@@ -54,8 +55,8 @@ namespace FEX::HLE {
     // Called from the signal trampoline function.
     void HandleSignal(int Signal, void *Info, void *UContext);
 
-    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread);
-    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread);
+    void RegisterTLSState(FEX::HLE::ThreadStateObject *Thread);
+    void UninstallTLSState(FEX::HLE::ThreadStateObject *Thread);
 
     /**
      * @brief Registers a signal handler for the host to handle a signal
@@ -130,7 +131,7 @@ namespace FEX::HLE {
 
     void SaveTelemetry();
   private:
-    FEXCore::Core::InternalThreadState *GetTLSThread();
+    FEX::HLE::ThreadStateObject *GetTLSThread();
 
     // Called from the thunk handler to handle the signal
     void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext);

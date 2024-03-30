@@ -22,7 +22,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/FileLoading.h>
@@ -341,14 +340,14 @@ fextl::string GdbServer::readRegs() {
   FEXCore::Core::CPUState state{};
 
   auto Threads = SyscallHandler->TM.GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { Threads->at(0) };
+  FEX::HLE::ThreadStateObject *CurrentThread { Threads->at(0) };
   bool Found = false;
 
   for (auto &Thread : *Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
-    memcpy(&state, Thread->CurrentFrame, sizeof(state));
+    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
     CurrentThread = Thread;
     Found = true;
     break;
@@ -356,14 +355,14 @@ fextl::string GdbServer::readRegs() {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
   }
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
   memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
 
-  GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread, false, nullptr, 0);
+  GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
@@ -392,14 +391,14 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   FEXCore::Core::CPUState state{};
 
   auto Threads = SyscallHandler->TM.GetThreads();
-  FEXCore::Core::InternalThreadState *CurrentThread { Threads->at(0) };
+  FEX::HLE::ThreadStateObject *CurrentThread { Threads->at(0) };
   bool Found = false;
 
   for (auto &Thread : *Threads) {
     if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
-    memcpy(&state, Thread->CurrentFrame, sizeof(state));
+    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
     CurrentThread = Thread;
     Found = true;
     break;
@@ -407,7 +406,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->CurrentFrame, sizeof(state));
+    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
   }
 
 
@@ -419,7 +418,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
     return {encodeHex((unsigned char *)(&state.rip), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, eflags)) {
-    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread, false, nullptr, 0);
+    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
 
     return {encodeHex((unsigned char *)(&eflags), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
   }

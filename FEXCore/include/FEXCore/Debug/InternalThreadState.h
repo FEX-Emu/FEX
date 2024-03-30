@@ -108,7 +108,6 @@ namespace FEXCore::Core {
 
     fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
-    FEXCore::HLE::ThreadManagement ThreadManager;
     fextl::unique_ptr<JITSymbolBuffer> SymbolBuffer;
 
     int StatusCode{};
