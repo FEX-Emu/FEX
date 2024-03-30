@@ -4258,16 +4258,8 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Result_Lower = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 1);
 
-  // Set ZF if memory result was expected
-  auto OneConst = _Constant(1);
-  auto ZeroConst = _Constant(0);
-
-  OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-    CASResult, Expected,
-    OneConst, ZeroConst);
-
-  // Set ZF
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(ZFResult);
+  HandleNZCV_RMW();
+  _CmpPairZ(IR::SizeToOpSize(Size), CASResult, Expected);
   CalculateDeferredFlags();
 
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {

@@ -642,7 +642,6 @@
                 ],
         "HasDest": true,
         "DestSize": "Size",
-        "ImplicitFlagClobber": true,
         "NumElements": "2",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
@@ -1094,6 +1093,11 @@
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
+      },
+      "CmpPairZ OpSize:#Size, GPRPair:$Src1, GPRPair:$Src2": {
+        "Desc": ["Compares register pairs and sets Z accordingly, preserving N/Z/V.",
+                 "This accelerates cmpxchg."],
+        "HasSideEffects": true
       },
       "SubNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the difference of two GPRs. ",

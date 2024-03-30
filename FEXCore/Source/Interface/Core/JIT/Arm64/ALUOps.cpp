@@ -5,6 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "FEXCore/IR/IR.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
@@ -296,6 +297,31 @@ DEF_OP(SubNZCV) {
     } else {
       cmp(EmitSize, ShiftedSrc1, GetReg(Op->Src2.ID()));
     }
+  }
+}
+
+DEF_OP(CmpPairZ) {
+  auto Op = IROp->C<IR::IROp_CmpPairZ>();
+  const uint8_t OpSize = IROp->Size;
+
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  // Save NZCV
+  mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
+  // Compare, setting Z and clobbering NzCV
+  const auto Src1 = GetRegPair(Op->Src1.ID());
+  const auto Src2 = GetRegPair(Op->Src2.ID());
+  cmp(EmitSize, Src1.first, Src2.first);
+  ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+
+  // Restore NzCV
+  if (CTX->HostFeatures.SupportsFlagM) {
+    rmif(TMP1, 0, 0xb /* NzCV */);
+  } else {
+    cset(ARMEmitter::Size::i32Bit, TMP2, ARMEmitter::Condition::CC_EQ);
+    bfi(ARMEmitter::Size::i32Bit, TMP1, TMP2, 30 /* lsb: Z */, 1);
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   }
 }
 

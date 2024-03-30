@@ -80,7 +80,7 @@
       ]
     },
     "dxvk hotblock from MGRR": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 40,
       "Comment": [
         "Hottest block in Metal Gear Rising: Revengeance render thread"
       ],
@@ -128,21 +128,19 @@
         "mov w23, w6",
         "mov w24, w21",
         "mov w25, w5",
-        "mrs x21, nzcv",
         "mov w2, w22",
         "mov w3, w23",
         "caspal w2, w3, w24, w25, [x20]",
-        "mov w24, w2",
-        "mov w25, w3",
-        "mov w20, w24",
-        "mov w12, w25",
-        "cmp x24, x22",
-        "ccmp x25, x23, #nzcv, eq",
-        "cset x22, eq",
-        "msr nzcv, x21",
-        "rmif x22, #62, #nZcv",
-        "csel x4, x20, x4, ne",
-        "csel x6, x12, x6, ne"
+        "mov w20, w2",
+        "mov w21, w3",
+        "mov w24, w20",
+        "mov w25, w21",
+        "mrs x0, nzcv",
+        "cmp w20, w22",
+        "ccmp w21, w23, #nzcv, eq",
+        "rmif x0, #0, #NzCV",
+        "csel x4, x24, x4, ne",
+        "csel x6, x25, x6, ne"
       ]
     },
     "Psychonauts matrix swizzle": {
