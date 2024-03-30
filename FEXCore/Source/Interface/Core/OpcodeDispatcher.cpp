@@ -2603,18 +2603,18 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   const auto OpSize = OpSizeFromSrc(Op);
-
-  // Res = Src << Shift
-  OrderedNode *Res = _Lshl(OpSize, Dest, Src);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   uint64_t Const;
   if (IsValueConstant(WrapNode(Src), &Const)) {
     Const &= Mask;
     if (!Const)
       return;
+
+    // Res = Src << Shift
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+    OrderedNode *Res = _Lshl(OpSize, Dest, Src);
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
     InvalidateDeferredFlags();
 
@@ -2640,20 +2640,28 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   }
 
   OrderedNode *SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
-  CalculateFlags_ShiftVariable(SrcMasked, [this, CF, Op, Size, OpSize, SrcMasked, Dest, &Res](){
-    // Res |= (SrcMasked >> (Size - Shift + 1)), expressed as
-    // Res | ((SrcMasked >> (-Shift)) >> 1), since Size - Shift = -Shift mod
-    // Size.
-    auto NegSrc = _Neg(OpSize, SrcMasked);
+  Calculate_ShiftVariable(SrcMasked, [this, Op, Size, OpSize](){
+    // Rematerialized to avoid crossblock liveness
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+
+    // Res = Src << Shift
+    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+    OrderedNode *Res = _Lshl(OpSize, Dest, Src);
+    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+    // Res |= (Dest >> (Size - Shift + 1)), expressed as
+    // Res | ((Dest >> (-Shift)) >> 1), since Size - Shift = -Shift mod
+    // Size. The shift aborbs the masking.
+    auto NegSrc = _Neg(OpSize, Src);
     Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, NegSrc), 1);
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Lshr(OpSize, Dest, NegSrc);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
 
-    // Since Shift != 0 we can inject the CF
-    OrderedNode *CFShl = _Sub(OpSize, SrcMasked, _Constant(Size, 1));
-    auto TmpCF = _Lshl(OpSize::i64Bit, CF, CFShl);
+    // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
+    OrderedNode *CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
+    auto TmpCF = _Lshl(OpSize, CF, CFShl);
     Res = _Or(OpSize, Res, TmpCF);
 
     // OF is the top two MSBs XOR'd together
