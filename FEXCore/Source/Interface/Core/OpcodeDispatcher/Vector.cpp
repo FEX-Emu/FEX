@@ -3001,16 +3001,15 @@ void OpDispatchBuilder::XSaveOp(OpcodeArgs) {
   XSaveOpImpl(Op);
 }
 
-void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
-  const auto XSaveBase = [this, Op] {
-    OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    return AppendSegmentOffset(Mem, Op->Flags);
-  };
+OrderedNode *OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  return AppendSegmentOffset(Mem, Op->Flags);
+}
 
+void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   // NOTE: Mask should be EAX and EDX concatenated, but we only need to test
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
   OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
-  OrderedNode *Base = XSaveBase();
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
@@ -3034,25 +3033,26 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   // x87
   {
-    StoreIfFlagSet(0, [this, Op, Base] { SaveX87State(Op, Base); });
+    StoreIfFlagSet(0, [this, Op] { SaveX87State(Op, XSaveBase(Op)); });
   }
   // SSE
   {
-    StoreIfFlagSet(1, [this, Base] { SaveSSEState(Base); });
+    StoreIfFlagSet(1, [this, Op] { SaveSSEState(XSaveBase(Op)); });
   }
   // AVX
   if (CTX->HostFeatures.SupportsAVX)
   {
-    StoreIfFlagSet(2, [this, Base] { SaveAVXState(Base); });
+    StoreIfFlagSet(2, [this, Op] { SaveAVXState(XSaveBase(Op)); });
   }
 
   // We need to save MXCSR and MXCSR_MASK if either SSE or AVX are requested to be saved
   {
-    StoreIfFlagSet(1, [this, Base] { SaveMXCSRState(Base); }, 2);
+    StoreIfFlagSet(1, [this, Op] { SaveMXCSRState(XSaveBase(Op)); }, 2);
   }
 
   // Update XSTATE_BV region of the XSAVE header
   {
+    OrderedNode *Base = XSaveBase(Op);
     OrderedNode *HeaderOffset = _Add(OpSize, Base, _Constant(512));
 
     // NOTE: We currently only support the first 3 bits (x87, SSE, and AVX)
@@ -3210,14 +3210,11 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
-  const auto XSaveBase = [this, Op] {
-    OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    return AppendSegmentOffset(Mem, Op->Flags);
-  };
-
   // Set up base address for the XSAVE region to restore from, and also read the
   // XSTATE_BV bit flags out of the XSTATE header.
-  OrderedNode *Base = XSaveBase();
+  //
+  // Note: we rematerialize Base in each block to avoid crossblock liveness.
+  OrderedNode *Base = XSaveBase(Op);
   OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(OpSize, Base, _Constant(512)), 8);
 
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
@@ -3253,27 +3250,28 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // x87
   {
     RestoreIfFlagSetOrDefault(0,
-                              [this, Base] { RestoreX87State(Base); },
+                              [this, Op] { RestoreX87State(XSaveBase(Op)); },
                               [this, Op] { DefaultX87State(Op); });
   }
   // SSE
   {
     RestoreIfFlagSetOrDefault(1,
-                              [this, Base] { RestoreSSEState(Base); },
+                              [this, Op] { RestoreSSEState(XSaveBase(Op)); },
                               [this] { DefaultSSEState(); });
   }
   // AVX
   if (CTX->HostFeatures.SupportsAVX)
   {
     RestoreIfFlagSetOrDefault(2,
-                              [this, Base] { RestoreAVXState(Base); },
+                              [this, Op] { RestoreAVXState(XSaveBase(Op)); },
                               [this] { DefaultAVXState(); });
   }
 
   {
     // We need to restore the MXCSR if either SSE or AVX are requested to be saved
     RestoreIfFlagSetOrDefault(1,
-                              [this, Base, OpSize] {
+                              [this, Op, OpSize] {
+                                OrderedNode *Base = XSaveBase(Op);
                                 OrderedNode *MXCSRLocation = _Add(OpSize, Base, _Constant(24));
                                 OrderedNode *MXCSR = _LoadMem(GPRClass, 4, MXCSRLocation, 4);
                                 RestoreMXCSRState(MXCSR);

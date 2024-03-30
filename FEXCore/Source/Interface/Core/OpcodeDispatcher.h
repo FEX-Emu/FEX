@@ -809,6 +809,7 @@ public:
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 
+  OrderedNode *XSaveBase(X86Tables::DecodedOp Op);
   void XSaveOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
