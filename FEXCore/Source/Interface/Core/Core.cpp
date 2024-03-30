@@ -478,7 +478,6 @@ namespace FEXCore::Context {
 
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
-    Thread->DebugStore.clear();
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
@@ -957,9 +956,6 @@ namespace FEXCore::Context {
         // Only the lookup cache is cleared here, so that old code can keep running until next compilation
         std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
         Thread->LookupCache->ClearCache();
-
-        // DebugStore also needs to be cleared
-        Thread->DebugStore.clear();
       }
     }
   }
@@ -975,7 +971,6 @@ namespace FEXCore::Context {
 
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
-    Thread->DebugStore.erase(GuestRIP);
     Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
   }
 

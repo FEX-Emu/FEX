@@ -10,7 +10,6 @@
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/memory.h>
-#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
@@ -63,14 +62,6 @@ namespace FEXCore::Core {
     fextl::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
-  struct LocalIREntry {
-    uint64_t StartAddr;
-    uint64_t Length;
-    fextl::unique_ptr<FEXCore::IR::IRListView, FEXCore::IR::IRListViewDeleter> IR;
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
-    fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
-  };
-
   // Buffered JIT symbol tracking.
   struct JITSymbolBuffer {
     // Maximum buffer size to ensure we are a page in size.
@@ -114,8 +105,6 @@ namespace FEXCore::Core {
 
     fextl::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
     fextl::unique_ptr<FEXCore::LookupCache> LookupCache;
-
-    fextl::robin_map<uint64_t, LocalIREntry> DebugStore;
 
     fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
