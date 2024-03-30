@@ -1725,15 +1725,12 @@ private:
   }
 
   template <typename F>
-  void CalculateFlags_ShiftVariable(OrderedNode *Shift, F&& CalculateFlags) {
-    // We are the ones calculating the deferred flags. Don't recurse!
-    InvalidateDeferredFlags();
-
+  void Calculate_ShiftVariable(OrderedNode *Shift, F&& Calculate) {
     // RCR can call this with constants, so handle that without branching.
     uint64_t Const;
     if (IsValueConstant(WrapNode(Shift), &Const)) {
       if (Const)
-        CalculateFlags();
+        Calculate();
 
       return;
     }
@@ -1750,13 +1747,20 @@ private:
     SetCurrentCodeBlock(SetBlock);
     StartNewBlock();
     {
-      CalculateFlags();
+      Calculate();
       Jump(EndBlock);
     }
 
     SetCurrentCodeBlock(EndBlock);
     StartNewBlock();
     PossiblySetNZCVBits |= OldSetNZCVBits;
+  }
+
+  template <typename F>
+  void CalculateFlags_ShiftVariable(OrderedNode *Shift, F&& CalculateFlags) {
+    // We are the ones calculating the deferred flags. Don't recurse!
+    InvalidateDeferredFlags();
+    Calculate_ShiftVariable(Shift, CalculateFlags);
   }
 
   /**
