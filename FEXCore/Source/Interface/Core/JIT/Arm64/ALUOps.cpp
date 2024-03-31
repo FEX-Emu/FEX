@@ -334,7 +334,7 @@ DEF_OP(RmifNZCV) {
   auto Op = IROp->C<IR::IROp_RmifNZCV>();
   LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
 
-  rmif(GetReg(Op->Src.ID()).X(), Op->Rotate, Op->Mask);
+  rmif(GetZeroableReg(Op->Src).X(), Op->Rotate, Op->Mask);
 }
 
 DEF_OP(SetSmallNZV) {
