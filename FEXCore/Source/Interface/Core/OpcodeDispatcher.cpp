@@ -3617,26 +3617,24 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
-    // read DF once
-    auto PtrDir = LoadDir(Size);
-
-    auto JumpStart = Jump();
-    // Make sure to start a new block after ending this one
-    auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetJumpTarget(JumpStart, LoopStart);
-    SetCurrentCodeBlock(LoopStart);
-    StartNewBlock();
-
+    // If rcx = 0, skip the whole loop.
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
+    auto OuterJump = CondJump(Counter, {COND_EQ});
+    IRPair<IROp_CondJump> InnerJump;
 
-    // Can we end the block?
-    auto CondJump_ = CondJump(Counter, {COND_EQ});
-    IRPair<IROp_CondJump> InternalCondJump;
-
-    auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
-    SetFalseJumpTarget(CondJump_, LoopTail);
-    SetCurrentCodeBlock(LoopTail);
+    // read DF once, outside the loop
+    auto BeforeLoop = CreateNewCodeBlockAfter(GetCurrentBlock());
+    SetFalseJumpTarget(OuterJump, BeforeLoop);
+    SetCurrentCodeBlock(BeforeLoop);
     StartNewBlock();
+    auto PtrDir = LoadDir(Size);
+    auto JumpIntoLoop = Jump();
+
+    // Setup for the loop
+    auto LoopHeader = CreateNewCodeBlockAfter(GetCurrentBlock());
+    SetCurrentCodeBlock(LoopHeader);
+    StartNewBlock();
+    SetJumpTarget(JumpIntoLoop, LoopHeader);
 
     // Working loop
     {
@@ -3651,15 +3649,14 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
       auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
-      GenerateFlags_SUB(Op, Src2, Src1);
-
-      // Calculate flags early.
-      CalculateDeferredFlags();
+      // We'll calculate PF/AF after the loop, so use them as temporaries here.
+      _StoreRegister(Src1, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+      _StoreRegister(Src2, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
 
       OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
       // Decrement counter
-      TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
+      TailCounter = _SubWithFlags(OpSize::i64Bit, TailCounter, _Constant(1));
 
       // Store the counter since we don't have phis
       StoreGPRRegister(X86State::REG_RCX, TailCounter);
@@ -3672,20 +3669,36 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, PtrDir);
       StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
-      CalculateDeferredFlags();
-      InternalCondJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
+      // If TailCounter != 0, compare sources.
+      // If TailCounter == 0, set ZF iff that would break.
+      _CondSubNZCV(OpSize::i64Bit, Src2, Src1, {COND_NEQ}, REPE ? 0 : (1 << 2) /* Z */);
+      CachedNZCV = nullptr;
+      NZCVDirty = false;
+      InnerJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
 
       // Jump back to the start if we have more work to do
-      SetTrueJumpTarget(InternalCondJump, LoopStart);
+      SetTrueJumpTarget(InnerJump, LoopHeader);
     }
 
     // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
-    SetTrueJumpTarget(CondJump_, LoopEnd);
-
-    SetFalseJumpTarget(InternalCondJump, LoopEnd);
+    auto LoopEnd = CreateNewCodeBlockAfter(GetCurrentBlock());
+    SetFalseJumpTarget(InnerJump, LoopEnd);
 
     SetCurrentCodeBlock(LoopEnd);
+    StartNewBlock();
+    {
+      // Grab the sources from the last iteration so we can set flags.
+      auto Src1 = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+      auto Src2 = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+      GenerateFlags_SUB(Op, Src2, Src1);
+      CalculateDeferredFlags();
+    }
+    auto Jump_ = Jump();
+
+    auto Exit = CreateNewCodeBlockAfter(LoopEnd);
+    SetJumpTarget(Jump_, Exit);
+    SetTrueJumpTarget(OuterJump, Exit);
+    SetCurrentCodeBlock(Exit);
     StartNewBlock();
   }
 }
