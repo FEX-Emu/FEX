@@ -297,6 +297,8 @@ namespace {
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
 
       uint64_t OriginalRIP;
+
+      fextl::vector<LiveRange*> StaticMaps;
   };
 
   ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _SupportsAVX)
@@ -550,7 +552,7 @@ namespace {
 
     auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
     auto MapsSize =  Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount + Graph->Set.Classes[FPRFixedClass.Val].PhysicalCount;
-    LiveRange* StaticMaps[MapsSize];
+    StaticMaps.resize(MapsSize);
 
     // Get a StaticMap entry from context offset
     const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
@@ -625,7 +627,7 @@ namespace {
     // - Mark read-aliases
     // - Demote read-aliases if SRA reg is written before the alias's last read
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      memset(StaticMaps, 0, MapsSize * sizeof(LiveRange*));
+      memset(StaticMaps.data(), 0, MapsSize * sizeof(LiveRange*));
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
         auto& NodeLiveRange = LiveRanges[Node.Value];
