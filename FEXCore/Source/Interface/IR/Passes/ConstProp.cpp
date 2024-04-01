@@ -1137,6 +1137,21 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         break;
       }
+      case OP_RMIFNZCV:
+      {
+        auto Op = IROp->C<IR::IROp_RmifNZCV>();
+
+        uint64_t Constant1{};
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+          if (Constant1 == 0) {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+            IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+            Changed = true;
+          }
+        }
+
+        break;
+      }
       case OP_CONDADDNZCV:
       {
         auto Op = IROp->C<IR::IROp_CondAddNZCV>();

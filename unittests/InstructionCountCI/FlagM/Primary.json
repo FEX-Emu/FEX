@@ -2353,11 +2353,10 @@
       ]
     },
     "clc": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0xf8",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "rmif x20, #63, #nzCv"
+        "rmif xzr, #63, #nzCv"
       ]
     },
     "stc": {
