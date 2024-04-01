@@ -981,16 +981,7 @@ private:
   }
 
   static bool IsNZCV(unsigned BitOffset) {
-    switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_CF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_SF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_OF_RAW_LOC:
-        return true;
-
-      default:
-        return false;
-    }
+    return ContainsNZCV(1U << BitOffset);
   }
 
   OrderedNode* CachedNZCV{};
