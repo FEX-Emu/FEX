@@ -1422,7 +1422,7 @@ private:
     SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(Constant << 4));
   }
 
-  void ZeroMultipleFlags(uint32_t BitMask);
+  void ZeroPF_AF();
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
