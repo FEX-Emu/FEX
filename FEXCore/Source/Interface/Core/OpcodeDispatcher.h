@@ -1295,12 +1295,8 @@ private:
   }
 
   OrderedNode *GetNZCV() {
-    if (!CachedNZCV) {
+    if (!CachedNZCV)
       CachedNZCV = _LoadNZCV();
-
-      // We don't know what's set
-      PossiblySetNZCVBits = ~0;
-    }
 
     return CachedNZCV;
   }
