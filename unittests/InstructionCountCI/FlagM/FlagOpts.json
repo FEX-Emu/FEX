@@ -197,25 +197,24 @@
       ]
     },
     "Variable rotate-through-carry dead": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "x86Insts": [
         "rcr rax, cl",
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "lsr x21, x20, x5",
-        "cset w22, hs",
-        "and x23, x5, #0x3f",
-        "cbz x23, #+0x2c",
-        "neg x24, x23",
-        "lsl x25, x20, x24",
-        "orr x21, x21, x25, lsl #1",
-        "sub x23, x23, #0x1 (1)",
-        "lsr x20, x20, x23",
-        "rmif x20, #63, #nzCv",
-        "lsl x20, x22, x24",
-        "orr x4, x21, x20",
+        "and x20, x5, #0x3f",
+        "cbz x20, #+0x34",
+        "lsr x20, x4, x5",
+        "cset w21, hs",
+        "neg x22, x5",
+        "lsl x23, x4, x22",
+        "orr x20, x20, x23, lsl #1",
+        "sub x23, x5, #0x1 (1)",
+        "lsr x23, x4, x23",
+        "rmif x23, #63, #nzCv",
+        "lsl x21, x21, x22",
+        "orr x4, x20, x21",
         "eor x20, x4, x4, lsr #1",
         "rmif x20, #62, #nzcV",
         "ands x26, x4, x6"
