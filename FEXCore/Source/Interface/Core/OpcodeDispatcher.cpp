@@ -3731,65 +3731,64 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     // Calculate flags early. because end of block
     CalculateDeferredFlags();
 
-    // XXX: Theoretically LODS could be optimized to
-    // RSI += {-}(RCX * Size)
-    // RAX = [RSI - Size]
-    // But this might violate the case of an application scanning pages for read permission and catching the fault
-    // May or may not matter
+    ForeachDirection([this, Op, Size](int PtrDir) {
+      // XXX: Theoretically LODS could be optimized to
+      // RSI += {-}(RCX * Size)
+      // RAX = [RSI - Size]
+      // But this might violate the case of an application scanning pages for read permission and catching the fault
+      // May or may not matter
 
-    // Read DF once
-    auto PtrDir = LoadDir(Size);
+      auto JumpStart = Jump();
+      // Make sure to start a new block after ending this one
+      auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
+      SetJumpTarget(JumpStart, LoopStart);
+      SetCurrentCodeBlock(LoopStart);
+      StartNewBlock();
 
-    auto JumpStart = Jump();
-    // Make sure to start a new block after ending this one
-    auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetJumpTarget(JumpStart, LoopStart);
-    SetCurrentCodeBlock(LoopStart);
-    StartNewBlock();
+      OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
-    OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
+      // Can we end the block?
 
-    // Can we end the block?
+      // We leave if RCX = 0
+      auto CondJump_ = CondJump(Counter, {COND_EQ});
 
-    // We leave if RCX = 0
-    auto CondJump_ = CondJump(Counter, {COND_EQ});
+      auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
+      SetFalseJumpTarget(CondJump_, LoopTail);
+      SetCurrentCodeBlock(LoopTail);
+      StartNewBlock();
 
-    auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
-    SetFalseJumpTarget(CondJump_, LoopTail);
-    SetCurrentCodeBlock(LoopTail);
-    StartNewBlock();
+      // Working loop
+      {
+        OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
 
-    // Working loop
-    {
-      OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
+        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-      Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+        auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
-      auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
+        StoreResult(GPRClass, Op, Src, -1);
 
-      StoreResult(GPRClass, Op, Src, -1);
+        OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
+        OrderedNode *TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
 
-      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
-      OrderedNode *TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
+        // Decrement counter
+        TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
 
-      // Decrement counter
-      TailCounter = _Sub(OpSize::i64Bit, TailCounter, _Constant(1));
+        // Store the counter since we don't have phis
+        StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
-      // Store the counter since we don't have phis
-      StoreGPRRegister(X86State::REG_RCX, TailCounter);
+        // Offset the pointer
+        TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, _Constant(PtrDir * Size));
+        StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
 
-      // Offset the pointer
-      TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, PtrDir);
-      StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
-
-      // Jump back to the start, we have more work to do
-      Jump(LoopStart);
-    }
-    // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
-    SetTrueJumpTarget(CondJump_, LoopEnd);
-    SetCurrentCodeBlock(LoopEnd);
-    StartNewBlock();
+        // Jump back to the start, we have more work to do
+        Jump(LoopStart);
+      }
+      // Make sure to start a new block after ending this one
+      auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
+      SetTrueJumpTarget(CondJump_, LoopEnd);
+      SetCurrentCodeBlock(LoopEnd);
+      StartNewBlock();
+    });
   }
 }
 
