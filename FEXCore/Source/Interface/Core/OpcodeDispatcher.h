@@ -228,6 +228,32 @@ public:
     return CanHaveSideEffects;
   }
 
+  template <typename F>
+  void ForeachDirection(F&& Routine) {
+    // Otherwise, prepare to branch.
+    auto Zero = _Constant(0);
+
+    // If the shift is zero, do not touch the flags.
+    auto ForwardBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+    auto BackwardBlock = CreateNewCodeBlockAfter(ForwardBlock);
+    auto ExitBlock = CreateNewCodeBlockAfter(BackwardBlock);
+
+    auto DF = GetRFLAG(X86State::RFLAG_DF_RAW_LOC);
+    CondJump(DF, Zero, ForwardBlock, BackwardBlock, {COND_EQ});
+
+    for (auto D = 0; D < 2; ++D) {
+      SetCurrentCodeBlock(D ? BackwardBlock : ForwardBlock);
+      StartNewBlock();
+      {
+        Routine(D ? -1 : 1);
+        Jump(ExitBlock);
+      }
+    }
+
+    SetCurrentCodeBlock(ExitBlock);
+    StartNewBlock();
+  }
+
   OpDispatchBuilder(FEXCore::Context::ContextImpl *ctx);
   OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 
