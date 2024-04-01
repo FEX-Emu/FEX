@@ -6,7 +6,6 @@
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Telemetry.h>
-#include <FEXCore/Core/CPUBackend.h>
 
 #include <atomic>
 #include <cstddef>

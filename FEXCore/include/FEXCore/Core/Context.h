@@ -236,6 +236,16 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
 
       /**
+       * @brief Checks if a PC is inside of a thread's JIT code buffer.
+       *
+       * @param Thread Which thread's code buffers to check inside of.
+       * @param Address The PC to check against.
+       *
+       * @return true if PC is inside the thread's code buffers.
+       */
+      FEX_DEFAULT_VISIBILITY virtual bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState *Thread, uintptr_t Address) const = 0;
+
+      /**
        * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.
        *
        * @param CTX A valid non-null context instance.

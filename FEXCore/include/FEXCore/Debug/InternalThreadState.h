@@ -2,7 +2,6 @@
 #pragma once
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
@@ -27,6 +26,7 @@ namespace FEXCore::Context {
 }
 
 namespace FEXCore::CPU {
+  class CPUBackend;
   union Relocation;
 }
 

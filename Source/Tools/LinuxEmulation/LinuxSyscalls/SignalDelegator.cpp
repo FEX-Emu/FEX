@@ -1170,7 +1170,7 @@ namespace FEX::HLE {
     ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
     uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
-    const bool WasInJIT = Thread->CPUBackend->IsAddressInCodeBuffer(OldPC);
+    const bool WasInJIT = CTX->IsAddressInCodeBuffer(Thread, OldPC);
 
     // Spill the SRA regardless of signal handler type
     // We are going to be returning to the top of the dispatcher which will fill again
@@ -1312,7 +1312,7 @@ namespace FEX::HLE {
       // Store our thread state so we can come back to this
       StoreThreadState(Thread, Signal, ucontext);
 
-      if (Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+      if (CTX->IsAddressInCodeBuffer(Thread, ArchHelpers::Context::GetPc(ucontext))) {
         // We are in jit, SRA must be spilled
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadPauseHandlerAddressSpillSRA);
       } else {
@@ -1343,7 +1343,7 @@ namespace FEX::HLE {
       Thread->CurrentFrame->SignalHandlerRefCounter = 0;
 
       // Set the new PC
-      if (Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+      if (CTX->IsAddressInCodeBuffer(Thread, ArchHelpers::Context::GetPc(ucontext))) {
         // We are in jit, SRA must be spilled
         ArchHelpers::Context::SetPc(ucontext, Config.ThreadStopHandlerAddressSpillSRA);
       } else {
@@ -1767,7 +1767,7 @@ namespace FEX::HLE {
     // Register SIGBUS signal handler.
     const auto SigbusHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *_info, void *ucontext) -> bool {
       const auto PC = ArchHelpers::Context::GetPc(ucontext);
-      if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
+      if (!Thread->CTX->IsAddressInCodeBuffer(Thread, PC)) {
         // Wasn't a sigbus in JIT code
         return false;
       }

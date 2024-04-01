@@ -12,6 +12,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers//Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
@@ -32,7 +33,6 @@ $end_info$
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
