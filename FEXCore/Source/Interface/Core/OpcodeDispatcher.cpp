@@ -3620,72 +3620,74 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     // If rcx = 0, skip the whole loop.
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
     auto OuterJump = CondJump(Counter, {COND_EQ});
-    IRPair<IROp_CondJump> InnerJump;
 
-    // read DF once, outside the loop
     auto BeforeLoop = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(OuterJump, BeforeLoop);
     SetCurrentCodeBlock(BeforeLoop);
     StartNewBlock();
-    auto PtrDir = LoadDir(Size);
-    auto JumpIntoLoop = Jump();
 
-    // Setup for the loop
-    auto LoopHeader = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetCurrentCodeBlock(LoopHeader);
-    StartNewBlock();
-    SetJumpTarget(JumpIntoLoop, LoopHeader);
+    ForeachDirection([this, Op, Size, REPE](int PtrDir) {
+      IRPair<IROp_CondJump> InnerJump;
+      auto JumpIntoLoop = Jump();
 
-    // Working loop
-    {
-      OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
-      OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
+      // Setup for the loop
+      auto LoopHeader = CreateNewCodeBlockAfter(GetCurrentBlock());
+      SetCurrentCodeBlock(LoopHeader);
+      StartNewBlock();
+      SetJumpTarget(JumpIntoLoop, LoopHeader);
 
-      // Only ES prefix
-      Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
-      // Default DS prefix
-      Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+      // Working loop
+      {
+        OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
+        OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
 
-      auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
-      auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
+        // Only ES prefix
+        Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        // Default DS prefix
+        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-      // We'll calculate PF/AF after the loop, so use them as temporaries here.
-      _StoreRegister(Src1, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
-      _StoreRegister(Src2, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+        auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
+        auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
-      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
+        // We'll calculate PF/AF after the loop, so use them as temporaries here.
+        _StoreRegister(Src1, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+        _StoreRegister(Src2, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
 
-      // Decrement counter
-      TailCounter = _SubWithFlags(OpSize::i64Bit, TailCounter, _Constant(1));
+        OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
-      // Store the counter since we don't have phis
-      StoreGPRRegister(X86State::REG_RCX, TailCounter);
+        // Decrement counter
+        TailCounter = _SubWithFlags(OpSize::i64Bit, TailCounter, _Constant(1));
 
-      // Offset the pointer
-      Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, PtrDir);
-      StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
+        // Store the counter since we don't have phis
+        StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
-      // Offset second pointer
-      Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, PtrDir);
-      StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
+        // Offset the pointer
+        Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, _Constant(PtrDir * Size));
+        StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
-      // If TailCounter != 0, compare sources.
-      // If TailCounter == 0, set ZF iff that would break.
-      _CondSubNZCV(OpSize::i64Bit, Src2, Src1, {COND_NEQ}, REPE ? 0 : (1 << 2) /* Z */);
-      CachedNZCV = nullptr;
-      NZCVDirty = false;
-      InnerJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
+        // Offset second pointer
+        Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, _Constant(PtrDir * Size));
+        StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
-      // Jump back to the start if we have more work to do
-      SetTrueJumpTarget(InnerJump, LoopHeader);
-    }
+        // If TailCounter != 0, compare sources.
+        // If TailCounter == 0, set ZF iff that would break.
+        _CondSubNZCV(OpSize::i64Bit, Src2, Src1, {COND_NEQ}, REPE ? 0 : (1 << 2) /* Z */);
+        CachedNZCV = nullptr;
+        NZCVDirty = false;
+        InnerJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
+
+        // Jump back to the start if we have more work to do
+        SetTrueJumpTarget(InnerJump, LoopHeader);
+      }
+
+      // Make sure to start a new block after ending this one
+      auto LoopEnd = CreateNewCodeBlockAfter(GetCurrentBlock());
+      SetFalseJumpTarget(InnerJump, LoopEnd);
+      SetCurrentCodeBlock(LoopEnd);
+      StartNewBlock();
+    });
 
     // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlockAfter(GetCurrentBlock());
-    SetFalseJumpTarget(InnerJump, LoopEnd);
-
-    SetCurrentCodeBlock(LoopEnd);
-    StartNewBlock();
     {
       // Grab the sources from the last iteration so we can set flags.
       auto Src1 = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
@@ -3695,7 +3697,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     }
     auto Jump_ = Jump();
 
-    auto Exit = CreateNewCodeBlockAfter(LoopEnd);
+    auto Exit = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetJumpTarget(Jump_, Exit);
     SetTrueJumpTarget(OuterJump, Exit);
     SetCurrentCodeBlock(Exit);
