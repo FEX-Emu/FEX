@@ -240,8 +240,6 @@ namespace {
       RegisterAllocationData::UniquePtr PullAllocationData() override;
 
     private:
-      using BlockInterferences = fextl::vector<IR::NodeID>;
-
       IR::NodeID SpillPointId;
 
       fextl::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanStart;
@@ -252,9 +250,6 @@ namespace {
       bool SupportsAVX;
 
       fextl::vector<LiveRange> LiveRanges;
-
-      fextl::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
-      BlockInterferences GlobalBlockInterferences;
 
       [[nodiscard]] static constexpr uint32_t InfoMake(uint32_t id, uint32_t Class) {
         return id | (Class << 24);
@@ -273,8 +268,6 @@ namespace {
 
       void CalculateLiveRange(FEXCore::IR::IRListView *IR);
       void OptimizeStaticRegisters(FEXCore::IR::IRListView *IR);
-      void CalculateBlockInterferences(FEXCore::IR::IRListView *IR);
-      void CalculateBlockNodeInterference(FEXCore::IR::IRListView *IR);
       void CalculateNodeInterference(FEXCore::IR::IRListView *IR);
       void AllocateVirtualRegisters();
       void CalculatePredecessors(FEXCore::IR::IRListView *IR);
@@ -747,103 +740,6 @@ namespace {
         }
       }
     }
-  }
-
-  void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView *IR) {
-    using namespace FEXCore;
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      const auto BlockNodeID = IR->GetID(BlockNode);
-      const auto BlockBeginID = BlockIROp->Begin.ID();
-      const auto BlockLastID = BlockIROp->Last.ID();
-
-      auto& BlockInterferenceVector = LocalBlockInterferences.try_emplace(BlockNodeID).first->second;
-      BlockInterferenceVector.reserve(BlockLastID.Value - BlockBeginID.Value);
-
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        const auto Node = IR->GetID(CodeNode);
-        LiveRange& NodeLiveRange = LiveRanges[Node.Value];
-
-        if (NodeLiveRange.Begin >= BlockBeginID &&
-            NodeLiveRange.End <= BlockLastID) {
-          // If the live range of this node is FULLY inside of the block
-          // Then add it to the block specific interference list
-          BlockInterferenceVector.emplace_back(Node);
-        }
-        else {
-          // If the live range is not fully inside the block then add it to the global interference list
-          GlobalBlockInterferences.emplace_back(Node);
-        }
-      }
-    }
-  }
-
-  void ConstrainedRAPass::CalculateBlockNodeInterference(FEXCore::IR::IRListView *IR) {
-    #if 0
-    const auto AddInterference = [&](IR::NodeID Node1, IR::NodeID Node2) {
-      RegisterNode *Node = &Graph->Nodes[Node1.Value];
-      Node->Interference.Set(Node2);
-      Node->InterferenceList[Node->Head.InterferenceCount++] = Node2;
-    };
-
-    const auto CheckInterferenceNodeSizes = [&](IR::NodeID Node1, uint32_t MaxNewNodes) {
-      RegisterNode *Node = &Graph->Nodes[Node1.Value];
-      uint32_t NewListMax = Node->Head.InterferenceCount + MaxNewNodes;
-      if (Node->InterferenceListSize <= NewListMax) {
-        const auto AlignedListCount = static_cast<uint32_t>(FEXCore::AlignUp(NewListMax, DEFAULT_INTERFERENCE_LIST_COUNT));
-        Node->InterferenceListSize = std::max(Node->InterferenceListSize * 2U, AlignedListCount);
-        Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
-      }
-    };
-    using namespace FEXCore;
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
-
-      fextl::vector<IR::NodeID> Interferences;
-      Interferences.reserve(BlockInterferenceVector->size() + GlobalBlockInterferences.size());
-
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        const auto Node = IR->GetID(CodeNode);
-        const auto& NodeLiveRange = LiveRanges[Node.Value];
-
-        // Check for every interference with the local block's interference
-        for (auto RHSNode : *BlockInterferenceVector) {
-          const auto& RHSNodeLiveRange = LiveRanges[RHSNode.Value];
-
-          if (!(NodeLiveRange.Begin >= RHSNodeLiveRange.End ||
-                RHSNodeLiveRange.Begin >= NodeLiveRange.End)) {
-            Interferences.emplace_back(RHSNode);
-          }
-        }
-
-        // Now check the global block interference vector
-        for (auto RHSNode : GlobalBlockInterferences) {
-          const auto& RHSNodeLiveRange = LiveRanges[RHSNode.Value];
-
-          if (!(NodeLiveRange.Begin >= RHSNodeLiveRange.End ||
-                RHSNodeLiveRange.Begin >= NodeLiveRange.End)) {
-            Interferences.emplace_back(RHSNode);
-          }
-        }
-
-        CheckInterferenceNodeSizes(Node, Interferences.size());
-        for (auto RHSNode : Interferences) {
-          AddInterference(Node, RHSNode);
-        }
-
-        for (auto RHSNode : Interferences) {
-          AddInterference(RHSNode, Node);
-          CheckInterferenceNodeSizes(RHSNode, 0);
-        }
-
-        Interferences.clear();
-      }
-    }
-    #endif
   }
 
   void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView *IR) {
@@ -1399,9 +1295,6 @@ namespace {
     using namespace FEXCore;
     bool Changed = false;
 
-    GlobalBlockInterferences.clear();
-    LocalBlockInterferences.clear();
-
     auto IR = IREmit->ViewIR();
 
     uint32_t SSACount = IR.GetSSACount();
@@ -1410,16 +1303,7 @@ namespace {
     FindNodeClasses(Graph, &IR);
     CalculateLiveRange(&IR);
     OptimizeStaticRegisters(&IR);
-
-    // Linear forward scan based interference calculation is faster for smaller blocks
-    // Smarter block based interference calculation is faster for larger blocks
-    /*if (SSACount >= 2048) {
-      CalculateBlockInterferences(&IR);
-      CalculateBlockNodeInterference(&IR);
-    }
-    else*/ {
-      CalculateNodeInterference(&IR);
-    }
+    CalculateNodeInterference(&IR);
     AllocateVirtualRegisters();
 
     return Changed;
