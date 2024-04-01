@@ -242,13 +242,12 @@ OrderedNode *OpDispatchBuilder::LoadPFRaw() {
   // parity calculated.
   auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
-  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
-  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
-  auto InputFPR = _VCastFromGPR(4, 4, Result);
+  // Cascade to calculate parity of bottom 8-bits to bottom bit.
+  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 4);
+  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 2);
+  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
 
-  // Calculate the popcount.
-  auto Count = _VPopcount(1, 1, InputFPR);
-  return _VExtractToGPR(8, 1, Count, 0);
+  return Result;
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {
