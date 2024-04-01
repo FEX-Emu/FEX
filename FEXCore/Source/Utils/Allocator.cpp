@@ -3,10 +3,10 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <array>
 #include <cctype>
@@ -95,8 +95,8 @@ namespace FEXCore::Allocator {
     // Now allocate the next page after the sbrk address to ensure it can't grow.
     // In most cases at the start of `main` this will already be page aligned, which means subsequent `sbrk`
     // calls won't allocate any memory through that.
-    void* AlignedBRK = reinterpret_cast<void*>(FEXCore::AlignUp(reinterpret_cast<uintptr_t>(StartingSBRK), FHU::FEX_PAGE_SIZE));
-    void *AfterBRK = mmap(AlignedBRK, FHU::FEX_PAGE_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE | MAP_NORESERVE, -1, 0);
+    void* AlignedBRK = reinterpret_cast<void*>(FEXCore::AlignUp(reinterpret_cast<uintptr_t>(StartingSBRK), FEXCore::Utils::FEX_PAGE_SIZE));
+    void *AfterBRK = mmap(AlignedBRK, FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE | MAP_NORESERVE, -1, 0);
     if (AfterBRK == INVALID_PTR) {
       // Couldn't allocate the page after the aligned brk? This should never happen.
       // FEXCore::LogMan isn't configured yet so we just need to print the message.
@@ -118,7 +118,7 @@ namespace FEXCore::Allocator {
   void ReenableSBRKAllocations(void* Ptr) {
     const void* INVALID_PTR = reinterpret_cast<void*>(~0ULL);
     if (Ptr != INVALID_PTR) {
-      munmap(Ptr, FHU::FEX_PAGE_SIZE);
+      munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
     }
   }
 
@@ -172,10 +172,10 @@ namespace FEXCore::Allocator {
         for (int i = 0; i < 64; ++i) {
           // Try grabbing a some of the top pages of the range
           // x86 allocates some high pages in the top end
-          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - FHU::FEX_PAGE_SIZE * i), FHU::FEX_PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - FEXCore::Utils::FEX_PAGE_SIZE * i), FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
           if (Ptr != (void*)~0ULL) {
-            ::munmap(Ptr, FHU::FEX_PAGE_SIZE);
-            if (Ptr == (void*)(Size - FHU::FEX_PAGE_SIZE * i)) {
+            ::munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
+            if (Ptr == (void*)(Size - FEXCore::Utils::FEX_PAGE_SIZE * i)) {
               return true;
             }
           }

@@ -15,11 +15,11 @@ $end_info$
 
 #include "LinuxSyscalls/Syscalls.h"
 
-#include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
+#include <FEXCore/Utils/TypeDefines.h>
 
 namespace FEX::HLE {
 
@@ -64,7 +64,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
       return false;
     }
 
-    auto FaultBase = FEXCore::AlignDown(FaultAddress, FHU::FEX_PAGE_SIZE);
+    auto FaultBase = FEXCore::AlignDown(FaultAddress, FEXCore::Utils::FEX_PAGE_SIZE);
 
     if (Entry->second.Flags.Shared) {
       LOGMAN_THROW_A_FMT(Entry->second.Resource, "VMA tracking error");
@@ -80,17 +80,17 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
 
           if (VMA->Prot.Writable) {
-            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
               auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
-            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
+            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE);
           }
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FEXCore::Utils::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
         auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
         LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
@@ -101,8 +101,8 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 }
 
 void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
-  const auto Base = Start & FHU::FEX_PAGE_MASK;
-  const auto Top = FEXCore::AlignUp(Start + Length, FHU::FEX_PAGE_SIZE);
+  const auto Base = Start & FEXCore::Utils::FEX_PAGE_MASK;
+  const auto Top = FEXCore::AlignUp(Start + Length, FEXCore::Utils::FEX_PAGE_SIZE);
 
   {
     if (SMCChecks != FEXCore::Config::CONFIG_SMC_MTRACK) {
@@ -182,7 +182,7 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
 
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
-  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
     CTX->MarkMemoryShared(Thread);
@@ -237,7 +237,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
 }
 
 void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size) {
-  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
 
   {
     // Frontend calls this with nullptr Thread during initialization.
@@ -254,7 +254,7 @@ void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uin
 }
 
 void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot) {
-  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
 
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -268,8 +268,8 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, u
 }
 
 void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
-  OldSize = FEXCore::AlignUp(OldSize, FHU::FEX_PAGE_SIZE);
-  NewSize = FEXCore::AlignUp(NewSize, FHU::FEX_PAGE_SIZE);
+  OldSize = FEXCore::AlignUp(OldSize, FEXCore::Utils::FEX_PAGE_SIZE);
+  NewSize = FEXCore::AlignUp(NewSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -364,7 +364,7 @@ void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uint
 }
 
 void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int advice) {
-  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     // TODO

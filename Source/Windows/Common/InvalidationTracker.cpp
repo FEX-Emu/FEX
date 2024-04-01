@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include "InvalidationTracker.h"
@@ -9,8 +10,8 @@
 
 namespace FEX::Windows {
 void InvalidationTracker::HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, ULONG Prot) {
-  const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
-  const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
+  const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
+  const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
 
   if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
     Thread->CTX->InvalidateGuestCodeRange(Thread, AlignedBase, AlignedSize);
@@ -43,8 +44,8 @@ void InvalidationTracker::InvalidateContainingSection(FEXCore::Core::InternalThr
 }
 
 void InvalidationTracker::InvalidateAlignedInterval(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, bool Free) {
-  const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
-  const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
+  const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
+  const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
   Thread->CTX->InvalidateGuestCodeRange(Thread, AlignedBase, AlignedSize);
 
   if (Free) {
@@ -90,7 +91,7 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
 
   if (NeedsInvalidate) {
     // RWXIntervalsLock cannot be held during invalidation
-    Thread->CTX->InvalidateGuestCodeRange(Thread, FaultAddress & FHU::FEX_PAGE_MASK, FHU::FEX_PAGE_SIZE);
+    Thread->CTX->InvalidateGuestCodeRange(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
     return true;
   }
   return false;

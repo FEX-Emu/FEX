@@ -39,7 +39,6 @@ $end_info$
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
 #include <alloca.h>

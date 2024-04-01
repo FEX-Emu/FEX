@@ -20,8 +20,8 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/set.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 
 namespace FEXCore::Frontend {
 #include "Interface/Core/VSyscall/VSyscall.inc"
@@ -1126,11 +1126,11 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   // Entry is a jump target
   BlocksToDecode.emplace(PC);
 
-  uint64_t CurrentCodePage = PC & FHU::FEX_PAGE_MASK;
+  uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
 
   fextl::set<uint64_t> CodePages = { CurrentCodePage };
 
-  AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
+  AddContainedCodePage(PC, CurrentCodePage, FEXCore::Utils::FEX_PAGE_SIZE);
 
   if (MaxInst == 0) {
     MaxInst = CTX->Config.MaxInstPerBlock;
@@ -1156,8 +1156,8 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
       auto OpMinAddress = RIPToDecode + PCOffset;
       auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
 
-      auto OpMinPage = OpMinAddress & FHU::FEX_PAGE_MASK;
-      auto OpMaxPage = OpMaxAddress & FHU::FEX_PAGE_MASK;
+      auto OpMinPage = OpMinAddress & FEXCore::Utils::FEX_PAGE_MASK;
+      auto OpMaxPage = OpMaxAddress & FEXCore::Utils::FEX_PAGE_MASK;
 
       if (OpMinPage != CurrentCodePage) {
         CurrentCodePage = OpMinPage;
@@ -1230,7 +1230,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   }
 
   for (auto CodePage : CodePages) {
-    AddContainedCodePage(PC, CodePage, FHU::FEX_PAGE_SIZE);
+    AddContainedCodePage(PC, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
   }
 
   // sort for better branching

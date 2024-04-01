@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/unordered_map.h>
@@ -25,7 +26,6 @@ $end_info$
 #include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/BitUtils.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -68,7 +68,7 @@ namespace {
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
-  constexpr size_t REGISTER_NODES_PER_PAGE = FHU::FEX_PAGE_SIZE / sizeof(RegisterNode);
+  constexpr size_t REGISTER_NODES_PER_PAGE = FEXCore::Utils::FEX_PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
     fextl::vector<RegisterClass> Classes;

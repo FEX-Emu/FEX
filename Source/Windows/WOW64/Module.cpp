@@ -23,7 +23,7 @@ $end_info$
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/FPState.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
-#include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
 #include "Common/InvalidationTracker.h"
@@ -311,7 +311,7 @@ namespace Context {
     }
 
     void *TmpAddress = reinterpret_cast<void *>(FaultAddress);
-    SIZE_T TmpSize = FHU::FEX_PAGE_SIZE;
+    SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
     ULONG TmpProt;
     NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_READWRITE, &TmpProt);
 
@@ -572,7 +572,7 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG *Count) {
 
     ULONG TmpProt;
     void *TmpAddress = &TLS.ThreadState()->InterruptFaultPage;
-    SIZE_T TmpSize = FHU::FEX_PAGE_SIZE;
+    SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
     NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_READONLY, &TmpProt);
   }
 

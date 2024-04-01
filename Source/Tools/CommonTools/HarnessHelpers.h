@@ -17,13 +17,13 @@
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/BitUtils.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TypeDefines.h>
 #include <unistd.h>
 
 namespace FEX::HarnessHelper {
@@ -425,7 +425,7 @@ namespace FEX::HarnessHelper {
 
       // Map in the memory region for the test file
 #ifndef _WIN32
-      size_t Length = FEXCore::AlignUp(RawASMFile.size(), FHU::FEX_PAGE_SIZE);
+      size_t Length = FEXCore::AlignUp(RawASMFile.size(), FEXCore::Utils::FEX_PAGE_SIZE);
       auto ASMPtr = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Code_start_page), Length, true);
 #else
       // Special magic DOS area that starts at 0x1'0000
