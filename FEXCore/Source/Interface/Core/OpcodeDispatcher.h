@@ -1325,7 +1325,7 @@ private:
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
     _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
-    CachedNZCV = _LoadNZCV();
+    CachedNZCV = nullptr;
     PossiblySetNZCVBits = (1u << 31) | (1u << 30);
     NZCVDirty = false;
   }
