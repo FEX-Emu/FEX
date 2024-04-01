@@ -11,7 +11,6 @@ $end_info$
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>

@@ -2,9 +2,8 @@
 #include "Common/SoftFloat.h"
 #include "Common/SoftFloat-3e/softfloat.h"
 
-#include <FEXCore/IR/IR.h>
-
 #include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
+#include "Interface/IR/IR.h"
 
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR

@@ -7,7 +7,6 @@
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 
 namespace FEXCore::IR {
     class IRListView;

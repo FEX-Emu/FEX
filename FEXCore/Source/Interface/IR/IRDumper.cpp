@@ -6,9 +6,10 @@ tags: ir|dumper
 $end_info$
 */
 
+#include "Interface/IR/IntrusiveIRList.h"
+#include "Interface/IR/RegisterAllocationData.h"
+
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/fextl/sstream.h>
 
 #include <algorithm>

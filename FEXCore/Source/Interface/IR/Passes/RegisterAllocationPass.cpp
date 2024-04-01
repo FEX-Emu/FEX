@@ -9,12 +9,12 @@ $end_info$
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "FEXCore/Core/X86Enums.h"
+#include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
+#include "Interface/IR/RegisterAllocationData.h"
 #include "Interface/IR/Passes.h"
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>

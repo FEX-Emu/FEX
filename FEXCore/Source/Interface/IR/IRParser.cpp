@@ -7,8 +7,8 @@ $end_info$
 */
 
 #include "Interface/IR/IREmitter.h"
+
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/StringUtils.h>
 #include <FEXCore/fextl/sstream.h>
