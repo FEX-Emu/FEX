@@ -6,12 +6,13 @@ desc: Emulated /proc/cpuinfo, version, osrelease, etc
 $end_info$
 */
 
+#include "CodeLoader.h"
+
 #include "Common/FDUtils.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Utils/CPUInfo.h>

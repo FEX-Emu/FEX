@@ -5,10 +5,6 @@
 
 #include <FEXCore/IR/IR.h>
 
-namespace FEXCore {
-  class CodeLoader;
-}
-
 namespace FEXCore::IR {
   struct AOTIRCacheEntry;
 }
@@ -74,7 +70,6 @@ namespace FEXCore::HLE {
     virtual FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const { return FEXCore::IR::SyscallFlags::DEFAULT; }
 
     SyscallOSABI GetOSABI() const { return OSABI; }
-    virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
     virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) { }
     virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) = 0;
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "CodeLoader.h"
 #include "Common/Config.h"
 
 #include <array>
@@ -9,7 +10,6 @@
 #include <cstring>
 #include <fcntl.h>
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/Allocator.h>
@@ -369,7 +369,7 @@ namespace FEX::HarnessHelper {
     ConfigStructBase BaseConfig;
   };
 
-  class HarnessCodeLoader final : public FEXCore::CodeLoader {
+  class HarnessCodeLoader final : public FEX::CodeLoader {
   public:
 
     HarnessCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {

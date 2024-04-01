@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ArchHelpers/UContext.h"
+#include "CodeLoader.h"
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
@@ -17,7 +18,6 @@
 #include <cstring>
 #include <random>
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -41,7 +41,7 @@
 #define PAGE_OFFSET(x) ((x) & 4095)
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
-class ELFCodeLoader final : public FEXCore::CodeLoader {
+class ELFCodeLoader final : public FEX::CodeLoader {
   ELFParser MainElf;
   ELFParser InterpElf;
 

@@ -6,6 +6,8 @@ desc: Provides a gdb interface to the guest state
 $end_info$
 */
 
+#include "CodeLoader.h"
+
 #include "LinuxSyscalls/NetStream.h"
 
 #include <cstdlib>
@@ -16,7 +18,6 @@ $end_info$
 
 #include <Common/FEXServerClient.h>
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
