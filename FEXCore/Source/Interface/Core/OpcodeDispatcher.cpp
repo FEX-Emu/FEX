@@ -775,24 +775,20 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
-OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, bool TrueIsNonzero, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+OrderedNode *OpDispatchBuilder::SelectBit(OrderedNode *Cmp, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue) {
   uint64_t TrueConst, FalseConst;
   if (IsValueConstant(WrapNode(TrueValue), &TrueConst) &&
       IsValueConstant(WrapNode(FalseValue), &FalseConst) &&
       TrueConst == 1 &&
       FalseConst == 0) {
 
-      if (!TrueIsNonzero)
-        Cmp = _Not(OpSize::i32Bit, Cmp);
-
       return _And(ResultSize, Cmp, _Constant(1));
   }
 
   SaveNZCV();
   _TestNZ(OpSize::i32Bit, Cmp, _Constant(1));
-  return _NZCVSelect(ResultSize,
-                 TrueIsNonzero ? CondClassType{COND_NEQ} : CondClassType{COND_EQ},
-                 TrueValue, FalseValue);
+  return _NZCVSelect(ResultSize, CondClassType{COND_NEQ},
+                     TrueValue, FalseValue);
 }
 
 std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) const {
@@ -857,10 +853,10 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Orde
     }
     case 0xA: { // JP - Jump if PF == 1
       // Raw value contains inverted PF in bottom bit
-      return SelectBit(LoadPFRaw(), false, ResultSize, TrueValue, FalseValue);
+      return SelectBit(LoadPFRaw(true), ResultSize, TrueValue, FalseValue);
     }
     case 0xB: { // JNP - Jump if PF == 0
-      return SelectBit(LoadPFRaw(), true, ResultSize, TrueValue, FalseValue);
+      return SelectBit(LoadPFRaw(false), ResultSize, TrueValue, FalseValue);
     }
     default:
       LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP);
