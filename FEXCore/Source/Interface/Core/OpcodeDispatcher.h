@@ -1324,10 +1324,8 @@ private:
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
+    HandleNZ00Write();
     _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
-    CachedNZCV = nullptr;
-    PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-    NZCVDirty = false;
   }
 
   void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
