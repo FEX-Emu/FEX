@@ -130,7 +130,7 @@ namespace FEXCore::Context {
        *    - HandleCallback(Thread, RIP);
        */
 
-      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) override;
+      FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState *NewThreadState) override;
 
       // Public for threading
       void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) override;
@@ -277,7 +277,6 @@ namespace FEXCore::Context {
     static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
       auto Thread = Frame->Thread;
 
-      LOGMAN_THROW_A_FMT(Thread->ThreadManager.GetTID() == FHU::Syscalls::gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), FHU::Syscalls::gettid());
       auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
