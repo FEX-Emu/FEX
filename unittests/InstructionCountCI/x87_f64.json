@@ -3888,12 +3888,12 @@
         "0xda 11b 0xd8 /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x0 (0)",
@@ -3914,12 +3914,12 @@
         "0xda 11b 0xd9 /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x1 (1)",
@@ -3940,12 +3940,12 @@
         "0xda 11b 0xda /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x2 (2)",
@@ -3966,12 +3966,12 @@
         "0xda 11b 0xdb /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x3 (3)",
@@ -3992,12 +3992,12 @@
         "0xda 11b 0xdc /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x4 (4)",
@@ -4018,12 +4018,12 @@
         "0xda 11b 0xdd /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x5 (5)",
@@ -4044,12 +4044,12 @@
         "0xda 11b 0xde /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x6 (6)",
@@ -4070,12 +4070,12 @@
         "0xda 11b 0xdf /1"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csetm x20, eq",
+        "csetm x20, ne",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #747]",
         "add w22, w20, #0x7 (7)",
@@ -4795,9 +4795,9 @@
         "0xdb 11b 0xd8 /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4821,9 +4821,9 @@
         "0xdb 11b 0xd9 /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4847,9 +4847,9 @@
         "0xdb 11b 0xda /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4873,9 +4873,9 @@
         "0xdb 11b 0xdb /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4899,9 +4899,9 @@
         "0xdb 11b 0xdc /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4925,9 +4925,9 @@
         "0xdb 11b 0xdd /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4951,9 +4951,9 @@
         "0xdb 11b 0xde /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
@@ -4977,9 +4977,9 @@
         "0xdb 11b 0xdf /3"
       ],
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csetm x20, ne",
