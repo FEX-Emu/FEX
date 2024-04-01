@@ -24,8 +24,8 @@
         "umov w20, v0.b[0]",
         "bfxil x4, x20, #0, #16",
         "tst w20, w20",
-        "mov w27, #0x0",
-        "mov w26, #0x1"
+        "mov w26, #0x1",
+        "mov w27, #0x0"
       ]
     },
     "popcnt eax, ebx": {
@@ -37,8 +37,8 @@
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
         "tst w4, w4",
-        "mov w27, #0x0",
-        "mov w26, #0x1"
+        "mov w26, #0x1",
+        "mov w27, #0x0"
       ]
     },
     "popcnt rax, rbx": {
@@ -50,8 +50,8 @@
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
         "tst w4, w4",
-        "mov w27, #0x0",
-        "mov w26, #0x1"
+        "mov w26, #0x1",
+        "mov w27, #0x0"
       ]
     },
     "tzcnt ax, bx": {

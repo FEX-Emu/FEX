@@ -704,8 +704,8 @@
         "mov x22, x20",
         "mov x20, x21",
         "bfxil x4, x22, #0, #16",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
@@ -719,8 +719,8 @@
         "mov x22, x20",
         "mov x20, x21",
         "mov w4, w22",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
@@ -733,8 +733,8 @@
         "cset x21, ne",
         "mov x4, x20",
         "mov x20, x21",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
@@ -748,8 +748,8 @@
         "mov x22, x20",
         "mov x20, x21",
         "bfxil x4, x22, #0, #16",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
@@ -763,8 +763,8 @@
         "mov x22, x20",
         "mov x20, x21",
         "mov w4, w22",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
@@ -777,8 +777,8 @@
         "cset x21, ne",
         "mov x4, x20",
         "mov x20, x21",
-        "mov w27, #0x0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
