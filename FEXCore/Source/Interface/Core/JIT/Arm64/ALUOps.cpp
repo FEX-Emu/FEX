@@ -402,6 +402,24 @@ DEF_OP(CondAddNZCV) {
   }
 }
 
+DEF_OP(CondSubNZCV) {
+  auto Op = IROp->C<IR::IROp_CondSubNZCV>();
+  const auto OpSize = IROp->Size;
+
+  LOGMAN_THROW_AA_FMT(OpSize == IR::i32Bit || OpSize == IR::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = OpSize == IR::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  ARMEmitter::StatusFlags Flags = (ARMEmitter::StatusFlags)Op->FalseNZCV;
+  uint64_t Const = 0;
+  auto Src1 = GetZeroableReg(Op->Src1);
+
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    ccmp(EmitSize, Src1, Const, Flags, MapSelectCC(Op->Cond));
+  } else {
+    ccmp(EmitSize, Src1, GetReg(Op->Src2.ID()), Flags, MapSelectCC(Op->Cond));
+  }
+}
+
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
   const uint8_t OpSize = IROp->Size;

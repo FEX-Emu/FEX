@@ -1164,6 +1164,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         break;
       }
       case OP_CONDADDNZCV:
+      case OP_CONDSUBNZCV:
       {
         auto Op = IROp->C<IR::IROp_CondAddNZCV>();
 

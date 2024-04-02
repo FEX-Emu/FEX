@@ -1035,6 +1035,14 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "CondSubNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2, CondClass:$Cond, u8:$FalseNZCV": {
+        "Desc": ["If condition is true, set NZCV per difference of GPRs, else force NZCV to a constant."],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = AdcWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Adds and set NZCV for the sum of two GPRs and carry-in given as NZCV"],
         "HasSideEffects": true,
