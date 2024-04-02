@@ -1662,13 +1662,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   const auto Size = GetSrcBitSize(Op);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op. Arm will mask
-  // by 0x3F when we do 64-bit shifts so we don't need to mask in that case,
-  // since the modulo is preserved even after presubtracting Size=64 for
-  // ShiftRight.
-  //
-  // TODO: Implement this optimization, it requires turning the shift=0 cases
-  // into (shift&0xc0) bit tests which is a bit complicated for now.
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op.
   if (Size == 64) {
     Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
   } else {
