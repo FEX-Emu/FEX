@@ -999,16 +999,7 @@ private:
   }
 
   static bool IsNZCV(unsigned BitOffset) {
-    switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_CF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_SF_RAW_LOC:
-      case FEXCore::X86State::RFLAG_OF_RAW_LOC:
-        return true;
-
-      default:
-        return false;
-    }
+    return ContainsNZCV(1U << BitOffset);
   }
 
   OrderedNode* CachedNZCV{};
@@ -1440,7 +1431,7 @@ private:
     SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(Constant << 4));
   }
 
-  void ZeroMultipleFlags(uint32_t BitMask);
+  void ZeroPF_AF();
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {

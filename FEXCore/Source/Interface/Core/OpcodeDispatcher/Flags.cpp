@@ -38,61 +38,10 @@ constexpr std::array<uint32_t, 17> FlagOffsets = {
   FEXCore::X86State::RFLAG_ID_LOC,
 };
 
-void OpDispatchBuilder::ZeroMultipleFlags(uint32_t FlagsMask) {
-  auto ZeroConst = _Constant(0);
-
-  if (ContainsNZCV(FlagsMask)) {
-    // NZCV is stored packed together.
-    // It's more optimal to zero NZCV with move+bic instead of multiple bics.
-    auto NZCVFlagsMask = FlagsMask & FullNZCVMask;
-    if (NZCVFlagsMask == FullNZCVMask) {
-      ZeroNZCV();
-    }
-    else {
-      const auto IndexMask = NZCVIndexMask(FlagsMask);
-
-      if (std::popcount(NZCVFlagsMask) == 1) {
-        // It's more optimal to store only one here.
-
-        for (size_t i = 0; NZCVFlagsMask && i < FlagOffsets.size(); ++i) {
-          const auto FlagOffset = FlagOffsets[i];
-          const auto FlagMask = 1U << FlagOffset;
-          if (!(FlagMask & NZCVFlagsMask)) {
-            continue;
-          }
-          SetRFLAG(ZeroConst, FlagOffset);
-          NZCVFlagsMask &= ~(FlagMask);
-        }
-      }
-      else {
-        auto IndexMaskConstant = _Constant(IndexMask);
-        auto NewNZCV = _Andn(OpSize::i64Bit, GetNZCV(), IndexMaskConstant);
-        SetNZCV(NewNZCV);
-      }
-      // Unset the possibly set bits.
-      PossiblySetNZCVBits &= ~IndexMask;
-    }
-
-    // Handled NZCV, so remove it from the mask.
-    FlagsMask &= ~FullNZCVMask;
-  }
-
+void OpDispatchBuilder::ZeroPF_AF() {
   // PF is stored inverted, so invert it when we zero.
-  if (FlagsMask & (1u << X86State::RFLAG_PF_RAW_LOC)) {
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Constant(1));
-    FlagsMask &= ~(1u << X86State::RFLAG_PF_RAW_LOC);
-  }
-
-  // Handle remaining masks.
-  for (size_t i = 0; FlagsMask && i < FlagOffsets.size(); ++i) {
-    const auto FlagOffset = FlagOffsets[i];
-    const auto FlagMask = 1U << FlagOffset;
-    if (!(FlagMask & FlagsMask)) {
-      continue;
-    }
-    SetRFLAG(ZeroConst, FlagOffset);
-    FlagsMask &= ~(FlagMask);
-  }
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Constant(1));
+  SetAF(0);
 }
 
 void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
@@ -865,9 +814,7 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
   // is in the range [0, 63]. In particular, it is always positive. So a
   // combined NZ test will correctly zero SF/CF/OF while setting ZF.
   SetNZ_ZeroCV(OpSize::i32Bit, Result);
-
-  ZeroMultipleFlags((1U << X86State::RFLAG_AF_RAW_LOC) |
-                    (1U << X86State::RFLAG_PF_RAW_LOC));
+  ZeroPF_AF();
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
@@ -893,15 +840,10 @@ void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result
 
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
   // OF, SF, ZF, AF, PF all zero
+  ZeroNZCV();
+  ZeroPF_AF();
+
   // CF is set to the incoming source
-
-  uint32_t FlagsMaskToZero =
-    FullNZCVMask |
-    (1U << X86State::RFLAG_AF_RAW_LOC) |
-    (1U << X86State::RFLAG_PF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
-
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 

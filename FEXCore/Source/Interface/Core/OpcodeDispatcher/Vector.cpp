@@ -4594,11 +4594,7 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   SetNZ_ZeroCV(32, Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
 
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_RAW_LOC) |
-    (1U << X86State::RFLAG_AF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  ZeroPF_AF();
 }
 
 void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
@@ -4635,8 +4631,7 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   SetNZ_ZeroCV(32, AndGPR);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFResult);
 
-  ZeroMultipleFlags((1U << X86State::RFLAG_PF_RAW_LOC) |
-                    (1U << X86State::RFLAG_AF_RAW_LOC));
+  ZeroPF_AF();
 }
 
 template <size_t ElementSize>
@@ -5568,11 +5563,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(GetFlagBit(18));
   SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(GetFlagBit(19));
 
-  uint32_t FlagsMaskToZero =
-    (1U << X86State::RFLAG_PF_RAW_LOC) |
-    (1U << X86State::RFLAG_AF_RAW_LOC);
-
-  ZeroMultipleFlags(FlagsMaskToZero);
+  ZeroPF_AF();
 }
 
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
