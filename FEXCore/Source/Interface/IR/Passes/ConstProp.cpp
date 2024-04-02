@@ -771,23 +771,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
-    /* TODO: restore this when we have rmif or something? */
-#if 0
-    case OP_TESTNZ: {
-      auto Op = IROp->CW<IR::IROp_TestNZ>();
-      uint64_t Constant1{};
-
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
-        bool N = Constant1 & (1ull << ((Op->Size * 8) - 1));
-        bool Z = Constant1 == 0;
-        uint32_t NZVC = (N ? (1u << 31) : 0) | (Z ? (1u << 30) : 0);
-
-        IREmit->ReplaceWithConstant(CodeNode, NZVC);
-        Changed = true;
-      }
-    break;
-    }
-#endif
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
