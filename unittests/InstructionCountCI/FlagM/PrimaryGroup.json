@@ -412,12 +412,11 @@
       ]
     },
     "add eax, -256": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffff00",
         "mov x27, x4",
-        "adds w26, w27, w20",
+        "subs w26, w27, #0x100 (256)",
         "mov x4, x26"
       ]
     },
@@ -509,12 +508,11 @@
       ]
     },
     "sub eax, -256": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffff00",
         "mov x27, x4",
-        "subs w26, w27, w20",
+        "adds w26, w27, #0x100 (256)",
         "cfinv",
         "mov x4, x26"
       ]
@@ -548,12 +546,11 @@
       ]
     },
     "cmp eax, -256": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /7",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffff00",
         "mov x27, x4",
-        "subs w26, w27, w20",
+        "adds w26, w27, #0x100 (256)",
         "cfinv"
       ]
     },
@@ -744,12 +741,11 @@
       ]
     },
     "add eax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "adds w26, w4, w20",
+        "subs w26, w4, #0x1 (1)",
         "mov x4, x26"
       ]
     },
@@ -845,12 +841,11 @@
       ]
     },
     "sub eax, -1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "subs w26, w4, w20",
+        "adds w26, w4, #0x1 (1)",
         "cfinv",
         "mov x4, x26"
       ]
@@ -886,12 +881,11 @@
       ]
     },
     "cmp eax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /7",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "subs w26, w4, w20",
+        "adds w26, w4, #0x1 (1)",
         "cfinv"
       ]
     },

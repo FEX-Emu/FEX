@@ -171,12 +171,11 @@
       ]
     },
     "add eax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x05",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "adds w26, w4, w20",
+        "subs w26, w4, #0x1 (1)",
         "mov x4, x26"
       ]
     },
@@ -1354,12 +1353,11 @@
       ]
     },
     "sub eax, -1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x2D",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "subs w26, w4, w20",
+        "adds w26, w4, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "mov x4, x26",
@@ -1723,12 +1721,11 @@
       ]
     },
     "cmp eax, -1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x3D",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
         "mvn w27, w4",
-        "subs w26, w4, w20",
+        "adds w26, w4, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
