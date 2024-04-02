@@ -691,6 +691,9 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       bool IsConstant1 = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
       bool IsConstant2 = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
 
+      int32_t Constant2_32Bit = Constant2;
+      int64_t NegConstant2 = (Op->Header.Size == 8) ? -Constant2 : -Constant2_32Bit;
+
       if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
@@ -700,7 +703,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
-      else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(-Constant2)) {
+      else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(NegConstant2)) {
         // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
         // So, negate the operation to negate (and inline) the constant.
         if (IROp->Op == OP_ADD)
@@ -718,7 +721,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         IREmit->SetWriteCursor(std::get<0>(*CodeIter));
 
         // Negate the constant.
-        auto NegConstant = IREmit->_Constant(-Constant2);
+        auto NegConstant = IREmit->_Constant(NegConstant2);
 
         // Replace the second source with the negated constant.
         IREmit->ReplaceNodeArgument(CodeNode, Op->Src2_Index, NegConstant);
