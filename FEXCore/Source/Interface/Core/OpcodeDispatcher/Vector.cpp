@@ -3008,10 +3008,10 @@ OrderedNode *OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
 void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   // NOTE: Mask should be EAX and EDX concatenated, but we only need to test
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
-  OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
-  const auto StoreIfFlagSet = [&](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
+  const auto StoreIfFlagSet = [this, OpSize](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1){
+    OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
@@ -3055,6 +3055,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
     OrderedNode *HeaderOffset = _Add(OpSize, Base, _Constant(512));
 
     // NOTE: We currently only support the first 3 bits (x87, SSE, and AVX)
+    OrderedNode *Mask = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *RequestedFeatures = _Bfe(OpSize, 3, 0, Mask);
 
     // XSTATE_BV section of the header is 8 bytes in size, but we only really
@@ -3209,17 +3210,18 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
-  // Set up base address for the XSAVE region to restore from, and also read the
-  // XSTATE_BV bit flags out of the XSTATE header.
-  //
-  // Note: we rematerialize Base in each block to avoid crossblock liveness.
-  OrderedNode *Base = XSaveBase(Op);
-  OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(OpSize, Base, _Constant(512)), 8);
-
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
   // otherwise, if not set, then we need to set the relevant data the bit corresponds to
   // to it's defined initial configuration.
-  const auto RestoreIfFlagSetOrDefault = [&](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
+  const auto RestoreIfFlagSetOrDefault = [this, Op, OpSize](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
+    // Set up base address for the XSAVE region to restore from, and also read
+    // the XSTATE_BV bit flags out of the XSTATE header.
+    //
+    // Note: we rematerialize Base/Mask in each block to avoid crossblock
+    // liveness.
+    OrderedNode *Base = XSaveBase(Op);
+    OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(OpSize, Base, _Constant(512)), 8);
+
     OrderedNode *BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
