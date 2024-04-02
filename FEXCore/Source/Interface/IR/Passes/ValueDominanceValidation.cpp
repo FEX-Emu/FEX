@@ -202,6 +202,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
     FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
     LogMan::Msg::EFmt("{}", Out.str());
+    LOGMAN_MSG_A_FMT("Encountered IR validation Error");
   }
 
   return false;
