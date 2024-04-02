@@ -515,50 +515,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
     bool Changed = false;
 
     switch (IROp->Op) {
-/*
-    case OP_UMUL:
-    case OP_DIV:
-    case OP_UDIV:
-    case OP_REM:
-    case OP_UREM:
-    case OP_MULH:
-    case OP_UMULH:
-    case OP_LSHR:
-    case OP_ASHR:
-    case OP_ROL:
-    case OP_ROR:
-    case OP_LDIV:
-    case OP_LUDIV:
-    case OP_LREM:
-    case OP_LUREM:
-    case OP_BFI:
-    {
-      uint64_t Constant1;
-      uint64_t Constant2;
-
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
-          IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
-      }
-    break;
-    }
-
-    case OP_SEXT:
-    case OP_NEG:
-    case OP_POPCOUNT:
-    case OP_FINDLSB:
-    case OP_FINDMSB:
-    case OP_REV:
-    case OP_SBFE: {
-      uint64_t Constant1;
-
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
-      }
-    break;
-    }
-*/
-
     case OP_LOADMEMTSO: {
       auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
