@@ -125,7 +125,7 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        static constexpr std::array<uint64_t, 44> OffsetArrayAVX = {{
+        static constexpr std::array<uint64_t, 43> OffsetArrayAVX = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]),
@@ -169,9 +169,8 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, mm[5][0]),
           offsetof(FEXCore::Core::CPUState, mm[6][0]),
           offsetof(FEXCore::Core::CPUState, mm[7][0]),
-          offsetof(FEXCore::Core::CPUState, mm[8][0]),
         }};
-        static constexpr std::array<uint64_t, 44> OffsetArraySSE = {{
+        static constexpr std::array<uint64_t, 43> OffsetArraySSE = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]),
           offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]),
@@ -215,7 +214,6 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, mm[5][0]),
           offsetof(FEXCore::Core::CPUState, mm[6][0]),
           offsetof(FEXCore::Core::CPUState, mm[7][0]),
-          offsetof(FEXCore::Core::CPUState, mm[8][0]),
         }};
 
         uintptr_t DataOffset = BaseConfig.OptionRegDataOffset;
@@ -254,10 +252,9 @@ namespace FEX::HarnessHelper {
               Name = "gs";
             else if (NameIndex == 34)
               Name ="fs";
-            else if (NameIndex == 35)
-              Name = "rflags";
-            else if (NameIndex >= 36 && NameIndex < 45)
-              Name = fextl::fmt::format("MM[{}][{}]", NameIndex - 36, j);
+            else if (NameIndex >= 35 && NameIndex < 43) {
+              Name = fextl::fmt::format("MM[{}][{}]", NameIndex - 35, j);
+            }
 
             if (State1) {
               CheckGPRs(fextl::fmt::format("Core1: {}: ", Name), State1Data[j], RegData->RegValues[j]);
