@@ -1890,165 +1890,71 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, Shift);
 }
 
-template<bool Is1Bit>
-void OpDispatchBuilder::ROROp(OpcodeArgs) {
-  OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+template<bool Left, bool IsImmediate, bool Is1Bit>
+void OpDispatchBuilder::RotateOp(OpcodeArgs) {
+  CalculateDeferredFlags();
 
-  const uint32_t Size = GetSrcBitSize(Op);
-  if constexpr (Is1Bit) {
-    Src = _Constant(std::max(32U, Size), 1);
-  } else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-  }
+  auto LoadShift = [this, Op](bool MustMask) -> OrderedNode * {
+    // x86 masks the shift by 0x3F or 0x1F depending on size of op
+    const uint32_t Size = GetSrcBitSize(Op);
+    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(OpSize::i64Bit, Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
-  }
-
-  if (Size < 32) {
-    // ARM doesn't support 8/16bit rotates. Emulate with an insert
-    // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
-    if (Size == 8 && !Is1Bit) {
-      // And because the shift size isn't masked to 8 bits, we need to fill the
-      // the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
+    if (Is1Bit) {
+      return _Constant(1);
+    } else if (IsImmediate) {
+      LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+      return _Constant(Op->Src[1].Data.Literal.Value & Mask);
+    } else {
+      auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      return MustMask ? _And(OpSize::i64Bit, Src, _Constant(Mask)) : Src;
     }
-  }
+  };
 
-  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+  Calculate_ShiftVariable(LoadShift(true), [this, LoadShift, Op](){
+    const uint32_t Size = GetSrcBitSize(Op);
+    const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
 
-  StoreResult(GPRClass, Op, ALUOp, -1);
+    // We don't need to mask when we rematerialize since the Ror aborbs.
+    auto Src = LoadShift(false);
 
-  if constexpr (Is1Bit) {
-    GenerateFlags_RotateRightImmediate(Op, ALUOp, Dest, 1);
-  } else {
-    GenerateFlags_RotateRight(Op, ALUOp, Dest, Src);
-  }
-}
+    uint64_t Const;
+    bool IsConst = IsValueConstant(WrapNode(Src), &Const);
 
-void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
-  // See ROLImmediateOp for masking explanation
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+    // We fill the upper bits so we allow garbage on load.
+    auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+    if (Size < 32) {
+      // ARM doesn't support 8/16bit rotates. Emulate with an insert
+      // StoreResult truncates back to a 8/16 bit value
+      Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
 
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  const uint32_t Size = GetSrcBitSize(Op);
-
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Shift &= 0x3F;
-  } else {
-    Shift &= 0x1F;
-  }
-
-  OrderedNode *Src = _Constant(std::max(32U, Size), Shift);
-
-  if (Size < 32) {
-    // ARM doesn't support 8/16bit rotates. Emulate with an insert
-    // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
-    if (Size == 8 && Shift > 8) {
-      // And because the shift size isn't masked to 8 bits, we need to fill the
-      // the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
+      if (Size == 8 && !(IsConst && Const < 8 && !Left)) {
+        // And because the shift size isn't masked to 8 bits, we need to fill the
+        // the full 32bits to get the correct result.
+        Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
+      }
     }
-  }
 
-  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+    // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
+    auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
+    StoreResult(GPRClass, Op, Res, -1);
 
-  StoreResult(GPRClass, Op, ALUOp, -1);
+    // Ends up faster overall if we don't have FlagM, slower if we do...
+    // If Shift != 1, OF is undefined so we choose to zero here.
+    if (!CTX->HostFeatures.SupportsFlagM)
+      ZeroCV();
 
-  GenerateFlags_RotateRightImmediate(Op, ALUOp, Dest, Shift);
-}
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, Left ? 0 : Size - 1, true);
 
-template<bool Is1Bit>
-void OpDispatchBuilder::ROLOp(OpcodeArgs) {
-  OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
-  const uint32_t Size = GetSrcBitSize(Op);
-
-  // Need to negate the shift so we can use ROR instead
-  if constexpr (Is1Bit) {
-    Src = _Constant(Size, 1);
-  } else {
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
-  }
-
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(OpSize::i64Bit, Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(OpSize::i32Bit, Src, _Constant(Size, 0x1F));
-  }
-
-  if (Size < 32) {
-    // ARM doesn't support 8/16bit rotates. Emulate with an insert
-    // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
-    if (Size == 8) {
-      // And because the shift size isn't masked to 8 bits, we need to fill the
-      // the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
+    // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
+    // For ROL, OF is the LSB and MSB XOR'd together.
+    // OF is architecturally only defined for 1-bit rotate.
+    if (!IsConst || Const == 1) {
+      auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
     }
-  }
-
-  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit,
-    Dest,
-    _Sub(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, _Constant(Size, std::max(32U, Size)), Src));
-
-  StoreResult(GPRClass, Op, ALUOp, -1);
-
-  if constexpr (Is1Bit) {
-    GenerateFlags_RotateLeftImmediate(Op, ALUOp, Dest, 1);
-  } else {
-    GenerateFlags_RotateLeft(Op, ALUOp, Dest, Src);
-  }
-}
-
-void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
-  // For 32-bit, garbage is ignored in hardware. For < 32, see Bfi comment.
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  const uint32_t Size = GetSrcBitSize(Op);
-
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Shift &= 0x3F;
-  } else {
-    Shift &= 0x1F;
-  }
-
-  // We also negate the shift so we can emulate Rol with Ror.
-  const auto NegatedShift = std::max(32U, Size) - Shift;
-  OrderedNode *Src = _Constant(Size, NegatedShift);
-
-  if (Size < 32) {
-    // ARM doesn't support 8/16bit rotates. Emulate with an insert
-    // StoreResult truncates back to a 8/16 bit value. The inserts have the side
-    // effect of stomping over any garbage we had in the upper bits.
-    Dest = _Bfi(OpSize::i32Bit, Size, Size, Dest, Dest);
-    if (Size == 8) {
-      // And because the shift size isn't masked to 8 bits, we need to fill the
-      // the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize::i32Bit, 16, 16, Dest, Dest);
-    }
-  }
-
-  auto ALUOp = _Ror(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
-
-  StoreResult(GPRClass, Op, ALUOp, -1);
-
-  GenerateFlags_RotateLeftImmediate(Op, ALUOp, Dest, Shift);
+  });
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
@@ -6161,8 +6067,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 7), 1, &OpDispatchBuilder::CMPOp<1>},
 
     // GROUP 2
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::RotateOp<true, true, false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::RotateOp<false, true, false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 2), 1, &OpDispatchBuilder::RCLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
@@ -6170,8 +6076,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 6), 1, &OpDispatchBuilder::SHLImmediateOp}, // SAL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::RotateOp<true, true, false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::RotateOp<false, true, false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 2), 1, &OpDispatchBuilder::RCLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
@@ -6179,8 +6085,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 6), 1, &OpDispatchBuilder::SHLImmediateOp}, // SAL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp<true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::RotateOp<true, true, true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::RotateOp<false, true, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 3), 1, &OpDispatchBuilder::RCROp8x1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp<true>},
@@ -6188,8 +6094,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 6), 1, &OpDispatchBuilder::SHLOp<true>}, // SAL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp<true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::RotateOp<true, true, true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::RotateOp<false, true, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 3), 1, &OpDispatchBuilder::RCROp1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp<true>},
@@ -6197,8 +6103,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 6), 1, &OpDispatchBuilder::SHLOp<true>}, // SAL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::RotateOp<true, false, false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::RotateOp<false, false, false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 2), 1, &OpDispatchBuilder::RCLSmallerOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 3), 1, &OpDispatchBuilder::RCRSmallerOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp<false>},
@@ -6206,8 +6112,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 6), 1, &OpDispatchBuilder::SHLOp<false>}, // SAL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp<false>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::RotateOp<true, false, false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::RotateOp<false, false, false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 2), 1, &OpDispatchBuilder::RCLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp<false>},
