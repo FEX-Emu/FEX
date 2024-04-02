@@ -681,14 +681,15 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       break;
     }
 
-    case OP_ADD: {
+    case OP_ADD:
+    case OP_ADDWITHFLAGS: {
       auto Op = IROp->C<IR::IROp_Add>();
       uint64_t Constant1{};
       uint64_t Constant2{};
       bool IsConstant1 = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
       bool IsConstant2 = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
 
-      if (IsConstant1 && IsConstant2) {
+      if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
@@ -697,7 +698,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
         // This means we can convert the operation in to a subtract.
         // Change the IR operation itself.
-        IROp->Op = OP_SUB;
+        IROp->Op = IROp->Op == OP_ADD ? OP_SUB : OP_SUBWITHFLAGS;
         // Set the write cursor to just before this operation.
         auto CodeIter = CurrentIR.at(CodeNode);
         --CodeIter;
