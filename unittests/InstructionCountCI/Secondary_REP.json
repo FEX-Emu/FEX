@@ -448,8 +448,8 @@
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
         "cmn wzr, w20, lsl #16",
-        "mrs x21, nzcv",
         "ubfx x20, x20, #4, #1",
+        "mrs x21, nzcv",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
@@ -461,9 +461,9 @@
         "rbit w4, w7",
         "clz w4, w4",
         "tst w4, w4",
-        "mrs x20, nzcv",
-        "ubfx x21, x4, #5, #1",
-        "orr w20, w20, w21, lsl #29",
+        "ubfx x20, x4, #5, #1",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
@@ -474,9 +474,9 @@
         "rbit x4, x7",
         "clz x4, x4",
         "tst x4, x4",
-        "mrs x20, nzcv",
-        "ubfx x21, x4, #6, #1",
-        "orr w20, w20, w21, lsl #29",
+        "ubfx x20, x4, #6, #1",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
@@ -489,8 +489,8 @@
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
         "cmn wzr, w20, lsl #16",
-        "mrs x21, nzcv",
         "ubfx x20, x20, #4, #1",
+        "mrs x21, nzcv",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
@@ -501,9 +501,9 @@
       "ExpectedArm64ASM": [
         "clz w4, w7",
         "tst w4, w4",
-        "mrs x20, nzcv",
-        "ubfx x21, x4, #5, #1",
-        "orr w20, w20, w21, lsl #29",
+        "ubfx x20, x4, #5, #1",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
@@ -513,9 +513,9 @@
       "ExpectedArm64ASM": [
         "clz x4, x7",
         "tst x4, x4",
-        "mrs x20, nzcv",
-        "ubfx x21, x4, #6, #1",
-        "orr w20, w20, w21, lsl #29",
+        "ubfx x20, x4, #6, #1",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },

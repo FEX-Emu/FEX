@@ -681,9 +681,9 @@
         "neg w20, w7",
         "and w4, w7, w20",
         "tst w4, w4",
-        "mrs x20, nzcv",
-        "cset w21, ne",
-        "orr w20, w20, w21, lsl #29",
+        "cset w20, ne",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     },
@@ -696,9 +696,9 @@
         "neg x20, x7",
         "and x4, x7, x20",
         "tst x4, x4",
-        "mrs x20, nzcv",
-        "cset w21, ne",
-        "orr w20, w20, w21, lsl #29",
+        "cset w20, ne",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20"
       ]
     }

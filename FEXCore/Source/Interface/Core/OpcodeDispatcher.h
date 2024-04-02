@@ -1304,12 +1304,8 @@ private:
   }
 
   OrderedNode *GetNZCV() {
-    if (!CachedNZCV) {
+    if (!CachedNZCV)
       CachedNZCV = _LoadNZCV();
-
-      // We don't know what's set
-      PossiblySetNZCVBits = ~0;
-    }
 
     return CachedNZCV;
   }
@@ -1337,10 +1333,8 @@ private:
   }
 
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
+    HandleNZ00Write();
     _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
-    CachedNZCV = _LoadNZCV();
-    PossiblySetNZCVBits = (1u << 31) | (1u << 30);
-    NZCVDirty = false;
   }
 
   void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
