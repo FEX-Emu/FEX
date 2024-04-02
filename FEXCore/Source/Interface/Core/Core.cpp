@@ -579,7 +579,7 @@ namespace FEXCore::Context {
 
             auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
 
-            auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
+            auto InvalidateCodeCond = Thread->OpDispatcher->CondJump(CodeChanged);
 
             auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
             auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
