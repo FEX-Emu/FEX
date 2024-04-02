@@ -128,7 +128,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // instead.
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_PF_RAW_LOC)) {
     // Set every bit except the bottommost.
-    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(), _Constant(~1ull));
+    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(false), _Constant(~1ull));
 
     // Rotate the bottom bit to the appropriate location for PF, so we get
     // something like 111P1111. Then invert that to get 000p0000. Then OR that
@@ -186,18 +186,21 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNo
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPFRaw() {
+OrderedNode *OpDispatchBuilder::LoadPFRaw(bool Invert) {
   // Read the stored byte. This is the original result (up to 64-bits), it needs
   // parity calculated.
   auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
-  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
-  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
-  auto InputFPR = _VCastFromGPR(4, 4, Result);
+  // Cascade to calculate parity of bottom 8-bits to bottom bit.
+  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 4);
+  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 2);
 
-  // Calculate the popcount.
-  auto Count = _VPopcount(1, 1, InputFPR);
-  return _VExtractToGPR(8, 1, Count, 0);
+  if (Invert)
+    Result = _XornShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
+  else
+    Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
+
+  return Result;
 }
 
 OrderedNode *OpDispatchBuilder::LoadAF() {

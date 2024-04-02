@@ -1636,7 +1636,7 @@ private:
   }
 
   std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP) const;
-  OrderedNode *SelectBit(OrderedNode *Cmp, bool Invert, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode *SelectBit(OrderedNode *Cmp, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
   OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
   /**
@@ -1774,7 +1774,7 @@ private:
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
-  OrderedNode *LoadPFRaw();
+  OrderedNode *LoadPFRaw(bool Invert);
   OrderedNode *LoadAF();
   void FixupAF();
   void SetAFAndFixup(OrderedNode *AF);

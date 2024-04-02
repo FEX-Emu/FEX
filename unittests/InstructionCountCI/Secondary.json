@@ -477,12 +477,12 @@
       "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csel w20, w7, w4, eq",
+        "csel w20, w7, w4, ne",
         "bfxil x4, x20, #0, #16",
         "msr nzcv, x21"
       ]
@@ -491,12 +491,12 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csel w4, w7, w4, eq",
+        "csel w4, w7, w4, ne",
         "msr nzcv, x21"
       ]
     },
@@ -504,12 +504,12 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x4a",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
-        "csel x4, x7, x4, eq",
+        "csel x4, x7, x4, ne",
         "msr nzcv, x21"
       ]
     },
@@ -517,9 +517,9 @@
       "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csel w20, w7, w4, ne",
@@ -531,9 +531,9 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csel w4, w7, w4, ne",
@@ -544,9 +544,9 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x4b",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "mrs x21, nzcv",
         "tst w20, #0x1",
         "csel x4, x7, x4, ne",
@@ -1234,13 +1234,12 @@
       ]
     },
     "setpe al": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0x9a",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
-        "mvn w20, w20",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "and x20, x20, #0x1",
         "bfxil x4, x20, #0, #8"
       ]
@@ -1249,9 +1248,9 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0x9b",
       "ExpectedArm64ASM": [
-        "fmov s2, w26",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
         "and x20, x20, #0x1",
         "bfxil x4, x20, #0, #8"
       ]

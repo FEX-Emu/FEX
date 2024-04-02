@@ -266,7 +266,7 @@
       ]
     },
     "AND use only PF": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "x86Insts": [
         "and eax, ebx",
         "setp cl",
@@ -274,10 +274,9 @@
       ],
       "ExpectedArm64ASM": [
         "and w4, w4, w7",
-        "fmov s2, w4",
-        "cnt v2.16b, v2.16b",
-        "umov w20, v2.b[0]",
-        "mvn w20, w20",
+        "eor w20, w4, w4, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eon w20, w20, w20, lsr #1",
         "and x20, x20, #0x1",
         "bfxil x5, x20, #0, #8",
         "mov x26, x5",
