@@ -461,12 +461,11 @@
       ]
     },
     "add rax, -256": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "adds x26, x27, x20",
+        "subs x26, x27, #0x100 (256)",
         "mov x4, x26"
       ]
     },
@@ -570,12 +569,11 @@
       ]
     },
     "sub rax, -256": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "subs x26, x27, x20",
+        "adds x26, x27, #0x100 (256)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "mov x4, x26",
@@ -613,12 +611,11 @@
       ]
     },
     "cmp rax, -256": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x81 /7",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "subs x26, x27, x20",
+        "adds x26, x27, #0x100 (256)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
@@ -828,12 +825,11 @@
       ]
     },
     "add rax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "adds x26, x4, x20",
+        "subs x26, x4, #0x1 (1)",
         "mov x4, x26"
       ]
     },
@@ -941,12 +937,11 @@
       ]
     },
     "sub rax, -1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "subs x26, x4, x20",
+        "adds x26, x4, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "mov x4, x26",
@@ -986,12 +981,11 @@
       ]
     },
     "cmp rax, -1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP1 0x83 /7",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "subs x26, x4, x20",
+        "adds x26, x4, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"

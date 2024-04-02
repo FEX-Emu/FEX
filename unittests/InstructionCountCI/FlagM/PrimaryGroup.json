@@ -422,12 +422,11 @@
       ]
     },
     "add rax, -256": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "adds x26, x27, x20",
+        "subs x26, x27, #0x100 (256)",
         "mov x4, x26"
       ]
     },
@@ -521,12 +520,11 @@
       ]
     },
     "sub rax, -256": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x81 /5",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "subs x26, x27, x20",
+        "adds x26, x27, #0x100 (256)",
         "cfinv",
         "mov x4, x26"
       ]
@@ -560,12 +558,11 @@
       ]
     },
     "cmp rax, -256": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /7",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffff00",
         "mov x27, x4",
-        "subs x26, x27, x20",
+        "adds x26, x27, #0x100 (256)",
         "cfinv"
       ]
     },
@@ -757,12 +754,11 @@
       ]
     },
     "add rax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /0",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "adds x26, x4, x20",
+        "subs x26, x4, #0x1 (1)",
         "mov x4, x26"
       ]
     },
@@ -860,12 +856,11 @@
       ]
     },
     "sub rax, -1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP1 0x83 /5",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "subs x26, x4, x20",
+        "adds x26, x4, #0x1 (1)",
         "cfinv",
         "mov x4, x26"
       ]
@@ -901,12 +896,11 @@
       ]
     },
     "cmp rax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /7",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
         "mvn w27, w4",
-        "subs x26, x4, x20",
+        "adds x26, x4, #0x1 (1)",
         "cfinv"
       ]
     },
