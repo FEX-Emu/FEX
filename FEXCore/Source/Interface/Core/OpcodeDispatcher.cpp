@@ -1600,9 +1600,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
-  StoreResult(GPRClass, Op, ALUOp, -1);
-
-  GenerateFlags_ShiftRight(Op, ALUOp, Dest, Src);
+  HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
 template<bool SHR1Bit>
