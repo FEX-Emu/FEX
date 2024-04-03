@@ -1872,16 +1872,13 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   auto LoadShift = [this, Op](bool MustMask) -> OrderedNode * {
-    // x86 masks the shift by 0x3F or 0x1F depending on size of op
-    const uint32_t Size = GetSrcBitSize(Op);
-    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
-
-    if (Is1Bit) {
-      return _Constant(1);
-    } else if (IsImmediate) {
-      LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-      return _Constant(Op->Src[1].Data.Literal.Value & Mask);
+    if (Is1Bit || IsImmediate) {
+      return _Constant(LoadConstantShift(Op, Is1Bit));
     } else {
+      // x86 masks the shift by 0x3F or 0x1F depending on size of op
+      const uint32_t Size = GetSrcBitSize(Op);
+      uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
+
       auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
       return MustMask ? _And(OpSize::i64Bit, Src, _Constant(Mask)) : Src;
     }
