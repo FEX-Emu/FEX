@@ -1546,6 +1546,19 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RCX, _Bfe(OpSize::i64Bit, 32, 0,  Result_Upper));
 }
 
+uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
+  if (Is1Bit) {
+    return 1;
+  } else {
+    // x86 masks the shift by 0x3F or 0x1F depending on size of op
+    const uint32_t Size = GetSrcBitSize(Op);
+    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
+
+    LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+    return Op->Src[1].Data.Literal.Value & Mask;
+  }
+}
+
 void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
   OrderedNode *Function = LoadGPRRegister(X86State::REG_RCX);
 
