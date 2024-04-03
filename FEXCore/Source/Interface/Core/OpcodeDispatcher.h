@@ -333,8 +333,8 @@ public:
   void SHLOp(OpcodeArgs);
   template<bool SHL1Bit>
   void SHLImmediateOp(OpcodeArgs);
-  template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
+  template<bool SHR1Bit>
   void SHRImmediateOp(OpcodeArgs);
   void SHLDOp(OpcodeArgs);
   void SHLDImmediateOp(OpcodeArgs);
