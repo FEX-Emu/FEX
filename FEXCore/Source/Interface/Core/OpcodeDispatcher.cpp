@@ -1772,9 +1772,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   }
 
   OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
-  StoreResult(GPRClass, Op, Result, -1);
-
-  GenerateFlags_SignShiftRight(Op, Result, Dest, Src);
+  HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
 }
 
 template<bool SHR1Bit>
