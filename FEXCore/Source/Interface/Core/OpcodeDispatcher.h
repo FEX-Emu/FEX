@@ -330,8 +330,8 @@ public:
   void CPUIDOp(OpcodeArgs);
   void XGetBVOp(OpcodeArgs);
   uint32_t LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
-  template<bool SHL1Bit>
   void SHLOp(OpcodeArgs);
+  template<bool SHL1Bit>
   void SHLImmediateOp(OpcodeArgs);
   template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
