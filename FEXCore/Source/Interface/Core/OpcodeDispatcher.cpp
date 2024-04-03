@@ -1727,9 +1727,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Shift, _Constant(0),
     Dest, Res);
 
-  StoreResult(GPRClass, Op, Res, -1);
-
-  GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
+  HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
