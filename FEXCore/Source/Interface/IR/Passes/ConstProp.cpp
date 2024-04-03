@@ -515,50 +515,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
     bool Changed = false;
 
     switch (IROp->Op) {
-/*
-    case OP_UMUL:
-    case OP_DIV:
-    case OP_UDIV:
-    case OP_REM:
-    case OP_UREM:
-    case OP_MULH:
-    case OP_UMULH:
-    case OP_LSHR:
-    case OP_ASHR:
-    case OP_ROL:
-    case OP_ROR:
-    case OP_LDIV:
-    case OP_LUDIV:
-    case OP_LREM:
-    case OP_LUREM:
-    case OP_BFI:
-    {
-      uint64_t Constant1;
-      uint64_t Constant2;
-
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
-          IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
-      }
-    break;
-    }
-
-    case OP_SEXT:
-    case OP_NEG:
-    case OP_POPCOUNT:
-    case OP_FINDLSB:
-    case OP_FINDMSB:
-    case OP_REV:
-    case OP_SBFE: {
-      uint64_t Constant1;
-
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
-      }
-    break;
-    }
-*/
-
     case OP_LOADMEMTSO: {
       auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
@@ -772,23 +728,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
-    /* TODO: restore this when we have rmif or something? */
-#if 0
-    case OP_TESTNZ: {
-      auto Op = IROp->CW<IR::IROp_TestNZ>();
-      uint64_t Constant1{};
-
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
-        bool N = Constant1 & (1ull << ((Op->Size * 8) - 1));
-        bool Z = Constant1 == 0;
-        uint32_t NZVC = (N ? (1u << 31) : 0) | (Z ? (1u << 30) : 0);
-
-        IREmit->ReplaceWithConstant(CodeNode, NZVC);
-        Changed = true;
-      }
-    break;
-    }
-#endif
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
@@ -1222,17 +1161,12 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
 
         uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
-#ifdef JIT_ARM64
-        bool SupportsAllOnes = true;
-#else
-        bool SupportsAllOnes = false;
-#endif
 
         uint64_t Constant2{};
         uint64_t Constant3{};
         if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
             IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
-            (Constant2 == 1 || (SupportsAllOnes && Constant2 == AllOnes)) &&
+            (Constant2 == 1 || Constant2 == AllOnes) &&
             Constant3 == 0)
         {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
