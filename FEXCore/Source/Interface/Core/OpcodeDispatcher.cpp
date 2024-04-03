@@ -1785,20 +1785,10 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-
-  uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  uint64_t Shift = LoadConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Shift &= 0x3F;
-  } else {
-    Shift &= 0x1F;
-  }
-
   if (Shift != 0) {
-
     OrderedNode *Res{};
     if (Size < 32) {
       OrderedNode *ShiftRight = _Constant(Shift);
