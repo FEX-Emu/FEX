@@ -1577,9 +1577,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   OrderedNode *Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
-  StoreResult(GPRClass, Op, Result, -1);
-
-  GenerateFlags_ShiftLeft(Op, Result, Dest, Src);
+  HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
 template<bool SHL1Bit>
