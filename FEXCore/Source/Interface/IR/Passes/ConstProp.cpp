@@ -681,23 +681,37 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       break;
     }
 
-    case OP_ADD: {
+    case OP_ADD:
+    case OP_SUB:
+    case OP_ADDWITHFLAGS:
+    case OP_SUBWITHFLAGS: {
       auto Op = IROp->C<IR::IROp_Add>();
       uint64_t Constant1{};
       uint64_t Constant2{};
       bool IsConstant1 = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
       bool IsConstant2 = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
 
-      if (IsConstant1 && IsConstant2) {
+      if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      } else if (IsConstant1 && IsConstant2 && IROp->Op == OP_SUB) {
+        uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
       else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(-Constant2)) {
         // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
-        // This means we can convert the operation in to a subtract.
-        // Change the IR operation itself.
-        IROp->Op = OP_SUB;
+        // So, negate the operation to negate (and inline) the constant.
+        if (IROp->Op == OP_ADD)
+          IROp->Op = OP_SUB;
+        else if (IROp->Op == OP_SUB)
+          IROp->Op = OP_ADD;
+        else if (IROp->Op == OP_ADDWITHFLAGS)
+          IROp->Op = OP_SUBWITHFLAGS;
+        else if (IROp->Op == OP_SUBWITHFLAGS)
+          IROp->Op = OP_ADDWITHFLAGS;
+
         // Set the write cursor to just before this operation.
         auto CodeIter = CurrentIR.at(CodeNode);
         --CodeIter;
@@ -708,19 +722,6 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
         // Replace the second source with the negated constant.
         IREmit->ReplaceNodeArgument(CodeNode, Op->Src2_Index, NegConstant);
-        Changed = true;
-      }
-    break;
-    }
-    case OP_SUB: {
-      auto Op = IROp->C<IR::IROp_Sub>();
-      uint64_t Constant1{};
-      uint64_t Constant2{};
-
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-        uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
-        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
     break;
