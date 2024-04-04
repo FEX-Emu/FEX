@@ -1295,13 +1295,12 @@
       ]
     },
     "shl al, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP2 0xd0 /4",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "lsl w21, w20, #1",
-        "bfxil x4, x21, #0, #8",
-        "uxtb w26, w21",
+        "lsl w26, w20, #1",
+        "bfxil x4, x26, #0, #8",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #6, #nzCv",
         "eor w20, w26, w20",
@@ -1326,7 +1325,7 @@
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "sxtb x20, w20",
-        "asr w26, w20, #1",
+        "asr x26, x20, #1",
         "bfxil x4, x26, #0, #8",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #63, #nzCv"
@@ -1471,13 +1470,12 @@
       ]
     },
     "shl ax, 1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP2 0xd1 /4",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
-        "lsl w21, w20, #1",
-        "bfxil x4, x21, #0, #16",
-        "uxth w26, w21",
+        "lsl w26, w20, #1",
+        "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #16",
         "rmif x20, #14, #nzCv",
         "eor w20, w26, w20",
@@ -1552,7 +1550,7 @@
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "sxth x20, w20",
-        "asr w26, w20, #1",
+        "asr x26, x20, #1",
         "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #16",
         "rmif x20, #63, #nzCv"
@@ -1671,14 +1669,13 @@
       ]
     },
     "shl al, cl": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Comment": "GROUP2 0xd2 /4",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "uxtb w21, w5",
         "lsl w22, w20, w21",
         "bfxil x4, x22, #0, #8",
-        "uxtb w22, w22",
         "cbz x21, #+0x24",
         "cmn wzr, w22, lsl #24",
         "mov w23, #0x8",
@@ -1939,14 +1936,13 @@
       ]
     },
     "shl ax, cl": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Comment": "GROUP2 0xd3 /4",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "uxth w21, w5",
         "lsl w22, w20, w21",
         "bfxil x4, x22, #0, #16",
-        "uxth w22, w22",
         "cbz x21, #+0x24",
         "cmn wzr, w22, lsl #16",
         "mov w23, #0x10",
