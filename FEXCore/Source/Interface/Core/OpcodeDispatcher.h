@@ -1293,6 +1293,8 @@ private:
 
   // Set flag tracking to prepare for a read-modify-write operation on NZCV.
   void HandleNZCV_RMW(uint32_t _PossiblySetNZCVBits = ~0) {
+    CalculateDeferredFlags();
+
     if (NZCVDirty && CachedNZCV)
       _StoreNZCV(CachedNZCV);
 
