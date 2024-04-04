@@ -19,6 +19,18 @@
 #include <unistd.h>
 
 namespace FHU::Filesystem {
+  enum class CreateDirectoryResult {
+    CREATED,
+    EXISTS,
+    ERROR,
+  };
+
+  enum class CopyOptions {
+    NONE,
+    SKIP_EXISTING,
+    OVERWRITE_EXISTING,
+  };
+
   /**
    * @brief Check if a filepath exists.
    *
@@ -34,17 +46,20 @@ namespace FHU::Filesystem {
     return access(Path.c_str(), F_OK) == 0;
   }
 
+  /**
+   * @brief Renames a file and overwrites if it already exists.
+   *
+   * @return No error on rename.
+   */
+  [[nodiscard]] inline std::error_code RenameFile(const fextl::string &From, const fextl::string &To) {
+    return rename(From.c_str(), To.c_str()) == 0 ? std::error_code{} : std::make_error_code(std::errc::io_error);
+  }
+
 #ifndef _WIN32
   inline bool ExistsAt(int FD, const fextl::string &Path) {
     return faccessat(FD, Path.c_str(), F_OK, 0) == 0;
   }
-#endif
 
-  enum class CreateDirectoryResult {
-    CREATED,
-    EXISTS,
-    ERROR,
-  };
   /**
    * @brief Creates a directory at the provided path.
    *
@@ -52,7 +67,6 @@ namespace FHU::Filesystem {
    *
    * @return Result enum depending.
    */
-#ifndef _WIN32
   inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
     auto Result = ::mkdir(Path.c_str(), 0777);
     if (Result == 0) {
@@ -73,18 +87,6 @@ namespace FHU::Filesystem {
     // Couldn't create, or the path that existed wasn't a folder.
     return CreateDirectoryResult::ERROR;
   }
-#else
-  inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
-    std::error_code ec;
-    if (std::filesystem::exists(Path, ec)) {
-      return CreateDirectoryResult::EXISTS;
-    }
-
-    return std::filesystem::create_directory(Path, ec) ?
-      CreateDirectoryResult::CREATED :
-      CreateDirectoryResult::ERROR;
-  }
-#endif
 
   /**
    * @brief Creates a directory tree with the provided path.
@@ -160,12 +162,6 @@ namespace FHU::Filesystem {
     return Path.starts_with('/');
   }
 
-  enum class CopyOptions {
-    NONE,
-    SKIP_EXISTING,
-    OVERWRITE_EXISTING,
-  };
-
   /**
    * @brief Copy a file from a location to another
    *
@@ -177,7 +173,6 @@ namespace FHU::Filesystem {
    *
    * @return True if the copy succeeded, false otherwise.
    */
-#ifndef _WIN32
   inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
     const bool DestExists = Exists(To);
     if (Options == CopyOptions::SKIP_EXISTING && DestExists) {
@@ -224,30 +219,6 @@ namespace FHU::Filesystem {
     }
 
     return false;
-  }
-#else
-  inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
-    std::filesystem::copy_options options{};
-    if (Options == CopyOptions::SKIP_EXISTING) {
-      options = std::filesystem::copy_options::skip_existing;
-    }
-    else if (Options == CopyOptions::OVERWRITE_EXISTING) {
-      options = std::filesystem::copy_options::overwrite_existing;
-    }
-
-    std::error_code ec;
-    return std::filesystem::copy_file(From, To, options, ec);
-  }
-
-#endif
-
-  /**
-   * @brief Renames a file and overwrites if it already exists.
-   *
-   * @return No error on rename.
-   */
-  [[nodiscard]] inline std::error_code RenameFile(const fextl::string &From, const fextl::string &To) {
-    return rename(From.c_str(), To.c_str()) == 0 ? std::error_code{} : std::make_error_code(std::errc::io_error);
   }
 
   inline fextl::string LexicallyNormal(const fextl::string &Path) {
@@ -353,11 +324,63 @@ namespace FHU::Filesystem {
       NeedsFinalSeparator ? "/" : "");
   }
 
-#ifndef _WIN32
   inline char *Absolute(const char *Path, char Fill[PATH_MAX]) {
     return realpath(Path, Fill);
   }
 #else
+  inline fextl::string PathToString(const std::filesystem::path &path) {
+    return path.string<char, std::char_traits<char>, fextl::FEXAlloc<char>>();
+  }
+
+  inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
+    std::error_code ec;
+    if (std::filesystem::exists(Path, ec)) {
+      return CreateDirectoryResult::EXISTS;
+    }
+
+    return std::filesystem::create_directory(Path, ec) ?
+      CreateDirectoryResult::CREATED :
+      CreateDirectoryResult::ERROR;
+  }
+
+  inline bool CreateDirectories(const fextl::string &Path) {
+    std::error_code ec;
+    return std::filesystem::exists(Path, ec) || std::filesystem::create_directories(Path, ec);
+  }
+
+  inline fextl::string GetFilename(const fextl::string &Path) {
+    return PathToString(std::filesystem::path(Path).filename());
+  }
+
+  inline fextl::string ParentPath(const fextl::string &Path) {
+    return PathToString(std::filesystem::path(Path).parent_path());
+  }
+
+  inline bool IsRelative(const std::string_view Path) {
+    return std::filesystem::path(Path).is_relative();
+  }
+
+  inline bool IsAbsolute(const std::string_view Path) {
+    return std::filesystem::path(Path).is_absolute();
+  }
+
+  inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
+    std::filesystem::copy_options options{};
+    if (Options == CopyOptions::SKIP_EXISTING) {
+      options = std::filesystem::copy_options::skip_existing;
+    }
+    else if (Options == CopyOptions::OVERWRITE_EXISTING) {
+      options = std::filesystem::copy_options::overwrite_existing;
+    }
+
+    std::error_code ec;
+    return std::filesystem::copy_file(From, To, options, ec);
+  }
+
+  inline fextl::string LexicallyNormal(const fextl::string &Path) {
+    return PathToString(std::filesystem::path(Path).lexically_normal());
+  }
+
   inline char *Absolute(const char *Path, char Fill[PATH_MAX]) {
     std::error_code ec;
     const auto PathAbsolute = std::filesystem::absolute(Path, ec);
