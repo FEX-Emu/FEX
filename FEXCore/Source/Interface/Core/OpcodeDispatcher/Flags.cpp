@@ -587,7 +587,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
 
     // Extract the last bit shifted in to CF
     auto Size = _Constant(SrcSize * 8);
-    auto ShiftAmt = _Sub(OpSize, Size, Src2);
+    auto ShiftAmt = SrcSize >= 4 ? _Neg(OpSize, Src2) : _Sub(OpSize, Size, Src2);
     auto LastBit = _Lshr(OpSize, Src1, ShiftAmt);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(LastBit, 0, true);
 
