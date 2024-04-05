@@ -1569,6 +1569,19 @@ private:
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
   }
 
+  // Helper to store a variable shift and calculate its flags for a variable
+  // shift, with correct PF handling.
+  void HandleShift(X86Tables::DecodedOp Op, OrderedNode *Result,
+                   OrderedNode *Dest, ShiftType Shift, OrderedNode *Src) {
+
+    StoreResult(GPRClass, Op, Result, -1);
+
+    auto OldPF = GetRFLAG(X86State::RFLAG_PF_RAW_LOC);
+
+    HandleNZCV_RMW();
+    CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF));
+  }
+
   // Helper to derive Dest by a given builder-using Expression with the opcode
   // replaced with NewOp. Useful for generic building code. Not safe in general.
   // but does the right handling of ImplicitFlagClobber at least and must be
