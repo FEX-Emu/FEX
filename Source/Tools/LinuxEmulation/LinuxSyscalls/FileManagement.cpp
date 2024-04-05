@@ -219,6 +219,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   // - AppConfig Global
   // - Steam AppConfig Local
   // - AppConfig Local
+  // - AppConfig override
   // This doesn't support the classic thunks interface.
 
   auto AppName = AppConfigName();
@@ -243,6 +244,11 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   else {
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
+  }
+
+  const char *AppConfig = getenv("FEX_APP_CONFIG");
+  if (AppConfig) {
+    ConfigPaths.emplace_back(AppConfig);
   }
 
   if (!LDPath().empty()) {

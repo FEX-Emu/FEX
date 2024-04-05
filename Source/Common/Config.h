@@ -73,6 +73,7 @@ namespace FEX::Config {
    * @return unique_ptr for that layer
    */
   fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File = nullptr);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(const char* AppConfig);
 
   /**
    * @brief Create an application configuration loader
