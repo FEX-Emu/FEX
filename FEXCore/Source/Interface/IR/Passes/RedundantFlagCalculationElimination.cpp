@@ -366,7 +366,7 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
           bool Eliminated = false;
 
           if ((FlagsRead & Info.Write) == 0) {
-            if (Info.CanEliminate) {
+            if (Info.CanEliminate && CodeNode->GetUses() == 0) {
               IREmit->Remove(CodeNode);
               Eliminated = true;
               Changed = true;
