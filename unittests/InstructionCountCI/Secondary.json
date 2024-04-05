@@ -1620,7 +1620,7 @@
       ]
     },
     "shld eax, ebx, cl": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 24,
       "Comment": "0x0f 0xad",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -1635,10 +1635,9 @@
         "csel x20, x21, x20, eq",
         "mov w4, w20",
         "msr nzcv, x23",
-        "cbz x22, #+0x34",
+        "cbz x22, #+0x30",
         "tst w20, w20",
-        "mov w23, #0x20",
-        "sub w22, w23, w22",
+        "neg w22, w22",
         "lsr w22, w21, w22",
         "ubfx x22, x22, #0, #1",
         "mrs x23, nzcv",
@@ -1651,7 +1650,7 @@
       ]
     },
     "shld rax, rbx, cl": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Comment": "0x0f 0xad",
       "ExpectedArm64ASM": [
         "mov x20, x4",
@@ -1665,10 +1664,9 @@
         "csel x22, x20, x22, eq",
         "mov x4, x22",
         "msr nzcv, x23",
-        "cbz x21, #+0x34",
+        "cbz x21, #+0x30",
         "tst x22, x22",
-        "mov w23, #0x40",
-        "sub x21, x23, x21",
+        "neg x21, x21",
         "lsr x21, x20, x21",
         "ubfx x21, x21, #0, #1",
         "mrs x23, nzcv",
