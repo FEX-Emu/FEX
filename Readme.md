@@ -16,6 +16,11 @@ This command will walk you through installing FEX through a PPA, and downloading
 
 Ubuntu PPA is updated with our monthly releases.
 
+### Using Nix
+For anyone who has the [nix package manager](https://nixos.org/) installed:
+`nix build '.?submodules=1'
+
+
 ### For everyone else
 Please see [Building FEX](#building-fex).
 
