@@ -129,6 +129,8 @@ namespace JSON {
   public:
     explicit MainLoader(FEXCore::Config::LayerType Type);
     explicit MainLoader(fextl::string ConfigFile);
+    explicit MainLoader(FEXCore::Config::LayerType Type, const char* ConfigFile);
+
     void Load() override;
 
   private:
@@ -186,6 +188,12 @@ namespace JSON {
   MainLoader::MainLoader(fextl::string ConfigFile)
     : OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
     , Config{std::move(ConfigFile)} {
+  }
+
+
+  MainLoader::MainLoader(FEXCore::Config::LayerType Type, const char* ConfigFile)
+    : OptionMapper(Type)
+    , Config{ConfigFile} {
   }
 
   void MainLoader::Load() {
@@ -274,6 +282,10 @@ namespace JSON {
     else {
       return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
     }
+  }
+
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(const char* AppConfig) {
+    return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig);
   }
 
   fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
@@ -369,6 +381,11 @@ namespace JSON {
     }
     else {
       FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+    }
+
+    const char *AppConfig = getenv("FEX_APP_CONFIG");
+    if (AppConfig && FHU::Filesystem::Exists(AppConfig)) {
+      FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfig));
     }
 
     FEXCore::Config::AddLayer(CreateEnvironmentLayer(envp));
@@ -529,21 +546,7 @@ namespace JSON {
   }
 
   fextl::string GetConfigFileLocation(bool Global) {
-    fextl::string ConfigFile{};
-    if (Global) {
-      ConfigFile = GetConfigDirectory(true) + "Config.json";
-    }
-    else {
-      const char *AppConfig = getenv("FEX_APP_CONFIG");
-      if (AppConfig) {
-        // App config environment variable overwrites only the config file
-        ConfigFile = AppConfig;
-      }
-      else {
-        ConfigFile = GetConfigDirectory(false) + "Config.json";
-      }
-    }
-    return ConfigFile;
+    return GetConfigDirectory(Global) + "Config.json";
   }
 
   void InitializeConfigs() {

@@ -130,7 +130,7 @@ namespace DefaultValues {
   static fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
-  constexpr std::array<FEXCore::Config::LayerType, 9> LoadOrder = {
+  constexpr std::array<FEXCore::Config::LayerType, 10> LoadOrder = {
     FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN,
     FEXCore::Config::LayerType::LAYER_MAIN,
     FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP,
@@ -138,6 +138,7 @@ namespace DefaultValues {
     FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP,
     FEXCore::Config::LayerType::LAYER_LOCAL_APP,
     FEXCore::Config::LayerType::LAYER_ARGUMENTS,
+    FEXCore::Config::LayerType::LAYER_USER_OVERRIDE,
     FEXCore::Config::LayerType::LAYER_ENVIRONMENT,
     FEXCore::Config::LayerType::LAYER_TOP
   };
