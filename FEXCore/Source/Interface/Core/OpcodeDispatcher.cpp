@@ -1577,9 +1577,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   OrderedNode *Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
-  StoreResult(GPRClass, Op, Result, -1);
-
-  GenerateFlags_ShiftLeft(Op, Result, Dest, Src);
+  HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
 template<bool SHL1Bit>
@@ -1602,9 +1600,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
 
   auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
-  StoreResult(GPRClass, Op, ALUOp, -1);
-
-  GenerateFlags_ShiftRight(Op, ALUOp, Dest, Src);
+  HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
 template<bool SHR1Bit>
@@ -1663,10 +1659,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
     Shift, _Constant(0),
     Dest, Res);
 
-  StoreResult(GPRClass, Op, Res, -1);
-
-  // No need to mask result, upper garbage is ignored in the flag calc
-  GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
+  HandleShift(Op, Res, Dest, ShiftType::LSL, Shift);
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -1734,9 +1727,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Shift, _Constant(0),
     Dest, Res);
 
-  StoreResult(GPRClass, Op, Res, -1);
-
-  GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
+  HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
@@ -1781,9 +1772,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   }
 
   OrderedNode *Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
-  StoreResult(GPRClass, Op, Result, -1);
-
-  GenerateFlags_SignShiftRight(Op, Result, Dest, Src);
+  HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
 }
 
 template<bool SHR1Bit>

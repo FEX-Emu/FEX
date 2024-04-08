@@ -794,19 +794,19 @@
         "csel x20, x21, x20, eq",
         "bfxil x4, x20, #0, #16",
         "msr nzcv, x23",
-        "cbz x22, #+0x24",
+        "cbz w22, #+0x24",
         "cmn wzr, w20, lsl #16",
-        "mov w23, #0x10",
-        "sub w22, w23, w22",
-        "lsr w22, w21, w22",
-        "rmif x22, #63, #nzCv",
         "mov x26, x20",
-        "eor w20, w21, w20",
-        "rmif x20, #15, #nzcV"
+        "mov w0, #0x10",
+        "sub w0, w0, w22",
+        "lsr w0, w21, w0",
+        "eor w2, w21, w20",
+        "rmif x0, #63, #nzCv",
+        "rmif x2, #15, #nzcV"
       ]
     },
     "shld eax, ebx, cl": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 19,
       "Comment": "0x0f 0xad",
       "ExpectedArm64ASM": [
         "mov w20, w7",
@@ -821,19 +821,17 @@
         "csel x20, x21, x20, eq",
         "mov w4, w20",
         "msr nzcv, x23",
-        "cbz x22, #+0x24",
-        "tst w20, w20",
-        "mov w23, #0x20",
-        "sub w22, w23, w22",
-        "lsr w22, w21, w22",
-        "rmif x22, #63, #nzCv",
-        "mov x26, x20",
-        "eor w20, w21, w20",
-        "rmif x20, #31, #nzcV"
+        "cbz w22, #+0x1c",
+        "ands w26, w20, w20",
+        "neg w0, w22",
+        "lsr w0, w21, w0",
+        "eor w2, w21, w20",
+        "rmif x0, #63, #nzCv",
+        "rmif x2, #31, #nzcV"
       ]
     },
     "shld rax, rbx, cl": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 17,
       "Comment": "0x0f 0xad",
       "ExpectedArm64ASM": [
         "mov x20, x4",
@@ -844,18 +842,15 @@
         "orr x22, x23, x22",
         "mrs x23, nzcv",
         "cmp x21, #0x0 (0)",
-        "csel x22, x20, x22, eq",
-        "mov x4, x22",
+        "csel x4, x20, x22, eq",
         "msr nzcv, x23",
-        "cbz x21, #+0x24",
-        "tst x22, x22",
-        "mov w23, #0x40",
-        "sub x21, x23, x21",
-        "lsr x21, x20, x21",
-        "rmif x21, #63, #nzCv",
-        "mov x26, x22",
-        "eor x20, x20, x22",
-        "rmif x20, #63, #nzcV"
+        "cbz x21, #+0x1c",
+        "ands x26, x4, x4",
+        "neg x0, x21",
+        "lsr x0, x20, x0",
+        "eor x2, x20, x4",
+        "rmif x0, #63, #nzCv",
+        "rmif x2, #63, #nzcV"
       ]
     },
     "bts ax, bx": {

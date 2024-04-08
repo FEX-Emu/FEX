@@ -157,6 +157,17 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
         .Replacement = OP_SBB,
       };
 
+    case OP_SHIFTFLAGS:
+      // _ShiftFlags conditionally sets NZCV+PF, which we model here as a
+      // read-modify-write. Logically, it also conditionally makes AF undefined,
+      // which we model by omitting AF from both Read and Write sets (since
+      // "cond ? AF : undef" may be optimized to "AF").
+      return {
+        .Read = FLAG_NZCV | FLAG_P,
+        .Write = FLAG_NZCV | FLAG_P,
+        .CanEliminate = true,
+      };
+
     case OP_ADDNZCV:
     case OP_SUBNZCV:
     case OP_TESTNZ:
@@ -366,7 +377,7 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
           bool Eliminated = false;
 
           if ((FlagsRead & Info.Write) == 0) {
-            if (Info.CanEliminate) {
+            if (Info.CanEliminate && CodeNode->GetUses() == 0) {
               IREmit->Remove(CodeNode);
               Eliminated = true;
               Changed = true;
