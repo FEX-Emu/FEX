@@ -1236,6 +1236,20 @@ private:
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
+  // In several instances, it's desirable to get a base address with the segment offset
+  // applied to it. This pulls all the common-case appending into a single set of functions.
+  [[nodiscard]] OrderedNode *MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint8_t OpSize) {
+    OrderedNode *Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
+    return AppendSegmentOffset(Mem, Op->Flags);
+  }
+  [[nodiscard]] OrderedNode *MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand) {
+    return MakeSegmentAddress(Op, Operand, GetSrcSize(Op));
+  }
+  [[nodiscard]] OrderedNode *MakeSegmentAddress(X86State::X86Reg Reg, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false) {
+    OrderedNode *Address = LoadGPRRegister(Reg);
+    return AppendSegmentOffset(Address, Flags, DefaultPrefix, Override);
+  }
+
   constexpr OpSize GetGuestVectorLength() const {
     return CTX->HostFeatures.SupportsAVX ? OpSize::i256Bit : OpSize::i128Bit;
   }

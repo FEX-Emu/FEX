@@ -395,8 +395,8 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     auto ALUOp = _Adc(OpSize, _Constant(0), Src);
 
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
   }
   else {
@@ -421,9 +421,8 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
 
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     auto SrcPlusCF = _Adc(OpSize, _Constant(0), Src);
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), SrcPlusCF, DestMem);
   }
@@ -1305,11 +1304,9 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags,
                                 {.AllowUpperGarbage = true});
   if (DestIsMem(Op)) {
-    HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
 
-    Dest = AppendSegmentOffset(Dest, Op->Flags);
-
+    OrderedNode *Dest = MakeSegmentAddress(Op, Op->Dest);
     auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
@@ -2615,8 +2612,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     }
   } else {
     // Load the address to the memory location
-    OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    Dest = AppendSegmentOffset(Dest, Op->Flags);
+    OrderedNode *Dest = MakeSegmentAddress(Op, Op->Dest);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Src))), 3, 0, Src);
 
@@ -2883,8 +2879,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     _AtomicXor(IR::SizeToOpSize(Size), MaskConst, DestMem);
   } else if (!Op->Dest.IsGPR()) {
     // GPR version plays fast and loose with sizes, be safe for memory tho.
@@ -3089,10 +3084,10 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
-  OrderedNode *Src = LoadGPRRegister(X86State::REG_RBX);
+  OrderedNode *Src = MakeSegmentAddress(X86State::REG_RBX, Op->Flags,
+                                        X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   OrderedNode *Offset = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   Src = _Add(OpSize::i64Bit, Src, Offset);
 
   auto Res = _LoadMemAutoTSO(GPRClass, 1, Src, 1);
@@ -3234,10 +3229,9 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 
   if (IsLocked) {
     HandledLock = true;
-    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
-    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
 
+    OrderedNode *DestAddress = MakeSegmentAddress(Op, Op->Dest);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), OneConst, DestAddress);
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
@@ -3282,8 +3276,8 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
   if (IsLocked) {
     HandledLock = true;
-    auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
+
+    OrderedNode *DestAddress = MakeSegmentAddress(Op, Op->Dest);
 
     // Use Add instead of Sub to avoid a NEG
     Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), _Constant(Size, -1), DestAddress);
@@ -3328,10 +3322,9 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   if (!Repeat) {
     // Src is used only for a store of the same size so allow garbage
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-    OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
-    Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    OrderedNode *Dest = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     // Store to memory where RDI points
     _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
@@ -3390,10 +3383,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RSI, Result_Src);
   }
   else {
-    OrderedNode *RSI = LoadGPRRegister(X86State::REG_RSI);
-    OrderedNode *RDI = LoadGPRRegister(X86State::REG_RDI);
-    RDI= AppendSegmentOffset(RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
-    RSI = AppendSegmentOffset(RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    OrderedNode *RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    OrderedNode *RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src = _LoadMemAutoTSO(GPRClass, Size, RSI, Size);
 
@@ -3420,13 +3411,12 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
   if (!Repeat) {
-    OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
-    OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
-
-    // Only ES prefix
-    Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     // Default DS prefix
-    Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    OrderedNode *Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags,
+                                               X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    // Only ES prefix
+    OrderedNode *Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0,
+                                               X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
@@ -3470,13 +3460,12 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
       // Working loop
       {
-        OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
-        OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
-
-        // Only ES prefix
-        Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
         // Default DS prefix
-        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+        OrderedNode *Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags,
+                                                   X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+        // Only ES prefix
+        OrderedNode *Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0,
+                                                   X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
         auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
@@ -3548,8 +3537,8 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
-    Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    OrderedNode *Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags,
+                                               X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
@@ -3591,9 +3580,8 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
       // Working loop
       {
-        OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
-
-        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+        OrderedNode *Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags,
+                                                   X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
         auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
@@ -3635,8 +3623,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
-    Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    OrderedNode *Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0,
+                                               X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
@@ -3675,9 +3663,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       // Working loop
       {
-        OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
-
-        Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        OrderedNode *Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0,
+                                                   X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
         auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
         auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
@@ -3776,9 +3763,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
 
   if (DestIsLockedMem(Op)) {
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     OrderedNode *Dest = _AtomicFetchNeg(IR::SizeToOpSize(Size), DestMem);
     CalculateFlags_SUB(Size, ZeroConst, Dest);
   }
@@ -4041,9 +4026,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       Src3Lower = Src3;
     }
     // If this is a memory location then we want the pointer to it
-    OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-
-    Src1 = AppendSegmentOffset(Src1, Op->Flags);
+    OrderedNode *Src1 = MakeSegmentAddress(Op, Op->Dest);
 
     // DataSrc = *Src1
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
@@ -4076,10 +4059,9 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   uint8_t Size = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
 
   HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
-  // If this is a memory location then we want the pointer to it
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
-  Src1 = AppendSegmentOffset(Src1, Op->Flags);
+  // If this is a memory location then we want the pointer to it
+  OrderedNode *Src1 = MakeSegmentAddress(Op, Op->Dest);
 
   OrderedNode *Expected_Lower = LoadGPRRegister(X86State::REG_RAX, Size);
   OrderedNode *Expected_Upper = LoadGPRRegister(X86State::REG_RDX, Size);
@@ -4862,9 +4844,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(IR::SizeToOpSize(Size), Src, DestMem));
     Dest = FetchOp;
   }
@@ -5055,14 +5035,12 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CLWB(OpcodeArgs) {
-  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+  OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
   _CacheLineClean(DestMem);
 }
 
 void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
-  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+  OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
   _CacheLineClear(DestMem, false);
 }
 
@@ -5093,8 +5071,7 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   }
   else {
     // This is a CLFlush
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    OrderedNode *DestMem = MakeSegmentAddress(Op, Op->Dest);
     _CacheLineClear(DestMem, true);
   }
 }
