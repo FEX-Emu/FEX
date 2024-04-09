@@ -2755,7 +2755,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1712]",
+        "ldr x0, [x28, #1720]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2824,7 +2824,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1712]",
+        "ldr x0, [x28, #1720]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2893,7 +2893,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1712]",
+        "ldr x0, [x28, #1720]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -4349,7 +4349,7 @@
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1592]",
+        "ldr x0, [x28, #1600]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.d, z17.d, z2.d"
@@ -4372,7 +4372,7 @@
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1576]",
+        "ldr x0, [x28, #1584]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.s, z17.s, z2.s"
@@ -4513,7 +4513,7 @@
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1672]",
+        "ldr x0, [x28, #1680]",
         "ld1b {z2.b}, p7/z, [x0]",
         "mrs x0, nzcv",
         "mov z0.d, #0",

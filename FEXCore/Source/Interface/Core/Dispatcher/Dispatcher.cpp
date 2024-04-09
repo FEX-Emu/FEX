@@ -61,6 +61,9 @@ void Dispatcher::EmitDispatcher() {
 
   ARMEmitter::ForwardLabel l_CTX;
   ARMEmitter::SingleUseForwardLabel l_Sleep;
+#ifdef _M_ARM_64EC
+  ARMEmitter::SingleUseForwardLabel ExitEC;
+#endif
   ARMEmitter::SingleUseForwardLabel l_CompileBlock;
 
   // Push all the register we need to save
@@ -91,7 +94,8 @@ void Dispatcher::EmitDispatcher() {
 
   // Load in our RIP
   // Don't modify TMP3 since it contains our RIP once the block doesn't exist
-
+  // IMPORTANT: Pointers.Common.ExitFunctionEC callsites/implementations need to be
+  // adjusted accordingly if this changes.
   auto RipReg = TMP3;
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
@@ -134,6 +138,10 @@ void Dispatcher::EmitDispatcher() {
 
     // If page pointer is zero then we have no block
     cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
+#ifdef _M_ARM_64EC
+    // The LSB of an L2 page entry indicates if this page contains EC code
+    tbnz(TMP1, 0, &ExitEC);
+#endif
 
     // Steal the page offset
     and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
@@ -166,6 +174,15 @@ void Dispatcher::EmitDispatcher() {
       br(TMP4);
     }
   }
+
+#ifdef _M_ARM_64EC
+  {
+    Bind(&ExitEC);
+    // Target PC is already loaded into TMP3 at the start of the dispatcher
+    ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+    br(TMP2);
+  }
+#endif
 
   {
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
