@@ -1,0 +1,6 @@
+{
+  "Comment": "Bypasses libGL's glX and instead sends GLX requests directly via xcb",
+  "ThunksDB": {
+    "GL": 0
+  }
+}
