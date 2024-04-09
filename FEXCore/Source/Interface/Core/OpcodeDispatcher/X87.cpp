@@ -196,7 +196,7 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   SetX87Top(top);
 }
 
-template<uint64_t Lower, uint32_t Upper>
+template<NamedVectorConstant constant>
 void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
@@ -204,28 +204,26 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   SetX87ValidTag(top, true);
   SetX87Top(top);
 
-  auto low = _Constant(Lower);
-  auto high = _Constant(Upper);
-  OrderedNode *data = _VCastFromGPR(16, 8, low);
-  data = _VInsGPR(16, 8, 1, data, high);
+  OrderedNode *data = LoadAndCacheNamedVectorConstant(16, constant);
+
   // Write to ST[TOP]
   _StoreContextIndexed(data, top, 16, MMBaseOffset(), 16, FPRClass);
 }
 
 template
-void OpDispatchBuilder::FLD_Const<0x8000'0000'0000'0000ULL, 0b0'011'1111'1111'1111ULL>(OpcodeArgs); // 1.0
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_ONE>(OpcodeArgs); // 1.0
 template
-void OpDispatchBuilder::FLD_Const<0xD49A'784B'CD1B'8AFEULL, 0x4000ULL>(OpcodeArgs); // log2l(10)
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10>(OpcodeArgs); // log2l(10)
 template
-void OpDispatchBuilder::FLD_Const<0xB8AA'3B29'5C17'F0BCULL, 0x3FFFULL>(OpcodeArgs); // log2l(e)
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E>(OpcodeArgs); // log2l(e)
 template
-void OpDispatchBuilder::FLD_Const<0xC90F'DAA2'2168'C235ULL, 0x4000ULL>(OpcodeArgs); // pi
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_PI>(OpcodeArgs); // pi
 template
-void OpDispatchBuilder::FLD_Const<0x9A20'9A84'FBCF'F799ULL, 0x3FFDULL>(OpcodeArgs); // log10l(2)
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2>(OpcodeArgs); // log10l(2)
 template
-void OpDispatchBuilder::FLD_Const<0xB172'17F7'D1CF'79ACULL, 0x3FFEULL>(OpcodeArgs); // log(2)
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG_2>(OpcodeArgs); // log(2)
 template
-void OpDispatchBuilder::FLD_Const<0, 0>(OpcodeArgs); // 0.0
+void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_ZERO>(OpcodeArgs); // 0.0
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Update TOP
@@ -958,10 +956,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   OrderedNode *st1 = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
   if (Plus1) {
-    auto low = _Constant(0x8000'0000'0000'0000ULL);
-    auto high = _Constant(0b0'011'1111'1111'1111);
-    OrderedNode *data = _VCastFromGPR(16, 8, low);
-    data = _VInsGPR(16, 8, 1, data, high);
+    OrderedNode *data = LoadAndCacheNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
     st0 = _F80Add(st0, data);
   }
 
@@ -981,10 +976,7 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
 
   auto result = _F80TAN(a);
 
-  auto low = _Constant(0x8000'0000'0000'0000ULL);
-  auto high = _Constant(0b0'011'1111'1111'1111ULL);
-  OrderedNode *data = _VCastFromGPR(16, 8, low);
-  data = _VInsGPR(16, 8, 1, data, high);
+  OrderedNode *data = LoadAndCacheNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
 
   // TODO: ACCURACY: should check source is in range –2^63 to +2^63
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));

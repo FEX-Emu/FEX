@@ -4501,7 +4501,7 @@
       ]
     },
     "fld1": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xe8 /5"
       ],
@@ -4515,16 +4515,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0x8000000000000000",
-        "mov w22, #0x3fff",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2304]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldl2t": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xe9 /5"
       ],
@@ -4538,19 +4535,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0x8afe",
-        "movk x21, #0xcd1b, lsl #16",
-        "movk x21, #0x784b, lsl #32",
-        "movk x21, #0xd49a, lsl #48",
-        "mov w22, #0x4000",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2320]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldl2e": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xea /5"
       ],
@@ -4564,19 +4555,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0xf0bc",
-        "movk x21, #0x5c17, lsl #16",
-        "movk x21, #0x3b29, lsl #32",
-        "movk x21, #0xb8aa, lsl #48",
-        "mov w22, #0x3fff",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2336]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldpi": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xeb /5"
       ],
@@ -4590,19 +4575,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0xc235",
-        "movk x21, #0x2168, lsl #16",
-        "movk x21, #0xdaa2, lsl #32",
-        "movk x21, #0xc90f, lsl #48",
-        "mov w22, #0x4000",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2352]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldlg2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xec /5"
       ],
@@ -4616,19 +4595,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0xf799",
-        "movk x21, #0xfbcf, lsl #16",
-        "movk x21, #0x9a84, lsl #32",
-        "movk x21, #0x9a20, lsl #48",
-        "mov w22, #0x3ffd",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2368]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldln2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xed /5"
       ],
@@ -4642,19 +4615,13 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov x21, #0x79ac",
-        "movk x21, #0xd1cf, lsl #16",
-        "movk x21, #0x17f7, lsl #32",
-        "movk x21, #0xb172, lsl #48",
-        "mov w22, #0x3ffe",
-        "fmov d2, x21",
-        "mov v2.d[1], x22",
+        "ldr q2, [x28, #2384]",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
     },
     "fldz": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xd9 11b 0xee /5"
       ],
@@ -4668,9 +4635,7 @@
         "orr w21, w22, w21",
         "strb w21, [x28, #1026]",
         "strb w20, [x28, #747]",
-        "mov w21, #0x0",
-        "fmov d2, x21",
-        "mov v2.d[1], x21",
+        "movi v2.2d, #0x0",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #768]"
       ]
@@ -4770,7 +4735,7 @@
       ]
     },
     "fptan": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 46,
       "Comment": [
         "0xd9 11b 0xf2 /6"
       ],
@@ -4814,10 +4779,7 @@
         "eor v2.16b, v2.16b, v2.16b",
         "mov v2.d[0], x0",
         "mov v2.h[4], w1",
-        "mov x21, #0x8000000000000000",
-        "mov w23, #0x3fff",
-        "fmov d3, x21",
-        "mov v3.d[1], x23",
+        "ldr q3, [x28, #2304]",
         "mov w21, #0x0",
         "strb w21, [x28, #746]",
         "add x0, x28, x20, lsl #4",
@@ -5081,7 +5043,7 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 79,
+      "ExpectedInstructionCount": 76,
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ],
@@ -5099,10 +5061,7 @@
         "ldr q2, [x0, #768]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #768]",
-        "mov x20, #0x8000000000000000",
-        "mov w22, #0x3fff",
-        "fmov d4, x20",
-        "mov v4.d[1], x22",
+        "ldr q4, [x28, #2304]",
         "mrs x0, nzcv",
         "str w0, [x28, #728]",
         "stp x4, x5, [x28, #8]",
