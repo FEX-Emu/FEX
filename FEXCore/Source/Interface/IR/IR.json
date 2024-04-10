@@ -1647,13 +1647,6 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VectorZero u8:#RegisterSize": {
-        "Desc": ["Generates a vector zero",
-                 "Useful to generate a zero vector without any previous dependencies"
-                ],
-        "DestSize": "RegisterSize"
-      },
-
       "FPR = VectorImm u8:#RegisterSize, u8:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}": {
         "Desc": ["Generates a vector with each element containg the immediate zexted"
                 ],

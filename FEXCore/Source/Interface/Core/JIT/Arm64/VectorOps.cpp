@@ -794,31 +794,6 @@ DEF_OP(VFCMPScalarInsert) {
   VFScalarOperation(IROp->Size, ElementSize, Op->ZeroUpperBits, Funcs[FEXCore::ToUnderlying(Op->Op)], Dst, Vector1, Vector2);
 }
 
-DEF_OP(VectorZero) {
-  const auto OpSize = IROp->Size;
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  const auto Dst = GetVReg(Node);
-
-  if (HostSupportsSVE256 && Is256Bit) {
-    mov_imm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), 0);
-  } else {
-    switch (OpSize) {
-      case 8: {
-        movi(ARMEmitter::SubRegSize::i64Bit, Dst.D(), 0);
-        break;
-      }
-      case 16: {
-        movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
-        break;
-    }
-  }
-}
-
 DEF_OP(VectorImm) {
   const auto Op = IROp->C<IR::IROp_VectorImm>();
   const auto OpSize = IROp->Size;
