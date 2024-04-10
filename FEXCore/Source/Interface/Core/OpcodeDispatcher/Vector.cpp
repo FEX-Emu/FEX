@@ -1758,10 +1758,7 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
     // Get the address to broadcast from into a GPR.
-    OrderedNode *Address = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags,
-                                                 {.LoadData = false});
-    Address = AppendSegmentOffset(Address, Op->Flags);
-
+    OrderedNode *Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPRSize());
     Result = _VBroadcastFromMem(DstSize, ElementSize, Address);
   }
 
@@ -2807,11 +2804,8 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   // Vector that will overwrite byte elements.
   OrderedNode *VectorSrc = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  // RDI source
-  auto MemDest = LoadGPRRegister(X86State::REG_RDI);
-
-  // DS prefix by default.
-  MemDest = AppendSegmentOffset(MemDest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+  // RDI source (DS prefix by default)
+  auto MemDest = MakeSegmentAddress(X86State::REG_RDI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
   OrderedNode *XMMReg = _LoadMem(FPRClass, Size, MemDest, 1);
 
@@ -2825,9 +2819,7 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t Da
                                        const X86Tables::DecodedOperand& DataOp) {
 
   const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
-    OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, Data, CTX->GetGPRSize(), Op->Flags,
-                                                  {.LoadData = false});
-    return AppendSegmentOffset(BaseAddr, Op->Flags);
+    return MakeSegmentAddress(Op, Data, CTX->GetGPRSize());
   };
 
   OrderedNode *Mask = LoadSource_WithOpSize(FPRClass, Op, MaskOp, DataSize, Op->Flags);
@@ -2988,8 +2980,7 @@ template
 void OpDispatchBuilder::AVXVFCMPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  Mem = AppendSegmentOffset(Mem, Op->Flags);
+  OrderedNode *Mem = MakeSegmentAddress(Op, Op->Dest);
 
   SaveX87State(Op, Mem);
   SaveSSEState(Mem);
@@ -3001,8 +2992,7 @@ void OpDispatchBuilder::XSaveOp(OpcodeArgs) {
 }
 
 OrderedNode *OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  return AppendSegmentOffset(Mem, Op->Flags);
+  return MakeSegmentAddress(Op, Op->Dest);
 }
 
 void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
@@ -3195,9 +3185,7 @@ OrderedNode *OpDispatchBuilder::GetMXCSR() {
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
-
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  Mem = AppendSegmentOffset(Mem, Op->Flags);
+  OrderedNode *Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   RestoreX87State(Mem);
   RestoreSSEState(Mem);

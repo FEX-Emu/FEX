@@ -64,9 +64,8 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  Mem = AppendSegmentOffset(Mem, Op->Flags);
+  const auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   //ignore the rounding precision, we're always 64-bit in F64.
@@ -893,10 +892,8 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   // 4 bytes : data pointer offset
   // 4 bytes : data pointer selector
 
-  auto Size = GetDstSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  Mem = AppendSegmentOffset(Mem, Op->Flags);
-
+  const auto Size = GetDstSize(Op);
+  OrderedNode *Mem = MakeSegmentAddress(Op, Op->Dest);
   OrderedNode *Top = GetX87Top();
   {
     auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
@@ -971,9 +968,8 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
 //This function converts from F80 on load for compatibility
 
 void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  Mem = AppendSegmentOffset(Mem, Op->Flags);
+  const auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   //ignore the rounding precision, we're always 64-bit in F64.
