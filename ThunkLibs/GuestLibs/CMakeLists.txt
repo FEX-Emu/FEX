@@ -182,8 +182,10 @@ if (BITNESS EQUAL 64)
   add_guest_lib(GL "libGL.so.1")
 
   # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
-  add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
-  target_link_libraries(GL-guest PRIVATE X11)
+  add_library(PlaceholderX11 SHARED ../libX11/libX11_NativeGuest.cpp)
+  target_link_options(PlaceholderX11 PRIVATE "LINKER:-soname,libX11.so.6")
+  set_target_properties(PlaceholderX11 PROPERTIES NO_SONAME ON)
+  target_link_libraries(GL-guest PRIVATE PlaceholderX11)
 
   # disabled for now, headers are platform specific
   # find_package(SDL2 REQUIRED)
