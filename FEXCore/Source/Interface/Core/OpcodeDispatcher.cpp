@@ -4457,9 +4457,6 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
           auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
           Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
         }
-        if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-          AccessType = MemoryAccessType::NONTSO;
-        }
       }
 
       if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
@@ -4470,10 +4467,6 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
         }
         else {
           Tmp = GPR;
-        }
-
-        if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-          AccessType = MemoryAccessType::NONTSO;
         }
       }
     }
@@ -4493,6 +4486,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, X
       else {
         Src = _Constant(GPRSize * 8, 0);
       }
+    }
+
+    if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP ||
+         Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP)
+        && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
 
     LoadableType = true;
@@ -4742,6 +4741,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       // If AddrSize == 16 then we need to clear the upper bits
       // GPRSize will be 32 in this case
       MemStoreDst = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, AddrSize)), AddrSize * 8, 0, MemStoreDst);
+    }
+
+    if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP ||
+         Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP)
+        && AccessType == MemoryAccessType::DEFAULT) {
+      AccessType = MemoryAccessType::NONTSO;
     }
 
     MemStore = true;
