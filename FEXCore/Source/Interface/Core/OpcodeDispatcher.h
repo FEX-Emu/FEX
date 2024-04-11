@@ -703,7 +703,7 @@ public:
   OrderedNode *ReconstructX87StateFromFSW(OrderedNode *FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
-  template<uint64_t Lower, uint32_t Upper>
+  template<NamedVectorConstant constant>
   void FLD_Const(OpcodeArgs);
 
   void FBLD(OpcodeArgs);

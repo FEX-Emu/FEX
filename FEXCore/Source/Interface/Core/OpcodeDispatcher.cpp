@@ -6647,13 +6647,13 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTST},
       {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAM},
       // E6 = Invalid
-      {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::FLD_Const<0x8000'0000'0000'0000, 0b0'011'1111'1111'1111>}, // 1.0
-      {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::FLD_Const<0xD49A'784B'CD1B'8AFE, 0x4000>}, // log2l(10)
-      {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::FLD_Const<0xB8AA'3B29'5C17'F0BC, 0x3FFF>}, // log2l(e)
-      {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::FLD_Const<0xC90F'DAA2'2168'C235, 0x4000>}, // pi
-      {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::FLD_Const<0x9A20'9A84'FBCF'F799, 0x3FFD>}, // log10l(2)
-      {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::FLD_Const<0xB172'17F7'D1CF'79AC, 0x3FFE>}, // log(2)
-      {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::FLD_Const<0, 0>}, // 0.0
+      {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_ONE>},     // 1.0
+      {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10>}, // log2l(10)
+      {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E>},  // log2l(e)
+      {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_PI>},      // pi
+      {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2>}, // log10l(2)
+      {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG_2>},   // log(2)
+      {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_ZERO>},        // 0.0
 
       // EF = Invalid
       {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80F2XM1>},

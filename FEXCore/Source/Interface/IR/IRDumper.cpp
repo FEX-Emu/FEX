@@ -191,45 +191,44 @@ static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const
 }
 
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::NamedVectorConstant Arg) {
-  switch (Arg) {
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX: {
-      *out << "u16_incremental_index";
-      break;
+  *out << [Arg] {
+    // clang-format off
+    switch (Arg) {
+      case NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX:
+        return "u16_incremental_index";
+      case NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER:
+        return "u16_incremental_index_upper";
+      case NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT:
+        return "addsubps_invert";
+      case NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER:
+        return "addsubps_invert_upper";
+      case NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT:
+        return "addsubpd_invert";
+      case NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER:
+        return "addsubpd_invert_upper";
+      case NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT:
+        return "movmskps_shift";
+      case NamedVectorConstant::NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE:
+        return "aeskeygenassist_swizzle";
+      case NamedVectorConstant::NAMED_VECTOR_ZERO:
+        return "vectorzero";
+      case NamedVectorConstant::NAMED_VECTOR_X87_ONE:
+        return "x87_1_0";
+      case NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10:
+        return "x87_log2_10";
+      case NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E:
+        return "x87_log2_e";
+      case NamedVectorConstant::NAMED_VECTOR_X87_PI:
+        return "x87_pi";
+      case NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2:
+        return "x87_log10_2";
+      case NamedVectorConstant::NAMED_VECTOR_X87_LOG_2:
+        return "x87_log2";
+      default:
+        return "<Unknown Named Vector Constant>";
     }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER: {
-      *out << "u16_incremental_index_upper";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT: {
-      *out << "addsubps_invert";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPS_INVERT_UPPER: {
-      *out << "addsubps_invert_upper";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT: {
-      *out << "addsubpd_invert";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER: {
-      *out << "addsubpd_invert_upper";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT: {
-      *out << "movmskps_shift";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE: {
-      *out << "aeskeygenassist_swizzle";
-      break;
-    }
-    case FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO: {
-      *out << "vectorzero";
-      break;
-    }
-    default: *out << "<Unknown Named Vector Constant>"; break;
-  }
+    // clang-format on
+  }();
 }
 
 static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::OpSize Arg) {
