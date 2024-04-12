@@ -1,0 +1,109 @@
+Language: Cpp
+BasedOnStyle: WebKit
+AccessModifierOffset: -2
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments: None
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignEscapedNewlines: DontAlign
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: Inline
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: true
+AttributeMacros:
+  - JEMALLOC_NOTHROW
+  - FEX_ALIGNED
+  - FEX_ANNOTATE
+  - FEX_DEFAULT_VISIBILITY
+  - FEX_NAKED
+  - FEX_PACKED
+  - FEXCORE_PRESERVE_ALL_ATTR
+  - GLIBC_ALIAS_FUNCTION
+BinPackArguments: true
+BinPackParameters: true
+BitFieldColonSpacing: Both
+BreakAfterAttributes: Always # clang 16 required
+BreakBeforeBraces: Attach
+BreakBeforeBinaryOperators: None
+BreakBeforeInlineASMColon: OnlyMultiline # clang 16 required
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeColon
+ColumnLimit: 140
+CompactNamespaces: false
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+EmptyLineAfterAccessModifier: Leave
+EmptyLineBeforeAccessModifier: Leave
+ExperimentalAutoDetectBinPacking: false
+FixNamespaceComments: true
+IncludeBlocks: Preserve
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: AfterExternBlock
+IndentGotoLabels: false
+IndentPPDirectives: None
+IndentRequires: false
+IndentWidth: 2
+InsertBraces: true
+KeepEmptyLinesAtTheStartOfBlocks: true
+LambdaBodyIndentation: OuterScope
+LineEnding: LF # clang 16 required
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: Inner
+QualifierAlignment: Left
+PackConstructorInitializers: Never
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 2
+PenaltyBreakOpenParenthesis: 2
+PenaltyBreakString: 10
+PenaltyBreakTemplateDeclaration: 8
+PenaltyExcessCharacter: 2
+PenaltyReturnTypeOnItsOwnLine: 16
+PointerAlignment: Left
+RemoveBracesLLVM: false
+ReferenceAlignment: Left
+ReflowComments: true
+RequiresClausePosition: WithPreceding
+SeparateDefinitionBlocks: Leave
+SortIncludes: Never
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterOverloadedOperator: false
+  AfterRequiresInClause: true
+  BeforeNonEmptyParentheses: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Leave
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInParentheses: false
+Standard: c++20
+UseTab: Never
