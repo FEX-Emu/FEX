@@ -230,8 +230,8 @@ private:
 
   /**  @} */
 
-  uint32_t SpillSlots{};
-  using OpType = void (Arm64JITCore::*)(IR::IROp_Header const *IROp, IR::NodeID Node);
+  uint32_t SpillSlots {};
+  using OpType = void (Arm64JITCore::*)(const IR::IROp_Header* IROp, IR::NodeID Node);
 
   using ScalarBinaryOpCaller = std::function<void(ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2)>;
   void VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2);

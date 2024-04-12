@@ -85,7 +85,7 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
   Info[Core::OPINDEX_VPCMPISTRX] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPISTRX>::handle);
 }
 
-bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, IR::IROp_Header const *IROp, FallbackInfo *Info) {
+bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::IROp_Header* IROp, FallbackInfo* Info) {
   uint8_t OpSize = IROp->Size;
   switch(IROp->Op) {
     case IR::OP_F80CVTTO: {
