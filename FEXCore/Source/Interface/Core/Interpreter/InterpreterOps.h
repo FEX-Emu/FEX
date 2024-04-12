@@ -44,6 +44,6 @@ namespace FEXCore::CPU {
   class InterpreterOps {
     public:
       static void FillFallbackIndexPointers(uint64_t *Info);
-      static bool GetFallbackHandler(bool SupportsPreserveAllABI, IR::IROp_Header const *IROp, FallbackInfo *Info);
+      static bool GetFallbackHandler(bool SupportsPreserveAllABI, const IR::IROp_Header *IROp, FallbackInfo *Info);
   };
 } // namespace FEXCore::CPU
