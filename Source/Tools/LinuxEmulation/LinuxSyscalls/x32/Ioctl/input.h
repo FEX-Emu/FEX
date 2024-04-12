@@ -9,5 +9,4 @@ namespace FEX::HLE::x32 {
 namespace input {
 #include "LinuxSyscalls/x32/Ioctl/input.inl"
 }
-}
-
+} // namespace FEX::HLE::x32

@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string>
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char** argv, char** envp) {
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
@@ -22,23 +22,15 @@ int main(int argc, char **argv, char **envp) {
   FEXCore::Config::Load();
 
   // Load the arguments
-  optparse::OptionParser Parser = optparse::OptionParser()
-    .description("Simple application to get a couple of FEX options");
+  optparse::OptionParser Parser = optparse::OptionParser().description("Simple application to get a couple of FEX options");
 
-  Parser.add_option("--install-prefix")
-    .action("store_true")
-    .help("Print the FEX install prefix");
+  Parser.add_option("--install-prefix").action("store_true").help("Print the FEX install prefix");
 
-  Parser.add_option("--app")
-    .help("Load an application profile for this application if it exists");
+  Parser.add_option("--app").help("Load an application profile for this application if it exists");
 
-  Parser.add_option("--current-rootfs")
-    .action("store_true")
-    .help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
+  Parser.add_option("--current-rootfs").action("store_true").help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
 
-  Parser.add_option("--version")
-    .action("store_true")
-    .help("Print the installed FEX-Emu version");
+  Parser.add_option("--version").action("store_true").help("Print the installed FEX-Emu version");
 
   optparse::Values Options = Parser.parse_args(argc, argv);
 

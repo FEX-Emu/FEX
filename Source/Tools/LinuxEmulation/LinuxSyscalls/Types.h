@@ -60,7 +60,7 @@ struct FEX_PACKED epoll_event_x86 {
   epoll_event_x86() = delete;
 
   operator struct epoll_event() const {
-    epoll_event event{};
+    epoll_event event {};
     event.events = events;
     event.data = data;
     return event;
@@ -78,16 +78,16 @@ static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 // Due to the way this definition cyclic depends inside of includes, redefine it
 // This works around some terrible compile errors on some platforms
 struct fex_seminfo {
-	int32_t semmap;
-	int32_t semmni;
-	int32_t semmns;
-	int32_t semmnu;
-	int32_t semmsl;
-	int32_t semopm;
-	int32_t semume;
-	int32_t semusz;
-	int32_t semvmx;
-	int32_t semaem;
+  int32_t semmap;
+  int32_t semmni;
+  int32_t semmns;
+  int32_t semmnu;
+  int32_t semmsl;
+  int32_t semopm;
+  int32_t semume;
+  int32_t semusz;
+  int32_t semvmx;
+  int32_t semaem;
 };
 
 struct FEX_PACKED GuestSAMask {
@@ -97,7 +97,7 @@ struct FEX_PACKED GuestSAMask {
 struct FEX_PACKED GuestSigAction {
   union {
     void (*handler)(int);
-    void (*sigaction)(int, siginfo_t *, void*);
+    void (*sigaction)(int, siginfo_t*, void*);
   } sigaction_handler;
 
   uint64_t sa_flags;
@@ -105,4 +105,4 @@ struct FEX_PACKED GuestSigAction {
   GuestSAMask sa_mask;
 };
 
-}
+} // namespace FEX::HLE

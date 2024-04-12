@@ -6,6 +6,6 @@
 #include <stack>
 
 namespace fextl {
-  template<class T, class Container = fextl::deque<T>>
-  using stack = std::stack<T, Container>;
+template<class T, class Container = fextl::deque<T>>
+using stack = std::stack<T, Container>;
 }

@@ -11,7 +11,7 @@ struct OpaqueType {
 };
 
 OpaqueType* MakeOpaqueType(uint32_t data) {
-  return new OpaqueType { data };
+  return new OpaqueType {data};
 }
 
 uint32_t ReadOpaqueTypeData(OpaqueType* value) {
@@ -23,7 +23,7 @@ void DestroyOpaqueType(OpaqueType* value) {
 }
 
 UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-  return UnionType { .c = { a, b, c, d } };
+  return UnionType {.c = {a, b, c, d}};
 }
 
 uint32_t GetUnionTypeA(UnionType* value) {
@@ -31,7 +31,7 @@ uint32_t GetUnionTypeA(UnionType* value) {
 }
 
 ReorderingType MakeReorderingType(uint32_t a, uint32_t b) {
-  return ReorderingType { .a = a, .b = b };
+  return ReorderingType {.a = a, .b = b};
 }
 
 uint32_t GetReorderingTypeMember(const ReorderingType* data, int index) {

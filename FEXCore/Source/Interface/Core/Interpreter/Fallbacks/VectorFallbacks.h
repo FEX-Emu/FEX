@@ -15,9 +15,9 @@ namespace FEXCore::CPU {
 template<>
 struct OpHandlers<IR::OP_VPCMPESTRX> {
   enum class AggregationOp {
-    EqualAny     = 0b00,
-    Ranges       = 0b01,
-    EqualEach    = 0b10,
+    EqualAny = 0b00,
+    Ranges = 0b01,
+    EqualEach = 0b10,
     EqualOrdered = 0b11,
   };
 
@@ -35,8 +35,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     NegativeMasked,
   };
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t handle(uint64_t RAX, uint64_t RDX, __uint128_t lhs, __uint128_t rhs, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(uint64_t RAX, uint64_t RDX, __uint128_t lhs, __uint128_t rhs, uint16_t control) {
     // Subtract by 1 in order to make validity limits 0-based
     const auto valid_lhs = GetExplicitLength(RAX, control) - 1;
     const auto valid_rhs = GetExplicitLength(RDX, control) - 1;
@@ -45,8 +44,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   }
 
   // Main PCMPXSTRX algorithm body. Allows for reuse with both implicit and explicit length variants.
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t MainBody(const __uint128_t& lhs, int valid_lhs, const __uint128_t& rhs, int valid_rhs, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t MainBody(const __uint128_t& lhs, int valid_lhs, const __uint128_t& rhs, int valid_rhs, uint16_t control) {
     const uint32_t aggregation = PerformAggregation(lhs, valid_lhs, rhs, valid_rhs, control);
     const int32_t upper_limit = (16 >> (control & 1)) - 1;
 
@@ -70,8 +68,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     return result | (flags << 16);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static int32_t GetExplicitLength(uint64_t reg, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static int32_t GetExplicitLength(uint64_t reg, uint16_t control) {
     // Bit 8 controls whether or not the reg value is 64-bit or 32-bit.
     int64_t value = 0;
     if (((control >> 8) & 1) != 0) {
@@ -94,62 +91,50 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     return std::abs(static_cast<int>(value));
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static int32_t GetElement(const __uint128_t& vec, int32_t index, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static int32_t GetElement(const __uint128_t& vec, int32_t index, uint16_t control) {
     const auto* vec_ptr = reinterpret_cast<const uint8_t*>(&vec);
 
     // Control bits [1:0] define the data type being dealt with.
     switch (static_cast<SourceData>(control & 0b11)) {
-    case SourceData::U8:
-      return static_cast<int32_t>(vec_ptr[index]);
+    case SourceData::U8: return static_cast<int32_t>(vec_ptr[index]);
     case SourceData::U16: {
-      uint16_t value{};
+      uint16_t value {};
       std::memcpy(&value, vec_ptr + (sizeof(uint16_t) * static_cast<size_t>(index)), sizeof(value));
       return value;
     }
-    case SourceData::S8:
-      return static_cast<int8_t>(vec_ptr[index]);
+    case SourceData::S8: return static_cast<int8_t>(vec_ptr[index]);
     case SourceData::S16:
     default: {
-      int16_t value{};
+      int16_t value {};
       std::memcpy(&value, vec_ptr + (sizeof(int16_t) * static_cast<size_t>(index)), sizeof(value));
       return value;
     }
     }
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t PerformAggregation(const __uint128_t& lhs, int32_t valid_lhs,
-                                     const __uint128_t& rhs, int32_t valid_rhs,
-                                     uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t
+  PerformAggregation(const __uint128_t& lhs, int32_t valid_lhs, const __uint128_t& rhs, int32_t valid_rhs, uint16_t control) {
     switch (static_cast<AggregationOp>((control >> 2) & 0b11)) {
-    case AggregationOp::EqualAny:
-      return HandleEqualAny(lhs, valid_lhs, rhs, valid_rhs, control);
-    case AggregationOp::Ranges:
-      return HandleRanges(lhs, valid_lhs, rhs, valid_rhs, control);
-    case AggregationOp::EqualEach:
-      return HandleEqualEach(lhs, valid_lhs, rhs, valid_rhs, control);
+    case AggregationOp::EqualAny: return HandleEqualAny(lhs, valid_lhs, rhs, valid_rhs, control);
+    case AggregationOp::Ranges: return HandleRanges(lhs, valid_lhs, rhs, valid_rhs, control);
+    case AggregationOp::EqualEach: return HandleEqualEach(lhs, valid_lhs, rhs, valid_rhs, control);
     case AggregationOp::EqualOrdered:
-    default:
-      return HandleEqualOrdered(lhs, valid_lhs, rhs, valid_rhs, control);
+    default: return HandleEqualOrdered(lhs, valid_lhs, rhs, valid_rhs, control);
     }
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t HandlePolarity(uint32_t value, uint16_t control, int upper_limit, int valid_rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t HandlePolarity(uint32_t value, uint16_t control, int upper_limit, int valid_rhs) {
     switch (static_cast<Polarity>((control >> 4) & 0b11)) {
-      case Polarity::Negative:
-        return value ^ ((2U << upper_limit) - 1);
-      case Polarity::NegativeMasked:
-        return value ^ ((1U << (valid_rhs + 1)) - 1);
-      case Polarity::Positive:
-      case Polarity::PositiveMasked:
-      default:
-        // Both positive masking and positive polarity are documented
-        // as both being equivalent to "IntRes2 = IntRes1", where IntRes1
-        // is our 'value' parameter, so we don't need to do anything in
-        // these cases except return the same value.
-        return value;
+    case Polarity::Negative: return value ^ ((2U << upper_limit) - 1);
+    case Polarity::NegativeMasked: return value ^ ((1U << (valid_rhs + 1)) - 1);
+    case Polarity::Positive:
+    case Polarity::PositiveMasked:
+    default:
+      // Both positive masking and positive polarity are documented
+      // as both being equivalent to "IntRes2 = IntRes1", where IntRes1
+      // is our 'value' parameter, so we don't need to do anything in
+      // these cases except return the same value.
+      return value;
     }
   }
 
@@ -175,10 +160,8 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                   │
   // 'c' match ────────┘
   //
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t HandleEqualAny(const __uint128_t& lhs, int32_t valid_lhs,
-                                 const __uint128_t& rhs, int32_t valid_rhs,
-                                 uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t
+  HandleEqualAny(const __uint128_t& lhs, int32_t valid_lhs, const __uint128_t& rhs, int32_t valid_rhs, uint16_t control) {
     uint32_t result = 0;
 
     for (int j = valid_rhs; j >= 0; j--) {
@@ -222,10 +205,8 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                                    │
   // 'Z' >= 'z' && 'A' <= 'z' ──────────┘
   //
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t HandleRanges(const __uint128_t& lhs, int32_t valid_lhs,
-                               const __uint128_t& rhs, int32_t valid_rhs,
-                               uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t
+  HandleRanges(const __uint128_t& lhs, int32_t valid_lhs, const __uint128_t& rhs, int32_t valid_rhs, uint16_t control) {
     uint32_t result = 0;
 
     for (int j = valid_rhs; j >= 0; j--) {
@@ -275,10 +256,8 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                      │
   // 'a' == 'a' ──────────┘
   //
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t HandleEqualEach(const __uint128_t& lhs, int32_t valid_lhs,
-                                  const __uint128_t& rhs, int32_t valid_rhs,
-                                  uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t
+  HandleEqualEach(const __uint128_t& lhs, int32_t valid_lhs, const __uint128_t& rhs, int32_t valid_rhs, uint16_t control) {
     const auto upper_limit = (16 >> (control & 1)) - 1;
     const auto max_valid = std::max(valid_lhs, valid_rhs);
     const auto min_valid = std::min(valid_lhs, valid_rhs);
@@ -330,10 +309,8 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   //                      │
   // At index 0 ──────────┘
   //
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t HandleEqualOrdered(const __uint128_t& lhs, int32_t valid_lhs,
-                                     const __uint128_t& rhs, int32_t valid_rhs,
-                                     uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t
+  HandleEqualOrdered(const __uint128_t& lhs, int32_t valid_lhs, const __uint128_t& rhs, int32_t valid_rhs, uint16_t control) {
     const auto upper_limit = (16 >> (control & 1)) - 1;
 
     // Edge case!
@@ -345,8 +322,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     }
 
     uint32_t result = 0;
-    const int initial = valid_rhs == upper_limit ? valid_rhs
-                                                 : valid_rhs - valid_lhs;
+    const int initial = valid_rhs == upper_limit ? valid_rhs : valid_rhs - valid_lhs;
     for (int j = initial; j >= 0; j--) {
       result <<= 1;
 
@@ -379,8 +355,7 @@ struct OpHandlers<IR::OP_VPCMPISTRX> {
   //      to be the max length possible for the given character size specified
   //      in the control flags (16 characters for 8-bit, and 8 characters for 16-bit).
   //
-  FEXCORE_PRESERVE_ALL_ATTR
-  static uint32_t handle(__uint128_t lhs, __uint128_t rhs, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(__uint128_t lhs, __uint128_t rhs, uint16_t control) {
     // Subtract by 1 in order to make validity limits 0-based
     const auto valid_lhs = GetImplicitLength(lhs, control) - 1;
     const auto valid_rhs = GetImplicitLength(rhs, control) - 1;
@@ -388,8 +363,7 @@ struct OpHandlers<IR::OP_VPCMPISTRX> {
     return OpHandlers<IR::OP_VPCMPESTRX>::MainBody(lhs, valid_lhs, rhs, valid_rhs, control);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR
-  static int32_t GetImplicitLength(const __uint128_t& data, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static int32_t GetImplicitLength(const __uint128_t& data, uint16_t control) {
     const auto* data_u8 = reinterpret_cast<const uint8_t*>(&data);
     const auto is_using_words = (control & 1) != 0;
 
@@ -399,7 +373,7 @@ struct OpHandlers<IR::OP_VPCMPISTRX> {
       const auto get_word = [data_u8](int32_t index) {
         const auto* src = data_u8 + (index * sizeof(uint16_t));
 
-        uint16_t element{};
+        uint16_t element {};
         std::memcpy(&element, src, sizeof(uint16_t));
         return element;
       };

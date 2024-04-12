@@ -15,8 +15,8 @@ struct InternalThreadState;
 namespace FEXCore::CPU {
 class CPUBackend;
 
-[[nodiscard]] fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *ctx,
-                                                             FEXCore::Core::InternalThreadState *Thread);
+[[nodiscard]]
+fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread);
 CPUBackendFeatures GetArm64JITBackendFeatures();
 
 } // namespace FEXCore::CPU

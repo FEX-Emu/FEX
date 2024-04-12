@@ -14,9 +14,9 @@ std::optional<CapturedHandlerState> from_handler;
 int capturing_handler_skip = 0;
 
 // Signal handler that writes its context data to the global from_handler
-static void CapturingHandler(int signal, siginfo_t *siginfo, void* context) {
+static void CapturingHandler(int signal, siginfo_t* siginfo, void* context) {
   ucontext_t* _context = (ucontext_t*)context;
-  from_handler = { _context->uc_mcontext, signal, siginfo->si_code };
+  from_handler = {_context->uc_mcontext, signal, siginfo->si_code};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else
@@ -79,7 +79,7 @@ struct CapturedHandlerState_32 {
 
 struct CapturedHandlerState_regparm_32 {
   int signal;
-  siginfo_t *siginfo;
+  siginfo_t* siginfo;
   void* context;
 };
 
@@ -102,10 +102,10 @@ static void CapturingHandler_non_realtime(int signal, ...) {
   //  uint32_t pret;
   //  uint32_t signal;
   //  sigcontext_32 sc;
-  sigframe_ia32 *frame = (sigframe_ia32 *)((size_t)__builtin_frame_address(0) + 4);
-  sigcontext_32 *context = &frame->sc;
+  sigframe_ia32* frame = (sigframe_ia32*)((size_t)__builtin_frame_address(0) + 4);
+  sigcontext_32* context = &frame->sc;
 
-  from_handler_32 = { *context, signal, 0 };
+  from_handler_32 = {*context, signal, 0};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else
@@ -122,10 +122,10 @@ static void CapturingHandler_non_realtime(int signal, ...) {
  * The arguments are passed on the stack for this function.
  */
 [[gnu::regparm(3)]]
-static void CapturingHandler_realtime_regparm(int signal, siginfo_t *siginfo, void* context) {
+static void CapturingHandler_realtime_regparm(int signal, siginfo_t* siginfo, void* context) {
   ucontext_t* _context = (ucontext_t*)context;
 
-  from_handler = { _context->uc_mcontext, signal, siginfo->si_code };
+  from_handler = {_context->uc_mcontext, signal, siginfo->si_code};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else
@@ -144,7 +144,7 @@ static void CapturingHandler_realtime_regparm(int signal, siginfo_t *siginfo, vo
  * The arguments are passed on in registers for this function.
  */
 [[gnu::regparm(3)]]
-static void CapturingHandler_non_realtime_regparm(int signal, siginfo_t *siginfo, void* context) {
+static void CapturingHandler_non_realtime_regparm(int signal, siginfo_t* siginfo, void* context) {
   // Getting the context frame is really hard, so hardwire some magic.
   // Getting the frame address returns
   // struct frame {
@@ -153,11 +153,11 @@ static void CapturingHandler_non_realtime_regparm(int signal, siginfo_t *siginfo
   //  uint32_t signal;
   //  sigcontext_32 sc;
   // If volatile isn't used then the compiler optimizes this out.
-  volatile sigframe_ia32 *frame = (volatile sigframe_ia32 *)((size_t)__builtin_frame_address(0) + 4);
-  volatile sigcontext_32 *context_stack = &frame->sc;
+  volatile sigframe_ia32* frame = (volatile sigframe_ia32*)((size_t)__builtin_frame_address(0) + 4);
+  volatile sigcontext_32* context_stack = &frame->sc;
 
   // siginfo and context should be nullptr.
-  from_handler_regparm_32 = { signal, siginfo, context };
+  from_handler_regparm_32 = {signal, siginfo, context};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else
@@ -179,12 +179,12 @@ static void CapturingHandler_realtime() {
   // struct frame {
   //  uint32_t ????;
   //  rt_sigframe_ia32 frame;
-  rt_sigframe_ia32 *frame = (rt_sigframe_ia32 *)((size_t)__builtin_frame_address(0) + 4);
+  rt_sigframe_ia32* frame = (rt_sigframe_ia32*)((size_t)__builtin_frame_address(0) + 4);
   int signal = frame->signal;
-  siginfo_t *siginfo = &frame->info;
+  siginfo_t* siginfo = &frame->info;
   ucontext_t* _context = &frame->uc;
 
-  from_handler = { _context->uc_mcontext, signal, siginfo->si_code };
+  from_handler = {_context->uc_mcontext, signal, siginfo->si_code};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else
@@ -202,10 +202,10 @@ static void CapturingHandler_realtime() {
  * This one is specifically is for testing if the glibc handler is working correctly.
  * It matches `CapturingHandler_realtime_regparm` but without the `regparm` ABI.
  */
-static void CapturingHandler_realtime_glibc_helper(int signal, siginfo_t *siginfo, void* context) {
+static void CapturingHandler_realtime_glibc_helper(int signal, siginfo_t* siginfo, void* context) {
   ucontext_t* _context = (ucontext_t*)context;
 
-  from_handler = { _context->uc_mcontext, signal, siginfo->si_code };
+  from_handler = {_context->uc_mcontext, signal, siginfo->si_code};
 #ifdef REG_RIP
 #define FEX_IP_REG REG_RIP
 #else

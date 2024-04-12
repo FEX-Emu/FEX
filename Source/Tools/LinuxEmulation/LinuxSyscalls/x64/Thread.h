@@ -13,6 +13,6 @@ struct CpuStateFrame;
 }
 
 namespace FEX::HLE::x64 {
-  uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls);
-  void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame);
-}
+uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls);
+void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame* Frame);
+} // namespace FEX::HLE::x64

@@ -10,5 +10,4 @@ namespace FEX::HLE::x64 {
 namespace sockios {
 #include "LinuxSyscalls/x64/Ioctl/sockios.inl"
 }
-}
-
+} // namespace FEX::HLE::x64

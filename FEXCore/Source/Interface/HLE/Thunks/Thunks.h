@@ -13,28 +13,28 @@ $end_info$
 #include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::Context {
-  class ContextImpl;
+class ContextImpl;
 }
 
 namespace FEXCore::Core {
-  struct InternalThreadState;
+struct InternalThreadState;
 }
 
 namespace FEXCore::IR {
-  struct SHA256Sum;
+struct SHA256Sum;
 }
 
 namespace FEXCore {
-    typedef void ThunkedFunction(void* ArgsRv);
+typedef void ThunkedFunction(void* ArgsRv);
 
-    class ThunkHandler {
-    public:
-      virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) = 0;
-      virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
-      virtual ~ThunkHandler() { }
+class ThunkHandler {
+public:
+  virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum& sha256) = 0;
+  virtual void RegisterTLSState(FEXCore::Core::InternalThreadState* Thread) = 0;
+  virtual ~ThunkHandler() {}
 
-      static fextl::unique_ptr<ThunkHandler> Create();
+  static fextl::unique_ptr<ThunkHandler> Create();
 
-      virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
-    };
+  virtual void AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) = 0;
 };
+}; // namespace FEXCore

@@ -9,4 +9,4 @@ namespace FEX::HLE::x64 {
 namespace input {
 #include "LinuxSyscalls/x64/Ioctl/input.inl"
 }
-}
+} // namespace FEX::HLE::x64

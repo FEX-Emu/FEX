@@ -20,9 +20,9 @@ uint32_t ReadOpaqueTypeData(OpaqueType*);
 void DestroyOpaqueType(OpaqueType*);
 
 union UnionType {
-    uint32_t a;
-    int32_t b;
-    uint8_t c[4];
+  uint32_t a;
+  int32_t b;
+  uint8_t c[4];
 };
 
 UnionType MakeUnionType(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
@@ -36,11 +36,11 @@ uint32_t GetUnionTypeA(UnionType*);
 // correct position.
 struct ReorderingType {
 #if !defined(GUEST_THUNK_LIBRARY)
-    uint32_t a;
-    uint32_t b;
+  uint32_t a;
+  uint32_t b;
 #else
-    uint32_t b;
-    uint32_t a;
+  uint32_t b;
+  uint32_t a;
 #endif
 };
 
@@ -57,8 +57,8 @@ uint32_t GetReorderingTypeMemberWithoutRepacking(const ReorderingType*, int inde
 // We enable custom repacking on the "data" member, with repacking code that
 // sets the first bit of "custom_repack_invoked" to 1 on entry.
 struct CustomRepackedType {
-    ReorderingType* data;
-    int custom_repack_invoked;
+  ReorderingType* data;
+  int custom_repack_invoked;
 };
 
 // Should return true if the custom repacker set "custom_repack_invoked" to true
@@ -73,5 +73,4 @@ enum DivType : uint8_t {};
 enum DivType : uint32_t {};
 #endif
 int FunctionWithDivergentSignature(DivType, DivType, DivType, DivType);
-
 }

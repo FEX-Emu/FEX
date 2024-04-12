@@ -12,14 +12,13 @@
 extern "C" void IntInstruction();
 
 #pragma GCC diagnostic ignored "-Wattributes" // Suppress warning in case control-flow checks aren't enabled
-__attribute__((naked, nocf_check))
-  static void InvalidINT() {
+__attribute__((naked, nocf_check)) static void InvalidINT() {
   __asm volatile(R"(
   IntInstruction:
   ud2;
   ret;
   )");
-  }
+}
 
 unsigned long EXPECTED_RIP = reinterpret_cast<unsigned long>(&IntInstruction);
 constexpr int EXPECTED_TRAPNO = 6;
@@ -29,7 +28,7 @@ constexpr int EXPECTED_SIGNAL = SIGILL;
 
 TEST_CASE("Signals: Invalid UD2") {
   capturing_handler_skip = 2;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);

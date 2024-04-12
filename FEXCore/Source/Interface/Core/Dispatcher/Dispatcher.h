@@ -23,7 +23,7 @@ struct GuestSigAction;
 namespace FEXCore::Core {
 struct CpuStateFrame;
 struct InternalThreadState;
-}
+} // namespace FEXCore::Core
 
 namespace FEXCore::Context {
 class ContextImpl;
@@ -31,51 +31,50 @@ class ContextImpl;
 
 namespace FEXCore::CPU {
 
-#define STATE_PTR(STATE_TYPE, FIELD) \
-  STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
+#define STATE_PTR(STATE_TYPE, FIELD) STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
 
 class Dispatcher final : public Arm64Emitter {
 public:
-  static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl *CTX);
+  static fextl::unique_ptr<Dispatcher> Create(FEXCore::Context::ContextImpl* CTX);
 
-  Dispatcher(FEXCore::Context::ContextImpl *ctx);
+  Dispatcher(FEXCore::Context::ContextImpl* ctx);
   ~Dispatcher();
 
   /**
    * @name Dispatch Helper functions
    * @{ */
-  uint64_t ThreadStopHandlerAddress{};
-  uint64_t ThreadStopHandlerAddressSpillSRA{};
-  uint64_t AbsoluteLoopTopAddress{};
-  uint64_t AbsoluteLoopTopAddressFillSRA{};
-  uint64_t ThreadPauseHandlerAddress{};
-  uint64_t ThreadPauseHandlerAddressSpillSRA{};
-  uint64_t ExitFunctionLinkerAddress{};
-  uint64_t SignalHandlerReturnAddress{};
-  uint64_t SignalHandlerReturnAddressRT{};
-  uint64_t GuestSignal_SIGILL{};
-  uint64_t GuestSignal_SIGTRAP{};
-  uint64_t GuestSignal_SIGSEGV{};
-  uint64_t IntCallbackReturnAddress{};
+  uint64_t ThreadStopHandlerAddress {};
+  uint64_t ThreadStopHandlerAddressSpillSRA {};
+  uint64_t AbsoluteLoopTopAddress {};
+  uint64_t AbsoluteLoopTopAddressFillSRA {};
+  uint64_t ThreadPauseHandlerAddress {};
+  uint64_t ThreadPauseHandlerAddressSpillSRA {};
+  uint64_t ExitFunctionLinkerAddress {};
+  uint64_t SignalHandlerReturnAddress {};
+  uint64_t SignalHandlerReturnAddressRT {};
+  uint64_t GuestSignal_SIGILL {};
+  uint64_t GuestSignal_SIGTRAP {};
+  uint64_t GuestSignal_SIGSEGV {};
+  uint64_t IntCallbackReturnAddress {};
 
-  uint64_t PauseReturnInstruction{};
+  uint64_t PauseReturnInstruction {};
 
   /**  @} */
 
-  uint64_t Start{};
-  uint64_t End{};
+  uint64_t Start {};
+  uint64_t End {};
 
-  void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread);
+  void InitThreadPointers(FEXCore::Core::InternalThreadState* Thread);
 
 #ifdef VIXL_SIMULATOR
-  void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) ;
-  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame);
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
 #else
-  void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
     DispatchPtr(Frame);
   }
 
-  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP) {
     CallbackPtr(Frame, RIP);
   }
 #endif
@@ -103,21 +102,21 @@ public:
   }
 
 protected:
-  FEXCore::Context::ContextImpl *CTX;
+  FEXCore::Context::ContextImpl* CTX;
 
-  using AsmDispatch = void(*)(FEXCore::Core::CpuStateFrame *Frame);
-  using JITCallback = void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
+  using AsmDispatch = void (*)(FEXCore::Core::CpuStateFrame* Frame);
+  using JITCallback = void (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
 
   AsmDispatch DispatchPtr;
   JITCallback CallbackPtr;
 private:
   // Long division helpers
-  uint64_t LUDIVHandlerAddress{};
-  uint64_t LDIVHandlerAddress{};
-  uint64_t LUREMHandlerAddress{};
-  uint64_t LREMHandlerAddress{};
+  uint64_t LUDIVHandlerAddress {};
+  uint64_t LDIVHandlerAddress {};
+  uint64_t LUREMHandlerAddress {};
+  uint64_t LREMHandlerAddress {};
 
   void EmitDispatcher();
 };
 
-}
+} // namespace FEXCore::CPU

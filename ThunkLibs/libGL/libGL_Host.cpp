@@ -25,7 +25,7 @@ $end_info$
 #include "thunkgen_host_libGL.inl"
 
 void* symbolFromGlXGetProcAddr(void*, const char* name) {
-    return (void*)glXGetProcAddress((const GLubyte*)name);
+  return (void*)glXGetProcAddress((const GLubyte*)name);
 }
 
 EXPORTS(libGL)

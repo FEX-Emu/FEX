@@ -9,7 +9,8 @@
 #include <winternl.h>
 
 namespace FEX::Windows {
-void InvalidationTracker::HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, ULONG Prot) {
+void InvalidationTracker::HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size,
+                                                             ULONG Prot) {
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
 
@@ -27,14 +28,14 @@ void InvalidationTracker::HandleMemoryProtectionNotification(FEXCore::Core::Inte
   }
 }
 
-void InvalidationTracker::InvalidateContainingSection(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, bool Free) {
+void InvalidationTracker::InvalidateContainingSection(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, bool Free) {
   MEMORY_BASIC_INFORMATION Info;
-  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void *>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr))
+  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr)) {
     return;
+  }
 
   const auto SectionBase = reinterpret_cast<uint64_t>(Info.AllocationBase);
-  const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize
-                           - reinterpret_cast<uint64_t>(Info.AllocationBase);
+  const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize - reinterpret_cast<uint64_t>(Info.AllocationBase);
   Thread->CTX->InvalidateGuestCodeRange(Thread, SectionBase, SectionSize);
 
   if (Free) {
@@ -43,7 +44,7 @@ void InvalidationTracker::InvalidateContainingSection(FEXCore::Core::InternalThr
   }
 }
 
-void InvalidationTracker::InvalidateAlignedInterval(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, bool Free) {
+void InvalidationTracker::InvalidateAlignedInterval(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size, bool Free) {
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
   Thread->CTX->InvalidateGuestCodeRange(Thread, AlignedBase, AlignedSize);
@@ -61,7 +62,7 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
   do {
     const auto Query = RWXIntervals.Query(Address);
     if (Query.Enclosed) {
-      void *TmpAddress = reinterpret_cast<void *>(Address);
+      void* TmpAddress = reinterpret_cast<void*>(Address);
       SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
       ULONG TmpProt;
       NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READ, &TmpProt);
@@ -74,16 +75,17 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
   } while (Address < End);
 }
 
-bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState *Thread, uint64_t FaultAddress) {
+bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t FaultAddress) {
   const bool NeedsInvalidate = [&](uint64_t Address) {
     std::unique_lock Lock(RWXIntervalsLock);
     const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
     // Invalidate just the single faulting page
-    if (!Enclosed)
+    if (!Enclosed) {
       return false;
+    }
 
     ULONG TmpProt;
-    void *TmpAddress = reinterpret_cast<void *>(Address);
+    void* TmpAddress = reinterpret_cast<void*>(Address);
     SIZE_T TmpSize = 1;
     NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
     return true;
@@ -96,4 +98,4 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
   }
   return false;
 }
-}
+} // namespace FEX::Windows

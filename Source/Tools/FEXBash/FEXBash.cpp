@@ -23,7 +23,7 @@ $end_info$
 #include <unistd.h>
 #include <vector>
 
-int main(int argc, char **argv, char **const envp) {
+int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
@@ -53,7 +53,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!std::filesystem::exists(FEXInterpreterPath)) {
     FEXInterpreterPath = FEXCore::Config::FindContainerPrefix() + FEXINTERPRETER_PATH;
   }
-  const char *FEXArgs[] = {
+  const char* FEXArgs[] = {
     FEXInterpreterPath.c_str(),
     Args.empty() ? BinBashPath.c_str() : BinShPath.c_str(),
     "-c",
@@ -88,15 +88,15 @@ int main(int argc, char **argv, char **const envp) {
   // But in case the user has set the PS1 environment variable then still prepend
   //
   // To get the shell variables as an environment variable then you can do `PS1=$PS1 FEXBash`
-  std::vector<const char *> Envp{};
-  char *PS1Env{};
+  std::vector<const char*> Envp {};
+  char* PS1Env {};
   for (unsigned i = 0;; ++i) {
-    if (envp[i] == nullptr)
+    if (envp[i] == nullptr) {
       break;
+    }
     if (strstr(envp[i], "PS1=") == envp[i]) {
       PS1Env = envp[i];
-    }
-    else {
+    } else {
       Envp.emplace_back(envp[i]);
     }
   }
@@ -108,5 +108,5 @@ int main(int argc, char **argv, char **const envp) {
   Envp.emplace_back(PS1.c_str());
   Envp.emplace_back(nullptr);
 
-  return execve(Argv[0], const_cast<char *const*>(&Argv.at(0)), const_cast<char *const*>(&Envp[0]));
+  return execve(Argv[0], const_cast<char* const*>(&Argv.at(0)), const_cast<char* const*>(&Envp[0]));
 }

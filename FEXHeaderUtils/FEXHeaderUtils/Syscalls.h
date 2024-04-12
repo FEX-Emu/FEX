@@ -52,7 +52,7 @@ namespace FHU::Syscalls {
 #endif
 
 #ifndef _WIN32
-inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
+inline int32_t getcpu(uint32_t* cpu, uint32_t* node) {
   // Third argument is unused
 #if defined(HAS_SYSCALL_GETCPU) && HAS_SYSCALL_GETCPU
   return ::getcpu(cpu, node);
@@ -77,15 +77,15 @@ inline int32_t tgkill(pid_t tgid, pid_t tid, int sig) {
 #endif
 }
 
-inline int32_t statx(int dirfd, const char *pathname, int32_t flags, uint32_t mask, void *statxbuf) {
+inline int32_t statx(int dirfd, const char* pathname, int32_t flags, uint32_t mask, void* statxbuf) {
 #if defined(HAS_SYSCALL_STATX) && HAS_SYSCALL_STATX
-  return ::statx(dirfd, pathname, flags, mask, reinterpret_cast<struct statx *__restrict>(statxbuf));
+  return ::statx(dirfd, pathname, flags, mask, reinterpret_cast<struct statx* __restrict>(statxbuf));
 #else
   return ::syscall(SYS_statx, dirfd, pathname, flags, mask, statxbuf);
 #endif
 }
 
-inline int32_t renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags) {
+inline int32_t renameat2(int olddirfd, const char* oldpath, int newdirfd, const char* newpath, unsigned int flags) {
 #if defined(HAS_SYSCALL_STATX) && HAS_SYSCALL_STATX
   return ::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
 #else
@@ -98,7 +98,7 @@ inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
 }
 #else
 
-inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
+inline int32_t getcpu(uint32_t* cpu, uint32_t* node) {
   if (cpu) {
     *cpu = GetCurrentProcessorNumber();
   }
@@ -119,4 +119,4 @@ inline int32_t gettid() {
 
 #endif
 
-}
+} // namespace FHU::Syscalls

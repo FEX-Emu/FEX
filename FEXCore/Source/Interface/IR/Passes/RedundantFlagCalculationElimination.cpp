@@ -53,271 +53,259 @@ struct FlagInfo {
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 
 private:
-  FlagInfo Classify(IROp_Header *Node);
+  FlagInfo Classify(IROp_Header* Node);
   unsigned FlagForOffset(unsigned Offset);
   unsigned FlagsForCondClassType(CondClassType Cond);
 };
 
-unsigned
-DeadFlagCalculationEliminination::FlagForOffset(unsigned Offset)
-{
-  return Offset == offsetof(FEXCore::Core::CPUState, pf_raw) ? FLAG_P :
-         Offset == offsetof(FEXCore::Core::CPUState, af_raw) ? FLAG_A :
-         0;
+unsigned DeadFlagCalculationEliminination::FlagForOffset(unsigned Offset) {
+  return Offset == offsetof(FEXCore::Core::CPUState, pf_raw) ? FLAG_P : Offset == offsetof(FEXCore::Core::CPUState, af_raw) ? FLAG_A : 0;
 };
 
-unsigned
-DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond)
-{
+unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
   switch (Cond) {
-  case COND_AL:
-    return 0;
+  case COND_AL: return 0;
 
   case COND_MI:
-  case COND_PL:
-    return FLAG_N;
+  case COND_PL: return FLAG_N;
 
   case COND_EQ:
-  case COND_NEQ:
-    return FLAG_Z;
+  case COND_NEQ: return FLAG_Z;
 
   case COND_UGE:
-  case COND_ULT:
-    return FLAG_C;
+  case COND_ULT: return FLAG_C;
 
   case COND_VS:
   case COND_VC:
   case COND_FU:
-  case COND_FNU:
-    return FLAG_V;
+  case COND_FNU: return FLAG_V;
 
   case COND_UGT:
-  case COND_ULE:
-    return FLAG_Z | FLAG_C;
+  case COND_ULE: return FLAG_Z | FLAG_C;
 
   case COND_SGE:
   case COND_SLT:
   case COND_FLU:
-  case COND_FGE:
-    return FLAG_N | FLAG_V;
+  case COND_FGE: return FLAG_N | FLAG_V;
 
   case COND_SGT:
   case COND_SLE:
   case COND_FLEU:
-  case COND_FGT:
-    return FLAG_N | FLAG_Z | FLAG_V;
+  case COND_FGT: return FLAG_N | FLAG_Z | FLAG_V;
 
-  default:
-    LOGMAN_THROW_AA_FMT(false, "unknown cond class type");
-    return FLAG_NZCV;
+  default: LOGMAN_THROW_AA_FMT(false, "unknown cond class type"); return FLAG_NZCV;
   }
 }
 
-FlagInfo
-DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
-{
+FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   switch (IROp->Op) {
-    case OP_ANDWITHFLAGS:
-      return {
-        .Write = FLAG_NZCV,
-        .CanReplace = true,
-        .Replacement = OP_AND,
-      };
+  case OP_ANDWITHFLAGS:
+    return {
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_AND,
+    };
 
-    case OP_ADDWITHFLAGS:
-      return {
-        .Write = FLAG_NZCV,
-        .CanReplace = true,
-        .Replacement = OP_ADD,
-      };
+  case OP_ADDWITHFLAGS:
+    return {
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_ADD,
+    };
 
-    case OP_SUBWITHFLAGS:
-      return {
-        .Write = FLAG_NZCV,
-        .CanReplace = true,
-        .Replacement = OP_SUB,
-      };
+  case OP_SUBWITHFLAGS:
+    return {
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_SUB,
+    };
 
-    case OP_ADCWITHFLAGS:
-      return {
-        .Read = FLAG_C,
-        .Write = FLAG_NZCV,
-        .CanReplace = true,
-        .Replacement = OP_ADC,
-      };
+  case OP_ADCWITHFLAGS:
+    return {
+      .Read = FLAG_C,
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_ADC,
+    };
 
-    case OP_SBBWITHFLAGS:
-      return {
-        .Read = FLAG_C,
-        .Write = FLAG_NZCV,
-        .CanReplace = true,
-        .Replacement = OP_SBB,
-      };
+  case OP_SBBWITHFLAGS:
+    return {
+      .Read = FLAG_C,
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_SBB,
+    };
 
-    case OP_SHIFTFLAGS:
-      // _ShiftFlags conditionally sets NZCV+PF, which we model here as a
-      // read-modify-write. Logically, it also conditionally makes AF undefined,
-      // which we model by omitting AF from both Read and Write sets (since
-      // "cond ? AF : undef" may be optimized to "AF").
-      return {
-        .Read = FLAG_NZCV | FLAG_P,
-        .Write = FLAG_NZCV | FLAG_P,
-        .CanEliminate = true,
-      };
+  case OP_SHIFTFLAGS:
+    // _ShiftFlags conditionally sets NZCV+PF, which we model here as a
+    // read-modify-write. Logically, it also conditionally makes AF undefined,
+    // which we model by omitting AF from both Read and Write sets (since
+    // "cond ? AF : undef" may be optimized to "AF").
+    return {
+      .Read = FLAG_NZCV | FLAG_P,
+      .Write = FLAG_NZCV | FLAG_P,
+      .CanEliminate = true,
+    };
 
-    case OP_ADDNZCV:
-    case OP_SUBNZCV:
-    case OP_TESTNZ:
-    case OP_FCMP:
-    case OP_STORENZCV:
-      return {
-        .Write = FLAG_NZCV,
-        .CanEliminate = true,
-      };
+  case OP_ADDNZCV:
+  case OP_SUBNZCV:
+  case OP_TESTNZ:
+  case OP_FCMP:
+  case OP_STORENZCV:
+    return {
+      .Write = FLAG_NZCV,
+      .CanEliminate = true,
+    };
 
-    case OP_AXFLAG:
-      // Per the Arm spec, axflag reads Z/V/C but not N. It writes all flags.
-      return {
-        .Read = FLAG_ZCV,
-        .Write = FLAG_NZCV,
-        .CanEliminate = true,
-      };
+  case OP_AXFLAG:
+    // Per the Arm spec, axflag reads Z/V/C but not N. It writes all flags.
+    return {
+      .Read = FLAG_ZCV,
+      .Write = FLAG_NZCV,
+      .CanEliminate = true,
+    };
 
-    case OP_CMPPAIRZ:
-      return {
-        .Write = FLAG_Z,
-        .CanEliminate = true,
-      };
+  case OP_CMPPAIRZ:
+    return {
+      .Write = FLAG_Z,
+      .CanEliminate = true,
+    };
 
-    case OP_CARRYINVERT:
-      return {
-        .Read = FLAG_C,
-        .Write = FLAG_C,
-        .CanEliminate = true,
-      };
+  case OP_CARRYINVERT:
+    return {
+      .Read = FLAG_C,
+      .Write = FLAG_C,
+      .CanEliminate = true,
+    };
 
-    case OP_SETSMALLNZV:
-      return {
-        .Write = FLAG_N | FLAG_Z | FLAG_V,
-        .CanEliminate = true,
-      };
+  case OP_SETSMALLNZV:
+    return {
+      .Write = FLAG_N | FLAG_Z | FLAG_V,
+      .CanEliminate = true,
+    };
 
-    case OP_LOADNZCV:
-      return {.Read = FLAG_NZCV};
+  case OP_LOADNZCV: return {.Read = FLAG_NZCV};
 
-    case OP_ADC:
-    case OP_SBB:
-      return {.Read = FLAG_C};
- 
-    case OP_ADCNZCV:
-    case OP_SBBNZCV:
-      return {
-        .Read = FLAG_C,
-        .Write = FLAG_NZCV,
-        .CanEliminate = true,
-      };
+  case OP_ADC:
+  case OP_SBB: return {.Read = FLAG_C};
 
-    case OP_NZCVSELECT: {
-      auto Op = IROp->CW<IR::IROp_NZCVSelect>();
-      return {.Read = FlagsForCondClassType(Op->Cond)};
-    }
+  case OP_ADCNZCV:
+  case OP_SBBNZCV:
+    return {
+      .Read = FLAG_C,
+      .Write = FLAG_NZCV,
+      .CanEliminate = true,
+    };
 
-    case OP_NEG: {
-      auto Op = IROp->CW<IR::IROp_Neg>();
-      return {.Read = FlagsForCondClassType(Op->Cond)};
-    }
+  case OP_NZCVSELECT: {
+    auto Op = IROp->CW<IR::IROp_NZCVSelect>();
+    return {.Read = FlagsForCondClassType(Op->Cond)};
+  }
 
-    case OP_CONDJUMP: {
-      auto Op = IROp->CW<IR::IROp_CondJump>();
-      if (!Op->FromNZCV)
-        break;
+  case OP_NEG: {
+    auto Op = IROp->CW<IR::IROp_Neg>();
+    return {.Read = FlagsForCondClassType(Op->Cond)};
+  }
 
-      return {.Read = FlagsForCondClassType(Op->Cond)};
-    }
-
-    case OP_CONDSUBNZCV:
-    case OP_CONDADDNZCV: {
-      auto Op = IROp->CW<IR::IROp_CondAddNZCV>();
-      return {
-        .Read = FlagsForCondClassType(Op->Cond),
-        .Write = FLAG_NZCV,
-        .CanEliminate = true,
-      };
-    }
-
-    case OP_RMIFNZCV: {
-      auto Op = IROp->CW<IR::IROp_RmifNZCV>();
-
-      static_assert(FLAG_N == (1 << 3), "rmif mask lines up with our bits");
-      static_assert(FLAG_Z == (1 << 2), "rmif mask lines up with our bits");
-      static_assert(FLAG_C == (1 << 1), "rmif mask lines up with our bits");
-      static_assert(FLAG_V == (1 << 0), "rmif mask lines up with our bits");
-
-      return {
-        .Write = Op->Mask,
-        .CanEliminate = true,
-      };
-    }
-
-    case OP_INVALIDATEFLAGS: {
-      auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
-      unsigned Flags = 0;
-
-      // TODO: Make this translation less silly
-      if (Op->Flags & (1u << X86State::RFLAG_SF_RAW_LOC))
-        Flags |= FLAG_N;
-
-      if (Op->Flags & (1u << X86State::RFLAG_ZF_RAW_LOC))
-        Flags |= FLAG_Z;
-
-      if (Op->Flags & (1u << X86State::RFLAG_CF_RAW_LOC))
-        Flags |= FLAG_C;
-
-      if (Op->Flags & (1u << X86State::RFLAG_OF_RAW_LOC))
-        Flags |= FLAG_V;
-
-      if (Op->Flags & (1u << X86State::RFLAG_PF_RAW_LOC))
-        Flags |= FLAG_P;
-
-      if (Op->Flags & (1u << X86State::RFLAG_AF_RAW_LOC))
-        Flags |= FLAG_A;
-
-      // The mental model of InvalidateFlags is writing undefined values to all
-      // of the selected flags, allowing the write-after-write optimizations to
-      // optimize invalidate-after-write for free.
-      return {
-        .Write = Flags,
-        .CanEliminate = true,
-      };
-    }
-
-    case OP_LOADREGISTER: {
-      auto Op = IROp->CW<IR::IROp_LoadRegister>();
-      if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass)
-        break;
-
-      return {.Read = FlagForOffset(Op->Offset)};
-    }
-
-    case OP_STOREREGISTER: {
-      auto Op = IROp->CW<IR::IROp_StoreRegister>();
-      if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass)
-        break;
-
-      LOGMAN_THROW_A_FMT(!Op->IsPrewrite, "PF/AF writes are fixed-form");
-      unsigned Flag = FlagForOffset(Op->Offset);
-
-      return {
-        .Write = Flag,
-        .CanEliminate = Flag != 0,
-      };
-    }
-
-    default:
+  case OP_CONDJUMP: {
+    auto Op = IROp->CW<IR::IROp_CondJump>();
+    if (!Op->FromNZCV) {
       break;
+    }
+
+    return {.Read = FlagsForCondClassType(Op->Cond)};
+  }
+
+  case OP_CONDSUBNZCV:
+  case OP_CONDADDNZCV: {
+    auto Op = IROp->CW<IR::IROp_CondAddNZCV>();
+    return {
+      .Read = FlagsForCondClassType(Op->Cond),
+      .Write = FLAG_NZCV,
+      .CanEliminate = true,
+    };
+  }
+
+  case OP_RMIFNZCV: {
+    auto Op = IROp->CW<IR::IROp_RmifNZCV>();
+
+    static_assert(FLAG_N == (1 << 3), "rmif mask lines up with our bits");
+    static_assert(FLAG_Z == (1 << 2), "rmif mask lines up with our bits");
+    static_assert(FLAG_C == (1 << 1), "rmif mask lines up with our bits");
+    static_assert(FLAG_V == (1 << 0), "rmif mask lines up with our bits");
+
+    return {
+      .Write = Op->Mask,
+      .CanEliminate = true,
+    };
+  }
+
+  case OP_INVALIDATEFLAGS: {
+    auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
+    unsigned Flags = 0;
+
+    // TODO: Make this translation less silly
+    if (Op->Flags & (1u << X86State::RFLAG_SF_RAW_LOC)) {
+      Flags |= FLAG_N;
+    }
+
+    if (Op->Flags & (1u << X86State::RFLAG_ZF_RAW_LOC)) {
+      Flags |= FLAG_Z;
+    }
+
+    if (Op->Flags & (1u << X86State::RFLAG_CF_RAW_LOC)) {
+      Flags |= FLAG_C;
+    }
+
+    if (Op->Flags & (1u << X86State::RFLAG_OF_RAW_LOC)) {
+      Flags |= FLAG_V;
+    }
+
+    if (Op->Flags & (1u << X86State::RFLAG_PF_RAW_LOC)) {
+      Flags |= FLAG_P;
+    }
+
+    if (Op->Flags & (1u << X86State::RFLAG_AF_RAW_LOC)) {
+      Flags |= FLAG_A;
+    }
+
+    // The mental model of InvalidateFlags is writing undefined values to all
+    // of the selected flags, allowing the write-after-write optimizations to
+    // optimize invalidate-after-write for free.
+    return {
+      .Write = Flags,
+      .CanEliminate = true,
+    };
+  }
+
+  case OP_LOADREGISTER: {
+    auto Op = IROp->CW<IR::IROp_LoadRegister>();
+    if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass) {
+      break;
+    }
+
+    return {.Read = FlagForOffset(Op->Offset)};
+  }
+
+  case OP_STOREREGISTER: {
+    auto Op = IROp->CW<IR::IROp_StoreRegister>();
+    if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass) {
+      break;
+    }
+
+    LOGMAN_THROW_A_FMT(!Op->IsPrewrite, "PF/AF writes are fixed-form");
+    unsigned Flag = FlagForOffset(Op->Offset);
+
+    return {
+      .Write = Flag,
+      .CanEliminate = Flag != 0,
+    };
+  }
+
+  default: break;
   }
 
   return {.Trivial = true};
@@ -326,7 +314,7 @@ DeadFlagCalculationEliminination::Classify(IROp_Header *IROp)
 /**
  * @brief This pass removes flag calculations that will otherwise be unused INSIDE of that block
  */
-bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
+bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   bool Changed = false;
@@ -392,8 +380,9 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
           // If we eliminated the instruction, we eliminate its read too. This
           // check is required to ensure the pass converges locally in a single
           // iteration.
-          if (!Eliminated)
+          if (!Eliminated) {
             FlagsRead |= Info.Read;
+          }
         }
       }
 
@@ -412,4 +401,4 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {
   return fextl::make_unique<DeadFlagCalculationEliminination>();
 }
 
-}
+} // namespace FEXCore::IR

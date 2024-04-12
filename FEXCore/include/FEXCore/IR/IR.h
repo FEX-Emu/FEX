@@ -20,21 +20,21 @@ class RegisterAllocationPass;
 class RegisterAllocationData;
 
 enum class SyscallFlags : uint8_t {
-  DEFAULT            = 0,
+  DEFAULT = 0,
   // Syscalldoesn't care about CPUState being serialized up to the syscall instruction.
   // Means DeadCodeElimination can optimize through a syscall operation.
-  OPTIMIZETHROUGH    = 1 << 0,
+  OPTIMIZETHROUGH = 1 << 0,
   // Syscall only reads the passed in arguments. Doesn't read CPUState.
   NOSYNCSTATEONENTRY = 1 << 1,
   // Syscall doesn't return. Code generation after syscall return can be removed.
-  NORETURN           = 1 << 2,
+  NORETURN = 1 << 2,
   // Syscall doesn't have any side-effects, so if the result isn't used then it can be removed.
-  NOSIDEEFFECTS      = 1 << 3,
+  NOSIDEEFFECTS = 1 << 3,
   // Syscall doesn't return a result.
   // Means the resulting register shouldn't be written (Usually RAX).
   // Usually used with !NOSYNCSTATEONENTRY, so the syscall can modify CPU state entirely.
   // Then on return FEXCore picks up the new state.
-  NORETURNEDRESULT   = 1 << 4,
+  NORETURNEDRESULT = 1 << 4,
 };
 
 FEX_DEF_NUM_OPS(SyscallFlags)
@@ -89,11 +89,15 @@ enum IndexNamedVectorConstant : uint8_t {
 
 struct SHA256Sum final {
   uint8_t data[32];
-  [[nodiscard]] bool operator<(SHA256Sum const &rhs) const {
+  [[nodiscard]]
+  bool
+  operator<(const SHA256Sum& rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) < 0;
   }
 
-  [[nodiscard]] bool operator==(SHA256Sum const &rhs) const {
+  [[nodiscard]]
+  bool
+  operator==(const SHA256Sum& rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) == 0;
   }
 };
@@ -102,7 +106,7 @@ typedef void ThunkedFunction(void* ArgsRv);
 
 struct ThunkDefinition final {
   SHA256Sum Sum;
-  ThunkedFunction *ThunkFunction;
+  ThunkedFunction* ThunkFunction;
 };
 
 } // namespace FEXCore::IR

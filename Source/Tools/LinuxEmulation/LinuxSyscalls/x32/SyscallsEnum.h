@@ -480,4 +480,3 @@ enum Syscalls_x86 {
   SYSCALL_x86_lsm_list_modules = 461,
   SYSCALL_x86_MAX = 512,
 };
-

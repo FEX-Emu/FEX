@@ -29,31 +29,28 @@ $end_info$
 #include <git_version.h>
 
 namespace FEX::HLE {
-  using cap_user_header_t = void*;
-  using cap_user_data_t = void*;
+using cap_user_header_t = void*;
+using cap_user_data_t = void*;
 
-  void RegisterInfo(FEX::HLE::SyscallHandler *Handler) {
-    using namespace FEXCore::IR;
+void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
+  using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_FLAGS(uname, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, struct utsname *buf) -> uint64_t {
-      struct utsname Local{};
+  REGISTER_SYSCALL_IMPL_FLAGS(
+    uname, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY, [](FEXCore::Core::CpuStateFrame* Frame, struct utsname* buf) -> uint64_t {
+      struct utsname Local {};
       if (::uname(&Local) == 0) {
         memcpy(buf->nodename, Local.nodename, sizeof(Local.nodename));
         static_assert(sizeof(Local.nodename) <= sizeof(buf->nodename));
         memcpy(buf->domainname, Local.domainname, sizeof(Local.domainname));
         static_assert(sizeof(Local.domainname) <= sizeof(buf->domainname));
-      }
-      else {
+      } else {
         strcpy(buf->nodename, "FEXCore");
         LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
       }
       strcpy(buf->sysname, "Linux");
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-      snprintf(buf->release, sizeof(buf->release), "%d.%d.%d",
-        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
-        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+      snprintf(buf->release, sizeof(buf->release), "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+               FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
 
       const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
       strcpy(buf->version, version);
@@ -63,10 +60,10 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL_FLAGS(seccomp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, unsigned int operation, unsigned int flags, void *args) -> uint64_t {
-      // FEX doesn't support seccomp
-      return -EINVAL;
-    });
-  }
+  REGISTER_SYSCALL_IMPL_FLAGS(seccomp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, unsigned int operation, unsigned int flags, void* args) -> uint64_t {
+                                // FEX doesn't support seccomp
+                                return -EINVAL;
+                              });
 }
+} // namespace FEX::HLE

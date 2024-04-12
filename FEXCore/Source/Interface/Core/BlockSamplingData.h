@@ -14,7 +14,7 @@ public:
     uint64_t TotalCalls;
   };
 
-  BlockData *GetBlockData(uint64_t RIP);
+  BlockData* GetBlockData(uint64_t RIP);
   ~BlockSamplingData();
 
   void DumpBlockData();
@@ -22,4 +22,4 @@ public:
 private:
   std::unordered_map<uint64_t, BlockData*> SamplingMap;
 };
-}
+} // namespace FEXCore

@@ -38,7 +38,7 @@
 #include <sys/random.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
-#define PAGE_OFFSET(x) ((x) & 4095)
+#define PAGE_OFFSET(x) ((x)&4095)
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
 class ELFCodeLoader final : public FEX::CodeLoader {
@@ -54,18 +54,18 @@ class ELFCodeLoader final : public FEX::CodeLoader {
   uintptr_t BrkStart;
   uintptr_t StackPointer;
 
-  size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr> &headers)
-  {
-    auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
-    auto last = std::find_if(headers.rbegin(), headers.rend(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
+  size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr>& headers) {
+    auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr& Header) { return Header.p_type == PT_LOAD; });
+    auto last = std::find_if(headers.rbegin(), headers.rend(), [](const Elf64_Phdr& Header) { return Header.p_type == PT_LOAD; });
 
-    if (first == headers.end())
+    if (first == headers.end()) {
       return 0;
+    }
 
     return PAGE_ALIGN(last->p_vaddr + last->p_memsz);
   }
 
-  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, FEX::HLE::SyscallHandler *const Handler) {
+  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr& Header, int prot, int flags, FEX::HLE::SyscallHandler* const Handler) {
 
     auto addr = Base + PAGE_START(Header.p_vaddr);
     auto size = Header.p_filesz + PAGE_OFFSET(Header.p_vaddr);
@@ -78,7 +78,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       return true;
     }
 
-    void *rv = Handler->GuestMmap(nullptr, (void*)addr, size, prot, flags, file.fd, off);
+    void* rv = Handler->GuestMmap(nullptr, (void*)addr, size, prot, flags, file.fd, off);
 
     if (rv == MAP_FAILED) {
       // uhoh, something went wrong
@@ -95,22 +95,25 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     }
   }
 
-  int MapFlags(const Elf64_Phdr &Header) {
+  int MapFlags(const Elf64_Phdr& Header) {
     int rv = 0;
 
-    if (Header.p_flags & PF_R)
+    if (Header.p_flags & PF_R) {
       rv |= PROT_READ;
+    }
 
-    if (Header.p_flags & PF_W)
+    if (Header.p_flags & PF_W) {
       rv |= PROT_WRITE;
+    }
 
-    if (Header.p_flags & PF_X)
+    if (Header.p_flags & PF_X) {
       rv |= PROT_EXEC;
+    }
 
     return rv;
   }
 
-  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, FEX::HLE::SyscallHandler *const Handler, uint64_t LoadHint = 0) {
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t* BrkBase, FEX::HLE::SyscallHandler* const Handler, uint64_t LoadHint = 0) {
 
     uintptr_t LoadBase = 0;
 
@@ -121,20 +124,22 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      LoadBase =
+        (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if ((void*)LoadBase == MAP_FAILED) {
         return {};
       }
 
-      //fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
+      // fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
       if (BrkBase) {
         *BrkBase = LoadBase + (TotalSize - BRK_SIZE);
       }
     }
 
-    for(const auto &Header: Elf.phdrs) {
-      if (Header.p_type != PT_LOAD)
+    for (const auto& Header : Elf.phdrs) {
+      if (Header.p_type != PT_LOAD) {
         continue;
+      }
 
       int MapProt = MapFlags(Header);
       int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED;
@@ -177,8 +182,8 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     return LoadBase;
   }
 
-  static bool GetRandom(void *Data, size_t DataSize) {
-    ssize_t Result{};
+  static bool GetRandom(void* Data, size_t DataSize) {
+    ssize_t Result {};
     do {
       // This is guaranteed to not be interrupted by a signal,
       // since fewer than 256 bytes of RNG data are requested
@@ -188,9 +193,9 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     return Result != -1;
   }
 
-  public:
+public:
 
-  static fextl::string ResolveRootfsFile(fextl::string const &File, fextl::string RootFS) {
+  static fextl::string ResolveRootfsFile(const fextl::string& File, fextl::string RootFS) {
     // If the path is relative then just run that
     if (File[0] != '/') {
       return File;
@@ -199,7 +204,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     fextl::string RootFSLink = RootFS + File;
 
     char Filename[PATH_MAX];
-    while(FHU::Symlinks::IsSymlink(RootFSLink.c_str())) {
+    while (FHU::Symlinks::IsSymlink(RootFSLink.c_str())) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
@@ -207,8 +212,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       if (SymlinkPath.starts_with('/')) {
         RootFSLink = RootFS;
         RootFSLink += SymlinkPath;
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -227,16 +231,18 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(fextl::string const &Filename, const std::string_view FEXFDString, fextl::string const &RootFS, [[maybe_unused]] fextl::vector<fextl::string> const &args, fextl::vector<fextl::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<fextl::string> *AdditionalEnvp = nullptr) :
-    Args {args} {
+  ELFCodeLoader(const fextl::string& Filename, const std::string_view FEXFDString, const fextl::string& RootFS,
+                [[maybe_unused]] const fextl::vector<fextl::string>& args, const fextl::vector<fextl::string>& ParsedArgs,
+                char** const envp = nullptr, FEXCore::Config::Value<fextl::string>* AdditionalEnvp = nullptr)
+    : Args {args} {
 
     bool LoadedWithFD = false;
     int FD = getauxval(AT_EXECFD);
 
     if (!FEXFDString.empty()) {
       // If we passed the execve FD to us then use that.
-      const char *StartPtr = FEXFDString.data();
-      char *EndPtr{};
+      const char* StartPtr = FEXFDString.data();
+      char* EndPtr {};
       FD = ::strtol(StartPtr, &EndPtr, 10);
       if (EndPtr == StartPtr) {
         LogMan::Msg::AFmt("FEXInterpreter passed invalid FD to exececute: {}", FEXFDString);
@@ -252,8 +258,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
         return;
       }
       LoadedWithFD = true;
-    }
-    else {
+    } else {
       if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename)) {
         return;
       }
@@ -273,28 +278,29 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 #define AT_FLAGS_PRESERVE_ARGV0 1
 #endif
     uint32_t HostKernel = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-    if ((HostKernel >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0) &&
-         (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) ||
-       LoadedWithFD){
+    if ((HostKernel >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0) && (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) || LoadedWithFD) {
 
       // Erase the initial argument from the list in this case
       Args.erase(Args.begin());
     }
 
     // Append any additional arguments from config
-    for (auto &Arg : AdditionalArguments.All()) {
+    for (auto& Arg : AdditionalArguments.All()) {
       Args.emplace_back(Arg);
     }
 
     if (!MainElf.InterpreterElf.empty()) {
-      if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
+      if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf)) {
         return;
+      }
 
-      if (!InterpElf.InterpreterElf.empty())
+      if (!InterpElf.InterpreterElf.empty()) {
         return;
+      }
 
-      if (InterpElf.type != MainElf.type)
+      if (InterpElf.type != MainElf.type) {
         return;
+      }
     }
 
     ElfValid = true;
@@ -302,8 +308,9 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     if (!!envp) {
       // If we had envp passed in then make sure to set it up on the guest
       for (unsigned i = 0;; ++i) {
-        if (envp[i] == nullptr)
+        if (envp[i] == nullptr) {
           break;
+        }
         EnvironmentVariables.emplace_back(envp[i]);
       }
     }
@@ -328,7 +335,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
     }
 
-    for (auto &Arg : ParsedArgs) {
+    for (auto& Arg : ParsedArgs) {
       LoaderArgs.emplace_back(Arg.c_str());
     }
   }
@@ -337,9 +344,15 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     Sections.clear();
   }
 
-  virtual uint64_t StackSize() const override { return STACK_SIZE; }
-  virtual uint64_t GetStackPointer() override { return StackPointer; }
-  virtual uint64_t DefaultRIP() const override { return Entrypoint; };
+  virtual uint64_t StackSize() const override {
+    return STACK_SIZE;
+  }
+  virtual uint64_t GetStackPointer() override {
+    return StackPointer;
+  }
+  virtual uint64_t DefaultRIP() const override {
+    return Entrypoint;
+  };
 
   struct auxv32_t {
     uint32_t key;
@@ -351,11 +364,12 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     uint64_t val;
   };
 
-  bool MapMemory(FEX::HLE::SyscallHandler *const Handler) {
-    for (auto Header: MainElf.phdrs) {
+  bool MapMemory(FEX::HLE::SyscallHandler* const Handler) {
+    for (auto Header : MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
-        if (Header.p_flags & PF_X)
+        if (Header.p_flags & PF_X) {
           ExecutableStack = true;
+        }
       }
 
       // We ignore LOPROC..HIPROC here, kernel has a platform specific hook about it
@@ -379,13 +393,13 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     //
     // MAP_GROWSDOWN is required here. The default stack pointer allocated by the kernel is mapped with it.
     // Some libraries (like libfmod) will have a PT_GNU_STACK with executable stack bit set
-    // On dlopen glibc will check its current stack allocation permission bits (using internal expectations of allocation, not /proc/self/maps)
-    // If stack hasn't been allocated as executable then it will proceed to mprotect the range with the executable bit set
+    // On dlopen glibc will check its current stack allocation permission bits (using internal expectations of allocation, not
+    // /proc/self/maps) If stack hasn't been allocated as executable then it will proceed to mprotect the range with the executable bit set
     // Then it will mprotect the base stack page with `PROT_READ|PROT_WRITE|PROT_EXEC|PROT_GROWSDOWN`
     // If the original stack memory region wasn't allocated with MAP_GROWSDOWN then the mprotect with PROT_GROWSDOWN will fail with EINVAL
     //
-    // This is still technically a memory leak if the stack grows, but since the primary thread's stack only gets destroyed on process close, this is
-    // fine.
+    // This is still technically a memory leak if the stack grows, but since the primary thread's stack only gets destroyed on process
+    // close, this is fine.
 
     // Stacks need to be allocated at the hint location just like on a real x86 system.
     // These are 128MB regions on both x86-64 and x86.
@@ -396,16 +410,17 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // Wine-preloader is expecting to allocate 32MB out of the total 128MB stack space in this case. Leaving 96MB for the application.
     //
     // If FEX doesn't allocate the stack in this region (nullptr mmap hint) then later allocations that FEX does will /eventually/
-    // end up inside of this address space that wine allocates. This usually ends up being a JIT CodeBuffer, which zeroes the memory and faults with a
-    // SIGILL.
+    // end up inside of this address space that wine allocates. This usually ends up being a JIT CodeBuffer, which zeroes the memory and
+    // faults with a SIGILL.
     //
     // On the upside, this more accurately emulates how the kernel allocates stack space for the application when hinting at the location.
     //
-    void* StackPointerBase{};
+    void* StackPointerBase {};
     uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
 
     // Allocate the base of the full 128MB stack range.
-    StackPointerBase = Handler->GuestMmap(nullptr, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+    StackPointerBase = Handler->GuestMmap(nullptr, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
+                                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 
     if (StackPointerBase == reinterpret_cast<void*>(~0ULL)) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -413,9 +428,9 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     }
 
     // Allocate with permissions the 8MB of regular stack size.
-    StackPointer = reinterpret_cast<uintptr_t>(Handler->GuestMmap(nullptr,
-      reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
-      StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+    StackPointer = reinterpret_cast<uintptr_t>(
+      Handler->GuestMmap(nullptr, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
+                         StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (StackPointer == ~0ULL) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -450,14 +465,13 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // 55ccaf8d2000-55ccaf8d4000 rw-p 00020000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
     // 55ccaf8d4000-55ccb00d5000 rw-p 00000000 00:00 0
     // <... Snip of misc allocations ...>
-    // 7fffff6c2000-7fffff6c4000 r--p 00000000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    // 7fffff6c4000-7fffff6ee000 r-xp 00002000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    // 7fffff6ee000-7fffff6f9000 r--p 0002c000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    // 7fffff6f9000-7fffff6fa000 ---p 00000000 00:00 0
-    // 7fffff6fa000-7fffff6fe000 rw-p 00037000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    // 7fffff7fe000-7fffffffe000 rw-p 00000000 00:00 0
-    // 7fffffffe000-7ffffffff000 r--p 00000000 08:82 7082611                    /usr/share/fex-emu/GuestThunks/libVDSO-guest.so
-    // 7ffffffff000-800000000000 rw-p 00000000 00:00 0
+    // 7fffff6c2000-7fffff6c4000 r--p 00000000 00:2a 22 /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fffff6c4000-7fffff6ee000
+    // r-xp 00002000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fffff6ee000-7fffff6f9000
+    // r--p 0002c000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fffff6f9000-7fffff6fa000
+    // ---p 00000000 00:00 0 7fffff6fa000-7fffff6fe000 rw-p 00037000 00:2a 22
+    // /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 7fffff7fe000-7fffffffe000 rw-p 00000000 00:00 0 7fffffffe000-7ffffffff000
+    // r--p 00000000 08:82 7082611                    /usr/share/fex-emu/GuestThunks/libVDSO-guest.so 7ffffffff000-800000000000 rw-p
+    // 00000000 00:00 0
     uint64_t ELFLoadHint = 0;
 
     if (!MainElf.InterpreterElf.empty()) {
@@ -487,8 +501,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
         // live way outside the VA space.
         uint64_t HostVASize = 1ULL << FEXCore::Allocator::DetermineVASize();
         ELFLoadHint = std::min(HostVASize, TASK_SIZE_64) / 3 * 2;
-      }
-      else {
+      } else {
         ELFLoadHint = TASK_SIZE_32 / 3 * 2;
       }
 #define ASLR_LOAD
@@ -500,7 +513,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       if (!NoRandomize) {
         constexpr uint64_t ASLR_BITS_64 = 28;
         constexpr uint64_t ASLR_BITS_32 = 8;
-        uint64_t ASLR_Offset{};
+        uint64_t ASLR_Offset {};
         if (!GetRandom(&ASLR_Offset, sizeof(ASLR_Offset))) {
           // getrandom failed for some reason.
           ASLR_Offset = 0;
@@ -509,8 +522,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
         if (Is64BitMode()) {
           ASLR_Offset &= (1ULL << ASLR_BITS_64) - 1;
-        }
-        else {
+        } else {
           ASLR_Offset &= (1ULL << ASLR_BITS_32) - 1;
         }
 
@@ -540,7 +552,8 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
     // XXX Randomise brk?
 
-    BrkStart = (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    BrkStart =
+      (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
@@ -558,33 +571,33 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // All done
 
     // Setup AuxVars
-    AuxVariables.emplace_back(auxv_t{11, getauxval(AT_UID)}); // AT_UID
-    AuxVariables.emplace_back(auxv_t{12, getauxval(AT_EUID)}); // AT_EUID
-    AuxVariables.emplace_back(auxv_t{13, getauxval(AT_GID)}); // AT_GID
-    AuxVariables.emplace_back(auxv_t{14, getauxval(AT_EGID)}); // AT_EGID
-    AuxVariables.emplace_back(auxv_t{17, getauxval(AT_CLKTCK)}); // AT_CLKTIK
-    AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
-    AuxRandom = &AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
-    AuxVariables.emplace_back(auxv_t{23, getauxval(AT_SECURE)}); // AT_SECURE
-    AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
-    AuxVariables.emplace_back(auxv_t{5, MainElf.phdrs.size()}); // AT_PHNUM
-    AuxVariables.emplace_back(auxv_t{16, HWCap}); // AT_HWCAP
-    AuxVariables.emplace_back(auxv_t{26, HWCap2}); // AT_HWCAP2
-    AuxVariables.emplace_back(auxv_t{51, CalculateSignalStackSize()}); // AT_MINSIGSTKSZ
-    AuxPlatform = &AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
-    AuxExecFN = &AuxVariables.emplace_back(auxv_t{AT_EXECFN, ~0ULL}); // AT_EXECFN
+    AuxVariables.emplace_back(auxv_t {11, getauxval(AT_UID)});          // AT_UID
+    AuxVariables.emplace_back(auxv_t {12, getauxval(AT_EUID)});         // AT_EUID
+    AuxVariables.emplace_back(auxv_t {13, getauxval(AT_GID)});          // AT_GID
+    AuxVariables.emplace_back(auxv_t {14, getauxval(AT_EGID)});         // AT_EGID
+    AuxVariables.emplace_back(auxv_t {17, getauxval(AT_CLKTCK)});       // AT_CLKTIK
+    AuxVariables.emplace_back(auxv_t {6, 0x1000});                      // AT_PAGESIZE
+    AuxRandom = &AuxVariables.emplace_back(auxv_t {25, ~0ULL});         // AT_RANDOM
+    AuxVariables.emplace_back(auxv_t {23, getauxval(AT_SECURE)});       // AT_SECURE
+    AuxVariables.emplace_back(auxv_t {8, 0});                           // AT_FLAGS
+    AuxVariables.emplace_back(auxv_t {5, MainElf.phdrs.size()});        // AT_PHNUM
+    AuxVariables.emplace_back(auxv_t {16, HWCap});                      // AT_HWCAP
+    AuxVariables.emplace_back(auxv_t {26, HWCap2});                     // AT_HWCAP2
+    AuxVariables.emplace_back(auxv_t {51, CalculateSignalStackSize()}); // AT_MINSIGSTKSZ
+    AuxPlatform = &AuxVariables.emplace_back(auxv_t {24, ~0ULL});       // AT_PLATFORM
+    AuxExecFN = &AuxVariables.emplace_back(auxv_t {AT_EXECFN, ~0ULL});  // AT_EXECFN
 
     if (Is64BitMode()) {
-      AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
-    }
-    else {
-      AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
+      AuxVariables.emplace_back(auxv_t {4, 0x38}); // AT_PHENT
+    } else {
+      AuxVariables.emplace_back(auxv_t {4, 0x20}); // AT_PHENT
 
       auto VSyscallEntry = FEX::VDSO::GetVSyscallEntry(VDSOBase);
       if (!VSyscallEntry) [[unlikely]] {
         // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
         // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
-        auto VSyscallPage = Handler->GuestMmap(nullptr, nullptr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        auto VSyscallPage =
+          Handler->GuestMmap(nullptr, nullptr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         constexpr static uint8_t VSyscallCode[] = {
           0xcd, 0x80, // int 0x80
           0xc3,       // ret
@@ -594,18 +607,18 @@ class ELFCodeLoader final : public FEX::CodeLoader {
         VSyscallEntry = reinterpret_cast<uint64_t>(VSyscallPage);
       }
 
-      AuxVariables.emplace_back(auxv_t{32, VSyscallEntry}); // AT_SYSINFO - Entry point to syscall
+      AuxVariables.emplace_back(auxv_t {32, VSyscallEntry}); // AT_SYSINFO - Entry point to syscall
     }
 
     if (VDSOBase) {
-      AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
+      AuxVariables.emplace_back(auxv_t {33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
     }
 
-    AuxVariables.emplace_back(auxv_t{3, MainElfBase + MainElf.ehdr.e_phoff}); // Program header
-    AuxVariables.emplace_back(auxv_t{7, InterpeterElfBase}); // AT_BASE - Interpreter address
-    AuxVariables.emplace_back(auxv_t{9, MainElfEntrypoint}); // AT_ENTRY
+    AuxVariables.emplace_back(auxv_t {3, MainElfBase + MainElf.ehdr.e_phoff}); // Program header
+    AuxVariables.emplace_back(auxv_t {7, InterpeterElfBase});                  // AT_BASE - Interpreter address
+    AuxVariables.emplace_back(auxv_t {9, MainElfEntrypoint});                  // AT_ENTRY
 
-    AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
+    AuxVariables.emplace_back(auxv_t {0, 0}); // Null ender
 
     SetupStack();
 
@@ -616,31 +629,23 @@ class ELFCodeLoader final : public FEX::CodeLoader {
   }
 
   // Helper for stack setup
-  template <typename PointerType, typename AuxType, size_t PointerSize>
-  static void SetupPointers(
-    uintptr_t StackPointer,
-    uint64_t AuxVOffset,
-    uint64_t ArgumentOffset,
-    uint64_t EnvpOffset,
-    const fextl::vector<fextl::string> &Args,
-    const fextl::vector<fextl::string> &EnvironmentVariables,
-    const fextl::list<auxv_t> &AuxVariables,
-    uint64_t *AuxTabBase,
-    uint64_t *AuxTabSize
-    ) {
+  template<typename PointerType, typename AuxType, size_t PointerSize>
+  static void SetupPointers(uintptr_t StackPointer, uint64_t AuxVOffset, uint64_t ArgumentOffset, uint64_t EnvpOffset,
+                            const fextl::vector<fextl::string>& Args, const fextl::vector<fextl::string>& EnvironmentVariables,
+                            const fextl::list<auxv_t>& AuxVariables, uint64_t* AuxTabBase, uint64_t* AuxTabSize) {
     // Pointer list offsets
-    PointerType *ArgumentPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize);
-    PointerType *PadPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize);
-    PointerType *EnvpPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize + PointerSize);
-    AuxType *AuxVPointers = reinterpret_cast<AuxType *>(StackPointer + AuxVOffset);
+    PointerType* ArgumentPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize);
+    PointerType* PadPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize);
+    PointerType* EnvpPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize + PointerSize);
+    AuxType* AuxVPointers = reinterpret_cast<AuxType*>(StackPointer + AuxVOffset);
 
     // Arguments memory lives after everything else
-    uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
-    uint8_t *EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpOffset);
+    uint8_t* ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
+    uint8_t* EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpOffset);
     PointerType ArgumentBackingBaseGuest = StackPointer + ArgumentOffset;
     PointerType EnvpBackingBaseGuest = StackPointer + EnvpOffset;
 
-    *reinterpret_cast<PointerType *>(StackPointer + 0) = Args.size();
+    *reinterpret_cast<PointerType*>(StackPointer + 0) = Args.size();
     PadPointers[0] = 0;
 
     // If we don't have any, just make sure the first is nullptr
@@ -680,7 +685,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // Last envp needs to be nullptr
     EnvpPointers[EnvironmentVariables.size()] = 0;
 
-    for (size_t i = 0; auto const &Variable : AuxVariables) {
+    for (size_t i = 0; const auto& Variable : AuxVariables) {
       AuxVPointers[i].key = Variable.key;
       AuxVPointers[i].val = Variable.val;
       ++i;
@@ -696,19 +701,18 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // Set up our initial CPU state
     uint64_t SizeOfPointer = Is64BitMode() ? 8 : 4;
 
-    uint64_t TotalArgumentMemSize{};
+    uint64_t TotalArgumentMemSize {};
 
-    TotalArgumentMemSize += SizeOfPointer; // Argument counter size
-    TotalArgumentMemSize += SizeOfPointer * Args.size(); // Pointers to strings
-    TotalArgumentMemSize += SizeOfPointer; // Padding for something
+    TotalArgumentMemSize += SizeOfPointer;                               // Argument counter size
+    TotalArgumentMemSize += SizeOfPointer * Args.size();                 // Pointers to strings
+    TotalArgumentMemSize += SizeOfPointer;                               // Padding for something
     TotalArgumentMemSize += SizeOfPointer * EnvironmentVariables.size(); // Argument location for envp
-    TotalArgumentMemSize += SizeOfPointer; // envp nullptr ender
+    TotalArgumentMemSize += SizeOfPointer;                               // envp nullptr ender
 
     uint64_t AuxVOffset = TotalArgumentMemSize;
     if (SizeOfPointer == 8) {
       TotalArgumentMemSize += sizeof(auxv_t) * AuxVariables.size();
-    }
-    else {
+    } else {
       TotalArgumentMemSize += sizeof(auxv32_t) * AuxVariables.size();
     }
 
@@ -722,7 +726,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     uint64_t RandomNumberLocation = TotalArgumentMemSize;
     TotalArgumentMemSize += 16;
 
-    uint64_t PlatformNameLocation =  TotalArgumentMemSize;
+    uint64_t PlatformNameLocation = TotalArgumentMemSize;
     TotalArgumentMemSize += platform_string_max_size;
 
     uint64_t ExecFNLocation = TotalArgumentMemSize;
@@ -733,25 +737,23 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
     // Setup our AUXP values that need memory now that the stack is setup
     AuxPlatform->val = StackPointer + PlatformNameLocation;
-    char *PlatformLoc = reinterpret_cast<char*>(AuxPlatform->val);
+    char* PlatformLoc = reinterpret_cast<char*>(AuxPlatform->val);
     memset(PlatformLoc, 0, platform_string_max_size);
     if (Is64BitMode()) {
       strncpy(PlatformLoc, platform_name_x86_64.data(), platform_string_max_size);
-    }
-    else {
+    } else {
       strncpy(PlatformLoc, platform_name_i686.data(), platform_string_max_size);
     }
 
     // Random value is always 128bits
     AuxRandom->val = StackPointer + RandomNumberLocation;
-    uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(AuxRandom->val);
-    uint64_t *HostRandom = reinterpret_cast<uint64_t*>(getauxval(AT_RANDOM));
+    uint64_t* RandomLoc = reinterpret_cast<uint64_t*>(AuxRandom->val);
+    uint64_t* HostRandom = reinterpret_cast<uint64_t*>(getauxval(AT_RANDOM));
     if (HostRandom) {
       // Pass through the host's random values
       RandomLoc[0] = HostRandom[0];
       RandomLoc[1] = HostRandom[1];
-    }
-    else {
+    } else {
       // Nothing provided from the kernel, generate our own random values.
       if (!GetRandom(&RandomLoc[0], sizeof(uint64_t) * 2)) {
         // getrandom failed for some reason.
@@ -780,35 +782,20 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // [envpend, +8): nullptr
 
     if (SizeOfPointer == 8) {
-      SetupPointers<uint64_t, auxv_t, 8>(
-        StackPointer,
-        AuxVOffset,
-        ArgumentOffset,
-        EnvpOffset,
-        Args,
-        EnvironmentVariables,
-        AuxVariables,
-        &AuxTabBase,
-        &AuxTabSize
-        );
-    }
-    else {
-      SetupPointers<uint32_t, auxv32_t, 4>(
-        StackPointer,
-        AuxVOffset,
-        ArgumentOffset,
-        EnvpOffset,
-        Args,
-        EnvironmentVariables,
-        AuxVariables,
-        &AuxTabBase,
-        &AuxTabSize
-        );
+      SetupPointers<uint64_t, auxv_t, 8>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, Args, EnvironmentVariables, AuxVariables,
+                                         &AuxTabBase, &AuxTabSize);
+    } else {
+      SetupPointers<uint32_t, auxv32_t, 4>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, Args, EnvironmentVariables, AuxVariables,
+                                           &AuxTabBase, &AuxTabSize);
     }
   }
 
-  fextl::vector<fextl::string> const *GetApplicationArguments() override { return &Args; }
-  void GetExecveArguments(fextl::vector<char const*> *Args) override { *Args = LoaderArgs; }
+  const fextl::vector<fextl::string>* GetApplicationArguments() override {
+    return &Args;
+  }
+  void GetExecveArguments(fextl::vector<const char*>* Args) override {
+    *Args = LoaderArgs;
+  }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
     addr = AuxTabBase;
@@ -824,7 +811,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
   }
 
   ::ELFLoader::ELFContainer::BRKInfo GetBRKInfo() {
-    return ::ELFLoader::ELFContainer::BRKInfo { BrkStart, BRK_SIZE };
+    return ::ELFLoader::ELFContainer::BRKInfo {BrkStart, BRK_SIZE};
   }
 
   bool ELFWasLoaded() {
@@ -835,7 +822,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     VDSOBase = Base;
   }
 
-  void CalculateHWCaps(FEXCore::Context::Context *ctx) {
+  void CalculateHWCaps(FEXCore::Context::Context* ctx) {
     // HWCAP is just CPUID function 0x1, the EDX result
     auto res_1 = ctx->RunCPUIDFunction(1, 0);
     auto res_7 = ctx->RunCPUIDFunction(7, 0);
@@ -865,30 +852,27 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     // - siginfo_t
     // Size of state requiring to be stored is different between 32-bit and 64-bit.
 
-    uint64_t Result{};
+    uint64_t Result {};
     if (Is64BitMode()) {
       Result += sizeof(FEXCore::x86_64::ucontext_t);
       Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::ucontext_t));
       if (SupportsAVX) {
         Result += sizeof(FEXCore::x86_64::xstate);
         Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::xstate));
-      }
-      else {
+      } else {
         Result += sizeof(FEXCore::x86_64::_libc_fpstate);
         Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::_libc_fpstate));
       }
 
       Result += sizeof(siginfo_t);
       Result = FEXCore::AlignUp(Result, alignof(siginfo_t));
-    }
-    else {
+    } else {
       Result += sizeof(FEXCore::x86::ucontext_t);
       Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::ucontext_t));
       if (SupportsAVX) {
         Result += sizeof(FEXCore::x86::xstate);
         Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::xstate));
-      }
-      else {
+      } else {
         Result += sizeof(FEXCore::x86::_libc_fpstate);
         Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::_libc_fpstate));
       }
@@ -908,21 +892,21 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
   fextl::vector<fextl::string> Args;
   fextl::vector<fextl::string> EnvironmentVariables;
-  fextl::vector<char const*> LoaderArgs;
+  fextl::vector<const char*> LoaderArgs;
 
   fextl::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
-  uint64_t ArgumentBackingSize{};
-  uint64_t EnvironmentBackingSize{};
-  uint64_t BaseOffset{};
-  void* VDSOBase{};
-  uint64_t HWCap{};
-  uint64_t HWCap2{};
-  bool SupportsAVX{};
+  uint64_t ArgumentBackingSize {};
+  uint64_t EnvironmentBackingSize {};
+  uint64_t BaseOffset {};
+  void* VDSOBase {};
+  uint64_t HWCap {};
+  uint64_t HWCap2 {};
+  bool SupportsAVX {};
 
-  auxv_t *AuxRandom{};
-  auxv_t *AuxPlatform{};
-  auxv_t *AuxExecFN{};
+  auxv_t* AuxRandom {};
+  auxv_t* AuxPlatform {};
+  auxv_t* AuxExecFN {};
 
   static constexpr std::string_view platform_name_x86_64 = "x86_64";
   static constexpr std::string_view platform_name_i686 = "i686";
@@ -931,5 +915,4 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
   FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
   FEX_CONFIG_OPT(InjectLibSegFault, INJECTLIBSEGFAULT);
-
 };

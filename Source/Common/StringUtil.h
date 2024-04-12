@@ -5,7 +5,7 @@
 #include <algorithm>
 
 namespace FEX::StringUtil {
-void ltrim(fextl::string &s);
-void rtrim(fextl::string &s);
-void trim(fextl::string &s);
-}
+void ltrim(fextl::string& s);
+void rtrim(fextl::string& s);
+void trim(fextl::string& s);
+} // namespace FEX::StringUtil

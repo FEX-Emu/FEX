@@ -476,4 +476,4 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_epoll_wait_old = ~0,
   SYSCALL_Arm64_newfstatat = ~0,
 };
-}
+} // namespace FEX::HLE::Arm64

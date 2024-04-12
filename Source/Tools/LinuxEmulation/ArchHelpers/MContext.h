@@ -147,7 +147,7 @@ static inline uint64_t GetArmPState(void* ucontext) {
   return GetMContext(ucontext)->pstate;
 }
 
-static inline uint64_t *GetArmGPRs(void* ucontext) {
+static inline uint64_t* GetArmGPRs(void* ucontext) {
   return reinterpret_cast<uint64_t*>(GetMContext(ucontext)->regs);
 }
 
@@ -157,7 +157,7 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
 
 static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
   auto MContext = GetMContext(ucontext);
-  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&MContext->__reserved[0]);
+  HostFPRState* HostState = reinterpret_cast<HostFPRState*>(&MContext->__reserved[0]);
   LOGMAN_THROW_AA_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
 
   return HostState->FPRs[id];
@@ -203,7 +203,7 @@ static inline uint32_t GetProtectFlags(void* ucontext) {
   uint64_t ESR = GetArmESR(ucontext);
   LOGMAN_THROW_A_FMT((ESR & ESR1_EC) == ESR1_EC_DataAbort, "Unknown ESR1 EC type: 0x{:x} != 0x{:x}", ESR & ESR1_EC, ESR1_EC_DataAbort);
 
-  uint32_t ProtectFlags{};
+  uint32_t ProtectFlags {};
   if ((ESR & ESR1_DataAbort_Level) == ESR1_DataAbort_Level_EL0) {
     // Always a user error for us.
     ProtectFlags |= FEXCore::X86State::X86_PF_USER;
@@ -219,8 +219,8 @@ static inline uint32_t GetProtectFlags(void* ucontext) {
 }
 
 using ContextBackup = ArmContextBackup;
-template <typename T>
-static inline void BackupContext(void* ucontext, T *Backup) {
+template<typename T>
+static inline void BackupContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
@@ -231,7 +231,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     Backup->PState = _mcontext->pstate;
 
     // Host FPR state starts at _mcontext->reserved[0];
-    HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
+    HostFPRState* HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
     LOGMAN_THROW_AA_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
     Backup->FPSR = HostState->FPSR;
     Backup->FPCR = HostState->FPCR;
@@ -249,15 +249,15 @@ static inline void BackupContext(void* ucontext, T *Backup) {
   }
 }
 
-template <typename T>
-static inline void RestoreContext(void* ucontext, T *Backup) {
+template<typename T>
+static inline void RestoreContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
     LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
 
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
 
-    HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
+    HostFPRState* HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
     LOGMAN_THROW_AA_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
     memcpy(&HostState->FPRs[0], &Backup->FPRs[0], 32 * sizeof(__uint128_t));
     HostState->FPCR = Backup->FPCR;
@@ -287,7 +287,7 @@ static inline uint64_t GetSp(void* ucontext) {
 
 static inline uint64_t GetPc(void* ucontext) {
   return GetMContext(ucontext)->gregs[REG_RIP];
-  }
+}
 
 static inline void SetSp(void* ucontext, uint64_t val) {
   GetMContext(ucontext)->gregs[REG_RSP] = val;
@@ -321,7 +321,7 @@ static inline uint64_t GetArmPState(void* ucontext) {
   ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 
-static inline uint64_t *GetArmGPRs(void* ucontext) {
+static inline uint64_t* GetArmGPRs(void* ucontext) {
   ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 
@@ -330,8 +330,8 @@ static inline uint32_t GetProtectFlags(void* ucontext) {
 }
 
 using ContextBackup = X86ContextBackup;
-template <typename T>
-static inline void BackupContext(void* ucontext, T *Backup) {
+template<typename T>
+static inline void BackupContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
@@ -354,8 +354,8 @@ static inline void BackupContext(void* ucontext, T *Backup) {
   }
 }
 
-template <typename T>
-static inline void RestoreContext(void* ucontext, T *Backup) {
+template<typename T>
+static inline void RestoreContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
     LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
 
@@ -379,4 +379,4 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 #else
 
 #endif
-} // namespace FEXCore::ArchHelpers::Context
+} // namespace FEX::ArchHelpers::Context

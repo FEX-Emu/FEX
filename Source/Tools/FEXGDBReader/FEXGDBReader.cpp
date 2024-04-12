@@ -12,19 +12,19 @@ GDB_DECLARE_GPL_COMPATIBLE_READER;
 #define debugf(...)
 
 extern "C" {
-static enum gdb_status read_debug_info(struct gdb_reader_funcs *self, struct gdb_symbol_callbacks *cbs, void *memory, long memory_sz) {
-  
-  info_t *info = (info_t *)memory;
-  blocks_t *blocks = (blocks_t *)(info->blocks_ofs + (long)memory);
-  gdb_line_mapping *lines = (gdb_line_mapping *)(info->lines_ofs + (long)memory);
+static enum gdb_status read_debug_info(struct gdb_reader_funcs* self, struct gdb_symbol_callbacks* cbs, void* memory, long memory_sz) {
+
+  info_t* info = (info_t*)memory;
+  blocks_t* blocks = (blocks_t*)(info->blocks_ofs + (long)memory);
+  gdb_line_mapping* lines = (gdb_line_mapping*)(info->lines_ofs + (long)memory);
   debugf("info: %p\n", info);
   debugf("info: s %p\n", info->filename);
   debugf("info: s %s\n", info->filename);
   debugf("info: l %d\n", info->nlines);
   debugf("info: b %d\n", info->nblocks);
 
-  struct gdb_object *object = cbs->object_open(cbs);
-  struct gdb_symtab *symtab = cbs->symtab_open(cbs, object, info->filename);
+  struct gdb_object* object = cbs->object_open(cbs);
+  struct gdb_symtab* symtab = cbs->symtab_open(cbs, object, info->filename);
 
   for (int i = 0; i < info->nblocks; i++) {
     debugf("info: %d\n", i);
@@ -50,16 +50,18 @@ static enum gdb_status read_debug_info(struct gdb_reader_funcs *self, struct gdb
   return GDB_SUCCESS;
 }
 
-enum gdb_status unwind_frame(struct gdb_reader_funcs *self, struct gdb_unwind_callbacks *cbs) { return GDB_SUCCESS; }
+enum gdb_status unwind_frame(struct gdb_reader_funcs* self, struct gdb_unwind_callbacks* cbs) {
+  return GDB_SUCCESS;
+}
 
-struct gdb_frame_id get_frame_id(struct gdb_reader_funcs *self, struct gdb_unwind_callbacks *cbs) {
+struct gdb_frame_id get_frame_id(struct gdb_reader_funcs* self, struct gdb_unwind_callbacks* cbs) {
   struct gdb_frame_id frame = {0x1234000, 0};
   return frame;
 }
 
-void destroy_reader(struct gdb_reader_funcs *self) {}
+void destroy_reader(struct gdb_reader_funcs* self) {}
 
-extern struct gdb_reader_funcs *gdb_init_reader(void) {
+extern struct gdb_reader_funcs* gdb_init_reader(void) {
   static struct gdb_reader_funcs funcs = {GDB_READER_INTERFACE_VERSION, NULL, read_debug_info, unwind_frame, get_frame_id, destroy_reader};
   return &funcs;
 }

@@ -12,8 +12,7 @@
 extern "C" void IntInstruction();
 
 #pragma GCC diagnostic ignored "-Wattributes" // Suppress warning in case control-flow checks aren't enabled
-__attribute__((naked, nocf_check))
-static void InvalidINT() {
+__attribute__((naked, nocf_check)) static void InvalidINT() {
   __asm volatile(R"(
   IntInstruction:
   .byte 0xF1; # int1
@@ -29,7 +28,7 @@ constexpr int EXPECTED_SIGNAL = SIGTRAP;
 
 TEST_CASE("Signals: Invalid INT1") {
   capturing_handler_skip = 0;
-  struct sigaction act{};
+  struct sigaction act {};
   act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);
@@ -42,10 +41,10 @@ TEST_CASE("Signals: Invalid INT1") {
 #define REG_RIP REG_EIP
 #endif
 
-REQUIRE(from_handler.has_value());
-CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP);
-CHECK(from_handler->mctx.gregs[REG_TRAPNO] == EXPECTED_TRAPNO);
-CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);
-CHECK(from_handler->si_code == EXPECTED_SI_CODE);
-CHECK(from_handler->signal == EXPECTED_SIGNAL);
+  REQUIRE(from_handler.has_value());
+  CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP);
+  CHECK(from_handler->mctx.gregs[REG_TRAPNO] == EXPECTED_TRAPNO);
+  CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);
+  CHECK(from_handler->si_code == EXPECTED_SI_CODE);
+  CHECK(from_handler->signal == EXPECTED_SIGNAL);
 }

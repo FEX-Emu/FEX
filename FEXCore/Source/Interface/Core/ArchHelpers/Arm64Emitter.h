@@ -80,17 +80,17 @@ constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_32B = FEXCore::ARMEmitter::PRe
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {
 protected:
-  Arm64Emitter(FEXCore::Context::ContextImpl *ctx, void* EmissionPtr = nullptr, size_t size = 0);
+  Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
-  FEXCore::Context::ContextImpl *EmitterCTX;
+  FEXCore::Context::ContextImpl* EmitterCTX;
   vixl::aarch64::CPU CPU;
 
-  std::span<const FEXCore::ARMEmitter::Register> ConfiguredDynamicRegisterBase{};
-  std::span<const FEXCore::ARMEmitter::Register> StaticRegisters{};
-  std::span<const FEXCore::ARMEmitter::Register> GeneralRegisters{};
-  std::span<const std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>> GeneralPairRegisters{};
-  std::span<const FEXCore::ARMEmitter::VRegister> StaticFPRegisters{};
-  std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters{};
+  std::span<const FEXCore::ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
+  std::span<const FEXCore::ARMEmitter::Register> StaticRegisters {};
+  std::span<const FEXCore::ARMEmitter::Register> GeneralRegisters {};
+  std::span<const std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>> GeneralPairRegisters {};
+  std::span<const FEXCore::ARMEmitter::VRegister> StaticFPRegisters {};
+  std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters {};
 
   /**
    * @name Register Allocation
@@ -152,8 +152,7 @@ protected:
   void SpillForABICall(bool SupportsPreserveAllABI, FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
       SpillForPreserveAllABICall(TmpReg, FPRs);
-    }
-    else {
+    } else {
       SpillStaticRegs(TmpReg, FPRs);
       PushDynamicRegsAndLR(TmpReg);
     }
@@ -162,8 +161,7 @@ protected:
   void FillForABICall(bool SupportsPreserveAllABI, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
       FillForPreserveAllABICall(FPRs);
-    }
-    else {
+    } else {
       PopDynamicRegsAndLR();
       FillStaticRegs(FPRs);
     }
@@ -185,8 +183,7 @@ protected:
 
   template<typename R, typename... P>
   void GenerateRuntimeCall(R (*Function)(P...)) {
-    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(&(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
 
     uintptr_t FunctionAddress = reinterpret_cast<uintptr_t>(Function);
 
@@ -204,8 +201,7 @@ protected:
 
   template<typename R, typename... P>
   void GenerateIndirectRuntimeCall(ARMEmitter::Register Reg) {
-    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(&(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
 
     hlt(vixl::aarch64::kIndirectRuntimeCallOpcode);
 
@@ -221,8 +217,8 @@ protected:
 
   template<>
   void GenerateIndirectRuntimeCall<float, __uint128_t>(ARMEmitter::Register Reg) {
-    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<float, __uint128_t>::Wrapper));
+    uintptr_t SimulatorWrapperAddress =
+      reinterpret_cast<uintptr_t>(&(vixl::aarch64::Simulator::RuntimeCallStructHelper<float, __uint128_t>::Wrapper));
 
     hlt(vixl::aarch64::kIndirectRuntimeCallOpcode);
 
@@ -262,4 +258,4 @@ protected:
 #endif
 };
 
-}
+} // namespace FEXCore::CPU

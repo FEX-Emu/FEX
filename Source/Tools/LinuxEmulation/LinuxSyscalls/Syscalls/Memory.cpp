@@ -19,23 +19,23 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterMemory(FEX::HLE::SyscallHandler *Handler) {
-    using namespace FEXCore::IR;
+void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
+  using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_FLAGS(brk, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, void *addr) -> uint64_t {
-      uint64_t Result = FEX::HLE::_SyscallHandler->HandleBRK(Frame, addr);
-      SYSCALL_ERRNO();
-    });
+  REGISTER_SYSCALL_IMPL_FLAGS(brk, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, void* addr) -> uint64_t {
+                                uint64_t Result = FEX::HLE::_SyscallHandler->HandleBRK(Frame, addr);
+                                SYSCALL_ERRNO();
+                              });
 
-    REGISTER_SYSCALL_IMPL_FLAGS(madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int32_t advice) -> uint64_t {
-      uint64_t Result = ::madvise(addr, length, advice);
+  REGISTER_SYSCALL_IMPL_FLAGS(madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length, int32_t advice) -> uint64_t {
+                                uint64_t Result = ::madvise(addr, length, advice);
 
-      if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMadvise(Frame->Thread, (uintptr_t)addr, length, advice);
-      }
-      SYSCALL_ERRNO();
-    });
-  }
+                                if (Result != -1) {
+                                  FEX::HLE::_SyscallHandler->TrackMadvise(Frame->Thread, (uintptr_t)addr, length, advice);
+                                }
+                                SYSCALL_ERRNO();
+                              });
 }
+} // namespace FEX::HLE

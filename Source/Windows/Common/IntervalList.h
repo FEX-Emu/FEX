@@ -17,7 +17,9 @@ public:
 
     Interval() = default;
 
-    Interval(SizeType Offset, SizeType End) : Offset{Offset}, End{End} {}
+    Interval(SizeType Offset, SizeType End)
+      : Offset {Offset}
+      , End {End} {}
   };
 
 private:
@@ -25,7 +27,7 @@ private:
 
 public:
   struct QueryResult {
-    bool Enclosed; ///< If the given offset was enclosed by an interval
+    bool Enclosed;       ///< If the given offset was enclosed by an interval
     DifferenceType Size; ///< Size of the interval starting from the query offset, or distance to the next interval if
                          /// `Enclosed` is false (if there is no next interval, size is 0)
   };
@@ -39,9 +41,8 @@ public:
       return;
     }
 
-    auto [FirstIt, EndIt] = std::equal_range(Intervals.begin(), Intervals.end(), Entry, [](const auto &LHS, const auto &RHS) {
-      return LHS.End <= RHS.Offset;
-    });
+    auto [FirstIt, EndIt] =
+      std::equal_range(Intervals.begin(), Intervals.end(), Entry, [](const auto& LHS, const auto& RHS) { return LHS.End <= RHS.Offset; });
 
     if (FirstIt == EndIt) {
       // No overlaps
@@ -70,9 +71,8 @@ public:
       return;
     }
 
-    auto [FirstIt, EndIt] = std::equal_range(Intervals.begin(), Intervals.end(), Entry, [](const auto &LHS, const auto &RHS) {
-      return LHS.End <= RHS.Offset;
-    });
+    auto [FirstIt, EndIt] =
+      std::equal_range(Intervals.begin(), Intervals.end(), Entry, [](const auto& LHS, const auto& RHS) { return LHS.End <= RHS.Offset; });
 
     if (FirstIt == EndIt) {
       // No intersecting intervals present, nothing more to do
@@ -81,7 +81,7 @@ public:
 
     if (FirstIt->Offset < Entry.Offset && FirstIt->End > Entry.End) {
       // The interval to be removed is fully enclosed by an existing interval
-      
+
       // Break the single interval into two smaller intervals on either side on the interval being removed
       const auto FirstPredecessorIt = Intervals.insert(FirstIt, *FirstIt);
       FirstIt = std::next(FirstPredecessorIt);
@@ -122,7 +122,7 @@ public:
   }
 
   QueryResult Query(SizeType Offset) {
-    const auto It = std::upper_bound(Intervals.begin(), Intervals.end(), Offset, [](const auto &LHS, const auto &RHS) {
+    const auto It = std::upper_bound(Intervals.begin(), Intervals.end(), Offset, [](const auto& LHS, const auto& RHS) {
       return LHS < RHS.End;
     }); // Lowest offset interval that (maybe) overlaps with the query offset
 
@@ -136,7 +136,7 @@ public:
   }
 
   bool Intersect(Interval Entry) {
-    const auto It = std::upper_bound(Intervals.begin(), Intervals.end(), Entry, [](const auto &LHS, const auto &RHS) {
+    const auto It = std::upper_bound(Intervals.begin(), Intervals.end(), Entry, [](const auto& LHS, const auto& RHS) {
       return LHS.Offset < RHS.End;
     }); // Lowest offset interval that (maybe) overlaps with the query offset
 

@@ -24,4 +24,4 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeH0F3ATables(Mode);
 }
 
-}
+} // namespace FEXCore::X86Tables

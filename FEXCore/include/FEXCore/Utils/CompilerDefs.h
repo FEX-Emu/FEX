@@ -29,7 +29,7 @@
 #define FEX_UNREACHABLE __builtin_unreachable()
 
 namespace FEXCore::Assert {
-  // This function can not be inlined
-  [[noreturn]]
-  FEX_DEFAULT_VISIBILITY void ForcedAssert();
-}
+// This function can not be inlined
+[[noreturn]]
+FEX_DEFAULT_VISIBILITY void ForcedAssert();
+} // namespace FEXCore::Assert

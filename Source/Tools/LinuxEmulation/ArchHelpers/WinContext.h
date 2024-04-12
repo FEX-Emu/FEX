@@ -30,7 +30,7 @@ static inline void SetState(PCONTEXT Context, uint64_t val) {
   Context->X28 = val;
 }
 
-static inline uint64_t *GetArmGPRs(PCONTEXT Context) {
+static inline uint64_t* GetArmGPRs(PCONTEXT Context) {
   return Context->X;
 }
 #endif
@@ -60,12 +60,12 @@ static inline void SetState(PCONTEXT Context, uint64_t val) {
   Context->R14 = val;
 }
 
-static inline uint64_t *GetArmGPRs(PCONTEXT Context) {
+static inline uint64_t* GetArmGPRs(PCONTEXT Context) {
   ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 
 #endif
 
-}
+} // namespace FEX::ArchHelpers::Context
 
 #endif

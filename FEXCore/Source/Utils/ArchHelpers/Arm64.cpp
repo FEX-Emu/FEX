@@ -16,9 +16,9 @@
 namespace FEXCore::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear,  TYPE_CAS_16BIT_TEAR);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas32Tear,  TYPE_CAS_32BIT_TEAR);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas64Tear,  TYPE_CAS_64BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear, TYPE_CAS_16BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas32Tear, TYPE_CAS_32BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas64Tear, TYPE_CAS_64BIT_TEAR);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas128Tear, TYPE_CAS_128BIT_TEAR);
 
 static void ClearICache(void* Begin, std::size_t Length) {
@@ -26,20 +26,19 @@ static void ClearICache(void* Begin, std::size_t Length) {
 }
 
 static __uint128_t LoadAcquire128(uint64_t Addr) {
-  __uint128_t Result{};
+  __uint128_t Result {};
   uint64_t Lower;
   uint64_t Upper;
   // This specifically avoids using std::atomic<__uint128_t>
   // std::atomic helper does a ldaxp + stxp pair that crashes when the page is only mapped readable
   __asm volatile(
-R"(
+    R"(
   ldaxp %[ResultLower], %[ResultUpper], [%[Addr]];
   clrex;
 )"
-  : [ResultLower] "=r" (Lower)
-  , [ResultUpper] "=r" (Upper)
-  : [Addr] "r" (Addr)
-  : "memory");
+    : [ResultLower] "=r"(Lower), [ResultUpper] "=r"(Upper)
+    : [Addr] "r"(Addr)
+    : "memory");
   Result = Upper;
   Result <<= 64;
   Result |= Lower;
@@ -47,32 +46,32 @@ R"(
 }
 
 static uint64_t LoadAcquire64(uint64_t Addr) {
-  std::atomic<uint64_t> *Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+  std::atomic<uint64_t>* Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
   return Atom->load(std::memory_order_acquire);
 }
 
-static bool StoreCAS64(uint64_t &Expected, uint64_t Val, uint64_t Addr) {
-  std::atomic<uint64_t> *Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+static bool StoreCAS64(uint64_t& Expected, uint64_t Val, uint64_t Addr) {
+  std::atomic<uint64_t>* Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
 static uint32_t LoadAcquire32(uint64_t Addr) {
-  std::atomic<uint32_t> *Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+  std::atomic<uint32_t>* Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
   return Atom->load(std::memory_order_acquire);
 }
 
-static bool StoreCAS32(uint32_t &Expected, uint32_t Val, uint64_t Addr) {
-  std::atomic<uint32_t> *Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+static bool StoreCAS32(uint32_t& Expected, uint32_t Val, uint64_t Addr) {
+  std::atomic<uint32_t>* Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
 static uint8_t LoadAcquire8(uint64_t Addr) {
-  std::atomic<uint8_t> *Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
+  std::atomic<uint8_t>* Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
   return Atom->load(std::memory_order_acquire);
 }
 
-static bool StoreCAS8(uint8_t &Expected, uint8_t Val, uint64_t Addr) {
-  std::atomic<uint8_t> *Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
+static bool StoreCAS8(uint8_t& Expected, uint8_t Val, uint64_t Addr) {
+  std::atomic<uint8_t>* Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
@@ -82,8 +81,8 @@ uint16_t DoLoad16(uint64_t Addr) {
     // Address crosses over 16byte or 64byte threshold
     // Needs two loads
     uint64_t AddrUpper = Addr + 1;
-    uint8_t ActualUpper{};
-    uint8_t ActualLower{};
+    uint8_t ActualUpper {};
+    uint8_t ActualLower {};
     // Careful ordering here
     ActualUpper = LoadAcquire8(AddrUpper);
     ActualLower = LoadAcquire8(Addr);
@@ -92,8 +91,7 @@ uint16_t DoLoad16(uint64_t Addr) {
     Result <<= 8;
     Result |= ActualLower;
     return Result;
-  }
-  else {
+  } else {
     AlignmentMask = 0b111;
     if ((Addr & AlignmentMask) == 7) {
       // Crosses 8byte boundary
@@ -107,8 +105,7 @@ uint16_t DoLoad16(uint64_t Addr) {
       // Zexts the result
       uint16_t Result = TmpResult >> (Alignment * 8);
       return Result;
-    }
-    else {
+    } else {
       AlignmentMask = 0b11;
       if ((Addr & AlignmentMask) == 3) {
         // Crosses 4byte boundary
@@ -116,21 +113,20 @@ uint16_t DoLoad16(uint64_t Addr) {
         uint64_t Alignment = Addr & AlignmentMask;
         Addr &= ~AlignmentMask;
 
-        std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+        std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
         uint64_t TmpResult = Atomic->load();
 
         // Zexts the result
         uint16_t Result = TmpResult >> (Alignment * 8);
         return Result;
-      }
-      else {
+      } else {
         // Fits within 4byte boundary
         // Only needs 32bit Load
         // Only alignment offset will be 1 here
         uint64_t Alignment = Addr & AlignmentMask;
         Addr &= ~AlignmentMask;
 
-        std::atomic<uint32_t> *Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+        std::atomic<uint32_t>* Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
         uint32_t TmpResult = Atomic->load();
 
         // Zexts the result
@@ -159,8 +155,7 @@ uint32_t DoLoad32(uint64_t Addr) {
     Result <<= 32;
     Result |= ActualLower;
     return Result >> (Alignment * 8);
-  }
-  else {
+  } else {
     AlignmentMask = 0b111;
     if ((Addr & AlignmentMask) >= 5) {
       // Crosses 8byte boundary
@@ -172,15 +167,14 @@ uint32_t DoLoad32(uint64_t Addr) {
       __uint128_t TmpResult = LoadAcquire128(Addr);
 
       return TmpResult >> (Alignment * 8);
-    }
-    else {
+    } else {
       // Fits within 8byte boundary
       // Only needs 64bit CAS
       // Alignments can be [1,5)
       uint64_t Alignment = Addr & AlignmentMask;
       Addr &= ~AlignmentMask;
 
-      std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+      std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
       uint64_t TmpResult = Atomic->load();
 
       return TmpResult >> (Alignment * 8);
@@ -197,8 +191,8 @@ uint64_t DoLoad64(uint64_t Addr) {
 
     // Crosses a 16byte boundary
     // Needs two 8 byte loads
-    uint64_t ActualUpper{};
-    uint64_t ActualLower{};
+    uint64_t ActualUpper {};
+    uint64_t ActualLower {};
     // Careful ordering here
     ActualUpper = LoadAcquire64(AddrUpper);
     ActualLower = LoadAcquire64(Addr);
@@ -207,8 +201,7 @@ uint64_t DoLoad64(uint64_t Addr) {
     Result <<= 64;
     Result |= ActualLower;
     return Result >> (Alignment * 8);
-  }
-  else {
+  } else {
     // Fits within a 16byte region
     uint64_t Alignment = Addr & AlignmentMask;
     Addr &= ~AlignmentMask;
@@ -235,17 +228,18 @@ std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
     } Bytes;
   };
 
-  AlignedData *Data = reinterpret_cast<AlignedData*>(alloca(sizeof(AlignedData)));
+  AlignedData* Data = reinterpret_cast<AlignedData*>(alloca(sizeof(AlignedData)));
   Data->Large.Upper = LoadAcquire128(AddrUpper);
   Data->Large.Lower = LoadAcquire128(Addr);
 
-  uint64_t ResultLower{}, ResultUpper{};
+  uint64_t ResultLower {}, ResultUpper {};
   memcpy(&ResultLower, &Data->Bytes.Data[Alignment], sizeof(uint64_t));
   memcpy(&ResultUpper, &Data->Bytes.Data[Alignment + sizeof(uint64_t)], sizeof(uint64_t));
   return {ResultLower, ResultUpper};
 }
 
-static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1, uint32_t ExpectedReg2, uint32_t AddressReg) {
+static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1,
+                      uint32_t ExpectedReg2, uint32_t AddressReg) {
   if (Size == 0) {
     // 32bit
     uint64_t Addr = GPRs[AddressReg];
@@ -281,8 +275,8 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
       __uint128_t Mask = ~0ULL;
       Mask <<= Alignment * 8;
       __uint128_t NegMask = ~Mask;
-      __uint128_t TmpExpected{};
-      __uint128_t TmpDesired{};
+      __uint128_t TmpExpected {};
+      __uint128_t TmpDesired {};
 
       __uint128_t Desired = DesiredUpper;
       Desired <<= 32;
@@ -320,8 +314,7 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
             if (StoreCAS64(TmpExpectedLower, TmpDesiredLower, Addr)) {
               // Stored successfully
               return true;
-            }
-            else {
+            } else {
               // CAS managed to tear, we can't really solve this
               // Continue down the path to let the guest know values weren't expected
               FEXCORE_TELEMETRY_SET(Cas128Tear, 1);
@@ -331,8 +324,7 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
           TmpExpected = TmpExpectedUpper;
           TmpExpected <<= 64;
           TmpExpected |= TmpExpectedLower;
-        }
-        else {
+        } else {
           // Mismatch up front
           TmpExpected = TmpActual;
         }
@@ -364,18 +356,17 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
         GPRs[ExpectedReg2] = FailedResult >> 32;
         return true;
       }
-    }
-    else {
+    } else {
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t> *Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
 
       __uint128_t Mask = ~0ULL;
       Mask <<= Alignment * 8;
       __uint128_t NegMask = ~Mask;
-      __uint128_t TmpExpected{};
-      __uint128_t TmpDesired{};
+      __uint128_t TmpExpected {};
+      __uint128_t TmpDesired {};
 
       __uint128_t Desired = (uint64_t)DesiredUpper << 32 | DesiredLower;
       Desired <<= Alignment * 8;
@@ -399,8 +390,7 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
         if (CASResult) {
           // Successful, so we are done
           return true;
-        }
-        else {
+        } else {
           // Not successful
           // Now we need to check the results to see if we need to try again
           __uint128_t FailedResultOurBits = TmpExpected & Mask;
@@ -425,7 +415,7 @@ static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
   return false;
 }
 
-bool HandleCASPAL(uint32_t Instr, uint64_t *GPRs) {
+bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs) {
   uint32_t Size = (Instr >> 30) & 1;
 
   uint32_t DesiredReg1 = Instr & 0b11111;
@@ -437,7 +427,7 @@ bool HandleCASPAL(uint32_t Instr, uint64_t *GPRs) {
   return RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
 }
 
-uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *GPRs) {
+uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* GPRs) {
   // caspair
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
   // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
@@ -452,20 +442,20 @@ uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *
   // [11] mov(Dst.second.W(), TMP3.W());
   // [12] clrex();
 
-  uint32_t *PC = (uint32_t*)ProgramCounter;
+  uint32_t* PC = (uint32_t*)ProgramCounter;
 
   uint32_t Size = (Instr >> 30) & 1;
   uint32_t AddrReg = (Instr >> 5) & 0x1F;
   uint32_t DataReg = Instr & 0x1F;
   uint32_t DataReg2 = (Instr >> 10) & 0x1F;
 
-  uint32_t ExpectedReg1{};
-  uint32_t ExpectedReg2{};
+  uint32_t ExpectedReg1 {};
+  uint32_t ExpectedReg2 {};
 
-  uint32_t DesiredReg1{};
-  uint32_t DesiredReg2{};
+  uint32_t DesiredReg1 {};
+  uint32_t DesiredReg2 {};
 
-  if(Size == 1) {
+  if (Size == 1) {
     // 64-bit pair happens on paranoid vector loads
     // [1] ldaxp(TMP1, TMP2, MemSrc);
     // [2] clrex();
@@ -476,8 +466,7 @@ uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *
     // [3] cbnz(TMP3, &B); // < Overwritten with DMB
 
     if (DataReg == 31) {
-    }
-    else {
+    } else {
       uint32_t NextInstr = PC[1];
       if ((NextInstr & ArchHelpers::Arm64::CLREX_MASK) == ArchHelpers::Arm64::CLREX_INST) {
         uint64_t Addr = GPRs[AddrReg];
@@ -498,25 +487,25 @@ uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *
     return 0;
   }
 
-  //Only 32-bit pairs
-  for(int i = 1; i < 10; i++) {
+  // Only 32-bit pairs
+  for (int i = 1; i < 10; i++) {
     uint32_t NextInstr = PC[i];
     if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
         (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
-       ExpectedReg1 = GetRmReg(NextInstr);
+      ExpectedReg1 = GetRmReg(NextInstr);
     } else if ((NextInstr & ArchHelpers::Arm64::CCMP_MASK) == ArchHelpers::Arm64::CCMP_INST) {
-       ExpectedReg2 = GetRmReg(NextInstr);
+      ExpectedReg2 = GetRmReg(NextInstr);
     } else if ((NextInstr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) {
-       DesiredReg1 = (NextInstr & 0x1F);
-       DesiredReg2 = (NextInstr >> 10) & 0x1F;
+      DesiredReg1 = (NextInstr & 0x1F);
+      DesiredReg2 = (NextInstr >> 10) & 0x1F;
     }
   }
 
-  //mov expected into the temp registers used by JIT
+  // mov expected into the temp registers used by JIT
   GPRs[DataReg] = GPRs[ExpectedReg1];
   GPRs[DataReg2] = GPRs[ExpectedReg2];
 
-  if(RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
+  if (RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
     return 9 * sizeof(uint32_t); // skip to mov + clrex
   } else {
     return 0;
@@ -524,12 +513,12 @@ uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *
 }
 
 static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
-  uint32_t *PC = (uint32_t*)ProgramCounter;
+  uint32_t* PC = (uint32_t*)ProgramCounter;
 
   uint32_t Size = (Instr >> 30) & 1;
   uint32_t DataReg = Instr & 0x1F;
 
-  if(Size == 1) {
+  if (Size == 1) {
     // 64-bit pair happens on paranoid vector stores
     // [0] ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS. Overwritten with DMB
     // [1] stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
@@ -539,12 +528,7 @@ static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
       uint32_t AddrReg = (NextInstr >> 5) & 0x1F;
       DataReg = NextInstr & 0x1F;
       uint32_t DataReg2 = (NextInstr >> 10) & 0x1F;
-      uint32_t STP =
-        (0b10 << 30) |
-        (0b101001000000000 << 15) |
-        (DataReg2 << 10) |
-        (AddrReg << 5) |
-        DataReg;
+      uint32_t STP = (0b10 << 30) | (0b101001000000000 << 15) | (DataReg2 << 10) | (AddrReg << 5) | DataReg;
 
       PC[0] = DMB;
       PC[1] = STP;
@@ -558,19 +542,14 @@ static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
   return false;
 }
 
-template <typename T>
+template<typename T>
 using CASExpectedFn = T (*)(T Src, T Expected);
-template <typename T>
+template<typename T>
 using CASDesiredFn = T (*)(T Src, T Desired);
 
 template<bool Retry>
-static
-uint16_t DoCAS16(
-  uint16_t DesiredSrc,
-  uint16_t ExpectedSrc,
-  uint64_t Addr,
-  CASExpectedFn<uint16_t> ExpectedFunction,
-  CASDesiredFn<uint16_t> DesiredFunction) {
+static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint16_t> ExpectedFunction,
+                        CASDesiredFn<uint16_t> DesiredFunction) {
 
   if ((Addr & 63) == 63) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
@@ -586,8 +565,8 @@ uint16_t DoCAS16(
     uint64_t AddrUpper = Addr + 1;
 
     while (1) {
-      uint8_t ActualUpper{};
-      uint8_t ActualLower{};
+      uint8_t ActualUpper {};
+      uint8_t ActualLower {};
       // Careful ordering here
       ActualUpper = LoadAcquire8(AddrUpper);
       ActualLower = LoadAcquire8(Addr);
@@ -605,14 +584,12 @@ uint16_t DoCAS16(
       uint8_t ExpectedUpper = Expected >> 8;
 
       bool Tear = false;
-      if (ActualUpper == ExpectedUpper &&
-          ActualLower == ExpectedLower) {
+      if (ActualUpper == ExpectedUpper && ActualLower == ExpectedLower) {
         if (StoreCAS8(ExpectedUpper, DesiredUpper, AddrUpper)) {
           if (StoreCAS8(ExpectedLower, DesiredLower, Addr)) {
             // Stored successfully
             return Expected;
-          }
-          else {
+          } else {
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
@@ -635,19 +612,16 @@ uint16_t DoCAS16(
           // If we are retrying and tearing then we can't do anything here
           // XXX: Resolve with TME
           return FailedResult;
-        }
-        else {
+        } else {
           // We can retry safely
         }
-      }
-      else {
+      } else {
         // Without Retry (CAS) then we have failed regardless of tear
         // CAS failed but handled successfully
         return FailedResult;
       }
     }
-  }
-  else {
+  } else {
     AlignmentMask = 0b111;
     if ((Addr & AlignmentMask) == 7) {
       // Crosses 8byte boundary
@@ -655,13 +629,13 @@ uint16_t DoCAS16(
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t> *Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
 
       __uint128_t Mask = 0xFFFF;
       Mask <<= Alignment * 8;
       __uint128_t NegMask = ~Mask;
-      __uint128_t TmpExpected{};
-      __uint128_t TmpDesired{};
+      __uint128_t TmpExpected {};
+      __uint128_t TmpDesired {};
 
       while (1) {
         TmpExpected = Atomic128->load();
@@ -685,8 +659,7 @@ uint16_t DoCAS16(
         if (CASResult) {
           // Successful, so we are done
           return Expected >> (Alignment * 8);
-        }
-        else {
+        } else {
           if constexpr (Retry) {
             // If we failed but we have enabled retry then just retry without checking results
             // CAS can't retry but atomic memory ops need to retry until passing
@@ -710,8 +683,7 @@ uint16_t DoCAS16(
           return FailedResult;
         }
       }
-    }
-    else {
+    } else {
       AlignmentMask = 0b11;
       if ((Addr & AlignmentMask) == 3) {
         // Crosses 4byte boundary
@@ -724,10 +696,10 @@ uint16_t DoCAS16(
 
         uint64_t NegMask = ~Mask;
 
-        uint64_t TmpExpected{};
-        uint64_t TmpDesired{};
+        uint64_t TmpExpected {};
+        uint64_t TmpDesired {};
 
-        std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+        std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
         while (1) {
           TmpExpected = Atomic->load();
 
@@ -750,8 +722,7 @@ uint16_t DoCAS16(
           if (CASResult) {
             // Successful, so we are done
             return Expected >> (Alignment * 8);
-          }
-          else {
+          } else {
             if constexpr (Retry) {
               // If we failed but we have enabled retry then just retry without checking results
               // CAS can't retry but atomic memory ops need to retry until passing
@@ -776,8 +747,7 @@ uint16_t DoCAS16(
             return FailedResult;
           }
         }
-      }
-      else {
+      } else {
         // Fits within 4byte boundary
         // Only needs 32bit CAS
         // Only alignment offset will be 1 here
@@ -789,10 +759,10 @@ uint16_t DoCAS16(
 
         uint32_t NegMask = ~Mask;
 
-        uint32_t TmpExpected{};
-        uint32_t TmpDesired{};
+        uint32_t TmpExpected {};
+        uint32_t TmpDesired {};
 
-        std::atomic<uint32_t> *Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+        std::atomic<uint32_t>* Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
         while (1) {
           TmpExpected = Atomic->load();
 
@@ -816,8 +786,7 @@ uint16_t DoCAS16(
           if (CASResult) {
             // Successful, so we are done
             return Expected >> (Alignment * 8);
-          }
-          else {
+          } else {
             if constexpr (Retry) {
               // If we failed but we have enabled retry then just retry without checking results
               // CAS can't retry but atomic memory ops need to retry until passing
@@ -848,13 +817,8 @@ uint16_t DoCAS16(
 }
 
 template<bool Retry>
-static
-uint32_t DoCAS32(
-  uint32_t DesiredSrc,
-  uint32_t ExpectedSrc,
-  uint64_t Addr,
-  CASExpectedFn<uint32_t> ExpectedFunction,
-  CASDesiredFn<uint32_t> DesiredFunction) {
+static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint32_t> ExpectedFunction,
+                        CASDesiredFn<uint32_t> DesiredFunction) {
 
   if ((Addr & 63) > 60) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
@@ -905,8 +869,7 @@ uint32_t DoCAS32(
           if (StoreCAS32(TmpExpectedLower, TmpDesiredLower, Addr)) {
             // Stored successfully
             return Expected;
-          }
-          else {
+          } else {
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
@@ -917,8 +880,7 @@ uint32_t DoCAS32(
         TmpExpected = TmpExpectedUpper;
         TmpExpected <<= 32;
         TmpExpected |= TmpExpectedLower;
-      }
-      else {
+      } else {
         // Mismatch up front
         TmpExpected = TmpActual;
       }
@@ -943,19 +905,16 @@ uint32_t DoCAS32(
           // If we are retrying and tearing then we can't do anything here
           // XXX: Resolve with TME
           return FailedResult;
-        }
-        else {
+        } else {
           // We can retry safely
         }
-      }
-      else {
+      } else {
         // Without Retry (CAS) then we have failed regardless of tear
         // CAS failed but handled successfully
         return FailedResult;
       }
     }
-  }
-  else {
+  } else {
     AlignmentMask = 0b111;
     if ((Addr & AlignmentMask) >= 5) {
       // Crosses 8byte boundary
@@ -963,13 +922,13 @@ uint32_t DoCAS32(
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t> *Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
 
       __uint128_t Mask = ~0U;
       Mask <<= Alignment * 8;
       __uint128_t NegMask = ~Mask;
-      __uint128_t TmpExpected{};
-      __uint128_t TmpDesired{};
+      __uint128_t TmpExpected {};
+      __uint128_t TmpDesired {};
 
       while (1) {
         __uint128_t TmpActual = Atomic128->load();
@@ -991,8 +950,7 @@ uint32_t DoCAS32(
         if (CASResult) {
           // Stored successfully
           return Expected;
-        }
-        else {
+        } else {
           if constexpr (Retry) {
             // If we failed but we have enabled retry then just retry without checking results
             // CAS can't retry but atomic memory ops need to retry until passing
@@ -1017,8 +975,7 @@ uint32_t DoCAS32(
           return FailedResult;
         }
       }
-    }
-    else {
+    } else {
       // Fits within 8byte boundary
       // Only needs 64bit CAS
       // Alignments can be [1,5)
@@ -1030,10 +987,10 @@ uint32_t DoCAS32(
 
       uint64_t NegMask = ~Mask;
 
-      uint64_t TmpExpected{};
-      uint64_t TmpDesired{};
+      uint64_t TmpExpected {};
+      uint64_t TmpDesired {};
 
-      std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+      std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
       while (1) {
         uint64_t TmpActual = Atomic->load();
 
@@ -1054,8 +1011,7 @@ uint32_t DoCAS32(
         if (CASResult) {
           // Stored successfully
           return Expected;
-        }
-        else {
+        } else {
           if constexpr (Retry) {
             // If we failed but we have enabled retry then just retry without checking results
             // CAS can't retry but atomic memory ops need to retry until passing
@@ -1086,13 +1042,8 @@ uint32_t DoCAS32(
 }
 
 template<bool Retry>
-static
-uint64_t DoCAS64(
-  uint64_t DesiredSrc,
-  uint64_t ExpectedSrc,
-  uint64_t Addr,
-  CASExpectedFn<uint64_t> ExpectedFunction,
-  CASDesiredFn<uint64_t> DesiredFunction) {
+static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint64_t> ExpectedFunction,
+                        CASDesiredFn<uint64_t> DesiredFunction) {
 
   if ((Addr & 63) > 56) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
@@ -1112,8 +1063,8 @@ uint64_t DoCAS64(
     __uint128_t Mask = ~0ULL;
     Mask <<= Alignment * 8;
     __uint128_t NegMask = ~Mask;
-    __uint128_t TmpExpected{};
-    __uint128_t TmpDesired{};
+    __uint128_t TmpExpected {};
+    __uint128_t TmpDesired {};
 
     while (1) {
       __uint128_t LoadOrderUpper = LoadAcquire64(AddrUpper);
@@ -1145,8 +1096,7 @@ uint64_t DoCAS64(
           if (StoreCAS64(TmpExpectedLower, TmpDesiredLower, Addr)) {
             // Stored successfully
             return Expected;
-          }
-          else {
+          } else {
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
@@ -1157,8 +1107,7 @@ uint64_t DoCAS64(
         TmpExpected = TmpExpectedUpper;
         TmpExpected <<= 64;
         TmpExpected |= TmpExpectedLower;
-      }
-      else {
+      } else {
         // Mismatch up front
         TmpExpected = TmpActual;
       }
@@ -1183,29 +1132,26 @@ uint64_t DoCAS64(
           // If we are retrying and tearing then we can't do anything here
           // XXX: Resolve with TME
           return FailedResult;
-        }
-        else {
+        } else {
           // We can retry safely
         }
-      }
-      else {
+      } else {
         // Without Retry (CAS) then we have failed regardless of tear
         // CAS failed but handled successfully
         return FailedResult;
       }
     }
-  }
-  else {
+  } else {
     // Fits within a 16byte region
     uint64_t Alignment = Addr & AlignmentMask;
     Addr &= ~AlignmentMask;
-    std::atomic<__uint128_t> *Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+    std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
 
     __uint128_t Mask = ~0ULL;
     Mask <<= Alignment * 8;
     __uint128_t NegMask = ~Mask;
-    __uint128_t TmpExpected{};
-    __uint128_t TmpDesired{};
+    __uint128_t TmpExpected {};
+    __uint128_t TmpDesired {};
 
     while (1) {
       __uint128_t TmpActual = Atomic128->load();
@@ -1227,8 +1173,7 @@ uint64_t DoCAS64(
       if (CASResult) {
         // Stored successfully
         return Expected;
-      }
-      else {
+      } else {
         if constexpr (Retry) {
           // If we failed but we have enabled retry then just retry without checking results
           // CAS can't retry but atomic memory ops need to retry until passing
@@ -1256,7 +1201,7 @@ uint64_t DoCAS64(
   }
 }
 
-static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
+static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
   uint64_t Addr = GPRs[AddressReg];
 
   // Cross-cacheline CAS doesn't work on ARM
@@ -1271,9 +1216,7 @@ static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
   // Only need to handle 16, 32, 64
   if (Size == 2) {
     auto Res = DoCAS16<false>(
-      GPRs[DesiredReg],
-      GPRs[ExpectedReg],
-      Addr,
+      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
       [](uint16_t, uint16_t Expected) -> uint16_t {
         // Expected is just Expected
         return Expected;
@@ -1289,12 +1232,9 @@ static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
       GPRs[ExpectedReg] = Res;
     }
     return true;
-  }
-  else if (Size == 4) {
+  } else if (Size == 4) {
     auto Res = DoCAS32<false>(
-      GPRs[DesiredReg],
-      GPRs[ExpectedReg],
-      Addr,
+      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
       [](uint32_t, uint32_t Expected) -> uint32_t {
         // Expected is just Expected
         return Expected;
@@ -1310,12 +1250,9 @@ static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
       GPRs[ExpectedReg] = Res;
     }
     return true;
-  }
-  else if (Size == 8) {
+  } else if (Size == 8) {
     auto Res = DoCAS64<false>(
-      GPRs[DesiredReg],
-      GPRs[ExpectedReg],
-      Addr,
+      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
       [](uint64_t, uint64_t Expected) -> uint64_t {
         // Expected is just Expected
         return Expected;
@@ -1336,7 +1273,7 @@ static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
   return false;
 }
 
-static bool HandleCASAL(uint64_t *GPRs, uint32_t Instr) {
+static bool HandleCASAL(uint64_t* GPRs, uint32_t Instr) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DesiredReg = Instr & 0b11111;
@@ -1345,7 +1282,7 @@ static bool HandleCASAL(uint64_t *GPRs, uint32_t Instr) {
   return RunCASAL(GPRs, Size, DesiredReg, ExpectedReg, AddressReg);
 }
 
-static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
+static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs) {
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t SourceReg = (Instr >> 16) & 0b11111;
@@ -1380,43 +1317,27 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
       return Desired;
     };
 
-    CASDesiredFn<uint16_t> DesiredFunction{};
+    CASDesiredFn<uint16_t> DesiredFunction {};
 
     switch (Op) {
-      case ATOMIC_ADD_OP:
-        DesiredFunction = ADDDesired;
-        break;
-      case ATOMIC_CLR_OP:
-        DesiredFunction = CLRDesired;
-        break;
-      case ATOMIC_EOR_OP:
-        DesiredFunction = EORDesired;
-        break;
-      case ATOMIC_SET_OP:
-        DesiredFunction = SETDesired;
-        break;
-      case ATOMIC_SWAP_OP:
-        DesiredFunction = SWAPDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
-        return false;
+    case ATOMIC_ADD_OP: DesiredFunction = ADDDesired; break;
+    case ATOMIC_CLR_OP: DesiredFunction = CLRDesired; break;
+    case ATOMIC_EOR_OP: DesiredFunction = EORDesired; break;
+    case ATOMIC_SET_OP: DesiredFunction = SETDesired; break;
+    case ATOMIC_SWAP_OP: DesiredFunction = SWAPDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS16<true>(
-      GPRs[SourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS16<true>(GPRs[SourceReg],
+                             0, // Unused
+                             Addr, NOPExpected, DesiredFunction);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
     return true;
-  }
-  else if (Size == 4) {
+  } else if (Size == 4) {
     auto NOPExpected = [](uint32_t SrcVal, uint32_t) -> uint32_t {
       return SrcVal;
     };
@@ -1441,43 +1362,27 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
       return Desired;
     };
 
-    CASDesiredFn<uint32_t> DesiredFunction{};
+    CASDesiredFn<uint32_t> DesiredFunction {};
 
     switch (Op) {
-      case ATOMIC_ADD_OP:
-        DesiredFunction = ADDDesired;
-        break;
-      case ATOMIC_CLR_OP:
-        DesiredFunction = CLRDesired;
-        break;
-      case ATOMIC_EOR_OP:
-        DesiredFunction = EORDesired;
-        break;
-      case ATOMIC_SET_OP:
-        DesiredFunction = SETDesired;
-        break;
-      case ATOMIC_SWAP_OP:
-        DesiredFunction = SWAPDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
-        return false;
+    case ATOMIC_ADD_OP: DesiredFunction = ADDDesired; break;
+    case ATOMIC_CLR_OP: DesiredFunction = CLRDesired; break;
+    case ATOMIC_EOR_OP: DesiredFunction = EORDesired; break;
+    case ATOMIC_SET_OP: DesiredFunction = SETDesired; break;
+    case ATOMIC_SWAP_OP: DesiredFunction = SWAPDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS32<true>(
-      GPRs[SourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS32<true>(GPRs[SourceReg],
+                             0, // Unused
+                             Addr, NOPExpected, DesiredFunction);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
     return true;
-  }
-  else if (Size == 8) {
+  } else if (Size == 8) {
     auto NOPExpected = [](uint64_t SrcVal, uint64_t) -> uint64_t {
       return SrcVal;
     };
@@ -1502,35 +1407,20 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
       return Desired;
     };
 
-    CASDesiredFn<uint64_t> DesiredFunction{};
+    CASDesiredFn<uint64_t> DesiredFunction {};
 
     switch (Op) {
-      case ATOMIC_ADD_OP:
-        DesiredFunction = ADDDesired;
-        break;
-      case ATOMIC_CLR_OP:
-        DesiredFunction = CLRDesired;
-        break;
-      case ATOMIC_EOR_OP:
-        DesiredFunction = EORDesired;
-        break;
-      case ATOMIC_SET_OP:
-        DesiredFunction = SETDesired;
-        break;
-      case ATOMIC_SWAP_OP:
-        DesiredFunction = SWAPDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
-        return false;
+    case ATOMIC_ADD_OP: DesiredFunction = ADDDesired; break;
+    case ATOMIC_CLR_OP: DesiredFunction = CLRDesired; break;
+    case ATOMIC_EOR_OP: DesiredFunction = EORDesired; break;
+    case ATOMIC_SET_OP: DesiredFunction = SETDesired; break;
+    case ATOMIC_SWAP_OP: DesiredFunction = SWAPDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS64<true>(
-      GPRs[SourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS64<true>(GPRs[SourceReg],
+                             0, // Unused
+                             Addr, NOPExpected, DesiredFunction);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
@@ -1542,7 +1432,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
   return false;
 }
 
-static bool HandleAtomicLoad(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
+static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t ResultReg = Instr & 0b11111;
@@ -1557,16 +1447,14 @@ static bool HandleAtomicLoad(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
       GPRs[ResultReg] = Res;
     }
     return true;
-  }
-  else if (Size == 4) {
+  } else if (Size == 4) {
     auto Res = DoLoad32(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
     return true;
-  }
-  else if (Size == 8) {
+  } else if (Size == 8) {
     auto Res = DoLoad64(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
@@ -1578,7 +1466,7 @@ static bool HandleAtomicLoad(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
   return false;
 }
 
-static bool HandleAtomicStore(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
+static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DataReg = Instr & 0x1F;
@@ -1601,8 +1489,7 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
         return Desired;
       });
     return true;
-  }
-  else if (Size == 4) {
+  } else if (Size == 4) {
     DoCAS32<DoRetry>(
       GPRs[DataReg],
       0, // Unused
@@ -1616,8 +1503,7 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
         return Desired;
       });
     return true;
-  }
-  else if (Size == 8) {
+  } else if (Size == 8) {
     DoCAS64<DoRetry>(
       GPRs[DataReg],
       0, // Unused
@@ -1636,8 +1522,7 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
   return false;
 }
 
-static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t *GPRs)
-{
+static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t* GPRs) {
   // ARMv8.0 CAS
   // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc))
   // [2] cmp (TMP2.W(), Expected.W())
@@ -1649,40 +1534,39 @@ static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t *GPRs)
   // [8] mov (.., TMP2.W());
   // [9] clrex
 
-  uint32_t *PC = (uint32_t*)ProgramCounter;
+  uint32_t* PC = (uint32_t*)ProgramCounter;
   uint32_t Instr = PC[0];
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t AddressReg = GetRnReg(Instr);
-  uint32_t ResultReg = GetRdReg(Instr); //TMP2
+  uint32_t ResultReg = GetRdReg(Instr); // TMP2
   uint32_t DesiredReg = 0;
   uint32_t ExpectedReg = 0;
   for (size_t i = 1; i < 6; ++i) {
-     uint32_t NextInstr = PC[i];
-     if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
-       #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-       // Just double check that the memory destination matches
-       const uint32_t StoreAddressReg = GetRnReg(NextInstr);
-       LOGMAN_THROW_A_FMT(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
-       #endif
-       DesiredReg = GetRdReg(NextInstr);
-     }
-     else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
-              (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
-       ExpectedReg = GetRmReg(NextInstr);
-     }
+    uint32_t NextInstr = PC[i];
+    if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      // Just double check that the memory destination matches
+      const uint32_t StoreAddressReg = GetRnReg(NextInstr);
+      LOGMAN_THROW_A_FMT(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
+#endif
+      DesiredReg = GetRdReg(NextInstr);
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
+               (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
+      ExpectedReg = GetRmReg(NextInstr);
+    }
   }
-  //set up CASAL by doing mov(TMP2, Expected)
+  // set up CASAL by doing mov(TMP2, Expected)
   GPRs[ResultReg] = GPRs[ExpectedReg];
 
-  if(RunCASAL(GPRs, Size, DesiredReg, ResultReg, AddressReg)) {
-    return 7 * sizeof(uint32_t); //jump to mov to allocated register
+  if (RunCASAL(GPRs, Size, DesiredReg, ResultReg, AddressReg)) {
+    return 7 * sizeof(uint32_t); // jump to mov to allocated register
   } else {
     return 0;
   }
 }
 
-static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_t *GPRs) {
-  uint32_t *PC = (uint32_t*)ProgramCounter;
+static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_t* GPRs) {
+  uint32_t* PC = (uint32_t*)ProgramCounter;
   uint32_t Instr = PC[0];
 
   // Atomic Add
@@ -1746,48 +1630,38 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ADD_SHIFT_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_ADD;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_INST ||
-             (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_SHIFT_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_INST ||
+               (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_SHIFT_INST) {
       uint32_t RnReg = GetRnReg(NextInstr);
       if (RnReg == REGISTER_MASK) {
         // Zero reg means neg
         AtomicOp = ExclusiveAtomicPairType::TYPE_NEG;
-      }
-      else {
+      } else {
         AtomicOp = ExclusiveAtomicPairType::TYPE_SUB;
       }
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
-             (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST ) {
-      return HandleCAS_NoAtomics(ProgramCounter, GPRs); //ARMv8.0 CAS
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::AND_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
+               (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
+      return HandleCAS_NoAtomics(ProgramCounter, GPRs); // ARMv8.0 CAS
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::BIC_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::BIC_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_BIC;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::OR_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::OR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_OR;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ORN_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ORN_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_ORN;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EOR_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EOR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_EOR;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EON_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EON_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_EON;
       DataSourceReg = GetRmReg(NextInstr);
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       // Just double check that the memory destination matches
       const uint32_t StoreAddressReg = GetRnReg(NextInstr);
@@ -1802,14 +1676,12 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         // Source is directly in STLXR
         DataSourceReg = StoreResultReg;
       }
-    }
-    else if ((NextInstr & ArchHelpers::Arm64::CBNZ_MASK) == ArchHelpers::Arm64::CBNZ_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::CBNZ_MASK) == ArchHelpers::Arm64::CBNZ_INST) {
       // Found the CBNZ, we want to skip to just after this instruction when done
       NumInstructionsToSkip = i + 1;
       // This is the last instruction we care about. Leave now
       break;
-    }
-    else {
+    } else {
       LogMan::Msg::AFmt("Unknown instruction 0x{:08x}", NextInstr);
     }
   }
@@ -1864,159 +1736,79 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
   if (Size == 2) {
     using AtomicType = uint16_t;
-    CASDesiredFn<AtomicType> DesiredFunction{};
+    CASDesiredFn<AtomicType> DesiredFunction {};
 
     switch (AtomicOp) {
-      case ExclusiveAtomicPairType::TYPE_SWAP:
-        DesiredFunction = SWAPDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ADD:
-        DesiredFunction = ADDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_SUB:
-        DesiredFunction = SUBDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_AND:
-        DesiredFunction = ANDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_BIC:
-        DesiredFunction = BICDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_OR:
-        DesiredFunction = ORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ORN:
-        DesiredFunction = ORNDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EOR:
-        DesiredFunction = EORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EON:
-        DesiredFunction = EONDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_NEG:
-        DesiredFunction = NEGDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          FEXCore::ToUnderlying(AtomicOp));
-        return false;
+    case ExclusiveAtomicPairType::TYPE_SWAP: DesiredFunction = SWAPDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ADD: DesiredFunction = ADDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_SUB: DesiredFunction = SUBDesired; break;
+    case ExclusiveAtomicPairType::TYPE_AND: DesiredFunction = ANDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_BIC: DesiredFunction = BICDesired; break;
+    case ExclusiveAtomicPairType::TYPE_OR: DesiredFunction = ORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ORN: DesiredFunction = ORNDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EOR: DesiredFunction = EORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EON: DesiredFunction = EONDesired; break;
+    case ExclusiveAtomicPairType::TYPE_NEG: DesiredFunction = NEGDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS16<DoRetry>(
-      GPRs[DataSourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS16<DoRetry>(GPRs[DataSourceReg],
+                                0, // Unused
+                                Addr, NOPExpected, DesiredFunction);
 
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
       GPRs[ResultReg] = Res;
     }
-  }
-  else if (Size == 4) {
+  } else if (Size == 4) {
     using AtomicType = uint32_t;
-    CASDesiredFn<AtomicType> DesiredFunction{};
+    CASDesiredFn<AtomicType> DesiredFunction {};
 
     switch (AtomicOp) {
-      case ExclusiveAtomicPairType::TYPE_SWAP:
-        DesiredFunction = SWAPDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ADD:
-        DesiredFunction = ADDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_SUB:
-        DesiredFunction = SUBDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_AND:
-        DesiredFunction = ANDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_BIC:
-        DesiredFunction = BICDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_OR:
-        DesiredFunction = ORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ORN:
-        DesiredFunction = ORNDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EOR:
-        DesiredFunction = EORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EON:
-        DesiredFunction = EONDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_NEG:
-        DesiredFunction = NEGDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          FEXCore::ToUnderlying(AtomicOp));
-        return false;
+    case ExclusiveAtomicPairType::TYPE_SWAP: DesiredFunction = SWAPDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ADD: DesiredFunction = ADDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_SUB: DesiredFunction = SUBDesired; break;
+    case ExclusiveAtomicPairType::TYPE_AND: DesiredFunction = ANDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_BIC: DesiredFunction = BICDesired; break;
+    case ExclusiveAtomicPairType::TYPE_OR: DesiredFunction = ORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ORN: DesiredFunction = ORNDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EOR: DesiredFunction = EORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EON: DesiredFunction = EONDesired; break;
+    case ExclusiveAtomicPairType::TYPE_NEG: DesiredFunction = NEGDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS32<DoRetry>(
-      GPRs[DataSourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS32<DoRetry>(GPRs[DataSourceReg],
+                                0, // Unused
+                                Addr, NOPExpected, DesiredFunction);
 
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
       GPRs[ResultReg] = Res;
     }
-  }
-  else if (Size == 8) {
+  } else if (Size == 8) {
     using AtomicType = uint64_t;
-    CASDesiredFn<AtomicType> DesiredFunction{};
+    CASDesiredFn<AtomicType> DesiredFunction {};
 
     switch (AtomicOp) {
-      case ExclusiveAtomicPairType::TYPE_SWAP:
-        DesiredFunction = SWAPDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ADD:
-        DesiredFunction = ADDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_SUB:
-        DesiredFunction = SUBDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_AND:
-        DesiredFunction = ANDDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_BIC:
-        DesiredFunction = BICDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_OR:
-        DesiredFunction = ORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_ORN:
-        DesiredFunction = ORNDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EOR:
-        DesiredFunction = EORDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_EON:
-        DesiredFunction = EONDesired;
-        break;
-      case ExclusiveAtomicPairType::TYPE_NEG:
-        DesiredFunction = NEGDesired;
-        break;
-      default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          FEXCore::ToUnderlying(AtomicOp));
-        return false;
+    case ExclusiveAtomicPairType::TYPE_SWAP: DesiredFunction = SWAPDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ADD: DesiredFunction = ADDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_SUB: DesiredFunction = SUBDesired; break;
+    case ExclusiveAtomicPairType::TYPE_AND: DesiredFunction = ANDDesired; break;
+    case ExclusiveAtomicPairType::TYPE_BIC: DesiredFunction = BICDesired; break;
+    case ExclusiveAtomicPairType::TYPE_OR: DesiredFunction = ORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_ORN: DesiredFunction = ORNDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EOR: DesiredFunction = EORDesired; break;
+    case ExclusiveAtomicPairType::TYPE_EON: DesiredFunction = EONDesired; break;
+    case ExclusiveAtomicPairType::TYPE_NEG: DesiredFunction = NEGDesired; break;
+    default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS64<DoRetry>(
-      GPRs[DataSourceReg],
-      0, // Unused
-      Addr,
-      NOPExpected,
-      DesiredFunction);
+    auto Res = DoCAS64<DoRetry>(GPRs[DataSourceReg],
+                                0, // Unused
+                                Addr, NOPExpected, DesiredFunction);
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
@@ -2028,7 +1820,9 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
   return NumInstructionsToSkip * 4;
 }
 
-[[nodiscard]] std::pair<bool, int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState *Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs) {
+[[nodiscard]]
+std::pair<bool, int32_t>
+HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t* GPRs) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
@@ -2038,7 +1832,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
   constexpr auto NotHandled = std::make_pair(false, 0);
 
   if constexpr (is_arm64) {
-    uint32_t *PC = (uint32_t*)ProgramCounter;
+    uint32_t* PC = (uint32_t*)ProgramCounter;
     uint32_t Instr = PC[0];
 
     // 1 = 16bit
@@ -2050,47 +1844,40 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     // ParanoidTSO path doesn't modify any code.
     if (ParanoidTSO) [[unlikely]] {
-      if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
+      if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
           (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
-        }
-        else {
+        } else {
           LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
           return NotHandled;
         }
-      }
-      else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
+      } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
         if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
-        }
-        else {
+        } else {
           LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
           return NotHandled;
         }
-      }
-      else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
+      } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
         // Extract the 9-bit offset from the instruction
         int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, Offset)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
-        }
-        else {
+        } else {
           LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAPUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
           return NotHandled;
         }
-      }
-      else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
+      } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
         // Extract the 9-bit offset from the instruction
         int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
         if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset)) {
           // Skip this instruction now
           return std::make_pair(true, 4);
-        }
-        else {
+        } else {
           LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
           return NotHandled;
         }
@@ -2099,14 +1886,14 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     const auto Frame = Thread->CurrentFrame;
     const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
-    auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader *>(BlockBegin);
-    auto InlineTail = reinterpret_cast<CPU::CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+    auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader*>(BlockBegin);
+    auto InlineTail = reinterpret_cast<CPU::CPUBackend::JITCodeTail*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
 
     // Lock code mutex during any SIGBUS handling that potentially changes code.
     // Need to be careful to not read any code part-way through modification.
     FEXCore::Utils::SpinWaitLock::UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
 
-    if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
+    if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
       LDR |= Size << 30;
@@ -2117,8 +1904,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
       ClearICache(&PC[-1], 16);
       // With the instruction modified, now execute again.
       return std::make_pair(true, 0);
-    }
-    else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
+    } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
       uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
       STR |= Size << 30;
       STR |= AddrReg << 5;
@@ -2128,8 +1914,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
       ClearICache(&PC[-1], 16);
       // Back up one instruction and have another go
       return std::make_pair(true, -4);
-    }
-    else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
+    } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
       // Extract the 9-bit offset from the instruction
       uint32_t LDUR = 0b0011'1000'0100'0000'0000'0000'0000'0000;
       LDUR |= Size << 30;
@@ -2141,84 +1926,70 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
       ClearICache(&PC[-1], 16);
       // With the instruction modified, now execute again.
       return std::make_pair(true, 0);
-    }
-    else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
+    } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
       uint32_t STUR = 0b0011'1000'0000'0000'0000'0000'0000'0000;
       STUR |= Size << 30;
       STUR |= AddrReg << 5;
       STUR |= DataReg;
       STUR |= Instr & (0b1'1111'1111 << 9);
-      PC[-1] = DMB;  // Back-patch the half-barrier.
+      PC[-1] = DMB; // Back-patch the half-barrier.
       PC[0] = STUR;
       ClearICache(&PC[-1], 16);
       // Back up one instruction and have another go
       return std::make_pair(true, -4);
-    }
-    else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
-      //Should be compare and swap pair only. LDAXP not used elsewhere
+    } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
+      // Should be compare and swap pair only. LDAXP not used elsewhere
       uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
       if (BytesToSkip) {
         // Skip this instruction now
         return std::make_pair(true, BytesToSkip);
-      }
-      else {
+      } else {
         if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
           return std::make_pair(true, 0);
-        }
-        else {
+        } else {
           LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
           return NotHandled;
         }
       }
-    }
-    else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
-      //Should not trigger - middle of an LDAXP/STAXP pair.
+    } else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
+      // Should not trigger - middle of an LDAXP/STAXP pair.
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
       return NotHandled;
-    }
-    else if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+    } else if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
       if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
         // Skip this instruction now
         return std::make_pair(true, 4);
-      }
-      else {
+      } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return NotHandled;
       }
-    }
-    else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
+    } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
       if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr)) {
         // Skip this instruction now
         return std::make_pair(true, 4);
-      }
-      else {
+      } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return NotHandled;
       }
-    }
-    else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+    } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
       if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
         // Skip this instruction now
         return std::make_pair(true, 4);
-      }
-      else {
+      } else {
         uint8_t Op = (PC[0] >> 12) & 0xF;
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
         return NotHandled;
       }
-    }
-    else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+    } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
       uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs);
       if (BytesToSkip) {
         // Skip this instruction now
         return std::make_pair(true, BytesToSkip);
-      }
-      else {
+      } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return NotHandled;
       }
-    }
-    else {
+    } else {
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
       return NotHandled;
     }
@@ -2227,4 +1998,4 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 }
 
 
-}
+} // namespace FEXCore::ArchHelpers::Arm64

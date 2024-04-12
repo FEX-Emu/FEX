@@ -20,14 +20,14 @@ namespace FEXCore {
 namespace IR {
   class IRListView;
   class RegisterAllocationData;
-}
+} // namespace IR
 
 namespace Core {
   struct DebugData;
   struct ThreadState;
   struct CpuStateFrame;
   struct InternalThreadState;
-}
+} // namespace Core
 
 namespace CodeSerialize {
   struct CodeObjectFileSection;
@@ -43,21 +43,22 @@ namespace CPU {
   class CPUBackend {
   public:
     struct CodeBuffer {
-      uint8_t *Ptr;
+      uint8_t* Ptr;
       size_t Size;
     };
 
     /**
      * @param InitialCodeSize - Initial size for the code buffers
      * @param MaxCodeSize - Max size for the code buffers
-    */
-    CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize);
+     */
+    CPUBackend(FEXCore::Core::InternalThreadState* ThreadState, size_t InitialCodeSize, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
     /**
      * @return The name of this backend
      */
-    [[nodiscard]] virtual fextl::string GetName() = 0;
+    [[nodiscard]]
+    virtual fextl::string GetName() = 0;
 
     struct CompiledCode {
       // Where this code block begins.
@@ -137,10 +138,9 @@ namespace CPU {
      *
      * @return Information about the compiled code block.
      */
-    [[nodiscard]] virtual CompiledCode CompileCode(uint64_t Entry,
-                                            FEXCore::IR::IRListView const *IR,
-                                            FEXCore::Core::DebugData *DebugData,
-                                            FEXCore::IR::RegisterAllocationData *RAData) = 0;
+    [[nodiscard]]
+    virtual CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
+                                     FEXCore::IR::RegisterAllocationData* RAData) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache
@@ -150,14 +150,18 @@ namespace CPU {
      *
      * @return An executable function pointer relocated from the cache object
      */
-    [[nodiscard]] virtual void *RelocateJITObjectCode(uint64_t Entry, CodeSerialize::CodeObjectFileSection const *SerializationData) { return nullptr; }
+    [[nodiscard]]
+    virtual void* RelocateJITObjectCode(uint64_t Entry, const CodeSerialize::CodeObjectFileSection* SerializationData) {
+      return nullptr;
+    }
 
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
      *
      * @return Currently unused
      */
-    [[nodiscard]] virtual void *MapRegion(void *HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
+    [[nodiscard]]
+    virtual void* MapRegion(void* HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
 
     /**
      * @brief Lets FEXCore know if this CPUBackend needs IR and DebugData for CompileCode
@@ -168,7 +172,8 @@ namespace CPU {
      *
      * @return true if it needs the IR
      */
-    [[nodiscard]] virtual bool NeedsOpDispatch() = 0;
+    [[nodiscard]]
+    virtual bool NeedsOpDispatch() = 0;
 
     virtual void ClearCache() {}
 
@@ -184,13 +189,14 @@ namespace CPU {
     // to be able to handle a 256-bit vector store to a slot.
     constexpr static uint32_t MaxSpillSlotSize = 32;
 
-    FEXCore::Core::InternalThreadState *ThreadState;
+    FEXCore::Core::InternalThreadState* ThreadState;
 
     size_t InitialCodeSize, MaxCodeSize;
-    [[nodiscard]] CodeBuffer *GetEmptyCodeBuffer();
+    [[nodiscard]]
+    CodeBuffer* GetEmptyCodeBuffer();
 
     // This is the current code buffer that we are tracking
-    CodeBuffer *CurrentCodeBuffer{};
+    CodeBuffer* CurrentCodeBuffer {};
 
   private:
     CodeBuffer AllocateNewCodeBuffer(size_t Size);
@@ -202,8 +208,8 @@ namespace CPU {
 
     // This is the array of code buffers. Unless signals force us to keep more than
     // buffer, there will be only one entry here
-    fextl::vector<CodeBuffer> CodeBuffers{};
+    fextl::vector<CodeBuffer> CodeBuffers {};
   };
 
-}
-}
+} // namespace CPU
+} // namespace FEXCore

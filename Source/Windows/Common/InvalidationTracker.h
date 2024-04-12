@@ -6,7 +6,7 @@
 #include <mutex>
 
 namespace FEXCore::Core {
-  struct InternalThreadState;
+struct InternalThreadState;
 }
 
 namespace FEX::Windows {
@@ -15,14 +15,14 @@ namespace FEX::Windows {
  */
 class InvalidationTracker {
 public:
-  void HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, ULONG Prot);
-  void InvalidateContainingSection(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, bool Free);
-  void InvalidateAlignedInterval(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, uint64_t Size, bool Free);
+  void HandleMemoryProtectionNotification(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size, ULONG Prot);
+  void InvalidateContainingSection(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, bool Free);
+  void InvalidateAlignedInterval(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
-  bool HandleRWXAccessViolation(FEXCore::Core::InternalThreadState *Thread, uint64_t FaultAddress);
+  bool HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t FaultAddress);
 
 private:
   IntervalList<uint64_t> RWXIntervals;
   std::mutex RWXIntervalsLock;
 };
-}
+} // namespace FEX::Windows

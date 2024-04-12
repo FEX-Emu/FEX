@@ -29,14 +29,17 @@
 using namespace Xbyak;
 
 #ifdef _M_X86_64
-static inline int modify_ldt(int func, void *ldt) { return ::syscall(SYS_modify_ldt, func, ldt, sizeof(struct user_desc)); }
+static inline int modify_ldt(int func, void* ldt) {
+  return ::syscall(SYS_modify_ldt, func, ldt, sizeof(struct user_desc));
+}
 
 class x86HostRunner final : public Xbyak::CodeGenerator {
 public:
   using AsmDispatch = void (*)(uintptr_t InitialRip, uintptr_t InitialStack);
   AsmDispatch DispatchPtr;
 
-  x86HostRunner() : CodeGenerator(4096) {
+  x86HostRunner()
+    : CodeGenerator(4096) {
     Setup32BitCodeSegment();
 
     DispatchPtr = getCurr<AsmDispatch>();
@@ -88,10 +91,10 @@ public:
       GetCodeSegmentEntryLocation = getCurr<uint64_t>();
       hlt();
 
-      Label Gate{};
+      Label Gate {};
       // Patch gate entry point
       // mov(dword[rip + Gate], edi)
-      jmp(qword [rip + Gate], LabelType::T_FAR);
+      jmp(qword[rip + Gate], LabelType::T_FAR);
 
       L(Gate);
       dd(0x1'0000); // This is a 32-bit offset from the start of the gate. We start at 0x1'0000 + 0
@@ -113,14 +116,14 @@ public:
     ready();
   }
 
-  bool HandleSIGSEGV(FEXCore::Core::CPUState *OutState, int Signal, void *info, void *ucontext) {
-    ucontext_t *_context = (ucontext_t *)ucontext;
-    mcontext_t *_mcontext = &_context->uc_mcontext;
+  bool HandleSIGSEGV(FEXCore::Core::CPUState* OutState, int Signal, void* info, void* ucontext) {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    mcontext_t* _mcontext = &_context->uc_mcontext;
 
     // Check our current instruction that we just executed to ensure it was an HLT
-    uint8_t *Inst{};
+    uint8_t* Inst {};
 
-    Inst = reinterpret_cast<uint8_t *>(_mcontext->gregs[REG_RIP]);
+    Inst = reinterpret_cast<uint8_t*>(_mcontext->gregs[REG_RIP]);
     if (!Is64BitMode()) {
       if (_mcontext->gregs[REG_RIP] == GetCodeSegmentEntryLocation) {
         // Backup the CSGSFS register
@@ -161,8 +164,7 @@ public:
     const auto* reserved = &xstate->fpstate.sw_reserved;
     if (reserved->HasExtendedContext() && reserved->HasYMMH()) {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&OutState->xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i],
-               sizeof(xstate->ymmh.ymmh_space[0]));
+        memcpy(&OutState->xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(xstate->ymmh.ymmh_space[0]));
       }
     }
 
@@ -189,8 +191,8 @@ public:
 
 private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  int CodeSegmentEntry{};
-  int GlobalCodeSegmentEntry{};
+  int CodeSegmentEntry {};
+  int GlobalCodeSegmentEntry {};
   uint64_t GetCodeSegmentEntryLocation;
 
   uint64_t ReturningStackLocation;
@@ -265,22 +267,21 @@ private:
   }
 };
 
-void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
-               FEXCore::Core::CPUState *OutputState) {
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+               FEXCore::Core::CPUState* OutputState) {
   x86HostRunner runner;
   SignalDelegation->RegisterHostSignalHandler(
     SIGSEGV,
-    [&runner, OutputState](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    [&runner, OutputState](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
       return runner.HandleSIGSEGV(OutputState, Signal, info, ucontext);
     },
-    true
-  );
+    true);
 
   runner.DispatchPtr(InitialRip, StackPointer);
 }
 #else
-void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
-               FEXCore::Core::CPUState *OutputState) {
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+               FEXCore::Core::CPUState* OutputState) {
   LOGMAN_MSG_A_FMT("RunAsHost doesn't exist for this host");
 }
 #endif

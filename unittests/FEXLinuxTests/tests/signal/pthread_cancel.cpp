@@ -15,19 +15,19 @@ std::atomic<bool> cancel_sent;
 
 static pthread_key_t key;
 
-void key_dtor(void *ptr) {
+void key_dtor(void* ptr) {
   puts("key_dtor: Thread aborted\n");
   free(ptr);
 }
 
-#define handle_error_en(en, msg)                                                                                                           \
-  do {                                                                                                                                     \
-    errno = en;                                                                                                                            \
-    perror(msg);                                                                                                                           \
-    exit(EXIT_FAILURE);                                                                                                                    \
+#define handle_error_en(en, msg) \
+  do { \
+    errno = en; \
+    perror(msg); \
+    exit(EXIT_FAILURE); \
   } while (0)
 
-static void *thread_func(void *ignored_argument) {
+static void* thread_func(void* ignored_argument) {
   pthread_key_create(&key, &key_dtor);
   pthread_setspecific(key, malloc(32));
   int s;
@@ -36,8 +36,9 @@ static void *thread_func(void *ignored_argument) {
      immediately react to a cancellation request. */
 
   s = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-  if (s != 0)
+  if (s != 0) {
     handle_error_en(s, "pthread_setcancelstate");
+  }
 
   printf("thread_func(): started; cancellation disabled\n");
   thread_ready = true;
@@ -47,13 +48,15 @@ static void *thread_func(void *ignored_argument) {
   printf("thread_func(): about to enable cancellation\n");
 
   s = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-  if (s != 0)
+  if (s != 0) {
     handle_error_en(s, "pthread_setcancelstate");
+  }
 
   /* sleep() is a cancellation point. */
 
-  for (;;)
+  for (;;) {
     sleep(1000); /* Should get canceled while we sleep */
+  }
 
   /* Should never get here. */
 
@@ -63,7 +66,7 @@ static void *thread_func(void *ignored_argument) {
 
 TEST_CASE("pthreads cancel") {
   pthread_t thr;
-  void *res;
+  void* res;
   int s;
 
   /* Start a thread and then send it a cancellation request. */

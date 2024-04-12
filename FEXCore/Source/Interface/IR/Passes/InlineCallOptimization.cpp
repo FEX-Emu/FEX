@@ -23,12 +23,12 @@ class InlineCallOptimization final : public FEXCore::IR::Pass {
 public:
   InlineCallOptimization(const FEXCore::CPUIDEmu* CPUID)
     : CPUID {CPUID} {}
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 private:
   const FEXCore::CPUIDEmu* CPUID;
 };
 
-bool InlineCallOptimization::Run(IREmitter *IREmit) {
+bool InlineCallOptimization::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::SyscallOpt");
 
   bool Changed = false;
@@ -60,15 +60,10 @@ bool InlineCallOptimization::Run(IREmitter *IREmit) {
           if (SyscallDef.HostSyscallNumber != -1) {
             IREmit->SetWriteCursor(CodeNode);
             // Skip Args[0] since that is the syscallid
-            auto InlineSyscall = IREmit->_InlineSyscall(
-              CurrentIR.GetNode(IROp->Args[1]),
-              CurrentIR.GetNode(IROp->Args[2]),
-              CurrentIR.GetNode(IROp->Args[3]),
-              CurrentIR.GetNode(IROp->Args[4]),
-              CurrentIR.GetNode(IROp->Args[5]),
-              CurrentIR.GetNode(IROp->Args[6]),
-              SyscallDef.HostSyscallNumber,
-              Op->Flags);
+            auto InlineSyscall =
+              IREmit->_InlineSyscall(CurrentIR.GetNode(IROp->Args[1]), CurrentIR.GetNode(IROp->Args[2]), CurrentIR.GetNode(IROp->Args[3]),
+                                     CurrentIR.GetNode(IROp->Args[4]), CurrentIR.GetNode(IROp->Args[5]), CurrentIR.GetNode(IROp->Args[6]),
+                                     SyscallDef.HostSyscallNumber, Op->Flags);
 
             // Replace all syscall uses with this inline one
             IREmit->ReplaceAllUsesWith(CodeNode, InlineSyscall);
@@ -81,11 +76,10 @@ bool InlineCallOptimization::Run(IREmitter *IREmit) {
 
         Changed = true;
       }
-    }
-    else if (IROp->Op == FEXCore::IR::OP_CPUID) {
+    } else if (IROp->Op == FEXCore::IR::OP_CPUID) {
       auto Op = IROp->CW<IR::IROp_CPUID>();
 
-      uint64_t ConstantFunction{}, ConstantLeaf{};
+      uint64_t ConstantFunction {}, ConstantLeaf {};
       bool IsConstantFunction = IREmit->IsValueConstant(Op->Function, &ConstantFunction);
       bool IsConstantLeaf = IREmit->IsValueConstant(Op->Leaf, &ConstantLeaf);
       // If the CPUID function is constant then we can try and optimize.
@@ -113,12 +107,12 @@ bool InlineCallOptimization::Run(IREmitter *IREmit) {
     else if (IROp->Op == FEXCore::IR::OP_XGETBV) {
       auto Op = IROp->CW<IR::IROp_XGetBV>();
 
-      uint64_t ConstantFunction{};
-      if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) &&
-          CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
+      uint64_t ConstantFunction {};
+      if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) && CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
         const auto ConstantXCRResult = CPUID->RunXCRFunction(ConstantFunction);
         IREmit->SetWriteCursor(CodeNode);
-        auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
+        auto ElementPair =
+          IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
         // Replace all xgetbv uses with this inline one
         IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
         Changed = true;
@@ -132,4 +126,4 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore:
   return fextl::make_unique<InlineCallOptimization>(CPUID);
 }
 
-}
+} // namespace FEXCore::IR

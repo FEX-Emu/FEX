@@ -24,76 +24,79 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
-    Frame->State.fs_cached = reinterpret_cast<uint64_t>(tls);
-    return 0;
-  }
+uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls) {
+  Frame->State.fs_cached = reinterpret_cast<uint64_t>(tls);
+  return 0;
+}
 
-  void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame) {
-    Frame->State.rip += 2;
-  }
+void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame* Frame) {
+  Frame->State.rip += 2;
+}
 
-  void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
-    using namespace FEXCore::IR;
+void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
+  using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(clone, SyscallFlags::DEFAULT,
-      ([](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
+  REGISTER_SYSCALL_IMPL_X64_FLAGS(
+    clone, SyscallFlags::DEFAULT,
+    ([](FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, pid_t* child_tid, void* tls) -> uint64_t {
       FEX::HLE::clone3_args args {
         .Type = TypeOfClone::TYPE_CLONE2,
-        .args = {
-          .flags = flags, // CSIGNAL is contained in here
-          .pidfd = 0, // For clone, pidfd is duplicated here
-          .child_tid = reinterpret_cast<uint64_t>(child_tid),
-          .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
-          .exit_signal = flags & CSIGNAL,
-          .stack = reinterpret_cast<uint64_t>(stack),
-          .stack_size = 0, // This syscall isn't able to see the stack size
-          .tls = reinterpret_cast<uint64_t>(tls),
-          .set_tid = 0, // This syscall isn't able to select TIDs
-          .set_tid_size = 0,
-          .cgroup = 0, // This syscall can't select cgroups
-        },
+        .args =
+          {
+            .flags = flags, // CSIGNAL is contained in here
+            .pidfd = 0,     // For clone, pidfd is duplicated here
+            .child_tid = reinterpret_cast<uint64_t>(child_tid),
+            .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
+            .exit_signal = flags & CSIGNAL,
+            .stack = reinterpret_cast<uint64_t>(stack),
+            .stack_size = 0, // This syscall isn't able to see the stack size
+            .tls = reinterpret_cast<uint64_t>(tls),
+            .set_tid = 0, // This syscall isn't able to select TIDs
+            .set_tid_size = 0,
+            .cgroup = 0, // This syscall can't select cgroups
+          },
       };
       return CloneHandler(Frame, &args);
     }));
 
-    REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame *Frame, const stack_t *ss, stack_t *old_ss) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
-    });
+  REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame* Frame, const stack_t* ss, stack_t* old_ss) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
+  });
 
-    // launch a new process under fex
-    // currently does not propagate argv[0] correctly
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(execve, SyscallFlags::DEFAULT,
-      [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
-      fextl::vector<const char*> Args;
-      fextl::vector<const char*> Envp;
+  // launch a new process under fex
+  // currently does not propagate argv[0] correctly
+  REGISTER_SYSCALL_IMPL_X64_FLAGS(execve, SyscallFlags::DEFAULT,
+                                  [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const argv[], char* const envp[]) -> uint64_t {
+                                    fextl::vector<const char*> Args;
+                                    fextl::vector<const char*> Envp;
 
-      if (argv) {
-        for (int i = 0; argv[i]; i++) {
-          Args.push_back(argv[i]);
-        }
+                                    if (argv) {
+                                      for (int i = 0; argv[i]; i++) {
+                                        Args.push_back(argv[i]);
+                                      }
 
-        Args.push_back(nullptr);
-      }
+                                      Args.push_back(nullptr);
+                                    }
 
-      if (envp) {
-        for (int i = 0; envp[i]; i++) {
-          Envp.push_back(envp[i]);
-        }
+                                    if (envp) {
+                                      for (int i = 0; envp[i]; i++) {
+                                        Envp.push_back(envp[i]);
+                                      }
 
-        Envp.push_back(nullptr);
-      }
+                                      Envp.push_back(nullptr);
+                                    }
 
-      auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
-      auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+                                    auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+                                    auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
 
-      FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
+                                    FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
 
-      return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
-    });
+                                    return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
+                                  });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(execveat, SyscallFlags::DEFAULT,
-      ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
+  REGISTER_SYSCALL_IMPL_X64_FLAGS(
+    execveat, SyscallFlags::DEFAULT,
+    ([](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, char* const argv[], char* const envp[], int flags) -> uint64_t {
       fextl::vector<const char*> Args;
       fextl::vector<const char*> Envp;
 
@@ -122,5 +125,5 @@ namespace FEX::HLE::x64 {
       auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
       return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
     }));
-  }
 }
+} // namespace FEX::HLE::x64

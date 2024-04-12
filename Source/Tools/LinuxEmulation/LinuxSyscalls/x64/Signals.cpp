@@ -19,8 +19,9 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  void RegisterSignals(FEX::HLE::SyscallHandler *Handler) {
-    REGISTER_SYSCALL_IMPL_X64(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const GuestSigAction *act, GuestSigAction *oldact, size_t sigsetsize) -> uint64_t {
+void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL_X64(
+    rt_sigaction, [](FEXCore::Core::CpuStateFrame* Frame, int signum, const GuestSigAction* act, GuestSigAction* oldact, size_t sigsetsize) -> uint64_t {
       if (sigsetsize != 8) {
         return -EINVAL;
       }
@@ -28,9 +29,10 @@ namespace FEX::HLE::x64 {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act, oldact);
     });
 
-    REGISTER_SYSCALL_IMPL_X64(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, siginfo_t *info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
+  REGISTER_SYSCALL_IMPL_X64(
+    rt_sigtimedwait,
+    [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, siginfo_t* info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, info, timeout, sigsetsize);
     });
-  }
 }
-
+} // namespace FEX::HLE::x64

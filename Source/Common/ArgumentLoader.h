@@ -6,21 +6,21 @@
 #include <FEXCore/fextl/vector.h>
 
 namespace FEX::ArgLoader {
-  class ArgLoader final : public FEXCore::Config::Layer {
-  public:
-    explicit ArgLoader(int _argc, char **_argv)
-      : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ARGUMENTS)
-      , argc {_argc}
-      , argv {_argv} {}
+class ArgLoader final : public FEXCore::Config::Layer {
+public:
+  explicit ArgLoader(int _argc, char** _argv)
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ARGUMENTS)
+    , argc {_argc}
+    , argv {_argv} {}
 
-    void Load();
+  void Load();
 
-  private:
-    int argc{};
-    char **argv;
-  };
+private:
+  int argc {};
+  char** argv;
+};
 
-  void LoadWithoutArguments(int _argc, char **_argv);
-  fextl::vector<fextl::string> Get();
-  fextl::vector<fextl::string> GetParsedArgs();
-}
+void LoadWithoutArguments(int _argc, char** _argv);
+fextl::vector<fextl::string> Get();
+fextl::vector<fextl::string> GetParsedArgs();
+} // namespace FEX::ArgLoader
