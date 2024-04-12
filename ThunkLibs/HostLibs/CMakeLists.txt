@@ -148,10 +148,6 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp ${GUEST_BITNESS})
   add_host_lib(Xfixes ${GUEST_BITNESS})
 
-  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp ${GUEST_BITNESS})
-  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-  add_host_lib(vulkan ${GUEST_BITNESS})
-
   find_package(PkgConfig)
   pkg_search_module(XCB REQUIRED xcb)
   version_to_variables(${XCB_VERSION} XCB)
@@ -200,6 +196,10 @@ set (BITNESS_LIST "32;64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})
   add_host_lib(fex_thunk_test ${GUEST_BITNESS})
+
+  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp ${GUEST_BITNESS})
+  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  add_host_lib(vulkan ${GUEST_BITNESS})
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
   add_host_lib(wayland-client ${GUEST_BITNESS})

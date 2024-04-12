@@ -217,10 +217,6 @@ if (BITNESS EQUAL 64)
   generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
   add_guest_lib(Xfixes "libXfixes.so.3")
 
-  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
-  target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-  add_guest_lib(vulkan "libvulkan.so.1")
-
   find_package(PkgConfig)
   pkg_search_module(XCB REQUIRED xcb)
   version_to_variables(${XCB_VERSION} XCB)
@@ -264,6 +260,10 @@ if (BITNESS EQUAL 64)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
   add_guest_lib(drm "libdrm.so.2")
 endif()
+
+generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
+target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+add_guest_lib(vulkan "libvulkan.so.1")
 
 generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
 add_guest_lib(wayland-client "libwayland-client.so.0.20.0")

@@ -35,12 +35,6 @@ list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
 function(AddTests Tests BinDirectory Bitness)
   foreach(TEST ${Tests})
     get_filename_component(TEST_NAME ${TEST} NAME_WE)
-
-    file(READ ${TEST} TEST_CODE)
-
-    # Used to insert a configuration dependency to the test file
-    CONFIGURE_FILE(${TEST} ${CMAKE_BINARY_DIR}/junk.file)
-
     set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
     set(TEST_CASE "${TEST_NAME}.${Bitness}")
 

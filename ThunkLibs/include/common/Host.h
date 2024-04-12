@@ -144,6 +144,12 @@ struct __attribute__((packed)) guest_layout {
   }
 };
 
+template<typename T, std::size_t N>
+struct __attribute__((packed)) guest_layout<T[N]> {
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
+  std::array<guest_layout<type>, N> data;
+};
+
 template<typename T>
 struct guest_layout<T*> {
 #ifdef IS_32BIT_THUNK
@@ -240,6 +246,17 @@ const host_layout<T>& to_host_layout(const T& t) {
   static_assert(std::is_same_v<decltype(host_layout<T>::data), T>);
   return reinterpret_cast<const host_layout<T>&>(t);
 }
+
+template<typename T, size_t N>
+struct host_layout<T[N]> {
+  std::array<T, N> data;
+
+  explicit host_layout(const guest_layout<T[N]>& from) {
+    for (size_t i = 0; i < N; ++i) {
+      data[i] = host_layout<T> { from.data[i] }.data;
+    }
+  }
+};
 
 template<typename T>
 constexpr bool is_long_or_longlong =

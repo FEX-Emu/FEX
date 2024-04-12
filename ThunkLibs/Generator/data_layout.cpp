@@ -305,15 +305,15 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(
                 host_member_type = context.getCanonicalType(array_type->getElementType().getTypePtr());
             }
 
-            if (host_member_type->isPointerType()) {
+            if (types.at(type).UsesCustomRepackFor(host_member_field)) {
+                member_compat.push_back(TypeCompatibility::Repackable);
+                continue;
+            } else if (host_member_type->isPointerType()) {
                 // Automatic repacking of pointers to non-compatible types is only possible if:
                 // * Pointee is fully compatible, or
                 // * Pointer member is annotated
-                // TODO: Don't restrict this to structure types. it applies to pointers to builtin types too!
                 auto host_member_pointee_type = context.getCanonicalType(host_member_type->getPointeeType().getTypePtr());
-                if (types.at(type).UsesCustomRepackFor(host_member_field)) {
-                    member_compat.push_back(TypeCompatibility::Repackable);
-                } else if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).assumed_compatible) {
+                if (types.contains(host_member_pointee_type) && types.at(host_member_pointee_type).assumed_compatible) {
                     // Pointee doesn't need repacking, but pointer needs extending on 32-bit
                     member_compat.push_back(is_32bit ? TypeCompatibility::Repackable : TypeCompatibility::Full);
                 } else if (host_member_pointee_type->isPointerType()) {

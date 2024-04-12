@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 extern "C" {
 
@@ -73,5 +74,37 @@ enum DivType : uint8_t {};
 enum DivType : uint32_t {};
 #endif
 int FunctionWithDivergentSignature(DivType, DivType, DivType, DivType);
+
+
+/// Interfaces used to test Vulkan-like APIs
+
+// Equivalent of VkStructureType
+enum class StructType {
+    Struct1,
+    Struct2,
+};
+
+// Equivalent of VkBaseInStructure
+struct TestBaseStruct {
+    TestBaseStruct* Next;
+    StructType Type;
+};
+
+// Equivalent of e.g. VkImageCreateInfo
+struct TestStruct1 {
+    const void* Next;
+    StructType Type; // StructType::Struct1
+    uint8_t Data2;
+    uint8_t pad0[3];
+    int Data1;
+};
+
+struct TestStruct2 {
+    const void* Next;
+    StructType Type;  // StructType::Struct2
+    int Data1;
+};
+
+int ReadData1(TestStruct1*, int depth);
 
 }

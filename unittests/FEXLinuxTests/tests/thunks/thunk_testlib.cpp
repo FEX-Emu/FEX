@@ -36,6 +36,8 @@ struct Fixture {
   GET_SYMBOL(RanCustomRepack);
 
   GET_SYMBOL(FunctionWithDivergentSignature);
+
+  GET_SYMBOL(ReadData1);
 };
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
@@ -88,4 +90,25 @@ TEST_CASE_METHOD(Fixture, "Assisted struct repacking") {
 
 TEST_CASE_METHOD(Fixture, "Function signature with differing parameter sizes") {
   CHECK(FunctionWithDivergentSignature(DivType{1}, DivType{2}, DivType{3}, DivType{4}) == 0x01020304);
+}
+
+// Test Vulkan-like linked lists
+TEST_CASE_METHOD(Fixture, "Assisted repacking of linked lists") {
+  const int s2_data = 0xcddeeff;
+  TestStruct2 s2 {
+    .Next = nullptr,
+    .Type = StructType::Struct2,
+    .Data1 = s2_data,
+  };
+
+  const int s1_data = 0x1234567;
+  TestStruct1 s1 {
+    .Next = &s2,
+    .Type = StructType::Struct1,
+    .Data2 = 0xab,
+    .Data1 = s1_data,
+  };
+
+  CHECK(ReadData1(&s1, 0) == s1_data);
+  CHECK(ReadData1(&s1, 1) == s2_data);
 }
