@@ -22,11 +22,6 @@ namespace Handler {
     if (Value == "irjit") {
       return "0";
     }
-#ifdef _M_X86_64
-    else if (Value == "host") {
-      return "1";
-    }
-#endif
     return "0";
   }
 
