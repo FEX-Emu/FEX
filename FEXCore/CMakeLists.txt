@@ -13,8 +13,6 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
   set(_M_ARM_64 1)
 endif()
 
-option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
-
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 cmake_policy(SET CMP0083 NEW) # Follow new PIE policy
 include(CheckPIESupported)
