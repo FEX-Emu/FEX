@@ -3,6 +3,6 @@
 
 namespace FEX::EnvLoader {
 
-  void Load(char *const envp[]);
+void Load(char* const envp[]);
 
 }

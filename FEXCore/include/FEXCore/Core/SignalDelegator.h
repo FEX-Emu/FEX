@@ -34,61 +34,61 @@ namespace Core {
     FAULT_SIGILL = 4,
 #endif
   };
-}
-  class SignalDelegator {
-  public:
-    virtual ~SignalDelegator() = default;
+} // namespace Core
+class SignalDelegator {
+public:
+  virtual ~SignalDelegator() = default;
 
-    struct SignalDelegatorConfig {
-      bool SupportsAVX{};
+  struct SignalDelegatorConfig {
+    bool SupportsAVX {};
 
-      // Dispatcher information
-      uint64_t DispatcherBegin;
-      uint64_t DispatcherEnd;
+    // Dispatcher information
+    uint64_t DispatcherBegin;
+    uint64_t DispatcherEnd;
 
-      // Dispatcher entrypoint.
-      uint64_t AbsoluteLoopTopAddress{};
-      uint64_t AbsoluteLoopTopAddressFillSRA{};
+    // Dispatcher entrypoint.
+    uint64_t AbsoluteLoopTopAddress {};
+    uint64_t AbsoluteLoopTopAddressFillSRA {};
 
-      // Signal return pointers.
-      uint64_t SignalHandlerReturnAddress{};
-      uint64_t SignalHandlerReturnAddressRT{};
+    // Signal return pointers.
+    uint64_t SignalHandlerReturnAddress {};
+    uint64_t SignalHandlerReturnAddressRT {};
 
-      // Pause handlers.
-      uint64_t PauseReturnInstruction{};
-      uint64_t ThreadPauseHandlerAddressSpillSRA{};
-      uint64_t ThreadPauseHandlerAddress{};
+    // Pause handlers.
+    uint64_t PauseReturnInstruction {};
+    uint64_t ThreadPauseHandlerAddressSpillSRA {};
+    uint64_t ThreadPauseHandlerAddress {};
 
-      // Stop handlers.
-      uint64_t ThreadStopHandlerAddressSpillSRA;
-      uint64_t ThreadStopHandlerAddress{};
+    // Stop handlers.
+    uint64_t ThreadStopHandlerAddressSpillSRA;
+    uint64_t ThreadStopHandlerAddress {};
 
-      // SRA information.
-      uint16_t SRAGPRCount;
-      uint16_t SRAFPRCount;
+    // SRA information.
+    uint16_t SRAGPRCount;
+    uint16_t SRAFPRCount;
 
-      // SRA index mapping.
-      uint8_t SRAGPRMapping[16];
-      uint8_t SRAFPRMapping[16];
-    };
-
-    void SetConfig(const SignalDelegatorConfig& _Config) {
-      Config = _Config;
-    }
-
-    const SignalDelegatorConfig &GetConfig() const {
-      return Config;
-    }
-
-    /**
-     * @brief Signals a thread with a specific core event.
-     *
-     * @param Thread Which thread to signal.
-     * @param Event Which event to signal the event with.
-     */
-    virtual void SignalThread(FEXCore::Core::InternalThreadState *Thread, Core::SignalEvent Event) = 0;
-
-  protected:
-    SignalDelegatorConfig Config;
+    // SRA index mapping.
+    uint8_t SRAGPRMapping[16];
+    uint8_t SRAFPRMapping[16];
   };
-}
+
+  void SetConfig(const SignalDelegatorConfig& _Config) {
+    Config = _Config;
+  }
+
+  const SignalDelegatorConfig& GetConfig() const {
+    return Config;
+  }
+
+  /**
+   * @brief Signals a thread with a specific core event.
+   *
+   * @param Thread Which thread to signal.
+   * @param Event Which event to signal the event with.
+   */
+  virtual void SignalThread(FEXCore::Core::InternalThreadState* Thread, Core::SignalEvent Event) = 0;
+
+protected:
+  SignalDelegatorConfig Config;
+};
+} // namespace FEXCore

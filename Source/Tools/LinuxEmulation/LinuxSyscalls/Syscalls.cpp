@@ -60,14 +60,11 @@ $end_info$
 
 namespace FEX::HLE {
 class SignalDelegator;
-SyscallHandler *_SyscallHandler{};
+SyscallHandler* _SyscallHandler {};
 
 template<bool IncrementOffset, typename T>
-uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
-  uint64_t Result = syscall(SYSCALL_DEF(getdents64),
-    static_cast<uint64_t>(fd),
-    dirp,
-    static_cast<uint64_t>(count));
+uint64_t GetDentsEmulation(int fd, T* dirp, uint32_t count) {
+  uint64_t Result = syscall(SYSCALL_DEF(getdents64), static_cast<uint64_t>(fd), dirp, static_cast<uint64_t>(count));
 
   // Now copy back in to the array we were given
   if (Result != -1) {
@@ -76,7 +73,7 @@ uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
     if constexpr (sizeof(decltype(FEX::HLE::x64::linux_dirent_64::d_ino)) > sizeof(decltype(T::d_ino))) {
       uint64_t TmpOffset = 0;
       while (TmpOffset < Result) {
-        FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
+        FEX::HLE::x64::linux_dirent_64* Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
         decltype(T::d_ino) Result_d_ino = Tmp->d_ino;
 
         if (Result_d_ino != Tmp->d_ino) {
@@ -95,8 +92,8 @@ uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
     // than the data returned by getdents64.
     // This means FEX is guaranteed to /never/ fill the full getdents buffer to the guest, but we may temporarily use it all.
     while (TmpOffset < Result) {
-      T *Outgoing = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
-      FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
+      T* Outgoing = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
+      FEX::HLE::x64::linux_dirent_64* Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
 
       if (!Tmp->d_reclen) {
         break;
@@ -130,11 +127,9 @@ uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
   SYSCALL_ERRNO();
 }
 
-template
-uint64_t GetDentsEmulation<false>(int, FEX::HLE::x64::linux_dirent*, uint32_t);
+template uint64_t GetDentsEmulation<false>(int, FEX::HLE::x64::linux_dirent*, uint32_t);
 
-template
-uint64_t GetDentsEmulation<true>(int, FEX::HLE::x32::linux_dirent_32*, uint32_t);
+template uint64_t GetDentsEmulation<true>(int, FEX::HLE::x32::linux_dirent_32*, uint32_t);
 
 static bool IsShebangFile(std::span<char> Data) {
   // File isn't large enough to even contain a shebang.
@@ -143,13 +138,10 @@ static bool IsShebangFile(std::span<char> Data) {
   }
 
   // Handle shebang files.
-  if (Data[0] == '#' &&
-      Data[1] == '!') {
-    fextl::string InterpreterLine {
-        Data.begin() + 2, // strip off "#!" prefix
-        std::find(Data.begin(), Data.end(), '\n')
-    };
-    fextl::vector<fextl::string> ShebangArguments{};
+  if (Data[0] == '#' && Data[1] == '!') {
+    fextl::string InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
+                                   std::find(Data.begin(), Data.end(), '\n')};
+    fextl::vector<fextl::string> ShebangArguments {};
 
     // Shebang line can have a single argument
     fextl::istringstream InterpreterSS(InterpreterLine);
@@ -162,7 +154,7 @@ static bool IsShebangFile(std::span<char> Data) {
     }
 
     // Executable argument
-    fextl::string &ShebangProgram = ShebangArguments[0];
+    fextl::string& ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -190,7 +182,7 @@ static bool IsShebangFD(int FD) {
   return IsShebangFile(std::span<char>(Header.data(), ReadSize));
 }
 
-static bool IsShebangFilename(fextl::string const &Filename) {
+static bool IsShebangFilename(const fextl::string& Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -202,37 +194,33 @@ static bool IsShebangFilename(fextl::string const &Filename) {
   return IsShebang;
 }
 
-uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
-  fextl::string Filename{};
+uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
+  fextl::string Filename {};
 
   fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
-  ELFLoader::ELFContainer::ELFType Type{};
+  ELFLoader::ELFContainer::ELFType Type {};
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
   const bool SupportsProcFSInterpreter = FEX::HLE::_SyscallHandler->FM.SupportsProcFSInterpreterPath();
   fextl::string FDExecEnv;
 
-  bool IsShebang{};
+  bool IsShebang {};
 
   if (IsFDExec) {
     Type = ELFLoader::ELFContainer::GetELFType(Args.dirfd);
 
     IsShebang = IsShebangFD(Args.dirfd);
-  }
-  else
-  {
+  } else {
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
       auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
       if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
         Filename = Path;
-      }
-      else {
+      } else {
         Filename = pathname;
       }
-    }
-    else {
+    } else {
       Filename = pathname;
     }
 
@@ -247,9 +235,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
       char PidSelfPath[50];
       snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
 
-      if (strcmp(pathname, "/proc/self/exe") == 0 ||
-          strcmp(pathname, "/proc/thread-self/exe") == 0 ||
-          strcmp(pathname, PidSelfPath) == 0) {
+      if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
         // If the application is trying to execve `/proc/self/exe` or its variants,
         // then we need to redirect this path to the true application path.
         // This is because this path is a symlink to the executing application, which is always `FEXInterpreter` or `FEXLoader`.
@@ -275,11 +261,9 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
   // Kernel does its own checks for file format support for this
   // We can only call execve directly if we both have an interpreter installed AND were ran with the interpreter
   // If the user ran FEX through FEXLoader then we must go down the emulated path
-  uint64_t Result{};
-  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() &&
-      FEX::HLE::_SyscallHandler->IsInterpreter() &&
-      (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 ||
-       Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
+  uint64_t Result {};
+  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && FEX::HLE::_SyscallHandler->IsInterpreter() &&
+      (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
     // If the FEX interpreter is installed then just execve the ELF file
     // This will stay inside of our emulated environment since binfmt_misc will capture it
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, envp, Args.flags);
@@ -296,9 +280,9 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
-  fextl::vector<const char *> ExecveArgs{};
-  fextl::vector<const char *> EnvpArgs{};
-  char *const *EnvpPtr = envp;
+  fextl::vector<const char*> ExecveArgs {};
+  fextl::vector<const char*> EnvpArgs {};
+  char* const* EnvpPtr = envp;
   const char NullString[] = "";
   FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
   if (!FEX::HLE::_SyscallHandler->IsInterpreter()) {
@@ -321,10 +305,9 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
         ExecveArgs.emplace_back(*OldArgv);
         ++OldArgv;
       }
-    }
-    else {
+    } else {
       // Linux kernel will stick an empty argument in to the argv list if none are provided.
-       ExecveArgs.emplace_back(NullString);
+      ExecveArgs.emplace_back(NullString);
     }
 
     // Emplace nullptr at the end to stop
@@ -362,12 +345,11 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
     // Emplace nullptr at the end to stop
     EnvpArgs.emplace_back(nullptr);
 
-    EnvpPtr = const_cast<char *const *>(EnvpArgs.data());
+    EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
   }
 
-  const char *InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
-  Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath,
-                     const_cast<char *const *>(ExecveArgs.data()), EnvpPtr, Args.flags);
+  const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
+  Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
 
   SYSCALL_ERRNO();
 }
@@ -381,10 +363,10 @@ static bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
 }
 
 struct StackFrameData {
-  FEXCore::Core::InternalThreadState *Thread{};
-  FEXCore::Context::Context *CTX{};
-  FEXCore::Core::CpuStateFrame NewFrame{};
-  FEX::HLE::clone3_args GuestArgs{};
+  FEXCore::Core::InternalThreadState* Thread {};
+  FEXCore::Context::Context* CTX {};
+  FEXCore::Core::CpuStateFrame NewFrame {};
+  FEX::HLE::clone3_args GuestArgs {};
 };
 
 struct StackFramePlusRet {
@@ -394,7 +376,7 @@ struct StackFramePlusRet {
 };
 
 [[noreturn]]
-static void CloneBody(StackFrameData *Data, bool NeedsDataFree) {
+static void CloneBody(StackFrameData* Data, bool NeedsDataFree) {
   uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
   auto Stack = Data->GuestArgs.NewStack;
   if (NeedsDataFree) {
@@ -407,12 +389,12 @@ static void CloneBody(StackFrameData *Data, bool NeedsDataFree) {
 
 [[noreturn]]
 static void Clone3HandlerRet() {
-  StackFrameData *Data = (StackFrameData*)alloca(0);
+  StackFrameData* Data = (StackFrameData*)alloca(0);
   CloneBody(Data, false);
 }
 
-static int Clone2HandlerRet(void *arg) {
-  StackFrameData *Data = (StackFrameData*)arg;
+static int Clone2HandlerRet(void* arg) {
+  StackFrameData* Data = (StackFrameData*)arg;
   CloneBody(Data, true);
 }
 
@@ -428,38 +410,39 @@ static int Clone2HandlerRet(void *arg) {
 #define CLONE_NEWTIME 0x00000080ULL
 #endif
 
-static void PrintFlags(uint64_t Flags){
-#define FLAGPRINT(x, y) if (Flags & (y)) LogMan::Msg::IFmt("\tFlag: " #x)
-  FLAGPRINT(CSIGNAL,              0x000000FF);
-  FLAGPRINT(CLONE_VM,             0x00000100);
-  FLAGPRINT(CLONE_FS,             0x00000200);
-  FLAGPRINT(CLONE_FILES,          0x00000400);
-  FLAGPRINT(CLONE_SIGHAND,        0x00000800);
-  FLAGPRINT(CLONE_PTRACE,         0x00002000);
-  FLAGPRINT(CLONE_VFORK,          0x00004000);
-  FLAGPRINT(CLONE_PARENT,         0x00008000);
-  FLAGPRINT(CLONE_THREAD,         0x00010000);
-  FLAGPRINT(CLONE_NEWNS,          0x00020000);
-  FLAGPRINT(CLONE_SYSVSEM,        0x00040000);
-  FLAGPRINT(CLONE_SETTLS,         0x00080000);
-  FLAGPRINT(CLONE_PARENT_SETTID,  0x00100000);
+static void PrintFlags(uint64_t Flags) {
+#define FLAGPRINT(x, y) \
+  if (Flags & (y)) LogMan::Msg::IFmt("\tFlag: " #x)
+  FLAGPRINT(CSIGNAL, 0x000000FF);
+  FLAGPRINT(CLONE_VM, 0x00000100);
+  FLAGPRINT(CLONE_FS, 0x00000200);
+  FLAGPRINT(CLONE_FILES, 0x00000400);
+  FLAGPRINT(CLONE_SIGHAND, 0x00000800);
+  FLAGPRINT(CLONE_PTRACE, 0x00002000);
+  FLAGPRINT(CLONE_VFORK, 0x00004000);
+  FLAGPRINT(CLONE_PARENT, 0x00008000);
+  FLAGPRINT(CLONE_THREAD, 0x00010000);
+  FLAGPRINT(CLONE_NEWNS, 0x00020000);
+  FLAGPRINT(CLONE_SYSVSEM, 0x00040000);
+  FLAGPRINT(CLONE_SETTLS, 0x00080000);
+  FLAGPRINT(CLONE_PARENT_SETTID, 0x00100000);
   FLAGPRINT(CLONE_CHILD_CLEARTID, 0x00200000);
-  FLAGPRINT(CLONE_DETACHED,       0x00400000);
-  FLAGPRINT(CLONE_UNTRACED,       0x00800000);
-  FLAGPRINT(CLONE_CHILD_SETTID,   0x01000000);
-  FLAGPRINT(CLONE_NEWCGROUP,      0x02000000);
-  FLAGPRINT(CLONE_NEWUTS,         0x04000000);
-  FLAGPRINT(CLONE_NEWIPC,         0x08000000);
-  FLAGPRINT(CLONE_NEWUSER,        0x10000000);
-  FLAGPRINT(CLONE_NEWPID,         0x20000000);
-  FLAGPRINT(CLONE_NEWNET,         0x40000000);
-  FLAGPRINT(CLONE_IO,             0x80000000);
-  FLAGPRINT(CLONE_PIDFD,          0x00001000);
+  FLAGPRINT(CLONE_DETACHED, 0x00400000);
+  FLAGPRINT(CLONE_UNTRACED, 0x00800000);
+  FLAGPRINT(CLONE_CHILD_SETTID, 0x01000000);
+  FLAGPRINT(CLONE_NEWCGROUP, 0x02000000);
+  FLAGPRINT(CLONE_NEWUTS, 0x04000000);
+  FLAGPRINT(CLONE_NEWIPC, 0x08000000);
+  FLAGPRINT(CLONE_NEWUSER, 0x10000000);
+  FLAGPRINT(CLONE_NEWPID, 0x20000000);
+  FLAGPRINT(CLONE_NEWNET, 0x40000000);
+  FLAGPRINT(CLONE_IO, 0x80000000);
+  FLAGPRINT(CLONE_PIDFD, 0x00001000);
 #undef FLAGPRINT
 };
 
-static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
-  StackFrameData *Data = (StackFrameData *)FEXCore::Allocator::malloc(sizeof(StackFrameData));
+static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
+  StackFrameData* Data = (StackFrameData*)FEXCore::Allocator::malloc(sizeof(StackFrameData));
   Data->Thread = Frame->Thread;
   Data->CTX = Frame->Thread->CTX;
   Data->GuestArgs = *args;
@@ -468,43 +451,41 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   memcpy(&Data->NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
 
   // Remove flags that will break us
-  constexpr uint64_t INVALID_FOR_HOST =
-    CLONE_SETTLS;
+  constexpr uint64_t INVALID_FOR_HOST = CLONE_SETTLS;
   uint64_t Flags = args->args.flags & ~INVALID_FOR_HOST;
-  uint64_t Result = ::clone(
-    Clone2HandlerRet, // To be called function
-    (void*)((uint64_t)args->NewStack + args->StackSize), // Stack
-    Flags, //Flags
-    Data, //Argument
-    (pid_t*)args->args.parent_tid, // parent_tid
-    0, // XXX: What is correct for this? tls
-    (pid_t*)args->args.child_tid); // child_tid
+  uint64_t Result = ::clone(Clone2HandlerRet,                                    // To be called function
+                            (void*)((uint64_t)args->NewStack + args->StackSize), // Stack
+                            Flags,                                               // Flags
+                            Data,                                                // Argument
+                            (pid_t*)args->args.parent_tid,                       // parent_tid
+                            0,                                                   // XXX: What is correct for this? tls
+                            (pid_t*)args->args.child_tid);                       // child_tid
 
   // Only parent will get here
   SYSCALL_ERRNO();
 }
 
-static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
+static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   constexpr size_t Offset = sizeof(StackFramePlusRet);
-  StackFramePlusRet *Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(args->NewStack) + args->StackSize - Offset);
+  StackFramePlusRet* Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(args->NewStack) + args->StackSize - Offset);
   Data->Ret = (uint64_t)Clone3HandlerRet;
   Data->Data.Thread = Frame->Thread;
   Data->Data.CTX = Frame->Thread->CTX;
   Data->Data.GuestArgs = *args;
 
-  FEX::HLE::kernel_clone3_args HostArgs{};
-  HostArgs.flags       = args->args.flags;
-  HostArgs.pidfd       = args->args.pidfd;
-  HostArgs.child_tid   = args->args.child_tid;
-  HostArgs.parent_tid  = args->args.parent_tid;
+  FEX::HLE::kernel_clone3_args HostArgs {};
+  HostArgs.flags = args->args.flags;
+  HostArgs.pidfd = args->args.pidfd;
+  HostArgs.child_tid = args->args.child_tid;
+  HostArgs.parent_tid = args->args.parent_tid;
   HostArgs.exit_signal = args->args.exit_signal;
   // Host stack is always created
-  HostArgs.stack       = reinterpret_cast<uint64_t>(args->NewStack);
-  HostArgs.stack_size  = args->StackSize - Offset; // Needs to be 16 byte aligned
-  HostArgs.tls         = 0; // XXX: What is correct for this?
-  HostArgs.set_tid     = args->args.set_tid;
-  HostArgs.set_tid_size= args->args.set_tid_size;
-  HostArgs.cgroup      = args->args.cgroup;
+  HostArgs.stack = reinterpret_cast<uint64_t>(args->NewStack);
+  HostArgs.stack_size = args->StackSize - Offset; // Needs to be 16 byte aligned
+  HostArgs.tls = 0;                               // XXX: What is correct for this?
+  HostArgs.set_tid = args->args.set_tid;
+  HostArgs.set_tid_size = args->args.set_tid_size;
+  HostArgs.cgroup = args->args.cgroup;
 
   // Create a copy of the parent frame
   memcpy(&Data->Data.NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
@@ -514,7 +495,7 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   SYSCALL_ERRNO();
 };
 
-uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
+uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   uint64_t flags = args->args.flags;
 
   if (flags & CLONE_CLEAR_SIGHAND) {
@@ -525,20 +506,11 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     return -EINVAL;
   }
 
-  auto HasUnhandledFlags = [](FEX::HLE::clone3_args *args) -> bool {
-    constexpr uint64_t UNHANDLED_FLAGS =
-      CLONE_NEWNS |
-      // CLONE_UNTRACED |
-      CLONE_NEWCGROUP |
-      CLONE_NEWUTS |
-      CLONE_NEWUTS |
-      CLONE_NEWIPC |
-      CLONE_NEWUSER |
-      CLONE_NEWPID |
-      CLONE_NEWNET |
-      CLONE_IO |
-      CLONE_CLEAR_SIGHAND |
-      CLONE_INTO_CGROUP;
+  auto HasUnhandledFlags = [](FEX::HLE::clone3_args* args) -> bool {
+    constexpr uint64_t UNHANDLED_FLAGS = CLONE_NEWNS |
+                                         // CLONE_UNTRACED |
+                                         CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID |
+                                         CLONE_NEWNET | CLONE_IO | CLONE_CLEAR_SIGHAND | CLONE_INTO_CGROUP;
 
     if ((args->args.flags & UNHANDLED_FLAGS) != 0) {
       // Basic unhandled flags
@@ -558,12 +530,11 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     }
 
     if (AnyFlagsSet(args->args.flags, CLONE_THREAD)) {
-      if (!AllFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
+      if (!AllFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND)) {
         LogMan::Msg::IFmt("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
         return false;
       }
-    }
-    else {
+    } else {
       if (AnyFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
         // CLONE_VM is particularly nasty here
         // Memory regions at the point of clone(More similar to a fork) are shared
@@ -596,11 +567,10 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
       FEX::HLE::_SyscallHandler->LockBeforeFork(Frame->Thread);
 
-      uint64_t Result{};
+      uint64_t Result {};
       if (args->Type == TYPE_CLONE2) {
         Result = Clone2Handler(Frame, args);
-      }
-      else {
+      } else {
         Result = Clone3Handler(Frame, args);
       }
 
@@ -612,16 +582,14 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
         ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, nullptr, sizeof(args->SignalMask));
       }
       return Result;
-    }
-    else {
+    } else {
       LogMan::Msg::IFmt("Unsupported flag with CLONE_THREAD. This breaks TLS, falling down classic thread path");
       PrintFlags(flags);
     }
   }
 
   constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
-  if (args->args.tls &&
-      args->args.tls >= TASK_MAX) {
+  if (args->args.tls && args->args.tls >= TASK_MAX) {
     return -EPERM;
   }
 
@@ -634,12 +602,9 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
   if (!(flags & CLONE_THREAD)) {
     // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
-    return FEX::HLE::ForkGuest(Thread, Frame, flags,
-      reinterpret_cast<void*>(args->args.stack),
-      args->args.stack_size,
-      reinterpret_cast<pid_t*>(args->args.parent_tid),
-      reinterpret_cast<pid_t*>(args->args.child_tid),
-      reinterpret_cast<void*>(args->args.tls));
+    return FEX::HLE::ForkGuest(Thread, Frame, flags, reinterpret_cast<void*>(args->args.stack), args->args.stack_size,
+                               reinterpret_cast<pid_t*>(args->args.parent_tid), reinterpret_cast<pid_t*>(args->args.child_tid),
+                               reinterpret_cast<void*>(args->args.tls));
   } else {
     auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
 
@@ -661,23 +626,21 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   }
 };
 
-uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr) {
+uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);
 
   uint64_t Result;
 
   if (Addr == nullptr) { // Just wants to get the location of the program break atm
     Result = DataSpace + DataSpaceSize;
-  }
-  else {
+  } else {
     // Allocating out data space
     uint64_t NewEnd = reinterpret_cast<uint64_t>(Addr);
     if (NewEnd < DataSpace) {
       // Not allowed to move brk end below original start
       // Set the size to zero
       DataSpaceSize = 0;
-    }
-    else {
+    } else {
       uint64_t NewSize = NewEnd - DataSpace;
       uint64_t NewSizeAligned = FEXCore::AlignUp(NewSize, 4096);
 
@@ -692,18 +655,17 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
 
         DataSpaceMaxSize = NewSizeAligned;
-      }
-      else if (NewSize > DataSpaceMaxSize) {
+      } else if (NewSize > DataSpaceMaxSize) {
         constexpr static uint64_t SizeAlignment = 8 * 1024 * 1024;
         uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, SizeAlignment) - DataSpaceMaxSize;
-        if (!Is64BitMode() &&
-          (DataSpace + DataSpaceMaxSize + AllocateNewSize > 0x1'0000'0000ULL)) {
+        if (!Is64BitMode() && (DataSpace + DataSpaceMaxSize + AllocateNewSize > 0x1'0000'0000ULL)) {
           // If we are 32bit and we tried going about the 32bit limit then out of memory
           return DataSpace + DataSpaceSize;
         }
 
-        uint64_t NewBRK{};
-        NewBRK = (uint64_t)GuestMmap(Frame->Thread, (void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        uint64_t NewBRK {};
+        NewBRK = (uint64_t)GuestMmap(Frame->Thread, (void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE,
+                                     MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
@@ -717,8 +679,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         if (NewBRK == ~0ULL) {
           // If we couldn't allocate a new region then out of memory
           return DataSpace + DataSpaceSize;
-        }
-        else {
+        } else {
           // Increase our BRK size
           DataSpaceMaxSize += AllocateNewSize;
         }
@@ -737,7 +698,7 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
   DataSpaceStartingSize = Size;
 }
 
-SyscallHandler::SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation)
+SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation)
   : TM {_CTX, _SignalDelegation}
   , FM {_CTX}
   , CTX {_CTX}
@@ -755,14 +716,14 @@ SyscallHandler::~SyscallHandler() {
 }
 
 uint32_t SyscallHandler::CalculateHostKernelVersion() {
-  struct utsname buf{};
+  struct utsname buf {};
   if (uname(&buf) == -1) {
     return 0;
   }
 
-  uint32_t Major{};
-  uint32_t Minor{};
-  uint32_t Patch{};
+  uint32_t Major {};
+  uint32_t Minor {};
+  uint32_t Patch {};
 
   // Parse kernel version in the form of `<Major>.<Minor>.<Patch>[Optional Data]`
   const auto End = buf.release + sizeof(buf.release);
@@ -778,27 +739,32 @@ uint32_t SyscallHandler::CalculateGuestKernelVersion() {
   return std::max(KernelVersion(5, 0), std::min(KernelVersion(6, 8), GetHostKernelVersion()));
 }
 
-uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
+uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
   if (Args->Argument[0] >= Definitions.size()) {
     return -ENOSYS;
   }
 
-  auto &Def = Definitions[Args->Argument[0]];
-  uint64_t Result{};
+  auto& Def = Definitions[Args->Argument[0]];
+  uint64_t Result {};
   switch (Def.NumArgs) {
   case 0: Result = std::invoke(Def.Ptr0, Frame); break;
   case 1: Result = std::invoke(Def.Ptr1, Frame, Args->Argument[1]); break;
   case 2: Result = std::invoke(Def.Ptr2, Frame, Args->Argument[1], Args->Argument[2]); break;
   case 3: Result = std::invoke(Def.Ptr3, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3]); break;
   case 4: Result = std::invoke(Def.Ptr4, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]); break;
-  case 5: Result = std::invoke(Def.Ptr5, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]); break;
-  case 6: Result = std::invoke(Def.Ptr6, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]); break;
+  case 5:
+    Result = std::invoke(Def.Ptr5, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]);
+    break;
+  case 6:
+    Result = std::invoke(Def.Ptr6, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
+                         Args->Argument[6]);
+    break;
   // for missing syscalls
   case 255: return std::invoke(Def.Ptr1, Frame, Args->Argument[0]);
   default:
     LOGMAN_MSG_A_FMT("Unhandled syscall: {}", Args->Argument[0]);
     return -1;
-  break;
+    break;
   }
 #ifdef DEBUG_STRACE
   Strace(Args, Result);
@@ -807,40 +773,44 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXC
 }
 
 #ifdef DEBUG_STRACE
-void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) {
-  auto &Def = Definitions[Args->Argument[0]];
+void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret) {
+  auto& Def = Definitions[Args->Argument[0]];
   switch (Def.NumArgs) {
-    case 0: LogMan::Msg::D(Def.StraceFmt.c_str(), Ret); break;
-    case 1: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
-    case 2: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
-    case 3: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
-    case 4: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
-    case 5: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret); break;
-    case 6: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6], Ret); break;
-    default: break;
+  case 0: LogMan::Msg::D(Def.StraceFmt.c_str(), Ret); break;
+  case 1: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
+  case 2: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
+  case 3: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
+  case 4: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
+  case 5:
+    LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret);
+    break;
+  case 6:
+    LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
+                   Args->Argument[6], Ret);
+    break;
+  default: break;
   }
 }
 #endif
 
-uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
+uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame* Frame, uint64_t SyscallNumber) {
   ERROR_AND_DIE_FMT("Unhandled system call: {}", SyscallNumber);
   return -ENOSYS;
 }
 
-uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
+uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame* Frame, uint64_t SyscallNumber) {
   return -ENOSYS;
 }
 
-void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {
+void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
   Thread->CTX->LockBeforeFork(Thread);
   VMATracking.Mutex.lock();
 }
 
-void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
+void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   if (Child) {
     VMATracking.Mutex.StealAndDropActiveLocks();
-  }
-  else {
+  } else {
     VMATracking.Mutex.unlock();
   }
 
@@ -854,7 +824,8 @@ static bool isHEX(char c) {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
 }
 
-fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
+fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
+SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
 
   ELFParser GuestELF;
 
@@ -932,7 +903,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
       rv->SortedLineMappings.resize(len);
 
-      for (auto &Mapping: rv->SortedLineMappings) {
+      for (auto& Mapping : rv->SortedLineMappings) {
         ::read(FD, (char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
         ::read(FD, (char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
         ::read(FD, (char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
@@ -946,7 +917,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
       rv->SortedSymbolMappings.resize(len);
 
-      for (auto &Mapping: rv->SortedSymbolMappings) {
+      for (auto& Mapping : rv->SortedSymbolMappings) {
         ::read(FD, (char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
         ::read(FD, (char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
 
@@ -963,8 +934,8 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     close(FD);
     return rv;
   } else {
-    // objdump output parsing,  index generation, index file serialization
-    DoGenerate:
+// objdump output parsing,  index generation, index file serialization
+DoGenerate:
     LogMan::Msg::DFmt("GenerateMap: Generating index for '{}'", GuestSourceFile);
     int StreamFD = ::open(GuestSourceFile.c_str(), O_RDONLY | O_CLOEXEC);
 
@@ -995,12 +966,12 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
     bool PreviousLineWasEmpty = false;
 
-    uintptr_t LastSymbolOffset{};
-    uintptr_t CurrentSymbolOffset{};
+    uintptr_t LastSymbolOffset {};
+    uintptr_t CurrentSymbolOffset {};
     fextl::string LastSymbolName;
 
-    uintptr_t LastOffset{};
-    uintptr_t CurrentOffset{};
+    uintptr_t LastOffset {};
+    uintptr_t CurrentOffset {};
     int LastOffsetLine;
 
     auto rv = fextl::make_unique<FEXCore::HLE::SourcecodeMap>();
@@ -1042,10 +1013,12 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
           for (; !isspace(Line[offs]) && offs < Line.size(); offs++)
             ;
 
-          if (offs == Line.size())
+          if (offs == Line.size()) {
             continue;
-          if (offs != 8 && offs != 16)
+          }
+          if (offs != 8 && offs != 16) {
             continue;
+          }
 
           auto VAOffset = std::strtoul(Line.substr(0, offs).c_str(), nullptr, 16);
 
@@ -1065,8 +1038,9 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
           for (; Line[offs] != '<' && offs < Line.size(); offs++)
             ;
 
-          if (offs == Line.size())
+          if (offs == Line.size()) {
             continue;
+          }
 
           offs++;
 
@@ -1078,16 +1052,18 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
           for (; isspace(Line[offs]) && offs < Line.size(); offs++)
             ;
 
-          if (offs == Line.size())
+          if (offs == Line.size()) {
             continue;
+          }
 
           int start = offs;
 
           for (; Line[offs] != ':' && offs < Line.size(); offs++)
             ;
 
-          if (offs == Line.size())
+          if (offs == Line.size()) {
             continue;
+          }
 
           if (Line[offs + 1] == '\t') {
             auto VAOffsetStr = Line.substr(start, offs - start);
@@ -1121,10 +1097,10 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     // Index post processing - entires are sorted for faster lookups
 
     std::sort(rv->SortedLineMappings.begin(), rv->SortedLineMappings.end(),
-              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
+              [](const auto& lhs, const auto& rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
 
     std::sort(rv->SortedSymbolMappings.begin(), rv->SortedSymbolMappings.end(),
-              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
+              [](const auto& lhs, const auto& rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
 
     // Index serialization
     {
@@ -1138,7 +1114,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
       ::write(IndexStream, (const char*)&len, sizeof(len));
 
-      for (const auto &Mapping: rv->SortedLineMappings) {
+      for (const auto& Mapping : rv->SortedLineMappings) {
         ::write(IndexStream, (const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
         ::write(IndexStream, (const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
         ::write(IndexStream, (const char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
@@ -1150,7 +1126,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
       ::write(IndexStream, (char*)&len, sizeof(len));
 
-      for (const auto &Mapping: rv->SortedSymbolMappings) {
+      for (const auto& Mapping : rv->SortedSymbolMappings) {
         ::write(IndexStream, (const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
         ::write(IndexStream, (const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
 
@@ -1173,8 +1149,6 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     LogMan::Msg::DFmt("GenerateMap: Finished generating index", GuestIndexFile);
     return rv;
   }
-
-
 }
 
-}
+} // namespace FEX::HLE

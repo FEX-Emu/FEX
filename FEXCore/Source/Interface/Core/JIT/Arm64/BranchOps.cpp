@@ -19,7 +19,7 @@ $end_info$
 #include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(CallbackReturn) {
   // spill back to CTX
@@ -103,7 +103,7 @@ DEF_OP(Jump) {
 
 static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
-  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
   case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
   case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
   case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
@@ -115,17 +115,15 @@ static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
   case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
   case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
   case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
+  case FEXCore::IR::COND_FU: return ARMEmitter::Condition::CC_VS;
   case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
   case FEXCore::IR::COND_VS:
   case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI:  return ARMEmitter::Condition::CC_MI;
-  case FEXCore::IR::COND_PL:  return ARMEmitter::Condition::CC_PL;
-  default:
-  LOGMAN_MSG_A_FMT("Unsupported compare type");
-  return ARMEmitter::Condition::CC_NV;
+  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
+  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
+  default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
   }
 }
 
@@ -144,13 +142,12 @@ DEF_OP(CondJump) {
 
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     LOGMAN_THROW_A_FMT(isConst && Const == 0, "CondJump: Expected 0 source");
-    LOGMAN_THROW_A_FMT(Op->Cond.Val == FEXCore::IR::COND_EQ ||
-                       Op->Cond.Val == FEXCore::IR::COND_NEQ,
-                       "CondJump: Expected simple condition");
+    LOGMAN_THROW_A_FMT(Op->Cond.Val == FEXCore::IR::COND_EQ || Op->Cond.Val == FEXCore::IR::COND_NEQ, "CondJump: Expected simple "
+                                                                                                      "condition");
 
     if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
       cbz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
-    } else  {
+    } else {
       cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
     }
 
@@ -190,7 +187,9 @@ DEF_OP(Syscall) {
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
   for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
-    if (Op->Header.Args[i].IsInvalid()) continue;
+    if (Op->Header.Args[i].IsInvalid()) {
+      continue;
+    }
     str(GetReg(Op->Header.Args[i].ID()).X(), ARMEmitter::Reg::rsp, i * 8);
   }
 
@@ -202,8 +201,7 @@ DEF_OP(Syscall) {
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r3);
   }
 
@@ -241,20 +239,19 @@ DEF_OP(InlineSyscall) {
   // X6: Arg6 - Doesn't exist in x86-64 land. RA INTERSECT
 
   // One argument is removed from the SyscallArguments::MAX_ARGS since the first argument was syscall number
-  const static std::array<ARMEmitter::XRegister, FEXCore::HLE::SyscallArguments::MAX_ARGS-1> RegArgs = {{
-    ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::XReg::x2, ARMEmitter::XReg::x3, ARMEmitter::XReg::x4, ARMEmitter::XReg::x5
-  }};
+  const static std::array<ARMEmitter::XRegister, FEXCore::HLE::SyscallArguments::MAX_ARGS - 1> RegArgs = {
+    {ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::XReg::x2, ARMEmitter::XReg::x3, ARMEmitter::XReg::x4, ARMEmitter::XReg::x5}};
 
-  bool Intersects{};
+  bool Intersects {};
   // We always need to spill x8 since we can't know if it is live at this SSA location
   uint32_t SpillMask = 1U << 8;
-  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
-    if (Op->Header.Args[i].IsInvalid()) break;
+  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
+    if (Op->Header.Args[i].IsInvalid()) {
+      break;
+    }
 
     auto Reg = GetReg(Op->Header.Args[i].ID());
-    if (Reg == ARMEmitter::Reg::r8 ||
-        Reg == ARMEmitter::Reg::r4 ||
-        Reg == ARMEmitter::Reg::r5) {
+    if (Reg == ARMEmitter::Reg::r8 || Reg == ARMEmitter::Reg::r4 || Reg == ARMEmitter::Reg::r5) {
 
       SpillMask |= (1U << Reg.Idx());
       Intersects = true;
@@ -278,8 +275,10 @@ DEF_OP(InlineSyscall) {
   const auto EmitSize = CTX->Config.Is64BitMode() ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   const auto EmitSubSize = CTX->Config.Is64BitMode() ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i32Bit;
   if (Intersects) {
-    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
-      if (Op->Header.Args[i].IsInvalid()) break;
+    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
+      if (Op->Header.Args[i].IsInvalid()) {
+        break;
+      }
 
       auto Reg = GetReg(Op->Header.Args[i].ID());
       // In the case of intersection with x4, x5, or x8 then these are currently SRA
@@ -287,21 +286,19 @@ DEF_OP(InlineSyscall) {
       // Just load back from the context. Could be slightly smarter but this is fairly uncommon
       if (Reg == ARMEmitter::Reg::r8) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP]));
-      }
-      else if (Reg == ARMEmitter::Reg::r4) {
+      } else if (Reg == ARMEmitter::Reg::r4) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX]));
-      }
-      else if (Reg == ARMEmitter::Reg::r5) {
+      } else if (Reg == ARMEmitter::Reg::r5) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RCX]));
-      }
-      else {
+      } else {
         mov(EmitSize, RegArgs[i].R(), Reg);
       }
     }
-  }
-  else {
-    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
-      if (Op->Header.Args[i].IsInvalid()) break;
+  } else {
+    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
+      if (Op->Header.Args[i].IsInvalid()) {
+        break;
+      }
 
       mov(EmitSize, RegArgs[i].R(), GetReg(Op->Header.Args[i].ID()));
     }
@@ -342,8 +339,7 @@ DEF_OP(Thunk) {
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r2);
   }
 
@@ -354,7 +350,7 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  const auto *OldCode = (const uint8_t *)&Op->CodeOriginalLow;
+  const auto* OldCode = (const uint8_t*)&Op->CodeOriginalLow;
   int len = Op->CodeLength;
   int idx = 0;
 
@@ -364,37 +360,33 @@ DEF_OP(ValidateCode) {
 
   const auto Dst = GetReg(Node);
 
-  while (len >= 8)
-  {
+  while (len >= 8) {
     ldr(ARMEmitter::XReg::x2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t *)(OldCode + idx));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
     cmp(ARMEmitter::Size::i64Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 8;
     idx += 8;
   }
-  while (len >= 4)
-  {
+  while (len >= 4) {
     ldr(ARMEmitter::WReg::w2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t *)(OldCode + idx));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
     cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 4;
     idx += 4;
   }
-  while (len >= 2)
-  {
+  while (len >= 2) {
     ldrh(TMP3, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint16_t *)(OldCode + idx));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint16_t*)(OldCode + idx));
     cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 2;
     idx += 2;
   }
-  while (len >= 1)
-  {
+  while (len >= 1) {
     ldrb(TMP3, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint8_t *)(OldCode + idx));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint8_t*)(OldCode + idx));
     cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 1;
@@ -416,8 +408,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r2);
   }
   FillStaticRegs();
@@ -448,8 +439,7 @@ DEF_OP(CPUID) {
 
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r3);
   }
 
@@ -465,7 +455,7 @@ DEF_OP(CPUID) {
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
   auto Dst = GetRegPair(Node);
-  mov(ARMEmitter::Size::i64Bit, Dst.first,  TMP1);
+  mov(ARMEmitter::Size::i64Bit, Dst.first, TMP1);
   mov(ARMEmitter::Size::i64Bit, Dst.second, TMP2);
 }
 
@@ -483,8 +473,7 @@ DEF_OP(XGetBV) {
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
-  }
-  else {
+  } else {
     blr(ARMEmitter::Reg::r2);
   }
 
@@ -499,10 +488,9 @@ DEF_OP(XGetBV) {
   // Results are in x0
   // Results want to be in a i32v2 vector
   auto Dst = GetRegPair(Node);
-  mov(ARMEmitter::Size::i32Bit, Dst.first,  TMP1);
+  mov(ARMEmitter::Size::i32Bit, Dst.first, TMP1);
   lsr(ARMEmitter::Size::i64Bit, Dst.second, TMP1, 32);
 }
 
 #undef DEF_OP
-}
-
+} // namespace FEXCore::CPU

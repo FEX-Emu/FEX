@@ -29,6 +29,6 @@ namespace FEX::HLE::x64 {
 #include "LinuxSyscalls/x64/Ioctl/amdgpu_drm.inl"
 #include "LinuxSyscalls/x64/Ioctl/msm_drm.inl"
 
-}
+} // namespace FEX::HLE::x64
 #undef CPYT
 #undef CPYF

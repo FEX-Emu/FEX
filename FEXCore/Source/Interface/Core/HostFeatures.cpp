@@ -28,23 +28,21 @@ namespace FEXCore {
 [[maybe_unused]] constexpr uint32_t DCZID_BS_MASK = 0b0'1111;
 
 #ifdef _M_ARM_64
-[[maybe_unused]] static uint32_t GetDCZID() {
-  uint64_t Result{};
-  __asm("mrs %[Res], DCZID_EL0"
-      : [Res] "=r" (Result));
+[[maybe_unused]]
+static uint32_t GetDCZID() {
+  uint64_t Result {};
+  __asm("mrs %[Res], DCZID_EL0" : [Res] "=r"(Result));
   return Result;
 }
 
 static uint32_t GetFPCR() {
-  uint64_t Result{};
-  __asm ("mrs %[Res], FPCR"
-    : [Res] "=r" (Result));
+  uint64_t Result {};
+  __asm("mrs %[Res], FPCR" : [Res] "=r"(Result));
   return Result;
 }
 
 static void SetFPCR(uint64_t Value) {
-  __asm ("msr FPCR, %[Value]"
-    :: [Value] "r" (Value));
+  __asm("msr FPCR, %[Value]" ::[Value] "r"(Value));
 }
 #else
 static uint32_t GetDCZID() {
@@ -53,7 +51,7 @@ static uint32_t GetDCZID() {
 }
 #endif
 
-static void OverrideFeatures(HostFeatures *Features) {
+static void OverrideFeatures(HostFeatures* Features) {
   // Override features if the user has specifically called for it.
   FEX_CONFIG_OPT(HostFeatures, HOSTFEATURES);
   if (!HostFeatures()) {
@@ -62,19 +60,19 @@ static void OverrideFeatures(HostFeatures *Features) {
   }
 
 #define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name) \
-    do { \
-      const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
-      const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
-      LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
-      const bool AlreadyEnabled = Features->FeatureName; \
-      const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name; \
-      Features->FeatureName = Result; \
-    } while (0)
+  do { \
+    const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
+    const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0; \
+    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
+    const bool AlreadyEnabled = Features->FeatureName; \
+    const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name; \
+    Features->FeatureName = Result; \
+  } while (0)
 
 #define GET_SINGLE_OPTION(name, enum_name) \
-    const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
-    const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
-    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
+  const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
+  const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0; \
+  LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
   ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);
   ENABLE_DISABLE_OPTION(SupportsAVX2, AVX2, AVX2);
@@ -102,8 +100,7 @@ static void OverrideFeatures(HostFeatures *Features) {
     Features->SupportsCRC = true;
     Features->SupportsSHA = true;
     Features->SupportsPMULL_128Bit = true;
-  }
-  else if (DisableCrypto) {
+  } else if (DisableCrypto) {
     Features->SupportsAES = false;
     Features->SupportsCRC = false;
     Features->SupportsSHA = false;
@@ -127,8 +124,7 @@ HostFeatures::HostFeatures() {
 
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
-  SupportsSHA = Features.Has(vixl::CPUFeatures::Feature::kSHA1) &&
-                Features.Has(vixl::CPUFeatures::Feature::kSHA2);
+  SupportsSHA = Features.Has(vixl::CPUFeatures::Feature::kSHA1) && Features.Has(vixl::CPUFeatures::Feature::kSHA2);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
   SupportsRAND = Features.Has(vixl::CPUFeatures::Feature::kRNG);
 
@@ -151,8 +147,7 @@ HostFeatures::HostFeatures() {
   SupportsAVX = true;
 #else
   SupportsSVE = Features.Has(vixl::CPUFeatures::Feature::kSVE);
-  SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) &&
-                vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
+  SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
   // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
   SupportsAVX2 = false;
@@ -173,21 +168,19 @@ HostFeatures::HostFeatures() {
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
   uint64_t CTR;
-  __asm volatile ("mrs %[ctr], ctr_el0"
-    : [ctr] "=r"(CTR));
+  __asm volatile("mrs %[ctr], ctr_el0" : [ctr] "=r"(CTR));
 
   DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
   ICacheLineSize = 4 << (CTR & 0xF);
 
   // Test if this CPU supports float exception trapping by attempting to enable
   // On unsupported these bits are architecturally defined as RAZ/WI
-  constexpr uint32_t ExceptionEnableTraps =
-    (1U << 8) |  // Invalid Operation float exception trap enable
-    (1U << 9) |  // Divide by zero float exception trap enable
-    (1U << 10) | // Overflow float exception trap enable
-    (1U << 11) | // Underflow float exception trap enable
-    (1U << 12) | // Inexact float exception trap enable
-    (1U << 15);  // Input Denormal float exception trap enable
+  constexpr uint32_t ExceptionEnableTraps = (1U << 8) |  // Invalid Operation float exception trap enable
+                                            (1U << 9) |  // Divide by zero float exception trap enable
+                                            (1U << 10) | // Overflow float exception trap enable
+                                            (1U << 11) | // Underflow float exception trap enable
+                                            (1U << 12) | // Inexact float exception trap enable
+                                            (1U << 15);  // Input Denormal float exception trap enable
 
   uint32_t OriginalFPCR = GetFPCR();
   uint32_t FPCR = OriginalFPCR | ExceptionEnableTraps;
@@ -222,7 +215,7 @@ HostFeatures::HostFeatures() {
   ICacheLineSize = 64U;
 
 #if !defined(VIXL_SIMULATOR)
-  Xbyak::util::Cpu X86Features{};
+  Xbyak::util::Cpu X86Features {};
   SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
   SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
   SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
@@ -256,4 +249,4 @@ HostFeatures::HostFeatures() {
   SupportsPreserveAllABI = FEXCORE_HAS_PRESERVE_ALL_ATTR;
   OverrideFeatures(this);
 }
-}
+} // namespace FEXCore

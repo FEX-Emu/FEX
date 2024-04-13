@@ -5,7 +5,7 @@
 #include <winternl.h>
 
 namespace FEXCore::Context {
-  class Context;
+class Context;
 }
 
 /**
@@ -14,19 +14,19 @@ namespace FEXCore::Context {
 namespace FEX::Windows {
 class CPUFeatures {
 public:
-  CPUFeatures(FEXCore::Context::Context &CTX);
+  CPUFeatures(FEXCore::Context::Context& CTX);
 
   /**
-   * @brief If the given PF_* feature is supported  
+   * @brief If the given PF_* feature is supported
    */
   bool IsFeaturePresent(uint32_t Feature);
 
   /**
    * @brief Fills in `Info` according to the detected CPU features
    */
-  void UpdateInformation(SYSTEM_CPU_INFORMATION *Info);
+  void UpdateInformation(SYSTEM_CPU_INFORMATION* Info);
 
 private:
-  SYSTEM_CPU_INFORMATION CpuInfo{};
+  SYSTEM_CPU_INFORMATION CpuInfo {};
 };
-}
+} // namespace FEX::Windows

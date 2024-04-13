@@ -14,34 +14,32 @@ namespace FEXCore::FileLoading {
 
 #ifndef _WIN32
 template<typename T>
-static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
+static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSize) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
   if (FD == -1) {
     return false;
   }
 
-  size_t FileSize{};
+  size_t FileSize {};
   if (FixedSize == 0) {
     struct stat buf;
     if (fstat(FD, &buf) == 0) {
       FileSize = buf.st_size;
     }
-  }
-  else {
+  } else {
     FileSize = FixedSize;
   }
 
   ssize_t Read = -1;
-  bool LoadedFile{};
+  bool LoadedFile {};
   if (FileSize) {
     // File size is known upfront
     Data.resize(FileSize);
     Read = pread(FD, &Data.at(0), FileSize, 0);
 
     LoadedFile = Read == FileSize;
-  }
-  else {
+  } else {
     // The file is either empty or its size is unknown (e.g. procfs data).
     // Try reading in chunks instead
     ssize_t CurrentOffset = 0;
@@ -68,7 +66,7 @@ static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSiz
   return LoadedFile;
 }
 
-ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
+ssize_t LoadFileToBuffer(const fextl::string& Filepath, std::span<char> Buffer) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
   if (FD == -1) {
@@ -82,7 +80,7 @@ ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) 
 
 #else
 template<typename T>
-static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
+static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSize) {
   std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
   if (f.fail()) {
     return false;
@@ -94,19 +92,19 @@ static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSiz
   return !f.fail();
 }
 
-ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
+ssize_t LoadFileToBuffer(const fextl::string& Filepath, std::span<char> Buffer) {
   std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
   return f.readsome(Buffer.data(), Buffer.size());
 }
 
 #endif
 
-bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize) {
+bool LoadFile(fextl::vector<char>& Data, const fextl::string& Filepath, size_t FixedSize) {
   return LoadFileImpl(Data, Filepath, FixedSize);
 }
 
-bool LoadFile(fextl::string &Data, const fextl::string &Filepath, size_t FixedSize) {
+bool LoadFile(fextl::string& Data, const fextl::string& Filepath, size_t FixedSize) {
   return LoadFileImpl(Data, Filepath, FixedSize);
 }
 
-}
+} // namespace FEXCore::FileLoading

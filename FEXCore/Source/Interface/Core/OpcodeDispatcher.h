@@ -71,8 +71,8 @@ struct LoadSourceOptions {
 };
 
 class OpDispatchBuilder final : public IREmitter {
-friend class FEXCore::IR::Pass;
-friend class FEXCore::IR::PassManager;
+  friend class FEXCore::IR::Pass;
+  friend class FEXCore::IR::PassManager;
 
 public:
   enum class FlagsGenerationType : uint8_t {
@@ -103,11 +103,15 @@ public:
 
   void SetNewBlockIfChanged(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
-    if (it == JumpTargets.end()) return;
+    if (it == JumpTargets.end()) {
+      return;
+    }
 
     it->second.HaveEmitted = true;
 
-    if (CurrentCodeBlock->Wrapped(DualListData.ListBegin()).ID() == it->second.BlockEntry->Wrapped(DualListData.ListBegin()).ID()) return;
+    if (CurrentCodeBlock->Wrapped(DualListData.ListBegin()).ID() == it->second.BlockEntry->Wrapped(DualListData.ListBegin()).ID()) {
+      return;
+    }
 
     // We have hit a RIP that is a jump target
     // Thus we need to end up in a new block
@@ -131,19 +135,20 @@ public:
     CalculateDeferredFlags();
     return _Jump();
   }
-  IRPair<IROp_Jump> Jump(OrderedNode *_TargetBlock) {
+  IRPair<IROp_Jump> Jump(OrderedNode* _TargetBlock) {
     CalculateDeferredFlags();
     return _Jump(_TargetBlock);
   }
-  IRPair<IROp_CondJump> CondJump(OrderedNode *_Cmp1, OrderedNode *_Cmp2, OrderedNode *_TrueBlock, OrderedNode *_FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
+  IRPair<IROp_CondJump> CondJump(OrderedNode* _Cmp1, OrderedNode* _Cmp2, OrderedNode* _TrueBlock, OrderedNode* _FalseBlock,
+                                 CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
     CalculateDeferredFlags();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
-  IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> CondJump(OrderedNode* ssa0, CondClassType cond = {COND_NEQ}) {
     CalculateDeferredFlags();
     return _CondJump(ssa0, cond);
   }
-  IRPair<IROp_CondJump> CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> CondJump(OrderedNode* ssa0, OrderedNode* ssa1, OrderedNode* ssa2, CondClassType cond = {COND_NEQ}) {
     CalculateDeferredFlags();
     return _CondJump(ssa0, ssa1, ssa2, cond);
   }
@@ -179,8 +184,7 @@ public:
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
         _ExitFunction(RelocatedNextRIP);
-      }
-      else if (it != JumpTargets.end()) {
+      } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
         return true;
       }
@@ -195,7 +199,7 @@ public:
     return false;
   }
 
-  static bool CanHaveSideEffects(FEXCore::X86Tables::X86InstInfo const* TableInfo, FEXCore::X86Tables::DecodedOp Op) {
+  static bool CanHaveSideEffects(const FEXCore::X86Tables::X86InstInfo* TableInfo, FEXCore::X86Tables::DecodedOp Op) {
     if (TableInfo && TableInfo->Flags & X86Tables::InstFlags::FLAGS_DEBUG_MEM_ACCESS) {
       // If it is marked as having memory access then always say it has a side-effect.
       // Not always true but better to be safe.
@@ -204,7 +208,7 @@ public:
 
     auto CanHaveSideEffects = false;
 
-    auto HasPotentialMemoryAccess = [](X86Tables::DecodedOperand const &Operand) -> bool {
+    auto HasPotentialMemoryAccess = [](const X86Tables::DecodedOperand& Operand) -> bool {
       if (Operand.IsNone()) {
         return false;
       }
@@ -220,7 +224,7 @@ public:
     return CanHaveSideEffects;
   }
 
-  template <typename F>
+  template<typename F>
   void ForeachDirection(F&& Routine) {
     // Otherwise, prepare to branch.
     auto Zero = _Constant(0);
@@ -246,21 +250,35 @@ public:
     StartNewBlock();
   }
 
-  OpDispatchBuilder(FEXCore::Context::ContextImpl *ctx);
-  OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
+  OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx);
+  OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator& Allocator);
 
   void ResetWorkingList();
-  void ResetDecodeFailure() { NeedsBlockEnd = DecodeFailure = false; }
-  bool HadDecodeFailure() const { return DecodeFailure; }
-  bool NeedsBlockEnder() const { return NeedsBlockEnd; }
+  void ResetDecodeFailure() {
+    NeedsBlockEnd = DecodeFailure = false;
+  }
+  bool HadDecodeFailure() const {
+    return DecodeFailure;
+  }
+  bool NeedsBlockEnder() const {
+    return NeedsBlockEnd;
+  }
 
-  void ResetHandledLock() { HandledLock = false; }
-  bool HasHandledLock() const { return HandledLock; }
+  void ResetHandledLock() {
+    HandledLock = false;
+  }
+  bool HasHandledLock() const {
+    return HandledLock;
+  }
 
-  void SetDumpIR(bool DumpIR) { ShouldDump = DumpIR; }
-  bool ShouldDumpIR() const { return ShouldDump; }
+  void SetDumpIR(bool DumpIR) {
+    ShouldDump = DumpIR;
+  }
+  bool ShouldDumpIR() const {
+    return ShouldDump;
+  }
 
-  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks, uint32_t NumInstructions);
+  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions);
   void Finalize();
 
   // Dispatch builder functions
@@ -366,8 +384,8 @@ public:
   void POPFOp(OpcodeArgs);
 
   struct CycleCounterPair {
-    OrderedNode *CounterLow;
-    OrderedNode *CounterHigh;
+    OrderedNode* CounterLow;
+    OrderedNode* CounterHigh;
   };
   CycleCounterPair CycleCounter();
   void RDTSCOp(OpcodeArgs);
@@ -478,9 +496,9 @@ public:
   template<size_t ElementSize>
   void PExtrOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSIGN(OpcodeArgs);
 
   // BMI1 Ops
@@ -502,21 +520,21 @@ public:
   void ADXOp(OpcodeArgs);
 
   // AVX Ops
-  template <IROps IROp, size_t ElementSize>
+  template<IROps IROp, size_t ElementSize>
   void AVXVectorALUOp(OpcodeArgs);
-  template <IROps IROp, size_t ElementSize>
+  template<IROps IROp, size_t ElementSize>
   void AVXVectorUnaryOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void AVXVectorRound(OpcodeArgs);
 
-  template <size_t DstElementSize, size_t SrcElementSize>
+  template<size_t DstElementSize, size_t SrcElementSize>
   void AVXScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template <size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void AVXVector_CVT_Float_To_Int(OpcodeArgs);
 
-  template <size_t SrcElementSize, bool Widen>
+  template<size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
@@ -535,7 +553,7 @@ public:
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize>
   void InsertCVTGPR_To_FPR(OpcodeArgs);
-  template <size_t DstElementSize>
+  template<size_t DstElementSize>
   void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
 
   template<size_t DstElementSize, size_t SrcElementSize>
@@ -543,23 +561,23 @@ public:
   template<size_t DstElementSize, size_t SrcElementSize>
   void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void InsertScalarRound(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void AVXInsertScalarRound(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void InsertScalarFCMPOp(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void AVXInsertScalarFCMPOp(OpcodeArgs);
 
-  template <size_t DstElementSize>
+  template<size_t DstElementSize>
   void AVXCVTGPR_To_FPR(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void AVXVFCMPOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
   void VAESDecOp(OpcodeArgs);
@@ -573,23 +591,23 @@ public:
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VBROADCASTOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VDPPOp(OpcodeArgs);
 
   void VEXTRACT128Op(OpcodeArgs);
 
-  template <IROps IROp, size_t ElementSize>
+  template<IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VHSUBPOp(OpcodeArgs);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
 
-  template <size_t ElementSize, bool IsStore>
+  template<size_t ElementSize, bool IsStore>
   void VMASKMOVOp(OpcodeArgs);
 
   void VMOVHPOp(OpcodeArgs);
@@ -607,10 +625,10 @@ public:
 
   void VMPSADBWOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPACKSSOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPACKUSOp(OpcodeArgs);
 
   void VPALIGNROp(OpcodeArgs);
@@ -624,14 +642,14 @@ public:
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPERMILImmOp(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPERMILRegOp(OpcodeArgs);
 
   void VPHADDSWOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPHSUBOp(OpcodeArgs);
   void VPHSUBSWOp(OpcodeArgs);
 
@@ -642,65 +660,65 @@ public:
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
 
-  template <bool IsStore>
+  template<bool IsStore>
   void VPMASKMOVOp(OpcodeArgs);
 
   void VPMULHRSWOp(OpcodeArgs);
 
-  template <bool Signed>
+  template<bool Signed>
   void VPMULHWOp(OpcodeArgs);
 
-  template <size_t ElementSize, bool Signed>
+  template<size_t ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
   void VPSADBWOp(OpcodeArgs);
 
   void VPSHUFBOp(OpcodeArgs);
 
-  template <size_t ElementSize, bool Low>
+  template<size_t ElementSize, bool Low>
   void VPSHUFWOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
   void VPSLLDQOp(OpcodeArgs);
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSLLIOp(OpcodeArgs);
   void VPSLLVOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSRAOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSRAIOp(OpcodeArgs);
 
   void VPSRAVDOp(OpcodeArgs);
   void VPSRLVOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
   void VPSRLDQOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPUNPCKHOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPUNPCKLOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VPSRLIOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VSHUFOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void VTESTPOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
-  OrderedNode *ReconstructFSW();
+  OrderedNode* ReconstructFSW();
   // Returns new x87 stack top from FSW.
-  OrderedNode *ReconstructX87StateFromFSW(OrderedNode *FSW);
+  OrderedNode* ReconstructX87StateFromFSW(OrderedNode* FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
   template<NamedVectorConstant constant>
@@ -824,7 +842,7 @@ public:
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 
-  OrderedNode *XSaveBase(X86Tables::DecodedOp Op);
+  OrderedNode* XSaveBase(X86Tables::DecodedOp Op);
   void XSaveOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
@@ -890,7 +908,7 @@ public:
 
   void PSADBW(OpcodeArgs);
 
-  OrderedNode *BitwiseAtLeastTwo(OrderedNode *A, OrderedNode *B, OrderedNode *C);
+  OrderedNode* BitwiseAtLeastTwo(OrderedNode* A, OrderedNode* B, OrderedNode* C);
 
   void SHA1NEXTEOp(OpcodeArgs);
   void SHA1MSG1Op(OpcodeArgs);
@@ -933,18 +951,20 @@ public:
 
   void InvalidOp(OpcodeArgs);
 
-  void SetPackedRFLAG(bool Lower8, OrderedNode *Src);
-  OrderedNode *GetPackedRFLAG(uint32_t FlagsMask = ~0U);
+  void SetPackedRFLAG(bool Lower8, OrderedNode* Src);
+  OrderedNode* GetPackedRFLAG(uint32_t FlagsMask = ~0U);
 
-  void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
+  void SetMultiblock(bool _Multiblock) {
+    Multiblock = _Multiblock;
+  }
 
   static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
     switch (BitOffset) {
-      case FEXCore::X86State::RFLAG_OF_RAW_LOC: return 28;
-      case FEXCore::X86State::RFLAG_CF_RAW_LOC: return 29;
-      case FEXCore::X86State::RFLAG_ZF_RAW_LOC: return 30;
-      case FEXCore::X86State::RFLAG_SF_RAW_LOC: return 31;
-      default: FEX_UNREACHABLE;
+    case FEXCore::X86State::RFLAG_OF_RAW_LOC: return 28;
+    case FEXCore::X86State::RFLAG_CF_RAW_LOC: return 29;
+    case FEXCore::X86State::RFLAG_ZF_RAW_LOC: return 30;
+    case FEXCore::X86State::RFLAG_SF_RAW_LOC: return 31;
+    default: FEX_UNREACHABLE;
     }
   }
 
@@ -960,19 +980,20 @@ protected:
       /* On AFP platforms, becomes fmin/fmax and preserves NZCV. Otherwise
        * becomes fcmp and clobbers.
        */
-      if (CTX->HostFeatures.SupportsAFP)
+      if (CTX->HostFeatures.SupportsAFP) {
         return;
+      }
 
       break;
-    default:
-      break;
+    default: break;
     }
 
     // Invariant: When executing instructions that clobber NZCV, the flags must
     // be resident in a GPR, which is equivalent to CachedNZCV != nullptr. Get
     // the NZCV which fills the cache if necessary.
-    if (CachedNZCV == nullptr)
+    if (CachedNZCV == nullptr) {
       GetNZCV();
+    }
 
     // Assume we'll need a reload.
     NZCVDirty = true;
@@ -984,13 +1005,10 @@ private:
     bool HaveEmitted;
   };
 
-  FEXCore::Context::ContextImpl *CTX{};
+  FEXCore::Context::ContextImpl* CTX {};
 
-  constexpr static unsigned FullNZCVMask =
-    (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
-    (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) |
-    (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
-    (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC);
+  constexpr static unsigned FullNZCVMask = (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) |
+                                           (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC);
 
   static bool ContainsNZCV(unsigned BitMask) {
     return (BitMask & FullNZCVMask) != 0;
@@ -1000,139 +1018,106 @@ private:
     return ContainsNZCV(1U << BitOffset);
   }
 
-  OrderedNode* CachedNZCV{};
-  bool NZCVDirty{};
-  uint32_t PossiblySetNZCVBits{};
+  OrderedNode* CachedNZCV {};
+  bool NZCVDirty {};
+  uint32_t PossiblySetNZCVBits {};
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
-  bool HandledLock{false};
-  bool DecodeFailure{false};
-  bool NeedsBlockEnd{false};
+  bool HandledLock {false};
+  bool DecodeFailure {false};
+  bool NeedsBlockEnd {false};
   // Used during new op bringup
-  bool ShouldDump{false};
+  bool ShouldDump {false};
 
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
-  OrderedNode* ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
-                             OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2);
 
   void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
-  template <size_t ElementSize>
+  template<size_t ElementSize>
   void AVXVectorVariableBlend(OpcodeArgs);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
 
-  OrderedNode* CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
-                                 const X86Tables::DecodedOperand& Src1Op,
-                                 const X86Tables::DecodedOperand& Src2Op);
+  OrderedNode*
+  CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  OrderedNode* DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                         const X86Tables::DecodedOperand& Src2,
+  OrderedNode* DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                          const X86Tables::DecodedOperand& Imm, size_t ElementSize);
 
-  OrderedNode* VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                           const X86Tables::DecodedOperand& Src2,
+  OrderedNode* VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                            const X86Tables::DecodedOperand& Imm);
 
-  OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
-                                        size_t DstElementSize, bool Signed);
+  OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
 
-  OrderedNode* HSUBPOpImpl(OpcodeArgs, size_t ElementSize,
-                           const X86Tables::DecodedOperand& Src1Op,
-                           const X86Tables::DecodedOperand& Src2Op);
+  OrderedNode* HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                              const X86Tables::DecodedOperand& Src2,
+  OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                               const X86Tables::DecodedOperand& Imm);
 
-  OrderedNode* MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
-                             const X86Tables::DecodedOperand& Src2Op,
+  OrderedNode* MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                              const X86Tables::DecodedOperand& ImmOp);
 
-  OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
-                            OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
-                            OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                             const X86Tables::DecodedOperand& Src2,
-                             const X86Tables::DecodedOperand& Imm,
-                             bool IsAVX);
+  OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
+                             const X86Tables::DecodedOperand& Imm, bool IsAVX);
 
   void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
 
-  OrderedNode* PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                            const X86Tables::DecodedOperand& Src2);
+  OrderedNode* PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
-  OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                           const X86Tables::DecodedOperand& Src2, size_t ElementSize);
+  OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize);
 
-  OrderedNode* PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
-                            const X86Tables::DecodedOperand& Src2Op);
+  OrderedNode* PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  OrderedNode* PINSROpImpl(OpcodeArgs, size_t ElementSize,
-                           const X86Tables::DecodedOperand& Src1Op,
-                           const X86Tables::DecodedOperand& Src2Op,
+  OrderedNode* PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                            const X86Tables::DecodedOperand& Imm);
 
-  OrderedNode* PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                             const X86Tables::DecodedOperand& Src2);
+  OrderedNode* PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
 
-  OrderedNode* PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
-                               const X86Tables::DecodedOperand& Src2Op);
+  OrderedNode* PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed,
-                            OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
-                           OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
-                            const X86Tables::DecodedOperand& Src2Op);
+  OrderedNode* PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  OrderedNode* PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                            const X86Tables::DecodedOperand& Src2);
+  OrderedNode* PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
 
-  OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
-                         OrderedNode *Src1, OrderedNode *Src2);
+  OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2);
 
-  OrderedNode* PSLLIImpl(OpcodeArgs, size_t ElementSize,
-                         OrderedNode *Src, uint64_t Shift);
+  OrderedNode* PSLLIImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, uint64_t Shift);
 
-  OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
-                        OrderedNode *Src, OrderedNode *ShiftVec);
+  OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec);
 
-  OrderedNode* PSRAOpImpl(OpcodeArgs, size_t ElementSize,
-                          OrderedNode *Src, OrderedNode *ShiftVec);
+  OrderedNode* PSRAOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec);
 
-  OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
-                           OrderedNode *Src, OrderedNode *ShiftVec);
+  OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec);
 
-  OrderedNode* SHUFOpImpl(OpcodeArgs, size_t ElementSize,
-                          const X86Tables::DecodedOperand& Src1,
-                          const X86Tables::DecodedOperand& Src2,
+  OrderedNode* SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                           const X86Tables::DecodedOperand& Imm);
 
-  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore,
-                      const X86Tables::DecodedOperand& MaskOp,
+  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
 
   void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
   void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
 
-  OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize,
-                           OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType);
+  OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2, uint8_t CompType);
 
   void VTESTOpImpl(OpcodeArgs, size_t ElementSize);
 
@@ -1151,47 +1136,28 @@ private:
   //   - Example 32bit ADDSS Dest, Src
   //   - Dest[31:0] = Dest[31:0] + Src[31:0]
   //   - Dest[{256,128}:32] = (Unmodified)
-  OrderedNode* VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp,
-                                   size_t DstSize, size_t ElementSize,
-                                   const X86Tables::DecodedOperand& Src1Op,
-                                   const X86Tables::DecodedOperand& Src2Op,
-                                   bool ZeroUpperBits);
+  OrderedNode* VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                           const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  OrderedNode* VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp,
-                                   size_t DstSize, size_t ElementSize,
-                                   const X86Tables::DecodedOperand& Src1Op,
-                                   const X86Tables::DecodedOperand& Src2Op,
-                                   bool ZeroUpperBits);
+  OrderedNode* VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                                const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  OrderedNode* InsertCVTGPR_To_FPRImpl(OpcodeArgs,
-                                       size_t DstSize, size_t DstElementSize,
-                                       const X86Tables::DecodedOperand& Src1Op,
-                                       const X86Tables::DecodedOperand& Src2Op,
-                                       bool ZeroUpperBits);
+  OrderedNode* InsertCVTGPR_To_FPRImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                       const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  OrderedNode* InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs,
-                                                   size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
-                                                   const X86Tables::DecodedOperand& Src1Op,
-                                                   const X86Tables::DecodedOperand& Src2Op,
+  OrderedNode* InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+                                                   const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                                                    bool ZeroUpperBits);
-  OrderedNode* InsertScalarRoundImpl(OpcodeArgs,
-                                     size_t DstSize, size_t ElementSize,
-                                     const X86Tables::DecodedOperand& Src1Op,
-                                     const X86Tables::DecodedOperand& Src2Op,
-                                     uint64_t Mode, bool ZeroUpperBits);
+  OrderedNode* InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                     const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  OrderedNode* InsertScalarFCMPOpImpl(OpcodeArgs,
-                                      size_t DstSize, size_t ElementSize,
-                                      const X86Tables::DecodedOperand& Src1Op,
-                                      const X86Tables::DecodedOperand& Src2Op,
-                                      uint8_t CompType, bool ZeroUpperBits);
+  OrderedNode* InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                      const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits);
 
-  OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
-                               OrderedNode *Src, uint64_t Mode);
+  OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, uint64_t Mode);
 
   OrderedNode* Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
-                                             const X86Tables::DecodedOperand& Src1Op,
-                                             const X86Tables::DecodedOperand& Src2Op);
+                                             const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
   void Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
 
@@ -1200,53 +1166,62 @@ private:
   OrderedNode* Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
 
   void XSaveOpImpl(OpcodeArgs);
-  void SaveX87State(OpcodeArgs, OrderedNode *MemBase);
-  void SaveSSEState(OrderedNode *MemBase);
-  void SaveMXCSRState(OrderedNode *MemBase);
-  void SaveAVXState(OrderedNode *MemBase);
+  void SaveX87State(OpcodeArgs, OrderedNode* MemBase);
+  void SaveSSEState(OrderedNode* MemBase);
+  void SaveMXCSRState(OrderedNode* MemBase);
+  void SaveAVXState(OrderedNode* MemBase);
 
   void XRstorOpImpl(OpcodeArgs);
-  void RestoreX87State(OrderedNode *MemBase);
-  void RestoreSSEState(OrderedNode *MemBase);
-  void RestoreMXCSRState(OrderedNode *MXCSR);
-  void RestoreAVXState(OrderedNode *MemBase);
+  void RestoreX87State(OrderedNode* MemBase);
+  void RestoreSSEState(OrderedNode* MemBase);
+  void RestoreMXCSRState(OrderedNode* MXCSR);
+  void RestoreAVXState(OrderedNode* MemBase);
   void DefaultX87State(OpcodeArgs);
   void DefaultSSEState();
   void DefaultAVXState();
 
-  OrderedNode *GetMXCSR();
+  OrderedNode* GetMXCSR();
 
-  #undef OpcodeArgs
+#undef OpcodeArgs
 
-  OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
-  OrderedNode *GetSegment(uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
+  OrderedNode* AppendSegmentOffset(OrderedNode* Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
+  OrderedNode* GetSegment(uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
 
-  void UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t SegmentReg);
+  void UpdatePrefixFromSegment(OrderedNode* Segment, uint32_t SegmentReg);
 
-  OrderedNode *LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
-  OrderedNode *LoadXMMRegister(uint32_t XMM);
-  void StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, int8_t Size = -1, uint8_t Offset = 0);
-  void StoreXMMRegister(uint32_t XMM, OrderedNode *const Src);
+  OrderedNode* LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
+  OrderedNode* LoadXMMRegister(uint32_t XMM);
+  void StoreGPRRegister(uint32_t GPR, OrderedNode* const Src, int8_t Size = -1, uint8_t Offset = 0);
+  void StoreXMMRegister(uint32_t XMM, OrderedNode* const Src);
 
-  OrderedNode *GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset = 0);
+  OrderedNode* GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
-  OrderedNode *LoadSource(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint32_t Flags, const LoadSourceOptions& Options = {});
-  OrderedNode *LoadSource_WithOpSize(RegisterClassType Class, X86Tables::DecodedOp const& Op, X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
-  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  OrderedNode* LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
+                          const LoadSourceOptions& Options = {});
+  OrderedNode* LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
+                                     uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
+  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
+                              const FEXCore::X86Tables::DecodedOperand& Operand, OrderedNode* const Src, uint8_t OpSize, int8_t Align,
+                              MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand,
+                   OrderedNode* const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode* const Src, int8_t Align,
+                   MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
   // In several instances, it's desirable to get a base address with the segment offset
   // applied to it. This pulls all the common-case appending into a single set of functions.
-  [[nodiscard]] OrderedNode *MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint8_t OpSize) {
-    OrderedNode *Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
+  [[nodiscard]]
+  OrderedNode* MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint8_t OpSize) {
+    OrderedNode* Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
     return AppendSegmentOffset(Mem, Op->Flags);
   }
-  [[nodiscard]] OrderedNode *MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand) {
+  [[nodiscard]]
+  OrderedNode* MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand) {
     return MakeSegmentAddress(Op, Operand, GetSrcSize(Op));
   }
-  [[nodiscard]] OrderedNode *MakeSegmentAddress(X86State::X86Reg Reg, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false) {
-    OrderedNode *Address = LoadGPRRegister(Reg);
+  [[nodiscard]]
+  OrderedNode* MakeSegmentAddress(X86State::X86Reg Reg, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false) {
+    OrderedNode* Address = LoadGPRRegister(Reg);
     return AppendSegmentOffset(Address, Flags, DefaultPrefix, Override);
   }
 
@@ -1254,28 +1229,36 @@ private:
     return CTX->HostFeatures.SupportsAVX ? OpSize::i256Bit : OpSize::i128Bit;
   }
 
-  [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
+  [[nodiscard]]
+  static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_AA_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
     return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
   }
 
-  [[nodiscard]] static uint32_t MMBaseOffset() {
+  [[nodiscard]]
+  static uint32_t MMBaseOffset() {
     return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
   }
 
-  [[nodiscard]] uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
-  [[nodiscard]] uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
-  [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
-  [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
-  [[nodiscard]] IR::OpSize OpSizeFromDst(X86Tables::DecodedOp Op) const {
+  [[nodiscard]]
+  uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]]
+  uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]]
+  uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]]
+  uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]]
+  IR::OpSize OpSizeFromDst(X86Tables::DecodedOp Op) const {
     return IR::SizeToOpSize(GetDstSize(Op));
   }
-  [[nodiscard]] IR::OpSize OpSizeFromSrc(X86Tables::DecodedOp Op) const {
+  [[nodiscard]]
+  IR::OpSize OpSizeFromSrc(X86Tables::DecodedOp Op) const {
     return IR::SizeToOpSize(GetSrcSize(Op));
   }
 
   static inline constexpr unsigned NZCVIndexMask(unsigned BitMask) {
-    unsigned NZCVMask{};
+    unsigned NZCVMask {};
     if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) {
       NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC);
     }
@@ -1306,8 +1289,9 @@ private:
   void HandleNZCV_RMW(uint32_t _PossiblySetNZCVBits = ~0) {
     CalculateDeferredFlags();
 
-    if (NZCVDirty && CachedNZCV)
+    if (NZCVDirty && CachedNZCV) {
       _StoreNZCV(CachedNZCV);
+    }
 
     HandleNZCVWrite(_PossiblySetNZCVBits);
   }
@@ -1317,14 +1301,15 @@ private:
     HandleNZCVWrite((1u << 31) | (1u << 30));
   }
 
-  OrderedNode *GetNZCV() {
-    if (!CachedNZCV)
+  OrderedNode* GetNZCV() {
+    if (!CachedNZCV) {
       CachedNZCV = _LoadNZCV();
+    }
 
     return CachedNZCV;
   }
 
-  void SetNZCV(OrderedNode *Value) {
+  void SetNZCV(OrderedNode* Value) {
     CachedNZCV = Value;
     NZCVDirty = true;
   }
@@ -1341,17 +1326,16 @@ private:
 
     // Mask out the NZ bits, clearing CV. Even if the code sets CV after, this can end up faster
     // moves by allowing orlshl to be used instead of bfi.
-    PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC)) |
-                          (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
+    PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC)) | (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
     SetNZCV(_And(OpSize::i32Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
   }
 
-  void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
+  void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode* Res) {
     HandleNZ00Write();
     _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
   }
 
-  void InsertNZCV(unsigned BitOffset, OrderedNode *Value, signed FlagOffset, bool MustMask) {
+  void InsertNZCV(unsigned BitOffset, OrderedNode* Value, signed FlagOffset, bool MustMask) {
     signed Bit = IndexNZCV(BitOffset);
 
     // If NZCV is not dirty, we always want to use rmif, it's 1 instruction to
@@ -1360,13 +1344,13 @@ private:
     // expect that 2 instruction sequence to be a win (versus something like
     // bfe+mov+bfi+mov which can happen with our RA..). It's not totally
     // conservative but it's pretty good in practice.
-    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask ||
-                      (PossiblySetNZCVBits & (1u << Bit));
+    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask || (PossiblySetNZCVBits & (1u << Bit));
 
     if (CTX->HostFeatures.SupportsFlagM && PreferRmif) {
       // Update NZCV
-      if (NZCVDirty && CachedNZCV)
+      if (NZCVDirty && CachedNZCV) {
         _StoreNZCV(CachedNZCV);
+      }
 
       CachedNZCV = nullptr;
       NZCVDirty = false;
@@ -1377,15 +1361,17 @@ private:
       CachedNZCV = nullptr;
     } else {
       // Insert as GPR
-      if (FlagOffset || MustMask)
+      if (FlagOffset || MustMask) {
         Value = _Bfe(OpSize::i64Bit, 1, FlagOffset, Value);
+      }
 
-      if (PossiblySetNZCVBits == 0)
+      if (PossiblySetNZCVBits == 0) {
         SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
-      else if ((PossiblySetNZCVBits & (1u << Bit)) == 0)
+      } else if ((PossiblySetNZCVBits & (1u << Bit)) == 0) {
         SetNZCV(_Orlshl(OpSize::i32Bit, GetNZCV(), Value, Bit));
-      else
+      } else {
         SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, GetNZCV(), Value));
+      }
     }
 
     PossiblySetNZCVBits |= (1u << Bit);
@@ -1407,11 +1393,11 @@ private:
   }
 
   template<unsigned BitOffset>
-  void SetRFLAG(OrderedNode *Value, unsigned ValueOffset = 0, bool MustMask = false) {
+  void SetRFLAG(OrderedNode* Value, unsigned ValueOffset = 0, bool MustMask = false) {
     SetRFLAG(Value, BitOffset, ValueOffset, MustMask);
   }
 
-  void SetRFLAG(OrderedNode *Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
+  void SetRFLAG(OrderedNode* Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
@@ -1419,8 +1405,9 @@ private:
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
       _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
     } else {
-      if (ValueOffset || MustMask)
+      if (ValueOffset || MustMask) {
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
+      }
 
       // For DF, we need to transform 0/1 into 1/-1
       if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
@@ -1443,37 +1430,32 @@ private:
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
-    case FEXCore::X86State::RFLAG_SF_RAW_LOC:
-      return Invert ? CondClassType{COND_PL} : CondClassType{COND_MI};
+    case FEXCore::X86State::RFLAG_SF_RAW_LOC: return Invert ? CondClassType {COND_PL} : CondClassType {COND_MI};
 
-    case FEXCore::X86State::RFLAG_ZF_RAW_LOC:
-      return Invert ? CondClassType{COND_NEQ} : CondClassType{COND_EQ};
+    case FEXCore::X86State::RFLAG_ZF_RAW_LOC: return Invert ? CondClassType {COND_NEQ} : CondClassType {COND_EQ};
 
-    case FEXCore::X86State::RFLAG_CF_RAW_LOC:
-      return Invert ? CondClassType{COND_ULT} : CondClassType{COND_UGE};
+    case FEXCore::X86State::RFLAG_CF_RAW_LOC: return Invert ? CondClassType {COND_ULT} : CondClassType {COND_UGE};
 
-    case FEXCore::X86State::RFLAG_OF_RAW_LOC:
-      return Invert ? CondClassType{COND_FNU} : CondClassType{COND_FU};
+    case FEXCore::X86State::RFLAG_OF_RAW_LOC: return Invert ? CondClassType {COND_FNU} : CondClassType {COND_FU};
 
-    default:
-      FEX_UNREACHABLE;
+    default: FEX_UNREACHABLE;
     }
   }
 
-  OrderedNode *GetRFLAG(unsigned BitOffset, bool Invert = false) {
+  OrderedNode* GetRFLAG(unsigned BitOffset, bool Invert = false) {
     if (IsNZCV(BitOffset)) {
       if (!(PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset)))) {
         return _Constant(Invert ? 1 : 0);
       } else if (NZCVDirty) {
         auto Value = _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
 
-        if (Invert)
+        if (Invert) {
           return _Xor(OpSize::i32Bit, Value, _Constant(1));
-        else
+        } else {
           return Value;
+        }
       } else {
-        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert),
-                           _Constant(1), _Constant(0));
+        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       return _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
@@ -1488,18 +1470,19 @@ private:
   }
 
   // Returns (DF ? -Size : Size)
-  OrderedNode *LoadDir(const unsigned Size) {
+  OrderedNode* LoadDir(const unsigned Size) {
     auto Dir = _LoadDF();
     auto Shift = FEXCore::ilog2(Size);
 
-    if (Shift)
+    if (Shift) {
       return _Lshl(IR::SizeToOpSize(CTX->GetGPRSize()), Dir, _Constant(Shift));
-    else
+    } else {
       return Dir;
+    }
   }
 
   // Returns DF ? (X - Size) : (X + Size)
-  OrderedNode *OffsetByDir(OrderedNode *X, const unsigned Size) {
+  OrderedNode* OffsetByDir(OrderedNode* X, const unsigned Size) {
     auto Shift = FEXCore::ilog2(Size);
 
     return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
@@ -1521,8 +1504,7 @@ private:
       //
       // We set PF to unordered (V), but our PF representation is inverted so we
       // actually set to !V. This is one instruction with the VC cond code.
-      OrderedNode *PFInvert =
-        _NZCVSelect(OpSize::i32Bit, CondClassType{COND_FNU}, _Constant(1), _Constant(0));
+      OrderedNode* PFInvert = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_FNU}, _Constant(1), _Constant(0));
 
       SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PFInvert);
 
@@ -1535,9 +1517,9 @@ private:
       // now, add a cfinv to deal. Hopefully we delete this later.
       CarryInvert();
     } else {
-      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-      OrderedNode *C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
-      OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+      OrderedNode* Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode* C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
+      OrderedNode* V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
 
       // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
       // this all with shifted-or's on non-flagm platforms.
@@ -1556,7 +1538,7 @@ private:
   // Set x87 comparison flags based on the result set by Arm FCMP. Clobbers
   // NZCV on flagm2 platforms.
   void ConvertNZCVToX87() {
-    OrderedNode *V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+    OrderedNode* V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
 
     if (CTX->HostFeatures.SupportsFlagM2) {
       LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
@@ -1569,8 +1551,8 @@ private:
       SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
       SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
     } else {
-      OrderedNode *Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-      OrderedNode *N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
+      OrderedNode* Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+      OrderedNode* N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
 
       SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
       SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
@@ -1582,8 +1564,7 @@ private:
 
   // Helper to store a variable shift and calculate its flags for a variable
   // shift, with correct PF handling.
-  void HandleShift(X86Tables::DecodedOp Op, OrderedNode *Result,
-                   OrderedNode *Dest, ShiftType Shift, OrderedNode *Src) {
+  void HandleShift(X86Tables::DecodedOp Op, OrderedNode* Result, OrderedNode* Dest, ShiftType Shift, OrderedNode* Src) {
 
     StoreResult(GPRClass, Op, Result, -1);
 
@@ -1598,19 +1579,18 @@ private:
   // but does the right handling of ImplicitFlagClobber at least and must be
   // used instead of raw Op mutation.
 #define DeriveOp(Dest, NewOp, Expr) \
-  if (ImplicitFlagClobber(NewOp))   \
-    SaveNZCV(NewOp);                \
-  auto Dest = (Expr);               \
+  if (ImplicitFlagClobber(NewOp)) SaveNZCV(NewOp); \
+  auto Dest = (Expr); \
   Dest.first->Header.Op = (NewOp)
 
   // Named constant cache for the current block.
   // Different arrays for sizes 1,2,4,8,16,32.
-  OrderedNode *CachedNamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][6]{};
+  OrderedNode* CachedNamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_MAX][6] {};
   struct IndexNamedVectorMapKey {
-    uint32_t Index{};
+    uint32_t Index {};
     FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant;
-    uint8_t log2_size_in_bytes{};
-    uint16_t _pad{};
+    uint8_t log2_size_in_bytes {};
+    uint16_t _pad {};
 
     bool operator==(const IndexNamedVectorMapKey&) const = default;
   };
@@ -1619,10 +1599,10 @@ private:
       return XXH3_64bits(&k, sizeof(k));
     }
   };
-  fextl::unordered_map<IndexNamedVectorMapKey, OrderedNode *, IndexNamedVectorMapKeyHasher> CachedIndexedNamedVectorConstants;
+  fextl::unordered_map<IndexNamedVectorMapKey, OrderedNode*, IndexNamedVectorMapKeyHasher> CachedIndexedNamedVectorConstants;
 
   // Load and cache a named vector constant.
-  OrderedNode *LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
+  OrderedNode* LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
     auto log2_size_bytes = FEXCore::ilog2(Size);
     if (CachedNamedVectorConstants[NamedConstant][log2_size_bytes]) {
       return CachedNamedVectorConstants[NamedConstant][log2_size_bytes];
@@ -1632,7 +1612,7 @@ private:
     CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
     return Constant;
   }
-  OrderedNode *LoadAndCacheIndexedNamedVectorConstant(uint8_t Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
+  OrderedNode* LoadAndCacheIndexedNamedVectorConstant(uint8_t Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
     IndexNamedVectorMapKey Key {
       .Index = Index,
       .NamedIndexedConstant = NamedIndexedConstant,
@@ -1657,8 +1637,8 @@ private:
   }
 
   std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP) const;
-  OrderedNode *SelectBit(OrderedNode *Cmp, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
-  OrderedNode *SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode *TrueValue, OrderedNode *FalseValue);
+  OrderedNode* SelectBit(OrderedNode* Cmp, IR::OpSize ResultSize, OrderedNode* TrueValue, OrderedNode* FalseValue);
+  OrderedNode* SelectCC(uint8_t OP, IR::OpSize ResultSize, OrderedNode* TrueValue, OrderedNode* FalseValue);
 
   /**
    * @name Deferred RFLAG calculation and generation.
@@ -1687,7 +1667,7 @@ private:
     uint8_t SrcSize;
 
     // Every flag generation type has a result
-    OrderedNode *Res{};
+    OrderedNode* Res {};
 
     union {
       // UMUL, BEXTR, BLSI, POPCOUNT, ZCNT, RDRAND
@@ -1696,32 +1676,32 @@ private:
 
       // MUL, BLSR, BLSMSKB, BZHI
       struct {
-        OrderedNode *Src1;
+        OrderedNode* Src1;
       } OneSource;
 
       // Logical
       struct {
-        OrderedNode *Src1;
-        OrderedNode *Src2;
+        OrderedNode* Src1;
+        OrderedNode* Src2;
       } TwoSource;
 
       // LSHLI, LSHRI, ASHRI
       struct {
-        OrderedNode *Src1;
+        OrderedNode* Src1;
         uint64_t Imm;
       } OneSrcImmediate;
 
       // ADD, SUB
       struct {
-        OrderedNode *Src1;
-        OrderedNode *Src2;
+        OrderedNode* Src1;
+        OrderedNode* Src2;
 
         bool UpdateCF;
       } TwoSrcImmediate;
-    } Sources{};
+    } Sources {};
   };
 
-  DeferredFlagData CurrentDeferredFlags{};
+  DeferredFlagData CurrentDeferredFlags {};
 
   /**
    * @brief Takes the current deferred flag state and stores the result in to RFLAGS.
@@ -1753,13 +1733,14 @@ private:
     return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
   }
 
-  template <typename F>
-  void Calculate_ShiftVariable(OrderedNode *Shift, F&& Calculate) {
+  template<typename F>
+  void Calculate_ShiftVariable(OrderedNode* Shift, F&& Calculate) {
     // RCR can call this with constants, so handle that without branching.
     uint64_t Const;
     if (IsValueConstant(WrapNode(Shift), &Const)) {
-      if (Const)
+      if (Const) {
         Calculate();
+      }
 
       return;
     }
@@ -1788,37 +1769,37 @@ private:
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
-  OrderedNode *LoadPFRaw(bool Invert);
-  OrderedNode *LoadAF();
+  OrderedNode* LoadPFRaw(bool Invert);
+  OrderedNode* LoadAF();
   void FixupAF();
-  void SetAFAndFixup(OrderedNode *AF);
-  OrderedNode *CalculateAFForDecimal(OrderedNode *A);
-  void CalculatePF(OrderedNode *Res);
-  void CalculateAF(OrderedNode *Src1, OrderedNode *Src2);
+  void SetAFAndFixup(OrderedNode* AF);
+  OrderedNode* CalculateAFForDecimal(OrderedNode* A);
+  void CalculatePF(OrderedNode* Res);
+  void CalculateAF(OrderedNode* Src1, OrderedNode* Src2);
 
-  void CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub);
-  OrderedNode *CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2);
-  OrderedNode *CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2);
-  OrderedNode *CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  OrderedNode *CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
-  void CalculateFlags_UMUL(OrderedNode *High);
-  void CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculateFlags_BEXTR(OrderedNode *Src);
-  void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
-  void CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
-  void CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
-  void CalculateFlags_POPCOUNT(OrderedNode *Src);
-  void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
-  void CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result);
-  void CalculateFlags_RDRAND(OrderedNode *Src);
+  void CalculateOF(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2, bool Sub);
+  OrderedNode* CalculateFlags_ADC(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2);
+  OrderedNode* CalculateFlags_SBB(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2);
+  OrderedNode* CalculateFlags_SUB(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2, bool UpdateCF = true);
+  OrderedNode* CalculateFlags_ADD(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2, bool UpdateCF = true);
+  void CalculateFlags_MUL(uint8_t SrcSize, OrderedNode* Res, OrderedNode* High);
+  void CalculateFlags_UMUL(OrderedNode* High);
+  void CalculateFlags_Logical(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2);
+  void CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2);
+  void CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2);
+  void CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift);
+  void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift);
+  void CalculateFlags_BEXTR(OrderedNode* Src);
+  void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode* Src);
+  void CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src);
+  void CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src);
+  void CalculateFlags_POPCOUNT(OrderedNode* Src);
+  void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode* Result, OrderedNode* Src);
+  void CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode* Result);
+  void CalculateFlags_RDRAND(OrderedNode* Src);
   /**  @} */
 
   /**
@@ -1826,7 +1807,7 @@ private:
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
    * @{ */
-  void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
+  void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src1, OrderedNode* Src2, bool UpdateCF = true) {
     if (!UpdateCF) {
       // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
       CalculateDeferredFlags();
@@ -1834,30 +1815,34 @@ private:
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_SUB,
       .SrcSize = GetSrcSize(Op),
-      .Sources = {
-        .TwoSrcImmediate = {
-          .Src1 = Src1,
-          .Src2 = Src2,
-          .UpdateCF = UpdateCF,
+      .Sources =
+        {
+          .TwoSrcImmediate =
+            {
+              .Src1 = Src1,
+              .Src2 = Src2,
+              .UpdateCF = UpdateCF,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High) {
+  void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* High) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_MUL,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSource = {
-          .Src1 = High,
+      .Sources =
+        {
+          .OneSource =
+            {
+              .Src1 = High,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *High) {
+  void GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode* High) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_UMUL,
       .SrcSize = GetSrcSize(Op),
@@ -1865,89 +1850,107 @@ private:
     };
   }
 
-  void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LOGICAL,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .TwoSource = {
-          .Src1 = Src1,
-          .Src2 = Src2,
+      .Sources =
+        {
+          .TwoSource =
+            {
+              .Src1 = Src1,
+              .Src2 = Src2,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
     // No flags changed if shift is zero.
-    if (Shift == 0) return;
+    if (Shift == 0) {
+      return;
+    }
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LSHLI,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
+      .Sources =
+        {
+          .OneSrcImmediate =
+            {
+              .Src1 = Src1,
+              .Imm = Shift,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
     // No flags changed if shift is zero.
-    if (Shift == 0) return;
+    if (Shift == 0) {
+      return;
+    }
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_ASHRI,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
+      .Sources =
+        {
+          .OneSrcImmediate =
+            {
+              .Src1 = Src1,
+              .Imm = Shift,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
     // No flags changed if shift is zero.
-    if (Shift == 0) return;
+    if (Shift == 0) {
+      return;
+    }
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LSHRI,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
+      .Sources =
+        {
+          .OneSrcImmediate =
+            {
+              .Src1 = Src1,
+              .Imm = Shift,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_ShiftRightDoubleImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  void GenerateFlags_ShiftRightDoubleImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
     // No flags changed if shift is zero.
-    if (Shift == 0) return;
+    if (Shift == 0) {
+      return;
+    }
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LSHRDI,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSrcImmediate = {
-          .Src1 = Src1,
-          .Imm = Shift,
+      .Sources =
+        {
+          .OneSrcImmediate =
+            {
+              .Src1 = Src1,
+              .Imm = Shift,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_BEXTR(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_BEXTR(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BEXTR,
       .SrcSize = GetSrcSize(Op),
@@ -1955,7 +1958,7 @@ private:
     };
   }
 
-  void GenerateFlags_BLSI(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_BLSI(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BLSI,
       .SrcSize = GetSrcSize(Op),
@@ -1963,33 +1966,37 @@ private:
     };
   }
 
-  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src) {
+  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BLSMSK,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSource = {
-          .Src1 = Src,
+      .Sources =
+        {
+          .OneSource =
+            {
+              .Src1 = Src,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_BLSR(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src) {
+  void GenerateFlags_BLSR(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Res, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BLSR,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
-      .Sources = {
-        .OneSource = {
-          .Src1 = Src,
+      .Sources =
+        {
+          .OneSource =
+            {
+              .Src1 = Src,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_POPCOUNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_POPCOUNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_POPCOUNT,
       .SrcSize = GetSrcSize(Op),
@@ -1997,20 +2004,22 @@ private:
     };
   }
 
-  void GenerateFlags_BZHI(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Result, OrderedNode *Src) {
+  void GenerateFlags_BZHI(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Result, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BZHI,
       .SrcSize = GetSrcSize(Op),
       .Res = Result,
-      .Sources = {
-        .OneSource = {
-          .Src1 = Src,
+      .Sources =
+        {
+          .OneSource =
+            {
+              .Src1 = Src,
+            },
         },
-      },
     };
   }
 
-  void GenerateFlags_ZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_ZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_ZCNT,
       .SrcSize = GetSrcSize(Op),
@@ -2018,7 +2027,7 @@ private:
     };
   }
 
-  void GenerateFlags_RDRAND(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+  void GenerateFlags_RDRAND(FEXCore::X86Tables::DecodedOp Op, OrderedNode* Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_RDRAND,
       .SrcSize = GetSrcSize(Op),
@@ -2026,7 +2035,7 @@ private:
     };
   }
 
-  OrderedNode *AndConst(FEXCore::IR::OpSize Size, OrderedNode *Node, uint64_t Const) {
+  OrderedNode* AndConst(FEXCore::IR::OpSize Size, OrderedNode* Node, uint64_t Const) {
     uint64_t NodeConst;
 
     if (IsValueConstant(WrapNode(Node), &NodeConst)) {
@@ -2039,14 +2048,14 @@ private:
   /**  @} */
   /**  @} */
 
-  OrderedNode * GetX87Top();
-  void SetX87ValidTag(OrderedNode *Value, bool Valid);
-  OrderedNode *GetX87ValidTag(OrderedNode *Value);
-  OrderedNode *GetX87Tag(OrderedNode *Value, OrderedNode *AbridgedFTW);
-  OrderedNode *GetX87Tag(OrderedNode *Value);
-  void SetX87FTW(OrderedNode *FTW);
-  OrderedNode *GetX87FTW();
-  void SetX87Top(OrderedNode *Value);
+  OrderedNode* GetX87Top();
+  void SetX87ValidTag(OrderedNode* Value, bool Valid);
+  OrderedNode* GetX87ValidTag(OrderedNode* Value);
+  OrderedNode* GetX87Tag(OrderedNode* Value, OrderedNode* AbridgedFTW);
+  OrderedNode* GetX87Tag(OrderedNode* Value);
+  void SetX87FTW(OrderedNode* FTW);
+  OrderedNode* GetX87FTW();
+  void SetX87Top(OrderedNode* Value);
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
     return DestIsMem(Op) && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
@@ -2056,52 +2065,51 @@ private:
     return !Op->Dest.IsGPR();
   }
 
-  void CreateJumpBlocks(fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
+  void CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks);
   bool BlockSetRIP {false};
 
-  bool Multiblock{};
+  bool Multiblock {};
   uint64_t Entry;
 
-  OrderedNode* _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *Addr, OrderedNode *Value, uint8_t Align = 1) {
-    if (CTX->IsAtomicTSOEnabled())
+  OrderedNode* _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* Addr, OrderedNode* Value, uint8_t Align = 1) {
+    if (CTX->IsAtomicTSOEnabled()) {
       return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
-    else
+    } else {
       return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+    }
   }
 
-  OrderedNode* _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
-    if (CTX->IsAtomicTSOEnabled())
+  OrderedNode* _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* ssa0, uint8_t Align = 1) {
+    if (CTX->IsAtomicTSOEnabled()) {
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
-    else
+    } else {
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+    }
   }
 
-  OrderedNode* Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, OrderedNode *ssa0) {
+  OrderedNode* Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, OrderedNode* ssa0) {
     return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
   }
 
   void InstallHostSpecificOpcodeHandlers();
 
   ///< Segment telemetry tracking
-  uint32_t SegmentsNeedReadCheck{~0U};
-  void CheckLegacySegmentWrite(OrderedNode *NewNode, uint32_t SegmentReg);
-  void CheckLegacySegmentRead(OrderedNode *NewNode, uint32_t SegmentReg);
+  uint32_t SegmentsNeedReadCheck {~0U};
+  void CheckLegacySegmentWrite(OrderedNode* NewNode, uint32_t SegmentReg);
+  void CheckLegacySegmentRead(OrderedNode* NewNode, uint32_t SegmentReg);
 };
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode);
 
-}
-template <>
+} // namespace FEXCore::IR
+template<>
 struct fmt::formatter<FEXCore::IR::OpDispatchBuilder::FlagsGenerationType> : fmt::formatter<int> {
   using Base = fmt::formatter<int>;
 
   // Pass-through the underlying value, so IDs can
   // be formatted like any integral value.
-  template <typename FormatContext>
+  template<typename FormatContext>
   auto format(const FEXCore::IR::OpDispatchBuilder::FlagsGenerationType& ID, FormatContext& ctx) {
     return Base::format(static_cast<int>(ID), ctx);
   }
 };
-
-
-

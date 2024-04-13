@@ -10,4 +10,4 @@ namespace wireless {
 #include "LinuxSyscalls/x64/Ioctl/wireless.inl"
 }
 
-}
+} // namespace FEX::HLE::x64

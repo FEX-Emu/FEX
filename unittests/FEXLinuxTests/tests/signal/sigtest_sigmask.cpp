@@ -11,7 +11,7 @@ volatile bool inhandler = false;
 
 #define SIGN SIGTSTP
 
-void sig_handler(int signum, siginfo_t *info, void *context) {
+void sig_handler(int signum, siginfo_t* info, void* context) {
   loop = false;
   printf("Inside handler function\n");
   if (inhandler) {
@@ -21,7 +21,7 @@ void sig_handler(int signum, siginfo_t *info, void *context) {
   inhandler = true;
   raise(signum);
 
-  auto uctx = (ucontext_t *)context;
+  auto uctx = (ucontext_t*)context;
   sigfillset(&uctx->uc_sigmask);
 }
 

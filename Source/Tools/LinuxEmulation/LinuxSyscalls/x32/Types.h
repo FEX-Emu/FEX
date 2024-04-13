@@ -64,29 +64,28 @@ template<typename T>
 class compat_ptr {
 public:
   compat_ptr() = delete;
-  compat_ptr(uint32_t In) : Ptr {In} {}
-  compat_ptr(T *In) : Ptr {static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In))} {}
+  compat_ptr(uint32_t In)
+    : Ptr {In} {}
+  compat_ptr(T* In)
+    : Ptr {static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In))} {}
 
-  template<typename T2 = T,
-    typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
+  template<typename T2 = T, typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
   T2& operator*() const {
     return *Interpret();
   }
 
-  T *operator->() {
+  T* operator->() {
     return Interpret();
   }
 
   // In the case of non-void type, we can index the pointer
-  template<typename T2 = T,
-    typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
-  T2 &operator[](size_t idx) const {
+  template<typename T2 = T, typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
+  T2& operator[](size_t idx) const {
     return *reinterpret_cast<T2*>(Ptr + sizeof(T2) * idx);
   }
 
   // In the case of void type, we need to trivially convert
-  template<typename T2 = T,
-    typename = std::enable_if<std::is_same<T2, void>::value, T2>>
+  template<typename T2 = T, typename = std::enable_if<std::is_same<T2, void>::value, T2>>
   operator T2*() const {
     return reinterpret_cast<T2*>(Ptr);
   }
@@ -120,17 +119,14 @@ static_assert(sizeof(compat_ptr<void>) == 4, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct
-FEX_ANNOTATE("alias-x86_32-timespec")
-FEX_ANNOTATE("fex-match")
-timespec32 {
+struct FEX_ANNOTATE("alias-x86_32-timespec") FEX_ANNOTATE("fex-match") timespec32 {
   int32_t tv_sec;
   int32_t tv_nsec;
 
   timespec32() = default;
 
   operator timespec() const {
-    timespec spec{};
+    timespec spec {};
     spec.tv_sec = tv_sec;
     spec.tv_nsec = tv_nsec;
     return spec;
@@ -153,17 +149,14 @@ static_assert(sizeof(timespec32) == 8, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct
-FEX_ANNOTATE("alias-x86_32-timeval")
-FEX_ANNOTATE("fex-match")
-timeval32 {
+struct FEX_ANNOTATE("alias-x86_32-timeval") FEX_ANNOTATE("fex-match") timeval32 {
   int32_t tv_sec;
   int32_t tv_usec;
 
   timeval32() = delete;
 
   operator timeval() const {
-    timeval spec{};
+    timeval spec {};
     spec.tv_sec = tv_sec;
     spec.tv_usec = tv_usec;
     return spec;
@@ -186,26 +179,22 @@ static_assert(sizeof(timeval32) == 8, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct
-FEX_ANNOTATE("alias-x86_32-itimerval")
-FEX_ANNOTATE("fex-match")
-itimerval32 {
+struct FEX_ANNOTATE("alias-x86_32-itimerval") FEX_ANNOTATE("fex-match") itimerval32 {
   FEX::HLE::x32::timeval32 it_interval;
   FEX::HLE::x32::timeval32 it_value;
 
   itimerval32() = delete;
 
   operator itimerval() const {
-    itimerval spec{};
+    itimerval spec {};
     spec.it_interval = it_interval;
     spec.it_value = it_value;
     return spec;
   }
 
   itimerval32(struct itimerval spec)
-    : it_interval { spec.it_interval }
-    , it_value { spec.it_value } {
-  }
+    : it_interval {spec.it_interval}
+    , it_value {spec.it_value} {}
 };
 /**  @} */
 
@@ -219,17 +208,14 @@ static_assert(sizeof(itimerval32) == 16, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct
-FEX_ANNOTATE("alias-x86_32-iovec")
-FEX_ANNOTATE("fex-match")
-iovec32 {
+struct FEX_ANNOTATE("alias-x86_32-iovec") FEX_ANNOTATE("fex-match") iovec32 {
   uint32_t iov_base;
   uint32_t iov_len;
 
   iovec32() = delete;
 
   operator iovec() const {
-    iovec vec{};
+    iovec vec {};
     vec.iov_base = reinterpret_cast<void*>(iov_base);
     vec.iov_len = iov_len;
     return vec;
@@ -245,23 +231,17 @@ static_assert(std::is_trivial<iovec32>::value, "Needs to be trivial");
 static_assert(sizeof(iovec32) == 8, "Incorrect size");
 /**  @} */
 
-struct
-FEX_ANNOTATE("alias-x86_32-cmsghdr")
-FEX_ANNOTATE("fex-match")
-cmsghdr32 {
+struct FEX_ANNOTATE("alias-x86_32-cmsghdr") FEX_ANNOTATE("fex-match") cmsghdr32 {
   uint32_t cmsg_len;
   int32_t cmsg_level;
   int32_t cmsg_type;
-  char    cmsg_data[];
+  char cmsg_data[];
 };
 
 static_assert(std::is_trivial<cmsghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(cmsghdr32) == 12, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-msghdr")
-FEX_ANNOTATE("fex-match")
-msghdr32 {
+struct FEX_ANNOTATE("alias-x86_32-msghdr") FEX_ANNOTATE("fex-match") msghdr32 {
   compat_ptr<void> msg_name;
   socklen_t msg_namelen;
 
@@ -276,10 +256,7 @@ msghdr32 {
 static_assert(std::is_trivial<msghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(msghdr32) == 28, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-mmsghdr")
-FEX_ANNOTATE("fex-match")
-mmsghdr_32 {
+struct FEX_ANNOTATE("alias-x86_32-mmsghdr") FEX_ANNOTATE("fex-match") mmsghdr_32 {
   msghdr32 msg_hdr;
   uint32_t msg_len;
 };
@@ -287,10 +264,7 @@ mmsghdr_32 {
 static_assert(std::is_trivial<mmsghdr_32>::value, "Needs to be trivial");
 static_assert(sizeof(mmsghdr_32) == 32, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-stack_t")
-FEX_ANNOTATE("fex-match")
-stack_t32 {
+struct FEX_ANNOTATE("alias-x86_32-stack_t") FEX_ANNOTATE("fex-match") stack_t32 {
   compat_ptr<void> ss_sp;
   int32_t ss_flags;
   compat_size_t ss_size;
@@ -298,17 +272,17 @@ stack_t32 {
   stack_t32() = delete;
 
   operator stack_t() const {
-    stack_t ss{};
-    ss.ss_sp    = ss_sp;
+    stack_t ss {};
+    ss.ss_sp = ss_sp;
     ss.ss_flags = ss_flags;
-    ss.ss_size  = ss_size;
+    ss.ss_size = ss_size;
     return ss;
   }
 
   stack_t32(stack_t ss)
     : ss_sp {ss.ss_sp} {
     ss_flags = ss.ss_flags;
-    ss_size  = ss.ss_size;
+    ss_size = ss.ss_size;
   }
 };
 
@@ -316,10 +290,9 @@ static_assert(std::is_trivial<stack_t32>::value, "Needs to be trivial");
 static_assert(sizeof(stack_t32) == 12, "Incorrect size");
 
 struct
-// This does not match the glibc implementation of stat
-// Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
-FEX_ANNOTATE("fex-match")
-oldstat32 {
+  // This does not match the glibc implementation of stat
+  // Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
+  FEX_ANNOTATE("fex-match") oldstat32 {
   uint16_t st_dev;
   uint16_t st_ino;
   uint16_t st_mode;
@@ -337,13 +310,12 @@ oldstat32 {
   oldstat32() = delete;
 
   oldstat32(struct stat host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     const uint32_t MINORBITS = 20;
     const uint32_t MINORMASK = (1U << MINORBITS) - 1;
     auto EncodeOld = [](dev_t dev) -> uint16_t {
       // This is a bit weird
-      return ((dev >> MINORBITS) << 8) |
-        (dev & MINORMASK);
+      return ((dev >> MINORBITS) << 8) | (dev & MINORMASK);
     };
 
     st_dev = EncodeOld(host.st_dev);
@@ -360,17 +332,16 @@ oldstat32 {
     st_atime_ = host.st_atim.tv_sec;
     st_mtime_ = host.st_mtime;
     st_ctime_ = host.st_ctime;
-    #undef COPY
+#undef COPY
   }
 };
 static_assert(std::is_trivial<oldstat32>::value, "Needs to be trivial");
 static_assert(sizeof(oldstat32) == 32, "Incorrect size");
 
 struct
-// This does not match the glibc implementation of stat
-// Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
-FEX_ANNOTATE("fex-match")
-stat32 {
+  // This does not match the glibc implementation of stat
+  // Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
+  FEX_ANNOTATE("fex-match") stat32 {
   compat_dev_t st_dev;
   uint16_t __pad1;
   compat_ino_t st_ino;
@@ -384,7 +355,7 @@ stat32 {
   uint16_t __pad2;
   uint32_t st_size;
   uint32_t st_blksize;
-  uint32_t st_blocks;  /* Number 512-byte blocks allocated. */
+  uint32_t st_blocks; /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
   uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
@@ -397,7 +368,7 @@ stat32 {
   stat32() = delete;
 
   stat32(struct stat host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
     COPY(st_mode);
@@ -419,20 +390,18 @@ stat32 {
 
     st_ctime_ = host.st_ctime;
     fex_st_ctime_nsec = host.st_ctim.tv_nsec;
-    #undef COPY
+#undef COPY
   }
 };
 static_assert(std::is_trivial<stat32>::value, "Needs to be trivial");
 static_assert(sizeof(stat32) == 64, "Incorrect size");
 
 struct
-// This does not match the glibc implementation of stat
-// Matches the definition of `struct stat64` in `x86_64-linux-gnu/asm/stat.h`
-FEX_ANNOTATE("fex-match")
-FEX_PACKED
-stat64_32 {
+  // This does not match the glibc implementation of stat
+  // Matches the definition of `struct stat64` in `x86_64-linux-gnu/asm/stat.h`
+  FEX_ANNOTATE("fex-match") FEX_PACKED stat64_32 {
   compat_uint64_t st_dev;
-  uint8_t  __pad0[4];
+  uint8_t __pad0[4];
   uint32_t __st_ino;
 
   uint32_t st_mode;
@@ -442,10 +411,10 @@ stat64_32 {
   uint32_t st_gid;
 
   compat_uint64_t st_rdev;
-  uint8_t  __pad3[4];
+  uint8_t __pad3[4];
   compat_int64_t st_size;
   uint32_t st_blksize;
-  compat_uint64_t st_blocks;  /* Number 512-byte blocks allocated. */
+  compat_uint64_t st_blocks; /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
   uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
@@ -457,7 +426,7 @@ stat64_32 {
   stat64_32() = delete;
 
   stat64_32(struct stat host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
     COPY(st_nlink);
@@ -481,12 +450,12 @@ stat64_32 {
 
     st_ctime_ = host.st_ctime;
     fex_st_ctime_nsec = host.st_ctim.tv_nsec;
-    #undef COPY
+#undef COPY
   }
 
 #ifndef stat64
   stat64_32(struct stat64 host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
     COPY(st_nlink);
@@ -510,19 +479,14 @@ stat64_32 {
 
     st_ctime_ = host.st_ctime;
     fex_st_ctime_nsec = host.st_ctim.tv_nsec;
-    #undef COPY
+#undef COPY
   }
 #endif
 };
 static_assert(std::is_trivial<stat64_32>::value, "Needs to be trivial");
 static_assert(sizeof(stat64_32) == 96, "Incorrect size");
 
-struct
-FEX_PACKED
-FEX_ALIGNED(4)
-FEX_ANNOTATE("alias-x86_32-statfs64")
-FEX_ANNOTATE("fex-match")
-statfs64_32 {
+struct FEX_PACKED FEX_ALIGNED(4) FEX_ANNOTATE("alias-x86_32-statfs64") FEX_ANNOTATE("fex-match") statfs64_32 {
   uint32_t f_type;
   uint32_t f_bsize;
   compat_uint64_t f_blocks;
@@ -539,7 +503,7 @@ statfs64_32 {
   statfs64_32() = delete;
 
   statfs64_32(struct statfs host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
     COPY(f_blocks);
@@ -552,12 +516,12 @@ statfs64_32 {
     COPY(f_flags);
 
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
-    #undef COPY
+#undef COPY
   }
 
 #ifndef statfs64
   statfs64_32(struct statfs64 host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
     COPY(f_blocks);
@@ -570,17 +534,14 @@ statfs64_32 {
     COPY(f_flags);
 
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
-    #undef COPY
+#undef COPY
   }
 #endif
 };
 static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-statfs")
-FEX_ANNOTATE("fex-match")
-statfs32_32 {
+struct FEX_ANNOTATE("alias-x86_32-statfs") FEX_ANNOTATE("fex-match") statfs32_32 {
   int32_t f_type;
   int32_t f_bsize;
   int32_t f_blocks;
@@ -597,7 +558,7 @@ statfs32_32 {
   statfs32_32() = delete;
 
   statfs32_32(struct statfs host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
     COPY(f_blocks);
@@ -610,12 +571,12 @@ statfs32_32 {
     COPY(f_flags);
 
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
-    #undef COPY
+#undef COPY
   }
 
 #ifndef statfs64
   statfs32_32(struct statfs64 host) {
-    #define COPY(x) x = host.x
+#define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
     COPY(f_blocks);
@@ -628,17 +589,14 @@ statfs32_32 {
     COPY(f_flags);
 
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
-    #undef COPY
+#undef COPY
   }
 #endif
 };
 static_assert(std::is_trivial<statfs32_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs32_32) == 64, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-flock")
-FEX_ANNOTATE("fex-match")
-flock_32 {
+struct FEX_ANNOTATE("alias-x86_32-flock") FEX_ANNOTATE("fex-match") flock_32 {
   int16_t l_type;
   int16_t l_whence;
   int32_t l_start;
@@ -648,20 +606,20 @@ flock_32 {
   flock_32() = delete;
 
   flock_32(struct flock host) {
-    l_type   = host.l_type;
+    l_type = host.l_type;
     l_whence = host.l_whence;
-    l_start  = host.l_start;
-    l_len    = host.l_len;
-    l_pid    = host.l_pid;
+    l_start = host.l_start;
+    l_len = host.l_len;
+    l_pid = host.l_pid;
   }
 
   operator struct flock() const {
-    struct flock res{};
-    res.l_type   = l_type;
+    struct flock res {};
+    res.l_type = l_type;
     res.l_whence = l_whence;
-    res.l_start  = l_start;
-    res.l_len    = l_len;
-    res.l_pid    = l_pid;
+    res.l_start = l_start;
+    res.l_len = l_len;
+    res.l_pid = l_pid;
     return res;
   }
 };
@@ -672,10 +630,7 @@ static_assert(sizeof(flock_32) == 16, "Incorrect size");
 // glibc doesn't pack flock64 while the kernel does
 // This does not match glibc flock64 definition
 // Matches the definition of `struct compat_flock64` in `arch/x86/include/asm/compat.h`
-struct
-FEX_ANNOTATE("fex-match")
-FEX_PACKED
-flock64_32 {
+struct FEX_ANNOTATE("fex-match") FEX_PACKED flock64_32 {
   int16_t l_type;
   int16_t l_whence;
   compat_loff_t l_start;
@@ -685,20 +640,20 @@ flock64_32 {
   flock64_32() = delete;
 
   flock64_32(struct flock host) {
-    l_type   = host.l_type;
+    l_type = host.l_type;
     l_whence = host.l_whence;
-    l_start  = host.l_start;
-    l_len    = host.l_len;
-    l_pid    = host.l_pid;
+    l_start = host.l_start;
+    l_len = host.l_len;
+    l_pid = host.l_pid;
   }
 
   operator struct flock() const {
-    struct flock res{};
-    res.l_type   = l_type;
+    struct flock res {};
+    res.l_type = l_type;
     res.l_whence = l_whence;
-    res.l_start  = l_start;
-    res.l_len    = l_len;
-    res.l_pid    = l_pid;
+    res.l_start = l_start;
+    res.l_len = l_len;
+    res.l_pid = l_pid;
     return res;
   }
 };
@@ -707,11 +662,9 @@ static_assert(sizeof(flock64_32) == 24, "Incorrect size");
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent` in fs/readdir.c
-struct
-FEX_ANNOTATE("fex-match")
-linux_dirent {
+struct FEX_ANNOTATE("fex-match") linux_dirent {
   compat_uint64_t d_ino;
-  compat_int64_t  d_off;
+  compat_int64_t d_off;
   uint16_t d_reclen;
   uint8_t _pad[6];
   char d_name[];
@@ -721,9 +674,7 @@ static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
 
 // There is no public definition of this struct
 // Matches the definition of `struct compat_linux_dirent` in fs/readdir.c
-struct
-FEX_ANNOTATE("fex-match")
-linux_dirent_32 {
+struct FEX_ANNOTATE("fex-match") linux_dirent_32 {
   compat_ulong_t d_ino;
   compat_ulong_t d_off;
   uint16_t d_reclen;
@@ -735,13 +686,11 @@ static_assert(sizeof(linux_dirent_32) == 12, "Incorrect size");
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
-struct
-FEX_ANNOTATE("fex-match")
-linux_dirent_64 {
+struct FEX_ANNOTATE("fex-match") linux_dirent_64 {
   compat_uint64_t d_ino;
   compat_uint64_t d_off;
   uint16_t d_reclen;
-  uint8_t  d_type;
+  uint8_t d_type;
   uint8_t _pad[5];
   char d_name[];
 };
@@ -750,9 +699,7 @@ static_assert(sizeof(linux_dirent_64) == 24, "Incorrect size");
 
 // There is no public definition of this struct
 // Matches `struct compat_sigset_argpack`
-struct
-FEX_ANNOTATE("fex-match")
-sigset_argpack32 {
+struct FEX_ANNOTATE("fex-match") sigset_argpack32 {
   compat_ptr<uint64_t> sigset;
   compat_size_t size;
 };
@@ -760,10 +707,7 @@ sigset_argpack32 {
 static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
 static_assert(sizeof(sigset_argpack32) == 8, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-rusage")
-FEX_ANNOTATE("fex-match")
-rusage_32 {
+struct FEX_ANNOTATE("alias-x86_32-rusage") FEX_ANNOTATE("fex-match") rusage_32 {
   timeval32 ru_utime;
   timeval32 ru_stime;
   union {
@@ -825,27 +769,27 @@ rusage_32 {
 
   rusage_32() = delete;
   rusage_32(struct rusage usage)
-    : ru_utime { usage.ru_utime }
-    , ru_stime { usage.ru_stime } {
+    : ru_utime {usage.ru_utime}
+    , ru_stime {usage.ru_stime} {
     // These only truncate
-    ru_maxrss   = usage.ru_maxrss;
-    ru_ixrss    = usage.ru_ixrss;
-    ru_idrss    = usage.ru_idrss;
-    ru_isrss    = usage.ru_isrss;
-    ru_minflt   = usage.ru_minflt;
-    ru_majflt   = usage.ru_majflt;
-    ru_nswap    = usage.ru_nswap;
-    ru_inblock  = usage.ru_inblock;
-    ru_oublock  = usage.ru_oublock;
-    ru_msgsnd   = usage.ru_msgsnd;
-    ru_msgrcv   = usage.ru_msgrcv;
+    ru_maxrss = usage.ru_maxrss;
+    ru_ixrss = usage.ru_ixrss;
+    ru_idrss = usage.ru_idrss;
+    ru_isrss = usage.ru_isrss;
+    ru_minflt = usage.ru_minflt;
+    ru_majflt = usage.ru_majflt;
+    ru_nswap = usage.ru_nswap;
+    ru_inblock = usage.ru_inblock;
+    ru_oublock = usage.ru_oublock;
+    ru_msgsnd = usage.ru_msgsnd;
+    ru_msgrcv = usage.ru_msgrcv;
     ru_nsignals = usage.ru_nsignals;
-    ru_nvcsw    = usage.ru_nvcsw;
-    ru_nivcsw   = usage.ru_nivcsw;
+    ru_nvcsw = usage.ru_nvcsw;
+    ru_nivcsw = usage.ru_nivcsw;
   }
 
   operator struct rusage() const {
-    struct rusage usage{};
+    struct rusage usage {};
     usage.ru_utime = ru_utime;
     usage.ru_stime = ru_stime;
     usage.ru_maxrss = ru_maxrss;
@@ -869,10 +813,7 @@ rusage_32 {
 static_assert(std::is_trivial<rusage_32>::value, "Needs to be trivial");
 static_assert(sizeof(rusage_32) == 72, "Incorrect size");
 
-struct
-FEX_PACKED
-FEX_ANNOTATE("fex-match")
-OldGuestSigAction_32 {
+struct FEX_PACKED FEX_ANNOTATE("fex-match") OldGuestSigAction_32 {
   FEX::HLE::x32::compat_ptr<void> handler_32;
   uint32_t sa_mask;
   uint32_t sa_flags;
@@ -881,7 +822,7 @@ OldGuestSigAction_32 {
   OldGuestSigAction_32() = delete;
 
   operator FEX::HLE::GuestSigAction() const {
-    FEX::HLE::GuestSigAction action{};
+    FEX::HLE::GuestSigAction action {};
 
     action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
     action.sa_flags = sa_flags;
@@ -904,10 +845,7 @@ static_assert(sizeof(OldGuestSigAction_32) == 16, "Incorrect size");
 // This definition isn't public
 // This is for rt_sigaction
 // Matches the definition for `struct compat_sigaction` in `include/linux/compat.h`
-struct
-FEX_PACKED
-FEX_ANNOTATE("fex-match")
-GuestSigAction_32 {
+struct FEX_PACKED FEX_ANNOTATE("fex-match") GuestSigAction_32 {
   FEX::HLE::x32::compat_ptr<void> handler_32;
 
   uint32_t sa_flags;
@@ -917,7 +855,7 @@ GuestSigAction_32 {
   GuestSigAction_32() = delete;
 
   operator FEX::HLE::GuestSigAction() const {
-    FEX::HLE::GuestSigAction action{};
+    FEX::HLE::GuestSigAction action {};
 
     action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
     action.sa_flags = sa_flags;
@@ -937,10 +875,7 @@ GuestSigAction_32 {
 static_assert(std::is_trivial<GuestSigAction_32>::value, "Needs to be trivial");
 static_assert(sizeof(GuestSigAction_32) == 20, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-tms")
-FEX_ANNOTATE("fex-match")
-compat_tms {
+struct FEX_ANNOTATE("alias-x86_32-tms") FEX_ANNOTATE("fex-match") compat_tms {
   compat_clock_t tms_utime;
   compat_clock_t tms_stime;
   compat_clock_t tms_cutime;
@@ -948,7 +883,7 @@ compat_tms {
 
   compat_tms() = delete;
   operator tms() const {
-    tms val{};
+    tms val {};
     val.tms_utime = tms_utime;
     val.tms_stime = tms_stime;
     val.tms_cutime = tms_cutime;
@@ -966,16 +901,13 @@ compat_tms {
 static_assert(std::is_trivial<compat_tms>::value, "Needs to be trivial");
 static_assert(sizeof(compat_tms) == 16, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-utimbuf")
-FEX_ANNOTATE("fex-match")
-old_utimbuf32 {
+struct FEX_ANNOTATE("alias-x86_32-utimbuf") FEX_ANNOTATE("fex-match") old_utimbuf32 {
   old_time32_t actime;
   old_time32_t modtime;
 
   old_utimbuf32() = delete;
   operator utimbuf() const {
-    utimbuf val{};
+    utimbuf val {};
     val.actime = actime;
     val.modtime = modtime;
     return val;
@@ -990,42 +922,35 @@ old_utimbuf32 {
 static_assert(std::is_trivial<old_utimbuf32>::value, "Needs to be trivial");
 static_assert(sizeof(old_utimbuf32) == 8, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-itimerspec")
-FEX_ANNOTATE("fex-match")
-old_itimerspec32 {
+struct FEX_ANNOTATE("alias-x86_32-itimerspec") FEX_ANNOTATE("fex-match") old_itimerspec32 {
   timespec32 it_interval;
   timespec32 it_value;
 
   old_itimerspec32() = delete;
   operator itimerspec() const {
-    itimerspec val{};
+    itimerspec val {};
     val.it_interval = it_interval;
     val.it_value = it_value;
     return val;
   }
 
   old_itimerspec32(struct itimerspec val)
-    : it_interval { val.it_interval }
-    , it_value { val.it_value } {
-  }
+    : it_interval {val.it_interval}
+    , it_value {val.it_value} {}
 };
 
 static_assert(std::is_trivial<old_itimerspec32>::value, "Needs to be trivial");
 static_assert(sizeof(old_itimerspec32) == 16, "Incorrect size");
 
 template<bool Signed>
-struct
-FEX_ANNOTATE("alias-x86_32-rlimit")
-FEX_ANNOTATE("fex-match")
-rlimit32 {
+struct FEX_ANNOTATE("alias-x86_32-rlimit") FEX_ANNOTATE("fex-match") rlimit32 {
   uint32_t rlim_cur;
   uint32_t rlim_max;
   rlimit32() = delete;
 
   operator rlimit() const {
     static_assert(Signed == false, "Signed variant doesn't exist");
-    rlimit val{};
+    rlimit val {};
 
     val.rlim_cur = rlim_cur;
     val.rlim_max = rlim_max;
@@ -1044,15 +969,13 @@ rlimit32 {
     constexpr uint32_t Limit = Signed ? 0x7FFF'FFFF : 0xFFFF'FFFF;
     if (val.rlim_cur > Limit) {
       rlim_cur = Limit;
-    }
-    else {
+    } else {
       rlim_cur = val.rlim_cur;
     }
 
     if (val.rlim_max > Limit) {
       rlim_max = Limit;
-    }
-    else {
+    } else {
       rlim_max = val.rlim_max;
     }
   }
@@ -1061,10 +984,7 @@ rlimit32 {
 static_assert(std::is_trivial<rlimit32<true>>::value, "Needs to be trivial");
 static_assert(sizeof(rlimit32<true>) == 8, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-timex")
-FEX_ANNOTATE("fex-match")
-timex32 {
+struct FEX_ANNOTATE("alias-x86_32-timex") FEX_ANNOTATE("fex-match") timex32 {
   uint32_t modes;
   compat_long_t offset;
   compat_long_t freq;
@@ -1088,75 +1008,80 @@ timex32 {
   int32_t tai;
 
   // Padding
-  int32_t  :32; int32_t  :32; int32_t  :32; int32_t  :32;
-  int32_t  :32; int32_t  :32; int32_t  :32; int32_t  :32;
-  int32_t  :32; int32_t  :32; int32_t  :32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
+  int32_t : 32;
 
   timex32() = delete;
 
   operator timex() const {
-    timex val{};
-    val.modes     = modes;
-    val.offset    = offset;
-    val.freq      = freq;
-    val.maxerror  = maxerror;
-    val.esterror  = esterror;
-    val.status    = status;
-    val.constant  = constant;
+    timex val {};
+    val.modes = modes;
+    val.offset = offset;
+    val.freq = freq;
+    val.maxerror = maxerror;
+    val.esterror = esterror;
+    val.status = status;
+    val.constant = constant;
     val.precision = precision;
     val.tolerance = tolerance;
-    val.time      = time;
-    val.tick      = tick;
-    val.ppsfreq   = ppsfreq;
-    val.jitter    = jitter;
-    val.shift     = shift;
-    val.stabil    = stabil;
-    val.jitcnt    = jitcnt;
-    val.calcnt    = calcnt;
-    val.errcnt    = errcnt;
-    val.stbcnt    = stbcnt;
-    val.tai       = tai;
+    val.time = time;
+    val.tick = tick;
+    val.ppsfreq = ppsfreq;
+    val.jitter = jitter;
+    val.shift = shift;
+    val.stabil = stabil;
+    val.jitcnt = jitcnt;
+    val.calcnt = calcnt;
+    val.errcnt = errcnt;
+    val.stbcnt = stbcnt;
+    val.tai = tai;
     return val;
   }
 
   timex32(struct timex val)
-    : time { val.time } {
-    modes     = val.modes;
-    offset    = val.offset;
-    freq      = val.freq;
-    maxerror  = val.maxerror;
-    esterror  = val.esterror;
-    status    = val.status;
-    constant  = val.constant;
+    : time {val.time} {
+    modes = val.modes;
+    offset = val.offset;
+    freq = val.freq;
+    maxerror = val.maxerror;
+    esterror = val.esterror;
+    status = val.status;
+    constant = val.constant;
     precision = val.precision;
     tolerance = val.tolerance;
-    tick      = val.tick;
-    ppsfreq   = val.ppsfreq;
-    jitter    = val.jitter;
-    shift     = val.shift;
-    stabil    = val.stabil;
-    jitcnt    = val.jitcnt;
-    calcnt    = val.calcnt;
-    errcnt    = val.errcnt;
-    stbcnt    = val.stbcnt;
-    tai       = val.tai;
+    tick = val.tick;
+    ppsfreq = val.ppsfreq;
+    jitter = val.jitter;
+    shift = val.shift;
+    stabil = val.stabil;
+    jitcnt = val.jitcnt;
+    calcnt = val.calcnt;
+    errcnt = val.errcnt;
+    stbcnt = val.stbcnt;
+    tai = val.tai;
   }
 };
 
 static_assert(std::is_trivial<timex32>::value, "Needs to be trivial");
 static_assert(sizeof(timex32) == 128, "Incorrect size");
 
-union
-FEX_ANNOTATE("alias-x86_32-sigval")
-FEX_ANNOTATE("fex-match")
-sigval32 {
+union FEX_ANNOTATE("alias-x86_32-sigval") FEX_ANNOTATE("fex-match") sigval32 {
   int sival_int;
   compat_ptr<void> sival_ptr;
 
   sigval32() = delete;
 
   operator sigval() const {
-    sigval val{};
+    sigval val {};
     val.sival_ptr = sival_ptr;
     return val;
   }
@@ -1172,9 +1097,7 @@ static_assert(sizeof(sigval32) == 4, "Incorrect size");
 constexpr size_t FEX_SIGEV_MAX_SIZE = 64;
 constexpr size_t FEX_SIGEV_PAD_SIZE = (FEX_SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
 
-struct
-FEX_ANNOTATE("fex-match")
-sigevent32 {
+struct FEX_ANNOTATE("fex-match") sigevent32 {
   FEX::HLE::x32::sigval32 sigev_value;
   int sigev_signo;
   int sigev_notify;
@@ -1191,35 +1114,33 @@ sigevent32 {
 
 // For older build environments
 #ifndef sigev_notify_thread_id
-#define sigev_notify_thread_id	 _sigev_un._tid
+#define sigev_notify_thread_id _sigev_un._tid
 #endif
 
   operator sigevent() const {
-    sigevent val{};
-    val.sigev_value  = sigev_value;
-    val.sigev_signo  = sigev_signo;
+    sigevent val {};
+    val.sigev_value = sigev_value;
+    val.sigev_signo = sigev_signo;
     val.sigev_notify = sigev_notify;
 
     if (sigev_notify == SIGEV_THREAD_ID) {
       val.sigev_notify_thread_id = _sigev_un._tid;
-    }
-    else if (sigev_notify == SIGEV_THREAD) {
-      val.sigev_notify_function   = reinterpret_cast<void(*)(sigval)>(_sigev_un._sigev_thread._function);
+    } else if (sigev_notify == SIGEV_THREAD) {
+      val.sigev_notify_function = reinterpret_cast<void (*)(sigval)>(_sigev_un._sigev_thread._function);
       val.sigev_notify_attributes = reinterpret_cast<pthread_attr_t*>(_sigev_un._sigev_thread._attribute);
     }
     return val;
   }
 
   sigevent32(sigevent val)
-    : sigev_value { val.sigev_value } {
-    sigev_signo  = val.sigev_signo;
+    : sigev_value {val.sigev_value} {
+    sigev_signo = val.sigev_signo;
     sigev_notify = val.sigev_notify;
 
     if (sigev_notify == SIGEV_THREAD_ID) {
       _sigev_un._tid = val.sigev_notify_thread_id;
-    }
-    else if (sigev_notify == SIGEV_THREAD) {
-      _sigev_un._sigev_thread._function  = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val.sigev_notify_function));
+    } else if (sigev_notify == SIGEV_THREAD) {
+      _sigev_un._sigev_thread._function = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val.sigev_notify_function));
       _sigev_un._sigev_thread._attribute = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val.sigev_notify_attributes));
     }
   }
@@ -1228,10 +1149,7 @@ sigevent32 {
 static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
 static_assert(sizeof(sigval32) == 4, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-mq_attr")
-FEX_ANNOTATE("fex-match")
-mq_attr32 {
+struct FEX_ANNOTATE("alias-x86_32-mq_attr") FEX_ANNOTATE("fex-match") mq_attr32 {
   compat_long_t mq_flags;
   compat_long_t mq_maxmsg;
   compat_long_t mq_msgsize;
@@ -1240,17 +1158,17 @@ mq_attr32 {
   mq_attr32() = delete;
 
   operator mq_attr() const {
-    struct mq_attr val{};
-    val.mq_flags   = mq_flags;
-    val.mq_maxmsg  = mq_maxmsg;
+    struct mq_attr val {};
+    val.mq_flags = mq_flags;
+    val.mq_maxmsg = mq_maxmsg;
     val.mq_msgsize = mq_msgsize;
     val.mq_curmsgs = mq_curmsgs;
     return val;
   }
 
   mq_attr32(struct mq_attr val) {
-    mq_flags   = val.mq_flags;
-    mq_maxmsg  = val.mq_maxmsg;
+    mq_flags = val.mq_flags;
+    mq_maxmsg = val.mq_maxmsg;
     mq_msgsize = val.mq_msgsize;
     mq_curmsgs = val.mq_curmsgs;
   }
@@ -1259,35 +1177,28 @@ mq_attr32 {
 static_assert(std::is_trivial<mq_attr32>::value, "Needs to be trivial");
 static_assert(sizeof(mq_attr32) == 32, "Incorrect size");
 
-union
-FEX_ANNOTATE("alias-x86_32-epoll_data_t")
-FEX_ANNOTATE("fex-match")
-epoll_data32 {
+union FEX_ANNOTATE("alias-x86_32-epoll_data_t") FEX_ANNOTATE("fex-match") epoll_data32 {
   compat_ptr<void> ptr;
   int fd;
   uint32_t u32;
   compat_uint64_t u64;
 };
 
-struct
-FEX_PACKED
-FEX_ANNOTATE("alias-x86_32-epoll_event")
-FEX_ANNOTATE("fex-match")
-epoll_event32 {
+struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-epoll_event") FEX_ANNOTATE("fex-match") epoll_event32 {
   uint32_t events;
   epoll_data32 data;
 
   epoll_event32() = delete;
 
   operator struct epoll_event() const {
-    epoll_event event{};
+    epoll_event event {};
     event.events = events;
     event.data.u64 = data.u64;
     return event;
   }
 
   epoll_event32(struct epoll_event event)
-    : data { event.data.u64 }{
+    : data {event.data.u64} {
     events = event.events;
   }
 };
@@ -1308,23 +1219,23 @@ struct ipc_perm_32 {
   operator struct ipc64_perm() const {
     struct ipc64_perm perm;
     perm.key = key;
-    perm.uid   = uid;
-    perm.gid   = gid;
-    perm.cuid  = cuid;
-    perm.cgid  = cgid;
-    perm.mode  = mode;
+    perm.uid = uid;
+    perm.gid = gid;
+    perm.cuid = cuid;
+    perm.cgid = cgid;
+    perm.mode = mode;
     perm.seq = seq;
     return perm;
   }
 
   ipc_perm_32(struct ipc64_perm perm) {
-    key  = perm.key;
-    uid  = perm.uid;
-    gid  = perm.gid;
+    key = perm.key;
+    uid = perm.uid;
+    gid = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.seq;
+    seq = perm.seq;
   }
 };
 
@@ -1348,23 +1259,23 @@ struct ipc_perm_64 {
   operator struct ipc64_perm() const {
     struct ipc64_perm perm;
     perm.key = key;
-    perm.uid   = uid;
-    perm.gid   = gid;
-    perm.cuid  = cuid;
-    perm.cgid  = cgid;
-    perm.mode  = mode;
+    perm.uid = uid;
+    perm.gid = gid;
+    perm.cuid = cuid;
+    perm.cgid = cgid;
+    perm.mode = mode;
     perm.seq = seq;
     return perm;
   }
 
   ipc_perm_64(struct ipc64_perm perm) {
-    key  = perm.key;
-    uid  = perm.uid;
-    gid  = perm.gid;
+    key = perm.key;
+    uid = perm.uid;
+    gid = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.seq;
+    seq = perm.seq;
   }
 };
 
@@ -1487,7 +1398,7 @@ struct semid_ds_32 {
   semid_ds_32() = delete;
 
   operator struct semid64_ds() const {
-    struct semid64_ds buf{};
+    struct semid64_ds buf {};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime;
@@ -1522,7 +1433,7 @@ struct semid_ds_64 {
   semid_ds_64() = delete;
 
   operator struct semid64_ds() const {
-    struct semid64_ds buf{};
+    struct semid64_ds buf {};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime_high;
@@ -1568,7 +1479,7 @@ struct msqid_ds_32 {
 
   msqid_ds_32() = delete;
   operator struct msqid64_ds() const {
-    struct msqid64_ds val{};
+    struct msqid64_ds val {};
     // msg_first and msg_last are unused and untouched
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime;
@@ -1591,23 +1502,20 @@ struct msqid_ds_32 {
     msg_ctime = buf.msg_ctime;
     if (buf.msg_cbytes > std::numeric_limits<uint16_t>::max()) {
       msg_cbytes = std::numeric_limits<uint16_t>::max();
-    }
-    else {
+    } else {
       msg_cbytes = buf.msg_cbytes;
     }
     msg_lcbytes = buf.msg_cbytes;
 
     if (buf.msg_qnum > std::numeric_limits<uint16_t>::max()) {
       msg_qnum = std::numeric_limits<uint16_t>::max();
-    }
-    else {
+    } else {
       msg_qnum = buf.msg_qnum;
     }
 
     if (buf.msg_cbytes > std::numeric_limits<uint16_t>::max()) {
       msg_cbytes = std::numeric_limits<uint16_t>::max();
-    }
-    else {
+    } else {
       msg_cbytes = buf.msg_cbytes;
     }
     msg_lqbytes = buf.msg_qbytes;
@@ -1635,7 +1543,7 @@ struct msqid_ds_64 {
 
   msqid_ds_64() = delete;
   operator struct msqid64_ds() const {
-    struct msqid64_ds val{};
+    struct msqid64_ds val {};
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime_high;
     val.msg_stime <<= 32;
@@ -1676,9 +1584,7 @@ struct msqid_ds_64 {
 static_assert(std::is_trivial<msqid_ds_64>::value, "Needs to be trivial");
 static_assert(sizeof(msqid_ds_64) == 88, "Incorrect size");
 
-struct
-FEX_ANNOTATE("fex-match")
-shminfo_32 {
+struct FEX_ANNOTATE("fex-match") shminfo_32 {
   uint32_t shmmax;
   uint32_t shmmin;
   uint32_t shmmni;
@@ -1709,10 +1615,7 @@ shminfo_32 {
 static_assert(std::is_trivial<shminfo_32>::value, "Needs to be trivial");
 static_assert(sizeof(shminfo_32) == 20, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-shminfo64")
-FEX_ANNOTATE("fex-match")
-shminfo_64 {
+struct FEX_ANNOTATE("alias-x86_32-shminfo64") FEX_ANNOTATE("fex-match") shminfo_64 {
   compat_ulong_t shmmax;
   compat_ulong_t shmmin;
   compat_ulong_t shmmni;
@@ -1747,10 +1650,7 @@ shminfo_64 {
 static_assert(std::is_trivial<shminfo_64>::value, "Needs to be trivial");
 static_assert(sizeof(shminfo_64) == 36, "Incorrect size");
 
-struct
-FEX_ANNOTATE("alias-x86_32-shm_info")
-FEX_ANNOTATE("fex-match")
-shm_info_32 {
+struct FEX_ANNOTATE("alias-x86_32-shm_info") FEX_ANNOTATE("fex-match") shm_info_32 {
   int used_ids;
   uint32_t shm_tot;
   uint32_t shm_rss;
@@ -1773,9 +1673,7 @@ shm_info_32 {
 static_assert(std::is_trivial<shm_info_32>::value, "Needs to be trivial");
 static_assert(sizeof(shm_info_32) == 24, "Incorrect size");
 
-struct
-FEX_ANNOTATE("fex-match")
-compat_select_args {
+struct FEX_ANNOTATE("fex-match") compat_select_args {
   int nfds;
   compat_ptr<fd_set32> readfds;
   compat_ptr<fd_set32> writefds;
@@ -1788,4 +1686,4 @@ compat_select_args {
 static_assert(std::is_trivial_v<compat_select_args>, "Needs to be trivial");
 static_assert(sizeof(compat_select_args) == 20, "Incorrect size");
 
-}
+} // namespace FEX::HLE::x32

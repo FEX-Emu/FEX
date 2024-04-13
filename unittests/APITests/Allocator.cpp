@@ -8,7 +8,7 @@ using FEXCore::Allocator::MemoryRegion;
 static std::optional<MemoryRegion> LastStackMapping;
 void* MmapOverride(void* Ptr, size_t Size, int Flags, int, int, __off_t) {
   if (Flags != PROT_NONE) {
-    LastStackMapping = MemoryRegion { Ptr, Size };
+    LastStackMapping = MemoryRegion {Ptr, Size};
   }
   return Ptr;
 }
@@ -39,7 +39,7 @@ struct Fixture {
 };
 
 MemoryRegion FromTo(uintptr_t Start, uintptr_t End) {
-  return MemoryRegion { reinterpret_cast<void*>(Start), End - Start };
+  return MemoryRegion {reinterpret_cast<void*>(Start), End - Start};
 }
 
 } // anonymous namespace
@@ -67,12 +67,11 @@ inline std::ostream& operator<<(std::ostream& os, fextl::vector<MemoryRegion> re
   os << "}";
   return os;
 }
-}
+} // namespace FEXCore::Allocator
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
   // Single entry covering exactly 2 pages of memory
-  const char SingletonMappings[] =
-    "000000100000-000000102000 r--p 00000000 00:00 0                          placeholder\n";
+  const char SingletonMappings[] = "000000100000-000000102000 r--p 00000000 00:00 0                          placeholder\n";
 
   auto Begin = GENERATE(0, 0xff000, 0x100000, 0x101000, 0x102000);
   auto End = GENERATE(0xff000, 0x100000, 0x101000, 0x102000, 0x103000);
@@ -84,53 +83,52 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
   INFO("CollectMemoryGaps 0x" << std::hex << Begin << "-0x" << End);
 
   if (Begin < 0x100000 && End == 0x103000) {
-    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> { FromTo(Begin, 0x100000), FromTo(0x102000, 0x103000) }));
+    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> {FromTo(Begin, 0x100000), FromTo(0x102000, 0x103000)}));
   } else if (Begin < 0x100000 && End < 0x100000) {
-    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> { FromTo(Begin, End) }));
+    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> {FromTo(Begin, End)}));
   } else if (Begin < 0x100000 && End <= 0x102000) {
-    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> { FromTo(Begin, 0x100000) }));
+    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> {FromTo(Begin, 0x100000)}));
   } else if (End != 0x103000) {
-    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> { }));
+    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> {}));
   } else {
     // Begin >= 0x100000 and End == 0x103000
-    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> { FromTo(0x102000, End) }));
+    CHECK_THAT(Mappings, Catch::Matchers::Equals(fextl::vector<MemoryRegion> {FromTo(0x102000, End)}));
   }
 }
 
 TEST_CASE_METHOD(Fixture, "RealWorld") {
-  const char RealWorldMappings[] =
-    "aaaaaaaa0000-aaaaaadba000 r--p 00000000 00:00 0                          placeholder\n"
-    "aaaaaadc9000-aaaaab77a000 r-xp 00000000 00:00 0                          placeholder\n"
-    "aaaaab789000-aaaaab7b7000 r--p 00000000 00:00 0                          placeholder\n"
-    "aaaaab7c6000-aaaaab894000 rw-p 00000000 00:00 0                          placeholder\n"
-    "aaaaab894000-aaaaabcc9000 rw-p 00000000 00:00 0                          placeholder\n"
-    "aaaaabcc9000-aaaaabcca000 ---p 00000000 00:00 0                          placeholder\n"
-    "fffff6a00000-fffff7a00000 rw-p 00000000 00:00 0\n"
-    "fffff7af0000-fffff7c78000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7c78000-fffff7c87000 ---p 00000000 00:00 0                          placeholder\n"
-    "fffff7c87000-fffff7c8b000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7c8b000-fffff7c8d000 rw-p 00000000 00:00 0                          placeholder\n"
-    "fffff7c8d000-fffff7c99000 rw-p 00000000 00:00 0\n"
-    "fffff7ca0000-fffff7cb4000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7cb4000-fffff7cc3000 ---p 00000000 00:00 0                          placeholder\n"
-    "fffff7cc3000-fffff7cc4000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7cc4000-fffff7cc5000 rw-p 00000000 00:00 0                          placeholder\n"
-    "fffff7cd0000-fffff7d56000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7d56000-fffff7d65000 ---p 00000000 00:00 0                          placeholder\n"
-    "fffff7d65000-fffff7d66000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7d66000-fffff7d67000 rw-p 00000000 00:00 0                          placeholder\n"
-    "fffff7d70000-fffff7f7a000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7f7a000-fffff7f89000 ---p 00000000 00:00 0                          placeholder\n"
-    "fffff7f89000-fffff7f94000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7f94000-fffff7f97000 rw-p 00000000 00:00 0                          placeholder\n"
-    "fffff7f97000-fffff7f9a000 rw-p 00000000 00:00 0\n"
-    "fffff7fc2000-fffff7fed000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7fef000-fffff7ff9000 rw-p 00000000 00:00 0\n"
-    "fffff7ff9000-fffff7ffb000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7ffb000-fffff7ffc000 r-xp 00000000 00:00 0                          placeholder\n"
-    "fffff7ffc000-fffff7ffe000 r--p 00000000 00:00 0                          placeholder\n"
-    "fffff7ffe000-fffff8000000 rw-p 00000000 00:00 0                          placeholder\n"
-    "fffffffd2000-1000000000000 rw-p 00000000 00:00 0                         [stack]\n";
+  const char RealWorldMappings[] = "aaaaaaaa0000-aaaaaadba000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "aaaaaadc9000-aaaaab77a000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "aaaaab789000-aaaaab7b7000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "aaaaab7c6000-aaaaab894000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "aaaaab894000-aaaaabcc9000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "aaaaabcc9000-aaaaabcca000 ---p 00000000 00:00 0                          placeholder\n"
+                                   "fffff6a00000-fffff7a00000 rw-p 00000000 00:00 0\n"
+                                   "fffff7af0000-fffff7c78000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7c78000-fffff7c87000 ---p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7c87000-fffff7c8b000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7c8b000-fffff7c8d000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7c8d000-fffff7c99000 rw-p 00000000 00:00 0\n"
+                                   "fffff7ca0000-fffff7cb4000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7cb4000-fffff7cc3000 ---p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7cc3000-fffff7cc4000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7cc4000-fffff7cc5000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7cd0000-fffff7d56000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7d56000-fffff7d65000 ---p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7d65000-fffff7d66000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7d66000-fffff7d67000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7d70000-fffff7f7a000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7f7a000-fffff7f89000 ---p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7f89000-fffff7f94000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7f94000-fffff7f97000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7f97000-fffff7f9a000 rw-p 00000000 00:00 0\n"
+                                   "fffff7fc2000-fffff7fed000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7fef000-fffff7ff9000 rw-p 00000000 00:00 0\n"
+                                   "fffff7ff9000-fffff7ffb000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7ffb000-fffff7ffc000 r-xp 00000000 00:00 0                          placeholder\n"
+                                   "fffff7ffc000-fffff7ffe000 r--p 00000000 00:00 0                          placeholder\n"
+                                   "fffff7ffe000-fffff8000000 rw-p 00000000 00:00 0                          placeholder\n"
+                                   "fffffffd2000-1000000000000 rw-p 00000000 00:00 0                         [stack]\n";
 
   using namespace Catch::Generators;
   uintptr_t Begin = GENERATE(take(30, random<uintptr_t>(0, 0xffffffffffffffff / 0x1000))) * 0x1000;

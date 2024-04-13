@@ -30,48 +30,46 @@ typedef void voidFunc();
 
 // Maps OpenGL API function names to the address of a guest function which is
 // linked to the corresponding host function pointer
-const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers =
-    std::invoke([]() {
+const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers = std::invoke([]() {
 #define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(GetCallerForHostFunction(name));
-        std::unordered_map<std::string_view, uintptr_t> Ret;
-        FOREACH_internal_SYMBOL(PAIR);
-        return Ret;
+  std::unordered_map<std::string_view, uintptr_t> Ret;
+  FOREACH_internal_SYMBOL(PAIR);
+  return Ret;
 #undef PAIR
-    });
+});
 
 extern "C" {
-  voidFunc *glXGetProcAddress(const GLubyte *procname) {
-    auto Ret = fexfn_pack_glXGetProcAddress(procname);
-    if (!Ret) {
-      return nullptr;
-    }
-
-    auto TargetFuncIt = HostPtrInvokers.find(reinterpret_cast<const char*>(procname));
-    if (TargetFuncIt == HostPtrInvokers.end()) {
-      std::string_view procname_s { reinterpret_cast<const char*>(procname) };
-      // If glXGetProcAddress is querying itself, then we can just return itself.
-      // Some games do this for unknown reasons.
-      if (procname_s == "glXGetProcAddress" ||
-          procname_s == "glXGetProcAddressARB") {
-        return reinterpret_cast<voidFunc *>(glXGetProcAddress);
-      }
-
-      // Extension found in host but not in our interface definition => Not fatal but warn about it
-      // Some games query leaked GLES symbols but don't use them
-      // glFrustrumf : ES 1.x function
-      //  - Papers, Please
-      //  - Dicey Dungeons
-      fprintf(stderr, "glXGetProcAddress: not found %s\n", procname);
-      return nullptr;
-    }
-
-    LinkAddressToFunction((uintptr_t)Ret, TargetFuncIt->second);
-    return Ret;
+voidFunc* glXGetProcAddress(const GLubyte* procname) {
+  auto Ret = fexfn_pack_glXGetProcAddress(procname);
+  if (!Ret) {
+    return nullptr;
   }
 
-  voidFunc *glXGetProcAddressARB(const GLubyte *procname) {
-    return glXGetProcAddress(procname);
+  auto TargetFuncIt = HostPtrInvokers.find(reinterpret_cast<const char*>(procname));
+  if (TargetFuncIt == HostPtrInvokers.end()) {
+    std::string_view procname_s {reinterpret_cast<const char*>(procname)};
+    // If glXGetProcAddress is querying itself, then we can just return itself.
+    // Some games do this for unknown reasons.
+    if (procname_s == "glXGetProcAddress" || procname_s == "glXGetProcAddressARB") {
+      return reinterpret_cast<voidFunc*>(glXGetProcAddress);
+    }
+
+    // Extension found in host but not in our interface definition => Not fatal but warn about it
+    // Some games query leaked GLES symbols but don't use them
+    // glFrustrumf : ES 1.x function
+    //  - Papers, Please
+    //  - Dicey Dungeons
+    fprintf(stderr, "glXGetProcAddress: not found %s\n", procname);
+    return nullptr;
   }
+
+  LinkAddressToFunction((uintptr_t)Ret, TargetFuncIt->second);
+  return Ret;
+}
+
+voidFunc* glXGetProcAddressARB(const GLubyte* procname) {
+  return glXGetProcAddress(procname);
+}
 }
 
 // libGL.so must pull in libX11.so as a dependency. Referencing some libX11

@@ -12,4 +12,4 @@ namespace FEX::HLE::x32 {
 namespace joystick {
 #include "LinuxSyscalls/x32/Ioctl/joystick.inl"
 }
-}
+} // namespace FEX::HLE::x32

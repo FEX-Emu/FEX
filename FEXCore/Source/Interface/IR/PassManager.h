@@ -18,7 +18,7 @@ $end_info$
 #include <utility>
 
 namespace FEXCore::Context {
-  class ContextImpl;
+class ContextImpl;
 }
 
 namespace FEXCore::HLE {
@@ -32,20 +32,20 @@ class IREmitter;
 class Pass {
 public:
   virtual ~Pass() = default;
-  virtual bool Run(IREmitter *IREmit) = 0;
+  virtual bool Run(IREmitter* IREmit) = 0;
 
-  void RegisterPassManager(PassManager *_Manager) {
+  void RegisterPassManager(PassManager* _Manager) {
     Manager = _Manager;
   }
 
 protected:
-  PassManager *Manager;
+  PassManager* Manager;
 };
 
 class PassManager final {
   friend class InlineCallOptimization;
 public:
-  void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants);
+  void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool InlineConstants);
   void AddDefaultValidationPasses();
   Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
     auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
@@ -58,7 +58,7 @@ public:
 
   void InsertRegisterAllocationPass(bool SupportsAVX);
 
-  bool Run(IREmitter *IREmit);
+  bool Run(IREmitter* IREmit);
 
   bool HasPass(fextl::string Name) const {
     return NameToPassMaping.contains(Name);
@@ -73,14 +73,14 @@ public:
     return NameToPassMaping[Name];
   }
 
-  void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) {
+  void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) {
     SyscallHandler = Handler;
   }
 
   void Finalize();
 
 protected:
-  FEXCore::HLE::SyscallHandler *SyscallHandler;
+  FEXCore::HLE::SyscallHandler* SyscallHandler;
 
 private:
   using PassArrayType = fextl::vector<fextl::unique_ptr<Pass>>;
@@ -106,5 +106,4 @@ private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(PassManagerDumpIR, PASSMANAGERDUMPIR);
 };
-}
-
+} // namespace FEXCore::IR

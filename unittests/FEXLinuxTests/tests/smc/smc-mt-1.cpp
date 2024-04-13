@@ -16,9 +16,9 @@
 std::atomic<int> result;
 std::atomic<bool> go;
 
-void *thread(void *) {
+void* thread(void*) {
 
-  auto code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
+  auto code = (char*)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
 
   for (int k = 0; k < 10; k++) {
     code[0] = 0xB8;
@@ -29,7 +29,8 @@ void *thread(void *) {
 
     code[5] = 0xC3;
 
-    while(!go) ;
+    while (!go)
+      ;
 
     auto fn = (int (*)())code;
     auto e1 = fn();
@@ -74,7 +75,7 @@ TEST_CASE("SMC: Concurrent invalidation of different code from different threads
   go = true;
 
   for (int i = 0; i < 10; i++) {
-    void *rv;
+    void* rv;
     pthread_join(tid[i], &rv);
   }
 

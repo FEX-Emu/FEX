@@ -20,77 +20,69 @@ namespace FEXCore::IR {
 
 bool IsFragmentExit(FEXCore::IR::IROps Op) {
   switch (Op) {
-    case OP_EXITFUNCTION:
-    case OP_BREAK:
-      return true;
-    default:
-    return false;
+  case OP_EXITFUNCTION:
+  case OP_BREAK: return true;
+  default: return false;
   }
 }
 
 bool IsBlockExit(FEXCore::IR::IROps Op) {
-  switch(Op) {
-    case OP_JUMP:
-    case OP_CONDJUMP:
-      return true;
-    default:
-      return IsFragmentExit(Op);
+  switch (Op) {
+  case OP_JUMP:
+  case OP_CONDJUMP: return true;
+  default: return IsFragmentExit(Op);
   }
 }
 
-FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(OrderedNode *Node) {
+FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(OrderedNode* Node) {
   auto Class = GetOpRegClass(Node);
   switch (Class) {
-    case GPRClass:
-    case GPRPairClass:
-    case FPRClass:
-    case GPRFixedClass:
-    case FPRFixedClass:
-    case InvalidClass:
-      return Class;
-    default: break;
+  case GPRClass:
+  case GPRPairClass:
+  case FPRClass:
+  case GPRFixedClass:
+  case FPRFixedClass:
+  case InvalidClass: return Class;
+  default: break;
   }
 
   // Complex case, needs to be handled on an op by op basis
   uintptr_t DataBegin = DualListData.DataBegin();
 
-  FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
+  FEXCore::IR::IROp_Header* IROp = Node->Op(DataBegin);
 
   switch (IROp->Op) {
-    case IROps::OP_LOADREGISTER: {
-      auto Op = IROp->C<IROp_LoadRegister>();
-      return Op->Class;
-      break;
-    }
-    case IROps::OP_LOADCONTEXT: {
-      auto Op = IROp->C<IROp_LoadContext>();
-      return Op->Class;
-      break;
-    }
-    case IROps::OP_LOADCONTEXTINDEXED: {
-      auto Op = IROp->C<IROp_LoadContextIndexed>();
-      return Op->Class;
-      break;
-    }
-    case IROps::OP_FILLREGISTER: {
-      auto Op = IROp->C<IROp_FillRegister>();
-      return Op->Class;
-      break;
-    }
-    case IROps::OP_LOADMEM: {
-      auto Op = IROp->C<IROp_LoadMem>();
-      return Op->Class;
-      break;
-    }
-    case IROps::OP_LOADMEMTSO: {
-      auto Op = IROp->C<IROp_LoadMemTSO>();
-      return Op->Class;
-      break;
-    }
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled op type: {} {} in argument class validation",
-                       ToUnderlying(IROp->Op), GetOpName(Node));
-      break;
+  case IROps::OP_LOADREGISTER: {
+    auto Op = IROp->C<IROp_LoadRegister>();
+    return Op->Class;
+    break;
+  }
+  case IROps::OP_LOADCONTEXT: {
+    auto Op = IROp->C<IROp_LoadContext>();
+    return Op->Class;
+    break;
+  }
+  case IROps::OP_LOADCONTEXTINDEXED: {
+    auto Op = IROp->C<IROp_LoadContextIndexed>();
+    return Op->Class;
+    break;
+  }
+  case IROps::OP_FILLREGISTER: {
+    auto Op = IROp->C<IROp_FillRegister>();
+    return Op->Class;
+    break;
+  }
+  case IROps::OP_LOADMEM: {
+    auto Op = IROp->C<IROp_LoadMem>();
+    return Op->Class;
+    break;
+  }
+  case IROps::OP_LOADMEMTSO: {
+    auto Op = IROp->C<IROp_LoadMemTSO>();
+    return Op->Class;
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled op type: {} {} in argument class validation", ToUnderlying(IROp->Op), GetOpName(Node)); break;
   }
   return InvalidClass;
 }
@@ -105,7 +97,7 @@ void IREmitter::ResetWorkingList() {
   CurrentCodeBlock = nullptr;
 }
 
-void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator Begin, AllNodesIterator End) {
+void IREmitter::ReplaceAllUsesWithRange(OrderedNode* Node, OrderedNode* NewNode, AllNodesIterator Begin, AllNodesIterator End) {
   uintptr_t ListBegin = DualListData.ListBegin();
   auto NodeId = Node->Wrapped(ListBegin).ID();
 
@@ -130,23 +122,23 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
   }
 }
 
-void IREmitter::ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg) {
+void IREmitter::ReplaceNodeArgument(OrderedNode* Node, uint8_t Arg, OrderedNode* NewArg) {
   uintptr_t ListBegin = DualListData.ListBegin();
   uintptr_t DataBegin = DualListData.DataBegin();
 
-  FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
+  FEXCore::IR::IROp_Header* IROp = Node->Op(DataBegin);
   OrderedNodeWrapper OldArgWrapper = IROp->Args[Arg];
-  OrderedNode *OldArg = OldArgWrapper.GetNode(ListBegin);
+  OrderedNode* OldArg = OldArgWrapper.GetNode(ListBegin);
   OldArg->RemoveUse();
   NewArg->AddUse();
   IROp->Args[Arg].NodeOffset = NewArg->Wrapped(ListBegin).NodeOffset;
 }
 
-void IREmitter::RemoveArgUses(OrderedNode *Node) {
+void IREmitter::RemoveArgUses(OrderedNode* Node) {
   uintptr_t ListBegin = DualListData.ListBegin();
   uintptr_t DataBegin = DualListData.DataBegin();
 
-  FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
+  FEXCore::IR::IROp_Header* IROp = Node->Op(DataBegin);
 
   const uint8_t NumArgs = IR::GetArgs(IROp->Op);
   for (uint8_t i = 0; i < NumArgs; ++i) {
@@ -155,7 +147,7 @@ void IREmitter::RemoveArgUses(OrderedNode *Node) {
   }
 }
 
-void IREmitter::Remove(OrderedNode *Node) {
+void IREmitter::Remove(OrderedNode* Node) {
   RemoveArgUses(Node);
 
   Node->Unlink(DualListData.ListBegin());
@@ -174,8 +166,9 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
     // Find last block
     auto LastBlock = CurrentCodeBlock;
 
-    while (LastBlock->Header.Next.GetNode(DualListData.ListBegin()) != InvalidNode)
+    while (LastBlock->Header.Next.GetNode(DualListData.ListBegin()) != InvalidNode) {
       LastBlock = LastBlock->Header.Next.GetNode(DualListData.ListBegin());
+    }
 
     // Append it after the last block
     LinkCodeBlocks(LastBlock, CodeNode);
@@ -186,34 +179,34 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
   return CodeNode;
 }
 
-void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
+void IREmitter::SetCurrentCodeBlock(OrderedNode* Node) {
   CurrentCodeBlock = Node;
-  LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'", IR::GetName(Node->Op(DualListData.DataBegin())->Op));
+  LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'",
+                     IR::GetName(Node->Op(DualListData.DataBegin())->Op));
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 }
 
-void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
-    auto Header = Node->Op(DualListData.DataBegin());
+void IREmitter::ReplaceWithConstant(OrderedNode* Node, uint64_t Value) {
+  auto Header = Node->Op(DualListData.DataBegin());
 
-    if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
-      // Unlink any arguments the node currently has
-      RemoveArgUses(Node);
+  if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
+    // Unlink any arguments the node currently has
+    RemoveArgUses(Node);
 
-      // Overwrite data with the new constant op
-      Header->Op = OP_CONSTANT;
-      auto Const = Header->CW<IROp_Constant>();
-      Const->Constant = Value;
-    } else {
-      // Fallback path for when the node to overwrite is too small
-      auto cursor = GetWriteCursor();
-      SetWriteCursor(Node);
+    // Overwrite data with the new constant op
+    Header->Op = OP_CONSTANT;
+    auto Const = Header->CW<IROp_Constant>();
+    Const->Constant = Value;
+  } else {
+    // Fallback path for when the node to overwrite is too small
+    auto cursor = GetWriteCursor();
+    SetWriteCursor(Node);
 
-      auto NewNode = _Constant(Value);
-      ReplaceAllUsesWith(Node, NewNode);
+    auto NewNode = _Constant(Value);
+    ReplaceAllUsesWith(Node, NewNode);
 
-      SetWriteCursor(cursor);
-    }
+    SetWriteCursor(cursor);
   }
-
 }
 
+} // namespace FEXCore::IR

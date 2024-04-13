@@ -23,56 +23,59 @@ $end_info$
 
 #include "thunkgen_host_libvulkan.inl"
 
-static bool SetupInstance{};
-static std::mutex SetupMutex{};
+static bool SetupInstance {};
+static std::mutex SetupMutex {};
 
 #define LDR_PTR(fn) fexldr_ptr_libvulkan_##fn
 
 static void DoSetupWithInstance(VkInstance instance) {
-    std::unique_lock lk {SetupMutex};
+  std::unique_lock lk {SetupMutex};
 
-    // Needed since the Guest-endpoint calls without a function pointer
-    // TODO: Support use of multiple instances
-    (void*&)LDR_PTR(vkGetDeviceProcAddr) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkGetDeviceProcAddr");
-    if (LDR_PTR(vkGetDeviceProcAddr) == nullptr) {
-      std::abort();
-    }
+  // Needed since the Guest-endpoint calls without a function pointer
+  // TODO: Support use of multiple instances
+  (void*&)LDR_PTR(vkGetDeviceProcAddr) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkGetDeviceProcAddr");
+  if (LDR_PTR(vkGetDeviceProcAddr) == nullptr) {
+    std::abort();
+  }
 
-    // Query pointers for functions customized below
-    (void*&)LDR_PTR(vkCreateDevice) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkCreateDevice");
+  // Query pointers for functions customized below
+  (void*&)LDR_PTR(vkCreateDevice) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkCreateDevice");
 
-    // Only do this lookup once.
-    // NOTE: If vkGetInstanceProcAddr was called with a null instance, only a few function pointers will be filled with non-null values, so we do repeat the lookup in that case
-    if (instance) {
-        SetupInstance = true;
-    }
+  // Only do this lookup once.
+  // NOTE: If vkGetInstanceProcAddr was called with a null instance, only a few function pointers will be filled with non-null values, so we do repeat the lookup in that case
+  if (instance) {
+    SetupInstance = true;
+  }
 }
 
 #define FEXFN_IMPL(fn) fexfn_impl_libvulkan_##fn
 
 // Functions with callbacks are overridden to ignore the guest-side callbacks
 
-static VkResult FEXFN_IMPL(vkCreateShaderModule)(VkDevice a_0, const VkShaderModuleCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkShaderModule* a_3) {
+static VkResult
+FEXFN_IMPL(vkCreateShaderModule)(VkDevice a_0, const VkShaderModuleCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkShaderModule* a_3) {
   (void*&)LDR_PTR(vkCreateShaderModule) = (void*)LDR_PTR(vkGetDeviceProcAddr)(a_0, "vkCreateShaderModule");
   return LDR_PTR(vkCreateShaderModule)(a_0, a_1, nullptr, a_3);
 }
 
-static VkBool32 DummyVkDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT, uint64_t, size_t,
-                                           int32_t, const char*, const char*, void*) {
+static VkBool32
+DummyVkDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t, const char*, const char*, void*) {
   return VK_FALSE;
 }
 
 static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, guest_layout<VkInstance*> a_2) {
   const VkInstanceCreateInfo* vk_struct_base = a_0;
-  for (const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(vk_struct_base); vk_struct->pNext; vk_struct = vk_struct->pNext) {
+  for (const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(vk_struct_base); vk_struct->pNext;
+       vk_struct = vk_struct->pNext) {
     // Override guest callbacks used for VK_EXT_debug_report
     if (reinterpret_cast<const VkBaseInStructure*>(vk_struct->pNext)->sType == VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT) {
       // Overwrite the pNext pointer, ignoring its const-qualifier
       const_cast<VkBaseInStructure*>(vk_struct)->pNext = vk_struct->pNext->pNext;
 
       // If we copied over a nullptr for pNext then early exit
-      if (!vk_struct->pNext)
+      if (!vk_struct->pNext) {
         break;
+      }
     }
   }
 
@@ -84,7 +87,8 @@ static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, co
   return ret;
 }
 
-static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, guest_layout<VkDevice*> a_3){
+static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2,
+                                           guest_layout<VkDevice*> a_3) {
   VkDevice out;
   auto ret = LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, &out);
   if (ret == VK_SUCCESS) {
@@ -93,7 +97,7 @@ static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceC
   return ret;
 }
 
-static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3){
+static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3) {
   (void*&)LDR_PTR(vkAllocateMemory) = (void*)LDR_PTR(vkGetDeviceProcAddr)(a_0, "vkAllocateMemory");
   return LDR_PTR(vkAllocateMemory)(a_0, a_1, nullptr, a_3);
 }
@@ -103,8 +107,9 @@ static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkA
   LDR_PTR(vkFreeMemory)(a_0, a_1, nullptr);
 }
 
-static VkResult FEXFN_IMPL(vkCreateDebugReportCallbackEXT)(VkInstance a_0, guest_layout<const VkDebugReportCallbackCreateInfoEXT*> a_1, const VkAllocationCallbacks* a_2, VkDebugReportCallbackEXT* a_3) {
-  auto overridden_callback = host_layout<VkDebugReportCallbackCreateInfoEXT> { *a_1.get_pointer() }.data;
+static VkResult FEXFN_IMPL(vkCreateDebugReportCallbackEXT)(VkInstance a_0, guest_layout<const VkDebugReportCallbackCreateInfoEXT*> a_1,
+                                                           const VkAllocationCallbacks* a_2, VkDebugReportCallbackEXT* a_3) {
+  auto overridden_callback = host_layout<VkDebugReportCallbackCreateInfoEXT> {*a_1.get_pointer()}.data;
   overridden_callback.pfnCallback = DummyVkDebugReportCallback;
   (void*&)LDR_PTR(vkCreateDebugReportCallbackEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkCreateDebugReportCallbackEXT");
   return LDR_PTR(vkCreateDebugReportCallbackEXT)(a_0, &overridden_callback, nullptr, a_3);
@@ -115,16 +120,14 @@ static void FEXFN_IMPL(vkDestroyDebugReportCallbackEXT)(VkInstance a_0, VkDebugR
   LDR_PTR(vkDestroyDebugReportCallbackEXT)(a_0, a_1, nullptr);
 }
 
-extern "C" VkBool32 DummyVkDebugUtilsMessengerCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
-    const VkDebugUtilsMessengerCallbackDataEXT*, void*) {
+extern "C" VkBool32 DummyVkDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
+                                                       const VkDebugUtilsMessengerCallbackDataEXT*, void*) {
   return VK_FALSE;
 }
 
-static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(
-    VkInstance_T* a_0, guest_layout<const VkDebugUtilsMessengerCreateInfoEXT*> a_1,
-    const VkAllocationCallbacks* a_2, VkDebugUtilsMessengerEXT* a_3) {
-  auto overridden_callback = host_layout<VkDebugUtilsMessengerCreateInfoEXT> { *a_1.get_pointer() }.data;
+static VkResult FEXFN_IMPL(vkCreateDebugUtilsMessengerEXT)(VkInstance_T* a_0, guest_layout<const VkDebugUtilsMessengerCreateInfoEXT*> a_1,
+                                                           const VkAllocationCallbacks* a_2, VkDebugUtilsMessengerEXT* a_3) {
+  auto overridden_callback = host_layout<VkDebugUtilsMessengerCreateInfoEXT> {*a_1.get_pointer()}.data;
   overridden_callback.pfnUserCallback = DummyVkDebugUtilsMessengerCallback;
   (void*&)LDR_PTR(vkCreateDebugUtilsMessengerEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkCreateDebugUtilsMessengerEXT");
   return LDR_PTR(vkCreateDebugUtilsMessengerEXT)(a_0, &overridden_callback, nullptr, a_3);
@@ -134,15 +137,15 @@ static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
   using namespace std::string_view_literals;
 
   if (a_1 == "vkCreateShaderModule"sv) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateShaderModule;
   } else if (a_1 == "vkCreateInstance"sv) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateInstance;
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateInstance;
   } else if (a_1 == "vkCreateDevice"sv) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateDevice;
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCreateDevice;
   } else if (a_1 == "vkAllocateMemory"sv) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
   } else if (a_1 == "vkFreeMemory"sv) {
-      return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
   }
   return nullptr;
 }

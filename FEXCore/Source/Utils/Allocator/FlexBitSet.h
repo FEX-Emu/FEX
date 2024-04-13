@@ -51,8 +51,8 @@ struct FlexBitSet final {
   // TODO: Make {Forward,Backward}ScanForRange faster
   // Currently these functions test a single bit at a time, which is fairly costly.
   // The compiler emits a full element load per iteration, wasting a bunch of time on loads.
-  // If we change these functions to have a pre-amble and post-amble to align the primary loop to the element size then this can go significantly
-  // faster.
+  // If we change these functions to have a pre-amble and post-amble to align the primary loop to the element size then this can go
+  // significantly faster.
   //
   // Once the element scanning is aligned to the element size, we can then use native count leading zero(CLZ) and count trailing zero(CTZ)
   // instructions on a full element to scan uint64_t elements per loop iteration.
@@ -70,8 +70,7 @@ struct FlexBitSet final {
   template<bool WantUnset>
   BitsetScanResults BackwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t MinimumElement) {
     bool FoundHole {};
-    for (size_t CurrentPage = BeginningElement;
-         CurrentPage >= (MinimumElement + ElementCount);) {
+    for (size_t CurrentPage = BeginningElement; CurrentPage >= (MinimumElement + ElementCount);) {
       size_t Remaining = ElementCount;
       LOGMAN_THROW_AA_FMT(Remaining <= CurrentPage, "Scanning less than available range");
 
@@ -91,10 +90,9 @@ struct FlexBitSet final {
 
         // Didn't find a slab range
         CurrentPage -= Remaining;
-      }
-      else {
+      } else {
         // We have a slab range
-        return BitsetScanResults{CurrentPage - ElementCount, FoundHole};
+        return BitsetScanResults {CurrentPage - ElementCount, FoundHole};
       }
     }
 
@@ -110,8 +108,7 @@ struct FlexBitSet final {
   BitsetScanResults ForwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t ElementsInSet) {
     bool FoundHole {};
 
-    for (size_t CurrentElement = BeginningElement;
-         CurrentElement < (ElementsInSet - ElementCount);) {
+    for (size_t CurrentElement = BeginningElement; CurrentElement < (ElementsInSet - ElementCount);) {
       // If we have enough free space, check if we have enough free pages that are contiguous
       size_t Remaining = ElementCount;
 
@@ -133,8 +130,7 @@ struct FlexBitSet final {
 
         // Didn't find a slab range
         CurrentElement += Remaining;
-      }
-      else {
+      } else {
         // We have a slab range
         return BitsetScanResults {CurrentElement, FoundHole};
       }

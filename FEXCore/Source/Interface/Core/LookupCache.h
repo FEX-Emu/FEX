@@ -26,12 +26,12 @@ public:
     uintptr_t GuestCode;
   };
 
-  LookupCache(FEXCore::Context::ContextImpl *CTX);
+  LookupCache(FEXCore::Context::ContextImpl* CTX);
   ~LookupCache();
 
   uintptr_t FindBlock(uint64_t Address) {
     // Try L1, no lock needed
-    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       return L1Entry.HostCode;
     }
@@ -40,7 +40,7 @@ public:
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Try L2
-    const auto PageIndex = (Address & (VirtualMemSize -1)) >> 12;
+    const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
     const auto PageOffset = Address & (0x0FFF);
 
     const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
@@ -51,8 +51,7 @@ public:
       // Find there pointer for the address in the blocks
       auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
 
-      if (BlockPointers[PageOffset].GuestCode == Address)
-      {
+      if (BlockPointers[PageOffset].GuestCode == Address) {
         L1Entry.GuestCode = Address;
         L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
         return L1Entry.HostCode;
@@ -74,7 +73,7 @@ public:
 #ifdef _M_ARM_64EC
   bool CheckPageEC(uint64_t Address) {
     if (!RtlIsEcCode(Address)) {
-        return false;
+      return false;
     }
 
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
@@ -82,7 +81,7 @@ public:
     // Mark L2 entry for this page as EC by setting the LSB, this can then be
     // checked by the dispatcher to see if it needs to perform a call/return to
     // EC code.
-    const auto PageIndex = (Address & (VirtualMemSize -1)) >> 12;
+    const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
     const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
     Pointers[PageIndex] |= 1;
     return true;
@@ -98,8 +97,8 @@ public:
 
     bool rv = false;
 
-    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length -1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
-      auto &CodePage = CodePages[CurrentPage];
+    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
+      auto& CodePage = CodePages[CurrentPage];
       rv |= CodePage.size() == 0;
       CodePage.push_back(Address);
     }
@@ -108,7 +107,7 @@ public:
   }
 
   // Adds to Guest -> Host code mapping
-  void AddBlockMapping(uint64_t Address, void *HostCode) {
+  void AddBlockMapping(uint64_t Address, void* HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
@@ -116,18 +115,18 @@ public:
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
-    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = (uintptr_t)HostCode;
   }
 
-  void Erase(FEXCore::Core::CpuStateFrame *Frame, uint64_t Address) {
+  void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
 
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Sever any links to this block
     auto lower = BlockLinks->lower_bound({Address, nullptr});
-    auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData *>(UINTPTR_MAX)});
+    auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
     for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
       it->second(Frame, it->first.HostLink);
     }
@@ -136,7 +135,7 @@ public:
     BlockList.erase(Address);
 
     // Do L1
-    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = 0;
       // Leave L1Entry.HostCode as is, so that concurrent lookups won't read a null pointer
@@ -145,11 +144,11 @@ public:
     }
 
     // Do full map
-    Address = Address & (VirtualMemSize -1);
+    Address = Address & (VirtualMemSize - 1);
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
 
-    uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
     uint64_t LocalPagePointer = Pointers[Address];
     if (!LocalPagePointer) {
       // Page for this code didn't even exist, nothing to do
@@ -162,7 +161,7 @@ public:
     BlockPointers[PageOffset].HostCode = 0;
   }
 
-  void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData * HostLink, const FEXCore::Context::BlockDelinkerFunc &delinker) {
+  void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink, const FEXCore::Context::BlockDelinkerFunc& delinker) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     BlockLinks->insert({{GuestDestination, HostLink}, delinker});
@@ -171,9 +170,15 @@ public:
   void ClearCache();
   void ClearL2Cache();
 
-  uintptr_t GetL1Pointer() const { return L1Pointer; }
-  uintptr_t GetPagePointer() const { return PagePointer; }
-  uintptr_t GetVirtualMemorySize() const { return VirtualMemSize; }
+  uintptr_t GetL1Pointer() const {
+    return L1Pointer;
+  }
+  uintptr_t GetPagePointer() const {
+    return PagePointer;
+  }
+  uintptr_t GetVirtualMemorySize() const {
+    return VirtualMemSize;
+  }
 
   constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
   constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
@@ -190,17 +195,17 @@ public:
 private:
   void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) {
     // Do L1
-    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = HostCode;
 
     // Do ful map
     auto FullAddress = Address;
-    Address = Address & (VirtualMemSize -1);
+    Address = Address & (VirtualMemSize - 1);
 
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
-    uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
     uint64_t LocalPagePointer = Pointers[Address];
     if (!LocalPagePointer) {
       // We don't have a page pointer for this address
@@ -244,15 +249,16 @@ private:
 
   struct BlockLinkTag {
     uint64_t GuestDestination;
-    FEXCore::Context::ExitFunctionLinkData *HostLink;
+    FEXCore::Context::ExitFunctionLinkData* HostLink;
 
-    bool operator <(const BlockLinkTag& other) const {
-      if (GuestDestination < other.GuestDestination)
+    bool operator<(const BlockLinkTag& other) const {
+      if (GuestDestination < other.GuestDestination) {
         return true;
-      else if (GuestDestination == other.GuestDestination)
+      } else if (GuestDestination == other.GuestDestination) {
         return HostLink < other.HostLink;
-      else
+      } else {
         return false;
+      }
     }
   };
 
@@ -265,7 +271,7 @@ private:
   std::pmr::monotonic_buffer_resource BlockLinks_mbr;
   using BlockLinksMapType = std::pmr::map<BlockLinkTag, FEXCore::Context::BlockDelinkerFunc>;
   fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
-  BlockLinksMapType *BlockLinks;
+  BlockLinksMapType* BlockLinks;
 
   fextl::robin_map<uint64_t, uint64_t> BlockList;
 
@@ -277,7 +283,7 @@ private:
 
   size_t AllocateOffset {};
 
-  FEXCore::Context::ContextImpl *ctx;
-  uint64_t VirtualMemSize{};
+  FEXCore::Context::ContextImpl* ctx;
+  uint64_t VirtualMemSize {};
 };
-}
+} // namespace FEXCore

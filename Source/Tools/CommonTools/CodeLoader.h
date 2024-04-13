@@ -16,7 +16,7 @@ namespace FEX {
  * @brief Code loader class so the CPU backend can load code in a generic fashion
  *
  * This class is expected to have multiple different style of code loaders
-*/
+ */
 class CodeLoader {
 public:
   virtual ~CodeLoader() = default;
@@ -36,15 +36,19 @@ public:
    */
   virtual uint64_t DefaultRIP() const = 0;
 
-  virtual fextl::vector<fextl::string> const *GetApplicationArguments() { return nullptr; }
-  virtual void GetExecveArguments(fextl::vector<char const*> *Args) {}
+  virtual const fextl::vector<fextl::string>* GetApplicationArguments() {
+    return nullptr;
+  }
+  virtual void GetExecveArguments(fextl::vector<const char*>* Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
 
-  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter *IR)>;
+  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter* IR)>;
   virtual void AddIR(IRHandler Handler) {}
 
-  virtual uint64_t GetBaseOffset() const { return 0; }
+  virtual uint64_t GetBaseOffset() const {
+    return 0;
+  }
 };
 
-}
+} // namespace FEX

@@ -16,13 +16,13 @@ $end_info$
 #include <sys/epoll.h>
 
 namespace FEX::HLE {
-  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler) {
-    using namespace FEXCore::IR;
+void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
+  using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_FLAGS(epoll_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, int size) -> uint64_t {
-      uint64_t Result = epoll_create(size);
-      SYSCALL_ERRNO();
-    });
-  }
+  REGISTER_SYSCALL_IMPL_FLAGS(epoll_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, int size) -> uint64_t {
+                                uint64_t Result = epoll_create(size);
+                                SYSCALL_ERRNO();
+                              });
 }
+} // namespace FEX::HLE

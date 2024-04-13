@@ -19,23 +19,12 @@ $end_info$
 
 namespace FEXCore::IR {
 constexpr std::array<uint32_t, 17> FlagOffsets = {
-  FEXCore::X86State::RFLAG_CF_RAW_LOC,
-  FEXCore::X86State::RFLAG_PF_RAW_LOC,
-  FEXCore::X86State::RFLAG_AF_RAW_LOC,
-  FEXCore::X86State::RFLAG_ZF_RAW_LOC,
-  FEXCore::X86State::RFLAG_SF_RAW_LOC,
-  FEXCore::X86State::RFLAG_TF_LOC,
-  FEXCore::X86State::RFLAG_IF_LOC,
-  FEXCore::X86State::RFLAG_DF_RAW_LOC,
-  FEXCore::X86State::RFLAG_OF_RAW_LOC,
-  FEXCore::X86State::RFLAG_IOPL_LOC,
-  FEXCore::X86State::RFLAG_NT_LOC,
-  FEXCore::X86State::RFLAG_RF_LOC,
-  FEXCore::X86State::RFLAG_VM_LOC,
-  FEXCore::X86State::RFLAG_AC_LOC,
-  FEXCore::X86State::RFLAG_VIF_LOC,
-  FEXCore::X86State::RFLAG_VIP_LOC,
-  FEXCore::X86State::RFLAG_ID_LOC,
+  FEXCore::X86State::RFLAG_CF_RAW_LOC, FEXCore::X86State::RFLAG_PF_RAW_LOC, FEXCore::X86State::RFLAG_AF_RAW_LOC,
+  FEXCore::X86State::RFLAG_ZF_RAW_LOC, FEXCore::X86State::RFLAG_SF_RAW_LOC, FEXCore::X86State::RFLAG_TF_LOC,
+  FEXCore::X86State::RFLAG_IF_LOC,     FEXCore::X86State::RFLAG_DF_RAW_LOC, FEXCore::X86State::RFLAG_OF_RAW_LOC,
+  FEXCore::X86State::RFLAG_IOPL_LOC,   FEXCore::X86State::RFLAG_NT_LOC,     FEXCore::X86State::RFLAG_RF_LOC,
+  FEXCore::X86State::RFLAG_VM_LOC,     FEXCore::X86State::RFLAG_AC_LOC,     FEXCore::X86State::RFLAG_VIF_LOC,
+  FEXCore::X86State::RFLAG_VIP_LOC,    FEXCore::X86State::RFLAG_ID_LOC,
 };
 
 void OpDispatchBuilder::ZeroPF_AF() {
@@ -44,7 +33,7 @@ void OpDispatchBuilder::ZeroPF_AF() {
   SetAF(0);
 }
 
-void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
+void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode* Src) {
   size_t NumFlags = FlagOffsets.size();
   if (Lower8) {
     // Calculate flags early.
@@ -52,8 +41,7 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
     // This is only a partial overwrite of flags since OF isn't stored here.
     CalculateDeferredFlags();
     NumFlags = 5;
-  }
-  else {
+  } else {
     // We are overwriting all RFLAGS. Invalidate the deferred flag state.
     InvalidateDeferredFlags();
   }
@@ -73,7 +61,7 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
       SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_RAW_LOC);
     } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       // PF is stored parity flipped
-      OrderedNode *Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
+      OrderedNode* Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
       Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
       SetRFLAG(Tmp, FlagOffset);
     } else {
@@ -82,15 +70,14 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
   }
 }
 
-OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
+OrderedNode* OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Original = _Constant(0);
+  OrderedNode* Original = _Constant(0);
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
-  bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_RAW_LOC)) &&
-               (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_RAW_LOC));
+  bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_RAW_LOC)) && (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_RAW_LOC));
 
   // Handle CF first, since it's at bit 0 and hence doesn't need shift or OR.
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_RAW_LOC)) {
@@ -104,21 +91,20 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
       continue;
     }
 
-    if ((GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_RAW_LOC ||
-                   FlagOffset == FEXCore::X86State::RFLAG_ZF_RAW_LOC)) ||
-        FlagOffset == FEXCore::X86State::RFLAG_CF_RAW_LOC ||
-        FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+    if ((GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_RAW_LOC || FlagOffset == FEXCore::X86State::RFLAG_ZF_RAW_LOC)) ||
+        FlagOffset == FEXCore::X86State::RFLAG_CF_RAW_LOC || FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       // Already handled
       continue;
     }
 
     // Note that the Bfi only considers the bottom bit of the flag, the rest of
     // the byte is allowed to be garbage.
-    OrderedNode *Flag;
-    if (FlagOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC)
+    OrderedNode* Flag;
+    if (FlagOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
       Flag = LoadAF();
-    else
+    } else {
       Flag = GetRFLAG(FlagOffset);
+    }
 
     Original = _Orlshl(OpSize::i64Bit, Original, Flag, FlagOffset);
   }
@@ -146,16 +132,17 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   }
 
   // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
-  if ((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask)
+  if ((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask) {
     Original = _Or(OpSize::i64Bit, Original, _Constant(2));
+  }
 
   return Original;
 }
 
-void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool Sub) {
+void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2, bool Sub) {
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   uint64_t SignBit = (SrcSize * 8) - 1;
-  OrderedNode *Anded = nullptr;
+  OrderedNode* Anded = nullptr;
 
   // For add, OF is set iff the sources have the same sign but the destination
   // sign differs. If we know a source sign, we can simplify the expression: if
@@ -169,24 +156,26 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, OrderedNode *Res, OrderedNo
   if (IsValueConstant(WrapNode(Src2), &Const)) {
     bool Negative = (Const & (1ull << SignBit)) != 0;
 
-    if (Negative ^ Sub)
+    if (Negative ^ Sub) {
       Anded = _Andn(OpSize, Src1, Res);
-    else
+    } else {
       Anded = _Andn(OpSize, Res, Src1);
+    }
   } else {
     auto XorOp1 = _Xor(OpSize, Src1, Src2);
     auto XorOp2 = _Xor(OpSize, Res, Src1);
 
-    if (Sub)
+    if (Sub) {
       Anded = _And(OpSize, XorOp2, XorOp1);
-    else
+    } else {
       Anded = _Andn(OpSize, XorOp2, XorOp1);
+    }
   }
 
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
 }
 
-OrderedNode *OpDispatchBuilder::LoadPFRaw(bool Invert) {
+OrderedNode* OpDispatchBuilder::LoadPFRaw(bool Invert) {
   // Read the stored byte. This is the original result (up to 64-bits), it needs
   // parity calculated.
   auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
@@ -195,15 +184,16 @@ OrderedNode *OpDispatchBuilder::LoadPFRaw(bool Invert) {
   Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 4);
   Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 2);
 
-  if (Invert)
+  if (Invert) {
     Result = _XornShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
-  else
+  } else {
     Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
+  }
 
   return Result;
 }
 
-OrderedNode *OpDispatchBuilder::LoadAF() {
+OrderedNode* OpDispatchBuilder::LoadAF() {
   // Read the stored value. This is the XOR of the arguments.
   auto AFWord = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
@@ -224,11 +214,11 @@ void OpDispatchBuilder::FixupAF() {
   auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
   auto AFRaw = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  OrderedNode *XorRes = _Xor(OpSize::i32Bit, AFRaw, PFRaw);
+  OrderedNode* XorRes = _Xor(OpSize::i32Bit, AFRaw, PFRaw);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::SetAFAndFixup(OrderedNode *AF) {
+void OpDispatchBuilder::SetAFAndFixup(OrderedNode* AF) {
   // We have a value of AF, we shift into AF[4].  We need to fixup AF[4] so that
   // we get the right value when we XOR in PF[4] later. The easiest solution is
   // to XOR by PF[4], since:
@@ -237,16 +227,16 @@ void OpDispatchBuilder::SetAFAndFixup(OrderedNode *AF) {
 
   auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
-  OrderedNode *XorRes = _XorShift(OpSize::i32Bit, PFRaw, AF, ShiftType::LSL, 4);
+  OrderedNode* XorRes = _XorShift(OpSize::i32Bit, PFRaw, AF, ShiftType::LSL, 4);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
+void OpDispatchBuilder::CalculatePF(OrderedNode* Res) {
   // Calculation is entirely deferred until load, just store the 8-bit result.
   SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Res);
 }
 
-void OpDispatchBuilder::CalculateAF(OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::CalculateAF(OrderedNode* Src1, OrderedNode* Src2) {
   // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
   // there's no sense XOR'ing at all. If we'll XOR with 1, that's just
   // inverting.
@@ -264,15 +254,16 @@ void OpDispatchBuilder::CalculateAF(OrderedNode *Src1, OrderedNode *Src2) {
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit.
-  OrderedNode *XorRes = _Xor(OpSize::i32Bit, Src1, Src2);
+  OrderedNode* XorRes = _Xor(OpSize::i32Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
-    if (NZCVDirty && CachedNZCV)
+    if (NZCVDirty && CachedNZCV) {
       _StoreNZCV(CachedNZCV);
+    }
 
     CachedNZCV = nullptr;
     NZCVDirty = false;
@@ -280,113 +271,68 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   }
 
   switch (CurrentDeferredFlags.Type) {
-    case FlagsGenerationType::TYPE_SUB:
-      CalculateFlags_SUB(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
-        CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2,
-        CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
-      break;
-    case FlagsGenerationType::TYPE_MUL:
-      CalculateFlags_MUL(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSource.Src1);
-      break;
-    case FlagsGenerationType::TYPE_UMUL:
-      CalculateFlags_UMUL(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_LOGICAL:
-      CalculateFlags_Logical(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.TwoSource.Src1,
-        CurrentDeferredFlags.Sources.TwoSource.Src2);
-      break;
-    case FlagsGenerationType::TYPE_LSHLI:
-      CalculateFlags_ShiftLeftImmediate(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-      break;
-    case FlagsGenerationType::TYPE_LSHRI:
-      CalculateFlags_ShiftRightImmediate(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-      break;
-    case FlagsGenerationType::TYPE_LSHRDI:
-      CalculateFlags_ShiftRightDoubleImmediate(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-      break;
-    case FlagsGenerationType::TYPE_ASHRI:
-      CalculateFlags_SignShiftRightImmediate(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
-        CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-      break;
-    case FlagsGenerationType::TYPE_BEXTR:
-      CalculateFlags_BEXTR(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_BLSI:
-      CalculateFlags_BLSI(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_BLSMSK:
-      CalculateFlags_BLSMSK(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSource.Src1);
-      break;
-    case FlagsGenerationType::TYPE_BLSR:
-      CalculateFlags_BLSR(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSource.Src1);
-      break;
-    case FlagsGenerationType::TYPE_POPCOUNT:
-      CalculateFlags_POPCOUNT(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_BZHI:
-      CalculateFlags_BZHI(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res,
-        CurrentDeferredFlags.Sources.OneSource.Src1);
-      break;
-    case FlagsGenerationType::TYPE_ZCNT:
-      CalculateFlags_ZCNT(
-        CurrentDeferredFlags.SrcSize,
-        CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_RDRAND:
-      CalculateFlags_RDRAND(CurrentDeferredFlags.Res);
-      break;
-    case FlagsGenerationType::TYPE_NONE:
-    default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
+  case FlagsGenerationType::TYPE_SUB:
+    CalculateFlags_SUB(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
+                       CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2, CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
+    break;
+  case FlagsGenerationType::TYPE_MUL:
+    CalculateFlags_MUL(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
+    break;
+  case FlagsGenerationType::TYPE_UMUL: CalculateFlags_UMUL(CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_LOGICAL:
+    CalculateFlags_Logical(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.TwoSource.Src1,
+                           CurrentDeferredFlags.Sources.TwoSource.Src2);
+    break;
+  case FlagsGenerationType::TYPE_LSHLI:
+    CalculateFlags_ShiftLeftImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
+                                      CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
+    break;
+  case FlagsGenerationType::TYPE_LSHRI:
+    CalculateFlags_ShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
+                                       CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
+    break;
+  case FlagsGenerationType::TYPE_LSHRDI:
+    CalculateFlags_ShiftRightDoubleImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
+                                             CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
+    break;
+  case FlagsGenerationType::TYPE_ASHRI:
+    CalculateFlags_SignShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
+                                           CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
+    break;
+  case FlagsGenerationType::TYPE_BEXTR: CalculateFlags_BEXTR(CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_BLSI: CalculateFlags_BLSI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_BLSMSK:
+    CalculateFlags_BLSMSK(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
+    break;
+  case FlagsGenerationType::TYPE_BLSR:
+    CalculateFlags_BLSR(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
+    break;
+  case FlagsGenerationType::TYPE_POPCOUNT: CalculateFlags_POPCOUNT(CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_BZHI:
+    CalculateFlags_BZHI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
+    break;
+  case FlagsGenerationType::TYPE_ZCNT: CalculateFlags_ZCNT(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_RDRAND: CalculateFlags_RDRAND(CurrentDeferredFlags.Res); break;
+  case FlagsGenerationType::TYPE_NONE:
+  default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
   }
 
   // Done calculating
   CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
 
-  if (NZCVDirty && CachedNZCV)
+  if (NZCVDirty && CachedNZCV) {
     _StoreNZCV(CachedNZCV);
+  }
 
   CachedNZCV = nullptr;
   NZCVDirty = false;
 }
 
-OrderedNode *OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2) {
+OrderedNode* OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  OrderedNode *Res;
+  OrderedNode* Res;
 
   CalculateAF(Src1, Src2);
 
@@ -400,7 +346,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode 
 
     auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
     auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, One, Zero);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+    auto SelectCF = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
@@ -411,14 +357,14 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode 
   return Res;
 }
 
-OrderedNode *OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2) {
+OrderedNode* OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(Src1, Src2);
 
-  OrderedNode *Res;
+  OrderedNode* Res;
   if (SrcSize >= 4) {
     // Rectify input carry
     CarryInvert();
@@ -435,7 +381,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode 
 
     auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
     auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+    auto SelectCF = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
@@ -446,7 +392,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode 
   return Res;
 }
 
-OrderedNode *OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+OrderedNode* OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -454,7 +400,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode 
 
   CalculateAF(Src1, Src2);
 
-  OrderedNode *Res;
+  OrderedNode* Res;
   if (SrcSize >= 4) {
     Res = _SubWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
   } else {
@@ -466,15 +412,16 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode 
 
   // If we're updating CF, we need to invert it for correctness. If we're not
   // updating CF, we need to restore the CF since we stomped over it.
-  if (UpdateCF)
+  if (UpdateCF) {
     CarryInvert();
-  else
+  } else {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+  }
 
   return Res;
 }
 
-OrderedNode *OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+OrderedNode* OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode* Src1, OrderedNode* Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -482,7 +429,7 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode 
 
   CalculateAF(Src1, Src2);
 
-  OrderedNode *Res;
+  OrderedNode* Res;
   if (SrcSize >= 4) {
     Res = _AddWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
   } else {
@@ -493,13 +440,14 @@ OrderedNode *OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode 
   CalculatePF(Res);
 
   // We stomped over CF while calculation flags, restore it.
-  if (!UpdateCF)
+  if (!UpdateCF) {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+  }
 
   return Res;
 }
 
-void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
+void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode* Res, OrderedNode* High) {
   HandleNZCVWrite();
 
   // PF/AF/ZF/SF
@@ -519,11 +467,11 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
     // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
     // undefined, this does what we need.
     auto Zero = _Constant(0);
-    _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
+    _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
+void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode* High) {
   HandleNZCVWrite();
 
   auto Zero = _Constant(0);
@@ -544,11 +492,11 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 
     // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
     // this does what we need.
-    _CondAddNZCV(Size, Zero, Zero, CondClassType{COND_EQ}, 0x3 /* nzCV */);
+    _CondAddNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, OrderedNode* Src2) {
   // AF
   // Undefined
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
@@ -559,9 +507,11 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
   SetNZ_ZeroCV(SrcSize, Res);
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *UnmaskedRes, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode* UnmaskedRes, OrderedNode* Src1, uint64_t Shift) {
   // No flags changed if shift is zero
-  if (Shift == 0) return;
+  if (Shift == 0) {
+    return;
+  }
 
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
@@ -593,16 +543,18 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
   // No flags changed if shift is zero
-  if (Shift == 0) return;
+  if (Shift == 0) {
+    return;
+  }
 
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift-1, true);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift - 1, true);
   }
 
   CalculatePF(Res);
@@ -617,7 +569,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   // already zeroed there's nothing to do here.
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
   // Set SF and PF. Clobbers OF, but OF only defined for Shift = 1 where it is
   // set below.
   SetNZ_ZeroCV(SrcSize, Res);
@@ -625,7 +577,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift-1, true);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift - 1, true);
   }
 
   CalculatePF(Res);
@@ -635,9 +587,11 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
   // No flags changed if shift is zero
-  if (Shift == 0) return;
+  if (Shift == 0) {
+    return;
+  }
 
   CalculateFlags_ShiftRightImmediateCommon(SrcSize, Res, Src1, Shift);
 
@@ -651,9 +605,11 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Orde
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode* Res, OrderedNode* Src1, uint64_t Shift) {
   // No flags changed if shift is zero
-  if (Shift == 0) return;
+  if (Shift == 0) {
+    return;
+  }
 
   const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   CalculateFlags_ShiftRightImmediateCommon(SrcSize, Res, Src1, Shift);
@@ -670,16 +626,15 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode* Src) {
   // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
   // AF are undefined.
   SetNZ_ZeroCV(GetOpSize(Src), Src);
 
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
-                   (1UL << X86State::RFLAG_AF_RAW_LOC));
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Result) {
+void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode* Result) {
   // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
   // Result is zero, so we can test the result instead. So, CF is just the
   // inverted ZF.
@@ -691,14 +646,12 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Result
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
-                   (1UL << X86State::RFLAG_AF_RAW_LOC));
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode* Result, OrderedNode* Src) {
   // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
-                   (1UL << X86State::RFLAG_AF_RAW_LOC));
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 
   // CF set according to the Src
   auto Zero = _Constant(0);
@@ -711,7 +664,7 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, OrderedNode *Resu
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 }
 
-void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode* Result, OrderedNode* Src) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
   auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
@@ -720,11 +673,10 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Result
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
 
   // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
-                   (1UL << X86State::RFLAG_AF_RAW_LOC));
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 }
 
-void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
+void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode* Result) {
   // We need to set ZF while clearing the rest of NZCV. The result of a popcount
   // is in the range [0, 63]. In particular, it is always positive. So a
   // combined NZ test will correctly zero SF/CF/OF while setting ZF.
@@ -732,16 +684,15 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Result) {
   ZeroPF_AF();
 }
 
-void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode* Result, OrderedNode* Src) {
   // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) |
-                   (1UL << X86State::RFLAG_AF_RAW_LOC));
+  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 
   SetNZ_ZeroCV(SrcSize, Result);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 
-void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result) {
+void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode* Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.
   SetNZ_ZeroCV(SrcSize, Result);
@@ -753,7 +704,7 @@ void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, OrderedNode *Result
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, CarryBit);
 }
 
-void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
+void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode* Src) {
   // OF, SF, ZF, AF, PF all zero
   ZeroNZCV();
   ZeroPF_AF();
@@ -762,4 +713,4 @@ void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src);
 }
 
-}
+} // namespace FEXCore::IR

@@ -4,6 +4,6 @@
 #include <FEXCore/fextl/string.h>
 
 namespace FEX::FormatCheck {
-  bool IsSquashFS(fextl::string const &Filename);
-  bool IsEroFS(fextl::string const &Filename);
-}
+bool IsSquashFS(const fextl::string& Filename);
+bool IsEroFS(const fextl::string& Filename);
+} // namespace FEX::FormatCheck

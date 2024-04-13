@@ -14,4 +14,4 @@ namespace FEX::HLE::x64 {
 namespace ext_fs {
 #include "LinuxSyscalls/x64/Ioctl/ext_fs.inl"
 }
-}
+} // namespace FEX::HLE::x64

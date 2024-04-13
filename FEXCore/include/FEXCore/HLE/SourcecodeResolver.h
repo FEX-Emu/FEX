@@ -10,7 +10,7 @@
 #include <filesystem>
 
 namespace FEXCore::IR {
-  struct AOTIRCacheEntry;
+struct AOTIRCacheEntry;
 }
 
 namespace FEXCore::HLE {
@@ -28,19 +28,16 @@ struct SourcecodeSymbolMapping {
 
   fextl::string Name;
 
-  static fextl::string SymName(const SourcecodeSymbolMapping *Sym, const fextl::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
+  static fextl::string SymName(const SourcecodeSymbolMapping* Sym, const fextl::string& GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
     if (Sym) {
       auto SymOffset = FileBegin - Sym->FileGuestBegin;
       if (SymOffset) {
-        return fextl::fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              SymOffset, HostEntry);
+        return fextl::fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name, SymOffset, HostEntry);
       } else {
-        return fextl::fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              HostEntry);
+        return fextl::fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name, HostEntry);
       }
     } else {
-      return fextl::fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
-                            HostEntry);
+      return fextl::fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin, HostEntry);
     }
   }
 };
@@ -51,13 +48,12 @@ struct SourcecodeMap {
   fextl::vector<SourcecodeSymbolMapping> SortedSymbolMappings;
 
   template<typename F>
-  void IterateLineMappings(uintptr_t FileBegin, uintptr_t Size, const F &Callback) const {
+  void IterateLineMappings(uintptr_t FileBegin, uintptr_t Size, const F& Callback) const {
     auto Begin = FileBegin;
     auto End = FileBegin + Size;
 
-    auto Found = std::lower_bound(SortedLineMappings.cbegin(), SortedLineMappings.cend(), Begin, [](const auto &Range, const auto Position) {
-      return Range.FileGuestEnd <= Position;
-    });
+    auto Found = std::lower_bound(SortedLineMappings.cbegin(), SortedLineMappings.cend(), Begin,
+                                  [](const auto& Range, const auto Position) { return Range.FileGuestEnd <= Position; });
 
     while (Found != SortedLineMappings.cend()) {
       if (Found->FileGuestBegin < End && Found->FileGuestEnd > Begin) {
@@ -69,19 +65,18 @@ struct SourcecodeMap {
     }
   }
 
-  const SourcecodeLineMapping *FindLineMapping(uintptr_t FileBegin) const {
+  const SourcecodeLineMapping* FindLineMapping(uintptr_t FileBegin) const {
     return Find(FileBegin, SortedLineMappings);
   }
 
-  const SourcecodeSymbolMapping *FindSymbolMapping(uintptr_t FileBegin) const {
+  const SourcecodeSymbolMapping* FindSymbolMapping(uintptr_t FileBegin) const {
     return Find(FileBegin, SortedSymbolMappings);
   }
 private:
   template<typename VecT>
-  const typename VecT::value_type *Find(uintptr_t FileBegin, const VecT &SortedMappings) const {
-    auto Found = std::lower_bound(SortedMappings.cbegin(), SortedMappings.cend(), FileBegin, [](const auto &Range, const auto Position) {
-      return Range.FileGuestEnd <= Position;
-    });
+  const typename VecT::value_type* Find(uintptr_t FileBegin, const VecT& SortedMappings) const {
+    auto Found = std::lower_bound(SortedMappings.cbegin(), SortedMappings.cend(), FileBegin,
+                                  [](const auto& Range, const auto Position) { return Range.FileGuestEnd <= Position; });
 
     if (Found != SortedMappings.end() && Found->FileGuestBegin <= FileBegin && Found->FileGuestEnd > FileBegin) {
       return &(*Found);
@@ -95,4 +90,4 @@ class SourcecodeResolver {
 public:
   virtual fextl::unique_ptr<SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) = 0;
 };
-}
+} // namespace FEXCore::HLE

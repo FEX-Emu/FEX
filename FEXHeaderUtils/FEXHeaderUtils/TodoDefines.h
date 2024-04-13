@@ -2,7 +2,7 @@
 #pragma once
 
 #ifndef DO_PRAGMA
-#define DO_PRAGMA(x) _Pragma (#x)
+#define DO_PRAGMA(x) _Pragma(#x)
 #endif
 
 #if FEX_WARN_TODO

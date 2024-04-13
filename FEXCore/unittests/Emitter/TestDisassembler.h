@@ -9,7 +9,7 @@
 
 #include <sys/mman.h>
 
-class TestDisassembler : public FEXCore::ARMEmitter::Emitter  {
+class TestDisassembler : public FEXCore::ARMEmitter::Emitter {
 public:
   TestDisassembler() {
     fp = tmpfile();
@@ -38,7 +38,7 @@ public:
   }
 
   uint32_t DisassembleEncoding(size_t Offset = 0) {
-    const uint32_t *Values = reinterpret_cast<const uint32_t*>(GetBufferBase());
+    const uint32_t* Values = reinterpret_cast<const uint32_t*>(GetBufferBase());
     SetCursorOffset(0);
     ResetFP();
     return Values[Offset];
@@ -46,7 +46,7 @@ public:
 
   fextl::string DisassembleString() {
     HandleDisasm();
-    fextl::string Decoded{};
+    fextl::string Decoded {};
     char Tmp[512];
     uint64_t Addr;
     uint32_t Encoding;
@@ -68,12 +68,10 @@ private:
   void ResetFP() {
     fseek(fp, 0, SEEK_SET);
   }
-  FILE *fp;
+  FILE* fp;
   const vixl::aarch64::Instruction* BufferBegin;
   std::unique_ptr<vixl::aarch64::PrintDisassembler> Disasm;
 };
 
 #define TEST_SINGLE(emit, expected) \
-{ \
-  CHECK((emit, DisassembleSingle()) == expected); \
-}
+  { CHECK((emit, DisassembleSingle()) == expected); }

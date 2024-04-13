@@ -12,4 +12,4 @@ namespace FEX::HLE::x64 {
 namespace msdos_fs {
 #include "LinuxSyscalls/x64/Ioctl/msdos_fs.inl"
 }
-}
+} // namespace FEX::HLE::x64

@@ -489,4 +489,4 @@ enum Syscalls_x64 {
   SYSCALL_x64_futex_time64 = ~0,
   SYSCALL_x64_sched_rr_get_interval_time64 = ~0,
 };
-}
+} // namespace FEX::HLE::x64

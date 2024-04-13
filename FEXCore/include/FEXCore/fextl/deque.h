@@ -5,6 +5,6 @@
 #include <deque>
 
 namespace fextl {
-  template<class T, class Allocator = fextl::FEXAlloc<T>>
-  using deque = std::deque<T, Allocator>;
+template<class T, class Allocator = fextl::FEXAlloc<T>>
+using deque = std::deque<T, Allocator>;
 }

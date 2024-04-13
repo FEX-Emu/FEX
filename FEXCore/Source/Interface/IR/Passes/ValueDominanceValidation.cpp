@@ -26,10 +26,10 @@ $end_info$
 namespace FEXCore::IR::Validation {
 class ValueDominanceValidation final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 };
 
-bool ValueDominanceValidation::Run(IREmitter *IREmit) {
+bool ValueDominanceValidation::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::ValueDominanceValidation");
 
   bool HadError = false;
@@ -45,20 +45,23 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
       const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
-        if (IROp->Args[i].IsInvalid()) continue;
+        if (IROp->Args[i].IsInvalid()) {
+          continue;
+        }
 
         // We do not validate the location of inline constants because it's
         // irrelevant, they're ignored by RA and always inlined to where they
         // need to be. This lets us pool inline constants globally.
         IROps Op = CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op;
-        if (Op == OP_IRHEADER || Op == OP_INLINECONSTANT) continue;
+        if (Op == OP_IRHEADER || Op == OP_INLINECONSTANT) {
+          continue;
+        }
 
         OrderedNodeWrapper Arg = IROp->Args[i];
 
         // If the SSA argument is not defined INSIDE the block, we have
         // cross-block liveness, which we forbid in the IR to simplify RA.
-        if (!(Arg.ID() >= BlockIROp->Begin.ID() &&
-              Arg.ID() < BlockIROp->Last.ID())) {
+        if (!(Arg.ID() >= BlockIROp->Begin.ID() && Arg.ID() < BlockIROp->Last.ID())) {
           HadError |= true;
           Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition not local!" << std::endl;
           continue;
@@ -100,4 +103,4 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation() {
   return fextl::make_unique<ValueDominanceValidation>();
 }
 
-}
+} // namespace FEXCore::IR::Validation

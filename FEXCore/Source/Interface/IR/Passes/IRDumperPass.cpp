@@ -18,39 +18,36 @@ namespace FEXCore::IR::Debug {
 class IRDumper final : public FEXCore::IR::Pass {
 public:
   IRDumper();
-  bool Run(IREmitter *IREmit) override;
+  bool Run(IREmitter* IREmit) override;
 
 private:
   FEX_CONFIG_OPT(DumpIR, DUMPIR);
-  bool DumpToFile{};
-  bool DumpToLog{};
+  bool DumpToFile {};
+  bool DumpToLog {};
 };
 
 IRDumper::IRDumper() {
   const auto DumpIRStr = DumpIR();
   if (DumpIRStr == "stderr" || DumpIRStr == "stdout" || DumpIRStr == "no") {
     // Intentionally do nothing
-  }
-  else if (DumpIRStr == "server") {
+  } else if (DumpIRStr == "server") {
     DumpToLog = true;
-  }
-  else {
+  } else {
     DumpToFile = true;
   }
 }
 
-bool IRDumper::Run(IREmitter *IREmit) {
+bool IRDumper::Run(IREmitter* IREmit) {
   auto RAPass = Manager->GetPass<IR::RegisterAllocationPass>("RA");
-  IR::RegisterAllocationData* RA{};
+  IR::RegisterAllocationData* RA {};
   if (RAPass) {
     RA = RAPass->GetAllocationData();
   }
 
-  FEXCore::File::File FD{};
+  FEXCore::File::File FD {};
   if (DumpIR() == "stderr") {
     FD = FEXCore::File::File::GetStdERR();
-  }
-  else if (DumpIR() == "stdout") {
+  } else if (DumpIR() == "stdout") {
     FD = FEXCore::File::File::GetStdOUT();
   }
 
@@ -62,9 +59,7 @@ bool IRDumper::Run(IREmitter *IREmit) {
   if (DumpToFile) {
     const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIR(), HeaderOp->OriginalRIP, RA ? "-post.ir" : "-pre.ir");
     FD = FEXCore::File::File(fileName.c_str(),
-      FEXCore::File::FileModes::WRITE |
-      FEXCore::File::FileModes::CREATE |
-      FEXCore::File::FileModes::TRUNCATE);
+                             FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
   }
 
   if (FD.IsValid() || DumpToLog) {
@@ -72,8 +67,7 @@ bool IRDumper::Run(IREmitter *IREmit) {
     FEXCore::IR::Dump(&out, &IR, RA);
     if (FD.IsValid()) {
       fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
-    }
-    else {
+    } else {
       LogMan::Msg::IFmt("IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
     }
   }
@@ -84,4 +78,4 @@ bool IRDumper::Run(IREmitter *IREmit) {
 fextl::unique_ptr<FEXCore::IR::Pass> CreateIRDumper() {
   return fextl::make_unique<IRDumper>();
 }
-}
+} // namespace FEXCore::IR::Debug

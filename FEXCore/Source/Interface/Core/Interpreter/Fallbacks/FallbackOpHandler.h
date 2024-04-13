@@ -68,8 +68,7 @@ namespace FEXCore::CPU {
 //
 // 5. Done.
 //
-template <IR::IROps Op>
-struct OpHandlers {
-};
+template<IR::IROps Op>
+struct OpHandlers {};
 
 } // namespace FEXCore::CPU

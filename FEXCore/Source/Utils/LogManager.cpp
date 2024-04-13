@@ -17,33 +17,41 @@ $end_info$
 namespace LogMan {
 
 namespace Throw {
-fextl::vector<ThrowHandler> Handlers;
-void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
-void UnInstallHandlers() { Handlers.clear(); }
-
-void MFmt(const char *fmt, const fmt::format_args& args) {
-  auto msg = fextl::fmt::vformat(fmt, args);
-
-  for (auto& Handler : Handlers) {
-    Handler(msg.c_str());
+  fextl::vector<ThrowHandler> Handlers;
+  void InstallHandler(ThrowHandler Handler) {
+    Handlers.emplace_back(Handler);
+  }
+  void UnInstallHandlers() {
+    Handlers.clear();
   }
 
-  FEX_TRAP_EXECUTION;
-}
+  void MFmt(const char* fmt, const fmt::format_args& args) {
+    auto msg = fextl::fmt::vformat(fmt, args);
+
+    for (auto& Handler : Handlers) {
+      Handler(msg.c_str());
+    }
+
+    FEX_TRAP_EXECUTION;
+  }
 } // namespace Throw
 
 namespace Msg {
-fextl::vector<MsgHandler> Handlers;
-void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
-void UnInstallHandlers() { Handlers.clear(); }
-
-void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
-  const auto msg = fextl::fmt::vformat(fmt, args);
-
-  for (auto& Handler : Handlers) {
-    Handler(level, msg.c_str());
+  fextl::vector<MsgHandler> Handlers;
+  void InstallHandler(MsgHandler Handler) {
+    Handlers.emplace_back(Handler);
   }
-}
+  void UnInstallHandlers() {
+    Handlers.clear();
+  }
+
+  void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
+    const auto msg = fextl::fmt::vformat(fmt, args);
+
+    for (auto& Handler : Handlers) {
+      Handler(level, msg.c_str());
+    }
+  }
 
 } // namespace Msg
 } // namespace LogMan

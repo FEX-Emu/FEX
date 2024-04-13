@@ -15,25 +15,25 @@ $end_info$
 #include <sys/types.h>
 
 namespace FEXCore::Context {
-  class Context;
+class Context;
 }
 
 namespace FEX::EmulatedFile {
-  class EmulatedFDManager {
-    public:
-      EmulatedFDManager(FEXCore::Context::Context *ctx);
-      ~EmulatedFDManager();
-      int32_t OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode);
+class EmulatedFDManager {
+public:
+  EmulatedFDManager(FEXCore::Context::Context* ctx);
+  ~EmulatedFDManager();
+  int32_t OpenAt(int dirfs, const char* pathname, int flags, uint32_t mode);
 
-    private:
-      FEXCore::Context::Context *CTX;
-      fextl::string cpus_online{};
-      std::once_flag cpu_info_initialized{};
-      fextl::string cpu_info{};
-      using FDReadStringFunc = std::function<int32_t(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)>;
-      fextl::unordered_map<fextl::string, FDReadStringFunc> FDReadCreators;
+private:
+  FEXCore::Context::Context* CTX;
+  fextl::string cpus_online {};
+  std::once_flag cpu_info_initialized {};
+  fextl::string cpu_info {};
+  using FDReadStringFunc = std::function<int32_t(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)>;
+  fextl::unordered_map<fextl::string, FDReadStringFunc> FDReadCreators;
 
-      static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
-      const uint32_t ThreadsConfig;
-  };
-}
+  static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
+  const uint32_t ThreadsConfig;
+};
+} // namespace FEX::EmulatedFile

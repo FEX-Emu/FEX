@@ -6,23 +6,23 @@
 
 class Event final {
 private:
-/**
- * @brief Literally just an atomic bool that we are using for this class
- */
-class Flag final {
-public:
-  bool TestAndSet(bool SetValue = true) {
-    bool Expected = !SetValue;
-    return Value.compare_exchange_strong(Expected, SetValue);
-  }
+  /**
+   * @brief Literally just an atomic bool that we are using for this class
+   */
+  class Flag final {
+  public:
+    bool TestAndSet(bool SetValue = true) {
+      bool Expected = !SetValue;
+      return Value.compare_exchange_strong(Expected, SetValue);
+    }
 
-  bool TestAndClear() {
-    return TestAndSet(false);
-  }
+    bool TestAndClear() {
+      return TestAndSet(false);
+    }
 
-private:
-  std::atomic_bool Value {false};
-};
+  private:
+    std::atomic_bool Value {false};
+  };
 
 public:
   ~Event() {
@@ -44,21 +44,23 @@ public:
 
   void Wait() {
     // Have we signaled before we started waiting?
-    if (FlagObject.TestAndClear())
+    if (FlagObject.TestAndClear()) {
       return;
+    }
 
     std::unique_lock<std::mutex> lk(MutexObject);
-    CondObject.wait(lk, [this]{ return FlagObject.TestAndClear(); });
+    CondObject.wait(lk, [this] { return FlagObject.TestAndClear(); });
   }
 
   template<class Rep, class Period>
-  bool WaitFor(std::chrono::duration<Rep, Period> const& time) {
+  bool WaitFor(const std::chrono::duration<Rep, Period>& time) {
     // Have we signaled before we started waiting?
-    if (FlagObject.TestAndClear())
+    if (FlagObject.TestAndClear()) {
       return true;
+    }
 
     std::unique_lock<std::mutex> lk(MutexObject);
-    bool DidSignal = CondObject.wait_for(lk, time, [this]{ return FlagObject.TestAndClear(); });
+    bool DidSignal = CondObject.wait_for(lk, time, [this] { return FlagObject.TestAndClear(); });
     return DidSignal;
   }
 

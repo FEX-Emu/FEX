@@ -26,24 +26,22 @@ static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t*, xcb_exte
 static size_t fexfn_impl_libxcb_FEX_usable_size(void*);
 static void fexfn_impl_libxcb_FEX_free_on_host(void*);
 
-static size_t fexfn_impl_libxcb_FEX_usable_size(void *a_0){
+static size_t fexfn_impl_libxcb_FEX_usable_size(void* a_0) {
   return malloc_usable_size(a_0);
 }
 
-static void fexfn_impl_libxcb_FEX_free_on_host(void *a_0){
+static void fexfn_impl_libxcb_FEX_free_on_host(void* a_0) {
   free(a_0);
 }
 
-static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1){
-  xcb_extension_t *ext{};
+static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t* a_0, xcb_extension_t* a_1) {
+  xcb_extension_t* ext {};
 
   if (strcmp(a_1->name, "BIG-REQUESTS") == 0) {
-    ext = (xcb_extension_t *)dlsym(fexldr_ptr_libxcb_so, "xcb_big_requests_id");
-  }
-  else if (strcmp(a_1->name, "XC-MISC") == 0) {
-    ext = (xcb_extension_t *)dlsym(fexldr_ptr_libxcb_so, "xcb_xc_misc_id");
-  }
-  else {
+    ext = (xcb_extension_t*)dlsym(fexldr_ptr_libxcb_so, "xcb_big_requests_id");
+  } else if (strcmp(a_1->name, "XC-MISC") == 0) {
+    ext = (xcb_extension_t*)dlsym(fexldr_ptr_libxcb_so, "xcb_xc_misc_id");
+  } else {
     fprintf(stderr, "Unknown xcb extension '%s'\n", a_1->name);
     __builtin_trap();
     return;

@@ -32,27 +32,27 @@ static_assert(sizeof(RemapNode) == 4);
 
 class IRCompaction final : public FEXCore::IR::Pass {
 public:
-  IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
-  bool Run(IREmitter *IREmit) override;
+  IRCompaction(FEXCore::Utils::IntrusivePooledAllocator& Allocator);
+  bool Run(IREmitter* IREmit) override;
 
 private:
   static constexpr size_t AlignSize = 0x2000;
   OpDispatchBuilder LocalBuilder;
   fextl::vector<RemapNode> OldToNewRemap;
   struct CodeBlockData {
-    OrderedNode *OldNode;
-    OrderedNode *NewNode;
+    OrderedNode* OldNode;
+    OrderedNode* NewNode;
   };
 
-  fextl::vector<CodeBlockData> GeneratedCodeBlocks{};
+  fextl::vector<CodeBlockData> GeneratedCodeBlocks {};
 };
 
-IRCompaction::IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator)
+IRCompaction::IRCompaction(FEXCore::Utils::IntrusivePooledAllocator& Allocator)
   : LocalBuilder {Allocator} {
   OldToNewRemap.resize(AlignSize);
 }
 
-bool IRCompaction::Run(IREmitter *IREmit) {
+bool IRCompaction::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::IRCompaction");
 
   LocalBuilder.ReownOrClaimBuffer();
@@ -63,9 +63,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   if (OldToNewRemap.size() < NodeCount) {
     OldToNewRemap.resize(std::max(OldToNewRemap.size() * 2U, AlignUp(NodeCount, AlignSize)));
   }
-  #ifndef NDEBUG
-    memset(&OldToNewRemap.at(0), 0xFF, NodeCount * sizeof(RemapNode));
-  #endif
+#ifndef NDEBUG
+  memset(&OldToNewRemap.at(0), 0xFF, NodeCount * sizeof(RemapNode));
+#endif
 
   GeneratedCodeBlocks.clear();
 
@@ -98,7 +98,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   // Zero is always zero(invalid)
   OldToNewRemap[0].NodeID.Invalidate();
-  auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->OriginalRIP, HeaderOp->BlockCount, HeaderOp->NumHostInstructions);
+  auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->OriginalRIP,
+                                              HeaderOp->BlockCount, HeaderOp->NumHostInstructions);
 
   OldToNewRemap[CurrentIR.GetID(HeaderNode).Value].NodeID = LocalIR.GetID(LocalHeaderOp.Node);
 
@@ -109,7 +110,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
       OldToNewRemap[CurrentIR.GetID(BlockNode).Value].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
-      GeneratedCodeBlocks.emplace_back(CodeBlockData{BlockNode, LocalBlockIRNode});
+      GeneratedCodeBlocks.emplace_back(CodeBlockData {BlockNode, LocalBlockIRNode});
     }
 
     // Link the IRHeader to the first code block
@@ -118,13 +119,13 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   {
     // Copy all of our IR ops over to the new location
-    for (auto &Block : GeneratedCodeBlocks) {
+    for (auto& Block : GeneratedCodeBlocks) {
 
       // Isolate block contents from any previous headers/blocks
       LocalBuilder.SetWriteCursor(nullptr);
 
-      CodeBlockData FirstNode{};
-      CodeBlockData LastNode{};
+      CodeBlockData FirstNode {};
+      CodeBlockData LastNode {};
       uint32_t i {};
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
         const size_t OpSize = FEXCore::IR::GetSize(IROp->Op);
@@ -166,7 +167,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   {
     // Fixup the arguments of all the IROps
-    for (auto &Block : GeneratedCodeBlocks) {
+    for (auto& Block : GeneratedCodeBlocks) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto BlockIROp = LocalIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.NewNode);
       LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -182,10 +183,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
           const auto OldArg = LocalIROp->Args[i].ID();
           const auto NewArg = OldToNewRemap[OldArg.Value].NodeID;
 
-          #ifndef NDEBUG
-            LOGMAN_THROW_A_FMT(NewArg.Value != UINT32_MAX,
-                               "Tried remapping unfound node %{}", OldArg);
-          #endif
+#ifndef NDEBUG
+          LOGMAN_THROW_A_FMT(NewArg.Value != UINT32_MAX, "Tried remapping unfound node %{}", OldArg);
+#endif
 
           LocalIROp->Args[i].NodeOffset = NewArg.Value * sizeof(OrderedNode);
         }
@@ -221,8 +221,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   return true;
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator) {
+fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator& Allocator) {
   return fextl::make_unique<IRCompaction>(Allocator);
 }
 
-}
+} // namespace FEXCore::IR

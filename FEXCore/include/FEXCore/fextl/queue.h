@@ -6,6 +6,6 @@
 #include <queue>
 
 namespace fextl {
-  template<class T, class Container = fextl::deque<T>>
-  using queue = std::queue<T, Container>;
+template<class T, class Container = fextl::deque<T>>
+using queue = std::queue<T, Container>;
 }

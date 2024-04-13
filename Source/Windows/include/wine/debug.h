@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-int __cdecl __wine_dbg_output( const char *str );
+int __cdecl __wine_dbg_output(const char* str);
 
 #ifdef __cplusplus
 }

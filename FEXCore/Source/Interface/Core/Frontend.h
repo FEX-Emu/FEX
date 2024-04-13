@@ -21,10 +21,10 @@ class Decoder final {
 public:
   // New Frontend decoding
   struct DecodedBlocks final {
-    uint64_t Entry{};
-    uint64_t NumInstructions{};
-    FEXCore::X86Tables::DecodedInst *DecodedInstructions;
-    bool HasInvalidInstruction{};
+    uint64_t Entry {};
+    uint64_t NumInstructions {};
+    FEXCore::X86Tables::DecodedInst* DecodedInstructions;
+    bool HasInvalidInstruction {};
   };
 
   struct DecodedBlockInformation final {
@@ -32,19 +32,24 @@ public:
     fextl::vector<DecodedBlocks> Blocks;
   };
 
-  Decoder(FEXCore::Context::ContextImpl *ctx);
+  Decoder(FEXCore::Context::ContextImpl* ctx);
   ~Decoder();
-  void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, uint64_t MaxInst, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst,
+                                 std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
-  DecodedBlockInformation const *GetDecodedBlockInfo() const {
+  const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
   }
 
   uint64_t DecodedMinAddress {};
   uint64_t DecodedMaxAddress {~0ULL};
 
-  void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
-  void SetExternalBranches(fextl::set<uint64_t> *v) { ExternalBranches = v; }
+  void SetSectionMaxAddress(uint64_t v) {
+    SectionMaxAddress = v;
+  }
+  void SetExternalBranches(fextl::set<uint64_t>* v) {
+    ExternalBranches = v;
+  }
 
   void DelayedDisownBuffer() {
     PoolObject.DelayedDisownBuffer();
@@ -59,8 +64,8 @@ private:
     bool L;       // VEX.L bit (if set then 256 bit operation, if unset then scalar or 128-bit operation)
   };
 
-  FEXCore::Context::ContextImpl *CTX;
-  const FEXCore::HLE::SyscallOSABI OSABI{};
+  FEXCore::Context::ContextImpl* CTX;
+  const FEXCore::HLE::SyscallOSABI OSABI {};
 
   bool DecodeInstruction(uint64_t PC);
 
@@ -70,22 +75,24 @@ private:
   uint8_t ReadByte();
   uint8_t PeekByte(uint8_t Offset) const;
   uint64_t ReadData(uint8_t Size);
-  void SkipBytes(uint8_t Size) { InstructionSize += Size; }
+  void SkipBytes(uint8_t Size) {
+    InstructionSize += Size;
+  }
 
-  bool NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op, DecodedHeader Options = {});
-  bool NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
+  bool NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options = {});
+  bool NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op);
 
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
-  FEXCore::X86Tables::DecodedInst *DecodedBuffer{};
+  FEXCore::X86Tables::DecodedInst* DecodedBuffer {};
   Utils::FixedSizePooledAllocation<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
 
-  uint8_t const *InstStream;
+  const uint8_t* InstStream;
 
   static constexpr size_t MAX_INST_SIZE = 15;
   uint8_t InstructionSize;
   std::array<uint8_t, MAX_INST_SIZE> Instruction;
-  FEXCore::X86Tables::DecodedInst *DecodeInst;
+  FEXCore::X86Tables::DecodedInst* DecodeInst;
 
   // This is for multiblock data tracking
   bool SymbolAvailable {false};
@@ -99,21 +106,21 @@ private:
   DecodedBlockInformation BlockInfo;
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> HasBlocks;
-  fextl::set<uint64_t> *ExternalBranches {nullptr};
+  fextl::set<uint64_t>* ExternalBranches {nullptr};
 
   // ModRM rm decoding
-  using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
-  void DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
-  void DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
+  using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
+  void DecodeModRM_16(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
+  void DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
 
-  static constexpr std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp{
+  static constexpr std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp {
     &FEXCore::Frontend::Decoder::DecodeModRM_64,
     &FEXCore::Frontend::Decoder::DecodeModRM_16,
   };
 
-  const uint8_t *AdjustAddrForSpecialRegion(uint8_t const* _InstStream, uint64_t EntryPoint, uint64_t RIP);
+  const uint8_t* AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP);
 
   FEXCORE_TELEMETRY_INIT(VEXOpTelem, TYPE_USES_VEX_OPS);
   FEXCORE_TELEMETRY_INIT(EVEXOpTelem, TYPE_USES_EVEX_OPS);
 };
-}
+} // namespace FEXCore::Frontend
