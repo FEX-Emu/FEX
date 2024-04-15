@@ -239,8 +239,8 @@ static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::C
                           :
                           ExtraGuard {ScopedSignalMasker {Mask}}
 #else
-                           :
-                           ExtraGuard {}
+                          :
+                          ExtraGuard {}
 #endif
   };
   scope_guard.lock = LockType<MutexType> {mutex};

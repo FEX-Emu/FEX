@@ -84,7 +84,7 @@ public:
     return DynamicLinker;
   }
 
-  const fextl::vector<char const*>* GetNecessaryLibs() const {
+  const fextl::vector<const char*>* GetNecessaryLibs() const {
     return &NecessaryLibs;
   }
 
