@@ -13,9 +13,11 @@ static bool ctime_is_old(uint64_t ctime) {
 }
 
 int main() {
-  // key      shmid perms                  size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime rss swap
-  //	 0     360448   777                  4096 165187 165187      0  1002  1002  1002  1002 1679659857 1679659857 1679659857 4096 0 	 0 32769
-  //777                  4096 153814 153814      0  1002  1002  1002  1002 1676490841 1676490841 1676490841                     0 4096
+  // clang-format off
+  // key      shmid perms                  size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime                   rss                  swap
+  //	 0     360448   777                  4096 165187 165187      0  1002  1002  1002  1002 1679659857 1679659857 1679659857                  4096                     0
+  //	 0      32769   777                  4096 153814 153814      0  1002  1002  1002  1002 1676490841 1676490841 1676490841                     0                  4096
+  // clang-format on
   std::ifstream fs {"/proc/sysvipc/shm", std::fstream::binary};
   std::string Line;
 

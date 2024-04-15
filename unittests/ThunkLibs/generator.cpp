@@ -637,15 +637,14 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                              "template<typename> struct fex_gen_type {};\n"
                              "template<> struct fex_gen_type<A> : fexgen::emit_layout_wrappers {};\n";
     const auto output = run_thunkgen_host(struct_def, code, guest_abi);
-    CHECK_THAT(output,
-               matches(classTemplateSpecializationDecl(
-                 hasName("guest_layout"), hasAnyTemplateArgument(refersToType(recordType(hasDeclaration(recordDecl(hasName("A")))))),
-                 // The member "data" exists and is defined to a struct...
-                 has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
-                                                  // ... the members of which also use guest_layout
-                                                  has(fieldDecl(hasName("a"), hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "B "
-                                                                                                                                   "*>")))),
-                                                  has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int32_t>")))))))))))));
+    CHECK_THAT(output, matches(classTemplateSpecializationDecl(
+                         hasName("guest_layout"), hasAnyTemplateArgument(refersToType(recordType(hasDeclaration(recordDecl(hasName("A")))))),
+                         // The member "data" exists and is defined to a struct...
+                         has(fieldDecl(hasName("data"), hasType(hasCanonicalType(hasDeclaration(decl(
+                                                          // ... the members of which also use guest_layout
+                                                          has(fieldDecl(hasName("a"), hasType(asString("guest_layout<" CLANG_STRUCT_PREFIX "B "
+                                                                                                       "*>")))),
+                                                          has(fieldDecl(hasName("b"), hasType(asString("guest_layout<int32_t>")))))))))))));
     CHECK_THAT(output, guest_converter_defined);
 
     CHECK_THAT(output, host_layout_is_trivial);
