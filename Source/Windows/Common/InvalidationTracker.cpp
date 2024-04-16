@@ -42,8 +42,13 @@ void InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Fre
   }
 
   const auto SectionBase = reinterpret_cast<uint64_t>(Info.AllocationBase);
-  const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize - reinterpret_cast<uint64_t>(Info.AllocationBase);
+  auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize - SectionBase;
 
+  while (!NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(SectionBase + SectionSize), MemoryBasicInformation, &Info,
+                               sizeof(Info), nullptr) &&
+         reinterpret_cast<uint64_t>(Info.AllocationBase) == SectionBase) {
+    SectionSize += Info.RegionSize;
+  }
   {
     std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
     for (auto Thread : Threads) {
