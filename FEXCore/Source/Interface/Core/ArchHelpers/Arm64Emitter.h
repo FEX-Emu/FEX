@@ -67,6 +67,10 @@ constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r24;
 // Vector temporaries
 constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v16;
 constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v17;
+
+// Entry/Exit ABI
+constexpr auto EC_CALL_CHECKER_PC_REG = FEXCore::ARMEmitter::XReg::x9;
+constexpr auto EC_ENTRY_CPUAREA_REG = FEXCore::ARMEmitter::XReg::x17;
 #endif
 
 // Predicate register temporaries (used when AVX support is enabled)

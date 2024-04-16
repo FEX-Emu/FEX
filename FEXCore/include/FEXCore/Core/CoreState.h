@@ -257,6 +257,8 @@ struct JITPointers {
      * @{ */
     uint64_t DispatcherLoopTop {};
     uint64_t DispatcherLoopTopFillSRA {};
+    uint64_t DispatcherLoopTopEnterEC {};
+    uint64_t DispatcherLoopTopEnterECFillSRA {};
     uint64_t ExitFunctionLinker {};
     uint64_t ThreadStopHandlerSpillSRA {};
     uint64_t ThreadPauseHandlerSpillSRA {};

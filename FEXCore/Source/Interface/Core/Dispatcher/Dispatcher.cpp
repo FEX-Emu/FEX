@@ -65,6 +65,8 @@ void Dispatcher::EmitDispatcher() {
   // These structures are not included in the standard Windows headers, define them here
   static constexpr size_t TEBCPUAreaOffset = 0x1788;
   static constexpr size_t CPUAreaInSyscallCallbackOffset = 0x1;
+  static constexpr size_t CPUAreaEmulatorStackLimitOffset = 0x8;
+  static constexpr size_t CPUAreaEmulatorDataOffset = 0x30;
   ARMEmitter::SingleUseForwardLabel ExitEC;
 #endif
   ARMEmitter::SingleUseForwardLabel l_CompileBlock;
@@ -85,20 +87,45 @@ void Dispatcher::EmitDispatcher() {
   AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
   FillStaticRegs();
+  ARMEmitter::BiDirectionalLabel LoopTop {};
+
+#ifdef _M_ARM_64EC
+  b(&LoopTop);
+
+  AbsoluteLoopTopAddressEnterECFillSRA = GetCursorAddress<uint64_t>();
+  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorDataOffset);
+  FillStaticRegs();
+
+  // Enter JIT
+  b(&LoopTop);
+
+  AbsoluteLoopTopAddressEnterEC = GetCursorAddress<uint64_t>();
+  // Load ThreadState and write the target PC there
+  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorDataOffset);
+  str(EC_CALL_CHECKER_PC_REG, STATE_PTR(CpuStateFrame, State.rip));
+
+  // Swap stacks to the emulator stack
+  ldr(TMP1, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorStackLimitOffset);
+  add(ARMEmitter::Size::i64Bit, StaticRegisters[X86State::REG_RSP], ARMEmitter::Reg::rsp, 0);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, TMP1, 0);
+
+  if (EmitterCTX->HostFeatures.SupportsSVE) {
+    ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
+  }
+
+  // Enter JIT
+#endif
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
   ARMEmitter::BiDirectionalLabel FullLookup {};
   ARMEmitter::BiDirectionalLabel CallBlock {};
-  ARMEmitter::BackwardLabel LoopTop {};
 
   Bind(&LoopTop);
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
   // Don't modify TMP3 since it contains our RIP once the block doesn't exist
-  // IMPORTANT: Pointers.Common.ExitFunctionEC callsites/implementations need to be
-  // adjusted accordingly if this changes.
   auto RipReg = TMP3;
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
@@ -519,6 +546,8 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
 
     Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
     Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.DispatcherLoopTopEnterEC = AbsoluteLoopTopAddressEnterEC;
+    Common.DispatcherLoopTopEnterECFillSRA = AbsoluteLoopTopAddressEnterECFillSRA;
     Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
     Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
