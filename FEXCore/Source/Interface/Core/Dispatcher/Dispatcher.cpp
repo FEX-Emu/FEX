@@ -207,7 +207,8 @@ void Dispatcher::EmitDispatcher() {
 #ifdef _M_ARM_64EC
   {
     Bind(&ExitEC);
-    // Target PC is already loaded into TMP3 at the start of the dispatcher
+    add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
+    mov(EC_CALL_CHECKER_PC_REG, RipReg);
     ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
     br(TMP2);
   }
