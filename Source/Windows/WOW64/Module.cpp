@@ -86,8 +86,8 @@ class WowSyscallHandler;
 namespace {
 namespace BridgeInstrs {
   // These directly jumped to by the guest to make system calls
-  uint16_t Syscall {0x2ecd};
-  uint16_t UnixCall {0x2ecd};
+  void* Syscall {};
+  void* UnixCall {};
 } // namespace BridgeInstrs
 
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
@@ -379,7 +379,7 @@ public:
     uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
     uint64_t ReturnRAX = 0;
 
-    if (Frame->State.rip == (uint64_t)&BridgeInstrs::UnixCall) {
+    if (Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
       struct StackLayout {
         unixlib_handle_t Handle;
         UINT32 ID;
@@ -391,7 +391,7 @@ public:
       Context::UnlockJITContext();
       ReturnRAX = static_cast<uint64_t>(__wine_unix_call(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
       Context::LockJITContext();
-    } else if (Frame->State.rip == (uint64_t)&BridgeInstrs::Syscall) {
+    } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
 
       Context::UnlockJITContext();
@@ -400,7 +400,7 @@ public:
       Context::LockJITContext();
     }
     // If a new context has been set, use it directly and don't return to the syscall caller
-    if (Frame->State.rip == (uint64_t)&BridgeInstrs::Syscall || Frame->State.rip == (uint64_t)&BridgeInstrs::UnixCall) {
+    if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall || Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
       Frame->State.rip = ReturnRIP;
@@ -451,6 +451,14 @@ void BTCpuProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
   CPUFeatures.emplace(*CTX);
+
+  // Allocate the syscall/unixcall trampolines in the lower 2GB of the address space
+  SIZE_T Size = 4;
+  void* Addr = nullptr;
+  NtAllocateVirtualMemory(NtCurrentProcess(), &Addr, (1U << 31) - 1, &Size, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  *reinterpret_cast<uint32_t*>(Addr) = 0x2ecd2ecd;
+  BridgeInstrs::Syscall = Addr;
+  BridgeInstrs::UnixCall = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Addr) + 2);
 }
 
 NTSTATUS BTCpuThreadInit() {
@@ -484,11 +492,11 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
 }
 
 void* BTCpuGetBopCode() {
-  return &BridgeInstrs::Syscall;
+  return BridgeInstrs::Syscall;
 }
 
 void* __wine_get_unix_opcode() {
-  return &BridgeInstrs::UnixCall;
+  return BridgeInstrs::UnixCall;
 }
 
 NTSTATUS BTCpuGetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
