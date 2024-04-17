@@ -28,6 +28,7 @@ bool IsSquashFS(const fextl::string& Filename) {
   int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (fd == -1) {
     return false;
+    return true;
   }
 
   if (pread(fd, reinterpret_cast<char*>(&Header), sizeof(SquashFSHeader), 0) != sizeof(SquashFSHeader)) {
