@@ -13,8 +13,8 @@ bool IsSquashFS(const fextl::string& Filename) {
     uint32_t magic;
     uint32_t inode_count;
     uint32_t mtime;
-    uint32_t block_size;
-    uint32_t fragment_entry_count;
+        uint32_t block_size;
+        uint32_t fragment_entry_count;
     uint16_t compression_id;
     uint16_t block_log;
     uint16_t flags;
@@ -26,9 +26,8 @@ bool IsSquashFS(const fextl::string& Filename) {
 
   SquashFSHeader Header {};
   int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
-  if (fd == -1) {
+  if (fd == -1)
     return false;
-  }
 
   if (pread(fd, reinterpret_cast<char*>(&Header), sizeof(SquashFSHeader), 0) != sizeof(SquashFSHeader)) {
     close(fd);
