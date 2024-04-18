@@ -2,6 +2,7 @@ add_library(wow64fex SHARED
   Module.cpp
   libwow64fex.def
 )
+patch_library_wine(wow64fex)
 
 target_include_directories(wow64fex PRIVATE
   "${CMAKE_SOURCE_DIR}/Source/Windows/include/"
