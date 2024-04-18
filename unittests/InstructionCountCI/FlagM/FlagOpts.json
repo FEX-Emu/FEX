@@ -86,15 +86,16 @@
       ]
     },
     "INC consumed": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "add rax, rbx",
         "inc rax"
       ],
       "ExpectedArm64ASM": [
-        "adds x27, x4, x7",
+        "adds x4, x4, x7",
         "cset w20, hs",
-        "adds x26, x27, #0x1 (1)",
+        "mov x27, x4",
+        "adds x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x4, x26"
       ]
@@ -107,22 +108,23 @@
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
-        "add x20, x4, x7",
-        "add x4, x20, #0x1 (1)",
+        "add x4, x4, x7",
+        "add x4, x4, #0x1 (1)",
         "ands x26, x4, x6"
       ]
     },
     "DEC consumed": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "sub rax, rbx",
         "dec rax"
       ],
       "ExpectedArm64ASM": [
-        "subs x27, x4, x7",
+        "subs x4, x4, x7",
         "cfinv",
         "cset w20, hs",
-        "subs x26, x27, #0x1 (1)",
+        "mov x27, x4",
+        "subs x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x4, x26"
       ]
@@ -135,13 +137,13 @@
         "test rax, rcx"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x4, x7",
-        "sub x4, x20, #0x1 (1)",
+        "sub x4, x4, x7",
+        "sub x4, x4, #0x1 (1)",
         "ands x26, x4, x5"
       ]
     },
     "8-bit DEC consumed": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 12,
       "x86Insts": [
         "sub al, ah",
         "dec al"
@@ -152,20 +154,17 @@
         "cmp w0, w20, lsl #24",
         "sub w20, w4, w20",
         "cfinv",
-        "mov x0, x4",
-        "bfxil x0, x20, #0, #8",
-        "mov x20, x0",
-        "uxtb w27, w20",
+        "bfxil x4, x20, #0, #8",
+        "uxtb w27, w4",
         "sub w26, w27, #0x1 (1)",
         "setf8 w26",
-        "bic w21, w27, w26",
-        "rmif x21, #7, #nzcV",
-        "mov x4, x20",
+        "bic w20, w27, w26",
+        "rmif x20, #7, #nzcV",
         "bfxil x4, x26, #0, #8"
       ]
     },
     "8-bit DEC dead": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 8,
       "x86Insts": [
         "sub al, ah",
         "dec al",
@@ -174,13 +173,10 @@
       "ExpectedArm64ASM": [
         "lsr w20, w4, #8",
         "sub w20, w4, w20",
-        "mov x0, x4",
-        "bfxil x0, x20, #0, #8",
-        "mov x20, x0",
-        "uxtb w21, w20",
-        "sub w21, w21, #0x1 (1)",
-        "mov x4, x20",
-        "bfxil x4, x21, #0, #8",
+        "bfxil x4, x20, #0, #8",
+        "uxtb w20, w4",
+        "sub w20, w20, #0x1 (1)",
+        "bfxil x4, x20, #0, #8",
         "mov x26, x4",
         "cmn wzr, w26, lsl #24"
       ]

@@ -559,8 +559,12 @@ bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* Lo
   if (PreviousMemberInfoCopy.AccessRegClass == Info->AccessRegClass && PreviousMemberInfoCopy.AccessOffset == Info->AccessOffset &&
       PreviousMemberInfoCopy.AccessSize == Size && PreviousMemberInfoCopy.Accessed == LastAccessType::WRITE) {
     // This optimizes redundant stores with no intervening load
+    // TODO: this is causing RA to fall over in some titles, disabling for now.
+    // Revisit when the new RA lands.
+#if 0
     IREmit->Remove(PreviousMemberInfoCopy.StoreNode);
     return true;
+#endif
   }
 
   // TODO: Optimize the case of partial stores.

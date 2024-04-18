@@ -4091,7 +4091,7 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xda 11b 0xe9 /5"
       ],
@@ -4118,6 +4118,7 @@
         "ldrb w22, [x28, #1026]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",
+        "strb w22, [x28, #1026]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "lsl w21, w21, w20",
@@ -6522,7 +6523,7 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 324,
+      "ExpectedInstructionCount": 325,
       "Comment": [
         "0xdd !11b /4"
       ],
@@ -6537,6 +6538,7 @@
         "lsr x1, x21, #2",
         "bfi x0, x1, #24, #1",
         "msr fpcr, x0",
+        "strh w20, [x28, #1024]",
         "strh w20, [x28, #1024]",
         "ldr w20, [x4, #4]",
         "ubfx w21, w20, #11, #3",
@@ -8705,7 +8707,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xde 11b 0xd9 /3"
       ],
@@ -8732,6 +8734,7 @@
         "ldrb w22, [x28, #1026]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",
+        "strb w22, [x28, #1026]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "lsl w21, w21, w20",
