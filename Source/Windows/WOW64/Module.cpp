@@ -368,13 +368,27 @@ void Init() {
 }
 } // namespace Logging
 
+// Calls a 2-argument function `Func` setting the parent unwind frame information to the given SP and PC
+__attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, void* Arg1, void* Func, uint64_t Sp, uint64_t Pc) {
+  asm(".seh_proc SEHFrameTrampoline2Args;"
+      "stp x3, x4, [sp, #-0x10]!;"
+      ".seh_pushframe;"
+      "stp x29, x30, [sp, #-0x10]!;"
+      ".seh_save_fplr_x 16;"
+      ".seh_endprologue;"
+      "blr x2;"
+      "ldp x29, x30, [sp], 0x20;"
+      "ret;"
+      ".seh_endproc;");
+}
+
 class WowSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   WowSyscallHandler() {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_WIN32;
   }
 
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  static uint64_t HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
     const uint64_t ReturnRIP = *(uint32_t*)(Frame->State.gregs[FEXCore::X86State::REG_RSP]); // Return address from the stack
     uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
     uint64_t ReturnRAX = 0;
@@ -408,6 +422,16 @@ public:
 
     // NORETURNEDRESULT causes this result to be ignored since we restore all registers back from memory after a syscall anyway
     return 0;
+  }
+
+  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+    // Stash the the context pointer on the stack, as Simulate can be called from this syscall handler which would overwrite it
+    CONTEXT* EntryContext = GetTLS().EntryContext();
+    // Call the syscall handler with unwind information pointing to Simulate as its caller
+    uint64_t Ret = SEHFrameTrampoline2Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(Args),
+                                           reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
+    GetTLS().EntryContext() = EntryContext;
+    return Ret;
   }
 
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
@@ -548,12 +572,7 @@ NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
 void BTCpuSimulate() {
   CONTEXT entry_context;
   RtlCaptureContext(&entry_context);
-
-  // APC handling calls BTCpuSimulate from syscalls and then use NtContinue to return to the previous context,
-  // to avoid the saved context being clobbered in this case only save the entry context highest in the stack
-  if (!GetTLS().EntryContext() || GetTLS().EntryContext()->Sp <= entry_context.Sp) {
-    GetTLS().EntryContext() = &entry_context;
-  }
+  GetTLS().EntryContext() = &entry_context;
 
   Context::LockJITContext();
   CTX->ExecuteThread(GetTLS().ThreadState());
