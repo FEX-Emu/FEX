@@ -3080,6 +3080,48 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   _StoreMemAutoTSO(GPRClass, GDTStoreSize, _Add(OpSize::i64Bit, DestAddress, _Constant(2)), _Constant(GDTAddress));
 }
 
+void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
+  const bool IsMemDst = DestIsMem(Op);
+
+  uint32_t DstSize {};
+  OrderedNode* Const = _Constant((1U << 31) | ///< PG - Paging
+                                 (0U << 30) | ///< CD - Cache Disable
+                                 (0U << 29) | ///< NW - Not Writethrough (Legacy, now ignored)
+                                 ///< [28:19] - Reserved
+                                 (1U << 18) | ///< AM - Alignment Mask
+                                 ///< 17 - Reserved
+                                 (1U << 16) | ///< WP - Write Protect
+                                 ///< [15:6] - Reserved
+                                 (1U << 5) | ///< NE - Numeric Error
+                                 (1U << 4) | ///< ET - Extension Type (Legacy, now reserved and 1)
+                                 (0U << 3) | ///< TS - Task Switched
+                                 (0U << 2) | ///< EM - Emulation
+                                 (1U << 1) | ///< MP - Monitor Coprocessor
+                                 (1U << 0)); ///< PE - Protection Enabled
+
+  if (CTX->Config.Is64BitMode) {
+    DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? 2 :
+              X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 :
+                                                                                                                   4;
+
+    if (!IsMemDst && DstSize == 4) {
+      // Special-case version of `smsw ebx`. This instruction does an insert in to the lower 32-bits on 64-bit hosts.
+      // Override and insert.
+      auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
+      Const = _Bfi(OpSize::i64Bit, 32, 0, Dest, Const);
+      DstSize = 8;
+    }
+  } else {
+    DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
+  }
+
+  if (IsMemDst) {
+    // Memory destinatino always writes only 16-bits.
+    DstSize = 2;
+  }
+
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Const, DstSize, -1);
+}
 
 OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter() {
   OrderedNode* CounterLow {};
@@ -6030,6 +6072,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 0), 1, &OpDispatchBuilder::SGDTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 0), 1, &OpDispatchBuilder::SGDTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 4), 1, &OpDispatchBuilder::SMSWOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 4), 1, &OpDispatchBuilder::SMSWOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 4), 1, &OpDispatchBuilder::SMSWOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 4), 1, &OpDispatchBuilder::SMSWOp},
 
     // GROUP 8
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},

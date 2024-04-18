@@ -423,6 +423,7 @@ public:
   void EnterOp(OpcodeArgs);
 
   void SGDTOp(OpcodeArgs);
+  void SMSWOp(OpcodeArgs);
 
   // SSE
   void MOVLPOp(OpcodeArgs);
