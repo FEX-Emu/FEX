@@ -375,7 +375,8 @@ bool RAValidation::Run(IREmitter* IREmit) {
       }
 
       // Update BlockState map
-      BlockRegState.Set(RAData->GetNodeRegister(ID), ID);
+      if (IROp->Op != OP_SPILLREGISTER)
+        BlockRegState.Set(RAData->GetNodeRegister(ID), ID);
     }
 
     // Forth, Add successors to the queue of blocks to validate
