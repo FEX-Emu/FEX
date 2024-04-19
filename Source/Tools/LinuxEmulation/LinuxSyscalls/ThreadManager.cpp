@@ -38,6 +38,10 @@ void ThreadManager::RunPrimaryThread(FEXCore::Context::Context* CTX, FEXCore::Co
   Thread->ThreadManager.TID = FHU::Syscalls::gettid();
   Thread->ThreadManager.PID = ::getpid();
 
+  if (GdbServer()) {
+    Thread->StartRunning.Wait();
+  }
+
   ++IdleWaitRefCount;
   CTX->RunUntilExit(Thread);
 }

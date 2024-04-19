@@ -162,6 +162,8 @@ public:
   }
 
 private:
+  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+
   FEXCore::Context::Context* CTX;
   FEX::HLE::SignalDelegator* SignalDelegation;
 
