@@ -66,7 +66,9 @@ void ThreadManager::NotifyPause() {
   // Tell all the threads that they should pause
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    if (Thread->RunningEvents.Running.load()) {
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    }
   }
 }
 
