@@ -878,11 +878,11 @@ DEF_OP(ShiftFlags) {
   {
     // PF/SF/ZF/OF
     if (OpSize >= 4) {
-      ands(EmitSize, PFOutput, Dst, Dst);
+      ands(EmitSize, PFTemp, Dst, Dst);
     } else {
       unsigned Shift = 32 - (OpSize * 8);
       cmn(EmitSize, ARMEmitter::Reg::zr, Dst, ARMEmitter::ShiftType::LSL, Shift);
-      mov(ARMEmitter::Size::i64Bit, PFOutput, Dst);
+      mov(ARMEmitter::Size::i64Bit, PFTemp, Dst);
     }
 
     // Extract the last bit shifted in to CF
@@ -924,13 +924,12 @@ DEF_OP(ShiftFlags) {
       msr(ARMEmitter::SystemRegister::NZCV, TMP2);
     }
   }
+  Bind(&Done);
 
   // TODO: Make RA less dumb so this can't happen (e.g. with late-kill).
-  if (PFBlocked) {
+  if (PFOutput != PFTemp) {
     mov(ARMEmitter::Size::i64Bit, PFOutput, PFTemp);
   }
-
-  Bind(&Done);
 }
 
 DEF_OP(Ror) {
