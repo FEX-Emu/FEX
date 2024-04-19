@@ -173,7 +173,6 @@ private:
   // Thread idling support.
   bool Running {};
   std::mutex IdleWaitMutex;
-  std::condition_variable IdleWaitCV;
   std::atomic<uint32_t> IdleWaitRefCount {};
 
   void HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread);
