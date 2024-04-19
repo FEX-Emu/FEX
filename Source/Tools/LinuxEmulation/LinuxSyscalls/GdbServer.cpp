@@ -17,6 +17,7 @@ $end_info$
 #include <optional>
 
 #include <Common/FEXServerClient.h>
+#include <Common/StringUtil.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -197,6 +198,8 @@ static fextl::string getThreadName(uint32_t ThreadID) {
   const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
   fextl::string ThreadName;
   FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
+  // Trim out the potential newline, breaks GDB if it exists.
+  FEX::StringUtil::trim(ThreadName);
   return ThreadName;
 }
 
