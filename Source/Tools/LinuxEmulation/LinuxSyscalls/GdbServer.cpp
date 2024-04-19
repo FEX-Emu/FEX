@@ -115,6 +115,8 @@ void GdbServer::BreakThread(FEXCore::Core::InternalThreadState* Thread, int sign
 }
 
 void GdbServer::WaitForThreadWakeup() {
+  ThreadBreakEventInfo.Thread = nullptr;
+
   // Wait for gdbserver to tell us to wake up
   ThreadBreakEvent.Wait();
 }
@@ -154,6 +156,9 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         // Pass signal to the guest
         return false;
       }
+
+      this->ThreadBreakEventInfo.HostPC = ArchHelpers::Context::GetPc(ucontext);
+      this->ThreadBreakEventInfo.Thread = Thread;
 
       // Let GDB know that we have a signal
       this->BreakThread(Thread, Signal);
@@ -355,7 +360,11 @@ fextl::string GdbServer::readRegs() {
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
-  memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+  if (ThreadBreakEventInfo.Thread == CurrentThread) {
+    GDB.rip = CTX->RestoreRIPFromHostPC(CurrentThread, ThreadBreakEventInfo.HostPC);
+  } else {
+    memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+  }
 
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread, false, nullptr, 0);
 

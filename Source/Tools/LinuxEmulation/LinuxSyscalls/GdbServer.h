@@ -54,6 +54,11 @@ private:
   void SendACK(std::ostream& stream, bool NACK);
 
   Event ThreadBreakEvent {};
+  struct ThreadBreakEventInfoStruct {
+    uint64_t HostPC {};
+    FEXCore::Core::InternalThreadState* Thread {};
+  };
+  ThreadBreakEventInfoStruct ThreadBreakEventInfo {};
   void WaitForThreadWakeup();
 
   struct HandledPacketType {
