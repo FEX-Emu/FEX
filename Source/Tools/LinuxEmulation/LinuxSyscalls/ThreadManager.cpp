@@ -94,21 +94,6 @@ void ThreadManager::Run() {
   }
 }
 
-void ThreadManager::WaitForIdleWithTimeout() {
-  std::unique_lock<std::mutex> lk(IdleWaitMutex);
-  bool WaitResult = IdleWaitCV.wait_for(lk, std::chrono::milliseconds(1500), [this] { return IdleWaitRefCount.load() == 0; });
-
-  if (!WaitResult) {
-    // The wait failed, this will occur if we stepped in to a syscall
-    // That's okay, we just need to pause the threads manually
-    NotifyPause();
-  }
-
-  // We have sent every thread a pause signal
-  // Now wait again because they /will/ be going to sleep
-  WaitForIdle();
-}
-
 void ThreadManager::WaitForThreadsToRun() {
   size_t NumThreads {};
   {

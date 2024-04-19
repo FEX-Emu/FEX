@@ -120,7 +120,6 @@ public:
   void Pausing(FEXCore::Core::InternalThreadState* Thread);
 
   void WaitForIdle();
-  void WaitForIdleWithTimeout();
   void WaitForThreadsToRun();
 
   void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame);
