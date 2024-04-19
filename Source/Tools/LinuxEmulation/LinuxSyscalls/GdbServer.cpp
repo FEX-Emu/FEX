@@ -102,6 +102,18 @@ void GdbServer::Break(int signal) {
   SendPacket(*CommsStream, str);
 }
 
+void GdbServer::BreakThread(FEXCore::Core::InternalThreadState* Thread, int signal) {
+  std::lock_guard lk(sendMutex);
+  if (!CommsStream) {
+    return;
+  }
+
+  const fextl::string str = fextl::fmt::format("T{:02x}thread:{:x};", signal, Thread->ThreadManager.GetTID());
+  SendPacket(*CommsStream, str);
+  // Current debugging thread switches to the thread that is breaking.
+  CurrentDebuggingThread = Thread->ThreadManager.GetTID();
+}
+
 void GdbServer::WaitForThreadWakeup() {
   // Wait for gdbserver to tell us to wake up
   ThreadBreakEvent.Wait();
@@ -144,7 +156,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       }
 
       // Let GDB know that we have a signal
-      this->Break(Signal);
+      this->BreakThread(Thread, Signal);
 
       WaitForThreadWakeup();
 

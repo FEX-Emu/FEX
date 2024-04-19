@@ -37,6 +37,7 @@ public:
 
 private:
   void Break(int signal);
+  void BreakThread(FEXCore::Core::InternalThreadState* Thread, int signal);
 
   void OpenListenSocket();
   void CloseListenSocket();
