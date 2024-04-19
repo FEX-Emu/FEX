@@ -75,6 +75,11 @@ void ThreadManager::Pause() {
   WaitForIdle();
 }
 
+void ThreadManager::Pausing(FEXCore::Core::InternalThreadState* Thread) {
+  Thread->RunningEvents.Running.store(false);
+  --IdleWaitRefCount;
+}
+
 void ThreadManager::Run() {
   // Spin up all the threads
   std::lock_guard lk(ThreadCreationMutex);

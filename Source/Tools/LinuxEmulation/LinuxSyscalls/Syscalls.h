@@ -117,6 +117,7 @@ public:
   void Run();
   void Step();
   void Stop(bool IgnoreCurrentThread = false);
+  void Pausing(FEXCore::Core::InternalThreadState* Thread);
 
   void WaitForIdle();
   void WaitForIdleWithTimeout();

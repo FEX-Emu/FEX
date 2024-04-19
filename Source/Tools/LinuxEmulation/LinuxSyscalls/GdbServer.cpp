@@ -157,6 +157,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         return false;
       }
 
+      this->SyscallHandler->TM.Pausing(Thread);
       this->ThreadBreakEventInfo.HostPC = ArchHelpers::Context::GetPc(ucontext);
       this->ThreadBreakEventInfo.Thread = Thread;
 
