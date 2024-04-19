@@ -111,6 +111,8 @@ public:
   void StopThread(FEXCore::Core::InternalThreadState* Thread);
   void RunThread(FEXCore::Core::InternalThreadState* Thread);
 
+  void RunPrimaryThread(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread);
+
   void Pause();
   void Run();
   void Step();

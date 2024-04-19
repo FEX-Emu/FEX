@@ -543,7 +543,7 @@ int main(int argc, char** argv, char** const envp) {
       FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
-    CTX->RunUntilExit(ParentThread);
+    SyscallHandler->TM.RunPrimaryThread(CTX.get(), ParentThread);
   }
 
   if (AOTEnabled) {

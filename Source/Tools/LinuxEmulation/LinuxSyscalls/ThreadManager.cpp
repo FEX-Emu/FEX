@@ -8,10 +8,7 @@
 namespace FEX::HLE {
 FEXCore::Core::InternalThreadState*
 ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
-  auto Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
-
-  ++IdleWaitRefCount;
-  return Thread;
+  return CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
 }
 
 void ThreadManager::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
@@ -34,6 +31,15 @@ void ThreadManager::StopThread(FEXCore::Core::InternalThreadState* Thread) {
 void ThreadManager::RunThread(FEXCore::Core::InternalThreadState* Thread) {
   // Tell the thread to start executing
   Thread->StartRunning.NotifyAll();
+  ++IdleWaitRefCount;
+}
+
+void ThreadManager::RunPrimaryThread(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread) {
+  Thread->ThreadManager.TID = FHU::Syscalls::gettid();
+  Thread->ThreadManager.PID = ::getpid();
+
+  ++IdleWaitRefCount;
+  CTX->RunUntilExit(Thread);
 }
 
 void ThreadManager::HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread) {
