@@ -8,7 +8,5 @@ EXPORTS
   NtSuspendThread
   NtGetContextThread
   NtContinue
-  NtQueryVirtualMemory
-  NtProtectVirtualMemory
   __wine_dbg_output
   __wine_unix_call

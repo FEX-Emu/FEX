@@ -36,7 +36,7 @@ $end_info$
 #include <atomic>
 #include <mutex>
 #include <utility>
-#include <unordered_set>
+#include <unordered_map>
 #include <ntstatus.h>
 #include <windef.h>
 #include <winternl.h>
@@ -94,11 +94,12 @@ fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
 fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
 
-FEX::Windows::InvalidationTracker InvalidationTracker;
+std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 
-std::mutex ThreadSuspendLock;
-std::unordered_set<DWORD> InitializedWOWThreads; // Set of TIDs, `ThreadSuspendLock` must be locked when accessing
+std::mutex ThreadCreationMutex;
+// Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
+std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
 std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -393,7 +394,7 @@ public:
   }
 
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
-    InvalidationTracker.ReprotectRWXIntervals(Start, Length);
+    InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
 };
 
@@ -422,14 +423,16 @@ void BTCpuProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
+  InvalidationTracker.emplace(*CTX, Threads);
   CPUFeatures.emplace(*CTX);
 }
 
 NTSTATUS BTCpuThreadInit() {
-  GetTLS().ThreadState() = CTX->CreateThread(0, 0);
+  auto* Thread = CTX->CreateThread(0, 0);
+  GetTLS().ThreadState() = Thread;
 
-  std::scoped_lock Lock(ThreadSuspendLock);
-  InitializedWOWThreads.emplace(GetCurrentThreadId());
+  std::scoped_lock Lock(ThreadCreationMutex);
+  Threads.emplace(GetCurrentThreadId(), Thread);
   return STATUS_SUCCESS;
 }
 
@@ -446,8 +449,8 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
     }
 
     const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
-    std::scoped_lock Lock(ThreadSuspendLock);
-    InitializedWOWThreads.erase(ThreadTID);
+    std::scoped_lock Lock(ThreadCreationMutex);
+    Threads.erase(ThreadTID);
   }
 
   CTX->DestroyThread(TLS.ThreadState());
@@ -550,10 +553,10 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
     return Err;
   }
 
-  std::scoped_lock Lock(ThreadSuspendLock);
+  std::scoped_lock Lock(ThreadCreationMutex);
 
   // If the thread hasn't yet been initialized, suspend it without special handling as it wont yet have entered the JIT
-  if (!InitializedWOWThreads.contains(ThreadTID)) {
+  if (!Threads.contains(ThreadTID)) {
     return NtSuspendThread(Thread, Count);
   }
 
@@ -615,13 +618,20 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
-    if (InvalidationTracker.HandleRWXAccessViolation(GetTLS().ThreadState(), FaultAddress)) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
-      NtContinue(Context, FALSE);
-    }
 
     if (Context::HandleSuspendInterrupt(Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");
+      NtContinue(Context, FALSE);
+    }
+
+    bool HandledRWX = false;
+    if (GetTLS().ThreadState()) {
+      std::scoped_lock Lock(ThreadCreationMutex);
+      HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
+    }
+
+    if (HandledRWX) {
+      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
       NtContinue(Context, FALSE);
     }
   }
@@ -645,29 +655,32 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
 }
 
 void BTCpuFlushInstructionCache2(const void* Address, SIZE_T Size) {
-  InvalidationTracker.InvalidateAlignedInterval(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
 void BTCpuNotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
-  InvalidationTracker.HandleMemoryProtectionNotification(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address),
-                                                         static_cast<uint64_t>(Size), Prot);
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
 void BTCpuNotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
-  InvalidationTracker.HandleMemoryProtectionNotification(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address),
-                                                         static_cast<uint64_t>(Size), NewProt);
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
 void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType) {
+  std::scoped_lock Lock(ThreadCreationMutex);
   if (!Size) {
-    InvalidationTracker.InvalidateContainingSection(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), true);
+    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
   } else if (FreeType & MEM_DECOMMIT) {
-    InvalidationTracker.InvalidateAlignedInterval(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+    InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
   }
 }
 
 void BTCpuNotifyUnmapViewOfSection(void* Address, ULONG Flags) {
-  InvalidationTracker.InvalidateContainingSection(GetTLS().ThreadState(), reinterpret_cast<uint64_t>(Address), true);
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
 }
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
