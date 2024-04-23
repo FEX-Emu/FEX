@@ -8,6 +8,7 @@
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <charconv>
