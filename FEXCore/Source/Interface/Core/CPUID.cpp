@@ -595,7 +595,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     // Disable Enhanced REP MOVS when TSO is enabled.
     // vcruntime140 memmove will use `rep movsb` in this case which completely destroys perf in Hades(appId 1145360)
     // This is due to LRCPC performance on Cortex being abysmal.
-    const uint32_t SupportsEnhancedREPMOVS = CTX->SoftwareTSORequired() ? 0 : 1;
+    // Only enable EnhancedREPMOVS if SoftwareTSO isn't required OR if MemcpySetTSO is not enabled.
+    const uint32_t SupportsEnhancedREPMOVS = CTX->SoftwareTSORequired() == false || MemcpySetTSOEnabled() == false;
 
     // Number of subfunctions
     Res.eax = 0x0;
