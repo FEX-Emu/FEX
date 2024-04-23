@@ -245,6 +245,15 @@ public:
     CurrentWriteCursor = Node;
   }
 
+  // Set cursor to write before Node
+  void SetWriteCursorBefore(OrderedNode* Node) {
+    auto IR = ViewIR();
+    auto Before = IR.at(Node);
+    --Before;
+
+    SetWriteCursor(std::get<0>(*Before));
+  }
+
   OrderedNode* GetWriteCursor() {
     return CurrentWriteCursor;
   }
