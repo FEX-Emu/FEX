@@ -639,10 +639,7 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         IROp->Op = OP_ADDWITHFLAGS;
       }
 
-      // Set the write cursor to just before this operation.
-      auto CodeIter = CurrentIR.at(CodeNode);
-      --CodeIter;
-      IREmit->SetWriteCursor(std::get<0>(*CodeIter));
+      IREmit->SetWriteCursorBefore(CodeNode);
 
       // Negate the constant.
       auto NegConstant = IREmit->_Constant(-Constant2);
