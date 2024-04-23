@@ -59,12 +59,6 @@ namespace x64 {
     FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
-    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
-    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
-  }};
-
   // All are caller saved
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
     FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
@@ -109,12 +103,6 @@ namespace x64 {
     FEXCore::ARMEmitter::Reg::r6,  FEXCore::ARMEmitter::Reg::r7,  FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
     FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r30,
   };
-
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7},
-    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
-    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
-  }};
 
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
     FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,
@@ -223,7 +211,7 @@ namespace x32 {
     REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 15> RA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 13> RA = {
     // All these callee saved
     FEXCore::ARMEmitter::Reg::r20,
     FEXCore::ARMEmitter::Reg::r21,
@@ -240,22 +228,12 @@ namespace x32 {
     FEXCore::ARMEmitter::Reg::r15,
     FEXCore::ARMEmitter::Reg::r16,
     FEXCore::ARMEmitter::Reg::r17,
-    FEXCore::ARMEmitter::Reg::r29,
-    FEXCore::ARMEmitter::Reg::r30,
+    // XXX: not an aligned reg pair, make RA less dumb or something
+    // FEXCore::ARMEmitter::Reg::r29,
+    // FEXCore::ARMEmitter::Reg::r30,
 
     FEXCore::ARMEmitter::Reg::r19,
   };
-
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 7> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
-    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
-    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
-
-    {FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13},
-    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
-    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
-    {FEXCore::ARMEmitter::Reg::r29, FEXCore::ARMEmitter::Reg::r30},
-  }};
 
   // All are caller saved
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 8> SRAFPR = {
@@ -385,7 +363,6 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;
     GeneralRegisters = x64::RA;
-    GeneralPairRegisters = x64::RAPair;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
 #ifdef _M_ARM_64EC
@@ -396,7 +373,6 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;
-    GeneralPairRegisters = x32::RAPair;
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;

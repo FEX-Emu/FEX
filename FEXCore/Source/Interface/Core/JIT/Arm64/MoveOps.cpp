@@ -42,5 +42,11 @@ DEF_OP(CreateElementPair) {
   }
 }
 
+DEF_OP(Copy) {
+  auto Op = IROp->C<IR::IROp_Copy>();
+
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(Op->Source.ID()));
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU

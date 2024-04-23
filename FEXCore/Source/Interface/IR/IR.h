@@ -524,6 +524,12 @@ public:
     return Node.ID();
   }
 
+  ///< Why did we ever get rid of getting the OrderedNodeWrapper from the interator?!
+  [[nodiscard]]
+  OrderedNodeWrapper GetNode() const {
+    return Node;
+  }
+
   [[nodiscard]]
   static NodeIterator Invalid() {
     return NodeIterator(0, 0);

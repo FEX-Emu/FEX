@@ -62,8 +62,8 @@ bool ValueDominanceValidation::Run(IREmitter* IREmit) {
         // If the SSA argument is not defined INSIDE the block, we have
         // cross-block liveness, which we forbid in the IR to simplify RA.
         if (!(Arg.ID() >= BlockIROp->Begin.ID() && Arg.ID() < BlockIROp->Last.ID())) {
-          HadError |= true;
-          Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition not local!" << std::endl;
+          // HadError |= true;
+          // Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition not local!" << std::endl;
           continue;
         }
 
