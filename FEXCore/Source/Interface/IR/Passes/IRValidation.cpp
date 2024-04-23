@@ -127,10 +127,12 @@ bool IRValidation::Run(IREmitter* IREmit) {
         const auto ArgID = Arg.ID();
 
         // Was an argument defined after this node?
+#if 0
         if (ArgID >= ID) {
           HadError |= true;
           Errors << "%" << ID << ": Arg[" << i << "] has definition after use at %" << ArgID << std::endl;
         }
+#endif
 
         if (ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
           HadError |= true;

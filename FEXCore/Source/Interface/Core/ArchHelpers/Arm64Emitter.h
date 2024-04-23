@@ -92,7 +92,6 @@ protected:
   std::span<const FEXCore::ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
   std::span<const FEXCore::ARMEmitter::Register> StaticRegisters {};
   std::span<const FEXCore::ARMEmitter::Register> GeneralRegisters {};
-  std::span<const std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>> GeneralPairRegisters {};
   std::span<const FEXCore::ARMEmitter::VRegister> StaticFPRegisters {};
   std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters {};
 

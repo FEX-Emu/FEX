@@ -26,7 +26,7 @@ void PassManager::Finalize() {
 
   auto it = Passes.begin();
   // Walk the passes and add them where asked.
-  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) {
+  if (true || PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) {
     // Insert at the start.
     it = InsertAt(it, Debug::CreateIRDumper());
     ++it; // Skip what we inserted.
@@ -37,7 +37,7 @@ void PassManager::Finalize() {
 
     bool SkipFirstBefore = PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT;
     for (; it != Passes.end();) {
-      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREPASS) {
+      if (true) {
         if (SkipFirstBefore) {
           // If we need to skip the first one, then continue.
           SkipFirstBefore = false;
@@ -51,7 +51,7 @@ void PassManager::Finalize() {
       }
 
       ++it; // Skip current pass.
-      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTERPASS) {
+      if (true) {
         // Insert after
         it = InsertAt(it, Debug::CreateIRDumper());
         ++it; // Skip what we inserted.

@@ -118,7 +118,7 @@ private:
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRPairClass.Val, "Unexpected Class: {}", Reg.Class);
 
-    return GeneralPairRegisters[Reg.Reg];
+    return std::make_pair(GeneralRegisters[Reg.Reg], GeneralRegisters[Reg.Reg + 1]);
   }
 
   [[nodiscard]]
