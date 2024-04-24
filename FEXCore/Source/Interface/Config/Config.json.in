@@ -414,6 +414,14 @@
           "Only affects REP MOVS and REP STOS instructions"
         ]
       },
+      "HalfBarrierTSOEnabled": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "When TSO emulation is enabled, controls if unaligned loads and stores should be backpatched to half-barrier atomics.",
+          "Can be dangerous due to aligned loadstores through the same code now become non-atomic."
+        ]
+      },
       "TSOAutoMigration": {
         "Type": "bool",
         "Default": "true",

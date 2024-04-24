@@ -556,10 +556,12 @@ void FillHackConfig() {
     auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED);
     auto VectorTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED);
     auto MemcpyTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED);
+    auto HalfBarrierTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_HALFBARRIERTSOENABLED);
 
     bool TSOEnabled = Value.has_value() && **Value == "1";
     bool VectorTSOEnabled = VectorTSO.has_value() && **VectorTSO == "1";
     bool MemcpyTSOEnabled = MemcpyTSO.has_value() && **MemcpyTSO == "1";
+    bool HalfBarrierTSOEnabled = HalfBarrierTSO.has_value() && **HalfBarrierTSO == "1";
 
     if (ImGui::Checkbox("TSO Enabled", &TSOEnabled)) {
       LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, TSOEnabled ? "1" : "0");
@@ -585,6 +587,16 @@ void FillHackConfig() {
         if (ImGui::IsItemHovered()) {
           ImGui::BeginTooltip();
           ImGui::Text("Disables TSO emulation on memcpy/memset instructions");
+          ImGui::EndTooltip();
+        }
+
+        if (ImGui::Checkbox("Unaligned Half-Barrier TSO Enabled", &HalfBarrierTSOEnabled)) {
+          LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_HALFBARRIERTSOENABLED, HalfBarrierTSOEnabled ? "1" : "0");
+          ConfigChanged = true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::BeginTooltip();
+          ImGui::Text("Disables half-barrier TSO emulation on unaligned load/store instructions");
           ImGui::EndTooltip();
         }
 

@@ -1822,7 +1822,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
 [[nodiscard]]
 std::pair<bool, int32_t>
-HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t* GPRs) {
+HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
@@ -1843,7 +1843,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidT
     uint32_t DataReg = Instr & 0x1F;
 
     // ParanoidTSO path doesn't modify any code.
-    if (ParanoidTSO) [[unlikely]] {
+    if (HandleType == UnalignedHandlerType::Paranoid) [[unlikely]] {
       if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
           (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
@@ -1900,8 +1900,10 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidT
       LDR |= AddrReg << 5;
       LDR |= DataReg;
       PC[0] = LDR;
-      PC[1] = DMB_LD; // Back-patch the half-barrier.
-      ClearICache(&PC[-1], 16);
+      if (HandleType != UnalignedHandlerType::NonAtomic) {
+        PC[1] = DMB_LD; // Back-patch the half-barrier.
+      }
+      ClearICache(&PC[0], 16);
       // With the instruction modified, now execute again.
       return std::make_pair(true, 0);
     } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
@@ -1909,7 +1911,9 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidT
       STR |= Size << 30;
       STR |= AddrReg << 5;
       STR |= DataReg;
-      PC[-1] = DMB; // Back-patch the half-barrier.
+      if (HandleType != UnalignedHandlerType::NonAtomic) {
+        PC[-1] = DMB; // Back-patch the half-barrier.
+      }
       PC[0] = STR;
       ClearICache(&PC[-1], 16);
       // Back up one instruction and have another go
@@ -1922,8 +1926,10 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidT
       LDUR |= DataReg;
       LDUR |= Instr & (0b1'1111'1111 << 9);
       PC[0] = LDUR;
-      PC[1] = DMB_LD; // Back-patch the half-barrier.
-      ClearICache(&PC[-1], 16);
+      if (HandleType != UnalignedHandlerType::NonAtomic) {
+        PC[1] = DMB_LD; // Back-patch the half-barrier.
+      }
+      ClearICache(&PC[0], 16);
       // With the instruction modified, now execute again.
       return std::make_pair(true, 0);
     } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
@@ -1932,7 +1938,9 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidT
       STUR |= AddrReg << 5;
       STUR |= DataReg;
       STUR |= Instr & (0b1'1111'1111 << 9);
-      PC[-1] = DMB; // Back-patch the half-barrier.
+      if (HandleType != UnalignedHandlerType::NonAtomic) {
+        PC[-1] = DMB; // Back-patch the half-barrier.
+      }
       PC[0] = STUR;
       ClearICache(&PC[-1], 16);
       // Back up one instruction and have another go

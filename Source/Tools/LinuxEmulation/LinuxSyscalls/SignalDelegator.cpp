@@ -1627,6 +1627,14 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
   HostHandlers[SIGKILL].Installed = true;
   HostHandlers[SIGSTOP].Installed = true;
 
+  if (ParanoidTSO()) {
+    UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::Paranoid;
+  } else if (HalfBarrierTSOEnabled()) {
+    UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier;
+  } else {
+    UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::NonAtomic;
+  }
+
   // Most signals default to termination
   // These ones are slightly different
   static constexpr std::array<std::pair<int, SignalDelegator::DefaultBehaviour>, 14> SignalDefaultBehaviours = {{
@@ -1703,7 +1711,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       return false;
     }
 
-    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, GlobalDelegator->ParanoidTSO(), PC,
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, GlobalDelegator->GetUnalignedHandlerType(), PC,
                                                                            ArchHelpers::Context::GetArmGPRs(ucontext));
     ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
     return Result.first;

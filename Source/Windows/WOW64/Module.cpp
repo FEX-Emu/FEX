@@ -263,14 +263,39 @@ WOW64_CONTEXT ReconstructWowContext(CONTEXT* Context) {
   return WowContext;
 }
 
+class TSOHandlerConfig final {
+public:
+  TSOHandlerConfig() {
+    if (ParanoidTSO()) {
+      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::Paranoid;
+    } else if (HalfBarrierTSOEnabled()) {
+      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier;
+    } else {
+      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::NonAtomic;
+    }
+  }
+
+  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType GetUnalignedHandlerType() const {
+    return UnalignedHandlerType;
+  }
+
+private:
+  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+  FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
+
+  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType UnalignedHandlerType {FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier};
+};
+
+static std::optional<TSOHandlerConfig> HandlerConfig;
+
 bool HandleUnalignedAccess(CONTEXT* Context) {
   auto Thread = GetTLS().ThreadState();
   if (!Thread->CTX->IsAddressInCodeBuffer(Thread, Context->Pc)) {
     return false;
   }
 
-  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-  const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, ParanoidTSO(), Context->Pc, &Context->X0);
+  const auto Result =
+    FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context->Pc, &Context->X0);
   if (!Result.first) {
     return false;
   }
@@ -418,6 +443,7 @@ void BTCpuProcessInit() {
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
+  Context::HandlerConfig.emplace();
 
   CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->SetSignalDelegator(SignalDelegator.get());
