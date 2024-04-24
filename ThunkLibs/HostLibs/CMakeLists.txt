@@ -53,7 +53,7 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
     OUTPUT "${OUTFILE}"
     DEPENDS "${SOURCE_FILE}"
     DEPENDS thunkgen
-    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" ${BITNESS_FLAGS} -- -std=c++20
+    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
