@@ -1,3 +1,8 @@
+if (NOT TARGET fmt)
+  set(FMT_INSTALL OFF)
+  add_subdirectory(../../External/fmt/ fmt)
+endif ()
+
 find_package(Clang REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
