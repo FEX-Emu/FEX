@@ -1181,7 +1181,7 @@ DEF_OP(VFAddV) {
     // ASIMD doesn't support faddv, need to use multiple faddp to match behaviour.
     if (ElementSize == 4) {
       faddp(SubRegSize.Vector, Dst.Q(), Vector.Q(), Vector.Q());
-      faddp(SubRegSize.Scalar, Dst, Vector);
+      faddp(SubRegSize.Scalar, Dst, Dst);
     } else {
       faddp(SubRegSize.Scalar, Dst, Vector);
     }
