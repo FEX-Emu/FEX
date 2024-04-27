@@ -23,6 +23,7 @@ $end_info$
 #include <mutex>
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/Telemetry.h>
 
 namespace FEXCore {
@@ -127,7 +128,9 @@ public:
 
   void SignalThread(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::SignalEvent Event) override;
 
-  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType GetUnalignedHandlerType() const {
+    return UnalignedHandlerType;
+  }
 
   void SaveTelemetry();
 private:
@@ -156,6 +159,10 @@ private:
   fextl::string const ApplicationName;
   FEXCORE_TELEMETRY_INIT(CrashMask, TYPE_CRASH_MASK);
   FEXCORE_TELEMETRY_INIT(UnhandledNonCanonical, TYPE_UNHANDLED_NONCANONICAL_ADDRESS);
+  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+  FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
+
+  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType UnalignedHandlerType {FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier};
 
   enum DefaultBehaviour {
     DEFAULT_TERM,

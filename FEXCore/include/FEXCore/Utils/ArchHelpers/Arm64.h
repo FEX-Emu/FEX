@@ -108,6 +108,15 @@ inline uint32_t GetRmReg(uint32_t Instr) {
   return (Instr >> RM_OFFSET) & REGISTER_MASK;
 }
 
+enum class UnalignedHandlerType {
+  ///< Don't backpatch code, instead handle inside SIGBUS handler.
+  Paranoid,
+  ///< Backpatch unaligned access to half-barrier based atomic.
+  HalfBarrier,
+  ///< Backpatch unaligned access to non-atomic.
+  NonAtomic,
+};
+
 /**
  * @brief On ARM64 handles an unaligned memory access that the JIT has done.
  *
@@ -123,5 +132,5 @@ inline uint32_t GetRmReg(uint32_t Instr) {
  */
 [[nodiscard]]
 FEX_DEFAULT_VISIBILITY std::pair<bool, int32_t>
-HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t* GPRs);
+HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs);
 } // namespace FEXCore::ArchHelpers::Arm64
