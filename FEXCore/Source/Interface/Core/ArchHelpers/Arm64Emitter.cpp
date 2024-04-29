@@ -53,10 +53,11 @@ namespace x64 {
     REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 7> RA = {
+  constexpr std::array<FEXCore::ARMEmitter::Register, 8> RA = {
     // All these callee saved
     FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
     FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r30,
+    FEXCore::ARMEmitter::Reg::r18,
   };
 
   // All are caller saved

@@ -22,6 +22,7 @@ namespace {
   constexpr uint32_t INVALID_REG = FEXCore::IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = FEXCore::IR::InvalidClass.Val;
   constexpr uint32_t EVEN_BITS = 0x55555555;
+  constexpr uint32_t PAIR_BITS = (1 << 6) - 1;
 
   struct RegisterClass {
     uint32_t Available;
@@ -290,7 +291,9 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
 
+    printf("spilling for %u\n", Exclude->Op);
     for (int i = 0; i < Class->Count; ++i) {
+      printf("%u: %u\n", i, Class->Available & (1 << i));
       if (!(Class->Available & (1 << i))) {
         OrderedNode* Old = Class->RegToSSA[i];
 
@@ -300,8 +303,10 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
 
         bool Excluded = false;
         foreach_arg(Exclude, _, Arg) {
-          if (Unmap(IR.GetNode(Arg)) == Old)
+          if (Unmap(IR.GetNode(Arg)) == Old) {
+            printf("   arg %u = %p\n", _, Old);
             Excluded = true;
+          }
         }
 
         if (Excluded)
@@ -379,7 +384,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       Available &= (Available >> 1);
 
       // Only consider aligned registers
-      Available &= EVEN_BITS;
+      Available &= EVEN_BITS & PAIR_BITS;
     }
 
     return Available;
