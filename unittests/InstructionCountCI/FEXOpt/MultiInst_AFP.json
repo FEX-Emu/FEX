@@ -15,7 +15,7 @@
   ],
   "Instructions": {
     "adds xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Redundant scalar operations should get eliminated with AFP"
       ],
@@ -24,8 +24,15 @@
         "addss xmm0, xmm2"
       ],
       "ExpectedArm64ASM": [
-        "fadd s16, s16, s17",
-        "fadd s16, s16, s18"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov v4.16b, v2.16b",
+        "fadd s4, s2, s3",
+        "mov v16.16b, v4.16b",
+        "mov v2.16b, v18.16b",
+        "mov v3.16b, v4.16b",
+        "fadd s3, s4, s2",
+        "mov v16.16b, v3.16b"
       ]
     }
   }

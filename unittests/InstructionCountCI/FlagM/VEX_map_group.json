@@ -10,83 +10,95 @@
   },
   "Instructions": {
     "blsr eax, ebx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b001 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub w20, w7, #0x1 (1)",
-        "and w4, w20, w7",
-        "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst w4, w4",
-        "rmif x20, #63, #nzCv"
+        "mov x20, x7",
+        "sub w21, w20, #0x1 (1)",
+        "and w22, w21, w20",
+        "mov x4, x22",
+        "cmp x20, #0x0 (0)",
+        "cset x21, eq",
+        "tst w22, w22",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsr rax, rbx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b001 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x7, #0x1 (1)",
-        "and x4, x20, x7",
-        "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst x4, x4",
-        "rmif x20, #63, #nzCv"
+        "mov x20, x7",
+        "sub x21, x20, #0x1 (1)",
+        "and x22, x21, x20",
+        "mov x4, x22",
+        "cmp x20, #0x0 (0)",
+        "cset x21, eq",
+        "tst x22, x22",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsmsk eax, ebx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b010 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub w20, w7, #0x1 (1)",
-        "eor w4, w20, w7",
-        "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst w4, w4",
-        "rmif x20, #63, #nzCv"
+        "mov x20, x7",
+        "sub w21, w20, #0x1 (1)",
+        "eor w22, w21, w20",
+        "mov x4, x22",
+        "cmp x20, #0x0 (0)",
+        "cset x21, eq",
+        "tst w22, w22",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsmsk rax, rbx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 17 0b010 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x7, #0x1 (1)",
-        "eor x4, x20, x7",
-        "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst x4, x4",
-        "rmif x20, #63, #nzCv"
+        "mov x20, x7",
+        "sub x21, x20, #0x1 (1)",
+        "eor x22, x21, x20",
+        "mov x4, x22",
+        "cmp x20, #0x0 (0)",
+        "cset x21, eq",
+        "tst x22, x22",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsi eax, ebx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map group 17 0b011 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "neg w20, w7",
-        "and w4, w7, w20",
-        "tst w4, w4",
+        "mov x20, x7",
+        "neg w21, w20",
+        "and w22, w20, w21",
+        "mov x4, x22",
+        "tst w22, w22",
         "cset w20, ne",
         "rmif x20, #63, #nzCv"
       ]
     },
     "blsi rax, rbx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map group 17 0b011 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "neg x20, x7",
-        "and x4, x7, x20",
-        "tst x4, x4",
+        "mov x20, x7",
+        "neg x21, x20",
+        "and x22, x20, x21",
+        "mov x4, x22",
+        "tst x22, x22",
         "cset w20, ne",
         "rmif x20, #63, #nzCv"
       ]

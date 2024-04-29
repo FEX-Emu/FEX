@@ -11,60 +11,74 @@
   },
   "Instructions": {
     "vrsqrtps xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b00 0x52 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frsqrte v16.4s, v17.4s"
+        "mov z2.d, p7/m, z17.d",
+        "frsqrte v3.4s, v2.4s",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vrsqrtps ymm0, ymm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b00 0x52 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "frsqrte z16.s, z17.s"
+        "mov z2.d, p7/m, z17.d",
+        "frsqrte z3.s, z2.s",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "AFP can make this more optimal",
         "Map 1 0b10 0x52 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov v16.16b, v17.16b",
-        "frsqrte s16, s18"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "mov v4.16b, v2.16b",
+        "frsqrte s4, s3",
+        "mov z16.d, p7/m, z4.d"
       ]
     },
     "vrcpps xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b00 0x53 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frecpe v16.4s, v17.4s"
+        "mov z2.d, p7/m, z17.d",
+        "frecpe v3.4s, v2.4s",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vrcpps ymm0, ymm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b00 0x53 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "frecpe z16.s, z17.s"
+        "mov z2.d, p7/m, z17.d",
+        "frecpe z3.s, z2.s",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b10 0x53 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov v16.16b, v17.16b",
-        "frecpe s16, s18"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "mov v4.16b, v2.16b",
+        "frecpe s4, s3",
+        "mov z16.d, p7/m, z4.d"
       ]
     }
   }

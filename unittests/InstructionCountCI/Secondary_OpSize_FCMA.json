@@ -11,11 +11,14 @@
   },
   "Instructions": {
     "addsubpd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ext v2.16b, v17.16b, v17.16b, #8",
-        "fcadd v16.2d, v16.2d, v2.2d, #90"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "ext v4.16b, v3.16b, v3.16b, #8",
+        "fcadd v3.2d, v2.2d, v4.2d, #90",
+        "mov v16.16b, v3.16b"
       ]
     }
   }

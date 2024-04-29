@@ -11,11 +11,14 @@
   },
   "Instructions": {
     "addsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "rev64 v2.4s, v17.4s",
-        "fcadd v16.4s, v16.4s, v2.4s, #90"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "rev64 v4.4s, v3.4s",
+        "fcadd v3.4s, v2.4s, v4.4s, #90",
+        "mov v16.16b, v3.16b"
       ]
     }
   }

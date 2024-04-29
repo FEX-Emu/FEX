@@ -13,48 +13,62 @@
   },
   "Instructions": {
     "ucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 9,
       "Comment": "0x66 0x0f 0x2e",
       "ExpectedArm64ASM": [
-        "fcmp d16, d17",
-        "mov w27, #0x0",
-        "cset w26, vc",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "fcmp d2, d3",
+        "mov w20, #0x0",
+        "cset w21, vc",
+        "mov x26, x21",
         "axflag",
-        "cfinv"
+        "cfinv",
+        "mov x27, x20"
       ]
     },
     "comisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 9,
       "Comment": "0x66 0x0f 0x2f",
       "ExpectedArm64ASM": [
-        "fcmp d16, d17",
-        "mov w27, #0x0",
-        "cset w26, vc",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "fcmp d2, d3",
+        "mov w20, #0x0",
+        "cset w21, vc",
+        "mov x26, x21",
         "axflag",
-        "cfinv"
+        "cfinv",
+        "mov x27, x20"
       ]
     },
     "pmovmskb eax, xmm0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "0x66 0x0f 0xd7",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2272]",
-        "cmlt v3.16b, v16.16b, #0",
-        "and v2.16b, v3.16b, v2.16b",
-        "addp v2.16b, v2.16b, v2.16b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "umov w4, v2.h[0]"
+        "mov v2.16b, v16.16b",
+        "ldr q3, [x28, #2272]",
+        "cmlt v4.16b, v2.16b, #0",
+        "and v2.16b, v4.16b, v3.16b",
+        "addp v3.16b, v2.16b, v2.16b",
+        "addp v2.8b, v3.8b, v3.8b",
+        "addp v3.8b, v2.8b, v2.8b",
+        "umov w20, v3.h[0]",
+        "mov x4, x20"
       ]
     },
     "maskmovdqu xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x66 0x0f 0xf7",
       "ExpectedArm64ASM": [
-        "cmlt v2.16b, v17.16b, #0",
-        "ldr q3, [x11]",
-        "bsl v2.16b, v16.16b, v3.16b",
-        "str q2, [x11]"
+        "mov v2.16b, v17.16b",
+        "cmlt v3.16b, v2.16b, #0",
+        "mov v2.16b, v16.16b",
+        "mov x20, x11",
+        "ldr q4, [x20]",
+        "mov v5.16b, v3.16b",
+        "bsl v5.16b, v2.16b, v4.16b",
+        "str q5, [x20]"
       ]
     }
   }

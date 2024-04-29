@@ -12,70 +12,86 @@
   },
   "Instructions": {
     "pclmulqdq xmm0, xmm1, 00000b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "pmull v16.1q, v16.1d, v17.1d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "pmull v4.1q, v2.1d, v3.1d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pclmulqdq xmm0, xmm1, 00001b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "dup v0.2d, v16.d[1]",
-        "pmull v16.1q, v0.1d, v17.1d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "dup v0.2d, v2.d[1]",
+        "pmull v4.1q, v0.1d, v3.1d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pclmulqdq xmm0, xmm1, 10000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "dup v0.2d, v17.d[1]",
-        "pmull v16.1q, v0.1d, v16.1d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "dup v0.2d, v3.d[1]",
+        "pmull v4.1q, v0.1d, v2.1d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pclmulqdq xmm0, xmm1, 10001b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x66 0x0f 0x3a 0x44"
       ],
       "ExpectedArm64ASM": [
-        "pmull2 v16.1q, v16.2d, v17.2d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "pmull2 v4.1q, v2.2d, v3.2d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2160]",
-        "movi v3.2d, #0x0",
-        "mov v16.16b, v17.16b",
+        "mov v2.16b, v17.16b",
+        "ldr q3, [x28, #2160]",
+        "movi v4.2d, #0x0",
+        "mov v5.16b, v2.16b",
         "unimplemented (Unimplemented)",
-        "tbl v16.16b, {v16.16b}, v2.16b"
+        "tbl v5.16b, {v5.16b}, v3.16b",
+        "mov v16.16b, v5.16b"
       ]
     },
     "aeskeygenassist xmm0, xmm1, 0xFF": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2160]",
-        "movi v3.2d, #0x0",
-        "mov v16.16b, v17.16b",
+        "mov v2.16b, v17.16b",
+        "ldr q3, [x28, #2160]",
+        "movi v4.2d, #0x0",
+        "mov v5.16b, v2.16b",
         "unimplemented (Unimplemented)",
-        "tbl v16.16b, {v16.16b}, v2.16b",
+        "tbl v5.16b, {v5.16b}, v3.16b",
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
-        "eor v16.16b, v16.16b, v1.16b"
+        "eor v5.16b, v5.16b, v1.16b",
+        "mov v16.16b, v5.16b"
       ]
     }
   }

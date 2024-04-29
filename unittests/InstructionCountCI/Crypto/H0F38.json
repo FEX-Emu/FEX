@@ -12,126 +12,167 @@
   },
   "Instructions": {
     "sha1nexte xmm0, xmm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0x66 0x0f 0x38 0xc8"
       ],
       "ExpectedArm64ASM": [
-        "dup v2.4s, v16.s[3]",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "dup v4.4s, v2.s[3]",
         "unimplemented (Unimplemented)",
-        "dup v2.4s, v2.s[0]",
-        "add v2.4s, v17.4s, v2.4s",
-        "mov v16.16b, v17.16b",
-        "mov v16.s[3], v2.s[3]"
+        "dup v4.4s, v2.s[0]",
+        "add v2.4s, v3.4s, v4.4s",
+        "mov v4.16b, v3.16b",
+        "mov v4.s[3], v2.s[3]",
+        "mov v16.16b, v4.16b"
       ]
     },
     "sha256msg1 xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0x66 0x0f 0x38 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "unimplemented (Unimplemented)"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov v0.16b, v2.16b",
+        "unimplemented (Unimplemented)",
+        "mov v4.16b, v0.16b",
+        "mov v16.16b, v4.16b"
       ]
     },
     "aesimc xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "0x66 0x0f 0x38 0xdb"
       ],
       "ExpectedArm64ASM": [
-        "unimplemented (Unimplemented)"
+        "mov v2.16b, v17.16b",
+        "unimplemented (Unimplemented)",
+        "mov v16.16b, v3.16b"
       ]
     },
     "aesenc xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0x66 0x0f 0x38 0xdc"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "movi v4.2d, #0x0",
+        "mov v0.16b, v2.16b",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
-        "eor v16.16b, v16.16b, v17.16b"
+        "eor v5.16b, v0.16b, v3.16b",
+        "mov v16.16b, v5.16b"
       ]
     },
     "aesenclast xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0x66 0x0f 0x38 0xdd"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "movi v4.2d, #0x0",
+        "mov v0.16b, v2.16b",
         "unimplemented (Unimplemented)",
-        "eor v16.16b, v16.16b, v17.16b"
+        "eor v5.16b, v0.16b, v3.16b",
+        "mov v16.16b, v5.16b"
       ]
     },
     "aesdec xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0x66 0x0f 0x38 0xde"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "movi v4.2d, #0x0",
+        "mov v0.16b, v2.16b",
         "unimplemented (Unimplemented)",
         "unimplemented (Unimplemented)",
-        "eor v16.16b, v16.16b, v17.16b"
+        "eor v5.16b, v0.16b, v3.16b",
+        "mov v16.16b, v5.16b"
       ]
     },
     "aesdeclast xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0x66 0x0f 0x38 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "movi v4.2d, #0x0",
+        "mov v0.16b, v2.16b",
         "unimplemented (Unimplemented)",
-        "eor v16.16b, v16.16b, v17.16b"
+        "eor v5.16b, v0.16b, v3.16b",
+        "mov v16.16b, v5.16b"
       ]
     },
     "crc32 eax, bl": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "crc32cb w4, w4, w7"
+        "mov x20, x4",
+        "mov x21, x7",
+        "crc32cb w22, w20, w21",
+        "mov x4, x22"
       ]
     },
     "crc32 eax, bx": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32ch w4, w4, w7"
+        "mov x20, x4",
+        "mov x21, x7",
+        "crc32ch w22, w20, w21",
+        "mov x4, x22"
       ]
     },
     "crc32 eax, ebx": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32cw w4, w4, w7"
+        "mov x20, x4",
+        "mov x21, x7",
+        "crc32cw w22, w20, w21",
+        "mov x4, x22"
       ]
     },
     "crc32 rax, bl": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "crc32cb w4, w4, w7"
+        "mov x20, x4",
+        "mov x21, x7",
+        "crc32cb w22, w20, w21",
+        "mov x4, x22"
       ]
     },
     "crc32 rax, rbx": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32cx w4, w4, x7"
+        "mov x20, x4",
+        "mov x21, x7",
+        "crc32cx w22, w20, x21",
+        "mov x4, x22"
       ]
     }
   }

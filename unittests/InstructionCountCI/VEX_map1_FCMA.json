@@ -10,94 +10,120 @@
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ext v2.16b, v18.16b, v18.16b, #8",
-        "fcadd v16.2d, v17.2d, v2.2d, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "ext v4.16b, v3.16b, v3.16b, #8",
+        "fcadd v3.2d, v2.2d, v4.2d, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubpd ymm0, ymm0, ymm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z18",
-        "ext z2.b, z2.b, z18.b, #8",
-        "fcadd z16.d, p7/m, z16.d, z2.d, #90"
+        "mov z2.d, p7/m, z16.d",
+        "mov z3.d, p7/m, z18.d",
+        "movprfx z4, z3",
+        "ext z4.b, z4.b, z3.b, #8",
+        "movprfx z3, z2",
+        "fcadd z3.d, p7/m, z3.d, z4.d, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z16",
-        "ext z2.b, z2.b, z16.b, #8",
-        "movprfx z16, z17",
-        "fcadd z16.d, p7/m, z16.d, z2.d, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z16.d",
+        "movprfx z4, z3",
+        "ext z4.b, z4.b, z3.b, #8",
+        "movprfx z3, z2",
+        "fcadd z3.d, p7/m, z3.d, z4.d, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z18",
-        "ext z2.b, z2.b, z18.b, #8",
-        "movprfx z16, z17",
-        "fcadd z16.d, p7/m, z16.d, z2.d, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "movprfx z4, z3",
+        "ext z4.b, z4.b, z3.b, #8",
+        "movprfx z3, z2",
+        "fcadd z3.d, p7/m, z3.d, z4.d, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "rev64 v2.4s, v18.4s",
-        "fcadd v16.4s, v17.4s, v2.4s, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "rev64 v4.4s, v3.4s",
+        "fcadd v3.4s, v2.4s, v4.4s, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "revw z2.d, p7/m, z16.d",
-        "movprfx z16, z17",
-        "fcadd z16.s, p7/m, z16.s, z2.s, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z16.d",
+        "revw z4.d, p7/m, z3.d",
+        "movprfx z3, z2",
+        "fcadd z3.s, p7/m, z3.s, z4.s, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubps ymm0, ymm0, ymm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "revw z2.d, p7/m, z18.d",
-        "fcadd z16.s, p7/m, z16.s, z2.s, #90"
+        "mov z2.d, p7/m, z16.d",
+        "mov z3.d, p7/m, z18.d",
+        "revw z4.d, p7/m, z3.d",
+        "movprfx z3, z2",
+        "fcadd z3.s, p7/m, z3.s, z4.s, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "revw z2.d, p7/m, z18.d",
-        "movprfx z16, z17",
-        "fcadd z16.s, p7/m, z16.s, z2.s, #90"
+        "mov z2.d, p7/m, z17.d",
+        "mov z3.d, p7/m, z18.d",
+        "revw z4.d, p7/m, z3.d",
+        "movprfx z3, z2",
+        "fcadd z3.s, p7/m, z3.s, z4.s, #90",
+        "mov z16.d, p7/m, z3.d"
       ]
     }
   }

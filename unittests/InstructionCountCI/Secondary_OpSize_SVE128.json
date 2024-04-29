@@ -10,81 +10,119 @@
   },
   "Instructions": {
     "psrlw xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xd1",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsr z16.h, p6/m, z16.h, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsr z4.h, p6/m, z4.h, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psrld xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xd2",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsr z16.s, p6/m, z16.s, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsr z4.s, p6/m, z4.s, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psrlq xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xd3",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsr z16.d, p6/m, z16.d, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsr z4.d, p6/m, z4.d, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psraw xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xe1",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "asr z16.h, p6/m, z16.h, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "asr z4.h, p6/m, z4.h, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psrad xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xe2",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "asr z16.s, p6/m, z16.s, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "asr z4.s, p6/m, z4.s, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pmulhuw xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0xe4",
       "ExpectedArm64ASM": [
-        "umulh z16.h, z16.h, z17.h"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "umulh z4.h, z2.h, z3.h",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pmulhw xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0xe5",
       "ExpectedArm64ASM": [
-        "smulh z16.h, z16.h, z17.h"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "smulh z4.h, z2.h, z3.h",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psllw xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xf1",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsl z16.h, p6/m, z16.h, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsl z4.h, p6/m, z4.h, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "pslld xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xf2",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsl z16.s, p6/m, z16.s, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsl z4.s, p6/m, z4.s, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     },
     "psllq xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0xf3",
       "ExpectedArm64ASM": [
-        "mov z0.d, d17",
-        "lsl z16.d, p6/m, z16.d, z0.d"
+        "mov v2.16b, v16.16b",
+        "mov v3.16b, v17.16b",
+        "mov z0.d, d3",
+        "movprfx z4, z2",
+        "lsl z4.d, p6/m, z4.d, z0.d",
+        "mov v16.16b, v4.16b"
       ]
     }
   }

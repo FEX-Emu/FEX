@@ -14,9 +14,10 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 54,
+      "ExpectedInstructionCount": 57,
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
+        "mov x20, x5",
         "sub sp, sp, #0xf0 (240)",
         "mov x3, sp",
         "st1 {v2.2d, v3.2d}, [x3], #32",
@@ -41,7 +42,7 @@
         "st1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x3], #64",
         "st1 {v24.2d, v25.2d, v26.2d, v27.2d}, [x3], #64",
         "st1 {v28.2d, v29.2d, v30.2d, v31.2d}, [x3], #64",
-        "mov w1, w5",
+        "mov w1, w20",
         "ldr x0, [x28, #1112]",
         "ldr x2, [x28, #1128]",
         "blr x2",
@@ -67,20 +68,22 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
-        "mov w20, w0",
-        "lsr x21, x0, #32",
-        "mov w4, w20",
-        "mov w6, w21"
+        "mov w22, w0",
+        "lsr x23, x0, #32",
+        "mov w20, w22",
+        "mov w21, w23",
+        "mov x4, x20",
+        "mov x6, x21"
       ]
     },
     "rdtscp": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 24,
       "Comment": "0xF 0x01 /7 RM-1",
       "ExpectedArm64ASM": [
         "dmb ld",
         "mrs x20, S3_3_c14_c0_2",
-        "lsl w4, w20, #7",
-        "lsr x6, x20, #25",
+        "lsl w21, w20, #7",
+        "lsr x22, x20, #25",
         "mrs x0, nzcv",
         "str w0, [x28, #728]",
         "str x8, [x28, #40]",
@@ -97,7 +100,10 @@
         "msr nzcv, x8",
         "ldr x8, [x28, #40]",
         "str xzr, [x28, #1056]",
-        "orr x5, x0, x1, lsl #12"
+        "orr x20, x0, x1, lsl #12",
+        "mov x4, x21",
+        "mov x5, x20",
+        "mov x6, x22"
       ]
     }
   }

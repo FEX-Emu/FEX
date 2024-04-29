@@ -10,105 +10,117 @@
   },
   "Instructions": {
     "movmskps eax, xmm0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "ushr v2.4s, v16.4s, #31",
-        "index z3.s, #0, #1",
-        "ushl v2.4s, v2.4s, v3.4s",
-        "addv s2, v2.4s",
-        "mov w4, v2.s[0]"
+        "mov v2.16b, v16.16b",
+        "ushr v3.4s, v2.4s, #31",
+        "index z2.s, #0, #1",
+        "ushl v4.4s, v3.4s, v2.4s",
+        "addv s2, v4.4s",
+        "mov w20, v2.s[0]",
+        "mov x4, x20"
       ]
     },
     "movmskps rax, xmm0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
-        "ushr v2.4s, v16.4s, #31",
-        "index z3.s, #0, #1",
-        "ushl v2.4s, v2.4s, v3.4s",
-        "addv s2, v2.4s",
-        "mov w4, v2.s[0]"
+        "mov v2.16b, v16.16b",
+        "ushr v3.4s, v2.4s, #31",
+        "index z2.s, #0, #1",
+        "ushl v4.4s, v3.4s, v2.4s",
+        "addv s2, v4.4s",
+        "mov w20, v2.s[0]",
+        "mov x4, x20"
       ]
     },
     "psrlw mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xd1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsr z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsr z4.h, p6/m, z4.h, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psrld mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xd2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsr z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsr z4.s, p6/m, z4.s, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psrlq mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xd3",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsr z2.d, p6/m, z2.d, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsr z4.d, p6/m, z4.d, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psraw mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xe1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "asr z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "asr z4.h, p6/m, z4.h, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psrad mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xe2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "asr z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "asr z4.s, p6/m, z4.s, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psllw mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xf1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsl z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsl z4.h, p6/m, z4.h, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "pslld mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xf2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsl z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsl z4.s, p6/m, z4.s, z3.d",
+        "str d4, [x28, #768]"
       ]
     },
     "psllq mm0, mm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xf3",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
         "ldr d3, [x28, #784]",
-        "lsl z2.d, p6/m, z2.d, z3.d",
-        "str d2, [x28, #768]"
+        "movprfx z4, z2",
+        "lsl z4.d, p6/m, z4.d, z3.d",
+        "str d4, [x28, #768]"
       ]
     }
   }
