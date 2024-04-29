@@ -344,6 +344,9 @@ OrderedNode* OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode*
     Res = _Adc(OpSize, Src1, Src2);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
+    // Need to zero-extend for correct comparisons below
+    Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
+
     auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
     auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, One, Zero);
     auto SelectCF = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
@@ -378,6 +381,9 @@ OrderedNode* OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode*
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
     Res = _Sub(OpSize, Src1, _Add(OpSize, Src2, CF));
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
+
+    // Need to zero-extend for correct comparisons below
+    Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
 
     auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
     auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
