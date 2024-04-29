@@ -69,19 +69,12 @@ namespace {
     // Complex register class handling
     switch (IROp->Op) {
     case IR::OP_LOADCONTEXT: return IROp->C<IR::IROp_LoadContext>()->Class;
-
     case IR::OP_LOADREGISTER: return IROp->C<IR::IROp_LoadRegister>()->Class;
-
     case IR::OP_LOADCONTEXTINDEXED: return IROp->C<IR::IROp_LoadContextIndexed>()->Class;
-
     case IR::OP_LOADMEM:
     case IR::OP_LOADMEMTSO: return IROp->C<IR::IROp_LoadMem>()->Class;
-
     case IR::OP_FILLREGISTER: return IROp->C<IR::IROp_FillRegister>()->Class;
-
-    default:
-      // Unreachable
-      return FEXCore::IR::InvalidClass;
+    default: return FEXCore::IR::InvalidClass;
     }
   };
 } // Anonymous namespace
