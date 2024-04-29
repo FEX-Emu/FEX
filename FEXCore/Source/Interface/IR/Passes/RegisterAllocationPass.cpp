@@ -22,7 +22,8 @@ namespace {
   constexpr uint32_t INVALID_REG = FEXCore::IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = FEXCore::IR::InvalidClass.Val;
   constexpr uint32_t EVEN_BITS = 0x55555555;
-  constexpr uint32_t PAIR_BITS = (1 << 6) - 1;
+  constexpr uint32_t PAIR_COUNT = 6;
+  constexpr uint32_t PAIR_BITS = (1 << PAIR_COUNT) - 1;
 
   struct RegisterClass {
     uint32_t Available;
@@ -278,7 +279,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     Class->Available |= RegBits;
   };
 
-  auto SpillReg = [&IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &Unmap, &IsOld, &NextUses](auto Class, IROp_Header *Exclude) {
+  auto SpillReg = [&IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &Unmap, &IsOld, &NextUses](auto Class, IROp_Header *Exclude, bool Pair) {
     // First, find the best node to spill. We use the well-known
     // "furthest-first" heuristic, spilling the node whose next-use is the
     // farthest in the future.
@@ -291,7 +292,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
 
-    for (int i = 0; i < Class->Count; ++i) {
+    for (int i = 0; i < (Pair ? PAIR_COUNT : Class->Count); ++i) {
       if (!(Class->Available & (1 << i))) {
         OrderedNode* Old = Class->RegToSSA[i];
 
@@ -403,13 +404,13 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     // if we're allocating a pair. We'll worry about shuffle code later.
     //
     // TODO: Maybe specialize this function for pairs vs not-pairs?
-    while (std::popcount(Class->Available) < ClassSize(OrigClassType)) {
+    while (std::popcount(Pair ? Class->Available & PAIR_BITS : Class->Available) < ClassSize(OrigClassType)) {
       IREmit->SetWriteCursorBefore(CodeNode);
-      SpillReg(Class, Pivot);
+      SpillReg(Class, Pivot, Pair);
     }
 
     // Now that we've spilled, there are enough registers. But the register file
-    // may be fragmented. In that case, ppick a scalar that is blocking a pair,
+    // may be fragmented. In that case, pick a scalar that is blocking a pair,
     // and evict it to make room for the pair.
     uint32_t Available = AvailableMask(Class, Pair);
     if (!Available) {
@@ -423,6 +424,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       // Its neighbour is blocking the pair.
       unsigned Blocked = Hole ^ 1;
       LOGMAN_THROW_AA_FMT(!(Class->Available & (1 << Blocked)), "Invariant");
+      LOGMAN_THROW_AA_FMT((1 << Hole) & PAIR_BITS, "Only spilled registers available for pairs");
 
       // Find another free scalar to evict the neighbour
       uint32_t AvailableAfter = Available & ~(1 << Hole);
@@ -437,7 +439,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
                                                                                             "neighbour");
       auto Copy = IREmit->_Copy(Map(Old));
 
-        Remap(Old, Copy);
+      Remap(Old, Copy);
       FreeReg(PhysicalRegister(GPRClass, Blocked));
       SetReg(Copy, Class, PhysicalRegister(GPRClass, NewReg));
 
