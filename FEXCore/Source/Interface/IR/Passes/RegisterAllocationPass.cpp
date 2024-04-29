@@ -123,6 +123,10 @@ RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
   return std::move(Graph->AllocData);
 }
 
+
+#define foreach_arg(IROp, index, arg) \
+  for (auto [index, Arg] = std::tuple(0, IROp->Args[0]); index < IR::GetRAArgs(IROp->Op); Arg = IROp->Args[++index]) \
+
 #define foreach_valid_arg(IROp, index, arg) \
   for (auto [index, Arg] = std::tuple(0, IROp->Args[0]); index < IR::GetRAArgs(IROp->Op); Arg = IROp->Args[++index]) \
     if (IsValidArg(Arg))
@@ -254,15 +258,13 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     return (T == GPRPairClass) ? 2 : 1;
   };
 
-  auto IsInRegisterFile = [this, &IR, &Map, &IsOld, &SSAToReg, &ClassSize](auto Old) {
+  auto IsInRegisterFile = [this, &IR, &Map, &IsOld, &SSAToReg](auto Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
     auto Reg = SSAToReg.at(IR.GetID(Map(Old)).Value);
     auto Class = &Graph->Set.Classes[Reg.Class == GPRPairClass ? GPRClass : Reg.Class];
-    auto R = Reg.Reg;
-    auto Mask = (1 << ClassSize(RegisterClassType {Reg.Class})) - 1;
 
-    return (!(Class->Available & (Mask << R))) && Class->RegToSSA[R] == Old;
+    return (!(Class->Available & (1 << Reg.Reg))) && Class->RegToSSA[Reg.Reg] == Old;
   };
 
   auto FreeReg = [this](auto Reg) {
@@ -275,7 +277,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     Class->Available |= RegBits;
   };
 
-  auto SpillReg = [&IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses](auto Class, uint32_t IP) {
+  auto SpillReg = [&IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &Unmap, &IsOld, &NextUses](auto Class, IROp_Header *Exclude) {
     // First, find the best node to spill. We use the well-known
     // "furthest-first" heuristic, spilling the node whose next-use is the
     // farthest in the future.
@@ -296,6 +298,15 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
         LOGMAN_THROW_AA_FMT(IsOld(Old), "Invariant");
         LOGMAN_THROW_AA_FMT(SSAToReg.at(IR.GetID(Map(Old)).Value).Reg == i, "Invariant'");
 
+        bool Excluded = false;
+        foreach_arg(Exclude, _, Arg) {
+          if (Unmap(IR.GetNode(Arg)) == Old)
+            Excluded = true;
+        }
+
+        if (Excluded)
+          continue;
+
         uint32_t NextUse = NextUses.at(IR.GetID(Old).Value);
         if (NextUse < BestDistance) {
           BestDistance = NextUse;
@@ -311,7 +322,6 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       }
     }
 
-    LOGMAN_THROW_AA_FMT(BestDistance < IP, "use must be in a future instruction");
     LOGMAN_THROW_AA_FMT(Candidate != nullptr, "must've found something..");
     LOGMAN_THROW_AA_FMT(IsOld(Candidate), "Invariant");
 
@@ -321,9 +331,11 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     auto Header = IR.GetOp<IROp_Header>(Candidate);
     auto Value = IR.GetID(Candidate).Value;
     auto Spilled = SpillSlots.at(Value) != 0;
+    printf("spilling %d = %u\n", IR.GetID(Candidate).Value, IR.GetID(Map(Candidate)).Value);
 
     // If we already spilled the Candidate, we don't need to spill again.
     if (!Spilled) {
+      printf("   spill\n");
       LOGMAN_THROW_AA_FMT(Reg.Class == GetRegClassFromNode(&IR, Header), "Consistent");
 
       // TODO: we should colour spill slots
@@ -374,7 +386,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   };
 
   // Assign a register for a given Node, spilling if necessary.
-  auto AssignReg = [this, &IR, IREmit, &SpillReg, &ClassSize, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask](OrderedNode* CodeNode, uint32_t IP) {
+  auto AssignReg = [this, &IR, IREmit, &SpillReg, &ClassSize, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask](OrderedNode* CodeNode, IROp_Header *Pivot) {
     const auto Node = IR.GetID(CodeNode);
     const auto IROp = IR.GetOp<IROp_Header>(CodeNode);
 
@@ -393,7 +405,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     // TODO: Maybe specialize this function for pairs vs not-pairs?
     while (std::popcount(Class->Available) < ClassSize(OrigClassType)) {
       IREmit->SetWriteCursorBefore(CodeNode);
-      SpillReg(Class, IP);
+      SpillReg(Class, Pivot);
     }
 
     // Now that we've spilled, there are enough registers. But the register file
@@ -424,8 +436,9 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       LOGMAN_THROW_AA_FMT(GetRegClassFromNode(&IR, IR.GetOp<IROp_Header>(Old)) == GPRClass, "Must be a scalar due to alignment and free "
                                                                                             "neighbour");
       auto Copy = IREmit->_Copy(Map(Old));
+      printf("copy %d -> %d -> %d\n", IR.GetID(Old).Value, IR.GetID(Map(Old)).Value, IR.GetID(Copy).Value),
 
-      Remap(Old, Copy);
+        Remap(Old, Copy);
       FreeReg(PhysicalRegister(GPRClass, Blocked));
       SetReg(Copy, Class, PhysicalRegister(GPRClass, NewReg));
 
@@ -437,6 +450,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     // Assign a free register in the appropriate class
     // Now that we have split live ranges, this must succeed.
     unsigned Reg = std::countr_zero(Available);
+    printf("assigning %u <-- %u\n", IR.GetID(CodeNode).Value, Reg);
     SetReg(CodeNode, Class, PhysicalRegister(OrigClassType, Reg));
   };
 
@@ -522,12 +536,13 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
         LOGMAN_THROW_AA_FMT(IsOld(Old), "before remapping");
 
         if (!IsInRegisterFile(Old)) {
+          printf("not in the file %d\n", IR.GetID(Old).Value);
           LOGMAN_THROW_AA_FMT(SpillSlots.at(IR.GetID(Old).Value), "Must have been spilled");
           IREmit->SetWriteCursorBefore(CodeNode);
           auto Fill = InsertFill(Old);
 
           Remap(Old, Fill);
-          AssignReg(Fill, IP);
+          AssignReg(Fill, IROp);
         }
       }
 
@@ -544,7 +559,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
 
       // Assign destinations
       if (GetHasDest(IROp->Op)) {
-        AssignReg(CodeNode, IP);
+        AssignReg(CodeNode, IROp);
       }
 
       // XXX TODO: Move up so we can share a reg with killed dest
@@ -564,7 +579,10 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
         auto New = IR.GetNode(IROp->Args[i]);
         auto Old = Unmap(New);
 
+        printf("source %d (was %d)\n", IR.GetID(Old).Value, IsInRegisterFile(Old));
+        LOGMAN_THROW_AA_FMT(IsInRegisterFile(Old), "instructions sources in file");
         if (!SourcesNextUses[SourceIndex]) {
+          printf("killing %d (was %d)\n", IR.GetID(New).Value, IR.GetID(Old).Value);
           FreeReg(SSAToReg.at(IR.GetID(New).Value));
         }
 
