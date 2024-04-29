@@ -364,8 +364,24 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     SSAToReg.at(Index) = Reg;
   };
 
+  // Get the mask of avaiable registers for a given register class
+  auto AvailableMask = [](auto Class, bool Pair) {
+    uint32_t Available = Class->Available;
+
+    // Limit Available to only valid base registers for pairs
+    if (Pair) {
+      // Only choose register R if R and R + 1 are both free.
+      Available &= (Available >> 1);
+
+      // Only consider aligned registers
+      Available &= EVEN_BITS;
+    }
+
+    return Available;
+  };
+
   // Assign a register for a given Node, spilling if necessary.
-  auto AssignReg = [this, &IR, IREmit, &SpillReg, &ClassSize, &Remap, &FreeReg, &SetReg, &Map](OrderedNode* CodeNode, uint32_t IP) {
+  auto AssignReg = [this, &IR, IREmit, &SpillReg, &ClassSize, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask](OrderedNode* CodeNode, uint32_t IP) {
     const auto Node = IR.GetID(CodeNode);
     const auto IROp = IR.GetOp<IROp_Header>(CodeNode);
 
@@ -387,24 +403,12 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       SpillReg(Class, IP);
     }
 
-    // Now that we've spilled, there are enough registers. Try to assign one.
-    uint32_t Available = Class->Available;
-
-    // Limit Available to only valid base registers for pairs
-    if (Pair) {
-      // Only choose register R if R and R + 1 are both free.
-      Available &= (Available >> 1);
-
-      // Only consider aligned registers
-      Available &= EVEN_BITS;
-    }
-
+    // Now that we've spilled, there are enough registers. But the register file
+    // may be fragmented. In that case, ppick a scalar that is blocking a pair,
+    // and evict it to make room for the pair.
+    uint32_t Available = AvailableMask(Class, Pair);
     if (!Available) {
       LOGMAN_THROW_AA_FMT(OrigClassType == GPRPairClass, "Already spilled");
-
-      // Even though there are enough registers, the register file is
-      // fragmented. Pick a scalar that is blocking a pair, and evict it to make
-      // room for the pair.
 
       // First, find a free scalar. There must be at least 2.
       Available = Class->Available;
@@ -432,17 +436,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       FreeReg(PhysicalRegister(GPRClass, Blocked));
       SetReg(Copy, Class, PhysicalRegister(GPRClass, NewReg));
 
-      // TODO: Deduplicate me!!
-      Available = Class->Available;
-
-      // Limit Available to only valid base registers for pairs
-      if (Pair) {
-        // Only choose register R if R and R + 1 are both free.
-        Available &= (Available >> 1);
-
-        // Only consider aligned registers
-        Available &= EVEN_BITS;
-      }
+      Available = AvailableMask(Class, Pair);
     }
 
     LOGMAN_THROW_AA_FMT(Available != 0, "Post-condition of spill and shuffle");
