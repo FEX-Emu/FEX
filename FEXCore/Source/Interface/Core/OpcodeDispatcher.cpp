@@ -342,7 +342,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
+  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags);
   uint8_t Size = GetDstSize(Op);
   const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
 
@@ -355,7 +355,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     OrderedNode* DestMem = MakeSegmentAddress(Op, Op->Dest);
     Before = _AtomicFetchAdd(IR::SizeToOpSize(Size), ALUOp, DestMem);
   } else {
-    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   }
 
   OrderedNode* Result = CalculateFlags_ADC(Size, Before, Src);
