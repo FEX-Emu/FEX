@@ -10,7 +10,7 @@ import fnmatch
 # Wrapper globals
 project_root = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
 ignore_file_path = os.path.join(project_root, ".clang-format-ignore")
-clang_format_command = "clang-format"
+clang_format_command = os.getenv("CLANG_FORMAT") or "clang-format"
 
 
 def glob_to_regex(pattern):
