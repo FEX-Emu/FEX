@@ -340,13 +340,19 @@ OrderedNode* OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode*
     HandleNZCV_RMW();
     Res = _AdcWithFlags(OpSize, Src1, Src2);
   } else {
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    Res = _Adc(OpSize, Src1, Src2);
+    // Need to zero-extend for correct comparisons below
+    Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
+
+    // Note that we do not extend Src2PlusCF, since we depend on proper
+    // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
+    OrderedNode* Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
+
+    // Need to zero-extend for the comparison.
+    Res = _Add(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, One, Zero);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, One, Zero);
-    auto SelectCF = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+    // TODO: We can fold that second Bfe in (cmp uxth).
+    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Res, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
@@ -375,13 +381,17 @@ OrderedNode* OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode*
     // Rectify output carry
     CarryInvert();
   } else {
+    // Zero extend for correct comparison behaviour with Src1 = 0xffff.
+    Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
+
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    Res = _Sub(OpSize, Src1, _Add(OpSize, Src2, CF));
+    auto Src1MinusCF = _Sub(OpSize, Src1, CF);
+
+    Res = _Sub(OpSize, Src1MinusCF, Src2);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
-    auto SelectCF = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
+    // Need to zero-extend for correct comparisons below
+    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Src1MinusCF, Res, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
