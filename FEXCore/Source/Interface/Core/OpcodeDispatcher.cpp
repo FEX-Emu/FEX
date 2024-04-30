@@ -3396,8 +3396,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
         // We'll calculate PF/AF after the loop, so use them as temporaries here.
-        _StoreRegister(Src1, false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
-        _StoreRegister(Src2, false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+        _StoreRegister(Src1, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+        _StoreRegister(Src2, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
 
         OrderedNode* TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -3436,8 +3436,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     // Make sure to start a new block after ending this one
     {
       // Grab the sources from the last iteration so we can set flags.
-      auto Src1 = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
-      auto Src2 = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+      auto Src1 = _LoadRegister(offsetof(FEXCore::Core::CPUState, pf_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
+      auto Src2 = _LoadRegister(offsetof(FEXCore::Core::CPUState, af_raw), GPRClass, GPRFixedClass, CTX->GetGPRSize());
       GenerateFlags_SUB(Op, Src2, Src1);
       CalculateDeferredFlags();
     }
@@ -4406,7 +4406,7 @@ OrderedNode* OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8
   if (Size == -1) {
     Size = GPRSize;
   }
-  OrderedNode* Reg = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
+  OrderedNode* Reg = _LoadRegister(offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
@@ -4425,7 +4425,7 @@ OrderedNode* OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
   const auto VectorOffset =
     CTX->HostFeatures.SupportsAVX ? offsetof(Core::CPUState, xmm.avx.data[XMM][0]) : offsetof(Core::CPUState, xmm.sse.data[XMM][0]);
 
-  OrderedNode* Reg = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
+  OrderedNode* Reg = _LoadRegister(VectorOffset, FPRClass, FPRFixedClass, VectorSize);
   return Reg;
 }
 
@@ -4442,7 +4442,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, OrderedNode* const Src, i
     Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, Reg, Src);
   }
 
-  _StoreRegister(Reg, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
+  _StoreRegister(Reg, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode* const Src) {
@@ -4450,7 +4450,7 @@ void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode* const Src) {
   const auto VectorOffset =
     CTX->HostFeatures.SupportsAVX ? offsetof(Core::CPUState, xmm.avx.data[XMM][0]) : offsetof(Core::CPUState, xmm.sse.data[XMM][0]);
 
-  _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
+  _StoreRegister(Src, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
 }
 
 OrderedNode* OpDispatchBuilder::LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op,

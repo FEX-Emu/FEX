@@ -296,7 +296,6 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       break;
     }
 
-    LOGMAN_THROW_A_FMT(!Op->IsPrewrite, "PF/AF writes are fixed-form");
     unsigned Flag = FlagForOffset(Op->Offset);
 
     return {
