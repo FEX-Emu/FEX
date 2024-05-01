@@ -798,9 +798,13 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) con
   return Res;
 }
 
+constexpr std::array<char, std::char_traits<char>::length(GIT_DESCRIBE_STRING) + 1> GitString = {GIT_DESCRIBE_STRING};
+static_assert(GitString.size() < 32);
+
 // Hypervisor CPUID information leaf
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
+  constexpr uint32_t MaximumSubLeafNumber = 2;
   if (Leaf == 0) {
     // EAX[3:0] Is the host architecture that FEX is running under
 #ifdef _M_X86_64
@@ -812,6 +816,15 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) con
 #else
     // EAX[3:0] = 0 = Unknown architecture
 #endif
+
+    // EAX[15:4] = Reserved
+
+    // EAX[31:16] = Maximum sub-leaf value.
+    Res.eax |= MaximumSubLeafNumber << 16;
+  } else if (Leaf == 1) {
+    memcpy(&Res, GitString.data(), std::min<size_t>(GitString.size(), sizeof(FEXCore::CPUID::FunctionResults)));
+  } else if (Leaf == 2) {
+    memcpy(&Res, GitString.data() + 16, std::min<size_t>(std::max<ssize_t>(0, GitString.size() - 16), sizeof(FEXCore::CPUID::FunctionResults)));
   }
 
   return Res;
@@ -917,11 +930,6 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
   return Res;
 }
 
-constexpr char ProcessorBrand[32] = {GIT_DESCRIBE_STRING};
-
-constexpr ssize_t DESCRIBE_STR_SIZE = std::char_traits<char>::length(GIT_DESCRIBE_STRING);
-static_assert(DESCRIBE_STR_SIZE < 32);
-
 // Processor brand string
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf) const {
   return Function_8000_0002h(Leaf, GetCPUID());
@@ -937,22 +945,24 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) con
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
-  memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[0], std::min(ssize_t {16L}, DESCRIBE_STR_SIZE));
+  auto& Data = PerCPUData[CPU];
+  memcpy(&Res, Data.ProductName, std::min(strlen(Data.ProductName), sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
-  memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[16], std::max(ssize_t {0L}, DESCRIBE_STR_SIZE - 16));
+  auto& Data = PerCPUData[CPU];
+  const auto RemainingStringSize = std::max<ssize_t>(0, strlen(Data.ProductName) - 16);
+  memcpy(&Res, Data.ProductName + 16, std::min<size_t>(RemainingStringSize, sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
   auto& Data = PerCPUData[CPU];
-  memcpy(&Res, Data.ProductName, std::min(strlen(Data.ProductName), sizeof(FEXCore::CPUID::FunctionResults)));
+  const auto RemainingStringSize = std::max<ssize_t>(0, strlen(Data.ProductName) - 32);
+  memcpy(&Res, Data.ProductName + 32, std::min<size_t>(RemainingStringSize, sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
 }
 
