@@ -1,4 +1,4 @@
-# FEX-2404
+# FEX-2405
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -166,8 +166,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 - [Host.cpp](../ThunkLibs/libvulkan/Host.cpp)
 
 #### X11
-- [libX11_Guest.cpp](../ThunkLibs/libX11/libX11_Guest.cpp): Handles callbacks and varargs
-- [libX11_Host.cpp](../ThunkLibs/libX11/libX11_Host.cpp): Handles callbacks and varargs
 - [libXext_Guest.cpp](../ThunkLibs/libXext/libXext_Guest.cpp)
 - [libXext_Host.cpp](../ThunkLibs/libXext/libXext_Host.cpp)
 - [libXfixes_Guest.cpp](../ThunkLibs/libXfixes/libXfixes_Guest.cpp)
@@ -204,42 +202,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### wayland-client
 - [Guest.cpp](../ThunkLibs/libwayland-client/Guest.cpp)
 - [Host.cpp](../ThunkLibs/libwayland-client/Host.cpp)
-
-#### xcb
-- [libxcb_Guest.cpp](../ThunkLibs/libxcb/libxcb_Guest.cpp)
-- [libxcb_Host.cpp](../ThunkLibs/libxcb/libxcb_Host.cpp)
-
-#### xcb-dri2
-- [libxcb-dri2_Guest.cpp](../ThunkLibs/libxcb-dri2/libxcb-dri2_Guest.cpp)
-- [libxcb-dri2_Host.cpp](../ThunkLibs/libxcb-dri2/libxcb-dri2_Host.cpp)
-
-#### xcb-dri3
-- [libxcb-dri3_Guest.cpp](../ThunkLibs/libxcb-dri3/libxcb-dri3_Guest.cpp)
-- [libxcb-dri3_Host.cpp](../ThunkLibs/libxcb-dri3/libxcb-dri3_Host.cpp)
-
-#### xcb-glx
-- [Guest.cpp](../ThunkLibs/libxcb-glx/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb-glx/Host.cpp)
-
-#### xcb-present
-- [Guest.cpp](../ThunkLibs/libxcb-present/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb-present/Host.cpp)
-
-#### xcb-randr
-- [Guest.cpp](../ThunkLibs/libxcb-randr/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb-randr/Host.cpp)
-
-#### xcb-shm
-- [libxcb-shm_Guest.cpp](../ThunkLibs/libxcb-shm/libxcb-shm_Guest.cpp)
-- [libxcb-shm_Host.cpp](../ThunkLibs/libxcb-shm/libxcb-shm_Host.cpp)
-
-#### xcb-sync
-- [Guest.cpp](../ThunkLibs/libxcb-sync/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb-sync/Host.cpp)
-
-#### xcb-xfixes
-- [libxcb-xfixes_Guest.cpp](../ThunkLibs/libxcb-xfixes/libxcb-xfixes_Guest.cpp)
-- [libxcb-xfixes_Host.cpp](../ThunkLibs/libxcb-xfixes/libxcb-xfixes_Host.cpp)
 
 #### xshmfence
 - [Guest.cpp](../ThunkLibs/libxshmfence/Guest.cpp)
