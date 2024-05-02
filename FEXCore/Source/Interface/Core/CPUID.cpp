@@ -841,9 +841,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
 
   // RDTSCP is disabled on WIN32/Wine because there is no sane way to query processor ID.
 #ifndef _WIN32
-  constexpr uint32_t SUPPORTS_RDTSCP = 0;
-#else
   constexpr uint32_t SUPPORTS_RDTSCP = 1;
+#else
+  constexpr uint32_t SUPPORTS_RDTSCP = 0;
 #endif
   FEXCore::CPUID::FunctionResults Res {};
 
