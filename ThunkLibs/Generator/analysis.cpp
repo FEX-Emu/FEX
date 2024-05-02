@@ -545,6 +545,10 @@ void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
 
       for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
         auto member_type = member->getType().getTypePtr();
+        if (type_repack_info.UsesCustomRepackFor(member) && member_type->isPointerType() && member_type->getPointeeType()->isStructureType()) {
+          continue;
+        }
+
         while (member_type->isArrayType()) {
           member_type = member_type->getArrayElementTypeNoTypeQual();
         }

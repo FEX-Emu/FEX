@@ -16,12 +16,11 @@ $end_info$
 
 #include <cstring>
 #include <mutex>
-#include <unordered_map>
 #include <string_view>
 
-#include <dlfcn.h>
-
 #include "thunkgen_host_libvulkan.inl"
+
+#include <common/X11Manager.h>
 
 static bool SetupInstance {};
 static std::mutex SetupMutex {};
@@ -49,6 +48,67 @@ static void DoSetupWithInstance(VkInstance instance) {
 }
 
 #define FEXFN_IMPL(fn) fexfn_impl_libvulkan_##fn
+
+static X11Manager x11_manager;
+
+static void fexfn_impl_libvulkan_SetGuestXGetVisualInfo(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+  MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXGetVisualInfo);
+}
+
+static void fexfn_impl_libvulkan_SetGuestXSync(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+  MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXSync);
+}
+
+static void fexfn_impl_libvulkan_SetGuestXDisplayString(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+  MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXDisplayString);
+}
+
+void fex_custom_repack_entry(host_layout<VkXcbSurfaceCreateInfoKHR>& to, const guest_layout<VkXcbSurfaceCreateInfoKHR>& from) {
+  // TODO: xcb_aux_sync?
+  to.data.connection = x11_manager.GuestToHostConnection(const_cast<xcb_connection_t*>(from.data.connection.force_get_host_pointer()));
+}
+
+bool fex_custom_repack_exit(guest_layout<VkXcbSurfaceCreateInfoKHR>&, const host_layout<VkXcbSurfaceCreateInfoKHR>&) {
+  // TODO: xcb_sync?
+  return false;
+}
+
+void fex_custom_repack_entry(host_layout<VkXlibSurfaceCreateInfoKHR>& to, const guest_layout<VkXlibSurfaceCreateInfoKHR>& from) {
+  to.data.dpy = x11_manager.GuestToHostDisplay(const_cast<Display*>(from.data.dpy.force_get_host_pointer()));
+}
+
+bool fex_custom_repack_exit(guest_layout<VkXlibSurfaceCreateInfoKHR>&, const host_layout<VkXlibSurfaceCreateInfoKHR>& from) {
+  x11_manager.HostXFlush(from.data.dpy);
+  return false;
+}
+
+static VkResult fexfn_impl_libvulkan_vkAcquireXlibDisplayEXT(VkPhysicalDevice a_0, guest_layout<Display*> a_1, VkDisplayKHR a_2) {
+  auto host_display = x11_manager.GuestToHostDisplay(a_1.force_get_host_pointer());
+  auto ret = fexldr_ptr_libvulkan_vkAcquireXlibDisplayEXT(a_0, host_display, a_2);
+  x11_manager.HostXFlush(host_display);
+  return ret;
+}
+
+static VkResult fexfn_impl_libvulkan_vkGetRandROutputDisplayEXT(VkPhysicalDevice a_0, guest_layout<Display*> a_1, RROutput a_2, VkDisplayKHR* a_3) {
+  auto host_display = x11_manager.GuestToHostDisplay(a_1.force_get_host_pointer());
+  auto ret = fexldr_ptr_libvulkan_vkGetRandROutputDisplayEXT(a_0, host_display, a_2, a_3);
+  x11_manager.HostXFlush(host_display);
+  return ret;
+}
+
+static VkBool32 fexfn_impl_libvulkan_vkGetPhysicalDeviceXcbPresentationSupportKHR(VkPhysicalDevice a_0, uint32_t a_1,
+                                                                                  guest_layout<xcb_connection_t*> a_2, xcb_visualid_t a_3) {
+  auto host_connection = x11_manager.GuestToHostConnection(a_2.force_get_host_pointer());
+  return fexldr_ptr_libvulkan_vkGetPhysicalDeviceXcbPresentationSupportKHR(a_0, a_1, host_connection, a_3);
+}
+
+static VkBool32 fexfn_impl_libvulkan_vkGetPhysicalDeviceXlibPresentationSupportKHR(VkPhysicalDevice a_0, uint32_t a_1,
+                                                                                   guest_layout<Display*> a_2, VisualID a_3) {
+  auto host_display = x11_manager.GuestToHostDisplay(a_2.force_get_host_pointer());
+  auto ret = fexldr_ptr_libvulkan_vkGetPhysicalDeviceXlibPresentationSupportKHR(a_0, a_1, host_display, a_3);
+  x11_manager.HostXFlush(host_display);
+  return ret;
+}
 
 // Functions with callbacks are overridden to ignore the guest-side callbacks
 
@@ -146,6 +206,14 @@ static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
   } else if (a_1 == "vkFreeMemory"sv) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
+  } else if (a_1 == "vkAcquireXlibDisplayEXT"sv) {
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAcquireXlibDisplayEXT;
+  } else if (a_1 == "vkGetRandROutputDisplayEXT"sv) {
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkGetRandROutputDisplayEXT;
+  } else if (a_1 == "vkGetPhysicalDeviceXcbPresentationSupportKHR"sv) {
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkGetPhysicalDeviceXcbPresentationSupportKHR;
+  } else if (a_1 == "vkGetPhysicalDeviceXlibPresentationSupportKHR"sv) {
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkGetPhysicalDeviceXlibPresentationSupportKHR;
   }
   return nullptr;
 }

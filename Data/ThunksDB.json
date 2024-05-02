@@ -30,16 +30,10 @@
     },
     "Vulkan": {
       "Library": "libvulkan-guest.so",
-      "Depends": [
-        "xcb"
-      ],
       "Overlay": [
         "@PREFIX_LIB@/libvulkan.so",
         "@PREFIX_LIB@/libvulkan.so.1",
         "@HOME@/.local/share/Steam/ubuntu12_32/steam-runtime/pinned_libs_64/libvulkan.so.1"
-      ],
-      "Comment": [
-        "Vulkan library relies on xcb, otherwise it crashes with jemalloc"
       ]
     },
     "xcb": {
