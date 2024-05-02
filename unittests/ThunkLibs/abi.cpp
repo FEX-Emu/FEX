@@ -615,7 +615,8 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
                                         "struct B { C* a; int16_t b; };\n"
                                         "struct A { int32_t a; B b; };\n"
                                         "template<> struct fex_gen_config<&B::a> : fexgen::custom_repack {};\n"
-                                        "template<> struct fex_gen_type<A> {};\n",
+                                        "template<> struct fex_gen_type<A> {};\n"
+                                        "template<> struct fex_gen_type<C> {};\n",
                                         guest_abi);
 
       INFO(FormatDataLayout(action->host_layout));
@@ -699,7 +700,8 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
                                       "#endif\n"
                                       "struct A { B* a; };\n"
                                       "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
-                                      "template<> struct fex_gen_type<A> {};\n",
+                                      "template<> struct fex_gen_type<A> {};\n"
+                                      "template<> struct fex_gen_type<B> {};\n",
                                       guest_abi);
 
     INFO(FormatDataLayout(action->host_layout));
@@ -720,15 +722,16 @@ TEST_CASE_METHOD(Fixture, "DataLayoutPointers") {
                                       "struct B {};\n"
                                       "struct A { B* a; };\n"
                                       "template<> struct fex_gen_config<&A::a> : fexgen::custom_repack {};\n"
-                                      "template<> struct fex_gen_type<A> {};\n",
+                                      "template<> struct fex_gen_type<A> {};\n"
+                                      "template<> struct fex_gen_type<B> {};\n",
                                       guest_abi);
 
     INFO(FormatDataLayout(action->host_layout));
 
     REQUIRE(action->guest_layout->contains("A"));
     REQUIRE(action->guest_layout->contains("B"));
-    CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::Full);
     CHECK(action->GetTypeCompatibility("struct A") == TypeCompatibility::Repackable);
+    CHECK(action->GetTypeCompatibility("struct B") == TypeCompatibility::Full);
   }
 
   SECTION("Self-referencing struct (like VkBaseOutStructure)") {

@@ -240,20 +240,23 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         assert(template_args.size() == 3);
 
         auto function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl());
-        auto param_idx = template_args[1].getAsIntegral().getZExtValue();
+        auto param_idx = template_args[1].getAsIntegral().getSExtValue();
         clang::QualType type = context.getCanonicalType(template_args[2].getAsType());
         type = type->getLocallyUnqualifiedSingleStepDesugaredType();
 
-        if (param_idx >= function->getNumParams()) {
+        if (param_idx >= function->getNumParams() || param_idx < -1) {
           throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(1).getLocation(),
                              "Out-of-bounds parameter index passed to fex_gen_param");
         }
 
-        if (!type->isVoidType() && !context.hasSameType(type, function->getParamDecl(param_idx)->getType())) {
+        auto expected_type = param_idx == -1 ? function->getReturnType() : function->getParamDecl(param_idx)->getType();
+
+        if (!type->isVoidType() && !context.hasSameType(type, expected_type)) {
+          auto loc = param_idx == -1 ? function->getReturnTypeSourceRange().getBegin() :
+                                       function->getParamDecl(param_idx)->getTypeSourceInfo()->getTypeLoc().getBeginLoc();
           throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(2).getLocation(),
                              "Type passed to fex_gen_param doesn't match the function signature")
-            .addNote(report_error(function->getParamDecl(param_idx)->getTypeSourceInfo()->getTypeLoc().getBeginLoc(), "Expected this type "
-                                                                                                                      "instead"));
+            .addNote(report_error(loc, "Expected this type instead"));
         }
 
         param_annotations[function][param_idx] = GetParameterAnnotations(context, decl);
@@ -366,6 +369,9 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
               continue;
             }
 
+            if (data.param_annotations[param_idx].is_passthrough && !data.custom_host_impl) {
+              throw report_error(param_loc, "Passthrough annotation requires custom host implementation");
+            }
             // Skip pointers-to-structs passed through to the host in guest_layout.
             // This avoids pulling in member types that can't be processed.
             if (data.param_annotations[param_idx].is_passthrough && param_type->isPointerType() &&
@@ -399,6 +405,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             if (param_type->isFunctionPointerType()) {
               if (param_idx == retval_index) {
                 // TODO: We already rely on this in a few places...
+                // TODO: Revisit now that we support ptr_passthrough for return values
                 //                                throw report_error(template_arg_loc, "Support for returning function pointers is not implemented");
                 continue;
               }
@@ -460,10 +467,6 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                 check_struct_type(pointee_type.getTypePtr());
                 types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType {});
               } else if (data.param_annotations[param_idx].is_passthrough) {
-                if (!data.custom_host_impl) {
-                  throw report_error(param_loc, "Passthrough annotation requires custom host implementation");
-                }
-
                 // Nothing to do
               } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
                 throw report_error(param_loc, "Unsupported parameter type")
@@ -542,6 +545,10 @@ void AnalysisAction::CoverReferencedTypes(clang::ASTContext& context) {
 
       for (auto* member : type->getAsStructureType()->getDecl()->fields()) {
         auto member_type = member->getType().getTypePtr();
+        if (type_repack_info.UsesCustomRepackFor(member) && member_type->isPointerType() && member_type->getPointeeType()->isStructureType()) {
+          continue;
+        }
+
         while (member_type->isArrayType()) {
           member_type = member_type->getArrayElementTypeNoTypeQual();
         }

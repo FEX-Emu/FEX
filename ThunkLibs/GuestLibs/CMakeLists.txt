@@ -195,71 +195,9 @@ if (BITNESS EQUAL 64)
   # target_link_libraries(SDL2-guest PRIVATE GL)
   # target_link_libraries(SDL2-guest PRIVATE dl)
 
-  find_package(PkgConfig)
-  pkg_search_module(X11 REQUIRED x11)
-  version_to_variables(${X11_VERSION} X11)
-
-  generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
-  add_guest_lib(X11 "libX11.so.6")
-
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
-
-  generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
-  add_guest_lib(Xext "libXext.so.6")
-
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
-
-  generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
-  add_guest_lib(Xrender "libXrender.so.1")
-
-  generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
-  add_guest_lib(Xfixes "libXfixes.so.3")
-
   generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
   target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
   add_guest_lib(vulkan "libvulkan.so.1")
-
-  find_package(PkgConfig)
-  pkg_search_module(XCB REQUIRED xcb)
-  version_to_variables(${XCB_VERSION} XCB)
-
-  generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
-  add_guest_lib(xcb "libxcb.so.1")
-
-  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MAJOR=${XCB_VERSION_MAJOR})
-  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
-  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
-
-  generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
-  add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
-
-  generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
-  add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
-
-  generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
-  add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
-
-  generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
-  add_guest_lib(xcb-shm "libxcb-shm.so.0")
-
-  generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
-  add_guest_lib(xcb-sync "libxcb-sync.so.1")
-
-  generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
-  add_guest_lib(xcb-present "libxcb-present.so.0")
-
-  generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
-  add_guest_lib(xcb-randr "libxcb-randr.so.0")
-
-  generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
-  add_guest_lib(xcb-glx "libxcb-glx.so.0")
-
-  generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
-  add_guest_lib(xshmfence "libxshmfence.so.1")
 
   generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)

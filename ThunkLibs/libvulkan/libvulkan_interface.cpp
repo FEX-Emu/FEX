@@ -28,6 +28,17 @@ struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen:
 template<typename>
 struct fex_gen_type {};
 
+// internal use
+void SetGuestXSync(uintptr_t, uintptr_t);
+void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
+void SetGuestXDisplayString(uintptr_t, uintptr_t);
+template<>
+struct fex_gen_config<SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<>
+struct fex_gen_config<SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<>
+struct fex_gen_config<SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+
 // So-called "dispatchable" handles are represented as opaque pointers.
 // In addition to marking them as such, API functions that create these objects
 // need special care since they wrap these handles in another pointer, which
@@ -91,9 +102,9 @@ struct fex_gen_type<VkAllocationCallbacks> : fexgen::opaque_type {};
 
 // X11 interop
 template<>
-struct fex_gen_type<Display> : fexgen::opaque_type {};
+struct fex_gen_config<&VkXcbSurfaceCreateInfoKHR::connection> : fexgen::custom_repack {};
 template<>
-struct fex_gen_type<xcb_connection_t> : fexgen::opaque_type {};
+struct fex_gen_config<&VkXlibSurfaceCreateInfoKHR::dpy> : fexgen::custom_repack {};
 
 // Wayland interop
 template<>
@@ -1398,9 +1409,13 @@ struct fex_gen_config<vkCmdDrawMeshTasksIndirectCountEXT> {};
 
 // vulkan_xlib_xrandr.h
 template<>
-struct fex_gen_config<vkAcquireXlibDisplayEXT> {};
+struct fex_gen_config<vkAcquireXlibDisplayEXT> : fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<vkGetRandROutputDisplayEXT> {};
+struct fex_gen_param<vkAcquireXlibDisplayEXT, 1, Display*> : fexgen::ptr_passthrough {};
+template<>
+struct fex_gen_config<vkGetRandROutputDisplayEXT> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkGetRandROutputDisplayEXT, 1, Display*> : fexgen::ptr_passthrough {};
 
 // vulkan_wayland.h
 template<>
@@ -1412,11 +1427,16 @@ struct fex_gen_config<vkGetPhysicalDeviceWaylandPresentationSupportKHR> {};
 template<>
 struct fex_gen_config<vkCreateXcbSurfaceKHR> {};
 template<>
-struct fex_gen_config<vkGetPhysicalDeviceXcbPresentationSupportKHR> {};
+struct fex_gen_config<vkGetPhysicalDeviceXcbPresentationSupportKHR> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkGetPhysicalDeviceXcbPresentationSupportKHR, 2, xcb_connection_t*> : fexgen::ptr_passthrough {};
 
 // vulkan_xlib.h
 template<>
 struct fex_gen_config<vkCreateXlibSurfaceKHR> {};
 template<>
-struct fex_gen_config<vkGetPhysicalDeviceXlibPresentationSupportKHR> {};
+struct fex_gen_config<vkGetPhysicalDeviceXlibPresentationSupportKHR> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkGetPhysicalDeviceXlibPresentationSupportKHR, 2, Display*> : fexgen::ptr_passthrough {};
+
 } // namespace internal
