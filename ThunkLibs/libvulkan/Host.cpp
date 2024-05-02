@@ -37,7 +37,7 @@ static void DoSetupWithInstance(VkInstance instance) {
     std::abort();
   }
 
-  // Query pointers for functions customized below
+  // Query pointers for non-EXT functions customized below
   (void*&)LDR_PTR(vkCreateDevice) = (void*)LDR_PTR(vkGetInstanceProcAddr)(instance, "vkCreateDevice");
 
   // Only do this lookup once.
@@ -240,6 +240,25 @@ static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, cons
 
   // Check for functions with custom implementations first
   if (auto ptr = LookupCustomVulkanFunction(a_1)) {
+    // If this function belongs to an instance extension, requery its address.
+    // This ensures fexldr_ptr_* is valid if the application creates a minimal
+    // VkInstance with no extensions before creating its actual instance.
+    using namespace std::string_view_literals;
+    if (a_1 == "vkGetRandROutputDisplayEXT"sv && !LDR_PTR(vkGetRandROutputDisplayEXT)) {
+      (void*&)LDR_PTR(vkGetRandROutputDisplayEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkGetRandROutputDisplayEXT");
+    }
+    if (a_1 == "vkAcquireXlibDisplayEXT"sv && !LDR_PTR(vkAcquireXlibDisplayEXT)) {
+      (void*&)LDR_PTR(vkAcquireXlibDisplayEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkAcquireXlibDisplayEXT");
+    }
+    const char* XcbPresent = "vkGetPhysicalDeviceXcbPresentationSupportKHR";
+    if (a_1 == std::string_view {XcbPresent} && !LDR_PTR(vkGetPhysicalDeviceXcbPresentationSupportKHR)) {
+      (void*&)LDR_PTR(vkGetPhysicalDeviceXcbPresentationSupportKHR) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, XcbPresent);
+    }
+    const char* XlibPresent = "vkGetPhysicalDeviceXlibPresentationSupportKHR";
+    if (a_1 == std::string_view {XlibPresent} && !LDR_PTR(vkGetPhysicalDeviceXlibPresentationSupportKHR)) {
+      (void*&)LDR_PTR(vkGetPhysicalDeviceXlibPresentationSupportKHR) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, XlibPresent);
+    }
+
     return ptr;
   }
 
