@@ -25,11 +25,21 @@
     * 1 - x86_64
     * 2 - AArch64
     * 3-15: **Reserved**
+  * Bits EAX[15:4] - **Reserved**
+  * Bits EAX[31:16] - Maximum subleaf input value for CPUID function 4000_0001h
 * EBX - **Reserved** - Read as zero
 * ECX - **Reserved** - Read as zero
 * EDX - **Reserved** - Read as zero
 
-### Sub-Leaf 0000_0001 - FFFF_FFFF: **Reserved**
+### Sub-leaf 1: ECX == 1
+* FEX version string signature. First 16-bytes
+* memcpy eax:ebx:ecx:edx in to the first 16-bytes of a string.
+
+### Sub-leaf 2: ECX == 2
+* FEX version string signature. Second 16-bytes
+* memcpy eax:ebx:ecx:edx in to the second 16-bytes of a string.
+
+### Sub-Leaf 0000_0003 - FFFF_FFFF: **Reserved**
 
 ## 4000_0002h - 4000_000Fh
 * **Reserved range**
