@@ -566,11 +566,13 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
           if (thunk.param_annotations[idx].is_passthrough) {
             fmt::print(file, "guest_layout<{}> a_{}", get_guest_type_name(type), idx);
           } else {
-            file << format_decl(type, fmt::format("a_{}", idx));
+            fmt::print(file, "{}", format_decl(type, fmt::format("a_{}", idx)));
           }
         }
         // Using trailing return type as it makes handling function pointer returns much easier
-        file << ") -> " << thunk.return_type.getAsString() << ";\n";
+        bool is_passthrough_ret = thunk.param_annotations[-1].is_passthrough;
+        fmt::print(file, ") -> {}{}{};\n", is_passthrough_ret ? "guest_layout<" : "", thunk.return_type.getAsString(),
+                   is_passthrough_ret ? ">" : "");
       }
 
       // Check data layout compatibility of parameter types
@@ -676,7 +678,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
       if (!thunk.return_type->isVoidType()) {
         fmt::print(file, "  args->rv = ");
-        if (!thunk.return_type->isFunctionPointerType()) {
+        if (!thunk.return_type->isFunctionPointerType() && !thunk.param_annotations[-1].is_passthrough) {
           fmt::print(file, "to_guest(to_host_layout<{}>(", thunk.return_type.getAsString());
         }
       }
@@ -707,7 +709,7 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
         fmt::print(file, "{}", format_function_args(thunk, format_param));
       }
-      if (!thunk.return_type->isVoidType() && !thunk.return_type->isFunctionPointerType()) {
+      if (!thunk.return_type->isVoidType() && !thunk.return_type->isFunctionPointerType() && !thunk.param_annotations[-1].is_passthrough) {
         fmt::print(file, "))");
       }
       fmt::print(file, ");\n");
@@ -746,8 +748,8 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
       }
 
       std::string annotations;
-      for (int param_idx = 0; param_idx < info.args.size(); ++param_idx) {
-        if (param_idx != 0) {
+      for (int param_idx = -1; param_idx < (int)info.args.size(); ++param_idx) {
+        if (param_idx != -1) {
           annotations += ", ";
         }
 
