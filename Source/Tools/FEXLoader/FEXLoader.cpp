@@ -329,7 +329,8 @@ int main(int argc, char** argv, char** const envp) {
         LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
       }
     } else if (!LogFile.empty()) {
-      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
+      constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
     }
   }
 
