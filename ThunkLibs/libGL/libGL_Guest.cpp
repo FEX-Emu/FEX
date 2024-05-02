@@ -18,6 +18,7 @@ $end_info$
 
 #include <stdio.h>
 #include <cstdlib>
+#include <dlfcn.h>
 #include <functional>
 #include <string_view>
 #include <unordered_map>
@@ -72,8 +73,20 @@ voidFunc* glXGetProcAddressARB(const GLubyte* procname) {
 }
 }
 
+// Wrapper around malloc() without noexcept specifiers
+static void* malloc_wrapper(size_t size) {
+  return malloc(size);
+}
+
+static void OnInit() {
+  fexfn_pack_SetGuestMalloc((uintptr_t)malloc_wrapper, (uintptr_t)CallbackUnpack<decltype(malloc_wrapper)>::Unpack);
+  fexfn_pack_SetGuestXSync((uintptr_t)XSync, (uintptr_t)CallbackUnpack<decltype(XSync)>::Unpack);
+  fexfn_pack_SetGuestXGetVisualInfo((uintptr_t)XGetVisualInfo, (uintptr_t)CallbackUnpack<decltype(XGetVisualInfo)>::Unpack);
+  fexfn_pack_SetGuestXDisplayString((uintptr_t)XDisplayString, (uintptr_t)CallbackUnpack<decltype(XDisplayString)>::Unpack);
+}
+
 // libGL.so must pull in libX11.so as a dependency. Referencing some libX11
 // symbol here prevents the linker from optimizing away the unused dependency
 auto implicit_libx11_dependency = XSetErrorHandler;
 
-LOAD_LIB(libGL)
+LOAD_LIB_INIT(libGL, OnInit)

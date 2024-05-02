@@ -466,12 +466,22 @@ constexpr bool IsCompatible() {
   }
 }
 
+template<typename T>
+struct decaying_host_layout {
+  host_layout<T> data;
+  operator T() {
+    return data.data;
+  }
+};
+
 template<ParameterAnnotations Annotation, typename HostT, typename T>
 auto Projection(guest_layout<T>& data) {
   if constexpr (Annotation.is_passthrough) {
     return data;
   } else if constexpr ((IsCompatible<T, Annotation>() && std::is_same_v<T, HostT>) || !std::is_pointer_v<T>) {
-    return host_layout<HostT> {data}.data;
+    // Instead of using host_layout<HostT> { data }.data, return a wrapper object.
+    // This ensures that temporary lifetime extension can kick in at call-site.
+    return decaying_host_layout<HostT> {.data {data}};
   } else {
     // This argument requires temporary storage for repacked data
     // *and* it needs to call custom repack functions (if any)

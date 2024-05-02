@@ -19,7 +19,21 @@ struct fex_gen_config {
 };
 
 template<>
-struct fex_gen_config<glXGetProcAddress> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+struct fex_gen_config<glXGetProcAddress> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+
+// internal use
+void SetGuestMalloc(uintptr_t, uintptr_t);
+void SetGuestXSync(uintptr_t, uintptr_t);
+void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
+void SetGuestXDisplayString(uintptr_t, uintptr_t);
+template<>
+struct fex_gen_config<SetGuestMalloc> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<>
+struct fex_gen_config<SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<>
+struct fex_gen_config<SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<>
+struct fex_gen_config<SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 
 template<typename>
 struct fex_gen_type {};
@@ -37,20 +51,22 @@ struct fex_gen_type<_cl_context> : fexgen::opaque_type {};
 template<>
 struct fex_gen_type<_cl_event> : fexgen::opaque_type {};
 
-// Opaque for the purpose of libGL
+// host_layout is manually customized for this. Mark as opaque to please the interface parser
 template<>
 struct fex_gen_type<_XDisplay> : fexgen::opaque_type {};
 
-#ifndef IS_32BIT_THUNK
-// TODO: These are largely compatible, *but* contain function pointer members that need adjustment!
 template<>
-struct fex_gen_type<XExtData> : fexgen::assume_compatible_data_layout {};
-#endif
+struct fex_gen_type<XVisualInfo> : fexgen::emit_layout_wrappers {};
+template<>
+struct fex_gen_type<Visual> : fexgen::opaque_type {}; // Used in XVisualInfo; treat as opaque
 
 // Symbols queryable through glXGetProcAddr
 namespace internal {
 template<auto>
 struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {};
+
+template<auto, int, typename = void>
+struct fex_gen_param {};
 
 template<>
 struct fex_gen_config<glXQueryCurrentRendererStringMESA> {};
@@ -65,9 +81,11 @@ struct fex_gen_config<glXImportContextEXT> {};
 template<>
 struct fex_gen_config<glXGetCurrentReadDrawableSGI> {};
 template<>
-struct fex_gen_config<glXChooseFBConfigSGIX> {};
+struct fex_gen_config<glXChooseFBConfigSGIX> : fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<glXGetFBConfigFromVisualSGIX> {};
+struct fex_gen_config<glXGetFBConfigFromVisualSGIX> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetFBConfigFromVisualSGIX, 1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXCreateGLXPbufferSGIX> {};
 template<>
@@ -119,7 +137,9 @@ struct fex_gen_config<glXReleaseTexImageEXT> {};
 template<>
 struct fex_gen_config<glXSelectEventSGIX> {};
 template<>
-struct fex_gen_config<glXGetVisualFromFBConfigSGIX> {};
+struct fex_gen_config<glXGetVisualFromFBConfigSGIX> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetVisualFromFBConfigSGIX, -1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXGetClientString> {};
 template<>
@@ -129,7 +149,9 @@ struct fex_gen_config<glXQueryServerString> {};
 template<>
 struct fex_gen_config<glXGetCurrentDisplay> {};
 template<>
-struct fex_gen_config<glXCreateContext> {};
+struct fex_gen_config<glXCreateContext> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXCreateContext, 1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXCreateNewContext> {};
 template<>
@@ -139,19 +161,23 @@ struct fex_gen_config<glXGetCurrentDrawable> {};
 template<>
 struct fex_gen_config<glXGetCurrentReadDrawable> {};
 template<>
-struct fex_gen_config<glXChooseFBConfig> {};
+struct fex_gen_config<glXChooseFBConfig> : fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<glXGetFBConfigs> {};
+struct fex_gen_config<glXGetFBConfigs> : fexgen::custom_host_impl {};
 template<>
 struct fex_gen_config<glXCreatePbuffer> {};
 template<>
-struct fex_gen_config<glXCreateGLXPixmap> {};
+struct fex_gen_config<glXCreateGLXPixmap> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXCreateGLXPixmap, 1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXCreatePixmap> {};
 template<>
 struct fex_gen_config<glXCreateWindow> {};
 template<>
-struct fex_gen_config<glXGetConfig> {};
+struct fex_gen_config<glXGetConfig> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetConfig, 1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXGetFBConfigAttrib> {};
 template<>
@@ -195,9 +221,13 @@ struct fex_gen_config<glXUseXFont> {};
 template<>
 struct fex_gen_config<glXWaitGL> {};
 template<>
-struct fex_gen_config<glXChooseVisual> {};
+struct fex_gen_config<glXChooseVisual> : fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<glXGetVisualFromFBConfig> {};
+struct fex_gen_param<glXChooseVisual, -1, XVisualInfo*> : fexgen::ptr_passthrough {};
+template<>
+struct fex_gen_config<glXGetVisualFromFBConfig> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetVisualFromFBConfig, -1, XVisualInfo*> : fexgen::ptr_passthrough {};
 
 // template<> struct fex_gen_config<glXCreateContextAttribs> {};
 template<>
@@ -6179,7 +6209,9 @@ struct fex_gen_config<glXGetCurrentDisplayEXT> {};
 template<>
 struct fex_gen_config<glXGetAGPOffsetMESA> {};
 template<>
-struct fex_gen_config<glXCreateGLXPixmapMESA> {};
+struct fex_gen_config<glXCreateGLXPixmapMESA> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXCreateGLXPixmapMESA, 1, XVisualInfo*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXReleaseBuffersMESA> {};
 template<>
@@ -6193,7 +6225,7 @@ struct fex_gen_config<glXCopyImageSubDataNV> {};
 template<>
 struct fex_gen_config<glXDelayBeforeSwapNV> {};
 template<>
-struct fex_gen_config<glXEnumerateVideoDevicesNV> {};
+struct fex_gen_config<glXEnumerateVideoDevicesNV> {}; // TODO: Custom host impl
 template<>
 struct fex_gen_config<glXBindVideoDeviceNV> {};
 template<>

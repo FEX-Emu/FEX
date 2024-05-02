@@ -2,9 +2,6 @@
   "DB": {
     "GL": {
       "Library" : "libGL-guest.so",
-      "Depends": [
-        "X11"
-      ],
       "Overlay": [
         "@PREFIX_LIB@/libGL.so",
         "@PREFIX_LIB@/libGL.so.1",
