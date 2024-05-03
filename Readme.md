@@ -2,7 +2,7 @@
 # FEX - Fast x86 emulation frontend
 FEX allows you to run x86 and x86-64 binaries on an AArch64 host, similar to qemu-user and box86.
 It has native support for a rootfs overlay, so you don't need to chroot, as well as some thunklibs so it can forward things like GL to the host.
-FEX presents a Linux 5.0 interface to the guest, and supports both AArch64 and x86-64 as hosts.
+FEX presents a Linux 5.0+ interface to the guest, and supports only AArch64 as a host.
 FEX is very much work in progress, so expect things to change.
 
 
@@ -20,8 +20,8 @@ Ubuntu PPA is updated with our monthly releases.
 Please see [Building FEX](#building-fex).
 
 ## Getting Started
-FEX has been tested to build and run on ARMv8.0, ARMv8.1+, and x86-64(AVX or newer) hardware.
-ARMv7 and older x86 hardware will not work.
+FEX has been tested to build and run on ARMv8.0+ hardware.
+ARMv7 hardware will not work.
 Expected operating system usage is Linux. FEX has been tested with Ubuntu 20.04, 20.10, and 21.04. Also Arch Linux.
 
 On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#RootFS-Generation).
