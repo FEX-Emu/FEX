@@ -265,7 +265,7 @@ bool InitializeSquashFS() {
   return true;
 }
 
-fextl::string GetMountFolder() {
+const fextl::string& GetMountFolder() {
   return MountFolder;
 }
 } // namespace SquashFS

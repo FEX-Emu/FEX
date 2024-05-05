@@ -338,7 +338,7 @@ void HandleSocketData(int Socket) {
       break;
     }
     case FEXServerClient::PacketType::TYPE_GET_ROOTFS_PATH: {
-      fextl::string MountFolder = SquashFS::GetMountFolder();
+      const fextl::string& MountFolder = SquashFS::GetMountFolder();
 
       FEXServerClient::FEXServerResultPacket Res {
         .MountPath {
@@ -357,7 +357,7 @@ void HandleSocketData(int Socket) {
           .iov_len = sizeof(Res),
         },
         {
-          .iov_base = MountFolder.data(),
+          .iov_base = const_cast<char*>(MountFolder.data()),
           .iov_len = MountFolder.size(),
         },
         {
