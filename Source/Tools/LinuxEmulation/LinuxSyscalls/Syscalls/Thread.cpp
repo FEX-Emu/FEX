@@ -44,7 +44,7 @@ namespace FEX::HLE {
 
 struct ExecutionThreadHandler {
   FEXCore::Context::Context* CTX;
-  FEXCore::Core::InternalThreadState* Thread;
+  FEX::HLE::ThreadStateObject* Thread;
 };
 
 static void* ThreadHandler(void* Data) {
@@ -53,14 +53,13 @@ static void* ThreadHandler(void* Data) {
   auto Thread = Handler->Thread;
   FEXCore::Allocator::free(Handler);
   FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
-  CTX->ExecutionThread(Thread);
+  CTX->ExecutionThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
   FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
   return nullptr;
 }
 
-FEXCore::Core::InternalThreadState*
-CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
+FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   uint64_t flags = args->args.flags;
   FEXCore::Core::CPUState NewThreadState {};
   // Clone copies the parent thread's state
@@ -79,28 +78,28 @@ CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Fr
 
   if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
     if (flags & CLONE_SETTLS) {
-      x64::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(args->args.tls));
+      x64::SetThreadArea(NewThread->Thread->CurrentFrame, reinterpret_cast<void*>(args->args.tls));
     }
     // Set us to start just after the syscall instruction
-    x64::AdjustRipForNewThread(NewThread->CurrentFrame);
+    x64::AdjustRipForNewThread(NewThread->Thread->CurrentFrame);
   } else {
     if (flags & CLONE_SETTLS) {
-      x32::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(args->args.tls));
+      x32::SetThreadArea(NewThread->Thread->CurrentFrame, reinterpret_cast<void*>(args->args.tls));
     }
-    x32::AdjustRipForNewThread(NewThread->CurrentFrame);
+    x32::AdjustRipForNewThread(NewThread->Thread->CurrentFrame);
   }
 
   // We need to do some post-thread creation setup.
-  NewThread->StartPaused = true;
+  NewThread->Thread->StartPaused = true;
 
   // Initialize a new thread for execution.
   ExecutionThreadHandler* Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
   Arg->CTX = CTX;
   Arg->Thread = NewThread;
-  NewThread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
+  NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
 
   // Wait for the thread to have started.
-  NewThread->ThreadWaiting.Wait();
+  NewThread->Thread->ThreadWaiting.Wait();
 
   if (FEX::HLE::_SyscallHandler->NeedXIDCheck()) {
     // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
@@ -112,7 +111,7 @@ CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Fr
   }
 
   // Return the new threads TID
-  uint64_t Result = NewThread->ThreadManager.GetTID();
+  uint64_t Result = NewThread->Thread->ThreadManager.GetTID();
 
   // Sets the child TID to pointer in ParentTID
   if (flags & CLONE_PARENT_SETTID) {
@@ -121,7 +120,7 @@ CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Fr
 
   // Sets the child TID to the pointer in ChildTID
   if (flags & CLONE_CHILD_SETTID) {
-    NewThread->ThreadManager.set_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
+    NewThread->Thread->ThreadManager.set_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
     *reinterpret_cast<pid_t*>(args->args.child_tid) = Result;
   }
 
@@ -129,7 +128,7 @@ CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Fr
   // Additionally wakeup a futex at that address
   // Address /may/ be changed with SET_TID_ADDRESS syscall
   if (flags & CLONE_CHILD_CLEARTID) {
-    NewThread->ThreadManager.clear_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
+    NewThread->Thread->ThreadManager.clear_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
   }
 
   // clone3 flag
@@ -148,7 +147,7 @@ CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Fr
   return NewThread;
 }
 
-uint64_t HandleNewClone(FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame,
+uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame,
                         FEX::HLE::clone3_args* CloneArgs) {
   auto GuestArgs = &CloneArgs->args;
   uint64_t flags = GuestArgs->flags;
@@ -172,7 +171,7 @@ uint64_t HandleNewClone(FEXCore::Core::InternalThreadState* Thread, FEXCore::Con
 
     // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
     // Call execution thread directly since we already are on the new thread
-    NewThread->StartRunning.NotifyAll(); // Clear the start running flag
+    NewThread->Thread->StartRunning.NotifyAll(); // Clear the start running flag
     CreatedNewThreadObject = true;
   } else {
     // If we don't have CLONE_THREAD then we are effectively a fork
@@ -183,36 +182,36 @@ uint64_t HandleNewClone(FEXCore::Core::InternalThreadState* Thread, FEXCore::Con
 
     ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &CloneArgs->SignalMask, nullptr, sizeof(CloneArgs->SignalMask));
 
-    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
+    Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
     if (GuestArgs->stack == 0) {
       // Copies in the original thread's stack
     } else {
-      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
+      Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
     }
   }
 
   if (CloneArgs->Type == TYPE_CLONE3) {
     // If we are coming from a clone3 handler then we need to adjust RSP.
-    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] += CloneArgs->args.stack_size;
+    Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] += CloneArgs->args.stack_size;
   }
 
   if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
     if (flags & CLONE_SETTLS) {
-      x64::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
+      x64::SetThreadArea(NewThread->Thread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
     }
     // Set us to start just after the syscall instruction
-    x64::AdjustRipForNewThread(NewThread->CurrentFrame);
+    x64::AdjustRipForNewThread(NewThread->Thread->CurrentFrame);
   } else {
     if (flags & CLONE_SETTLS) {
-      x32::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
+      x32::SetThreadArea(NewThread->Thread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
     }
-    x32::AdjustRipForNewThread(NewThread->CurrentFrame);
+    x32::AdjustRipForNewThread(NewThread->Thread->CurrentFrame);
   }
 
   // Depending on clone settings, our TID and PID could have changed
-  Thread->ThreadManager.TID = FHU::Syscalls::gettid();
-  Thread->ThreadManager.PID = ::getpid();
-  FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
+  Thread->Thread->ThreadManager.TID = FHU::Syscalls::gettid();
+  Thread->Thread->ThreadManager.PID = ::getpid();
+  FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->Thread->ThreadManager.PID);
 
   if (CreatedNewThreadObject) {
     FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
@@ -222,12 +221,12 @@ uint64_t HandleNewClone(FEXCore::Core::InternalThreadState* Thread, FEXCore::Con
 
   // Start exuting the thread directly
   // Our host clone starts in a new stack space, so it can't return back to the JIT space
-  CTX->ExecutionThread(Thread);
+  CTX->ExecutionThread(Thread->Thread);
 
   FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
 
   // The rest of the context remains as is and the thread will continue executing
-  return Thread->StatusCode;
+  return Thread->Thread->StatusCode;
 }
 
 uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack,
@@ -386,6 +385,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
                                 // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
                                 FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
+                                auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
 
                                 if (Thread->ThreadManager.clear_child_tid) {
                                   std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
@@ -394,7 +394,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 }
 
                                 Thread->StatusCode = status;
-                                FEX::HLE::_SyscallHandler->TM.StopThread(Thread);
+                                FEX::HLE::_SyscallHandler->TM.StopThread(ThreadObject);
 
                                 return 0;
                               });

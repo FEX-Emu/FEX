@@ -54,7 +54,7 @@ constexpr static uint32_t X86_MINSIGSTKSZ = 0x2000U;
 static SignalDelegator* GlobalDelegator {};
 
 struct ThreadState {
-  FEXCore::Core::InternalThreadState* Thread {};
+  FEX::HLE::ThreadStateObject* Thread {};
 
   void* AltStackPtr {};
   stack_t GuestAltStack {
@@ -148,19 +148,19 @@ void SignalDelegator::HandleSignal(int Signal, void* Info, void* UContext) {
   } else {
     SignalHandler& Handler = HostHandlers[Signal];
     for (auto& HandlerFunc : Handler.Handlers) {
-      if (HandlerFunc(Thread, Signal, Info, UContext)) {
+      if (HandlerFunc(Thread->Thread, Signal, Info, UContext)) {
         // If the host handler handled the fault then we can continue now
         return;
       }
     }
 
-    if (Handler.FrontendHandler && Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
+    if (Handler.FrontendHandler && Handler.FrontendHandler(Thread->Thread, Signal, Info, UContext)) {
       return;
     }
 
     // Now let the frontend handle the signal
     // It's clearly a guest signal and this ends up being an OS specific issue
-    HandleGuestSignal(Thread, Signal, Info, UContext);
+    HandleGuestSignal(Thread->Thread, Signal, Info, UContext);
   }
 }
 
@@ -1739,11 +1739,11 @@ SignalDelegator::~SignalDelegator() {
   GlobalDelegator = nullptr;
 }
 
-FEXCore::Core::InternalThreadState* SignalDelegator::GetTLSThread() {
+FEX::HLE::ThreadStateObject* SignalDelegator::GetTLSThread() {
   return ThreadData.Thread;
 }
 
-void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState* Thread) {
+void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
   ThreadData.Thread = Thread;
 
   // Set up our signal alternative stack
@@ -1764,14 +1764,14 @@ void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState* Threa
   // Get the current host signal mask
   ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadData.CurrentSignalMask.Val, 8);
 
-  if (Thread != (FEXCore::Core::InternalThreadState*)UINTPTR_MAX) {
+  if (Thread->Thread) {
     // Reserve a small amount of deferred signal frames. Usually the stack won't be utilized beyond
     // 1 or 2 signals but add a few more just in case.
-    Thread->DeferredSignalFrames.reserve(8);
+    Thread->Thread->DeferredSignalFrames.reserve(8);
   }
 }
 
-void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState* Thread) {
+void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
   FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ * 16);
 
   ThreadData.AltStackPtr = nullptr;
@@ -1874,7 +1874,7 @@ uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t* ss, stack_t* o
   bool UsingAltStack {};
   uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
   uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
-  uint64_t GuestSP = Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
+  uint64_t GuestSP = Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
 
   if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) && GuestSP >= AltStackBase && GuestSP <= AltStackEnd) {
     UsingAltStack = true;
@@ -1977,7 +1977,7 @@ uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t* set, uint64_
     *oldset = OldSet;
   }
 
-  CheckForPendingSignals(GetTLSThread());
+  CheckForPendingSignals(GetTLSThread()->Thread);
 
   return 0;
 }
@@ -2040,7 +2040,7 @@ uint64_t SignalDelegator::GuestSigSuspend(uint64_t* set, size_t sigsetsize) {
   // then this is safe-ish
   ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
 
-  CheckForPendingSignals(GetTLSThread());
+  CheckForPendingSignals(GetTLSThread()->Thread);
 
   return Result == -1 ? -errno : Result;
 }

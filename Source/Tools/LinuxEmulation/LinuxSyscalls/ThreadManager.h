@@ -18,6 +18,9 @@ namespace FEX::HLE {
 class SyscallHandler;
 class SignalDelegator;
 
+struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
+  FEXCore::Core::InternalThreadState* Thread;
+};
 
 class ThreadManager final {
 public:
@@ -27,16 +30,16 @@ public:
 
   ~ThreadManager();
 
-  FEXCore::Core::InternalThreadState*
+  FEX::HLE::ThreadStateObject*
   CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState = nullptr, uint64_t ParentTID = 0);
-  void TrackThread(FEXCore::Core::InternalThreadState* Thread) {
+  void TrackThread(FEX::HLE::ThreadStateObject* Thread) {
     std::lock_guard lk(ThreadCreationMutex);
     Threads.emplace_back(Thread);
   }
 
-  void DestroyThread(FEXCore::Core::InternalThreadState* Thread);
-  void StopThread(FEXCore::Core::InternalThreadState* Thread);
-  void RunThread(FEXCore::Core::InternalThreadState* Thread);
+  void DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
+  void StopThread(FEX::HLE::ThreadStateObject* Thread);
+  void RunThread(FEX::HLE::ThreadStateObject* Thread);
 
   void Pause();
   void Run();
@@ -64,7 +67,7 @@ public:
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
 
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread, Start, Length);
+      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length);
     }
   }
 
@@ -78,11 +81,11 @@ public:
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
 
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread, Start, Length, callback);
+      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length, callback);
     }
   }
 
-  const fextl::vector<FEXCore::Core::InternalThreadState*>* GetThreads() const {
+  const fextl::vector<FEX::HLE::ThreadStateObject*>* GetThreads() const {
     return &Threads;
   }
 
@@ -91,7 +94,7 @@ private:
   FEX::HLE::SignalDelegator* SignalDelegation;
 
   FEXCore::ForkableUniqueMutex ThreadCreationMutex;
-  fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
+  fextl::vector<FEX::HLE::ThreadStateObject*> Threads;
 
   // Thread idling support.
   bool Running {};
@@ -99,7 +102,7 @@ private:
   std::condition_variable IdleWaitCV;
   std::atomic<uint32_t> IdleWaitRefCount {};
 
-  void HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread);
+  void HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
   void NotifyPause();
 };
 

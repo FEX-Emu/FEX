@@ -6,15 +6,17 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 namespace FEX::HLE {
-FEXCore::Core::InternalThreadState*
+FEX::HLE::ThreadStateObject*
 ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
-  auto Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
+  auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
+  ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
+  ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
 
   ++IdleWaitRefCount;
-  return Thread;
+  return ThreadStateObject;
 }
 
-void ThreadManager::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
+void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
   {
     std::lock_guard lk(ThreadCreationMutex);
     auto It = std::find(Threads.begin(), Threads.end(), Thread);
@@ -22,32 +24,33 @@ void ThreadManager::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
     Threads.erase(It);
   }
 
-  HandleThreadDeletion(Thread);
+  HandleThreadDeletion(Thread, NeedsTLSUninstall);
 }
 
-void ThreadManager::StopThread(FEXCore::Core::InternalThreadState* Thread) {
-  if (Thread->RunningEvents.Running.exchange(false)) {
-    SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Stop);
+void ThreadManager::StopThread(FEX::HLE::ThreadStateObject* Thread) {
+  if (Thread->Thread->RunningEvents.Running.exchange(false)) {
+    SignalDelegation->SignalThread(Thread->Thread, FEXCore::Core::SignalEvent::Stop);
   }
 }
 
-void ThreadManager::RunThread(FEXCore::Core::InternalThreadState* Thread) {
+void ThreadManager::RunThread(FEX::HLE::ThreadStateObject* Thread) {
   // Tell the thread to start executing
-  Thread->StartRunning.NotifyAll();
+  Thread->Thread->StartRunning.NotifyAll();
 }
 
-void ThreadManager::HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread) {
-  if (Thread->ExecutionThread) {
-    if (Thread->ExecutionThread->joinable()) {
-      Thread->ExecutionThread->join(nullptr);
+void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
+  if (Thread->Thread->ExecutionThread) {
+    if (Thread->Thread->ExecutionThread->joinable()) {
+      Thread->Thread->ExecutionThread->join(nullptr);
     }
 
-    if (Thread->ExecutionThread->IsSelf()) {
-      Thread->ExecutionThread->detach();
+    if (Thread->Thread->ExecutionThread->IsSelf()) {
+      Thread->Thread->ExecutionThread->detach();
     }
   }
 
-  CTX->DestroyThread(Thread);
+  CTX->DestroyThread(Thread->Thread, NeedsTLSUninstall);
+  delete Thread;
   --IdleWaitRefCount;
   IdleWaitCV.notify_all();
 }
@@ -56,7 +59,7 @@ void ThreadManager::NotifyPause() {
   // Tell all the threads that they should pause
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    SignalDelegation->SignalThread(Thread->Thread, FEXCore::Core::SignalEvent::Pause);
   }
 }
 
@@ -69,11 +72,11 @@ void ThreadManager::Run() {
   // Spin up all the threads
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
+    Thread->Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
   }
 
   for (auto& Thread : Threads) {
-    Thread->StartRunning.NotifyAll();
+    Thread->Thread->StartRunning.NotifyAll();
   }
 }
 
@@ -113,7 +116,7 @@ void ThreadManager::Step() {
     // Walk the threads and tell them to clear their caches
     // Useful when our block size is set to a large number and we need to step a single instruction
     for (auto& Thread : Threads) {
-      CTX->ClearCodeCache(Thread);
+      CTX->ClearCodeCache(Thread->Thread);
     }
   }
 
@@ -126,30 +129,30 @@ void ThreadManager::Step() {
 
 void ThreadManager::Stop(bool IgnoreCurrentThread) {
   pid_t tid = FHU::Syscalls::gettid();
-  FEXCore::Core::InternalThreadState* CurrentThread {};
+  FEX::HLE::ThreadStateObject* CurrentThread {};
 
   // Tell all the threads that they should stop
   {
     std::lock_guard lk(ThreadCreationMutex);
     for (auto& Thread : Threads) {
-      if (IgnoreCurrentThread && Thread->ThreadManager.TID == tid) {
+      if (IgnoreCurrentThread && Thread->Thread->ThreadManager.TID == tid) {
         // If we are callign stop from the current thread then we can ignore sending signals to this thread
         // This means that this thread is already gone
-      } else if (Thread->ThreadManager.TID == tid) {
+      } else if (Thread->Thread->ThreadManager.TID == tid) {
         // We need to save the current thread for last to ensure all threads receive their stop signals
         CurrentThread = Thread;
         continue;
       }
 
-      if (Thread->RunningEvents.Running.load()) {
+      if (Thread->Thread->RunningEvents.Running.load()) {
         StopThread(Thread);
       }
 
       // If the thread is waiting to start but immediately killed then there can be a hang
       // This occurs in the case of gdb attach with immediate kill
-      if (Thread->RunningEvents.WaitingToStart.load()) {
-        Thread->RunningEvents.EarlyExit = true;
-        Thread->StartRunning.NotifyAll();
+      if (Thread->Thread->RunningEvents.WaitingToStart.load()) {
+        Thread->Thread->RunningEvents.EarlyExit = true;
+        Thread->Thread->StartRunning.NotifyAll();
       }
     }
   }
@@ -186,12 +189,12 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
   // This function is called after fork
   // We need to cleanup some of the thread data that is dead
   for (auto& DeadThread : Threads) {
-    if (DeadThread == LiveThread) {
+    if (DeadThread->Thread == LiveThread) {
       continue;
     }
 
     // Setting running to false ensures that when they are shutdown we won't send signals to kill them
-    DeadThread->RunningEvents.Running = false;
+    DeadThread->Thread->RunningEvents.Running = false;
 
     // Despite what google searches may susgest, glibc actually has special code to handle forks
     // with multiple active threads.
@@ -202,7 +205,8 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
 
     // Deconstructing the Interneal thread state should clean up most of the state.
     // But if anything on the now deleted stack is holding a refrence to the heap, it will be leaked
-    CTX->DestroyThread(DeadThread);
+    CTX->DestroyThread(DeadThread->Thread);
+    delete DeadThread;
 
     // FIXME: Make sure sure nothing gets leaked via the heap. Ideas:
     //         * Make sure nothing is allocated on the heap without ref in InternalThreadState
@@ -212,7 +216,9 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
 
   // Remove all threads but the live thread from Threads
   Threads.clear();
-  Threads.push_back(LiveThread);
+
+  auto LiveThreadData = static_cast<FEX::HLE::ThreadStateObject*>(LiveThread->FrontendPtr);
+  Threads.push_back(LiveThreadData);
 
   // Clean up dead stacks
   FEXCore::Threads::Thread::CleanupAfterFork();

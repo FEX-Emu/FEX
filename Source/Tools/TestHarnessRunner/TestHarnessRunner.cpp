@@ -301,7 +301,8 @@ int main(int argc, char** argv, char** const envp) {
     if (!CTX->InitCore()) {
       return 1;
     }
-    auto ParentThread = CTX->CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
 
     if (!ParentThread) {
@@ -310,22 +311,23 @@ int main(int argc, char** argv, char** const envp) {
 
     int LongJumpVal = setjmp(LongJumpHandler::LongJump);
     if (!LongJumpVal) {
-      CTX->RunUntilExit(ParentThread);
+      CTX->RunUntilExit(ParentThread->Thread);
     }
 
     // Just re-use compare state. It also checks against the expected values in config.
-    memcpy(&State, &ParentThread->CurrentFrame->State, sizeof(State));
-
-    SyscallHandler.reset();
+    memcpy(&State, &ParentThread->Thread->CurrentFrame->State, sizeof(State));
 
     SignalDelegation->UninstallTLSState(ParentThread);
-    CTX->DestroyThread(ParentThread, true);
+    FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
+
+    SyscallHandler.reset();
   }
 #ifndef _WIN32
   else {
     // Run as host
     SupportsAVX = true;
-    SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
+    FEX::HLE::ThreadStateObject ThreadStateObject {};
+    SignalDelegation->RegisterTLSState(&ThreadStateObject);
     if (!Loader.MapMemory()) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
@@ -333,6 +335,7 @@ int main(int argc, char** argv, char** const envp) {
     }
 
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
+    SignalDelegation->UninstallTLSState(&ThreadStateObject);
   }
 #endif
 
