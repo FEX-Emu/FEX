@@ -78,7 +78,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool Inli
       InsertPass(CreateLongDivideEliminationPass());
     }
 
-    InsertPass(CreateDeadStoreElimination(ctx->HostFeatures.SupportsAVX));
+    InsertPass(CreateDeadStoreElimination());
     InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9, Is64BitMode()));
 
