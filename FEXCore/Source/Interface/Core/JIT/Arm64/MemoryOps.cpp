@@ -92,28 +92,17 @@ DEF_OP(LoadRegister) {
                          (StaticRegisters.size() - 1) :
                          (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
 
-    const auto regOffs = Op->Offset & 7;
-
     LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
 
     const auto reg = StaticRegisters[regId];
 
-    switch (OpSize) {
-    case 4:
-      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-      if (GetReg(Node).Idx() != reg.Idx()) {
+    LOGMAN_THROW_AA_FMT((Op->Offset & 7) == 0, "expected aligned");
+    if (GetReg(Node).Idx() != reg.Idx()) {
+      if (OpSize == 4) {
         mov(GetReg(Node).W(), reg.W());
-      }
-      break;
-
-    case 8:
-      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-      if (GetReg(Node).Idx() != reg.Idx()) {
+      } else {
         mov(GetReg(Node).X(), reg.X());
       }
-      break;
-
-    default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister GPR size: {}", OpSize); break;
     }
   } else if (Op->Class == IR::FPRClass) {
     const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
@@ -163,19 +152,8 @@ DEF_OP(StoreRegister) {
     const auto reg = StaticRegisters[regId];
     const auto Src = GetReg(Op->Value.ID());
 
-    switch (OpSize) {
-    case 4:
-      if (Src.Idx() != reg.Idx()) {
-        mov(ARMEmitter::Size::i32Bit, reg, Src);
-      }
-      break;
-    case 8:
-      if (Src.Idx() != reg.Idx()) {
-        mov(ARMEmitter::Size::i64Bit, reg, Src);
-      }
-      break;
-
-    default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize); break;
+    if (Src.Idx() != reg.Idx()) {
+      mov(OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, reg, Src);
     }
   } else if (Op->Class == IR::FPRClass) {
     const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
