@@ -135,7 +135,8 @@ DEF_OP(StoreRegister) {
     const auto Src = GetReg(Op->Value.ID());
 
     if (Src.Idx() != reg.Idx()) {
-      mov(OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, reg, Src);
+      // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
+      mov(ARMEmitter::Size::i64Bit, reg, Src);
     }
   } else if (Op->Class == IR::FPRClass) {
     const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
