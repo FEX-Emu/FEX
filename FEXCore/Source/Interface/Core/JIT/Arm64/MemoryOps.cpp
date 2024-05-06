@@ -125,131 +125,18 @@ DEF_OP(LoadRegister) {
     const auto host = GetVReg(Node);
 
     if (HostSupportsSVE256) {
-      const auto regOffs = Op->Offset & 31;
+      LOGMAN_THROW_A_FMT(OpSize == 32, "expected AVX sized");
+      LOGMAN_THROW_A_FMT((Op->Offset & 31) == 0, "expected AVX aligned");
 
-      ARMEmitter::SingleUseForwardLabel DataLocation;
-      const auto LoadPredicate = [this, &DataLocation] {
-        const auto Predicate = ARMEmitter::PReg::p0;
-        adr(TMP1, &DataLocation);
-        ldr(Predicate, TMP1);
-        return Predicate.Merging();
-      };
-
-      const auto EmitData = [this, &DataLocation](uint32_t Value) {
-        ARMEmitter::SingleUseForwardLabel PastConstant;
-        b(&PastConstant);
-        Bind(&DataLocation);
-        dc32(Value);
-        Bind(&PastConstant);
-      };
-
-      switch (OpSize) {
-      case 1: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
-        break;
-      }
-      case 2: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        fmov(host.H(), guest.H());
-        break;
-      }
-      case 4: {
-        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-        if (regOffs == 0) {
-          if (host.Idx() != guest.Idx()) {
-            fmov(host.S(), guest.S());
-          }
-        } else {
-          const auto Predicate = LoadPredicate();
-
-          dup(FEXCore::ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
-          mov(FEXCore::ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
-
-          EmitData(1U << regOffs);
-        }
-        break;
-      }
-
-      case 8: {
-        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-        if (regOffs == 0) {
-          if (host.Idx() != guest.Idx()) {
-            dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
-          }
-        } else {
-          const auto Predicate = LoadPredicate();
-
-          dup(FEXCore::ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
-          mov(FEXCore::ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
-
-          EmitData(1U << regOffs);
-        }
-        break;
-      }
-
-      case 16: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (host.Idx() != guest.Idx()) {
-          mov(host.Q(), guest.Q());
-        }
-        break;
-      }
-
-      case 32: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (host.Idx() != guest.Idx()) {
-          mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
-        }
-        break;
-      }
-
-      default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize); break;
+      if (host.Idx() != guest.Idx()) {
+        mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
       }
     } else {
-      const auto regOffs = Op->Offset & 15;
+      LOGMAN_THROW_A_FMT(OpSize == 16, "expected SSE sized");
+      LOGMAN_THROW_A_FMT((Op->Offset & 15) == 0, "expected SSE aligned");
 
-      switch (OpSize) {
-      case 1:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        dup(ARMEmitter::ScalarRegSize::i8Bit, host, guest, 0);
-        break;
-
-      case 2:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        fmov(host.H(), guest.H());
-        break;
-
-      case 4:
-        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-        if (regOffs == 0) {
-          if (host.Idx() != guest.Idx()) {
-            fmov(host.S(), guest.S());
-          }
-        } else {
-          ins(ARMEmitter::SubRegSize::i32Bit, host, 0, guest, regOffs / 4);
-        }
-        break;
-
-      case 8:
-        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-        if (regOffs == 0) {
-          if (host.Idx() != guest.Idx()) {
-            dup(ARMEmitter::ScalarRegSize::i64Bit, host, guest, 0);
-          }
-        } else {
-          ins(ARMEmitter::SubRegSize::i64Bit, host, 0, guest, regOffs / 8);
-        }
-        break;
-
-      case 16:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (host.Idx() != guest.Idx()) {
-          mov(host.Q(), guest.Q());
-        }
-        break;
-
-      default: LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize); break;
+      if (host.Idx() != guest.Idx()) {
+        mov(host.Q(), guest.Q());
       }
     }
   } else {
@@ -263,6 +150,7 @@ DEF_OP(StoreRegister) {
 
   if (Op->Class == IR::GPRClass) {
     const auto regOffs = Op->Offset & 7;
+    LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
 
     const auto regId = Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ?
                          (StaticRegisters.size() - 2) :
@@ -277,13 +165,11 @@ DEF_OP(StoreRegister) {
 
     switch (OpSize) {
     case 4:
-      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
       if (Src.Idx() != reg.Idx()) {
         mov(ARMEmitter::Size::i32Bit, reg, Src);
       }
       break;
     case 8:
-      LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
       if (Src.Idx() != reg.Idx()) {
         mov(ARMEmitter::Size::i64Bit, reg, Src);
       }
@@ -301,131 +187,18 @@ DEF_OP(StoreRegister) {
     const auto host = GetVReg(Op->Value.ID());
 
     if (HostSupportsSVE256) {
-      // 256-bit capable hardware allows us to expand the allowed
-      // offsets used, however we cannot use Adv. SIMD's INS instruction
-      // at all, since it will zero out the upper lanes of the 256-bit SVE
-      // vectors, so we'll need to set up a proper predicate for performing
-      // the insert.
+      LOGMAN_THROW_A_FMT(OpSize == 32, "expected AVX sized");
+      LOGMAN_THROW_A_FMT((Op->Offset & 31) == 0, "expected AVX aligned");
 
-      const auto regOffs = Op->Offset & 31;
-
-      // Compartmentalized setting up of the predicate for the cases that need it.
-      ARMEmitter::SingleUseForwardLabel DataLocation;
-      const auto LoadPredicate = [this, &DataLocation] {
-        const auto Predicate = ARMEmitter::PReg::p0;
-        adr(TMP1, &DataLocation);
-        ldr(Predicate, TMP1);
-        return Predicate.Merging();
-      };
-
-      // Emits the predicate data and provides the necessary jump to go around the
-      // emitted data instead of trying to execute it. Place at end of necessary code.
-      // It's helpful to treat LoadPredicate and EmitData as a prologue and epilogue
-      // respectfully.
-      const auto EmitData = [this, &DataLocation](uint32_t Data) {
-        ARMEmitter::SingleUseForwardLabel PastConstant;
-        b(&PastConstant);
-        Bind(&DataLocation);
-        dc32(Data);
-        Bind(&PastConstant);
-      };
-
-      switch (OpSize) {
-      case 1: {
-        LOGMAN_THROW_AA_FMT(regOffs <= 31, "unexpected reg index: {}", regOffs);
-
-        const auto Predicate = LoadPredicate();
-        dup(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), host.Z(), 0);
-        mov(ARMEmitter::SubRegSize::i8Bit, guest.Z(), Predicate, VTMP1.Z());
-
-        EmitData(1U << regOffs);
-        break;
-      }
-
-      case 2: {
-        LOGMAN_THROW_AA_FMT((regOffs / 2) <= 15, "unexpected reg index: {}", regOffs / 2);
-
-        const auto Predicate = LoadPredicate();
-        dup(ARMEmitter::SubRegSize::i16Bit, VTMP1.Z(), host.Z(), 0);
-        mov(ARMEmitter::SubRegSize::i16Bit, guest.Z(), Predicate, VTMP1.Z());
-
-        EmitData(1U << regOffs);
-        break;
-      }
-
-      case 4: {
-        LOGMAN_THROW_AA_FMT((regOffs / 4) <= 7, "unexpected reg index: {}", regOffs / 4);
-
-        const auto Predicate = LoadPredicate();
-
-        dup(ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), host.Z(), 0);
-        mov(ARMEmitter::SubRegSize::i32Bit, guest.Z(), Predicate, VTMP1.Z());
-
-        EmitData(1U << regOffs);
-        break;
-      }
-
-      case 8: {
-        LOGMAN_THROW_AA_FMT((regOffs / 8) <= 3, "unexpected reg index: {}", regOffs / 8);
-
-        const auto Predicate = LoadPredicate();
-
-        dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), host.Z(), 0);
-        mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), Predicate, VTMP1.Z());
-
-        EmitData(1U << regOffs);
-        break;
-      }
-
-      case 16: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (guest.Idx() != host.Idx()) {
-          mov(guest.Q(), host.Q());
-        }
-        break;
-      }
-
-      case 32: {
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (guest.Idx() != host.Idx()) {
-          mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
-        }
-        break;
-      }
-
-      default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize); break;
+      if (guest.Idx() != host.Idx()) {
+        mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
       }
     } else {
-      const auto regOffs = Op->Offset & 15;
+      LOGMAN_THROW_A_FMT(OpSize == 16, "expected SSE sized");
+      LOGMAN_THROW_A_FMT((Op->Offset & 15) == 0, "expected SSE aligned");
 
-      switch (OpSize) {
-      case 1: ins(ARMEmitter::SubRegSize::i8Bit, guest, regOffs, host, 0); break;
-
-      case 2:
-        LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs: {}", regOffs);
-        ins(ARMEmitter::SubRegSize::i16Bit, guest, regOffs / 2, host, 0);
-        break;
-
-      case 4:
-        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
-        // XXX: This had a bug with insert of size 16bit
-        ins(ARMEmitter::SubRegSize::i32Bit, guest, regOffs / 4, host, 0);
-        break;
-
-      case 8:
-        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
-        // XXX: This had a bug with insert of size 16bit
-        ins(ARMEmitter::SubRegSize::i64Bit, guest, regOffs / 8, host, 0);
-        break;
-
-      case 16:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
-        if (guest.Idx() != host.Idx()) {
-          mov(guest.Q(), host.Q());
-        }
-        break;
-
-      default: LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize); break;
+      if (guest.Idx() != host.Idx()) {
+        mov(guest.Q(), host.Q());
       }
     }
   } else {
