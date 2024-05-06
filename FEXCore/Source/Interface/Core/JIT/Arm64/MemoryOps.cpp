@@ -109,22 +109,16 @@ DEF_OP(LoadRegister) {
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
+    LOGMAN_THROW_A_FMT((Op->Offset & (regSize - 1)) == 0, "expected aligned");
 
     const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Node);
 
-    if (HostSupportsSVE256) {
-      LOGMAN_THROW_A_FMT(OpSize == 32, "expected AVX sized");
-      LOGMAN_THROW_A_FMT((Op->Offset & 31) == 0, "expected AVX aligned");
-
-      if (host.Idx() != guest.Idx()) {
+    if (host.Idx() != guest.Idx()) {
+      if (HostSupportsSVE256) {
         mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
-      }
-    } else {
-      LOGMAN_THROW_A_FMT(OpSize == 16, "expected SSE sized");
-      LOGMAN_THROW_A_FMT((Op->Offset & 15) == 0, "expected SSE aligned");
-
-      if (host.Idx() != guest.Idx()) {
+      } else {
         mov(host.Q(), guest.Q());
       }
     }
@@ -160,22 +154,16 @@ DEF_OP(StoreRegister) {
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
+    LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
+    LOGMAN_THROW_A_FMT((Op->Offset & (regSize - 1)) == 0, "expected aligned");
 
     const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Op->Value.ID());
 
-    if (HostSupportsSVE256) {
-      LOGMAN_THROW_A_FMT(OpSize == 32, "expected AVX sized");
-      LOGMAN_THROW_A_FMT((Op->Offset & 31) == 0, "expected AVX aligned");
-
-      if (guest.Idx() != host.Idx()) {
+    if (guest.Idx() != host.Idx()) {
+      if (HostSupportsSVE256) {
         mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
-      }
-    } else {
-      LOGMAN_THROW_A_FMT(OpSize == 16, "expected SSE sized");
-      LOGMAN_THROW_A_FMT((Op->Offset & 15) == 0, "expected SSE aligned");
-
-      if (guest.Idx() != host.Idx()) {
+      } else {
         mov(guest.Q(), host.Q());
       }
     }
