@@ -344,16 +344,15 @@
     },
     "StaticRA": {
       "SSA = LoadRegister u32:$Reg, RegisterClass:$Class, u8:#Size": {
-        "Desc": ["Loads a value from the given register"],
+        "Desc": ["Loads a value from the given register",
+                 "Size must match the execution mode."],
         "DestSize": "Size"
       },
 
       "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, u8:#Size": {
         "HasSideEffects": true,
-        "Desc": ["Stores a value to a given register",
-                 "Zero Extends if value's type is too small",
-                 "Truncates if value's type is too large"
-                ],
+        "Desc": ["Stores a value to a given register.",
+                 "Size must match the execution mode."],
         "DestSize": "Size",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
