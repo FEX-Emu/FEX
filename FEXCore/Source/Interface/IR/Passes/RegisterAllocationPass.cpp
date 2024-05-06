@@ -42,7 +42,7 @@ namespace {
   constexpr uint32_t INVALID_REG = FEXCore::IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = FEXCore::IR::InvalidClass.Val;
 
-  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 122;
+  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 120;
   constexpr uint32_t DEFAULT_INTERFERENCE_SPAN_COUNT = 30;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
 
