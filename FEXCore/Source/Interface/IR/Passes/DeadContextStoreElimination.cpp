@@ -495,6 +495,18 @@ private:
 
   // Block local Passes
   bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit);
+
+  unsigned OffsetForReg(FEXCore::IR::RegisterClassType Class, unsigned Reg, unsigned Size) {
+    if (Class == FEXCore::IR::FPRClass) {
+      return Size == 32 ? offsetof(FEXCore::Core::CPUState, xmm.avx.data[Reg][0]) : offsetof(FEXCore::Core::CPUState, xmm.sse.data[Reg][0]);
+    } else if (Reg == FEXCore::Core::CPUState::PF_AS_GREG) {
+      return offsetof(FEXCore::Core::CPUState, pf_raw);
+    } else if (Reg == FEXCore::Core::CPUState::AF_AS_GREG) {
+      return offsetof(FEXCore::Core::CPUState, af_raw);
+    } else {
+      return offsetof(FEXCore::Core::CPUState, gregs[Reg]);
+    }
+  }
 };
 
 ContextMemberInfo* RCLSE::FindMemberInfo(ContextInfo* ContextClassificationInfo, uint32_t Offset, uint8_t Size) {
@@ -648,10 +660,13 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
         Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
       } else if (IROp->Op == OP_STOREREGISTER) {
         auto Op = IROp->CW<IR::IROp_StoreRegister>();
-        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+        auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
+
+        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
       } else if (IROp->Op == OP_LOADREGISTER) {
         auto Op = IROp->CW<IR::IROp_LoadRegister>();
-        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
+        auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
+        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, BlockEnd);
       } else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->CW<IR::IROp_LoadContext>();
         Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);

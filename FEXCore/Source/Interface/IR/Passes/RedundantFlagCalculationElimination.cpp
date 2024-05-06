@@ -57,12 +57,12 @@ public:
 
 private:
   FlagInfo Classify(IROp_Header* Node);
-  unsigned FlagForOffset(unsigned Offset);
+  unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
 };
 
-unsigned DeadFlagCalculationEliminination::FlagForOffset(unsigned Offset) {
-  return Offset == offsetof(FEXCore::Core::CPUState, pf_raw) ? FLAG_P : Offset == offsetof(FEXCore::Core::CPUState, af_raw) ? FLAG_A : 0;
+unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
+  return Reg == Core::CPUState::PF_AS_GREG ? FLAG_P : Reg == Core::CPUState::AF_AS_GREG ? FLAG_A : 0;
 };
 
 unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
@@ -287,7 +287,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       break;
     }
 
-    return {.Read = FlagForOffset(Op->Offset)};
+    return {.Read = FlagForReg(Op->Reg)};
   }
 
   case OP_STOREREGISTER: {
@@ -296,7 +296,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       break;
     }
 
-    unsigned Flag = FlagForOffset(Op->Offset);
+    unsigned Flag = FlagForReg(Op->Reg);
 
     return {
       .Write = Flag,

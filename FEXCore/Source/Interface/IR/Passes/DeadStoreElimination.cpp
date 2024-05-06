@@ -90,6 +90,18 @@ private:
 
     return 7UL << (bitn); // Return maximum on failure case
   }
+
+  unsigned OffsetForReg(FEXCore::IR::RegisterClassType Class, unsigned Reg, unsigned Size) {
+    if (Class == FEXCore::IR::FPRClass) {
+      return Size == 32 ? offsetof(FEXCore::Core::CPUState, xmm.avx.data[Reg][0]) : offsetof(FEXCore::Core::CPUState, xmm.sse.data[Reg][0]);
+    } else if (Reg == FEXCore::Core::CPUState::PF_AS_GREG) {
+      return offsetof(FEXCore::Core::CPUState, pf_raw);
+    } else if (Reg == FEXCore::Core::CPUState::AF_AS_GREG) {
+      return offsetof(FEXCore::Core::CPUState, af_raw);
+    } else {
+      return offsetof(FEXCore::Core::CPUState, gregs[Reg]);
+    }
+  }
 };
 
 struct FlagInfo {
@@ -224,14 +236,16 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           BlockInfo.flag.reads |= 1UL << X86State::RFLAG_DF_RAW_LOC;
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
+          auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
 
           auto& BlockInfo = InfoMap[BlockNode];
-          ClassifyRegisterStore(BlockInfo, Op->Offset, IROp->Size);
+          ClassifyRegisterStore(BlockInfo, Offset, IROp->Size);
         } else if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
+          auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
 
           auto& BlockInfo = InfoMap[BlockNode];
-          ClassifyRegisterLoad(BlockInfo, Op->Offset, IROp->Size);
+          ClassifyRegisterLoad(BlockInfo, Offset, IROp->Size);
         }
       }
     }
@@ -360,10 +374,11 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           }
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
+          auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
 
           auto& BlockInfo = InfoMap[BlockNode];
 
-          Changed |= RemoveDeadRegisterStore(IREmit, CodeNode, BlockInfo, Op->Offset, IROp->Size);
+          Changed |= RemoveDeadRegisterStore(IREmit, CodeNode, BlockInfo, Offset, IROp->Size);
         }
       }
     }

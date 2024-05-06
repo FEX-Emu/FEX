@@ -86,17 +86,13 @@ DEF_OP(LoadRegister) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    const auto regId = Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ?
-                         (StaticRegisters.size() - 2) :
-                       Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ?
-                         (StaticRegisters.size() - 1) :
-                         (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+    unsigned Reg = Op->Reg == Core::CPUState::PF_AS_GREG ? (StaticRegisters.size() - 2) :
+                   Op->Reg == Core::CPUState::AF_AS_GREG ? (StaticRegisters.size() - 1) :
+                                                           Op->Reg;
 
-    LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
+    const auto reg = StaticRegisters[Reg];
 
-    const auto reg = StaticRegisters[regId];
-
-    LOGMAN_THROW_AA_FMT((Op->Offset & 7) == 0, "expected aligned");
     if (GetReg(Node).Idx() != reg.Idx()) {
       if (OpSize == 4) {
         mov(GetReg(Node).W(), reg.W());
@@ -106,13 +102,10 @@ DEF_OP(LoadRegister) {
     }
   } else if (Op->Class == IR::FPRClass) {
     const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
-    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
-
-    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
-    LOGMAN_THROW_A_FMT((Op->Offset & (regSize - 1)) == 0, "expected aligned");
 
-    const auto guest = StaticFPRegisters[regId];
+    const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Node);
 
     if (host.Idx() != guest.Idx()) {
@@ -131,19 +124,14 @@ DEF_OP(StoreRegister) {
   const auto Op = IROp->C<IR::IROp_StoreRegister>();
   const auto OpSize = IROp->Size;
 
+
   if (Op->Class == IR::GPRClass) {
-    const auto regOffs = Op->Offset & 7;
-    LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+    unsigned Reg = Op->Reg == Core::CPUState::PF_AS_GREG ? (StaticRegisters.size() - 2) :
+                   Op->Reg == Core::CPUState::AF_AS_GREG ? (StaticRegisters.size() - 1) :
+                                                           Op->Reg;
 
-    const auto regId = Op->Offset == offsetof(Core::CpuStateFrame, State.pf_raw) ?
-                         (StaticRegisters.size() - 2) :
-                       Op->Offset == offsetof(Core::CpuStateFrame, State.af_raw) ?
-                         (StaticRegisters.size() - 1) :
-                         (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
-
-    LOGMAN_THROW_A_FMT(regId < StaticRegisters.size(), "out of range regId");
-
-    const auto reg = StaticRegisters[regId];
+    LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
+    const auto reg = StaticRegisters[Reg];
     const auto Src = GetReg(Op->Value.ID());
 
     if (Src.Idx() != reg.Idx()) {
@@ -151,13 +139,10 @@ DEF_OP(StoreRegister) {
     }
   } else if (Op->Class == IR::FPRClass) {
     const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
-    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
-
-    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
+    LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
     LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
-    LOGMAN_THROW_A_FMT((Op->Offset & (regSize - 1)) == 0, "expected aligned");
 
-    const auto guest = StaticFPRegisters[regId];
+    const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Op->Value.ID());
 
     if (guest.Idx() != host.Idx()) {

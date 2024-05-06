@@ -227,7 +227,7 @@ struct ThunkHandler_impl final : public ThunkHandler {
       const uint8_t GPRSize = CTX->GetGPRSize();
 
       if (GPRSize == 8) {
-        emit->_StoreRegister(emit->_Constant(Entrypoint), offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, GPRSize);
+        emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
       } else {
         emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
       }
