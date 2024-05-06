@@ -144,32 +144,15 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
         auto& BlockInfo = InfoMap[BlockNode];
         auto& TargetInfo = InfoMap[TargetNode];
 
-        //// Flags ////
-
         // stores to remove are written by the next block but not read
         BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+        BlockInfo.gpr.kill = TargetInfo.gpr.writes & ~(TargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+        BlockInfo.fpr.kill = TargetInfo.fpr.writes & ~(TargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
 
         // Flags that are written by the next block can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-
-
-        //// GPRs ////
-
-        // stores to remove are written by the next block but not read
-        BlockInfo.gpr.kill = TargetInfo.gpr.writes & ~(TargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-
-        // GPRs that are written by the next block can be considered as written by this block, if not read
         BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
-
-
-        //// FPRs ////
-
-        // stores to remove are written by the next block but not read
-        BlockInfo.fpr.kill = TargetInfo.fpr.writes & ~(TargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
-
-        // FPRs that are written by the next block can be considered as written by this block, if not read
         BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
-
       } else if (IROp->Op == OP_CONDJUMP) {
         auto Op = IROp->C<IR::IROp_CondJump>();
 
@@ -180,33 +163,18 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
         auto& TrueTargetInfo = InfoMap[TrueTargetNode];
         auto& FalseTargetInfo = InfoMap[FalseTargetNode];
 
-        //// Flags ////
-
         // stores to remove are written by the next blocks but not read
         BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+        BlockInfo.gpr.kill = TrueTargetInfo.gpr.writes & ~(TrueTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+        BlockInfo.fpr.kill = TrueTargetInfo.fpr.writes & ~(TrueTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+
         BlockInfo.flag.kill &= FalseTargetInfo.flag.writes & ~(FalseTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+        BlockInfo.gpr.kill &= FalseTargetInfo.gpr.writes & ~(FalseTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+        BlockInfo.fpr.kill &= FalseTargetInfo.fpr.writes & ~(FalseTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
 
         // Flags that are written by the next blocks can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-
-
-        //// GPRs ////
-
-        // stores to remove are written by the next blocks but not read
-        BlockInfo.gpr.kill = TrueTargetInfo.gpr.writes & ~(TrueTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-        BlockInfo.gpr.kill &= FalseTargetInfo.gpr.writes & ~(FalseTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-
-        // GPRs that are written by the next blocks can be considered as written by this block, if not read
         BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
-
-
-        //// FPRs ////
-
-        // stores to remove are written by the next blocks but not read
-        BlockInfo.fpr.kill = TrueTargetInfo.fpr.writes & ~(TrueTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
-        BlockInfo.fpr.kill &= FalseTargetInfo.fpr.writes & ~(FalseTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
-
-        // FPRs that are written by the next blocks can be considered as written by this block, if not read
         BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
       }
     }
