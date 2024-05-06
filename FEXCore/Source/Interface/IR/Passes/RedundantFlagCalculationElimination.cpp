@@ -283,7 +283,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 
   case OP_LOADREGISTER: {
     auto Op = IROp->CW<IR::IROp_LoadRegister>();
-    if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass) {
+    if (Op->Class != GPRClass) {
       break;
     }
 
@@ -292,7 +292,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 
   case OP_STOREREGISTER: {
     auto Op = IROp->CW<IR::IROp_StoreRegister>();
-    if (Op->Class != GPRClass || Op->StaticClass != GPRFixedClass) {
+    if (Op->Class != GPRClass) {
       break;
     }
 

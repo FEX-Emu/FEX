@@ -465,23 +465,23 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
   // Helpers
 
   // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
-  auto IsPreWritable = [this](uint8_t Size, RegisterClassType StaticClass) {
-    LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
-    if (StaticClass == GPRFixedClass) {
+  auto IsPreWritable = [this](uint8_t Size, RegisterClassType Class) {
+    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
+    if (Class == GPRClass) {
       return Size == 8 || Size == 4;
-    } else if (StaticClass == FPRFixedClass) {
+    } else if (Class == FPRClass) {
       return Size == 16 || (Size == 32 && SupportsAVX);
     }
     return false; // Unknown
   };
 
   // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
-  auto IsAliasable = [this](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
-    LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
-    if (StaticClass == GPRFixedClass) {
+  auto IsAliasable = [this](uint8_t Size, RegisterClassType Class, uint32_t Offset) {
+    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
+    if (Class == GPRClass) {
       // We need more meta info to support not-size-of-reg
       return (Size == 8 || Size == 4) && ((Offset & 7) == 0);
-    } else if (StaticClass == FPRFixedClass) {
+    } else if (Class == FPRClass) {
       // We need more meta info to support not-size-of-reg
       if (Size == 32 && SupportsAVX && (Offset & 31) == 0) {
         return true;
@@ -592,13 +592,13 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         const auto OpID = Op->Value.ID();
         auto& OpLiveRange = LiveRanges[OpID.Value];
 
-        if (IsPreWritable(IROp->Size, Op->StaticClass) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
+        if (IsPreWritable(IROp->Size, Op->Class) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
 
           // Pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
           SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", OpID, Node);
           OpLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
           OpLiveRange.PreWritten = Node;
-          SetNodeClass(Graph, OpID, Op->StaticClass);
+          SetNodeClass(Graph, OpID, Op->Class == FPRClass ? FPRFixedClass : GPRFixedClass);
         }
       }
     }
@@ -679,7 +679,7 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
           // if not sra-allocated and full size, sra-allocate
           if (!NodeLiveRange.Global && NodeLiveRange.PrefferedRegister.IsInvalid()) {
             // only full size reads can be aliased
-            if (IsAliasable(IROp->Size, Op->StaticClass, Op->Offset)) {
+            if (IsAliasable(IROp->Size, Op->Class, Op->Offset)) {
               // We can only track a single active span.
               // Marking here as written is overly agressive, but
               // there might be write(s) later on the instruction stream
@@ -692,7 +692,7 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
 
               NodeLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); // 0, 1, and so on
               (*StaticMap) = &NodeLiveRange;
-              SetNodeClass(Graph, Node, Op->StaticClass);
+              SetNodeClass(Graph, Node, Op->Class == FPRClass ? FPRFixedClass : GPRFixedClass);
               SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
             }
           }
