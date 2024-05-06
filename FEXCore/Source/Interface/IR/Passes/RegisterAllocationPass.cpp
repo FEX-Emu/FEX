@@ -475,22 +475,6 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
     return false; // Unknown
   };
 
-  // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
-  auto IsAliasable = [this](uint8_t Size, RegisterClassType Class, uint32_t Offset) {
-    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
-    if (Class == GPRClass) {
-      // We need more meta info to support not-size-of-reg
-      return (Size == 8 || Size == 4) && ((Offset & 7) == 0);
-    } else if (Class == FPRClass) {
-      // We need more meta info to support not-size-of-reg
-      if (Size == 32 && SupportsAVX && (Offset & 31) == 0) {
-        return true;
-      }
-      return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
-    }
-    return false; // Unknown
-  };
-
   const auto GetFPRBeginAndEnd = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
     if (SupportsAVX) {
       return {
@@ -676,25 +660,22 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
             SetNodeClass(Graph, ID, Op->Class);
           }
 
-          // if not sra-allocated and full size, sra-allocate
+          // if not sra-allocated, sra-allocate
           if (!NodeLiveRange.Global && NodeLiveRange.PrefferedRegister.IsInvalid()) {
-            // only full size reads can be aliased
-            if (IsAliasable(IROp->Size, Op->Class, Op->Offset)) {
-              // We can only track a single active span.
-              // Marking here as written is overly agressive, but
-              // there might be write(s) later on the instruction stream
-              if ((*StaticMap)) {
-                SRA_DEBUG("Marking ssa{} as written because ssa{} re-loads sra{}, "
-                          "and we can't track possible future writes\n",
-                          (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
-                (*StaticMap)->Written = true;
-              }
-
-              NodeLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); // 0, 1, and so on
-              (*StaticMap) = &NodeLiveRange;
-              SetNodeClass(Graph, Node, Op->Class == FPRClass ? FPRFixedClass : GPRFixedClass);
-              SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
+            // We can only track a single active span.
+            // Marking here as written is overly agressive, but
+            // there might be write(s) later on the instruction stream
+            if ((*StaticMap)) {
+              SRA_DEBUG("Marking ssa{} as written because ssa{} re-loads sra{}, "
+                        "and we can't track possible future writes\n",
+                        (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+              (*StaticMap)->Written = true;
             }
+
+            NodeLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); // 0, 1, and so on
+            (*StaticMap) = &NodeLiveRange;
+            SetNodeClass(Graph, Node, Op->Class == FPRClass ? FPRFixedClass : GPRFixedClass);
+            SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
           }
         }
       }
