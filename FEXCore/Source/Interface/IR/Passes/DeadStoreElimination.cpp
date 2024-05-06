@@ -30,16 +30,8 @@ public:
   bool Run(IREmitter* IREmit) override;
 
 private:
-  bool IsTrackedWriteFPR(RegisterClassType Class, uint8_t Size) const {
-    if (Size != 16 && Size != 8 && Size != 4) {
-      return false;
-    }
-
-    return Class == FPRClass;
-  }
-
   uint64_t FPRBit(RegisterClassType Class, uint32_t Reg) const {
-    return (Class == FPRClass) ? (7UL << (Reg * 3)) : 0;
+    return (Class == FPRClass) ? (1UL << Reg) : 0;
   }
 };
 
@@ -61,9 +53,9 @@ uint32_t GPRBit(RegisterClassType Class, uint32_t Reg) {
 }
 
 struct FPRInfo {
-  uint64_t reads {0};
-  uint64_t writes {0};
-  uint64_t kill {0};
+  uint32_t reads {0};
+  uint32_t writes {0};
+  uint32_t kill {0};
 };
 
 struct Info {
@@ -123,18 +115,8 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
           auto& BlockInfo = InfoMap[BlockNode];
 
-          // TODO: Optimize 32-bit, this is silly
-          if (IROp->Size == 8) {
-            BlockInfo.gpr.writes |= GPRBit(Op->Class, Op->Reg);
-          } else {
-            BlockInfo.gpr.reads |= GPRBit(Op->Class, Op->Reg);
-          }
-
-          if (IsTrackedWriteFPR(Op->Class, IROp->Size)) {
-            BlockInfo.fpr.writes |= FPRBit(Op->Class, Op->Reg);
-          } else {
-            BlockInfo.fpr.reads |= FPRBit(Op->Class, Op->Reg);
-          }
+          BlockInfo.gpr.writes |= GPRBit(Op->Class, Op->Reg);
+          BlockInfo.fpr.writes |= FPRBit(Op->Class, Op->Reg);
         } else if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
           auto& BlockInfo = InfoMap[BlockNode];
@@ -248,10 +230,9 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
           auto& BlockInfo = InfoMap[BlockNode];
-          auto FPRBit_ = FPRBit(Op->Class, Op->Reg);
 
           // If this OP_STOREREGISTER is never read, remove it
-          if ((BlockInfo.gpr.kill & GPRBit(Op->Class, Op->Reg)) || ((BlockInfo.fpr.kill & FPRBit_) == FPRBit_ && FPRBit_)) {
+          if ((BlockInfo.gpr.kill & GPRBit(Op->Class, Op->Reg)) || (BlockInfo.fpr.kill & FPRBit(Op->Class, Op->Reg))) {
             IREmit->Remove(CodeNode);
             Changed = true;
           }
