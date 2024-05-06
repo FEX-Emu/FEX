@@ -88,38 +88,30 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
   // This is conservative and doesn't try to be smart about loads after writes
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+      auto& BlockInfo = InfoMap[BlockNode];
+
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-          auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.writes |= 1UL << Op->Flag;
         } else if (IROp->Op == OP_INVALIDATEFLAGS) {
           auto Op = IROp->C<IR::IROp_InvalidateFlags>();
 
-          auto& BlockInfo = InfoMap[BlockNode];
-
           BlockInfo.flag.writes |= Op->Flags;
         } else if (IROp->Op == OP_LOADFLAG) {
           auto Op = IROp->C<IR::IROp_LoadFlag>();
 
-          auto& BlockInfo = InfoMap[BlockNode];
-
           BlockInfo.flag.reads |= 1UL << Op->Flag;
         } else if (IROp->Op == OP_LOADDF) {
-          auto& BlockInfo = InfoMap[BlockNode];
-
           BlockInfo.flag.reads |= 1UL << X86State::RFLAG_DF_RAW_LOC;
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
-          auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.gpr.writes |= GPRBit(Op->Class, Op->Reg);
           BlockInfo.fpr.writes |= FPRBit(Op->Class, Op->Reg);
         } else if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
-          auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.gpr.reads |= GPRBit(Op->Class, Op->Reg);
           BlockInfo.fpr.reads |= FPRBit(Op->Class, Op->Reg);
@@ -184,11 +176,11 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
   // Remove the dead stores
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+      auto& BlockInfo = InfoMap[BlockNode];
+
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-          auto& BlockInfo = InfoMap[BlockNode];
 
           // If this StoreFlag is never read, remove it
           if (BlockInfo.flag.kill & (1UL << Op->Flag)) {
@@ -197,7 +189,6 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           }
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
-          auto& BlockInfo = InfoMap[BlockNode];
 
           // If this OP_STOREREGISTER is never read, remove it
           if ((BlockInfo.gpr.kill & GPRBit(Op->Class, Op->Reg)) || (BlockInfo.fpr.kill & FPRBit(Op->Class, Op->Reg))) {
