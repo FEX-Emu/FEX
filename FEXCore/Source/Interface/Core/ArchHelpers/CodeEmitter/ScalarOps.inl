@@ -1060,7 +1060,7 @@ public:
     uint32_t imm5 = 0b0'0000;
     if (size == FEXCore::ARMEmitter::ScalarRegSize::i16Bit) {
       ptype = 0b11;
-      imm8 = FP16ToImm8(vixl::Float16(Value));
+      imm8 = FP16ToImm8(Float16(Value));
     }
     else if (size == FEXCore::ARMEmitter::ScalarRegSize::i32Bit) {
       ptype = 0b00;

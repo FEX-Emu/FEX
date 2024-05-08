@@ -3036,7 +3036,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       op = 0;
       o2 = 1;
-      Imm = FP16ToImm8(vixl::Float16(Value));
+      Imm = FP16ToImm8(Float16(Value));
     }
     else if (size == SubRegSize::i32Bit) {
       op = 0;
