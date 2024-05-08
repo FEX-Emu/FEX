@@ -561,7 +561,7 @@
         "HasSideEffects": true,
         "DestSize": "8"
       },
-      "GPRPair = MemCpy i1:$IsAtomic, u8:$Size, GPR:$PrefixDest, GPR:$PrefixSrc, GPR:$AddrDest, GPR:$AddrSrc, GPR:$Length, GPR:$Direction": {
+      "GPRPair = MemCpy i1:$IsAtomic, u8:$Size, GPR:$Dest, GPR:$Src, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 MOVS repeat",
                  "Returns the final addresses of destination and src addresses after they have been incremented or decremented"
                 ],
