@@ -226,7 +226,7 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
-  ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool SupportsAVX);
+  ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass);
   ~ConstrainedRAPass();
   bool Run(IREmitter* IREmit) override;
 
@@ -250,7 +250,6 @@ private:
 
   RegisterGraph* Graph;
   FEXCore::IR::Pass* CompactionPass;
-  bool SupportsAVX;
 
   fextl::vector<LiveRange> LiveRanges;
 
@@ -297,9 +296,8 @@ private:
   fextl::vector<LiveRange*> StaticMaps;
 };
 
-ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _SupportsAVX)
-  : CompactionPass {_CompactionPass}
-  , SupportsAVX {_SupportsAVX} {}
+ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass)
+  : CompactionPass {_CompactionPass} {}
 
 ConstrainedRAPass::~ConstrainedRAPass() {
   FreeRegisterGraph(Graph);
@@ -1239,7 +1237,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   return Changed;
 }
 
-fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool SupportsAVX) {
-  return fextl::make_unique<ConstrainedRAPass>(CompactionPass, SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass) {
+  return fextl::make_unique<ConstrainedRAPass>(CompactionPass);
 }
 } // namespace FEXCore::IR
