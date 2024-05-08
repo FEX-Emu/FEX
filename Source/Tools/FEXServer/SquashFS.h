@@ -5,5 +5,5 @@
 namespace SquashFS {
 bool InitializeSquashFS();
 void UnmountRootFS();
-fextl::string GetMountFolder();
+const fextl::string& GetMountFolder();
 } // namespace SquashFS
