@@ -205,9 +205,6 @@ public:
     CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
     uint64_t VirtualMemSize {1ULL << 36};
 
-    // this is for internal use
-    bool ValidateIRarser {false};
-
     // Used if the JIT needs to have its interrupt fault code emitted.
     bool NeedsPendingInterruptFaultCheck {false};
 

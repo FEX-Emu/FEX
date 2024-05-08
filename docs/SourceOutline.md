@@ -121,12 +121,6 @@ IR to IR Optimization
 - [RegisterAllocationPass.h](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
 - [ValueDominanceValidation.cpp](../FEXCore/Source/Interface/IR/Passes/ValueDominanceValidation.cpp): Sanity Checking
 
-#### parser
-Text -> IR
-- [IRParser.cpp](../FEXCore/Source/Interface/IR/IRParser.cpp)
-
-
-
 ### opcodes
 
 #### cpuid

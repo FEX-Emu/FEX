@@ -134,7 +134,6 @@ set (SRCS
   Interface/GDBJIT/GDBJIT.cpp
   Interface/IR/AOTIR.cpp
   Interface/IR/IRDumper.cpp
-  Interface/IR/IRParser.cpp
   Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp
   Interface/IR/Passes/ConstProp.cpp

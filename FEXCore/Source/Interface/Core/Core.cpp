@@ -469,30 +469,6 @@ static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* 
   fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
 };
 
-static void ValidateIR(ContextImpl* ctx, IR::IREmitter* IREmitter) {
-  // Convert to text, Parse, Convert to text again and make sure the texts match
-  fextl::stringstream out;
-  static auto compaction = IR::CreateIRCompaction(ctx->OpDispatcherAllocator);
-  compaction->Run(IREmitter);
-  auto NewIR = IREmitter->ViewIR();
-  Dump(&out, &NewIR, nullptr);
-  out.seekg(0);
-  FEXCore::Utils::PooledAllocatorMalloc Allocator;
-  auto reparsed = IR::Parse(Allocator, out);
-  if (reparsed == nullptr) {
-    LOGMAN_MSG_A_FMT("Failed to parse IR\n");
-  } else {
-    fextl::stringstream out2;
-    auto NewIR2 = reparsed->ViewIR();
-    Dump(&out2, &NewIR2, nullptr);
-    if (out.str() != out2.str()) {
-      LogMan::Msg::IFmt("one:\n {}", out.str());
-      LogMan::Msg::IFmt("two:\n {}", out2.str());
-      LOGMAN_MSG_A_FMT("Parsed IR doesn't match\n");
-    }
-  }
-}
-
 ContextImpl::GenerateIRResult
 ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("GenerateIR");
@@ -643,25 +619,17 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
   auto ShouldDump = Thread->OpDispatcher->ShouldDumpIR();
   // Debug
-  {
-    if (ShouldDump) {
-      IRDumper(Thread, IREmitter, GuestRIP, nullptr);
-    }
-
-    if (static_cast<ContextImpl*>(Thread->CTX)->Config.ValidateIRarser) {
-      ValidateIR(this, IREmitter);
-    }
+  if (ShouldDump) {
+    IRDumper(Thread, IREmitter, GuestRIP, nullptr);
   }
 
   // Run the passmanager over the IR from the dispatcher
   Thread->PassManager->Run(IREmitter);
 
   // Debug
-  {
-    if (ShouldDump) {
-      IRDumper(Thread, IREmitter, GuestRIP,
-               Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-    }
+  if (ShouldDump) {
+    IRDumper(Thread, IREmitter, GuestRIP,
+             Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
   }
 
   auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
