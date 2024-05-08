@@ -101,8 +101,8 @@ void PassManager::AddDefaultValidationPasses() {
 #endif
 }
 
-void PassManager::InsertRegisterAllocationPass(bool SupportsAVX) {
-  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), SupportsAVX), "RA");
+void PassManager::InsertRegisterAllocationPass() {
+  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction")), "RA");
 }
 
 bool PassManager::Run(IREmitter* IREmit) {

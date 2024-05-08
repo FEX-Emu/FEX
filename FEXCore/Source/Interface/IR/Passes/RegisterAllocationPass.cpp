@@ -226,7 +226,7 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
-  ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool SupportsAVX);
+  ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass);
   ~ConstrainedRAPass();
   bool Run(IREmitter* IREmit) override;
 
@@ -250,7 +250,6 @@ private:
 
   RegisterGraph* Graph;
   FEXCore::IR::Pass* CompactionPass;
-  bool SupportsAVX;
 
   fextl::vector<LiveRange> LiveRanges;
 
@@ -297,9 +296,8 @@ private:
   fextl::vector<LiveRange*> StaticMaps;
 };
 
-ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _SupportsAVX)
-  : CompactionPass {_CompactionPass}
-  , SupportsAVX {_SupportsAVX} {}
+ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass)
+  : CompactionPass {_CompactionPass} {}
 
 ConstrainedRAPass::~ConstrainedRAPass() {
   FreeRegisterGraph(Graph);
@@ -461,20 +459,6 @@ void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView* IR) {
 }
 
 void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
-
-  // Helpers
-
-  // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
-  auto IsPreWritable = [this](uint8_t Size, RegisterClassType Class) {
-    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
-    if (Class == GPRClass) {
-      return Size == 8 || Size == 4;
-    } else if (Class == FPRClass) {
-      return Size == 16 || (Size == 32 && SupportsAVX);
-    }
-    return false; // Unknown
-  };
-
   auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
   auto MapsSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount + Graph->Set.Classes[FPRFixedClass.Val].PhysicalCount;
   StaticMaps.resize(MapsSize);
@@ -516,7 +500,7 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         const auto OpID = Op->Value.ID();
         auto& OpLiveRange = LiveRanges[OpID.Value];
 
-        if (IsPreWritable(IROp->Size, Op->Class) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
+        if (OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
           // Pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
           SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", OpID, Node);
           OpLiveRange.PrefferedRegister = GetRegForSRA(Op->Class, Op->Reg);
@@ -1253,7 +1237,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   return Changed;
 }
 
-fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool SupportsAVX) {
-  return fextl::make_unique<ConstrainedRAPass>(CompactionPass, SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass) {
+  return fextl::make_unique<ConstrainedRAPass>(CompactionPass);
 }
 } // namespace FEXCore::IR

@@ -374,7 +374,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   // Create CPU backend
   switch (Config.Core) {
   case FEXCore::Config::CONFIG_IRJIT:
-    Thread->PassManager->InsertRegisterAllocationPass(HostFeatures.SupportsAVX);
+    Thread->PassManager->InsertRegisterAllocationPass();
     Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
     break;
   case FEXCore::Config::CONFIG_CUSTOM: Thread->CPUBackend = CustomCPUFactory(this, Thread); break;

@@ -56,7 +56,7 @@ public:
     return PassPtr;
   }
 
-  void InsertRegisterAllocationPass(bool SupportsAVX);
+  void InsertRegisterAllocationPass();
 
   bool Run(IREmitter* IREmit);
 
