@@ -664,6 +664,7 @@ public:
   void VPCMPISTRMOp(OpcodeArgs);
 
   void VCVTPH2PSOp(OpcodeArgs);
+  void VCVTPS2PHOp(OpcodeArgs);
 
   Ref VPERMDIndices(OpSize DstSize, Ref Indices, Ref IndexMask, Ref Repeating3210);
   void VPERM2Op(OpcodeArgs);
