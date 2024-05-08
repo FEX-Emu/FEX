@@ -4464,6 +4464,19 @@ void OpDispatchBuilder::VINSERTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VCVTPH2PSOp(OpcodeArgs) {
+  // In the event that a memory operand is used as the source operand,
+  // the access width will always be half the size of the destination vector width
+  // (i.e. 128-bit vector -> 64-bit mem, 256-bit vector -> 128-bit mem)
+  const auto DstSize = GetDstSize(Op);
+  const auto SrcLoadSize = Op->Src[0].IsGPR() ? DstSize : DstSize / 2;
+
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcLoadSize, Op->Flags);
+  Ref Result = _Vector_FToF(DstSize, 4, Src, 2);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
