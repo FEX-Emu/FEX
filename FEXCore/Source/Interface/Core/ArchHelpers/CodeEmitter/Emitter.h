@@ -12,8 +12,6 @@
 
 #include <FEXHeaderUtils/BitUtils.h>
 
-#include <aarch64/assembler-aarch64.h>
-
 #include <array>
 #include <cstdint>
 #include <utility>
@@ -832,6 +830,8 @@ public:
       return Result;
     }
   };
+
+#include "Interface/Core/ArchHelpers/CodeEmitter/VixlUtils.inl"
 
 public:
   // TODO: Implement SME when it matters.

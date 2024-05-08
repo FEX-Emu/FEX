@@ -176,7 +176,7 @@ public:
   // Logical immediate
   void and_(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Imm,
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
                            RegSizeInBits(s),
                            &n,
                            &imms,
@@ -191,7 +191,7 @@ public:
 
   void ands(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Imm,
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
                            RegSizeInBits(s),
                            &n,
                            &imms,
@@ -206,7 +206,7 @@ public:
 
   void orr(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Imm,
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
                            RegSizeInBits(s),
                            &n,
                            &imms,
@@ -217,7 +217,7 @@ public:
 
   void eor(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Imm,
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
                            RegSizeInBits(s),
                            &n,
                            &imms,
