@@ -656,7 +656,6 @@ bool IsFragmentExit(FEXCore::IR::IROps Op);
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
 void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocationData* RAData);
-fextl::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, fextl::stringstream& MapsStream);
 } // namespace FEXCore::IR
 
 template<>
