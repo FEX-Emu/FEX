@@ -1612,7 +1612,7 @@
       "Comment": "0x0f 0xd7",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #2272]",
+        "ldr d3, [x28, #2288]",
         "cmlt v2.16b, v2.16b, #0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v2.16b",
