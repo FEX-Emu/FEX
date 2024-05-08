@@ -8,10 +8,7 @@
 namespace FEX::HLE {
 FEXCore::Core::InternalThreadState*
 ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
-  auto Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
-
-  ++IdleWaitRefCount;
-  return Thread;
+  return CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
 }
 
 void ThreadManager::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
@@ -34,6 +31,19 @@ void ThreadManager::StopThread(FEXCore::Core::InternalThreadState* Thread) {
 void ThreadManager::RunThread(FEXCore::Core::InternalThreadState* Thread) {
   // Tell the thread to start executing
   Thread->StartRunning.NotifyAll();
+  ++IdleWaitRefCount;
+}
+
+void ThreadManager::RunPrimaryThread(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread) {
+  Thread->ThreadManager.TID = FHU::Syscalls::gettid();
+  Thread->ThreadManager.PID = ::getpid();
+
+  if (GdbServer()) {
+    Thread->StartRunning.Wait();
+  }
+
+  ++IdleWaitRefCount;
+  CTX->RunUntilExit(Thread);
 }
 
 void ThreadManager::HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread) {
@@ -49,20 +59,26 @@ void ThreadManager::HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thr
 
   CTX->DestroyThread(Thread);
   --IdleWaitRefCount;
-  IdleWaitCV.notify_all();
 }
 
 void ThreadManager::NotifyPause() {
   // Tell all the threads that they should pause
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    if (Thread->RunningEvents.Running.load()) {
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
+    }
   }
 }
 
 void ThreadManager::Pause() {
   NotifyPause();
   WaitForIdle();
+}
+
+void ThreadManager::Pausing(FEXCore::Core::InternalThreadState* Thread) {
+  Thread->RunningEvents.Running.store(false);
+  --IdleWaitRefCount;
 }
 
 void ThreadManager::Run() {
@@ -77,21 +93,6 @@ void ThreadManager::Run() {
   }
 }
 
-void ThreadManager::WaitForIdleWithTimeout() {
-  std::unique_lock<std::mutex> lk(IdleWaitMutex);
-  bool WaitResult = IdleWaitCV.wait_for(lk, std::chrono::milliseconds(1500), [this] { return IdleWaitRefCount.load() == 0; });
-
-  if (!WaitResult) {
-    // The wait failed, this will occur if we stepped in to a syscall
-    // That's okay, we just need to pause the threads manually
-    NotifyPause();
-  }
-
-  // We have sent every thread a pause signal
-  // Now wait again because they /will/ be going to sleep
-  WaitForIdle();
-}
-
 void ThreadManager::WaitForThreadsToRun() {
   size_t NumThreads {};
   {
@@ -100,8 +101,8 @@ void ThreadManager::WaitForThreadsToRun() {
   }
 
   // Spin while waiting for the threads to start up
-  std::unique_lock<std::mutex> lk(IdleWaitMutex);
-  IdleWaitCV.wait(lk, [this, NumThreads] { return IdleWaitRefCount.load() >= NumThreads; });
+  while (IdleWaitRefCount.load() < NumThreads)
+    ;
 
   Running = true;
 }
@@ -164,9 +165,7 @@ void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::C
   auto Thread = Frame->Thread;
 
   --IdleWaitRefCount;
-  IdleWaitCV.notify_all();
-
-  Thread->RunningEvents.ThreadSleeping = true;
+  Thread->RunningEvents.Running = false;
 
   // Go to sleep
   Thread->StartRunning.Wait();
@@ -174,8 +173,6 @@ void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::C
   Thread->RunningEvents.Running = true;
   ++IdleWaitRefCount;
   Thread->RunningEvents.ThreadSleeping = false;
-
-  IdleWaitCV.notify_all();
 }
 
 void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
@@ -223,8 +220,8 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
 }
 
 void ThreadManager::WaitForIdle() {
-  std::unique_lock<std::mutex> lk(IdleWaitMutex);
-  IdleWaitCV.wait(lk, [this] { return IdleWaitRefCount.load() == 0; });
+  while (IdleWaitRefCount.load() != 0)
+    ;
 
   Running = false;
 }

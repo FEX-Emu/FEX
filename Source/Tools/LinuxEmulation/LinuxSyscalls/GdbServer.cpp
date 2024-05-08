@@ -17,6 +17,7 @@ $end_info$
 #include <optional>
 
 #include <Common/FEXServerClient.h>
+#include <Common/StringUtil.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -101,7 +102,21 @@ void GdbServer::Break(int signal) {
   SendPacket(*CommsStream, str);
 }
 
+void GdbServer::BreakThread(FEXCore::Core::InternalThreadState* Thread, int signal) {
+  std::lock_guard lk(sendMutex);
+  if (!CommsStream) {
+    return;
+  }
+
+  const fextl::string str = fextl::fmt::format("T{:02x}thread:{:x};", signal, Thread->ThreadManager.GetTID());
+  SendPacket(*CommsStream, str);
+  // Current debugging thread switches to the thread that is breaking.
+  CurrentDebuggingThread = Thread->ThreadManager.GetTID();
+}
+
 void GdbServer::WaitForThreadWakeup() {
+  ThreadBreakEventInfo.Thread = nullptr;
+
   // Wait for gdbserver to tell us to wake up
   ThreadBreakEvent.Wait();
 }
@@ -142,8 +157,12 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         return false;
       }
 
+      this->SyscallHandler->TM.Pausing(Thread);
+      this->ThreadBreakEventInfo.HostPC = ArchHelpers::Context::GetPc(ucontext);
+      this->ThreadBreakEventInfo.Thread = Thread;
+
       // Let GDB know that we have a signal
-      this->Break(Signal);
+      this->BreakThread(Thread, Signal);
 
       WaitForThreadWakeup();
 
@@ -197,6 +216,8 @@ static fextl::string getThreadName(uint32_t ThreadID) {
   const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
   fextl::string ThreadName;
   FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
+  // Trim out the potential newline, breaks GDB if it exists.
+  FEX::StringUtil::trim(ThreadName);
   return ThreadName;
 }
 
@@ -340,7 +361,11 @@ fextl::string GdbServer::readRegs() {
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
-  memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+  if (ThreadBreakEventInfo.Thread == CurrentThread) {
+    GDB.rip = CTX->RestoreRIPFromHostPC(CurrentThread, ThreadBreakEventInfo.HostPC);
+  } else {
+    memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
+  }
 
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread, false, nullptr, 0);
 

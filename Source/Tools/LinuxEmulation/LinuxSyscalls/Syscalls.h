@@ -111,13 +111,15 @@ public:
   void StopThread(FEXCore::Core::InternalThreadState* Thread);
   void RunThread(FEXCore::Core::InternalThreadState* Thread);
 
+  void RunPrimaryThread(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread);
+
   void Pause();
   void Run();
   void Step();
   void Stop(bool IgnoreCurrentThread = false);
+  void Pausing(FEXCore::Core::InternalThreadState* Thread);
 
   void WaitForIdle();
-  void WaitForIdleWithTimeout();
   void WaitForThreadsToRun();
 
   void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame);
@@ -160,6 +162,8 @@ public:
   }
 
 private:
+  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+
   FEXCore::Context::Context* CTX;
   FEX::HLE::SignalDelegator* SignalDelegation;
 
@@ -169,7 +173,6 @@ private:
   // Thread idling support.
   bool Running {};
   std::mutex IdleWaitMutex;
-  std::condition_variable IdleWaitCV;
   std::atomic<uint32_t> IdleWaitRefCount {};
 
   void HandleThreadDeletion(FEXCore::Core::InternalThreadState* Thread);

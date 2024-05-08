@@ -311,8 +311,6 @@ bool ContextImpl::InitCore() {
   if (Config.GdbServer) {
     // If gdbserver is enabled then this needs to be enabled.
     Config.NeedsPendingInterruptFaultCheck = true;
-    // FEX needs to start paused when gdb is enabled.
-    StartPaused = true;
   }
 
   return true;
@@ -835,7 +833,7 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
   // Now notify the thread that we are initialized
   Thread->ThreadWaiting.NotifyAll();
 
-  if (StartPaused || Thread->StartPaused) {
+  if (Thread->StartPaused) {
     // Parent thread doesn't need to wait to run
     Thread->StartRunning.Wait();
   }
