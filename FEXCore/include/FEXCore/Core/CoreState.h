@@ -120,6 +120,11 @@ struct CPUState {
   // Since this memory region is thread local, we use NonAtomicRefCounter for fast atomic access.
   NonAtomicRefCounter<uint64_t>* DeferredSignalFaultAddress;
 
+  // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
+  // x86 otherwise). This allows a straightforward mapping for SRA.
+  static constexpr uint8_t PF_AS_GREG = 16;
+  static constexpr uint8_t AF_AS_GREG = 17;
+
   static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
   static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
   static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);

@@ -199,7 +199,7 @@
         "cset w20, hs",
         "adds w26, w27, #0x1 (1)",
         "rmif x20, #63, #nzCv",
-        "mov w4, w26"
+        "mov x4, x26"
       ]
     },
     "dec ax": {
@@ -236,7 +236,7 @@
         "cset w20, hs",
         "subs w26, w27, #0x1 (1)",
         "rmif x20, #63, #nzCv",
-        "mov w4, w26"
+        "mov x4, x26"
       ]
     },
     "pusha": {

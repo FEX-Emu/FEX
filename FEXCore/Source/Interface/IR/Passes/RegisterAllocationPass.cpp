@@ -465,109 +465,19 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
   // Helpers
 
   // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
-  auto IsPreWritable = [this](uint8_t Size, RegisterClassType StaticClass) {
-    LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
-    if (StaticClass == GPRFixedClass) {
+  auto IsPreWritable = [this](uint8_t Size, RegisterClassType Class) {
+    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
+    if (Class == GPRClass) {
       return Size == 8 || Size == 4;
-    } else if (StaticClass == FPRFixedClass) {
+    } else if (Class == FPRClass) {
       return Size == 16 || (Size == 32 && SupportsAVX);
     }
     return false; // Unknown
   };
 
-  // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
-  auto IsAliasable = [this](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
-    LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
-    if (StaticClass == GPRFixedClass) {
-      // We need more meta info to support not-size-of-reg
-      return (Size == 8 || Size == 4) && ((Offset & 7) == 0);
-    } else if (StaticClass == FPRFixedClass) {
-      // We need more meta info to support not-size-of-reg
-      if (Size == 32 && SupportsAVX && (Offset & 31) == 0) {
-        return true;
-      }
-      return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
-    }
-    return false; // Unknown
-  };
-
-  const auto GetFPRBeginAndEnd = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
-    if (SupportsAVX) {
-      return {
-        offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[0][0]),
-        offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[16][0]),
-      };
-    } else {
-      return {
-        offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]),
-        offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[16][0]),
-      };
-    }
-  };
-
-  // Get SRA Reg and Class from a Context offset
-  const auto GetRegAndClassFromOffset = [&, this](uint32_t Offset) {
-    const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-    const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
-    const auto pf = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
-    const auto af = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
-
-    const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
-
-    LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr) || (Offset == pf) || (Offset == af),
-                        "Unexpected Offset {}", Offset);
-
-    unsigned FlagOffset = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount - 2;
-
-    if (Offset == pf) {
-      return PhysicalRegister(GPRFixedClass, FlagOffset);
-    } else if (Offset == af) {
-      return PhysicalRegister(GPRFixedClass, FlagOffset + 1);
-    } else if (Offset >= beginGpr && Offset < endGpr) {
-      auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
-      return PhysicalRegister(GPRFixedClass, reg);
-    } else if (Offset >= beginFpr && Offset < endFpr) {
-      const auto size = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
-      const auto reg = (Offset - beginFpr) / size;
-      return PhysicalRegister(FPRFixedClass, reg);
-    }
-
-    return PhysicalRegister::Invalid();
-  };
-
   auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
   auto MapsSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount + Graph->Set.Classes[FPRFixedClass.Val].PhysicalCount;
   StaticMaps.resize(MapsSize);
-
-  // Get a StaticMap entry from context offset
-  const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
-    const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-    const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
-    const auto pf = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
-    const auto af = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
-
-    const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
-
-    LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr) || (Offset == pf) || (Offset == af),
-                        "Unexpected Offset {}", Offset);
-
-    unsigned FlagOffset = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount - 2;
-
-    if (Offset == pf) {
-      return &StaticMaps[FlagOffset];
-    } else if (Offset == af) {
-      return &StaticMaps[FlagOffset + 1];
-    } else if (Offset >= beginGpr && Offset < endGpr) {
-      auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
-      return &StaticMaps[reg];
-    } else if (Offset >= beginFpr && Offset < endFpr) {
-      const auto size = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
-      const auto reg = (Offset - beginFpr) / size;
-      return &StaticMaps[GprSize + reg];
-    }
-
-    return nullptr;
-  };
 
   // Get a StaticMap entry from reg and class
   const auto GetStaticMapFromReg = [&](IR::PhysicalRegister PhyReg) -> LiveRange** {
@@ -582,6 +492,20 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
     return nullptr;
   };
 
+  const auto GetRegForSRA = [&](auto Class, auto Reg) {
+    unsigned FlagOffset = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount - 2;
+
+    if (Class == FPRClass) {
+      return PhysicalRegister(FPRFixedClass, Reg);
+    } else if (Reg == Core::CPUState::PF_AS_GREG) {
+      return PhysicalRegister(GPRFixedClass, FlagOffset);
+    } else if (Reg == Core::CPUState::AF_AS_GREG) {
+      return PhysicalRegister(GPRFixedClass, FlagOffset + 1);
+    } else {
+      return PhysicalRegister(GPRFixedClass, Reg);
+    }
+  };
+
   // First pass: Mark pre-writes
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -592,13 +516,12 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         const auto OpID = Op->Value.ID();
         auto& OpLiveRange = LiveRanges[OpID.Value];
 
-        if (IsPreWritable(IROp->Size, Op->StaticClass) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
-
+        if (IsPreWritable(IROp->Size, Op->Class) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
           // Pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
           SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", OpID, Node);
-          OpLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
+          OpLiveRange.PrefferedRegister = GetRegForSRA(Op->Class, Op->Reg);
           OpLiveRange.PreWritten = Node;
-          SetNodeClass(Graph, OpID, Op->StaticClass);
+          SetNodeClass(Graph, OpID, RegisterClassType {OpLiveRange.PrefferedRegister.Class});
         }
       }
     }
@@ -664,7 +587,8 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
 
-          auto StaticMap = GetStaticMapFromOffset(Op->Offset);
+          auto Reg = GetRegForSRA(Op->Class, Op->Reg);
+          auto StaticMap = GetStaticMapFromReg(Reg);
 
           // Make sure there wasn't a store pre-written before this read
           if ((*StaticMap) && (*StaticMap)->PreWritten.IsValid()) {
@@ -676,25 +600,22 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
             SetNodeClass(Graph, ID, Op->Class);
           }
 
-          // if not sra-allocated and full size, sra-allocate
+          // if not sra-allocated, sra-allocate
           if (!NodeLiveRange.Global && NodeLiveRange.PrefferedRegister.IsInvalid()) {
-            // only full size reads can be aliased
-            if (IsAliasable(IROp->Size, Op->StaticClass, Op->Offset)) {
-              // We can only track a single active span.
-              // Marking here as written is overly agressive, but
-              // there might be write(s) later on the instruction stream
-              if ((*StaticMap)) {
-                SRA_DEBUG("Marking ssa{} as written because ssa{} re-loads sra{}, "
-                          "and we can't track possible future writes\n",
-                          (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
-                (*StaticMap)->Written = true;
-              }
-
-              NodeLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); // 0, 1, and so on
-              (*StaticMap) = &NodeLiveRange;
-              SetNodeClass(Graph, Node, Op->StaticClass);
-              SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
+            // We can only track a single active span.
+            // Marking here as written is overly agressive, but
+            // there might be write(s) later on the instruction stream
+            if ((*StaticMap)) {
+              SRA_DEBUG("Marking ssa{} as written because ssa{} re-loads sra{}, "
+                        "and we can't track possible future writes\n",
+                        (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+              (*StaticMap)->Written = true;
             }
+
+            NodeLiveRange.PrefferedRegister = Reg;
+            (*StaticMap) = &NodeLiveRange;
+            SetNodeClass(Graph, Node, RegisterClassType {NodeLiveRange.PrefferedRegister.Class});
+            SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
           }
         }
       }
@@ -707,7 +628,8 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         const auto OpID = Op->Value.ID();
         auto& OpLiveRange = LiveRanges[OpID.Value];
 
-        auto StaticMap = GetStaticMapFromOffset(Op->Offset);
+        auto Reg = GetRegForSRA(Op->Class, Op->Reg);
+        auto StaticMap = GetStaticMapFromReg(Reg);
         // if a read pending, it has been writting
         if ((*StaticMap)) {
           // writes to self don't invalidate the span
