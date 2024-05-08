@@ -461,20 +461,6 @@ void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView* IR) {
 }
 
 void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
-
-  // Helpers
-
-  // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
-  auto IsPreWritable = [this](uint8_t Size, RegisterClassType Class) {
-    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "Unexpected class {}", Class);
-    if (Class == GPRClass) {
-      return Size == 8 || Size == 4;
-    } else if (Class == FPRClass) {
-      return Size == 16 || (Size == 32 && SupportsAVX);
-    }
-    return false; // Unknown
-  };
-
   auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
   auto MapsSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount + Graph->Set.Classes[FPRFixedClass.Val].PhysicalCount;
   StaticMaps.resize(MapsSize);
@@ -516,7 +502,7 @@ void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView* IR) {
         const auto OpID = Op->Value.ID();
         auto& OpLiveRange = LiveRanges[OpID.Value];
 
-        if (IsPreWritable(IROp->Size, Op->Class) && OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
+        if (OpLiveRange.PrefferedRegister.IsInvalid() && !OpLiveRange.Global) {
           // Pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
           SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", OpID, Node);
           OpLiveRange.PrefferedRegister = GetRegForSRA(Op->Class, Op->Reg);
