@@ -20,8 +20,6 @@ target_link_libraries(wow64fex
   ntdll
 )
 
-target_link_options(wow64fex PRIVATE "LINKER:--image-base,0x6f100000")
-
 install(TARGETS wow64fex
   RUNTIME
   DESTINATION bin

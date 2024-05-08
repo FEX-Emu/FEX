@@ -86,8 +86,8 @@ class WowSyscallHandler;
 namespace {
 namespace BridgeInstrs {
   // These directly jumped to by the guest to make system calls
-  uint16_t Syscall {0x2ecd};
-  uint16_t UnixCall {0x2ecd};
+  void* Syscall {};
+  void* UnixCall {};
 } // namespace BridgeInstrs
 
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
@@ -368,18 +368,32 @@ void Init() {
 }
 } // namespace Logging
 
+// Calls a 2-argument function `Func` setting the parent unwind frame information to the given SP and PC
+__attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, void* Arg1, void* Func, uint64_t Sp, uint64_t Pc) {
+  asm(".seh_proc SEHFrameTrampoline2Args;"
+      "stp x3, x4, [sp, #-0x10]!;"
+      ".seh_pushframe;"
+      "stp x29, x30, [sp, #-0x10]!;"
+      ".seh_save_fplr_x 16;"
+      ".seh_endprologue;"
+      "blr x2;"
+      "ldp x29, x30, [sp], 0x20;"
+      "ret;"
+      ".seh_endproc;");
+}
+
 class WowSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   WowSyscallHandler() {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_WIN32;
   }
 
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  static uint64_t HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
     const uint64_t ReturnRIP = *(uint32_t*)(Frame->State.gregs[FEXCore::X86State::REG_RSP]); // Return address from the stack
     uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
     uint64_t ReturnRAX = 0;
 
-    if (Frame->State.rip == (uint64_t)&BridgeInstrs::UnixCall) {
+    if (Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
       struct StackLayout {
         unixlib_handle_t Handle;
         UINT32 ID;
@@ -391,7 +405,7 @@ public:
       Context::UnlockJITContext();
       ReturnRAX = static_cast<uint64_t>(__wine_unix_call(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
       Context::LockJITContext();
-    } else if (Frame->State.rip == (uint64_t)&BridgeInstrs::Syscall) {
+    } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
 
       Context::UnlockJITContext();
@@ -400,7 +414,7 @@ public:
       Context::LockJITContext();
     }
     // If a new context has been set, use it directly and don't return to the syscall caller
-    if (Frame->State.rip == (uint64_t)&BridgeInstrs::Syscall || Frame->State.rip == (uint64_t)&BridgeInstrs::UnixCall) {
+    if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall || Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
       Frame->State.rip = ReturnRIP;
@@ -408,6 +422,16 @@ public:
 
     // NORETURNEDRESULT causes this result to be ignored since we restore all registers back from memory after a syscall anyway
     return 0;
+  }
+
+  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+    // Stash the the context pointer on the stack, as Simulate can be called from this syscall handler which would overwrite it
+    CONTEXT* EntryContext = GetTLS().EntryContext();
+    // Call the syscall handler with unwind information pointing to Simulate as its caller
+    uint64_t Ret = SEHFrameTrampoline2Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(Args),
+                                           reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
+    GetTLS().EntryContext() = EntryContext;
+    return Ret;
   }
 
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
@@ -451,6 +475,14 @@ void BTCpuProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
   CPUFeatures.emplace(*CTX);
+
+  // Allocate the syscall/unixcall trampolines in the lower 2GB of the address space
+  SIZE_T Size = 4;
+  void* Addr = nullptr;
+  NtAllocateVirtualMemory(NtCurrentProcess(), &Addr, (1U << 31) - 1, &Size, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  *reinterpret_cast<uint32_t*>(Addr) = 0x2ecd2ecd;
+  BridgeInstrs::Syscall = Addr;
+  BridgeInstrs::UnixCall = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Addr) + 2);
 }
 
 NTSTATUS BTCpuThreadInit() {
@@ -484,11 +516,11 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
 }
 
 void* BTCpuGetBopCode() {
-  return &BridgeInstrs::Syscall;
+  return BridgeInstrs::Syscall;
 }
 
 void* __wine_get_unix_opcode() {
-  return &BridgeInstrs::UnixCall;
+  return BridgeInstrs::UnixCall;
 }
 
 NTSTATUS BTCpuGetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
@@ -540,12 +572,7 @@ NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
 void BTCpuSimulate() {
   CONTEXT entry_context;
   RtlCaptureContext(&entry_context);
-
-  // APC handling calls BTCpuSimulate from syscalls and then use NtContinue to return to the previous context,
-  // to avoid the saved context being clobbered in this case only save the entry context highest in the stack
-  if (!GetTLS().EntryContext() || GetTLS().EntryContext()->Sp <= entry_context.Sp) {
-    GetTLS().EntryContext() = &entry_context;
-  }
+  GetTLS().EntryContext() = &entry_context;
 
   Context::LockJITContext();
   CTX->ExecuteThread(GetTLS().ThreadState());
