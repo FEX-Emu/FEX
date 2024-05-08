@@ -7,8 +7,6 @@ $end_info$
 
 #include "FEXCore/Core/X86Enums.h"
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -170,7 +168,7 @@ DEF_OP(LoadContextIndexed) {
     case 2:
     case 4:
     case 8: {
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetReg(Node);
       switch (OpSize) {
       case 1: ldrb(Dst, TMP1, Op->BaseOffset); break;
@@ -192,7 +190,7 @@ DEF_OP(LoadContextIndexed) {
     case 8:
     case 16:
     case 32: {
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetVReg(Node);
 
       switch (OpSize) {
@@ -235,7 +233,7 @@ DEF_OP(StoreContextIndexed) {
     case 2:
     case 4:
     case 8: {
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
       case 1: strb(Value, TMP1, Op->BaseOffset); break;
@@ -259,7 +257,7 @@ DEF_OP(StoreContextIndexed) {
     case 8:
     case 16:
     case 32: {
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
       case 1: strb(Value, TMP1, Op->BaseOffset); break;
@@ -552,8 +550,8 @@ DEF_OP(StoreFlag) {
   strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
-FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
-  uint8_t AccessSize, FEXCore::ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
+  uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, 0);
   } else {
@@ -580,17 +578,16 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
   FEX_UNREACHABLE;
 }
 
-FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize, FEXCore::ARMEmitter::Register Base,
-                                                                       IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType,
-                                                                       [[maybe_unused]] uint8_t OffsetScale) {
+ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+                                                              IR::MemOffsetType OffsetType, [[maybe_unused]] uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
-    return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), 0);
+    return ARMEmitter::SVEMemOperand(Base.X(), 0);
   }
 
   uint64_t Const {};
   if (IsInlineConstant(Offset, &Const)) {
     if (Const == 0) {
-      return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), 0);
+      return ARMEmitter::SVEMemOperand(Base.X(), 0);
     }
 
     const auto SignedConst = static_cast<int64_t>(Const);
@@ -613,13 +610,13 @@ FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t A
     // then we can encode it as an immediate offset.
     //
     if (IsCleanlyDivisible && Index >= -8 && Index <= 7) {
-      return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), static_cast<uint64_t>(Index));
+      return ARMEmitter::SVEMemOperand(Base.X(), static_cast<uint64_t>(Index));
     }
 
     // If we can't do that for whatever reason, then unfortunately, we need
     // to move it over to a temporary to use as an offset.
     mov(TMP1, Const);
-    return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), TMP1);
+    return ARMEmitter::SVEMemOperand(Base.X(), TMP1);
   }
 
   // Otherwise handle it like normal.
@@ -629,7 +626,7 @@ FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t A
   LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val, "Currently only the default offset type (SXTX) is supported.");
 
   const auto RegOffset = GetReg(Offset.ID());
-  return FEXCore::ARMEmitter::SVEMemOperand(Base.X(), RegOffset.X());
+  return ARMEmitter::SVEMemOperand(Base.X(), RegOffset.X());
 }
 
 DEF_OP(LoadMem) {
@@ -743,7 +740,7 @@ DEF_OP(LoadMemTSO) {
     }
     if (VectorTSOEnabled()) {
       // Half-barrier.
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISHLD);
+      dmb(ARMEmitter::BarrierScope::ISHLD);
     }
   }
 }
@@ -895,7 +892,7 @@ DEF_OP(VStoreVectorElement) {
 
   // Emit a half-barrier if TSO is enabled.
   if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+    dmb(ARMEmitter::BarrierScope::ISH);
   }
 
   if (Is256Bit) {
@@ -1141,7 +1138,7 @@ DEF_OP(StoreMemTSO) {
   } else {
     if (VectorTSOEnabled()) {
       // Half-Barrier.
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      dmb(ARMEmitter::BarrierScope::ISH);
     }
     const auto Src = GetVReg(Op->Value.ID());
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
@@ -1180,7 +1177,7 @@ DEF_OP(MemSet) {
 
   uint64_t DirectionConstant;
   bool DirectionIsInline = IsInlineConstant(Op->Direction, &DirectionConstant);
-  FEXCore::ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
+  ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
   if (!DirectionIsInline) {
     DirectionReg = GetReg(Op->Direction.ID());
   }
@@ -1369,7 +1366,7 @@ DEF_OP(MemCpy) {
   const auto Length = GetReg(Op->Length.ID());
   uint64_t DirectionConstant;
   bool DirectionIsInline = IsInlineConstant(Op->Direction, &DirectionConstant);
-  FEXCore::ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
+  ARMEmitter::Register DirectionReg = ARMEmitter::Reg::r0;
   if (!DirectionIsInline) {
     DirectionReg = GetReg(Op->Direction.ID());
   }
@@ -1712,9 +1709,9 @@ DEF_OP(ParanoidLoadMemTSO) {
       ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
       break;
     case 32:
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      dmb(ARMEmitter::BarrierScope::ISH);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      dmb(ARMEmitter::BarrierScope::ISH);
       break;
     default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
     }
@@ -1788,9 +1785,9 @@ DEF_OP(ParanoidStoreMemTSO) {
       break;
     }
     case 32: {
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      dmb(ARMEmitter::BarrierScope::ISH);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
-      dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+      dmb(ARMEmitter::BarrierScope::ISH);
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
@@ -1818,7 +1815,7 @@ DEF_OP(CacheLineClear) {
 
   if (Op->Serialize) {
     // If requested, serialized all of the data cache operations.
-    dsb(FEXCore::ARMEmitter::BarrierScope::ISH);
+    dsb(ARMEmitter::BarrierScope::ISH);
   }
 }
 

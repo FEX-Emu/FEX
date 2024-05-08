@@ -6,7 +6,7 @@
 #include <compare>
 #include <cstdint>
 
-namespace FEXCore::ARMEmitter {
+namespace ARMEmitter {
 class WRegister;
 class XRegister;
 
@@ -1024,4 +1024,4 @@ enum class OpType : uint32_t {
   Destructive = 0,
   Constructive,
 };
-} // namespace FEXCore::ARMEmitter
+} // namespace ARMEmitter

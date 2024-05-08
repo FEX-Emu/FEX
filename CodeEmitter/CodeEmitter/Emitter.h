@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Interface/Core/ArchHelpers/CodeEmitter/Buffer.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
-
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -11,6 +8,8 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/BitUtils.h>
+#include <CodeEmitter/Buffer.h>
+#include <CodeEmitter/Registers.h>
 
 #include <array>
 #include <cstdint>
@@ -54,7 +53,7 @@
  *     it easier to select the correct load-store instruction. Mostly because these are a nightmare selecting
  *     the right instruction.
  */
-namespace FEXCore::ARMEmitter {
+namespace ARMEmitter {
 /*
  * This `Size` enum is used for most ALU operations.
  * These follow the AArch64 encoding style in most cases.
@@ -609,7 +608,7 @@ constexpr bool AreVectorsSequential(T first, const Args&... args) {
 // Choices:
 // - Size of ops passed as an argument rather than template to let the compiler use csel instead of branching.
 // - Registers are unsized so they can be passed in a GPR and not need conversion operations
-class Emitter : public FEXCore::ARMEmitter::Buffer {
+class Emitter : public ARMEmitter::Buffer {
 public:
   Emitter() = default;
 
@@ -804,7 +803,7 @@ public:
       }
     }
 
-    uint8_t ToImm8() {
+    uint8_t ToImm8() const {
       // ARM imm8 float encoding
       // Bit[7]   - Sign
       // Bit[6]   - Exponent
@@ -831,17 +830,17 @@ public:
     }
   };
 
-#include "Interface/Core/ArchHelpers/CodeEmitter/VixlUtils.inl"
+#include <CodeEmitter/VixlUtils.inl>
 
 public:
   // TODO: Implement SME when it matters.
-#include "Interface/Core/ArchHelpers/CodeEmitter/ALUOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/BranchOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/LoadstoreOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/SystemOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/ScalarOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/ASIMDOps.inl"
-#include "Interface/Core/ArchHelpers/CodeEmitter/SVEOps.inl"
+#include <CodeEmitter/ALUOps.inl>
+#include <CodeEmitter/BranchOps.inl>
+#include <CodeEmitter/LoadstoreOps.inl>
+#include <CodeEmitter/SystemOps.inl>
+#include <CodeEmitter/ScalarOps.inl>
+#include <CodeEmitter/ASIMDOps.inl>
+#include <CodeEmitter/SVEOps.inl>
 
 private:
   template<typename T>
@@ -903,4 +902,4 @@ private:
     return FEXCore::ToUnderlying(Reg);
   }
 };
-} // namespace FEXCore::ARMEmitter
+} // namespace ARMEmitter

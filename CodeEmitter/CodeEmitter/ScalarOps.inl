@@ -33,7 +33,7 @@ public:
     ASIMDScalarCopy(Op, 1, imm5, 0b0000, rd, rn);
   }
 
-  void mov(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Index) {
+  void mov(ARMEmitter::ScalarRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, uint32_t Index) {
     dup(size, rd, rn, Index);
   }
 
@@ -1052,21 +1052,21 @@ public:
   }
 
 // Floating-point immediate
-  void fmov(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, float Value) {
+  void fmov(ARMEmitter::ScalarRegSize size, ARMEmitter::VRegister rd, float Value) {
     uint32_t M = 0;
     uint32_t S = 0;
     uint32_t ptype;
     uint32_t imm8;
     uint32_t imm5 = 0b0'0000;
-    if (size == FEXCore::ARMEmitter::ScalarRegSize::i16Bit) {
+    if (size == ARMEmitter::ScalarRegSize::i16Bit) {
       ptype = 0b11;
       imm8 = FP16ToImm8(Float16(Value));
     }
-    else if (size == FEXCore::ARMEmitter::ScalarRegSize::i32Bit) {
+    else if (size == ARMEmitter::ScalarRegSize::i32Bit) {
       ptype = 0b00;
       imm8 = FP32ToImm8(Value);
     }
-    else if (size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit) {
+    else if (size == ARMEmitter::ScalarRegSize::i64Bit) {
       ptype = 0b01;
       imm8 = FP64ToImm8(Value);
     }
@@ -1077,7 +1077,7 @@ public:
     FloatScalarImmediate(M, S, ptype, imm8, imm5, rd);
   }
 
-  void FloatScalarImmediate(uint32_t M, uint32_t S, uint32_t ptype, uint32_t imm8, uint32_t imm5, FEXCore::ARMEmitter::VRegister rd) {
+  void FloatScalarImmediate(uint32_t M, uint32_t S, uint32_t ptype, uint32_t imm8, uint32_t imm5, ARMEmitter::VRegister rd) {
     constexpr uint32_t Op = 0b0001'1110'0010'0000'0001'00 << 10;
     uint32_t Instr = Op;
 
@@ -1286,7 +1286,7 @@ public:
 
 private:
 // Advanced SIMD scalar copy
-  void ASIMDScalarCopy(uint32_t Op, uint32_t Q, uint32_t imm5, uint32_t imm4, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn) {
+  void ASIMDScalarCopy(uint32_t Op, uint32_t Q, uint32_t imm5, uint32_t imm4, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
     uint32_t Instr = Op;
 
     Instr |= Q << 30;

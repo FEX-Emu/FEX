@@ -3,7 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fcntl.h>
 
-using namespace FEXCore::ARMEmitter;
+using namespace ARMEmitter;
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Advanced SIMD scalar copy") {
   TEST_SINGLE(dup(ScalarRegSize::i8Bit, VReg::v30, VReg::v29, 0), "mov b30, v29.b[0]");

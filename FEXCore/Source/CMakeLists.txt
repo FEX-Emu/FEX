@@ -193,7 +193,7 @@ endif()
 # Some defines for the softfloat library
 list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ")
 
-set (LIBS fmt::fmt vixl xxHash::xxhash FEXHeaderUtils)
+set (LIBS fmt::fmt vixl xxHash::xxhash FEXHeaderUtils CodeEmitter)
 
 if (NOT MINGW_BUILD)
   list (APPEND LIBS dl)

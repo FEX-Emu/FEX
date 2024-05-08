@@ -7,7 +7,6 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "FEXCore/IR/IR.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"

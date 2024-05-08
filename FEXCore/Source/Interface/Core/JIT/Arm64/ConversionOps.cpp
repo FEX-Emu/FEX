@@ -5,7 +5,6 @@ tags: backend|arm64
 $end_info$
 */
 
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
@@ -66,7 +65,7 @@ DEF_OP(VInsGPR) {
     // Inserts the GPR value into the given V register.
     // Also automatically adjusts the index in the case of using the
     // moved upper lane.
-    const auto Insert = [&](const FEXCore::ARMEmitter::VRegister& reg, int index) {
+    const auto Insert = [&](const ARMEmitter::VRegister& reg, int index) {
       if (InUpperLane) {
         index -= ElementsPer128Bit;
       }
@@ -353,23 +352,23 @@ DEF_OP(Vector_FToF) {
 
     switch (Conv) {
     case 0x0402: { // Float <- Half
-      zip1(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Vector.Z(), Vector.Z());
-      fcvtlt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Dst.Z());
+      zip1(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Vector.Z(), Vector.Z());
+      fcvtlt(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Dst.Z());
       break;
     }
     case 0x0804: { // Double <- Float
-      zip1(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Vector.Z(), Vector.Z());
-      fcvtlt(FEXCore::ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Dst.Z());
+      zip1(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Vector.Z(), Vector.Z());
+      fcvtlt(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Dst.Z());
       break;
     }
     case 0x0204: { // Half <- Float
-      fcvtnt(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Mask, Vector.Z());
-      uzp2(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Dst.Z(), Dst.Z());
+      fcvtnt(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Mask, Vector.Z());
+      uzp2(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Dst.Z(), Dst.Z());
       break;
     }
     case 0x0408: { // Float <- Double
-      fcvtnt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
-      uzp2(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
+      fcvtnt(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
+      uzp2(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;

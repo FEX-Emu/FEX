@@ -1,7 +1,6 @@
 #pragma once
 #include <FEXCore/fextl/string.h>
-
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
+#include <CodeEmitter/Emitter.h>
 
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
@@ -9,7 +8,7 @@
 
 #include <sys/mman.h>
 
-class TestDisassembler : public FEXCore::ARMEmitter::Emitter {
+class TestDisassembler : public ARMEmitter::Emitter {
 public:
   TestDisassembler() {
     fp = tmpfile();

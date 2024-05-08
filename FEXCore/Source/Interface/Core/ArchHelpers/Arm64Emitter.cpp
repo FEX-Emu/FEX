@@ -2,8 +2,6 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "FEXCore/Core/X86Enums.h"
 #include "FEXCore/Utils/AllocatorHooks.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/Thunks/Thunks.h"
@@ -13,6 +11,8 @@
 #include <FEXCore/Utils/MathUtils.h>
 
 #include <FEXHeaderUtils/BitUtils.h>
+#include <CodeEmitter/Emitter.h>
+#include <CodeEmitter/Registers.h>
 
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
@@ -31,110 +31,108 @@ namespace FEXCore::CPU {
 namespace x64 {
 #ifndef _M_ARM_64EC
   // All but x19 and x29 are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::Register, 18> SRA = {
-    FEXCore::ARMEmitter::Reg::r4,
-    FEXCore::ARMEmitter::Reg::r5,
-    FEXCore::ARMEmitter::Reg::r6,
-    FEXCore::ARMEmitter::Reg::r7,
-    FEXCore::ARMEmitter::Reg::r8,
-    FEXCore::ARMEmitter::Reg::r9,
-    FEXCore::ARMEmitter::Reg::r10,
-    FEXCore::ARMEmitter::Reg::r11,
-    FEXCore::ARMEmitter::Reg::r12,
-    FEXCore::ARMEmitter::Reg::r13,
-    FEXCore::ARMEmitter::Reg::r14,
-    FEXCore::ARMEmitter::Reg::r15,
-    FEXCore::ARMEmitter::Reg::r16,
-    FEXCore::ARMEmitter::Reg::r17,
-    FEXCore::ARMEmitter::Reg::r19,
-    FEXCore::ARMEmitter::Reg::r29,
+  constexpr std::array<ARMEmitter::Register, 18> SRA = {
+    ARMEmitter::Reg::r4,
+    ARMEmitter::Reg::r5,
+    ARMEmitter::Reg::r6,
+    ARMEmitter::Reg::r7,
+    ARMEmitter::Reg::r8,
+    ARMEmitter::Reg::r9,
+    ARMEmitter::Reg::r10,
+    ARMEmitter::Reg::r11,
+    ARMEmitter::Reg::r12,
+    ARMEmitter::Reg::r13,
+    ARMEmitter::Reg::r14,
+    ARMEmitter::Reg::r15,
+    ARMEmitter::Reg::r16,
+    ARMEmitter::Reg::r17,
+    ARMEmitter::Reg::r19,
+    ARMEmitter::Reg::r29,
     // PF/AF must be last.
     REG_PF,
     REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 7> RA = {
+  constexpr std::array<ARMEmitter::Register, 7> RA = {
     // All these callee saved
-    FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
-    FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r30,
+    ARMEmitter::Reg::r20, ARMEmitter::Reg::r21, ARMEmitter::Reg::r22, ARMEmitter::Reg::r23,
+    ARMEmitter::Reg::r24, ARMEmitter::Reg::r25, ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
-    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
-    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
+  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 3> RAPair = {{
+    {ARMEmitter::Reg::r20, ARMEmitter::Reg::r21},
+    {ARMEmitter::Reg::r22, ARMEmitter::Reg::r23},
+    {ARMEmitter::Reg::r24, ARMEmitter::Reg::r25},
   }};
 
   // All are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
-    FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
-    FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21, FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
-    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
-    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31};
+  constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
+    ARMEmitter::VReg::v16, ARMEmitter::VReg::v17, ARMEmitter::VReg::v18, ARMEmitter::VReg::v19,
+    ARMEmitter::VReg::v20, ARMEmitter::VReg::v21, ARMEmitter::VReg::v22, ARMEmitter::VReg::v23,
+    ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27,
+    ARMEmitter::VReg::v28, ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
 
   //  v8..v15 = (lower 64bits) Callee saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 14> RAFPR = {
+  constexpr std::array<ARMEmitter::VRegister, 14> RAFPR = {
     // v0 ~ v1 are used as temps.
-    // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+    // ARMEmitter::VReg::v0, ARMEmitter::VReg::v1,
 
-    FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,  FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,
-    FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,
-    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
-    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+    ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,  ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,
+    ARMEmitter::VReg::v7,  ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
+    ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
   };
 #else
-  constexpr std::array<FEXCore::ARMEmitter::Register, 18> SRA = {
-    FEXCore::ARMEmitter::Reg::r8,
-    FEXCore::ARMEmitter::Reg::r0,
-    FEXCore::ARMEmitter::Reg::r1,
-    FEXCore::ARMEmitter::Reg::r27,
+  constexpr std::array<ARMEmitter::Register, 18> SRA = {
+    ARMEmitter::Reg::r8,
+    ARMEmitter::Reg::r0,
+    ARMEmitter::Reg::r1,
+    ARMEmitter::Reg::r27,
     // SP's register location isn't specified by the ARM64EC ABI, we choose to use r23
-    FEXCore::ARMEmitter::Reg::r23,
-    FEXCore::ARMEmitter::Reg::r29,
-    FEXCore::ARMEmitter::Reg::r25,
-    FEXCore::ARMEmitter::Reg::r26,
-    FEXCore::ARMEmitter::Reg::r2,
-    FEXCore::ARMEmitter::Reg::r3,
-    FEXCore::ARMEmitter::Reg::r4,
-    FEXCore::ARMEmitter::Reg::r5,
-    FEXCore::ARMEmitter::Reg::r19,
-    FEXCore::ARMEmitter::Reg::r20,
-    FEXCore::ARMEmitter::Reg::r21,
-    FEXCore::ARMEmitter::Reg::r22,
+    ARMEmitter::Reg::r23,
+    ARMEmitter::Reg::r29,
+    ARMEmitter::Reg::r25,
+    ARMEmitter::Reg::r26,
+    ARMEmitter::Reg::r2,
+    ARMEmitter::Reg::r3,
+    ARMEmitter::Reg::r4,
+    ARMEmitter::Reg::r5,
+    ARMEmitter::Reg::r19,
+    ARMEmitter::Reg::r20,
+    ARMEmitter::Reg::r21,
+    ARMEmitter::Reg::r22,
     REG_PF,
     REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 7> RA = {
-    FEXCore::ARMEmitter::Reg::r6,  FEXCore::ARMEmitter::Reg::r7,  FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
-    FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r30,
+  constexpr std::array<ARMEmitter::Register, 7> RA = {
+    ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,  ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
+    ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 3> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7},
-    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
-    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
+  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 3> RAPair = {{
+    {ARMEmitter::Reg::r6, ARMEmitter::Reg::r7},
+    {ARMEmitter::Reg::r14, ARMEmitter::Reg::r15},
+    {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17},
   }};
 
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
-    FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,
-    FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,  FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,
-    FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11,
-    FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13, FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+  constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
+    ARMEmitter::VReg::v0,  ARMEmitter::VReg::v1,  ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,
+    ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,  ARMEmitter::VReg::v7,
+    ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
+    ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 14> RAFPR = {
-    FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19, FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21,
-    FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23, FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
-    FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
-    FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31};
+  constexpr std::array<ARMEmitter::VRegister, 14> RAFPR = {
+    ARMEmitter::VReg::v18, ARMEmitter::VReg::v19, ARMEmitter::VReg::v20, ARMEmitter::VReg::v21, ARMEmitter::VReg::v22,
+    ARMEmitter::VReg::v23, ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27,
+    ARMEmitter::VReg::v28, ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
 #endif
 
   // I wish this could get constexpr generated from SRA's definition but impossible until libstdc++12, libc++15.
   // SRA GPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<FEXCore::ARMEmitter::Register, 7> PreserveAll_SRA = {
-    FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,  FEXCore::ARMEmitter::Reg::r6,  FEXCore::ARMEmitter::Reg::r7,
-    FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+  constexpr std::array<ARMEmitter::Register, 7> PreserveAll_SRA = {
+    ARMEmitter::Reg::r4, ARMEmitter::Reg::r5,  ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,
+    ARMEmitter::Reg::r8, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17,
   };
 
   constexpr uint32_t PreserveAll_SRAMask = {[]() -> uint32_t {
@@ -160,12 +158,12 @@ namespace x64 {
   }()};
 
   // Dynamic GPRs
-  constexpr std::array<FEXCore::ARMEmitter::Register, 1> PreserveAll_Dynamic = {
+  constexpr std::array<ARMEmitter::Register, 1> PreserveAll_Dynamic = {
     // Only LR needs to get saved.
-    FEXCore::ARMEmitter::Reg::r30};
+    ARMEmitter::Reg::r30};
 
   // SRA FPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<FEXCore::ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
+  constexpr std::array<ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
     // None.
   };
 
@@ -179,15 +177,14 @@ namespace x64 {
 
   // Dynamic FPRs
   // - v0-v7
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
+  constexpr std::array<ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
     // v0 ~ v1 are temps
-    FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3, FEXCore::ARMEmitter::VReg::v4,
-    FEXCore::ARMEmitter::VReg::v5, FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+    ARMEmitter::VReg::v2, ARMEmitter::VReg::v3, ARMEmitter::VReg::v4, ARMEmitter::VReg::v5, ARMEmitter::VReg::v6, ARMEmitter::VReg::v7,
   };
 
   // SRA FPRs that need to be spilled when the host supports SVE-256bit with `preserve_all` ABI.
   // This is /all/ of the SRA registers
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> PreserveAll_SRAFPRSVE = SRAFPR;
+  constexpr std::array<ARMEmitter::VRegister, 16> PreserveAll_SRAFPRSVE = SRAFPR;
 
   constexpr uint32_t PreserveAll_SRAFPRSVEMask = {[]() -> uint32_t {
     uint32_t Mask {};
@@ -198,89 +195,86 @@ namespace x64 {
   }()};
 
   // Dynamic FPRs when the host supports SVE-256bit.
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 14> PreserveAll_DynamicFPRSVE = {
+  constexpr std::array<ARMEmitter::VRegister, 14> PreserveAll_DynamicFPRSVE = {
     // v0 ~ v1 are used as temps.
-    FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,  FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,
-    FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,
-    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
-    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+    ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,  ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,
+    ARMEmitter::VReg::v7,  ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
+    ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
   };
 } // namespace x64
 
 namespace x32 {
   // All but x19 and x29 are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::Register, 10> SRA = {
-    FEXCore::ARMEmitter::Reg::r4,
-    FEXCore::ARMEmitter::Reg::r5,
-    FEXCore::ARMEmitter::Reg::r6,
-    FEXCore::ARMEmitter::Reg::r7,
-    FEXCore::ARMEmitter::Reg::r8,
-    FEXCore::ARMEmitter::Reg::r9,
-    FEXCore::ARMEmitter::Reg::r10,
-    FEXCore::ARMEmitter::Reg::r11,
+  constexpr std::array<ARMEmitter::Register, 10> SRA = {
+    ARMEmitter::Reg::r4,
+    ARMEmitter::Reg::r5,
+    ARMEmitter::Reg::r6,
+    ARMEmitter::Reg::r7,
+    ARMEmitter::Reg::r8,
+    ARMEmitter::Reg::r9,
+    ARMEmitter::Reg::r10,
+    ARMEmitter::Reg::r11,
     // PF/AF must be last.
     REG_PF,
     REG_AF,
   };
 
-  constexpr std::array<FEXCore::ARMEmitter::Register, 15> RA = {
+  constexpr std::array<ARMEmitter::Register, 15> RA = {
     // All these callee saved
-    FEXCore::ARMEmitter::Reg::r20,
-    FEXCore::ARMEmitter::Reg::r21,
-    FEXCore::ARMEmitter::Reg::r22,
-    FEXCore::ARMEmitter::Reg::r23,
-    FEXCore::ARMEmitter::Reg::r24,
-    FEXCore::ARMEmitter::Reg::r25,
+    ARMEmitter::Reg::r20,
+    ARMEmitter::Reg::r21,
+    ARMEmitter::Reg::r22,
+    ARMEmitter::Reg::r23,
+    ARMEmitter::Reg::r24,
+    ARMEmitter::Reg::r25,
 
     // Registers only available on 32-bit
     // All these are caller saved (except for r19).
-    FEXCore::ARMEmitter::Reg::r12,
-    FEXCore::ARMEmitter::Reg::r13,
-    FEXCore::ARMEmitter::Reg::r14,
-    FEXCore::ARMEmitter::Reg::r15,
-    FEXCore::ARMEmitter::Reg::r16,
-    FEXCore::ARMEmitter::Reg::r17,
-    FEXCore::ARMEmitter::Reg::r29,
-    FEXCore::ARMEmitter::Reg::r30,
+    ARMEmitter::Reg::r12,
+    ARMEmitter::Reg::r13,
+    ARMEmitter::Reg::r14,
+    ARMEmitter::Reg::r15,
+    ARMEmitter::Reg::r16,
+    ARMEmitter::Reg::r17,
+    ARMEmitter::Reg::r29,
+    ARMEmitter::Reg::r30,
 
-    FEXCore::ARMEmitter::Reg::r19,
+    ARMEmitter::Reg::r19,
   };
 
-  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 7> RAPair = {{
-    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
-    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
-    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
+  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 7> RAPair = {{
+    {ARMEmitter::Reg::r20, ARMEmitter::Reg::r21},
+    {ARMEmitter::Reg::r22, ARMEmitter::Reg::r23},
+    {ARMEmitter::Reg::r24, ARMEmitter::Reg::r25},
 
-    {FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13},
-    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
-    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
-    {FEXCore::ARMEmitter::Reg::r29, FEXCore::ARMEmitter::Reg::r30},
+    {ARMEmitter::Reg::r12, ARMEmitter::Reg::r13},
+    {ARMEmitter::Reg::r14, ARMEmitter::Reg::r15},
+    {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17},
+    {ARMEmitter::Reg::r29, ARMEmitter::Reg::r30},
   }};
 
   // All are caller saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 8> SRAFPR = {
-    FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
-    FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21, FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+  constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {
+    ARMEmitter::VReg::v16, ARMEmitter::VReg::v17, ARMEmitter::VReg::v18, ARMEmitter::VReg::v19,
+    ARMEmitter::VReg::v20, ARMEmitter::VReg::v21, ARMEmitter::VReg::v22, ARMEmitter::VReg::v23,
   };
 
   //  v8..v15 = (lower 64bits) Callee saved
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 22> RAFPR = {
+  constexpr std::array<ARMEmitter::VRegister, 22> RAFPR = {
     // v0 ~ v1 are used as temps.
-    // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+    // ARMEmitter::VReg::v0, ARMEmitter::VReg::v1,
 
-    FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,  FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,
-    FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,
-    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
-    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+    ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,  ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,
+    ARMEmitter::VReg::v7,  ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
+    ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
 
-    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
-    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31};
+    ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27, ARMEmitter::VReg::v28,
+    ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
 
   // I wish this could get constexpr generated from SRA's definition but impossible until libstdc++12, libc++15.
   // SRA GPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<FEXCore::ARMEmitter::Register, 5> PreserveAll_SRA = {
-    FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5, FEXCore::ARMEmitter::Reg::r6,
-    FEXCore::ARMEmitter::Reg::r7, FEXCore::ARMEmitter::Reg::r8,
+  constexpr std::array<ARMEmitter::Register, 5> PreserveAll_SRA = {
+    ARMEmitter::Reg::r4, ARMEmitter::Reg::r5, ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r8,
   };
 
   constexpr uint32_t PreserveAll_SRAMask = {[]() -> uint32_t {
@@ -306,11 +300,10 @@ namespace x32 {
   }()};
 
   // Dynamic GPRs
-  constexpr std::array<FEXCore::ARMEmitter::Register, 3> PreserveAll_Dynamic = {
-    FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r30};
+  constexpr std::array<ARMEmitter::Register, 3> PreserveAll_Dynamic = {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30};
 
   // SRA FPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<FEXCore::ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
+  constexpr std::array<ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
     // None.
   };
 
@@ -324,15 +317,14 @@ namespace x32 {
 
   // Dynamic FPRs
   // - v0-v7
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
+  constexpr std::array<ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
     // v0 ~ v1 are temps
-    FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3, FEXCore::ARMEmitter::VReg::v4,
-    FEXCore::ARMEmitter::VReg::v5, FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+    ARMEmitter::VReg::v2, ARMEmitter::VReg::v3, ARMEmitter::VReg::v4, ARMEmitter::VReg::v5, ARMEmitter::VReg::v6, ARMEmitter::VReg::v7,
   };
 
   // SRA FPRs that need to be spilled when the host supports SVE-256bit with `preserve_all` ABI.
   // This is /all/ of the SRA registers
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 8> PreserveAll_SRAFPRSVE = SRAFPR;
+  constexpr std::array<ARMEmitter::VRegister, 8> PreserveAll_SRAFPRSVE = SRAFPR;
 
   constexpr uint32_t PreserveAll_SRAFPRSVEMask = {[]() -> uint32_t {
     uint32_t Mask {};
@@ -343,15 +335,14 @@ namespace x32 {
   }()};
 
   // Dynamic FPRs when the host supports SVE-256bit.
-  constexpr std::array<FEXCore::ARMEmitter::VRegister, 22> PreserveAll_DynamicFPRSVE = {
+  constexpr std::array<ARMEmitter::VRegister, 22> PreserveAll_DynamicFPRSVE = {
     // v0 ~ v1 are used as temps.
-    FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,  FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,
-    FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,
-    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
-    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+    ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,  ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,
+    ARMEmitter::VReg::v7,  ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
+    ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
 
-    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
-    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31};
+    ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27, ARMEmitter::VReg::v28,
+    ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
 } // namespace x32
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
@@ -589,7 +580,7 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
   }
 }
 
-void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
+void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Disable AFP features when spilling registers.
@@ -683,7 +674,7 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
 }
 
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
-  FEXCore::ARMEmitter::Register TmpReg = FEXCore::ARMEmitter::Reg::r0;
+  ARMEmitter::Register TmpReg = ARMEmitter::Reg::r0;
   LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
   [[maybe_unused]] bool FoundRegister {};
   for (auto Reg : StaticRegisters) {
@@ -798,7 +789,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   }
 }
 
-void Arm64Emitter::PushVectorRegisters(FEXCore::ARMEmitter::Register TmpReg, bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs) {
+void Arm64Emitter::PushVectorRegisters(ARMEmitter::Register TmpReg, bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs) {
   if (SVERegs) {
     size_t i = 0;
 
@@ -835,7 +826,7 @@ void Arm64Emitter::PushVectorRegisters(FEXCore::ARMEmitter::Register TmpReg, boo
   }
 }
 
-void Arm64Emitter::PushGeneralRegisters(FEXCore::ARMEmitter::Register TmpReg, std::span<const FEXCore::ARMEmitter::Register> Regs) {
+void Arm64Emitter::PushGeneralRegisters(ARMEmitter::Register TmpReg, std::span<const ARMEmitter::Register> Regs) {
   size_t i = 0;
   for (; i < (Regs.size() % 2); ++i) {
     const auto Reg1 = Regs[i];
@@ -849,7 +840,7 @@ void Arm64Emitter::PushGeneralRegisters(FEXCore::ARMEmitter::Register TmpReg, st
   }
 }
 
-void Arm64Emitter::PopVectorRegisters(bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs) {
+void Arm64Emitter::PopVectorRegisters(bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs) {
   if (SVERegs) {
     size_t i = 0;
     for (; i < (VRegs.size() % 4); i += 2) {
@@ -885,7 +876,7 @@ void Arm64Emitter::PopVectorRegisters(bool SVERegs, std::span<const FEXCore::ARM
   }
 }
 
-void Arm64Emitter::PopGeneralRegisters(std::span<const FEXCore::ARMEmitter::Register> Regs) {
+void Arm64Emitter::PopGeneralRegisters(std::span<const ARMEmitter::Register> Regs) {
   size_t i = 0;
   for (; i < (Regs.size() % 2); ++i) {
     const auto Reg1 = Regs[i];
@@ -898,7 +889,7 @@ void Arm64Emitter::PopGeneralRegisters(std::span<const FEXCore::ARMEmitter::Regi
   }
 }
 
-void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
+void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
   const auto GPRSize = (ConfiguredDynamicRegisterBase.size() + 1) * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
@@ -937,12 +928,12 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
 #endif
 }
 
-void Arm64Emitter::SpillForPreserveAllABICall(FEXCore::ARMEmitter::Register TmpReg, bool FPRs) {
+void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
   const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
 
-  std::span<const FEXCore::ARMEmitter::Register> DynamicGPRs {};
-  std::span<const FEXCore::ARMEmitter::VRegister> DynamicFPRs {};
+  std::span<const ARMEmitter::Register> DynamicGPRs {};
+  std::span<const ARMEmitter::VRegister> DynamicFPRs {};
   uint32_t PreserveSRAMask {};
   uint32_t PreserveSRAFPRMask {};
   if (EmitterCTX->Config.Is64BitMode()) {
@@ -989,8 +980,8 @@ void Arm64Emitter::SpillForPreserveAllABICall(FEXCore::ARMEmitter::Register TmpR
 void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
 
-  std::span<const FEXCore::ARMEmitter::Register> DynamicGPRs {};
-  std::span<const FEXCore::ARMEmitter::VRegister> DynamicFPRs {};
+  std::span<const ARMEmitter::Register> DynamicGPRs {};
+  std::span<const ARMEmitter::VRegister> DynamicFPRs {};
   uint32_t PreserveSRAMask {};
   uint32_t PreserveSRAFPRMask {};
 

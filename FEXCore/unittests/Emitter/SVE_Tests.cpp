@@ -3,7 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fcntl.h>
 
-using namespace FEXCore::ARMEmitter;
+using namespace ARMEmitter;
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Base Encodings") {
   TEST_SINGLE(dup(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, 0), "mov z30.b, b29");
@@ -287,11 +287,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert pre
   TEST_SINGLE(fcvtlt(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvtlt z30.d, p6/m, z29.s");
 
 
-  // void fcvtxnt(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
+  // void fcvtxnt(ARMEmitter::ZRegister zd, ARMEmitter::PRegister pg, ARMEmitter::ZRegister zn) {
   /////< Size is destination size
-  // void fcvtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
+  // void fcvtnt(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, ARMEmitter::PRegister pg, ARMEmitter::ZRegister zn) {
   /////< Size is destination size
-  // void fcvtlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
+  // void fcvtlt(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, ARMEmitter::PRegister pg, ARMEmitter::ZRegister zn) {
 
   // XXX: BFCVTNT
 }
@@ -1634,12 +1634,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract elem
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Extract") {
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0), "ext z30.b, z30.b, z29.b, #0");
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 255), "ext z30.b, z30.b, z29.b, #255");
+  TEST_SINGLE(ext<ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0), "ext z30.b, z30.b, z29.b, #0");
+  TEST_SINGLE(ext<ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 255), "ext z30.b, z30.b, z29.b, #255");
 
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0), "ext z30.b, {z28.b, z29.b}, #0");
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 255), "ext z30.b, {z28.b, z29.b}, #255");
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z31, ZReg::z0, 255), "ext z30.b, {z31.b, z0.b}, #255");
+  TEST_SINGLE(ext<ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0), "ext z30.b, {z28.b, z29.b}, #0");
+  TEST_SINGLE(ext<ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 255), "ext z30.b, {z28.b, z29.b}, #255");
+  TEST_SINGLE(ext<ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z31, ZReg::z0, 255), "ext z30.b, {z31.b, z0.b}, #255");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE permute vector segments") {

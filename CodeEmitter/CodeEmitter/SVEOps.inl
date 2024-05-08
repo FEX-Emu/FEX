@@ -1506,10 +1506,10 @@ public:
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
-  void fdup(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                        size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                        size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
+  void fdup(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
+    LOGMAN_THROW_AA_FMT(size == ARMEmitter::SubRegSize::i16Bit ||
+                        size == ARMEmitter::SubRegSize::i32Bit ||
+                        size == ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
     uint32_t Imm{};
     if (size == SubRegSize::i16Bit) {
       Imm = FP16ToImm8(Float16(Value));
@@ -1521,7 +1521,7 @@ public:
 
     SVEBroadcastFloatImmUnpredicated(0b00, 0, Imm, size, zd);
   }
-  void fmov(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
+  void fmov(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
     fdup(size, zd, Value);
   }
 
@@ -3717,7 +3717,7 @@ private:
 
   // SVE bitwise logical operations (predicated)
   void SVEBitwiseLogicalPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_AA_FMT(size != ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -4743,7 +4743,7 @@ private:
     dc32(Instr);
   }
 
-  void SVEPermuteVector(uint32_t op0, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zm, uint32_t Imm) {
+  void SVEPermuteVector(uint32_t op0, ARMEmitter::ZRegister zd, ARMEmitter::ZRegister zm, uint32_t Imm) {
     constexpr uint32_t Op = 0b0000'0101'0010'0000'000 << 13;
     uint32_t Instr = Op;
 

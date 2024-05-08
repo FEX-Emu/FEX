@@ -13,7 +13,6 @@ $end_info$
 
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -469,13 +468,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
 static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
   uintptr_t branch = (uintptr_t)(Record)-8;
-  FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
-  FEXCore::ARMEmitter::SingleUseForwardLabel l_BranchHost;
+  ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
+  ARMEmitter::SingleUseForwardLabel l_BranchHost;
   emit.ldr(TMP1, &l_BranchHost);
   emit.blr(TMP1);
   emit.Bind(&l_BranchHost);
   emit.dc64(LinkerAddress);
-  FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 8);
+  ARMEmitter::Emitter::ClearICache((void*)branch, 8);
 }
 
 static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
@@ -500,9 +499,9 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   if (vixl::IsInt26(offset)) {
     // optimal case - can branch directly
     // patch the code
-    FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
+    ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
     emit.b(offset);
-    FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 4);
+    ARMEmitter::Emitter::ClearICache((void*)branch, 4);
 
     // Add de-linking handler
     Thread->LookupCache->AddBlockLink(GuestRip, Record, DirectBlockDelinker);

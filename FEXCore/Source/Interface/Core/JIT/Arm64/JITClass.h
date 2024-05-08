@@ -8,7 +8,6 @@ $end_info$
 #pragma once
 
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/IR/IR.h"
@@ -23,6 +22,8 @@ $end_info$
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+
+#include <CodeEmitter/Emitter.h>
 
 #include <array>
 #include <cstdint>
@@ -83,7 +84,7 @@ private:
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
   [[nodiscard]]
-  FEXCore::ARMEmitter::Register GetReg(IR::NodeID Node) const {
+  ARMEmitter::Register GetReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
@@ -98,7 +99,7 @@ private:
   }
 
   [[nodiscard]]
-  FEXCore::ARMEmitter::VRegister GetVReg(IR::NodeID Node) const {
+  ARMEmitter::VRegister GetVReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
@@ -113,7 +114,7 @@ private:
   }
 
   [[nodiscard]]
-  std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register> GetRegPair(IR::NodeID Node) const {
+  std::pair<ARMEmitter::Register, ARMEmitter::Register> GetRegPair(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRPairClass.Val, "Unexpected Class: {}", Reg.Class);
@@ -134,7 +135,7 @@ private:
   }
 
   [[nodiscard]]
-  FEXCore::ARMEmitter::Register GetZeroableReg(IR::OrderedNodeWrapper Src) const {
+  ARMEmitter::Register GetZeroableReg(IR::OrderedNodeWrapper Src) const {
     uint64_t Const;
     if (IsInlineConstant(Src, &Const)) {
       LOGMAN_THROW_AA_FMT(Const == 0, "Only valid constant");
@@ -162,8 +163,8 @@ private:
   bool IsGPRPair(IR::NodeID Node) const;
 
   [[nodiscard]]
-  FEXCore::ARMEmitter::ExtendedMemOperand GenerateMemOperand(
-    uint8_t AccessSize, FEXCore::ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+  ARMEmitter::ExtendedMemOperand GenerateMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+                                                    IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   // NOTE: Will use TMP1 as a way to encode immediates that happen to fall outside
   //       the limits of the scalar plus immediate variant of SVE load/stores.
@@ -171,8 +172,8 @@ private:
   //       TMP1 is safe to use again once this memory operand is used with its
   //       equivalent loads or stores that this was called for.
   [[nodiscard]]
-  FEXCore::ARMEmitter::SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize, FEXCore::ARMEmitter::Register Base,
-                                                           IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+  ARMEmitter::SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+                                                  IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   [[nodiscard]]
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;

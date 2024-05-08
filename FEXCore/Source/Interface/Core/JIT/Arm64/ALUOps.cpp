@@ -7,8 +7,6 @@ $end_info$
 
 #include "FEXCore/IR/IR.h"
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
@@ -1373,23 +1371,23 @@ DEF_OP(Popcount) {
   case 0x1:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
     // only use lowest byte
-    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     break;
   case 0x2:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // only count two lowest bytes
-    addp(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
+    addp(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
     break;
   case 0x4:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // fmov has zero extended, unused bytes are zero
     addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     break;
   case 0x8:
     fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
-    cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+    cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // fmov has zero extended, unused bytes are zero
     addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     break;

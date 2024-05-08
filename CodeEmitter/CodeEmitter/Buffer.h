@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace FEXCore::ARMEmitter {
+namespace ARMEmitter {
 class Buffer {
 public:
   Buffer() {
@@ -103,4 +103,4 @@ protected:
   uint8_t* CurrentOffset;
   uint64_t Size;
 };
-} // namespace FEXCore::ARMEmitter
+} // namespace ARMEmitter
