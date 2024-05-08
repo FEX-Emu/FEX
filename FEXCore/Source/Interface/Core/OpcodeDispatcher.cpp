@@ -3304,11 +3304,26 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto DstSegment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     auto SrcSegment = GetSegment(Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-    auto Result =
-      _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstSegment ?: InvalidNode, SrcSegment ?: InvalidNode, DstAddr, SrcAddr, Counter, LoadDir(1));
+    if (DstSegment) {
+      DstAddr = _Add(OpSize::i64Bit, DstAddr, DstSegment);
+    }
+
+    if (SrcSegment) {
+      SrcAddr = _Add(OpSize::i64Bit, SrcAddr, SrcSegment);
+    }
+
+    auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1));
 
     OrderedNode* Result_Dst = _ExtractElementPair(OpSize::i64Bit, Result, 0);
     OrderedNode* Result_Src = _ExtractElementPair(OpSize::i64Bit, Result, 1);
+
+    if (DstSegment) {
+      Result_Dst = _Sub(OpSize::i64Bit, Result_Dst, DstSegment);
+    }
+
+    if (SrcSegment) {
+      Result_Src = _Sub(OpSize::i64Bit, Result_Src, SrcSegment);
+    }
 
     StoreGPRRegister(X86State::REG_RCX, _Constant(0));
     StoreGPRRegister(X86State::REG_RDI, Result_Dst);

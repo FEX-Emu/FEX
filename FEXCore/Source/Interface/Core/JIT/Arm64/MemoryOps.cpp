@@ -1363,8 +1363,8 @@ DEF_OP(MemCpy) {
 
   const bool IsAtomic = Op->IsAtomic && MemcpySetTSOEnabled();
   const int32_t Size = Op->Size;
-  const auto MemRegDest = GetReg(Op->AddrDest.ID());
-  const auto MemRegSrc = GetReg(Op->AddrSrc.ID());
+  const auto MemRegDest = GetReg(Op->Dest.ID());
+  const auto MemRegSrc = GetReg(Op->Src.ID());
 
   const auto Length = GetReg(Op->Length.ID());
   uint64_t DirectionConstant;
@@ -1388,19 +1388,8 @@ DEF_OP(MemCpy) {
   ARMEmitter::SingleUseForwardLabel Done {};
 
   mov(TMP1, Length.X());
-  if (Op->PrefixDest.IsInvalid()) {
-    mov(TMP2, MemRegDest.X());
-  } else {
-    const auto Prefix = GetReg(Op->PrefixDest.ID());
-    add(TMP2, Prefix.X(), MemRegDest.X());
-  }
-
-  if (Op->PrefixSrc.IsInvalid()) {
-    mov(TMP3, MemRegSrc.X());
-  } else {
-    const auto Prefix = GetReg(Op->PrefixSrc.ID());
-    add(TMP3, Prefix.X(), MemRegSrc.X());
-  }
+  mov(TMP2, MemRegDest.X());
+  mov(TMP3, MemRegSrc.X());
 
   // TMP1 = Length
   // TMP2 = Dest
