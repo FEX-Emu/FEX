@@ -56,8 +56,8 @@ public:
   // Called from the signal trampoline function.
   void HandleSignal(int Signal, void* Info, void* UContext);
 
-  void RegisterTLSState(FEXCore::Core::InternalThreadState* Thread);
-  void UninstallTLSState(FEXCore::Core::InternalThreadState* Thread);
+  void RegisterTLSState(FEX::HLE::ThreadStateObject* Thread);
+  void UninstallTLSState(FEX::HLE::ThreadStateObject* Thread);
 
   /**
    * @brief Registers a signal handler for the host to handle a signal
@@ -134,7 +134,7 @@ public:
 
   void SaveTelemetry();
 private:
-  FEXCore::Core::InternalThreadState* GetTLSThread();
+  FEX::HLE::ThreadStateObject* GetTLSThread();
 
   // Called from the thunk handler to handle the signal
   void HandleGuestSignal(FEXCore::Core::InternalThreadState* Thread, int Signal, void* Info, void* UContext);
