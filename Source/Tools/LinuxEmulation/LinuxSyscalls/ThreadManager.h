@@ -9,12 +9,14 @@ $end_info$
 #pragma once
 
 #include "LinuxSyscalls/Types.h"
+#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include <cstdint>
+#include <linux/seccomp.h>
 
 namespace FEX::HLE {
 class SyscallHandler;
@@ -49,10 +51,15 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
     uint64_t PendingSignals {};
 
   } SignalInfo {};
+
+  // Seccomp thread specific data.
+  uint32_t SeccompMode {SECCOMP_MODE_DISABLED};
+  fextl::vector<FEX::HLE::SeccompEmulator::FilterInformation*> Filters {};
 };
 
 class ThreadManager final {
 public:
+
   ThreadManager(FEXCore::Context::Context* CTX, FEX::HLE::SignalDelegator* SignalDelegation)
     : CTX {CTX}
     , SignalDelegation {SignalDelegation} {}
@@ -68,8 +75,8 @@ public:
     return static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
   }
 
-  FEX::HLE::ThreadStateObject*
-  CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState = nullptr, uint64_t ParentTID = 0);
+  FEX::HLE::ThreadStateObject* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState = nullptr,
+                                            uint64_t ParentTID = 0, FEX::HLE::ThreadStateObject* InheritThread = nullptr);
   void TrackThread(FEX::HLE::ThreadStateObject* Thread) {
     std::lock_guard lk(ThreadCreationMutex);
     Threads.emplace_back(Thread);

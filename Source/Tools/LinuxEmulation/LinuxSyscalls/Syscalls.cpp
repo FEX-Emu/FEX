@@ -43,6 +43,8 @@ $end_info$
 #include <alloca.h>
 #include <charconv>
 #include <functional>
+#include <linux/audit.h>
+#include <linux/seccomp.h>
 #include <memory>
 #include <regex>
 #include <sched.h>
@@ -51,6 +53,7 @@ $end_info$
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
+#include <signal.h>
 #include <system_error>
 #include <syscall.h>
 #include <sys/mman.h>
@@ -193,7 +196,7 @@ static bool IsShebangFilename(const fextl::string& Filename) {
   return IsShebang;
 }
 
-uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   auto SyscallHandler = FEX::HLE::_SyscallHandler;
   fextl::string Filename {};
 
@@ -204,6 +207,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
   const bool SupportsProcFSInterpreter = SyscallHandler->FM.SupportsProcFSInterpreterPath();
   fextl::string FDExecEnv;
+  fextl::string FDSeccompEnv;
 
   bool IsShebang {};
 
@@ -260,6 +264,21 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   char* const* EnvpPtr = envp;
   bool FDExecCopy {};
 
+  auto SeccompFD = SyscallHandler->SeccompEmulator.SerializeFilters(Frame);
+  const auto HasSeccomp = SeccompFD.has_value() && *SeccompFD != -1;
+
+  auto CloseSeccompFD = [&HasSeccomp, &SeccompFD]() {
+    if (HasSeccomp) {
+      close(*SeccompFD);
+    }
+  };
+
+  auto CloseFDExecFD = [&FDExecCopy, &Args]() {
+    if (FDExecCopy) {
+      close(Args.dirfd);
+    }
+  };
+
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
   // Kernel does its own checks for file format support for this
@@ -282,7 +301,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   // TODO: Additional future tasks that require envp copying in the future:
   // - seccomp inheritance
   // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
-  const bool NeedsEnvpCopy = IsFDExec && !(IsBinfmtCompatible || IsOtherELF);
+  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp;
 
   if (NeedsEnvpCopy) {
     if (envp) {
@@ -294,7 +313,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
       }
     }
 
-    if (IsFDExec) {
+    if (IsFDExec && !IsBinfmtCompatible) {
       int Flags = fcntl(Args.dirfd, F_GETFD);
       if (Flags & FD_CLOEXEC) {
         // FEX needs the FD to live past execve when binfmt_misc isn't used,
@@ -316,6 +335,15 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
       EnvpArgs.emplace_back(FDExecEnv.data());
     }
 
+    if (HasSeccomp) {
+      // Create the environment variable to pass the FD to our FEX.
+      // Needs to stick around until execveat completes.
+      FDSeccompEnv = fextl::fmt::format("FEX_SECCOMPFD={}", *SeccompFD);
+
+      // Insert the FD for FEX to track.
+      EnvpArgs.emplace_back(FDSeccompEnv.data());
+    }
+
     // Emplace nullptr at the end to stop
     EnvpArgs.emplace_back(nullptr);
 
@@ -325,6 +353,8 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
   if (IsBinfmtCompatible || IsOtherELF) {
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
+    CloseSeccompFD();
+    CloseFDExecFD();
     SYSCALL_ERRNO();
   }
 
@@ -364,11 +394,8 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
   const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
   Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
-
-  if (FDExecCopy) {
-    ///< Had to make a copy, close it now.
-    close(Args.dirfd);
-  }
+  CloseSeccompFD();
+  CloseFDExecFD();
 
   SYSCALL_ERRNO();
 }
@@ -719,6 +746,7 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation)
   : TM {_CTX, _SignalDelegation}
+  , SeccompEmulator {this, _SignalDelegation}
   , FM {_CTX}
   , CTX {_CTX}
   , SignalDelegation {_SignalDelegation} {
@@ -759,6 +787,15 @@ uint32_t SyscallHandler::CalculateGuestKernelVersion() {
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
+  // Grab the return address which will be inside the JIT.
+  const uint64_t JITPC = reinterpret_cast<uint64_t>(__builtin_extract_return_addr(__builtin_return_address(0)));
+
+  const auto SeccompResult = SeccompEmulator.ExecuteFilter(Frame, JITPC, Args);
+
+  if (SeccompResult.EarlyReturn) {
+    return SeccompResult.Result;
+  }
+
   if (Args->Argument[0] >= Definitions.size()) {
     return -ENOSYS;
   }

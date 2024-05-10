@@ -271,6 +271,7 @@ int main(int argc, char** argv, char** const envp) {
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
+  int FEXSeccompFD {StealFEXFDFromEnv("FEX_SECCOMPFD")};
 
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -516,6 +517,8 @@ int main(int argc, char** argv, char** const envp) {
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
   SignalDelegation->SetVDSOSigReturn();
+
+  SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 

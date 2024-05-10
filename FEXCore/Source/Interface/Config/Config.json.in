@@ -517,6 +517,13 @@
         "Desc": [
           "Override for a FEXServer socket path. Only useful for chroots."
         ]
+      },
+      "NeedsSeccomp": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Disables inline syscalls in order to support seccomp handling"
+        ]
       }
     }
   },

@@ -799,6 +799,40 @@ void SignalDelegator::UninstallHostHandler(int Signal) {
   ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
 }
 
+void SignalDelegator::QueueSignal(pid_t tgid, pid_t tid, int Signal, siginfo_t* info, bool IgnoreMask) {
+  bool WasIgnored {};
+  bool WasMasked {};
+  SignalHandler& SignalHandler = HostHandlers[Signal];
+  if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN && IgnoreMask) {
+    ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
+    WasIgnored = true;
+  }
+
+  // Get the current host signal mask
+  uint64_t ThreadSignalMask {};
+  const uint64_t SignalMask = 1ULL << (Signal - 1);
+  ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadSignalMask, 8);
+  if (ThreadSignalMask & SignalMask) {
+    WasMasked = true;
+
+    // Signal currently masked, unmask
+    ThreadSignalMask &= ~SignalMask;
+    ::syscall(SYS_rt_sigprocmask, 0, &ThreadSignalMask, &ThreadSignalMask, 8);
+  }
+
+  ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, Signal, info);
+
+  if (WasMasked) {
+    // Mask again
+    ::syscall(SYS_rt_sigprocmask, 0, &ThreadSignalMask, nullptr, 8);
+  }
+
+  if (WasIgnored) {
+    // Ignore again
+    ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.HostAction, nullptr, 8);
+  }
+}
+
 SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName)
   : CTX {_CTX}
   , ApplicationName {ApplicationName} {
