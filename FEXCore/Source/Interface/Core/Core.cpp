@@ -403,8 +403,6 @@ ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::C
   InitializeCompiler(Thread);
 
   Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
-  Thread->CurrentFrame->State.DeferredSignalFaultAddress =
-    reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
 
   if (Config.BlockJITNaming() || Config.GlobalJITNaming() || Config.LibraryJITNaming()) {
     // Allocate a JIT symbol buffer only if enabled.
@@ -421,7 +419,8 @@ void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState* Thread, bool
 #endif
   }
 
-  FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096);
+  FEXCore::Allocator::VirtualProtect(&Thread->InterruptFaultPage, sizeof(Thread->InterruptFaultPage),
+                                     Allocator::ProtectOptions::Read | Allocator::ProtectOptions::Write);
   delete Thread;
 }
 

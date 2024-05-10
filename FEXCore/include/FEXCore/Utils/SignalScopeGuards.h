@@ -137,11 +137,13 @@ public:
       // X86-64 must do an additional check around the store.
       if ((Result - 1) == 0) {
         // Must happen after the refcount store
-        Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
+        auto InterruptFaultPage = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(&Thread->InterruptFaultPage);
+        InterruptFaultPage->Store(0);
       }
 #else
       Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
-      Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
+      auto InterruptFaultPage = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(&Thread->InterruptFaultPage);
+      InterruptFaultPage->Store(0);
 #endif
     }
   }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/EnumOperators.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #ifndef ENABLE_JEMALLOC
 #include <stdlib.h>
@@ -38,6 +40,14 @@ FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_aligned_alloc(size_t a, 
 }
 
 namespace FEXCore::Allocator {
+enum class ProtectOptions : uint32_t {
+  None = 0,
+  Read = (1U << 0),
+  Write = (1U << 1),
+  Exec = (1U << 2),
+};
+FEX_DEF_NUM_OPS(ProtectOptions)
+
 #ifdef _WIN32
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
 #ifdef _M_ARM_64EC
@@ -66,6 +76,26 @@ inline void VirtualDontNeed(void* Ptr, size_t Size) {
   ::VirtualAlloc(Ptr, Size, MEM_RESET, PAGE_NOACCESS);
 }
 
+inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
+  DWORD prot {PAGE_NOACCESS};
+
+  if (options == ProtectOptions::None) {
+    prot = PAGE_NOACCESS;
+  } else if (options == ProtectOptions::Read) {
+    prot = PAGE_READONLY;
+  } else if (options == (ProtectOptions::Read | ProtectOptions::Write)) {
+    prot = PAGE_READWRITE;
+  } else if (options == (ProtectOptions::Read | ProtectOptions::Exec)) {
+    prot = PAGE_EXECUTE_READ;
+  } else if (options == (ProtectOptions::Read | ProtectOptions::Write | ProtectOptions::Exec)) {
+    prot = PAGE_EXECUTE_READWRITE;
+  } else {
+    LOGMAN_MSG_A_FMT("Unknown VirtualProtect options combination");
+  }
+
+  return ::VirtualProtect(Ptr, Size, prot, nullptr) == 0;
+}
+
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
 using MUNMAP_Hook = int (*)(void*, size_t);
@@ -87,6 +117,21 @@ inline void VirtualFree(void* Ptr, size_t Size) {
 inline void VirtualDontNeed(void* Ptr, size_t Size) {
   ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_DONTNEED);
 }
+inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
+  int prot {PROT_NONE};
+  if ((options & ProtectOptions::Read) == ProtectOptions::Read) {
+    prot |= PROT_READ;
+  }
+  if ((options & ProtectOptions::Write) == ProtectOptions::Write) {
+    prot |= PROT_WRITE;
+  }
+  if ((options & ProtectOptions::Exec) == ProtectOptions::Exec) {
+    prot |= PROT_EXEC;
+  }
+
+  return ::mprotect(Ptr, Size, prot) == 0;
+}
+
 #endif
 
 // Memory allocation routines aliased to jemalloc functions.
