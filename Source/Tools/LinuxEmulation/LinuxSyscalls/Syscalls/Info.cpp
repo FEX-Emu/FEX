@@ -62,8 +62,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_FLAGS(seccomp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame, unsigned int operation, unsigned int flags, void* args) -> uint64_t {
-                                // FEX doesn't support seccomp
-                                return -EINVAL;
+                                return FEX::HLE::_SyscallHandler->SeccompEmulator.Handle(Frame, operation, flags, args);
                               });
 }
 } // namespace FEX::HLE

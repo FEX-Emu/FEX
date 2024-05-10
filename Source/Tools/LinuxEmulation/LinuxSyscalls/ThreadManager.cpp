@@ -6,8 +6,8 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 namespace FEX::HLE {
-FEX::HLE::ThreadStateObject*
-ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
+FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState,
+                                                         uint64_t ParentTID, FEX::HLE::ThreadStateObject* InheritThread) {
   auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
 
   ThreadStateObject->ThreadInfo.parent_tid = ParentTID;
@@ -19,6 +19,10 @@ ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore:
 
   ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
+
+  if (InheritThread) {
+    FEX::HLE::_SyscallHandler->SeccompEmulator.InheritSeccompFilters(InheritThread, ThreadStateObject);
+  }
 
   ++IdleWaitRefCount;
   return ThreadStateObject;
@@ -58,6 +62,8 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
   }
 
   CTX->DestroyThread(Thread->Thread, NeedsTLSUninstall);
+  FEX::HLE::_SyscallHandler->SeccompEmulator.FreeSeccompFilters(Thread);
+
   delete Thread;
   --IdleWaitRefCount;
   IdleWaitCV.notify_all();
