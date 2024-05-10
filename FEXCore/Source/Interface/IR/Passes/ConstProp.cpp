@@ -440,7 +440,8 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
     // Is the first argument a constant?
     uint64_t Constant;
-    if (IREmit->IsValueConstant(Op->SyscallID, &Constant)) {
+    ///< TODO: Needs invalidation for seccomp
+    if (false && IREmit->IsValueConstant(Op->SyscallID, &Constant)) {
       auto SyscallDef = Manager->SyscallHandler->GetSyscallABI(Constant);
       auto SyscallFlags = Manager->SyscallHandler->GetSyscallFlags(Constant);
 

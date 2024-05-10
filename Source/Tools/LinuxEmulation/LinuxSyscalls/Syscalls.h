@@ -11,6 +11,7 @@ $end_info$
 #include "LinuxSyscalls/FileManagement.h"
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/ThreadManager.h"
+#include "LinuxSyscalls/SeccompEmulator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -91,17 +92,25 @@ struct ExecveAtArgs {
   }
 };
 
-uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver, public FEXCore::Allocator::FEXAllocOperators {
 public:
   ThreadManager TM;
+  FEX::HLE::SeccompEmulator SeccompEmulator;
+
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) final override;
 
   void DefaultProgramBreak(uint64_t Base, uint64_t Size);
+  void DeserializeSeccompFD(FEX::HLE::ThreadStateObject* Thread, int FD) {
+    if (FD == -1) {
+      return;
+    }
+    SeccompEmulator.DeserializeFilters(Thread->Thread->CurrentFrame, FD);
+  }
 
   using SyscallPtrArg0 = uint64_t (*)(FEXCore::Core::CpuStateFrame* Frame);
   using SyscallPtrArg1 = uint64_t (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t);
@@ -278,6 +287,11 @@ private:
   std::mutex SyscallMutex;
   FEX::CodeLoader* LocalLoader {};
   bool NeedToCheckXID {true};
+
+  uint64_t AuditSerialIncrement() {
+    return AuditSerial.fetch_add(1);
+  }
+  std::atomic<uint64_t> AuditSerial;
 
 #ifdef DEBUG_STRACE
   void Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret);
