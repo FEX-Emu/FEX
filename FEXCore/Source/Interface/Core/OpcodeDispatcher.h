@@ -948,7 +948,9 @@ public:
 
   void CRC32(OpcodeArgs);
 
+  void BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition);
   void UnimplementedOp(OpcodeArgs);
+  void PermissionRestrictedOp(OpcodeArgs);
 
   void InvalidOp(OpcodeArgs);
 
