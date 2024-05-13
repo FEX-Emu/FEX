@@ -45,7 +45,7 @@ section if a signal has been deferred. FEX's signal handler will check if the fa
 deferred signal mechanisms.
 
 ```cpp
-NonAtomicRefCounter<uint64_t> *DeferredSignalFaultAddress;
+NonAtomicRefCounter<uint64_t> *InterruptFaultPage;
 ```
 
 #### Example ARM64 JIT code for uninterruptible region
@@ -63,12 +63,9 @@ NonAtomicRefCounter<uint64_t> *DeferredSignalFaultAddress;
   sub x0, x0, #1
   str x0, [x28, #(offsetof(CPUState, DeferredSignalRefCount))]
 
-  ; Now the magic memory access to check for any deferred signals.
-  ; Load the page pointer from the CPUState
-  ldr x0, [x28, #(offsetof(CPUState, DeferredSignalFaultAddress))]
   ; Just store zero. (1 cycle plus no dependencies on a register. Super fast!)
   ; Will store fine with no deferred signal, or SIGSEGV if there was one!
-  str xzr, [x0]
+  strb wxr, [x28, #(offsetof(CPUState, InterruptFaultPage))]
 ```
 
 ### Deferred signal handling
@@ -83,7 +80,7 @@ The signal handler now knows that FEX is in an uninterruptible code section. We 
 - If it is an async signal (from tgkill, sigqueue, or something else) then we will start the deferring process.
 
 The deferring process starts with storing the kernel `siginfo_t` to a thread local array so we can restore it later.
-We then modify the permissions on the thread local `DeferredSignalFaultAddress` to be `PROT_NONE`.
+We then modify the permissions on the thread local `InterruptFaultPage` to be `PROT_NONE`.
 We then immediately return from the signal handler so that FEX can resume its "uninterruptible" code section without breaking anything.
 Once the "uninterruptible" code section finishes, FEX will intentionally trigger a SIGSEGV by storing to the page.
 

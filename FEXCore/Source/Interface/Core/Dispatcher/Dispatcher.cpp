@@ -267,8 +267,8 @@ void Dispatcher::EmitDispatcher() {
     str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
-    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
-    str(ARMEmitter::XReg::zr, TMP2, 0);
+    strb(ARMEmitter::XReg::zr, STATE,
+         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
 
     br(TMP1);
   }
@@ -317,8 +317,8 @@ void Dispatcher::EmitDispatcher() {
     str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
-    str(ARMEmitter::XReg::zr, TMP1, 0);
+    strb(ARMEmitter::XReg::zr, STATE,
+         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
 
     b(&LoopTop);
   }

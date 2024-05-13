@@ -1233,7 +1233,7 @@ bool SignalDelegator::HandleSIGILL(FEXCore::Core::InternalThreadState* Thread, i
       // If we have more deferred frames to process then mprotect back to PROT_NONE.
       // It will have been RW coming in to this sigreturn and now we need to remove permissions
       // to ensure FEX trampolines back to the SIGSEGV deferred handler.
-      mprotect(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096, PROT_NONE);
+      mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
     }
     return true;
   }
@@ -1368,13 +1368,12 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
   if (SupportDeferredSignals) {
     auto MustDeferSignal = (Thread->CurrentFrame->State.DeferredSignalRefCount.Load() != 0);
 
-    if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR &&
-        SigInfo.si_addr == reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress)) {
+    if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr == reinterpret_cast<void*>(&Thread->InterruptFaultPage)) {
       if (!MustDeferSignal) {
         // We just reached the end of the outermost signal-deferring section and faulted to check for pending signals.
         // Pull a signal frame off the stack.
 
-        mprotect(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096, PROT_READ | PROT_WRITE);
+        mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_READ | PROT_WRITE);
 
         if (Thread->DeferredSignalFrames.empty()) {
           // No signals to defer. Just set the fault page back to RW and continue execution.
@@ -1405,7 +1404,7 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
 #else
         // X86 should always be doing a refcount compare and branch since we can't guarantee instruction size.
         // ARM64 just always does the access to reduce branching overhead.
-        ERROR_AND_DIE_FMT("X86 shouldn't hit this DeferredSignalFaultAddress");
+        ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
 #endif
       }
     } else if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && FaultSafeMemcpy::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
@@ -1432,9 +1431,9 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
         });
 
         // Now update the faulting page permissions so it will fault on write.
-        mprotect(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096, PROT_NONE);
+        mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
 
-        // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to DeferredSignalFaultAddress.
+        // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to InterruptFaultPage.
         return;
       }
     }

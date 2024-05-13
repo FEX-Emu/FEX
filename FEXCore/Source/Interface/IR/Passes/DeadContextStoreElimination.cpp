@@ -357,17 +357,6 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
     FEXCore::IR::InvalidClass,
   });
 
-  // DeferredSignalFaultAddress
-  ContextClassification->emplace_back(ContextMemberInfo {
-    ContextMemberClassification {
-      offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress),
-      sizeof(FEXCore::Core::CPUState::DeferredSignalFaultAddress),
-    },
-    LastAccessType::NONE,
-    FEXCore::IR::InvalidClass,
-  });
-
-
   [[maybe_unused]] size_t ClassifiedStructSize {};
   ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
   for (auto& it : *ContextClassification) {
@@ -451,7 +440,6 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
   SetAccess(Offset++, LastAccessType::NONE);
   SetAccess(Offset++, LastAccessType::NONE);
 
-  SetAccess(Offset++, LastAccessType::INVALID);
   SetAccess(Offset++, LastAccessType::INVALID);
   SetAccess(Offset++, LastAccessType::INVALID);
 }

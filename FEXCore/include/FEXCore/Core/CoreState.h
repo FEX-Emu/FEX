@@ -117,8 +117,6 @@ struct CPUState {
   // Reference counter for FEX's per-thread deferred signals.
   // Counts the nesting depth of program sections that cause signals to be deferred.
   NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;
-  // Since this memory region is thread local, we use NonAtomicRefCounter for fast atomic access.
-  NonAtomicRefCounter<uint64_t>* DeferredSignalFaultAddress;
 
   // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
   // x86 otherwise). This allows a straightforward mapping for SRA.

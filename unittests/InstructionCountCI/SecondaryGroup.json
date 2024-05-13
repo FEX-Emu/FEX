@@ -927,7 +927,7 @@
         "str w0, [x28, #728]",
         "str x8, [x28, #40]",
         "mov w0, #0x100",
-        "str x0, [x28, #1056]",
+        "str x0, [x28, #1048]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -938,7 +938,7 @@
         "ldr w8, [x28, #728]",
         "msr nzcv, x8",
         "ldr x8, [x28, #40]",
-        "str xzr, [x28, #1056]",
+        "str xzr, [x28, #1048]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]
@@ -951,7 +951,7 @@
         "str w0, [x28, #728]",
         "str x8, [x28, #40]",
         "mov w0, #0x100",
-        "str x0, [x28, #1056]",
+        "str x0, [x28, #1048]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -962,7 +962,7 @@
         "ldr w8, [x28, #728]",
         "msr nzcv, x8",
         "ldr x8, [x28, #40]",
-        "str xzr, [x28, #1056]",
+        "str xzr, [x28, #1048]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]

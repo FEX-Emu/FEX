@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <type_traits>
 
 #define FEX_DEF_ENUM_CLASS_BIN_OP(Enum, Op) \
   [[maybe_unused]] static constexpr Enum operator Op(Enum lhs, Enum rhs) { \
