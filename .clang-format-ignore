@@ -8,7 +8,5 @@ FEXCore/Source/Common/SoftFloat-3e/*
 Source/Common/cpp-optparse/*
 
 # Files with human-indented tables for readability - don't mess with these
-FEXCore/Source/Interface/Core/X86Tables/X87Tables.cpp
-FEXCore/Source/Interface/Core/X86Tables/XOPTables.cpp
 FEXCore/Source/Interface/Core/X86Tables/*
 

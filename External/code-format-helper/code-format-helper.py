@@ -174,6 +174,12 @@ class ClangFormatHelper(FormatHelper):
     friendly_name = "C/C++ code formatter"
 
     @property
+    def cformat_wrapper_path(self) -> str:
+        relpath = "../../Scripts/clang-format.py"
+        curpath = os.path.dirname(os.path.abspath(__file__))
+        return os.path.abspath(os.path.normpath(os.path.join(curpath, relpath)))
+
+    @property
     def instructions(self) -> str:
         return " ".join(self.cf_cmd)
 
@@ -210,7 +216,11 @@ class ClangFormatHelper(FormatHelper):
         if not cpp_files:
             return None
 
-        cf_cmd = [self.clang_fmt_path, "--diff"]
+        cf_cmd = [
+            self.clang_fmt_path,
+            f"--binary={self.cformat_wrapper_path}",
+            "--diff",
+        ]
 
         if args.start_rev and args.end_rev:
             cf_cmd.append(args.start_rev)
