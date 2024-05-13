@@ -3034,9 +3034,8 @@ public:
     uint32_t o2;
     uint32_t Imm;
     if (size == SubRegSize::i16Bit) {
-      op = 0;
-      o2 = 1;
-      Imm = FP16ToImm8(Float16(Value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     }
     else if (size == SubRegSize::i32Bit) {
       op = 0;

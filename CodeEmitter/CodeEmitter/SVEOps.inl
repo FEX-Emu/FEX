@@ -1512,7 +1512,8 @@ public:
                         size == ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
     uint32_t Imm{};
     if (size == SubRegSize::i16Bit) {
-      Imm = FP16ToImm8(Float16(Value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     } else if (size == SubRegSize::i32Bit) {
       Imm = FP32ToImm8(Value);
     } else if (size == SubRegSize::i64Bit) {
@@ -3513,7 +3514,8 @@ private:
                         size == SubRegSize::i64Bit, "Unsupported fcpy/fmov size");
     uint32_t imm{};
     if (size == SubRegSize::i16Bit) {
-      imm = FP16ToImm8(Float16(value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     } else if (size == SubRegSize::i32Bit) {
       imm = FP32ToImm8(value);
     } else if (size == SubRegSize::i64Bit) {
@@ -5228,15 +5230,14 @@ private:
 
   // Alias that returns the equivalently sized unsigned type for a floating-point type T.
   template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, Float16>)
-  using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, Float16>, uint16_t,
-                                                   std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>>;
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+  using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
 
   // Determines if a floating-point value is capable of being converted
   // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
   // in ARM A-profile reference manual for a general overview of how this was derived.
   template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, Float16>)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
   [[nodiscard, maybe_unused]] static bool IsValidFPValueForImm8(T value) {
     const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
     const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
@@ -5275,13 +5276,6 @@ private:
     }
 
     return true;
-  }
-
-  static uint32_t FP16ToImm8(Float16 value) {
-    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
-                       "Value cannot be encoded into an 8-bit immediate");
-
-    return value.ToImm8();
   }
 
   static uint32_t FP32ToImm8(float value) {

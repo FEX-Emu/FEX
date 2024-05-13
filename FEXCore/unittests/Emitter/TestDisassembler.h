@@ -74,3 +74,6 @@ private:
 
 #define TEST_SINGLE(emit, expected) \
   { CHECK((emit, DisassembleSingle()) == expected); }
+
+// Float16 disabled until we have a Float16 storage type with unittests.
+#define TEST_FP16 0

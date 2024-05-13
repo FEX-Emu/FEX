@@ -756,11 +756,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point compare") {
   TEST_SINGLE(fcmpe(HReg::h30, HReg::h29), "fcmpe h30, h29");
   TEST_SINGLE(fcmpe(HReg::h30), "fcmpe h30, #0.0");
 }
-TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point immediate") {
-  TEST_SINGLE(fmov(ScalarRegSize::i16Bit, VReg::v30, 1.0), "fmov h30, #0x70 (1.0000)");
-  TEST_SINGLE(fmov(ScalarRegSize::i32Bit, VReg::v30, 1.0), "fmov s30, #0x70 (1.0000)");
-  TEST_SINGLE(fmov(ScalarRegSize::i64Bit, VReg::v30, 1.0), "fmov d30, #0x70 (1.0000)");
 
+#if TEST_FP16
+TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point immediate : fp16") {
+  TEST_SINGLE(fmov(ScalarRegSize::i16Bit, VReg::v30, 1.0), "fmov h30, #0x70 (1.0000)");
   float Decoding[] = {
     2.000000, 4.000000, 8.000000,  16.000000, 0.125000, 0.250000, 0.500000,  1.000000,  2.125000, 4.250000, 8.500000,  17.000000,
     0.132812, 0.265625, 0.531250,  1.062500,  2.250000, 4.500000, 9.000000,  18.000000, 0.140625, 0.281250, 0.562500,  1.125000,
@@ -814,6 +813,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point immediate") 
     TEST_SINGLE(fmov(ScalarRegSize::i16Bit, VReg::v30, Decoding[i]), DecodingString[i]);
   }
 }
+#endif
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point immediate") {
+  TEST_SINGLE(fmov(ScalarRegSize::i32Bit, VReg::v30, 1.0), "fmov s30, #0x70 (1.0000)");
+  TEST_SINGLE(fmov(ScalarRegSize::i64Bit, VReg::v30, 1.0), "fmov d30, #0x70 (1.0000)");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point conditional compare") {
   TEST_SINGLE(fccmp(SReg::s30, SReg::s29, StatusFlags::None, Condition::CC_AL), "fccmp s30, s29, #nzcv, al");
   TEST_SINGLE(fccmp(SReg::s30, SReg::s29, StatusFlags::Flag_N, Condition::CC_AL), "fccmp s30, s29, #Nzcv, al");

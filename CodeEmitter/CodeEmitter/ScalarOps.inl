@@ -1059,8 +1059,8 @@ public:
     uint32_t imm8;
     uint32_t imm5 = 0b0'0000;
     if (size == ARMEmitter::ScalarRegSize::i16Bit) {
-      ptype = 0b11;
-      imm8 = FP16ToImm8(Float16(Value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     }
     else if (size == ARMEmitter::ScalarRegSize::i32Bit) {
       ptype = 0b00;
