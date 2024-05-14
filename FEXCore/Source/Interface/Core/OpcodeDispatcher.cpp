@@ -4981,7 +4981,8 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
   GenerateFlags_RDRAND(Op, Result_Upper);
 }
 
-void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
+
+void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   // Ensure flags are calculated on invalid op.
   CalculateDeferredFlags();
 
@@ -4990,12 +4991,7 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
   _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(FEXCore::IR::BreakDefinition {
-    .ErrorRegister = 0,
-    .Signal = SIGILL,
-    .TrapNumber = 0,
-    .si_code = 0,
-  });
+  _Break(BreakDefinition);
 
   BlockSetRIP = true;
 
@@ -5006,22 +5002,31 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
+  BreakOp(Op, FEXCore::IR::BreakDefinition {
+                .ErrorRegister = 0,
+                .Signal = SIGILL,
+                .TrapNumber = X86State::X86_TRAPNO_UD,
+                .si_code = 2, ///< ILL_ILLOPN
+              });
+}
+
+void OpDispatchBuilder::PermissionRestrictedOp(OpcodeArgs) {
+  BreakOp(Op, FEXCore::IR::BreakDefinition {
+                .ErrorRegister = 0,
+                .Signal = SIGSEGV,
+                .TrapNumber = X86State::X86_TRAPNO_GP,
+                .si_code = 0x80,
+              });
+}
+
 void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
-  // Ensure flags are calculated on invalid op.
-  CalculateDeferredFlags();
-
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
-  // We don't actually support this instruction
-  // Multiblock may hit it though
-  _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(FEXCore::IR::BreakDefinition {
-    .ErrorRegister = 0,
-    .Signal = SIGILL,
-    .TrapNumber = 0,
-    .si_code = 0,
-  });
-  BlockSetRIP = true;
+  BreakOp(Op, FEXCore::IR::BreakDefinition {
+                .ErrorRegister = 0,
+                .Signal = SIGILL,
+                .TrapNumber = 0,
+                .si_code = 0,
+              });
 }
 
 #undef OpcodeArgs
@@ -5541,6 +5546,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x69, 1, &OpDispatchBuilder::IMUL2SrcOp},
     {0x6A, 1, &OpDispatchBuilder::PUSHOp},
     {0x6B, 1, &OpDispatchBuilder::IMUL2SrcOp},
+    {0x6C, 4, &OpDispatchBuilder::PermissionRestrictedOp},
 
     {0x70, 16, &OpDispatchBuilder::CondJUMPOp},
     {0x84, 2, &OpDispatchBuilder::TESTOp<0>},
@@ -5577,14 +5583,17 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD7, 2, &OpDispatchBuilder::XLATOp},
     {0xE0, 3, &OpDispatchBuilder::LoopOp},
     {0xE3, 1, &OpDispatchBuilder::CondJUMPRCXOp},
+    {0xE4, 4, &OpDispatchBuilder::PermissionRestrictedOp},
     {0xE8, 1, &OpDispatchBuilder::CALLOp},
     {0xE9, 1, &OpDispatchBuilder::JUMPOp},
     {0xEB, 1, &OpDispatchBuilder::JUMPOp},
+    {0xEC, 4, &OpDispatchBuilder::PermissionRestrictedOp},
     {0xF1, 1, &OpDispatchBuilder::INTOp},
     {0xF4, 1, &OpDispatchBuilder::INTOp},
 
     {0xF5, 1, &OpDispatchBuilder::FLAGControlOp},
     {0xF8, 2, &OpDispatchBuilder::FLAGControlOp},
+    {0xFA, 2, &OpDispatchBuilder::PermissionRestrictedOp},
     {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
   };
 
@@ -5617,12 +5626,19 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     // Instructions
+    {0x06, 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {0x07, 1, &OpDispatchBuilder::PermissionRestrictedOp},
     {0x0B, 1, &OpDispatchBuilder::INTOp},
     {0x0E, 1, &OpDispatchBuilder::X87EMMS},
 
     {0x19, 7, &OpDispatchBuilder::NOPOp}, // NOP with ModRM
 
+    {0x20, 4, &OpDispatchBuilder::PermissionRestrictedOp},
+
+    {0x30, 1, &OpDispatchBuilder::PermissionRestrictedOp},
     {0x31, 1, &OpDispatchBuilder::RDTSCOp},
+    {0x32, 2, &OpDispatchBuilder::PermissionRestrictedOp},
+    {0x34, 3, &OpDispatchBuilder::UnimplementedOp},
 
     {0x3F, 1, &OpDispatchBuilder::ThunkOp},
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
@@ -6060,16 +6076,32 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr uint16_t PF_F2 = 3;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOpTable[] = {
+    // GROUP 6
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F2, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+
     // GROUP 7
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 0), 1, &OpDispatchBuilder::SGDTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 0), 1, &OpDispatchBuilder::SGDTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 0), 1, &OpDispatchBuilder::SGDTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
 
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 4), 1, &OpDispatchBuilder::SMSWOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 4), 1, &OpDispatchBuilder::SMSWOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 4), 1, &OpDispatchBuilder::SMSWOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 4), 1, &OpDispatchBuilder::SMSWOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
 
     // GROUP 8
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
@@ -6190,10 +6222,18 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 #undef OPD
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOpTable[] = {
+    // REG /1
+    {((0 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
+    {((0 << 3) | 1), 1, &OpDispatchBuilder::UnimplementedOp},
+
     // REG /2
     {((1 << 3) | 0), 1, &OpDispatchBuilder::XGetBVOp},
 
+    // REG /3
+    {((2 << 3) | 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+
     // REG /7
+    {((3 << 3) | 0), 1, &OpDispatchBuilder::PermissionRestrictedOp},
     {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},
 
   };

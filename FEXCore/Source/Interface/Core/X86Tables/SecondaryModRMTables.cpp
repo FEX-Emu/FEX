@@ -15,8 +15,8 @@ std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() 
   std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> Table{};
   constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
     // REG /1
-    {((0 << 3) | 0), 1, X86InstInfo{"MONITOR",  TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
-    {((0 << 3) | 1), 1, X86InstInfo{"MWAIT",    TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
+    {((0 << 3) | 0), 1, X86InstInfo{"MONITOR",  TYPE_INST,    FLAGS_NONE, 0, nullptr}},
+    {((0 << 3) | 1), 1, X86InstInfo{"MWAIT",    TYPE_INST,    FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 2), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 3), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 4), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
@@ -42,10 +42,10 @@ std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() 
     {((2 << 3) | 4), 1, X86InstInfo{"STGI",     TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((2 << 3) | 5), 1, X86InstInfo{"CLGI",     TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((2 << 3) | 6), 1, X86InstInfo{"SKINIT",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
-    {((2 << 3) | 7), 1, X86InstInfo{"INVLPGA",  TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
+    {((2 << 3) | 7), 1, X86InstInfo{"INVLPGA",  TYPE_INST,    FLAGS_NONE, 0, nullptr}},
 
     // REG /7
-    {((3 << 3) | 0), 1, X86InstInfo{"SWAPGS",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
+    {((3 << 3) | 0), 1, X86InstInfo{"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_INST,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 2), 1, X86InstInfo{"MONITORX", TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 3), 1, X86InstInfo{"MWAITX",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
