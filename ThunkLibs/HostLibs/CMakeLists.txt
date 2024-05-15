@@ -109,15 +109,6 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp ${GUEST_BITNESS})
   add_host_lib(asound ${GUEST_BITNESS})
 
-  generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp ${GUEST_BITNESS})
-  add_host_lib(EGL ${GUEST_BITNESS})
-
-  generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp ${GUEST_BITNESS})
-  add_host_lib(GL ${GUEST_BITNESS})
-
-  find_package(OpenGL REQUIRED)
-  target_link_libraries(GL-host-${GUEST_BITNESS} PRIVATE OpenGL::GL)
-
   # disabled for now, headers are platform specific
   # find_package(SDL2 REQUIRED)
   # generate(libSDL2)
@@ -141,6 +132,15 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
   add_host_lib(wayland-client ${GUEST_BITNESS})
+
+  generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(EGL ${GUEST_BITNESS})
+
+  generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(GL ${GUEST_BITNESS})
+
+  find_package(OpenGL REQUIRED)
+  target_link_libraries(GL-host-${GUEST_BITNESS} PRIVATE OpenGL::GL)
 endforeach()
 
 add_library(fex_thunk_test SHARED ../libfex_thunk_test/lib.cpp)

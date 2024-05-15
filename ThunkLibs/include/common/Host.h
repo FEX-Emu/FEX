@@ -405,6 +405,12 @@ struct host_to_guest_convertible {
   {
     return {static_cast<uint32_t>(from.data)};
   }
+
+  // libGL also needs to allow long->int conversions for return values...
+  operator guest_layout<int32_t>() const requires (std::is_same_v<T, long>)
+  {
+    return {static_cast<int32_t>(from.data)};
+  }
 #endif
 
   // Make guest_layout of "long long" and "long" interoperable, since they are

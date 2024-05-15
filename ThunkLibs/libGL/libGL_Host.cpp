@@ -68,7 +68,53 @@ static void fexfn_impl_libGL_SetGuestXDisplayString(uintptr_t GuestTarget, uintp
 auto fexfn_impl_libGL_glXGetProcAddress(const GLubyte* name) -> void (*)() {
   using VoidFn = void (*)();
   std::string_view name_sv {reinterpret_cast<const char*>(name)};
-  if (name_sv == "glXChooseFBConfig") {
+  if (name_sv == "glCompileShaderIncludeARB") {
+    return (VoidFn)fexfn_impl_libGL_glCompileShaderIncludeARB;
+  } else if (name_sv == "glCreateShaderProgramv") {
+    return (VoidFn)fexfn_impl_libGL_glCreateShaderProgramv;
+  } else if (name_sv == "glGetBufferPointerv") {
+    return (VoidFn)fexfn_impl_libGL_glGetBufferPointerv;
+  } else if (name_sv == "glGetBufferPointervARB") {
+    return (VoidFn)fexfn_impl_libGL_glGetBufferPointervARB;
+  } else if (name_sv == "glGetNamedBufferPointerv") {
+    return (VoidFn)fexfn_impl_libGL_glGetNamedBufferPointerv;
+  } else if (name_sv == "glGetNamedBufferPointervEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetNamedBufferPointervEXT;
+  } else if (name_sv == "glGetPointerv") {
+    return (VoidFn)fexfn_impl_libGL_glGetPointerv;
+  } else if (name_sv == "glGetPointervEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetPointervEXT;
+  } else if (name_sv == "glGetPointeri_vEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetPointeri_vEXT;
+  } else if (name_sv == "glGetPointerIndexedvEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetPointerIndexedvEXT;
+  } else if (name_sv == "glGetVariantPointervEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetVariantPointervEXT;
+  } else if (name_sv == "glGetVertexAttribPointervARB") {
+    return (VoidFn)fexfn_impl_libGL_glGetVertexAttribPointervARB;
+  } else if (name_sv == "glGetVertexAttribPointerv") {
+    return (VoidFn)fexfn_impl_libGL_glGetVertexAttribPointerv;
+  } else if (name_sv == "glGetVertexAttribPointervNV") {
+    return (VoidFn)fexfn_impl_libGL_glGetVertexAttribPointervNV;
+  } else if (name_sv == "glGetVertexArrayPointeri_vEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetVertexArrayPointeri_vEXT;
+  } else if (name_sv == "glGetVertexArrayPointervEXT") {
+    return (VoidFn)fexfn_impl_libGL_glGetVertexArrayPointervEXT;
+  } else if (name_sv == "glShaderSource") {
+    return (VoidFn)fexfn_impl_libGL_glShaderSource;
+  } else if (name_sv == "glShaderSourceARB") {
+    return (VoidFn)fexfn_impl_libGL_glShaderSourceARB;
+#ifdef IS_32BIT_THUNK
+  } else if (name_sv == "glBindBuffersRange") {
+    return (VoidFn)fexfn_impl_libGL_glBindBuffersRange;
+  } else if (name_sv == "glBindVertexBuffers") {
+    return (VoidFn)fexfn_impl_libGL_glBindVertexBuffers;
+  } else if (name_sv == "glGetUniformIndices") {
+    return (VoidFn)fexfn_impl_libGL_glGetUniformIndices;
+  } else if (name_sv == "glVertexArrayVertexBuffers") {
+    return (VoidFn)fexfn_impl_libGL_glVertexArrayVertexBuffers;
+#endif
+  } else if (name_sv == "glXChooseFBConfig") {
     return (VoidFn)fexfn_impl_libGL_glXChooseFBConfig;
   } else if (name_sv == "glXChooseFBConfigSGIX") {
     return (VoidFn)fexfn_impl_libGL_glXChooseFBConfigSGIX;
@@ -92,6 +138,124 @@ auto fexfn_impl_libGL_glXGetProcAddress(const GLubyte* name) -> void (*)() {
     return (VoidFn)fexfn_impl_libGL_glXGetVisualFromFBConfig;
   }
   return (VoidFn)glXGetProcAddress((const GLubyte*)name);
+}
+
+void fexfn_impl_libGL_glCompileShaderIncludeARB(GLuint a_0, GLsizei Count, guest_layout<const GLchar* const*> a_2, const GLint* a_3) {
+  // TODO: Only on 32-bit
+  auto sources = (const char**)alloca(Count * sizeof(const char*));
+  for (GLsizei i = 0; i < Count; ++i) {
+    sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
+  }
+  return fexldr_ptr_libGL_glCompileShaderIncludeARB(a_0, Count, sources, a_3);
+}
+
+GLuint fexfn_impl_libGL_glCreateShaderProgramv(GLuint a_0, GLsizei count, guest_layout<const GLchar* const*> a_2) {
+  // TODO: Only on 32-bit
+  auto sources = (const char**)alloca(count * sizeof(const char*));
+  for (GLsizei i = 0; i < count; ++i) {
+    sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
+  }
+  return fexldr_ptr_libGL_glCreateShaderProgramv(a_0, count, sources);
+}
+
+void fexfn_impl_libGL_glGetBufferPointerv(GLenum a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetBufferPointerv(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetBufferPointervARB(GLenum a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetBufferPointervARB(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetNamedBufferPointerv(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetNamedBufferPointerv(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetNamedBufferPointervEXT(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetNamedBufferPointervEXT(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetPointerv(GLenum a_0, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetPointerv(a_0, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetPointervEXT(GLenum a_0, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetPointervEXT(a_0, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetPointeri_vEXT(GLenum a_0, GLuint a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetPointeri_vEXT(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetPointerIndexedvEXT(GLenum a_0, GLuint a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetPointerIndexedvEXT(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVariantPointervEXT(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVariantPointervEXT(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVertexAttribPointervARB(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVertexAttribPointervARB(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVertexAttribPointerv(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVertexAttribPointerv(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVertexAttribPointervNV(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVertexAttribPointervNV(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVertexArrayPointeri_vEXT(GLuint a_0, GLuint a_1, GLenum a_2, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVertexArrayPointeri_vEXT(a_0, a_1, a_2, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glGetVertexArrayPointervEXT(GLuint a_0, GLenum a_1, guest_layout<void**> GuestOut) {
+  void* HostOut;
+  fexldr_ptr_libGL_glGetVertexArrayPointervEXT(a_0, a_1, &HostOut);
+  *GuestOut.get_pointer() = to_guest(to_host_layout(HostOut));
+}
+
+void fexfn_impl_libGL_glShaderSource(GLuint a_0, GLsizei count, guest_layout<const GLchar* const*> a_2, const GLint* a_3) {
+  auto sources = (const char**)alloca(count * sizeof(const char*));
+  for (GLsizei i = 0; i < count; ++i) {
+    sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
+  }
+  return fexldr_ptr_libGL_glShaderSource(a_0, count, sources, a_3);
+}
+
+void fexfn_impl_libGL_glShaderSourceARB(GLuint a_0, GLsizei count, guest_layout<const GLcharARB**> a_2, const GLint* a_3) {
+  auto sources = (const char**)alloca(count * sizeof(const char*));
+  for (GLsizei i = 0; i < count; ++i) {
+    sources[i] = a_2.get_pointer()[i].force_get_host_pointer();
+  }
+  return fexldr_ptr_libGL_glShaderSourceARB(a_0, count, sources, a_3);
 }
 
 // Relocate data to guest heap so it can be called with XFree.
@@ -208,5 +372,43 @@ int fexfn_impl_libGL_glXGetConfig(Display* Display, guest_layout<XVisualInfo*> I
 guest_layout<XVisualInfo*> fexfn_impl_libGL_glXGetVisualFromFBConfig(Display* Display, GLXFBConfig Config) {
   return MapToGuestVisualInfo(Display, fexldr_ptr_libGL_glXGetVisualFromFBConfig(Display, Config));
 }
+
+#ifdef IS_32BIT_THUNK
+void fexfn_impl_libGL_glBindBuffersRange(GLenum a_0, GLuint a_1, GLsizei Count, const GLuint* a_3, guest_layout<const int*> Offsets,
+                                         guest_layout<const int*> Sizes) {
+  auto HostOffsets = (GLintptr*)alloca(Count * sizeof(GLintptr));
+  auto HostSizes = (GLsizeiptr*)alloca(Count * sizeof(GLsizeiptr));
+  for (int i = 0; i < Count; ++i) {
+    HostOffsets[i] = Offsets.get_pointer()[i].data;
+    HostSizes[i] = Sizes.get_pointer()[i].data;
+  }
+  return fexldr_ptr_libGL_glBindBuffersRange(a_0, a_1, Count, a_3, HostOffsets, HostSizes);
+}
+
+void fexfn_impl_libGL_glBindVertexBuffers(GLuint a_0, GLsizei count, const GLuint* a_2, guest_layout<const int*> Offsets, const GLsizei* a_4) {
+  auto HostOffsets = (GLintptr*)alloca(count * sizeof(GLintptr));
+  for (int i = 0; i < count; ++i) {
+    HostOffsets[i] = Offsets.get_pointer()[i].data;
+  }
+  fexldr_ptr_libGL_glBindVertexBuffers(a_0, count, a_2, HostOffsets, a_4);
+}
+
+void fexfn_impl_libGL_glGetUniformIndices(GLuint a_0, GLsizei Count, guest_layout<const GLchar* const*> Names, GLuint* a_3) {
+  auto HostNames = (const GLchar**)alloca(Count * sizeof(GLintptr));
+  for (int i = 0; i < Count; ++i) {
+    HostNames[i] = host_layout<const char* const> {Names.get_pointer()[i]}.data;
+  }
+  fexldr_ptr_libGL_glGetUniformIndices(a_0, Count, HostNames, a_3);
+}
+
+void fexfn_impl_libGL_glVertexArrayVertexBuffers(GLuint a_0, GLuint a_1, GLsizei count, const GLuint* a_3, guest_layout<const int*> Offsets,
+                                                 const GLsizei* a_5) {
+  auto HostOffsets = (GLintptr*)alloca(count * sizeof(GLintptr));
+  for (int i = 0; i < count; ++i) {
+    HostOffsets[i] = Offsets.get_pointer()[i].data;
+  }
+  fexldr_ptr_libGL_glVertexArrayVertexBuffers(a_0, a_1, count, a_3, HostOffsets, a_5);
+}
+#endif
 
 EXPORTS(libGL)
