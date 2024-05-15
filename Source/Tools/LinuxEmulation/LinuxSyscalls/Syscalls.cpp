@@ -531,14 +531,14 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
 
     if (AnyFlagsSet(args->args.flags, CLONE_THREAD)) {
       if (!AllFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND)) {
-        LogMan::Msg::IFmt("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
+        LogMan::Msg::IFmt("clone: CLONE_THREAD: Unsupported flags w/ CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
         return false;
       }
     } else {
       if (AnyFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
         // CLONE_VM is particularly nasty here
         // Memory regions at the point of clone(More similar to a fork) are shared
-        LogMan::Msg::IFmt("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
+        LogMan::Msg::IFmt("clone: Unsupported flags w/o CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
         return false;
       }
     }
