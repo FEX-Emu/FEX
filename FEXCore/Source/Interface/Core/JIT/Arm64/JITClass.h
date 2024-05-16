@@ -155,6 +155,17 @@ private:
   }
 
   [[nodiscard]]
+  ARMEmitter::Size ConvertSize(const IR::IROp_Header* Op) {
+    return Op->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  }
+
+  [[nodiscard]]
+  ARMEmitter::Size ConvertSize48(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->Size == 4 || Op->Size == 8, "Invalid size");
+    return ConvertSize(Op);
+  }
+
+  [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
     const auto ElementSize = Op->ElementSize;
 

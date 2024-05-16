@@ -79,7 +79,7 @@ DEF_OP(CAS) {
   auto Desired = GetReg(Op->Desired.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -126,7 +126,7 @@ DEF_OP(AtomicAdd) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -153,7 +153,7 @@ DEF_OP(AtomicSub) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -181,7 +181,7 @@ DEF_OP(AtomicAnd) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -209,7 +209,7 @@ DEF_OP(AtomicCLR) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -236,7 +236,7 @@ DEF_OP(AtomicOr) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -263,7 +263,7 @@ DEF_OP(AtomicXor) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -289,7 +289,7 @@ DEF_OP(AtomicNeg) {
 
   auto MemSrc = GetReg(Op->Addr.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -312,7 +312,7 @@ DEF_OP(AtomicSwap) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -339,7 +339,7 @@ DEF_OP(AtomicFetchAdd) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -367,7 +367,7 @@ DEF_OP(AtomicFetchSub) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -396,7 +396,7 @@ DEF_OP(AtomicFetchAnd) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -425,7 +425,7 @@ DEF_OP(AtomicFetchCLR) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -453,7 +453,7 @@ DEF_OP(AtomicFetchOr) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -481,7 +481,7 @@ DEF_OP(AtomicFetchXor) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -508,7 +508,7 @@ DEF_OP(AtomicFetchNeg) {
 
   auto MemSrc = GetReg(Op->Addr.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
