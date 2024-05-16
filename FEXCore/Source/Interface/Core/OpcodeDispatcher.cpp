@@ -1511,9 +1511,9 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   OrderedNode* Src = _Constant(Size, Shift);
   OrderedNode* Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  StoreResult(GPRClass, Op, Result, -1);
-
   GenerateFlags_ShiftLeftImmediate(Op, Result, Dest, Shift);
+  CalculateDeferredFlags();
+  StoreResult(GPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
@@ -1534,8 +1534,9 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   OrderedNode* Src = _Constant(Size, Shift);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  StoreResult(GPRClass, Op, ALUOp, -1);
   GenerateFlags_ShiftRightImmediate(Op, ALUOp, Dest, Shift);
+  CalculateDeferredFlags();
+  StoreResult(GPRClass, Op, ALUOp, -1);
 }
 
 void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
@@ -1602,8 +1603,9 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
-    StoreResult(GPRClass, Op, Res, -1);
     GenerateFlags_ShiftLeftImmediate(Op, Res, Dest, Shift);
+    CalculateDeferredFlags();
+    StoreResult(GPRClass, Op, Res, -1);
   } else if (Shift == 0 && Size == 32) {
     // Ensure Zext still occurs
     StoreResult(GPRClass, Op, Dest, -1);
@@ -1701,9 +1703,9 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   OrderedNode* Src = _Constant(Size, Shift);
   OrderedNode* Result = _Ashr(IR::SizeToOpSize(std::max<uint8_t>(4, GetOpSize(Dest))), Dest, Src);
 
-  StoreResult(GPRClass, Op, Result, -1);
-
   GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, Shift);
+  CalculateDeferredFlags();
+  StoreResult(GPRClass, Op, Result, -1);
 }
 
 template<bool Left, bool IsImmediate, bool Is1Bit>
@@ -2296,14 +2298,14 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   // TODO: Use `adc Res, xzr, Dest, lsl 1` to save an instruction
   OrderedNode* Res = _Orlshl(OpSize, CF, Dest, 1);
 
-  StoreResult(GPRClass, Op, Res, -1);
-
   // Our new CF will be the top bit of the source
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Size - 1, true);
 
   // OF is the top two MSBs XOR'd together
   // Top two MSBs is CF and top bit of result
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_Xor(OpSize, Res, Dest), Size - 1, true);
+
+  StoreResult(GPRClass, Op, Res, -1);
 }
 
 void OpDispatchBuilder::RCLOp(OpcodeArgs) {
@@ -2840,9 +2842,8 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
-    StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
-
     CalculateFlags_ADD(GetSrcSize(Op), Before, Src);
+    StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
   }
 }
 
@@ -3943,10 +3944,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       Size = 8;
     }
 
+    GenerateFlags_SUB(Op, Src3Lower, CASResult);
+    CalculateDeferredFlags();
+
     // RAX gets the result of the CAS op
     StoreGPRRegister(X86State::REG_RAX, RAXResult, Size);
-
-    GenerateFlags_SUB(Op, Src3Lower, CASResult);
   }
 }
 

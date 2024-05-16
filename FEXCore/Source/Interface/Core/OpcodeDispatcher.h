@@ -1569,12 +1569,11 @@ private:
   // shift, with correct PF handling.
   void HandleShift(X86Tables::DecodedOp Op, OrderedNode* Result, OrderedNode* Dest, ShiftType Shift, OrderedNode* Src) {
 
-    StoreResult(GPRClass, Op, Result, -1);
-
     auto OldPF = GetRFLAG(X86State::RFLAG_PF_RAW_LOC);
 
     HandleNZCV_RMW();
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF));
+    StoreResult(GPRClass, Op, Result, -1);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
