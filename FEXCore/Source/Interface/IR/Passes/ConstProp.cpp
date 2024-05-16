@@ -152,7 +152,6 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
         }
       }
     }
-#if defined(_M_ARM_64) // x86 can't sext or zext on mem ops
     // Try to optimize: Base + (u32)Offset
     else if (Src0Header->Op == OP_BFE) {
       auto Bfe = Src0Header->C<IROp_Bfe>();
@@ -171,7 +170,6 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
           std::make_tuple(MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
       }
     }
-#endif
   }
 
   // no match anywhere, just add
