@@ -339,11 +339,11 @@
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
         "ldaddalb w20, w21, [x4]",
-        "bfxil x7, x21, #0, #8",
         "eor w27, w21, w20",
         "lsl w0, w21, #24",
         "cmn w0, w20, lsl #24",
-        "add w26, w21, w20"
+        "add w26, w21, w20",
+        "bfxil x7, x21, #0, #8"
       ]
     },
     "xadd word [rax], bx": {
@@ -352,11 +352,11 @@
       "ExpectedArm64ASM": [
         "uxth w20, w7",
         "ldaddalh w20, w21, [x4]",
-        "bfxil x7, x21, #0, #16",
         "eor w27, w21, w20",
         "lsl w0, w21, #16",
         "cmn w0, w20, lsl #16",
-        "add w26, w21, w20"
+        "add w26, w21, w20",
+        "bfxil x7, x21, #0, #16"
       ]
     },
     "xadd dword [rax], ebx": {
