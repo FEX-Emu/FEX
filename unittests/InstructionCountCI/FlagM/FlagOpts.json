@@ -225,8 +225,8 @@
       ],
       "ExpectedArm64ASM": [
         "subs x20, x4, x7",
-        "cset x20, eq",
-        "bfxil x5, x20, #0, #8",
+        "cset x21, eq",
+        "bfxil x5, x21, #0, #8",
         "mov x26, x5",
         "cmn wzr, w26, lsl #24"
       ]

@@ -373,10 +373,10 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
-        "mov x20, x7",
-        "ldaddal x20, x7, [x4]",
-        "eor w27, w7, w20",
-        "adds x26, x7, x20"
+        "ldaddal x7, x20, [x4]",
+        "eor w27, w20, w7",
+        "adds x26, x20, x7",
+        "mov x7, x20"
       ]
     },
     "lock add byte [rax], 1": {

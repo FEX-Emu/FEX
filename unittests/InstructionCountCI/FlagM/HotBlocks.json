@@ -81,11 +81,11 @@
         "mov w10, w5",
         "mov x6, x9",
         "mov x4, x7",
-        "ldr s18, [x6]",
-        "add x4, x4, #0x20 (32)",
+        "ldr s18, [x9]",
+        "add x4, x7, #0x20 (32)",
         "fmul s0, s18, s16",
         "mov v18.s[0], v0.s[0]",
-        "add x6, x6, #0x20 (32)",
+        "add x6, x9, #0x20 (32)",
         "sub x20, x4, #0x20 (32)",
         "ldr s2, [x20]",
         "fadd s0, s18, s2",
@@ -191,7 +191,7 @@
       ]
     },
     "bytemark data xor loop": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -207,21 +207,22 @@
         "cmp     rdi, rax"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, x4",
-        "mov x6, x20",
-        "mov x5, x20",
+        "mov x6, x4",
+        "mov x5, x4",
         "mov x19, x10",
-        "add x4, x20, #0x1 (1)",
-        "lsr x6, x20, #6",
-        "and w5, w20, #0x3f",
-        "lsl x19, x19, x5",
-        "add x20, x7, x6, lsl #3",
-        "ldr x20, [x20]",
-        "eor x20, x20, x19",
+        "add x20, x4, #0x1 (1)",
+        "mov x21, x4",
+        "mov x4, x20",
+        "lsr x6, x21, #6",
+        "and w5, w21, #0x3f",
+        "lsl x19, x10, x5",
         "add x21, x7, x6, lsl #3",
-        "str x20, [x21]",
-        "eor w27, w11, w4",
-        "subs x26, x11, x4",
+        "ldr x21, [x21]",
+        "eor x21, x21, x19",
+        "add x22, x7, x6, lsl #3",
+        "str x21, [x22]",
+        "eor w27, w11, w20",
+        "subs x26, x11, x20",
         "cfinv"
       ]
     }

@@ -202,9 +202,9 @@
       "ExpectedInstructionCount": 9,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
-        "mov w27, w4",
         "cset w20, hs",
-        "adds w26, w27, #0x1 (1)",
+        "mov x27, x4",
+        "adds w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "mov w0, w21",
         "bfi w0, w20, #29, #1",
@@ -247,9 +247,9 @@
       "ExpectedInstructionCount": 9,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
-        "mov w27, w4",
         "cset w20, hs",
-        "subs w26, w27, #0x1 (1)",
+        "mov x27, x4",
+        "subs w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "mov w0, w21",
         "bfi w0, w20, #29, #1",
