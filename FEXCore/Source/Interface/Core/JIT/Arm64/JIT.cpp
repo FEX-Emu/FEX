@@ -530,8 +530,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
-  RAPass->AllocateRegisterSet(RegisterClasses);
-
   RAPass->AddRegisters(FEXCore::IR::GPRClass, GeneralRegisters.size());
   RAPass->AddRegisters(FEXCore::IR::GPRFixedClass, StaticRegisters.size());
   RAPass->AddRegisters(FEXCore::IR::FPRClass, GeneralFPRegisters.size());

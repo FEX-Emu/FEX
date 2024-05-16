@@ -60,8 +60,6 @@ namespace {
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
   bool Run(IREmitter* IREmit) override;
-
-  void AllocateRegisterSet(uint32_t ClassCount) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
 
   RegisterAllocationData* GetAllocationData() override;
@@ -69,14 +67,8 @@ public:
 
 private:
   IR::RegisterAllocationData::UniquePtr AllocData;
-  fextl::vector<RegisterClass> Classes;
+  RegisterClass Classes[INVALID_CLASS];
 };
-
-void ConstrainedRAPass::AllocateRegisterSet(uint32_t ClassCount) {
-  LOGMAN_THROW_AA_FMT(ClassCount <= INVALID_CLASS, "Up to {} classes supported", INVALID_CLASS);
-
-  Classes.resize(ClassCount);
-}
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
   LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);

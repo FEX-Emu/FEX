@@ -18,7 +18,6 @@ struct RegisterClassType;
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {
 public:
-  virtual void AllocateRegisterSet(uint32_t ClassCount) = 0;
   virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
 
   /**

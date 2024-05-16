@@ -99,8 +99,6 @@ protected:
   /**
    * @name Register Allocation
    * @{ */
-  constexpr static uint32_t RegisterClasses = 6;
-
   constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint64_t FPRBase = (1ULL << 32);
   constexpr static uint64_t GPRPairBase = (2ULL << 32);
