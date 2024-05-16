@@ -236,8 +236,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
 
     foreach_arg(Header, _, Arg) {
       auto Node = IR.GetNode(Arg);
-
       LOGMAN_THROW_AA_FMT(IsOld(Node), "not yet mapped");
+
       if (Node == Old) {
         return true;
       }
