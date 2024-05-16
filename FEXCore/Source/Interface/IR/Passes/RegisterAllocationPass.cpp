@@ -24,8 +24,6 @@ namespace {
   constexpr uint32_t INVALID_REG = IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = IR::InvalidClass.Val;
   constexpr uint32_t EVEN_BITS = 0x55555555;
-  constexpr uint32_t PAIR_COUNT = 6; // TODO
-  constexpr uint32_t PAIR_BITS = (1 << PAIR_COUNT) - 1;
 
   struct RegisterClass {
     uint32_t Available;
@@ -367,7 +365,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       Available &= (Available >> 1);
 
       // Only consider aligned registers in the pair region
-      Available &= (EVEN_BITS & PAIR_BITS);
+      Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
     }
 
     return Available;
@@ -407,7 +405,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     //
     // When spilling for pairs, SpillReg prioritizes spilling the pair region
     // which ensures this loop is well-behaved.
-    while (std::popcount(Class->Available) < (Pair ? 2 : 1) || (Pair && !(Class->Available & PAIR_BITS))) {
+    while (std::popcount(Class->Available) < (Pair ? 2 : 1) || (Pair && !(Class->Available & ((1u << PairRegs) - 1)))) {
       IREmit->SetWriteCursorBefore(CodeNode);
       SpillReg(Class, Pivot, Pair);
     }
@@ -425,7 +423,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       // Its neighbour is blocking the pair.
       unsigned Blocked = Hole ^ 1;
       LOGMAN_THROW_AA_FMT(!(Class->Available & (1u << Blocked)), "Invariant7");
-      LOGMAN_THROW_AA_FMT((1 << Hole) & PAIR_BITS, "Pairable register");
+      LOGMAN_THROW_AA_FMT(Hole < PairRegs, "Pairable register");
 
       // Find another free scalar to evict the neighbour
       unsigned NewReg = std::countr_zero(Class->Available & ~(1u << Hole));

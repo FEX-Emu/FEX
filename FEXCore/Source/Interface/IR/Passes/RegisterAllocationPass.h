@@ -25,6 +25,9 @@ public:
    * @name Inference graph handling
    * @{ */
 
+  // Number of GPRs usable for pairs at start of GPR set. Must be even.
+  uint32_t PairRegs;
+
   /**
    * @brief Returns the register and class map array
    */
