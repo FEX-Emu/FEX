@@ -59,8 +59,7 @@ namespace x64 {
     FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r30, FEXCore::ARMEmitter::Reg::r18,
   };
 
-  // d20, d22, d24
-  constexpr unsigned RAPairs = 3;
+  constexpr unsigned RAPairs = 6;
 
   // All are caller saved
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
@@ -107,8 +106,7 @@ namespace x64 {
     FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r30,
   };
 
-  // d6, d14, d16
-  constexpr unsigned RAPairs = 3;
+  constexpr unsigned RAPairs = 6;
 
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
     FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,
@@ -240,8 +238,7 @@ namespace x32 {
     FEXCore::ARMEmitter::Reg::r19,
   };
 
-  // d20, d22, d24, d12, d14, d16
-  constexpr unsigned RAPairs = 6;
+  constexpr unsigned RAPairs = 12;
 
   // All are caller saved
   constexpr std::array<FEXCore::ARMEmitter::VRegister, 8> SRAFPR = {
