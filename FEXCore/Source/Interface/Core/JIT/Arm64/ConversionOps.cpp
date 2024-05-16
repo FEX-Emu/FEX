@@ -18,12 +18,7 @@ DEF_OP(VInsGPR) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1, "Unexpected {} size", __func__);
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                              ARMEmitter::SubRegSize::i8Bit;
+  const auto SubEmitSize = ConvertSubRegSize8(IROp);
   const auto ElementsPer128Bit = 16 / ElementSize;
 
   const auto Dst = GetVReg(Node);
@@ -117,16 +112,7 @@ DEF_OP(VDupFromGPR) {
   const auto Src = GetReg(Op->Src.ID());
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = IROp->ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1, "Unexpected {} element size: {}",
-                      __func__, ElementSize);
-
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                              ARMEmitter::SubRegSize::i8Bit;
+  const auto SubEmitSize = ConvertSubRegSize8(IROp);
 
   if (HostSupportsSVE256 && Is256Bit) {
     dup(SubEmitSize, Dst.Z(), Src);
@@ -216,13 +202,8 @@ DEF_OP(Vector_SToF) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -253,13 +234,8 @@ DEF_OP(Vector_FToZS) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -289,14 +265,8 @@ DEF_OP(Vector_FToS) {
   const auto Op = IROp->C<IR::IROp_Vector_FToS>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                              ARMEmitter::SubRegSize::i16Bit;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -323,14 +293,9 @@ DEF_OP(Vector_FToF) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -396,13 +361,8 @@ DEF_OP(Vector_FToI) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2, "Unexpected {} size", __func__);
-
-  const auto SubEmitSize = ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                              ARMEmitter::SubRegSize::i16Bit;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
