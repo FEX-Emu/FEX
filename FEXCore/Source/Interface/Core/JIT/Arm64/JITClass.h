@@ -166,9 +166,7 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
-    const auto ElementSize = Op->ElementSize;
-
+  ARMEmitter::SubRegSize ConvertSubRegSize16(uint8_t ElementSize) {
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
     return ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
            ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -178,9 +176,19 @@ private:
   }
 
   [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
+    return ConvertSubRegSize16(Op->ElementSize);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize8(uint8_t ElementSize) {
+    LOGMAN_THROW_AA_FMT(ElementSize != 16, "Invalid size");
+    return ConvertSubRegSize16(ElementSize);
+  }
+
+  [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize8(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->ElementSize != 16, "Invalid size");
-    return ConvertSubRegSize16(Op);
+    return ConvertSubRegSize8(Op->ElementSize);
   }
 
   [[nodiscard]]
