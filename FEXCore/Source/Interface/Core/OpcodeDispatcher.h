@@ -1018,7 +1018,7 @@ private:
   }
 
   static bool IsNZCV(unsigned BitOffset) {
-    return ContainsNZCV(1U << BitOffset);
+    return ContainsNZCV(UINT64_C(1) << BitOffset);
   }
 
   OrderedNode* CachedNZCV {};
