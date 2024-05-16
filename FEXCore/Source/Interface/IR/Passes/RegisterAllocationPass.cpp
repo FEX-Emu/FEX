@@ -273,7 +273,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     return std::make_pair(nullptr, PhysicalRegister::Invalid());
   };
 
-  auto SpillReg = [&IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses,
+  auto SpillReg = [this, &IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses,
                    &HasSource](auto Class, IROp_Header* Exclude, bool Pair) {
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
@@ -287,7 +287,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     for (int i = 0; i < Class->Count; ++i) {
       // We have to prioritize the pair region if we're allocating for a Pair.
       // See the comment at the call site in AssignReg.
-      if (Pair && Candidate != nullptr && i >= PAIR_COUNT) {
+      if (Pair && Candidate != nullptr && i >= PairRegs) {
         break;
       }
 
