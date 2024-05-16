@@ -755,7 +755,7 @@ DEF_OP(VLoadVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = IROp->ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
   const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
@@ -765,17 +765,10 @@ DEF_OP(VLoadVectorMasked) {
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
-
   // Check if the sign bit is set for the given element size.
   cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
-  switch (ElementSize) {
+  switch (IROp->ElementSize) {
   case 1: {
     ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
     break;
@@ -792,7 +785,7 @@ DEF_OP(VLoadVectorMasked) {
     ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
     break;
   }
-  default: LOGMAN_MSG_A_FMT("Unhandled VLoadVectorMasked size: {}", ElementSize); break;
+  default: break;
   }
 }
 
@@ -803,7 +796,7 @@ DEF_OP(VStoreVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = IROp->ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
   const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
@@ -813,17 +806,10 @@ DEF_OP(VStoreVectorMasked) {
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto MemDst = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
-
   // Check if the sign bit is set for the given element size.
   cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
-  switch (ElementSize) {
+  switch (IROp->ElementSize) {
   case 1: {
     st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
     break;
@@ -840,7 +826,7 @@ DEF_OP(VStoreVectorMasked) {
     st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
     break;
   }
-  default: LOGMAN_MSG_A_FMT("Unhandled VStoreVectorMasked size: {}", ElementSize); break;
+  default: break;
   }
 }
 
