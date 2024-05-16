@@ -357,7 +357,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   };
 
   // Get the mask of avaiable registers for a given register class
-  auto AvailableMask = [](auto Class, bool Pair) {
+  auto AvailableMask = [this](auto Class, bool Pair) {
     uint32_t Available = Class->Available;
 
     if (Pair) {
