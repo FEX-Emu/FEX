@@ -96,19 +96,6 @@ protected:
   std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters {};
   uint32_t PairRegisters = 0;
 
-  /**
-   * @name Register Allocation
-   * @{ */
-  constexpr static uint64_t GPRBase = (0ULL << 32);
-  constexpr static uint64_t FPRBase = (1ULL << 32);
-  constexpr static uint64_t GPRPairBase = (2ULL << 32);
-
-  /**  @} */
-
-  constexpr static uint8_t RA_32 = 0;
-  constexpr static uint8_t RA_64 = 1;
-  constexpr static uint8_t RA_FPR = 2;
-
   void LoadConstant(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 
 
