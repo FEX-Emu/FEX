@@ -373,11 +373,13 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
     GeneralRegisters = x64::RA;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
+    PairRegisters = x64::RAPairs;
 #ifdef _M_ARM_64EC
     ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
 #endif
   } else {
     ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
+    PairRegisters = x32::RAPairs;
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;

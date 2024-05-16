@@ -94,6 +94,7 @@ protected:
   std::span<const FEXCore::ARMEmitter::Register> GeneralRegisters {};
   std::span<const FEXCore::ARMEmitter::VRegister> StaticFPRegisters {};
   std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters {};
+  uint32_t PairRegisters = 0;
 
   /**
    * @name Register Allocation
