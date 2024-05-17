@@ -11,12 +11,10 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
-  LOGMAN_THROW_AA_FMT(Op->Header.Size == 4 || Op->Header.Size == 8, "Invalid size");
-  const auto EmitSize = Op->Header.Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Src = GetRegPair(Op->Pair.ID());
   const std::array<ARMEmitter::Register, 2> Regs = {Src.first, Src.second};
-  mov(EmitSize, GetReg(Node), Regs[Op->Element]);
+  mov(ConvertSize48(IROp), GetReg(Node), Regs[Op->Element]);
 }
 
 DEF_OP(CreateElementPair) {

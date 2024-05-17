@@ -69,8 +69,8 @@ DEF_OP(CASPair) {
 
 DEF_OP(CAS) {
   auto Op = IROp->C<IR::IROp_CAS>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
@@ -78,13 +78,6 @@ DEF_OP(CAS) {
   auto Expected = GetReg(Op->Expected.ID());
   auto Desired = GetReg(Op->Desired.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(EmitSize, TMP2, Expected);
@@ -96,9 +89,9 @@ DEF_OP(CAS) {
     ARMEmitter::SingleUseForwardLabel LoopExpected;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
-    if (OpSize == 1) {
+    if (IROp->Size == 1) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTB, 0);
-    } else if (OpSize == 2) {
+    } else if (IROp->Size == 2) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTH, 0);
     } else {
       cmp(EmitSize, TMP2, Expected);
@@ -120,18 +113,11 @@ DEF_OP(CAS) {
 
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     staddl(SubEmitSize, Src, MemSrc);
@@ -147,18 +133,11 @@ DEF_OP(AtomicAdd) {
 
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
@@ -175,18 +154,11 @@ DEF_OP(AtomicSub) {
 
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
@@ -203,18 +175,11 @@ DEF_OP(AtomicAnd) {
 
 DEF_OP(AtomicCLR) {
   auto Op = IROp->C<IR::IROp_AtomicCLR>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stclrl(SubEmitSize, Src, MemSrc);
@@ -230,18 +195,11 @@ DEF_OP(AtomicCLR) {
 
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stsetl(SubEmitSize, Src, MemSrc);
@@ -257,18 +215,11 @@ DEF_OP(AtomicOr) {
 
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     steorl(SubEmitSize, Src, MemSrc);
@@ -284,17 +235,10 @@ DEF_OP(AtomicXor) {
 
 DEF_OP(AtomicNeg) {
   auto Op = IROp->C<IR::IROp_AtomicNeg>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);
@@ -312,7 +256,7 @@ DEF_OP(AtomicSwap) {
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -333,18 +277,11 @@ DEF_OP(AtomicSwap) {
 
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldaddal(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -361,18 +298,11 @@ DEF_OP(AtomicFetchAdd) {
 
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
@@ -390,18 +320,11 @@ DEF_OP(AtomicFetchSub) {
 
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
@@ -419,18 +342,11 @@ DEF_OP(AtomicFetchAnd) {
 
 DEF_OP(AtomicFetchCLR) {
   auto Op = IROp->C<IR::IROp_AtomicFetchCLR>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldclral(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -447,18 +363,11 @@ DEF_OP(AtomicFetchCLR) {
 
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldsetal(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -475,18 +384,11 @@ DEF_OP(AtomicFetchOr) {
 
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldeoral(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -503,17 +405,10 @@ DEF_OP(AtomicFetchXor) {
 
 DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto EmitSize = ConvertSize(IROp);
+  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
   auto MemSrc = GetReg(Op->Addr.ID());
-
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);

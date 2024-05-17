@@ -173,11 +173,7 @@ void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, b
 DEF_OP(VFAddScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFAddScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fadd(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -195,11 +191,7 @@ DEF_OP(VFAddScalarInsert) {
 DEF_OP(VFSubScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFSubScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fsub(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -217,11 +209,7 @@ DEF_OP(VFSubScalarInsert) {
 DEF_OP(VFMulScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFMulScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fmul(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -239,11 +227,7 @@ DEF_OP(VFMulScalarInsert) {
 DEF_OP(VFDivScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFDivScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     fdiv(SubRegSize.Scalar, Dst, Src1, Src2);
@@ -261,11 +245,7 @@ DEF_OP(VFDivScalarInsert) {
 DEF_OP(VFMinScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFMinScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     if (HostSupportsAFP) {
@@ -289,11 +269,7 @@ DEF_OP(VFMinScalarInsert) {
 DEF_OP(VFMaxScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFMaxScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   // AFP can make this more optimal.
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
@@ -318,11 +294,7 @@ DEF_OP(VFMaxScalarInsert) {
 DEF_OP(VFSqrtScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFSqrtScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -341,11 +313,7 @@ DEF_OP(VFSqrtScalarInsert) {
 DEF_OP(VFRSqrtScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFRSqrtScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -378,11 +346,7 @@ DEF_OP(VFRSqrtScalarInsert) {
 DEF_OP(VFRecpScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFRecpScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   auto ScalarEmit = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -543,12 +507,7 @@ DEF_OP(VSToFGPRInsert) {
 DEF_OP(VFToIScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFToIScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
-
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto RoundMode = Op->Round;
 
   auto ScalarEmit = [this, SubRegSize, RoundMode](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
@@ -575,11 +534,7 @@ DEF_OP(VFToIScalarInsert) {
 DEF_OP(VFCMPScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFCMPScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   const auto ZeroUpperBits = Op->ZeroUpperBits;
   const auto Is256Bit = IROp->Size == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -741,13 +696,7 @@ DEF_OP(VectorImm) {
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto ElementSize = Op->Header.ElementSize;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
 
@@ -964,18 +913,11 @@ DEF_OP(VAdd) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     add(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -989,18 +931,11 @@ DEF_OP(VSub) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1014,18 +949,11 @@ DEF_OP(VUQAdd) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uqadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1039,18 +967,11 @@ DEF_OP(VUQSub) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uqsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1064,18 +985,11 @@ DEF_OP(VSQAdd) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1089,18 +1003,11 @@ DEF_OP(VSQSub) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1114,19 +1021,11 @@ DEF_OP(VAddP) {
   const auto OpSize = IROp->Size;
   const auto IsScalar = OpSize == 8;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1159,17 +1058,13 @@ DEF_OP(VFAddV) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
   LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE || OpSize == Core::CPUState::XMM_AVX_REG_SIZE, "Only AVX and SSE size "
                                                                                                                 "supported");
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                                          ARMEmitter::SubRegSize::i64Bit);
-
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
     faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
@@ -1193,17 +1088,11 @@ DEF_OP(VAddV) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     // SVE doesn't have an equivalent ADDV instruction, so we make do
@@ -1234,17 +1123,10 @@ DEF_OP(VUMinV) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B;
@@ -1260,17 +1142,10 @@ DEF_OP(VUMaxV) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B;
@@ -1285,19 +1160,12 @@ DEF_OP(VURAvg) {
   const auto Op = IROp->C<IR::IROp_VURAvg>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -1326,16 +1194,10 @@ DEF_OP(VAbs) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Src = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     abs(SubRegSize, Dst.Z(), PRED_TMP_32B.Merging(), Src.Z());
@@ -1355,16 +1217,11 @@ DEF_OP(VFAbs) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Src = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fabs(SubRegSize, Dst.Z(), PRED_TMP_32B.Merging(), Src.Z());
@@ -1398,18 +1255,10 @@ DEF_OP(VPopcount) {
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = OpSize == 8;
-
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Src = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1428,18 +1277,13 @@ DEF_OP(VFAdd) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fadd(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1471,17 +1315,11 @@ DEF_OP(VFAddP) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1509,18 +1347,13 @@ DEF_OP(VFSub) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fsub(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1552,18 +1385,13 @@ DEF_OP(VFMul) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     fmul(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -1595,18 +1423,13 @@ DEF_OP(VFDiv) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -1655,18 +1478,13 @@ DEF_OP(VFMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   // NOTE: We don't directly use FMIN here for any of the implementations,
   //       because it has undesirable NaN handling behavior (it sets
@@ -1750,18 +1568,13 @@ DEF_OP(VFMax) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   // NOTE: See VFMin implementation for reasons why we
   //       don't just use FMAX/FMIN for these implementations.
@@ -1831,17 +1644,12 @@ DEF_OP(VFRecp) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = Op->Header.ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1901,17 +1709,12 @@ DEF_OP(VFSqrt) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1945,17 +1748,12 @@ DEF_OP(VFRSqrt) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2017,18 +1815,11 @@ DEF_OP(VNeg) {
   const auto Op = IROp->C<IR::IROp_VNeg>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2042,17 +1833,11 @@ DEF_OP(VFNeg) {
   const auto Op = IROp->C<IR::IROp_VFNeg>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2083,18 +1868,12 @@ DEF_OP(VUMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2137,18 +1916,12 @@ DEF_OP(VSMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2191,18 +1964,12 @@ DEF_OP(VUMax) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2245,18 +2012,12 @@ DEF_OP(VSMax) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2298,19 +2059,12 @@ DEF_OP(VZip) {
   const auto Op = IROp->C<IR::IROp_VZip>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     zip1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2327,19 +2081,12 @@ DEF_OP(VZip2) {
   const auto Op = IROp->C<IR::IROp_VZip2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     zip2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2356,19 +2103,12 @@ DEF_OP(VUnZip) {
   const auto Op = IROp->C<IR::IROp_VUnZip>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uzp1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2385,19 +2125,12 @@ DEF_OP(VUnZip2) {
   const auto Op = IROp->C<IR::IROp_VUnZip2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     uzp2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2414,19 +2147,12 @@ DEF_OP(VTrn) {
   const auto Op = IROp->C<IR::IROp_VTrn>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     trn1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2443,19 +2169,12 @@ DEF_OP(VTrn2) {
   const auto Op = IROp->C<IR::IROp_VTrn2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     trn2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
@@ -2532,19 +2251,13 @@ DEF_OP(VCMPEQ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
@@ -2577,18 +2290,12 @@ DEF_OP(VCMPEQZ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2624,19 +2331,13 @@ DEF_OP(VCMPGT) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2669,18 +2370,12 @@ DEF_OP(VCMPGTZ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2713,18 +2408,12 @@ DEF_OP(VCMPLTZ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                                       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i128Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2757,18 +2446,13 @@ DEF_OP(VFCMPEQ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2800,18 +2484,13 @@ DEF_OP(VFCMPNEQ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2845,18 +2524,13 @@ DEF_OP(VFCMPLT) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2888,18 +2562,13 @@ DEF_OP(VFCMPGT) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2931,18 +2600,13 @@ DEF_OP(VFCMPLE) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2974,19 +2638,13 @@ DEF_OP(VFCMPORD) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3030,19 +2688,13 @@ DEF_OP(VFCMPUNO) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                                                       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                                       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                                                          ARMEmitter::SubRegSize::i8Bit);
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3085,6 +2737,7 @@ DEF_OP(VUShl) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = IROp->ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto MaxShift = ElementSize * 8;
 
@@ -3092,13 +2745,6 @@ DEF_OP(VUShl) {
   auto ShiftVector = GetVReg(Op->ShiftVector.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
   const auto RangeCheck = Op->RangeCheck;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3145,6 +2791,7 @@ DEF_OP(VUShr) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = IROp->ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto MaxShift = ElementSize * 8;
 
@@ -3152,13 +2799,6 @@ DEF_OP(VUShr) {
   auto ShiftVector = GetVReg(Op->ShiftVector.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
   const auto RangeCheck = Op->RangeCheck;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3208,6 +2848,7 @@ DEF_OP(VSShr) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = IROp->ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto MaxShift = (ElementSize * 8) - 1;
   const auto RangeCheck = Op->RangeCheck;
@@ -3215,13 +2856,6 @@ DEF_OP(VSShr) {
   const auto Dst = GetVReg(Node);
   auto ShiftVector = GetVReg(Op->ShiftVector.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3270,19 +2904,12 @@ DEF_OP(VUShlS) {
   const auto Op = IROp->C<IR::IROp_VUShlS>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3305,19 +2932,12 @@ DEF_OP(VUShrS) {
   const auto Op = IROp->C<IR::IROp_VUShrS>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3342,17 +2962,12 @@ DEF_OP(VUShrSWide) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3412,17 +3027,12 @@ DEF_OP(VSShrSWide) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3482,17 +3092,12 @@ DEF_OP(VUShlSWide) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3550,19 +3155,12 @@ DEF_OP(VSShrS) {
   const auto Op = IROp->C<IR::IROp_VSShrS>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3588,6 +3186,7 @@ DEF_OP(VInsElement) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const uint32_t ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
 
   const uint32_t DestIdx = Op->DestIdx;
   const uint32_t SrcIdx = Op->SrcIdx;
@@ -3597,13 +3196,6 @@ DEF_OP(VInsElement) {
   auto Reg = GetVReg(Op->DestVector.ID());
 
   if (HostSupportsSVE256 && Is256Bit) {
-    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-    const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                            ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                            ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                            ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                               ARMEmitter::SubRegSize::i128Bit;
-
     // Broadcast our source value across a temporary,
     // then combine with the destination.
     dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
@@ -3639,13 +3231,6 @@ DEF_OP(VInsElement) {
       msr(ARMEmitter::SystemRegister::NZCV, TMP1);
     }
   } else {
-    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-    const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                            ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                            ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                            ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                               ARMEmitter::SubRegSize::i8Bit;
-
     // If nothing aliases the destination, then we can just
     // move the DestVector over and directly insert.
     if (Dst != Reg && Dst != SrcVector) {
@@ -3679,19 +3264,12 @@ DEF_OP(VDupElement) {
   const auto OpSize = IROp->Size;
 
   const auto Index = Op->Index;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i128Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     dup(SubRegSize, Dst.Z(), Vector.Z(), Index);
@@ -3757,17 +3335,11 @@ DEF_OP(VUShrI) {
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (BitShift >= (ElementSize * 8)) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
@@ -3804,19 +3376,12 @@ DEF_OP(VUShraI) {
   const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto DestVector = GetVReg(Op->DestVector.ID());
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     if (Dst == DestVector) {
@@ -3852,18 +3417,12 @@ DEF_OP(VSShrI) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Shift = std::min(uint8_t(ElementSize * 8 - 1), Op->BitShift);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3897,18 +3456,11 @@ DEF_OP(VShlI) {
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
-
 
   if (BitShift >= (ElementSize * 8)) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
@@ -3945,17 +3497,11 @@ DEF_OP(VUShrNI) {
   const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     shrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
@@ -3970,18 +3516,12 @@ DEF_OP(VUShrNI2) {
   const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_16B;
@@ -4012,17 +3552,11 @@ DEF_OP(VSXTL) {
   const auto Op = IROp->C<IR::IROp_VSXTL>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     sunpklo(SubRegSize, Dst.Z(), Vector.Z());
@@ -4035,17 +3569,11 @@ DEF_OP(VSXTL2) {
   const auto Op = IROp->C<IR::IROp_VSXTL2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     sunpkhi(SubRegSize, Dst.Z(), Vector.Z());
@@ -4058,17 +3586,11 @@ DEF_OP(VUXTL) {
   const auto Op = IROp->C<IR::IROp_VUXTL>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     uunpklo(SubRegSize, Dst.Z(), Vector.Z());
@@ -4081,17 +3603,11 @@ DEF_OP(VUXTL2) {
   const auto Op = IROp->C<IR::IROp_VUXTL2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
     uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
@@ -4104,17 +3620,11 @@ DEF_OP(VSQXTN) {
   const auto Op = IROp->C<IR::IROp_VSQXTN>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // Note that SVE SQXTNB and SQXTNT are a tad different
@@ -4161,18 +3671,12 @@ DEF_OP(VSQXTN2) {
   const auto Op = IROp->C<IR::IROp_VSQXTN2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // We use the 16 byte mask due to how SPLICE works. We only
@@ -4210,18 +3714,12 @@ DEF_OP(VSQXTNPair) {
   const auto Op = IROp->C<IR::IROp_VSQXTNPair>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // This combines the SVE versions of VSQXTN/VSQXTN2.
@@ -4259,17 +3757,11 @@ DEF_OP(VSQXTUN) {
   const auto Op = IROp->C<IR::IROp_VSQXTUN>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     sqxtunb(SubRegSize, Dst.Z(), Vector.Z());
@@ -4283,18 +3775,12 @@ DEF_OP(VSQXTUN2) {
   const auto Op = IROp->C<IR::IROp_VSQXTUN2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // NOTE: See VSQXTN2 implementation for an in-depth explanation
@@ -4334,18 +3820,12 @@ DEF_OP(VSQXTUNPair) {
   const auto Op = IROp->C<IR::IROp_VSQXTUNPair>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorLower = GetVReg(Op->VectorLower.ID());
   auto VectorUpper = GetVReg(Op->VectorUpper.ID());
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Incorrect size");
-
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // This combines the SVE versions of VSQXTUN/VSQXTUN2.
@@ -4384,18 +3864,11 @@ DEF_OP(VSRSHR) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
   const auto BitShift = Op->BitShift;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4419,18 +3892,11 @@ DEF_OP(VSQSHL) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
   const auto BitShift = Op->BitShift;
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4454,18 +3920,11 @@ DEF_OP(VMul) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize16(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     mul(SubRegSize, Dst.Z(), Vector1.Z(), Vector2.Z());
@@ -4478,18 +3937,12 @@ DEF_OP(VUMull) {
   const auto Op = IROp->C<IR::IROp_VUMull>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     umullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4504,18 +3957,12 @@ DEF_OP(VSMull) {
   const auto Op = IROp->C<IR::IROp_VSMull>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     smullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4530,18 +3977,12 @@ DEF_OP(VUMull2) {
   const auto Op = IROp->C<IR::IROp_VUMull2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     umullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4556,18 +3997,12 @@ DEF_OP(VSMull2) {
   const auto Op = IROp->C<IR::IROp_VSMull2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     smullb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
@@ -4583,18 +4018,13 @@ DEF_OP(VUMulH) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
 
   const auto SubRegSizeLarger = ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
                                 ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
@@ -4637,18 +4067,13 @@ DEF_OP(VSMulH) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
 
   const auto SubRegSizeLarger = ElementSize == 1 ? ARMEmitter::SubRegSize::i16Bit :
                                 ElementSize == 2 ? ARMEmitter::SubRegSize::i32Bit :
@@ -4690,18 +4115,12 @@ DEF_OP(VUABDL) {
   const auto Op = IROp->C<IR::IROp_VUABDL>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // To mimic the behavior of AdvSIMD UABDL, we need to get the
@@ -4721,18 +4140,12 @@ DEF_OP(VUABDL2) {
   const auto Op = IROp->C<IR::IROp_VUABDL2>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                          ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     // To mimic the behavior of AdvSIMD UABDL, we need to get the
@@ -4913,16 +4326,11 @@ DEF_OP(VRev64) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4, "Invalid size");
-  const auto SubRegSize = ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                          ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4955,18 +4363,14 @@ DEF_OP(VFCADD) {
   const auto Op = IROp->C<IR::IROp_VFCADD>();
   const auto OpSize = IROp->Size;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   LOGMAN_THROW_A_FMT(Op->Rotate == 90 || Op->Rotate == 270, "Invalidate Rotate");
-  const auto SubRegSize = ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                          ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                                             ARMEmitter::SubRegSize::i64Bit;
   const auto Rotate = Op->Rotate == 90 ? ARMEmitter::Rotation::ROTATE_90 : ARMEmitter::Rotation::ROTATE_270;
 
   if (HostSupportsSVE256 && Is256Bit) {

@@ -155,6 +155,72 @@ private:
   }
 
   [[nodiscard]]
+  ARMEmitter::Size ConvertSize(const IR::IROp_Header* Op) {
+    return Op->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  }
+
+  [[nodiscard]]
+  ARMEmitter::Size ConvertSize48(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->Size == 4 || Op->Size == 8, "Invalid size");
+    return ConvertSize(Op);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize16(uint8_t ElementSize) {
+    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
+    return ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+           ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+                              ARMEmitter::SubRegSize::i128Bit;
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
+    return ConvertSubRegSize16(Op->ElementSize);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize8(uint8_t ElementSize) {
+    LOGMAN_THROW_AA_FMT(ElementSize != 16, "Invalid size");
+    return ConvertSubRegSize16(ElementSize);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize8(const IR::IROp_Header* Op) {
+    return ConvertSubRegSize8(Op->ElementSize);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize4(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != 8, "Invalid size");
+    return ConvertSubRegSize8(Op);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::SubRegSize ConvertSubRegSize248(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != 1, "Invalid size");
+    return ConvertSubRegSize8(Op);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair16(const IR::IROp_Header* Op) {
+    return ARMEmitter::ToVectorSizePair(ConvertSubRegSize16(Op));
+  }
+
+  [[nodiscard]]
+  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair8(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != 16, "Invalid size");
+    return ConvertSubRegSizePair16(Op);
+  }
+
+  [[nodiscard]]
+  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair248(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != 1, "Invalid size");
+    return ConvertSubRegSizePair8(Op);
+  }
+
+  [[nodiscard]]
   bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]]
   bool IsGPR(IR::NodeID Node) const;
