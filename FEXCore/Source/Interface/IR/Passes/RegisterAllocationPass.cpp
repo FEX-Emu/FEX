@@ -74,8 +74,8 @@ private:
   IR::RegisterAllocationData::UniquePtr AllocData;
   RegisterClass Classes[INVALID_CLASS];
 
-  IREmitter *IREmit;
-  IRListView *IR;
+  IREmitter* IREmit;
+  IRListView* IR;
 
   // Map of Old nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
@@ -110,14 +110,14 @@ private:
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
-  OrderedNode *Map(OrderedNode* Old) {
+  OrderedNode* Map(OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Pre-condition");
 
     return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
   };
 
   // Return the Old node for a possibly-remapped node.
-  OrderedNode *Unmap(OrderedNode* Node) {
+  OrderedNode* Unmap(OrderedNode* Node) {
     return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
   };
 
@@ -141,7 +141,7 @@ private:
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
-  OrderedNode *InsertFill(OrderedNode* Old) {
+  OrderedNode* InsertFill(OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
     auto SlotPlusOne = SpillSlots.at(IR->GetID(Old).Value);
