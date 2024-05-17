@@ -19,6 +19,11 @@ $end_info$
 
 using namespace FEXCore;
 
+#define foreach_arg(IROp, index, arg) \
+  for (auto [index, Arg] = std::tuple(0, IROp->Args[0]); index < IR::GetRAArgs(IROp->Op); Arg = IROp->Args[++index])
+
+#define foreach_valid_arg(IROp, index, arg) foreach_arg(IROp, index, arg) if (IsValidArg(Arg))
+
 namespace FEXCore::IR {
 namespace {
   constexpr uint32_t INVALID_REG = IR::InvalidReg;
@@ -65,41 +70,15 @@ public:
   RegisterAllocationData* GetAllocationData() override;
   RegisterAllocationData::UniquePtr PullAllocationData() override;
 
+private:
   IR::RegisterAllocationData::UniquePtr AllocData;
   RegisterClass Classes[INVALID_CLASS];
 
   IREmitter *IREmit;
   IRListView *IR;
-};
-
-void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
-  LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
-
-  Classes[Class].Count = RegisterCount;
-}
-
-RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
-  return AllocData.get();
-}
-
-RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
-  return std::move(AllocData);
-}
-
-#define foreach_arg(IROp, index, arg) \
-  for (auto [index, Arg] = std::tuple(0, IROp->Args[0]); index < IR::GetRAArgs(IROp->Op); Arg = IROp->Args[++index])
-
-#define foreach_valid_arg(IROp, index, arg) foreach_arg(IROp, index, arg) if (IsValidArg(Arg))
-
-bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
-  FEXCORE_PROFILE_SCOPED("PassManager::RA");
-
-  IREmit_ = IREmit;
-  auto IR_ = IREmit->ViewIR();
-  IR = &IR_;
 
   // Map of Old nodes to their preferred register, to coalesce load/store reg.
-  fextl::vector<PhysicalRegister> PreferredReg(IR->GetSSACount(), PhysicalRegister::Invalid());
+  fextl::vector<PhysicalRegister> PreferredReg;
 
   // FEX's original RA could only assign a single register to a given def for
   // its entire live range, and this limitation is baked deep into the IR.
@@ -118,37 +97,36 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
   //
   // Since its indexed by Old nodes, SSAToNewSSA does not grow.
-  fextl::vector<OrderedNode*> SSAToNewSSA(IR->GetSSACount(), nullptr);
+  fextl::vector<OrderedNode*> SSAToNewSSA;
 
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
-  fextl::vector<OrderedNode*> NewSSAToSSA(IR->GetSSACount(), nullptr);
+  fextl::vector<OrderedNode*> NewSSAToSSA;
 
   // Map of assigned registers. Grows.
-  PhysicalRegister InvalidPhysReg = PhysicalRegister(InvalidClass, InvalidReg);
-  fextl::vector<PhysicalRegister> SSAToReg(IR->GetSSACount(), InvalidPhysReg);
+  fextl::vector<PhysicalRegister> SSAToReg;
 
-  auto IsOld = [this, &SSAToNewSSA](OrderedNode* Node) {
+  bool IsOld(OrderedNode* Node) {
     return IR->GetID(Node).Value < SSAToNewSSA.size();
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
-  auto Map = [&IR, &SSAToNewSSA, &IsOld](OrderedNode* Old) {
+  OrderedNode *Map(OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Pre-condition");
 
-    return SSAToNewSSA[IR.GetID(Old).Value] ?: Old;
+    return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
   };
 
   // Return the Old node for a possibly-remapped node.
-  auto Unmap = [&IR, &NewSSAToSSA](OrderedNode* Node) {
-    return NewSSAToSSA[IR.GetID(Node).Value] ?: Node;
+  OrderedNode *Unmap(OrderedNode* Node) {
+    return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
   };
 
   // Record a remapping of Old to New.
-  auto Remap = [&IR, &SSAToNewSSA, &NewSSAToSSA, &Map, &Unmap, &IsOld](OrderedNode* Old, OrderedNode* New) {
+  void Remap(OrderedNode* Old, OrderedNode* New) {
     LOGMAN_THROW_AA_FMT(IsOld(Old) && !IsOld(New), "Pre-condition");
 
-    auto OldID = IR.GetID(Old).Value;
-    auto NewID = IR.GetID(New).Value;
+    auto OldID = IR->GetID(Old).Value;
+    auto NewID = IR->GetID(New).Value;
 
     LOGMAN_THROW_AA_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
     NewSSAToSSA.resize(NewID + 1, 0);
@@ -161,18 +139,18 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   };
 
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
-  fextl::vector<unsigned> SpillSlots(IR.GetSSACount(), 0);
+  fextl::vector<unsigned> SpillSlots;
 
-  auto InsertFill = [&IR, &IREmit_, &SpillSlots, &IsOld](OrderedNode* Old) {
+  OrderedNode *InsertFill(OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
     auto SlotPlusOne = SpillSlots.at(IR.GetID(Old).Value);
     LOGMAN_THROW_AA_FMT(SlotPlusOne >= 1, "Old must have been spilled");
 
-    auto Header = IR.GetOp<IROp_Header>(Old);
-    auto RegClass = GetRegClassFromNode(&IR, Header);
+    auto Header = IR->GetOp<IROp_Header>(Old);
+    auto RegClass = GetRegClassFromNode(IR, Header);
 
-    auto Fill = IREmit_->_FillRegister(Old, SlotPlusOne - 1, RegClass);
+    auto Fill = IREmit->_FillRegister(Old, SlotPlusOne - 1, RegClass);
     Fill.first->Header.Size = Header->Size;
     Fill.first->Header.ElementSize = Header->ElementSize;
     return Fill;
@@ -180,16 +158,16 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
   // IP of next-use of each Old source. IPs are measured from the end of the
   // block, so we don't need to size the block up-front.
-  fextl::vector<uint32_t> NextUses(IR.GetSSACount(), 0);
+  fextl::vector<uint32_t> NextUses;
 
-  unsigned SpillSlotCount = 0;
+  unsigned SpillSlotCount;
 
-  auto IsValidArg = [&IR](auto Arg) {
+  bool IsValidArg(auto Arg) {
     if (Arg.IsInvalid()) {
       return false;
     }
 
-    switch (IR.GetOp<IROp_Header>(Arg)->Op) {
+    switch (IR->GetOp<IROp_Header>(Arg)->Op) {
     case OP_INLINECONSTANT:
     case OP_INLINEENTRYPOINTOFFSET:
     case OP_IRHEADER: return false;
@@ -200,22 +178,22 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
   };
 
-  auto DecodeReg = [this](PhysicalRegister Reg) -> std::pair<struct RegisterClass*, uint32_t> {
+  std::pair<struct RegisterClass*, uint32_t> DecodeReg(PhysicalRegister Reg) {
     auto Pair = (Reg.Class == GPRPairClass);
 
     return std::make_pair(&Classes[Pair ? GPRClass : Reg.Class], (Pair ? 0b11 : 0b1) << Reg.Reg);
   };
 
-  auto IsInRegisterFile = [&DecodeReg, &IR, &Map, &IsOld, &SSAToReg](auto Old) {
+  bool IsInRegisterFile(auto Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
-    auto Reg = SSAToReg[IR.GetID(Map(Old)).Value];
+    auto Reg = SSAToReg[IR->GetID(Map(Old)).Value];
     auto [Class, RegBit] = DecodeReg(Reg);
 
     return (Class->Allocated & RegBit) && Class->RegToSSA[Reg.Reg] == Old;
   };
 
-  auto FreeReg = [&DecodeReg](auto Reg) {
+  void FreeReg(auto Reg) {
     auto [Class, RegBits] = DecodeReg(Reg);
 
     LOGMAN_THROW_AA_FMT(!(Class->Available & RegBits), "Register double-free");
@@ -225,11 +203,11 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     Class->Allocated &= ~RegBits;
   };
 
-  auto HasSource = [&IR, &IsOld](auto Header, auto Old) {
+  bool HasSource(auto Header, auto Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Invariant2");
 
     foreach_arg(Header, _, Arg) {
-      auto Node = IR.GetNode(Arg);
+      auto Node = IR->GetNode(Arg);
       LOGMAN_THROW_AA_FMT(IsOld(Node), "not yet mapped");
 
       if (Node == Old) {
@@ -240,7 +218,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     return false;
   };
 
-  auto GetFixedReg = [this](RegisterClassType Class, uint8_t Reg) -> PhysicalRegister {
+  PhysicalRegister GetFixedReg(RegisterClassType Class, uint8_t Reg) {
     LOGMAN_THROW_AA_FMT(Class == GPRClass || Class == FPRClass, "SRA classes");
     uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
 
@@ -255,22 +233,21 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
   };
 
-  auto DecodeSRA = [&IR, &GetFixedReg](OrderedNode* Node) -> std::pair<OrderedNode*, PhysicalRegister> {
-    auto Header = IR.GetOp<IROp_Header>(Node);
+  std::pair<OrderedNode*, PhysicalRegister> DecodeSRA(OrderedNode* Node) {
+    auto Header = IR->GetOp<IROp_Header>(Node);
 
     if (Header->Op == OP_LOADREGISTER) {
       auto Op = Header->C<IR::IROp_LoadRegister>();
       return std::make_pair(Node, GetFixedReg(Op->Class, Op->Reg));
     } else if (Header->Op == OP_STOREREGISTER) {
       auto Op = Header->C<IR::IROp_StoreRegister>();
-      return std::make_pair(IR.GetNode(Op->Value), GetFixedReg(Op->Class, Op->Reg));
+      return std::make_pair(IR->GetNode(Op->Value), GetFixedReg(Op->Class, Op->Reg));
     }
 
     return std::make_pair(nullptr, PhysicalRegister::Invalid());
   };
 
-  auto SpillReg = [this, &IR, &IREmit_, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses,
-                   &HasSource](auto Class, IROp_Header* Exclude, bool Pair) {
+  void SpillReg(auto Class, IROp_Header* Exclude, bool Pair) {
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
     // next-use has the /smallest/ unsigned IP.
@@ -291,11 +268,11 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         OrderedNode* Old = Class->RegToSSA[i];
 
         LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
-        LOGMAN_THROW_AA_FMT(SSAToReg.at(IR.GetID(Map(Old)).Value).Reg == i, "Invariant4");
+        LOGMAN_THROW_AA_FMT(SSAToReg.at(IR->GetID(Map(Old)).Value).Reg == i, "Invariant4");
 
         // Skip any source used by the current instruction, it is unspillable.
         if (!HasSource(Exclude, Old)) {
-          uint32_t NextUse = NextUses.at(IR.GetID(Old).Value);
+          uint32_t NextUse = NextUses.at(IR->GetID(Old).Value);
           if (NextUse < BestDistance) {
             BestDistance = NextUse;
             BestReg = i;
@@ -308,22 +285,22 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     LOGMAN_THROW_AA_FMT(Candidate != nullptr, "must've found something..");
     LOGMAN_THROW_AA_FMT(IsOld(Candidate), "Invariant5");
 
-    auto Reg = SSAToReg.at(IR.GetID(Map(Candidate)).Value);
+    auto Reg = SSAToReg.at(IR->GetID(Map(Candidate)).Value);
     LOGMAN_THROW_AA_FMT(Reg.Reg == BestReg, "Invariant6");
 
-    auto Header = IR.GetOp<IROp_Header>(Candidate);
-    auto Value = IR.GetID(Candidate).Value;
+    auto Header = IR->GetOp<IROp_Header>(Candidate);
+    auto Value = IR->GetID(Candidate).Value;
     auto Spilled = SpillSlots.at(Value) != 0;
 
     // If we already spilled the Candidate, we don't need to spill again.
     if (!Spilled) {
-      LOGMAN_THROW_AA_FMT(Reg.Class == GetRegClassFromNode(&IR, Header), "Consistent");
+      LOGMAN_THROW_AA_FMT(Reg.Class == GetRegClassFromNode(IR, Header), "Consistent");
 
       // TODO: we should colour spill slots
       auto Slot = SpillSlotCount++;
 
       // We must map here in case we're spilling something we shuffled.
-      auto SpillOp = IREmit_->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
+      auto SpillOp = IREmit->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
       SpillOp.first->Header.Size = Header->Size;
       SpillOp.first->Header.ElementSize = Header->ElementSize;
       SpillSlots.at(Value) = Slot + 1;
@@ -334,8 +311,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   };
 
   // Record a given assignment of register Reg to Node.
-  auto SetReg = [&IR, &Unmap, &SSAToReg, &DecodeReg, InvalidPhysReg](OrderedNode* Node, PhysicalRegister Reg) {
-    uint32_t Index = IR.GetID(Node).Value;
+  void SetReg(OrderedNode* Node, PhysicalRegister Reg) {
+    uint32_t Index = IR->GetID(Node).Value;
     auto [Class, RegBits] = DecodeReg(Reg);
 
     LOGMAN_THROW_AA_FMT((Class->Available & RegBits) == RegBits, "Precondition");
@@ -346,14 +323,14 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     Class->RegToSSA[Reg.Reg] = Unmap(Node);
 
     if (Index >= SSAToReg.size()) {
-      SSAToReg.resize(Index + 1, InvalidPhysReg);
+      SSAToReg.resize(Index + 1, PhysicalRegister::Invalid());
     }
 
     SSAToReg.at(Index) = Reg;
   };
 
   // Get the mask of avaiable registers for a given register class
-  auto AvailableMask = [this](auto Class, bool Pair) {
+  uint32_t AvailableMask(auto Class, bool Pair) {
     uint32_t Available = Class->Available;
 
     if (Pair) {
@@ -368,9 +345,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   };
 
   // Assign a register for a given Node, spilling if necessary.
-  auto AssignReg = [this, &IR, IREmit_, &SpillReg, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask, &PreferredReg, &SSAToReg, &DecodeReg,
-                    &IsOld](OrderedNode* CodeNode, IROp_Header* Pivot) {
-    const auto Node = IR.GetID(CodeNode);
+  void AssignReg(OrderedNode* CodeNode, IROp_Header* Pivot) {
+    const auto Node = IR->GetID(CodeNode);
     LOGMAN_THROW_AA_FMT(Node.IsValid(), "Node must be valid");
 
     // Prioritize preferred registers.
@@ -384,8 +360,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
     }
 
-    const auto IROp = IR.GetOp<IROp_Header>(CodeNode);
-    auto OrigClassType = GetRegClassFromNode(&IR, IROp);
+    const auto IROp = IR->GetOp<IROp_Header>(CodeNode);
+    auto OrigClassType = GetRegClassFromNode(IR, IROp);
     bool Pair = OrigClassType == GPRPairClass;
     auto ClassType = Pair ? GPRClass : OrigClassType;
     auto Class = &Classes[ClassType];
@@ -427,7 +403,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       IREmit->SetWriteCursorBefore(CodeNode);
       auto Old = Class->RegToSSA[Blocked];
-      LOGMAN_THROW_AA_FMT(GetRegClassFromNode(&IR, IR.GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
+      LOGMAN_THROW_AA_FMT(GetRegClassFromNode(IR, IR->GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
       FreeReg(PhysicalRegister(GPRClass, Blocked));
 
       bool Clobbered = false;
@@ -435,8 +411,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
       // If that scalar is free because it is killed by this instruction, it
       // needs to be shuffled too, since the copy would clobber it.
       foreach_arg(Pivot, _, Arg) {
-        const auto Clobber = IR.GetNode(Arg);
-        const auto ClobberReg = SSAToReg[IR.GetID(Clobber).Value];
+        const auto Clobber = IR->GetNode(Arg);
+        const auto ClobberReg = SSAToReg[IR->GetID(Clobber).Value];
         if (ClobberReg.Class == GPRClass && ClobberReg.Reg == NewReg) {
           // Swap the registers instead of copying.
           LOGMAN_THROW_AA_FMT(IsOld(Clobber), "Not yet mapped");
@@ -473,9 +449,39 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     SetReg(CodeNode, PhysicalRegister(OrigClassType, Reg));
   };
 
-  auto IsRAOp = [](auto Op) -> bool {
+  bool IsRAOp(auto Op) {
     return Op == OP_SPILLREGISTER || Op == OP_FILLREGISTER || Op == OP_COPY;
   };
+};
+
+void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
+  LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+
+  Classes[Class].Count = RegisterCount;
+}
+
+RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
+  return AllocData.get();
+}
+
+RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
+  return std::move(AllocData);
+}
+
+bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
+  FEXCORE_PROFILE_SCOPED("PassManager::RA");
+
+  IREmit_ = IREmit;
+  auto IR_ = IREmit->ViewIR();
+  IR = &IR_;
+
+  PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
+  SSAToNewSSA.resize(IR->GetSSACount(), nullptr);
+  NewSSAToSSA.resize(IR->GetSSACount(), nullptr);
+  SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
+  SpillSlots.resize(IR->GetSSACount(), 0);
+  NextUses.resize(IR.GetSSACount(), 0);
+  SpillSlotCount = 0;
 
   for (auto [BlockNode, BlockHeader] : IR.GetBlocks()) {
     // At the start of each block, all registers are available.
