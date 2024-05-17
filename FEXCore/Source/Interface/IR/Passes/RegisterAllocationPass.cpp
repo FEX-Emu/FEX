@@ -480,10 +480,10 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   NewSSAToSSA.resize(IR->GetSSACount(), nullptr);
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   SpillSlots.resize(IR->GetSSACount(), 0);
-  NextUses.resize(IR.GetSSACount(), 0);
+  NextUses.resize(IR->GetSSACount(), 0);
   SpillSlotCount = 0;
 
-  for (auto [BlockNode, BlockHeader] : IR.GetBlocks()) {
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     // At the start of each block, all registers are available.
     for (auto& Class : Classes) {
       Class.Available = (1u << Class.Count) - 1;
@@ -504,8 +504,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
       auto BlockIROp = BlockHeader->CW<IR::IROp_CodeBlock>();
 
       // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR.at(BlockIROp->Begin);
-      auto CodeLast = IR.at(BlockIROp->Last);
+      auto CodeBegin = IR->at(BlockIROp->Begin);
+      auto CodeLast = IR->at(BlockIROp->Last);
 
       while (1) {
         auto [CodeNode, IROp] = CodeLast();
@@ -531,7 +531,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (auto [Node, Reg] = DecodeSRA(CodeNode); Node != nullptr) {
           auto [Class, _] = DecodeReg(Reg);
 
-          PreferredReg[IR.GetID(Node).Value] = Reg;
+          PreferredReg[IR->GetID(Node).Value] = Reg;
           Class->RegToSSA[Reg.Reg] = CodeNode;
         }
 
@@ -544,12 +544,12 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // store in question iff there is no intervening load/store.
         //
         // Reset PreferredReg if that is not the case, ensuring SRA correctness.
-        if (auto Reg = PreferredReg[IR.GetID(CodeNode).Value]; !Reg.IsInvalid()) {
+        if (auto Reg = PreferredReg[IR->GetID(CodeNode).Value]; !Reg.IsInvalid()) {
           auto [Class, _] = DecodeReg(Reg);
           auto [SRA, __] = DecodeSRA(Class->RegToSSA[Reg.Reg]);
 
           if (CodeNode != SRA) {
-            PreferredReg[IR.GetID(CodeNode).Value] = PhysicalRegister::Invalid();
+            PreferredReg[IR->GetID(CodeNode).Value] = PhysicalRegister::Invalid();
           }
         }
 
@@ -571,7 +571,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
     unsigned SourceIndex = SourcesNextUses.size();
 
     // Forward pass: Assign registers, spilling as we go.
-    for (auto [CodeNode, IROp] : IR.GetCode(BlockNode)) {
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       LOGMAN_THROW_AA_FMT(!IsRAOp(IROp->Op), "RA ops inserted before, so not seen iterating forward");
 
       // Static registers must be consistent at SRA load/store. Evict to ensure.
@@ -589,7 +589,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
             OrderedNode* Copy;
 
             if (Reg.Class == FPRFixedClass) {
-              auto Header = IR.GetOp<IROp_Header>(Old);
+              auto Header = IR->GetOp<IROp_Header>(Old);
               Copy = IREmit->_VMov(Header->Size, Map(Old));
             } else {
               Copy = IREmit->_Copy(Map(Old));
@@ -607,11 +607,11 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
       // This happens before freeing killed sources, since we need all sources in
       // the register file simultaneously.
       foreach_valid_arg(IROp, _, Arg) {
-        auto Old = IR.GetNode(Arg);
+        auto Old = IR->GetNode(Arg);
         LOGMAN_THROW_AA_FMT(IsOld(Old), "before remapping");
 
         if (!IsInRegisterFile(Old)) {
-          LOGMAN_THROW_AA_FMT(SpillSlots.at(IR.GetID(Old).Value), "Must have been spilled");
+          LOGMAN_THROW_AA_FMT(SpillSlots.at(IR->GetID(Old).Value), "Must have been spilled");
           IREmit->SetWriteCursorBefore(CodeNode);
           auto Fill = InsertFill(Old);
 
@@ -624,14 +624,14 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         SourceIndex--;
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
-        auto Old = IR.GetNode(Arg);
+        auto Old = IR->GetNode(Arg);
         LOGMAN_THROW_AA_FMT(IsInRegisterFile(Old), "sources in file");
 
         if (!SourcesNextUses[SourceIndex]) {
-          FreeReg(SSAToReg.at(IR.GetID(Map(Old)).Value));
+          FreeReg(SSAToReg.at(IR->GetID(Map(Old)).Value));
         }
 
-        NextUses.at(IR.GetID(Old).Value) = SourcesNextUses[SourceIndex];
+        NextUses.at(IR->GetID(Old).Value) = SourcesNextUses[SourceIndex];
       }
 
       // Assign destinations.
@@ -641,7 +641,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       // Remap sources last, since AssignReg can shuffle.
       foreach_valid_arg(IROp, i, Arg) {
-        auto Remapped = SSAToNewSSA.at(IR.GetID(IR.GetNode(Arg)).Value);
+        auto Remapped = SSAToNewSSA.at(IR->GetID(IR->GetNode(Arg)).Value);
 
         if (Remapped != nullptr) {
           IREmit->ReplaceNodeArgument(CodeNode, i, Remapped);
@@ -662,6 +662,13 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   AllocData = RegisterAllocationData::Create(SSAToReg.size());
   AllocData->SpillSlotCount = SpillSlotCount;
   memcpy(AllocData->Map, SSAToReg.data(), sizeof(PhysicalRegister) * SSAToReg.size());
+
+  PreferredReg.clear();
+  SSAToNewSSA.clear();
+  NewSSAToSSA.clear();
+  SSAToReg.clear();
+  SpillSlots.clear();
+  NextUses.clear();
 
   /* No point tracking this finely, RA is always one-shot */
   return true;
