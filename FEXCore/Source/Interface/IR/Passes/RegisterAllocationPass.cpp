@@ -471,7 +471,7 @@ RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
 bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
-  IREmit_ = IREmit;
+  IREmit = IREmit_;
   auto IR_ = IREmit->ViewIR();
   IR = &IR_;
 
