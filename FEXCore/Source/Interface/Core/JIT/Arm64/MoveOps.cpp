@@ -44,5 +44,25 @@ DEF_OP(CreateElementPair) {
   }
 }
 
+DEF_OP(Copy) {
+  auto Op = IROp->C<IR::IROp_Copy>();
+
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(Op->Source.ID()));
+}
+
+DEF_OP(Swap1) {
+  auto Op = IROp->C<IR::IROp_Swap1>();
+  auto A = GetReg(Op->A.ID()), B = GetReg(Op->B.ID());
+  LOGMAN_THROW_AA_FMT(B == GetReg(Node), "Invariant");
+
+  mov(ARMEmitter::Size::i64Bit, TMP1, A);
+  mov(ARMEmitter::Size::i64Bit, A, B);
+  mov(ARMEmitter::Size::i64Bit, B, TMP1);
+}
+
+DEF_OP(Swap2) {
+  // Implemented above
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU
