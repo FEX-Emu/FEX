@@ -10,7 +10,6 @@ $end_info$
 #endif
 
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
 
@@ -28,9 +27,9 @@ DEF_OP(GuestOpcode) {
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {
-  case IR::Fence_Load.Val: dmb(FEXCore::ARMEmitter::BarrierScope::LD); break;
-  case IR::Fence_LoadStore.Val: dmb(FEXCore::ARMEmitter::BarrierScope::SY); break;
-  case IR::Fence_Store.Val: dmb(FEXCore::ARMEmitter::BarrierScope::ST); break;
+  case IR::Fence_Load.Val: dmb(ARMEmitter::BarrierScope::LD); break;
+  case IR::Fence_LoadStore.Val: dmb(ARMEmitter::BarrierScope::SY); break;
+  case IR::Fence_Store.Val: dmb(ARMEmitter::BarrierScope::ST); break;
   default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
 }

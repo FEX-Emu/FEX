@@ -1,7 +1,6 @@
 #pragma once
 #include <FEXCore/fextl/string.h>
-
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
+#include <CodeEmitter/Emitter.h>
 
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
@@ -9,7 +8,7 @@
 
 #include <sys/mman.h>
 
-class TestDisassembler : public FEXCore::ARMEmitter::Emitter {
+class TestDisassembler : public ARMEmitter::Emitter {
 public:
   TestDisassembler() {
     fp = tmpfile();
@@ -75,3 +74,6 @@ private:
 
 #define TEST_SINGLE(emit, expected) \
   { CHECK((emit, DisassembleSingle()) == expected); }
+
+// Float16 disabled until we have a Float16 storage type with unittests.
+#define TEST_FP16 0

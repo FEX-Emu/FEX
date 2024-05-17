@@ -2,9 +2,6 @@
 #pragma once
 
 #include "FEXCore/Utils/EnumUtils.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
-
 #include "Interface/Core/ObjectCache/Relocations.h"
 
 #include <aarch64/assembler-aarch64.h>
@@ -22,6 +19,8 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/vector.h>
+#include <CodeEmitter/Emitter.h>
+#include <CodeEmitter/Registers.h>
 
 #include <array>
 #include <cstddef>
@@ -35,66 +34,66 @@ class ContextImpl;
 
 namespace FEXCore::CPU {
 // Contains the address to the currently available CPU state
-constexpr auto STATE = FEXCore::ARMEmitter::XReg::x28;
+constexpr auto STATE = ARMEmitter::XReg::x28;
 
 #ifndef _M_ARM_64EC
 // GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
-constexpr auto TMP1 = FEXCore::ARMEmitter::XReg::x0;
-constexpr auto TMP2 = FEXCore::ARMEmitter::XReg::x1;
-constexpr auto TMP3 = FEXCore::ARMEmitter::XReg::x2;
-constexpr auto TMP4 = FEXCore::ARMEmitter::XReg::x3;
+constexpr auto TMP1 = ARMEmitter::XReg::x0;
+constexpr auto TMP2 = ARMEmitter::XReg::x1;
+constexpr auto TMP3 = ARMEmitter::XReg::x2;
+constexpr auto TMP4 = ARMEmitter::XReg::x3;
 constexpr bool TMP_ABIARGS = true;
 
 // We pin r26/r27 as PF/AF respectively, this is internal FEX ABI.
-constexpr auto REG_PF = FEXCore::ARMEmitter::Reg::r26;
-constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r27;
+constexpr auto REG_PF = ARMEmitter::Reg::r26;
+constexpr auto REG_AF = ARMEmitter::Reg::r27;
 
 // Vector temporaries
-constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v0;
-constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v1;
+constexpr auto VTMP1 = ARMEmitter::VReg::v0;
+constexpr auto VTMP2 = ARMEmitter::VReg::v1;
 #else
-constexpr auto TMP1 = FEXCore::ARMEmitter::XReg::x10;
-constexpr auto TMP2 = FEXCore::ARMEmitter::XReg::x11;
-constexpr auto TMP3 = FEXCore::ARMEmitter::XReg::x12;
-constexpr auto TMP4 = FEXCore::ARMEmitter::XReg::x13;
+constexpr auto TMP1 = ARMEmitter::XReg::x10;
+constexpr auto TMP2 = ARMEmitter::XReg::x11;
+constexpr auto TMP3 = ARMEmitter::XReg::x12;
+constexpr auto TMP4 = ARMEmitter::XReg::x13;
 constexpr bool TMP_ABIARGS = false;
 
 // We pin r11/r12 as PF/AF respectively for arm64ec, as r26/r27 are used for SRA.
-constexpr auto REG_PF = FEXCore::ARMEmitter::Reg::r9;
-constexpr auto REG_AF = FEXCore::ARMEmitter::Reg::r24;
+constexpr auto REG_PF = ARMEmitter::Reg::r9;
+constexpr auto REG_AF = ARMEmitter::Reg::r24;
 
 // Vector temporaries
-constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v16;
-constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v17;
+constexpr auto VTMP1 = ARMEmitter::VReg::v16;
+constexpr auto VTMP2 = ARMEmitter::VReg::v17;
 
 // Entry/Exit ABI
-constexpr auto EC_CALL_CHECKER_PC_REG = FEXCore::ARMEmitter::XReg::x9;
-constexpr auto EC_ENTRY_CPUAREA_REG = FEXCore::ARMEmitter::XReg::x17;
+constexpr auto EC_CALL_CHECKER_PC_REG = ARMEmitter::XReg::x9;
+constexpr auto EC_ENTRY_CPUAREA_REG = ARMEmitter::XReg::x17;
 #endif
 
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
 // PRED_TMP_32B indicates a predicate register that indicates the first 32 bytes set to 1.
-constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_16B = FEXCore::ARMEmitter::PReg::p6;
-constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_32B = FEXCore::ARMEmitter::PReg::p7;
+constexpr ARMEmitter::PRegister PRED_TMP_16B = ARMEmitter::PReg::p6;
+constexpr ARMEmitter::PRegister PRED_TMP_32B = ARMEmitter::PReg::p7;
 
 
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
-class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {
+class Arm64Emitter : public ARMEmitter::Emitter {
 protected:
   Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
   FEXCore::Context::ContextImpl* EmitterCTX;
   vixl::aarch64::CPU CPU;
 
-  std::span<const FEXCore::ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
-  std::span<const FEXCore::ARMEmitter::Register> StaticRegisters {};
-  std::span<const FEXCore::ARMEmitter::Register> GeneralRegisters {};
-  std::span<const std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>> GeneralPairRegisters {};
-  std::span<const FEXCore::ARMEmitter::VRegister> StaticFPRegisters {};
-  std::span<const FEXCore::ARMEmitter::VRegister> GeneralFPRegisters {};
+  std::span<const ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
+  std::span<const ARMEmitter::Register> StaticRegisters {};
+  std::span<const ARMEmitter::Register> GeneralRegisters {};
+  std::span<const std::pair<ARMEmitter::Register, ARMEmitter::Register>> GeneralPairRegisters {};
+  std::span<const ARMEmitter::VRegister> StaticFPRegisters {};
+  std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
 
   /**
    * @name Register Allocation
@@ -111,13 +110,13 @@ protected:
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
 
-  void LoadConstant(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
+  void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 
 
   // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
   //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
   //       TMP4 is left alone.
-  void SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
+  void SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 
   // Register 0-18 + 29 + 30 are caller saved
@@ -128,13 +127,13 @@ protected:
   static constexpr uint32_t CALLER_FPR_MASK = ~0U;
 
   // Generic push and pop vector registers.
-  void PushVectorRegisters(FEXCore::ARMEmitter::Register TmpReg, bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs);
-  void PushGeneralRegisters(FEXCore::ARMEmitter::Register TmpReg, std::span<const FEXCore::ARMEmitter::Register> Regs);
+  void PushVectorRegisters(ARMEmitter::Register TmpReg, bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs);
+  void PushGeneralRegisters(ARMEmitter::Register TmpReg, std::span<const ARMEmitter::Register> Regs);
 
-  void PopVectorRegisters(bool SVERegs, std::span<const FEXCore::ARMEmitter::VRegister> VRegs);
-  void PopGeneralRegisters(std::span<const FEXCore::ARMEmitter::Register> Regs);
+  void PopVectorRegisters(bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs);
+  void PopGeneralRegisters(std::span<const ARMEmitter::Register> Regs);
 
-  void PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg);
+  void PushDynamicRegsAndLR(ARMEmitter::Register TmpReg);
   void PopDynamicRegsAndLR();
 
   void PushCalleeSavedRegisters();
@@ -150,10 +149,10 @@ protected:
   // Callee Saved:
   // - X9-X15, X19-X31
   // - Low 128-bits of v8-v31
-  void SpillForPreserveAllABICall(FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true);
+  void SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs = true);
   void FillForPreserveAllABICall(bool FPRs = true);
 
-  void SpillForABICall(bool SupportsPreserveAllABI, FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true) {
+  void SpillForABICall(bool SupportsPreserveAllABI, ARMEmitter::Register TmpReg, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
       SpillForPreserveAllABICall(TmpReg, FPRs);
     } else {

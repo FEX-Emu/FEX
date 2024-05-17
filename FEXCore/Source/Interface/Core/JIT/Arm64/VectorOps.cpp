@@ -5,8 +5,6 @@ tags: backend|arm64
 $end_info$
 */
 
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
@@ -741,7 +739,7 @@ DEF_OP(LoadNamedVectorConstant) {
     }
   }
   // Load the pointer.
-  auto GenerateMemOperand = [this](uint8_t OpSize, uint32_t NamedConstant, FEXCore::ARMEmitter::Register Base) {
+  auto GenerateMemOperand = [this](uint8_t OpSize, uint32_t NamedConstant, ARMEmitter::Register Base) {
     const auto ConstantOffset = offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.NamedVectorConstants[NamedConstant]);
 
     if (ConstantOffset <= 255 || // Unscaled 9-bit signed
@@ -4207,7 +4205,8 @@ DEF_OP(VTBL2) {
       mov(VTMP2.Q(), VectorTable2.Q());
     }
 
-    static_assert(ARMEmitter::AreVectorsSequential(VTMP1, VTMP2), "VTMP1 and VTMP2 must be sequential in order to use double-table TBL");
+    static_assert(ARMEmitter::AreVectorsSequential(VTMP1, VTMP2), "VTMP1 and VTMP2 must be sequential in order to use double-table "
+                                                                  "TBL");
     VectorTable1 = VTMP1;
     VectorTable2 = VTMP2;
   }

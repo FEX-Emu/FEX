@@ -6,7 +6,6 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 

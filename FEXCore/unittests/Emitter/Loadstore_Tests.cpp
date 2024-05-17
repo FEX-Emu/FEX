@@ -3,7 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fcntl.h>
 
-using namespace FEXCore::ARMEmitter;
+using namespace ARMEmitter;
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Compare and swap pair") {
   TEST_SINGLE(casp(Size::i32Bit, Reg::r28, Reg::r29, Reg::r26, Reg::r27, Reg::r30), "casp w28, w29, w26, w27, [x30]");

@@ -357,6 +357,7 @@ if (BUILD_TESTS)
 endif()
 
 add_subdirectory(FEXHeaderUtils/)
+add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
 
 # Binfmt_misc files must be installed prior to Source/ installs

@@ -12,29 +12,29 @@
  */
 public:
   // Compare and swap pair
-  void casp(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rs2, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void casp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
-    AtomicOp(Op, s, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    AtomicOp(Op, s, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspa(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rs2, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void caspa(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
-    AtomicOp(Op, s, 1, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    AtomicOp(Op, s, 1, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspl(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rs2, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void caspl(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
-    AtomicOp(Op, s, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    AtomicOp(Op, s, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspal(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rs2, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void caspal(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
-    AtomicOp(Op, s, 1, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    AtomicOp(Op, s, 1, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
 
   // Advanced SIMD load/store multiple structures
@@ -804,7 +804,7 @@ public:
 
   // Advanced SIMD load/store single structure (post-indexed)
   template<typename T>
-  void st1(FEXCore::ARMEmitter::SubRegSize size, T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -845,10 +845,10 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, ARMEmitter::Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void ld1(FEXCore::ARMEmitter::SubRegSize size, T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -889,18 +889,18 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, ARMEmitter::Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void ld1r(FEXCore::ARMEmitter::SubRegSize size, T rt, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void ld1r(ARMEmitter::SubRegSize size, T rt, ARMEmitter::Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(PostOffset == 1 || PostOffset == 2 || PostOffset == 4 || PostOffset == 8, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1 : 0;
     uint32_t R = 0;
     uint32_t opcode = 0b110;
     uint32_t S = 0;
     uint32_t Size = FEXCore::ToUnderlying(size);
-    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt);
+    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, ARMEmitter::Reg::r31, rn, rt);
   }
 
   template<typename T>
@@ -1219,7 +1219,7 @@ public:
   }
 
   template<typename T>
-  void st1(FEXCore::ARMEmitter::SubRegSize size, T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1263,7 +1263,7 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void ld1(FEXCore::ARMEmitter::SubRegSize size, T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1629,109 +1629,109 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, rm, rn, rt.Q());
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st1(T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     st1(size, rt, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld1(T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld1(size, rt, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1r(T rt, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld1r(T rt, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld1r(size, rt, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2r(T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld2r(T rt, T rt2, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld2r(size, rt, rt2, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3r(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld3r(T rt, T rt2, T rt3, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld3r(size, rt, rt2, rt3, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4r(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld4r(T rt, T rt2, T rt3, T rt4, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld4r(size, rt, rt2, rt3, rt4, rn, PostOffset);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st2(T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st2(T rt, T rt2, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     st2(size, rt, rt2, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2(T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld2(T rt, T rt2, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld2(size, rt, rt2, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st3(T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st3(T rt, T rt2, T rt3, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     st3(size, rt, rt2, rt3, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3(T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld3(T rt, T rt2, T rt3, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld3(size, rt, rt2, rt3, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st4(T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st4(T rt, T rt2, T rt3, T rt4, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     st4(size, rt, rt2, rt3, rt4, Index, rn, PostOffset);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4(T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld4(T rt, T rt2, T rt3, T rt4, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     ld4(size, rt, rt2, rt3, rt4, Index, rn, PostOffset);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st1(T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     st1(size, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld1(T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld1(size, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1r(T rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld1r(T rt, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld1r(size, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2r(T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld2r(T rt, T rt2, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld2r(size, rt, rt2, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3r(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld3r(T rt, T rt2, T rt3, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld3r(size, rt, rt2, rt3, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4r(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld4r(T rt, T rt2, T rt3, T rt4, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld4r(size, rt, rt2, rt3, rt4, rn, rm);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st2(T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st2(T rt, T rt2, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     st2(size, rt, rt2, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2(T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld2(T rt, T rt2, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld2(size, rt, rt2, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st3(T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st3(T rt, T rt2, T rt3, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     st3(size, rt, rt2, rt3, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3(T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld3(T rt, T rt2, T rt3, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld3(size, rt, rt2, rt3, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st4(T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void st4(T rt, T rt2, T rt3, T rt4, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     st4(size, rt, rt2, rt3, rt4, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4(T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<ARMEmitter::SubRegSize size, typename T>
+  void ld4(T rt, T rt2, T rt3, T rt4, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     ld4(size, rt, rt2, rt3, rt4, Index, rn, rm);
   }
 
   template<typename T>
-  void ASIMDLoadStoreSinglePost(uint32_t Op, uint32_t Q, uint32_t L, uint32_t R, uint32_t opcode, uint32_t S, uint32_t size, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::Register rn, T rt) {
-    LOGMAN_THROW_A_FMT(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>, "Only supports 128-bit and 64-bit vector registers.");
+  void ASIMDLoadStoreSinglePost(uint32_t Op, uint32_t Q, uint32_t L, uint32_t R, uint32_t opcode, uint32_t S, uint32_t size, ARMEmitter::Register rm, ARMEmitter::Register rn, T rt) {
+    LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>, "Only supports 128-bit and 64-bit vector registers.");
     uint32_t Instr = Op;
 
     Instr |= Q << 30;
@@ -1746,375 +1746,375 @@ public:
     dc32(Instr);
   }
   // Loadstore exclusive pair
-  void stxp(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void stxp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b1000'1000'001 << 21;
     AtomicOp(Op, s, 0, 0, rs, rt, rt2, rn);
   }
-  void stlxp(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void stlxp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b1000'1000'001 << 21;
     AtomicOp(Op, s, 0, 1, rs, rt, rt2, rn);
   }
-  void ldxp(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void ldxp(ARMEmitter::Size s, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b1000'1000'001 << 21;
-    AtomicOp(Op, s, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, rt2, rn);
+    AtomicOp(Op, s, 1, 0, ARMEmitter::Reg::r31, rt, rt2, rn);
   }
-  void ldaxp(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
+  void ldaxp(ARMEmitter::Size s, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b1000'1000'001 << 21;
-    AtomicOp(Op, s, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, rt2, rn);
+    AtomicOp(Op, s, 1, 1, ARMEmitter::Reg::r31, rt, rt2, rn);
   }
   // Loadstore exclusive register
-  void stxrb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stxrb(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stlxrb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stlxrb(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldxrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldxrb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 1, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldaxrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldaxrb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 1, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stxrh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stxrh(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stlxrh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stlxrh(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldxrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldxrh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 1, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldaxrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldaxrh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 1, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stxr(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void stxr(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 0, 0, rs, rt, ARMEmitter::WReg::w31, rn);
   }
-  void stlxr(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void stlxr(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 1, rs, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 0, 1, rs, rt, ARMEmitter::WReg::w31, rn);
   }
-  void ldxr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void ldxr(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 0, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 1, 0, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void ldaxr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void ldaxr(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 1, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 1, 1, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void stxr(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void stxr(ARMEmitter::XRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 0, 0, rs, rt, ARMEmitter::XReg::x31, rn);
   }
-  void stlxr(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void stlxr(ARMEmitter::WRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 1, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 0, 1, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void ldxr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void ldxr(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 0, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 1, 0, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
-  void ldaxr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void ldaxr(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 1, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 1, 1, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
-  void stxr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stxr(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, size, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stlxr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void stlxr(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, size, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldxr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldxr(ARMEmitter::SubRegSize size, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, size, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 1, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldaxr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void ldaxr(ARMEmitter::SubRegSize size, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'000 << 21;
-    SubAtomicOp(Op, size, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 1, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
 
   // Load/store ordered
   static constexpr uint32_t LoadStoreOrdered_Op = 0b0000'1000'100 << 21;
-  void stllrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void stllrb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i8Bit, 0, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stlrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void stlrb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i8Bit, 0, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldlarb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void ldlarb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i8Bit, 1, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldarb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void ldarb(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i8Bit, 1, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stllrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void stllrh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i16Bit, 0, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stlrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void stlrh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i16Bit, 0, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldlarh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 0, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void ldlarh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i16Bit, 1, 0, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void ldarh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 1, FEXCore::ARMEmitter::Reg::r31, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+  void ldarh(ARMEmitter::Register rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i16Bit, 1, 1, ARMEmitter::Reg::r31, rt, ARMEmitter::Reg::r31, rn);
   }
-  void stllr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 0, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+  void stllr(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i32Bit, 0, 0, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void stlr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 1, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+  void stlr(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i32Bit, 0, 1, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void ldlar(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 0, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+  void ldlar(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i32Bit, 1, 0, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void ldar(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 1, FEXCore::ARMEmitter::WReg::w31, rt, FEXCore::ARMEmitter::WReg::w31, rn);
+  void ldar(ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i32Bit, 1, 1, ARMEmitter::WReg::w31, rt, ARMEmitter::WReg::w31, rn);
   }
-  void stllr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 0, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+  void stllr(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i64Bit, 0, 0, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
-  void stlr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 1, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+  void stlr(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i64Bit, 0, 1, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
-  void ldlar(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 0, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+  void ldlar(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i64Bit, 1, 0, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
-  void ldar(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    SubAtomicOp(LoadStoreOrdered_Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 1, FEXCore::ARMEmitter::XReg::x31, rt, FEXCore::ARMEmitter::XReg::x31, rn);
+  void ldar(ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
+    SubAtomicOp(LoadStoreOrdered_Op, ARMEmitter::SubRegSize::i64Bit, 1, 1, ARMEmitter::XReg::x31, rt, ARMEmitter::XReg::x31, rn);
   }
   // Compare and swap
-  void casb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casb(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caslb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void caslb(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casab(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 1, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casalb(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 1, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i8Bit, 1, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void cash(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void cash(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caslh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void caslh(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casah(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 1, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casalh(ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 1, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i16Bit, 1, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void cas(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void cas(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 0, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 0, 0, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casl(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0, 1, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 0, 1, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casa(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casa(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 0, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 1, 0, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casal(ARMEmitter::WRegister rs, ARMEmitter::WRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 1, 1, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i32Bit, 1, 1, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void cas(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void cas(ARMEmitter::XRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 0, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 0, 0, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casl(ARMEmitter::XRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0, 1, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 0, 1, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casa(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casa(ARMEmitter::XRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 0, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 1, 0, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
-  void casal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
+  void casal(ARMEmitter::XRegister rs, ARMEmitter::XRegister rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 1, 1, rs.R(), rt.R(), FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, ARMEmitter::SubRegSize::i64Bit, 1, 1, rs.R(), rt.R(), ARMEmitter::Reg::r31, rn);
   }
 
-  void cas(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void cas(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, size, 0, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casl(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, size, 0, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casa(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casa(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, size, 1, 0, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 1, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void casal(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
+  void casal(ARMEmitter::SubRegSize size, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rn) {
     constexpr uint32_t Op = 0b0000'1000'101 << 21;
-    SubAtomicOp(Op, size, 1, 1, rs, rt, FEXCore::ARMEmitter::Reg::r31, rn);
+    SubAtomicOp(Op, size, 1, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
   // LDAPR/STLR unscaled immediate
-  void stlurb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stlurb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i8Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapurb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapurb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i8Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapursb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapursb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0b11, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i8Bit, 0b11, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapursb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapursb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i8Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i8Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void stlurh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stlurh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i16Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapurh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapurh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i16Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapursh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapursh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0b11, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i16Bit, 0b11, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapursh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapursh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i16Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i16Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void stlur(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stlur(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i32Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapur(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapur(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i32Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapursw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapursw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i32Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i32Bit, 0b10, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void stlur(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stlur(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i64Bit, 0b00, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
-  void ldapur(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldapur(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1001'000 << 21;
-    SubAtomicImm(Op, FEXCore::ARMEmitter::SubRegSize::i64Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
+    SubAtomicImm(Op, ARMEmitter::SubRegSize::i64Bit, 0b01, rt, rn, static_cast<uint32_t>(Imm) & 0x1'FF);
   }
   // Load register literal
-  void ldr(FEXCore::ARMEmitter::WRegister rt, int32_t Imm) {
+  void ldr(ARMEmitter::WRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, int32_t Imm) {
+  void ldr(ARMEmitter::SRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, int32_t Imm) {
+  void ldr(ARMEmitter::XRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, int32_t Imm) {
+  void ldr(ARMEmitter::DRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldrs(FEXCore::ARMEmitter::WRegister rt, int32_t Imm) {
+  void ldrs(ARMEmitter::WRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, int32_t Imm) {
+  void ldr(ARMEmitter::QRegister rt, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, int32_t Imm) {
+  void prfm(ARMEmitter::Prefetch prfop, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::WRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::WRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::SRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::XRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::DRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, BackwardLabel const* Label) {
+  void ldrsw(ARMEmitter::XRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::QRegister rt, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, BackwardLabel const* Label) {
+  void prfm(ARMEmitter::Prefetch prfop, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1101'1000 << 24;
@@ -2123,7 +2123,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(FEXCore::ARMEmitter::WRegister rt, LabelType *Label) {
+  void ldr(ARMEmitter::WRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2131,7 +2131,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(FEXCore::ARMEmitter::SRegister rt, LabelType *Label) {
+  void ldr(ARMEmitter::SRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2139,7 +2139,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(FEXCore::ARMEmitter::XRegister rt, LabelType *Label) {
+  void ldr(ARMEmitter::XRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2147,7 +2147,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(FEXCore::ARMEmitter::DRegister rt, LabelType *Label) {
+  void ldr(ARMEmitter::DRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2155,7 +2155,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, LabelType *Label) {
+  void ldrsw(ARMEmitter::XRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2163,7 +2163,7 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(FEXCore::ARMEmitter::QRegister rt, LabelType *Label) {
+  void ldr(ARMEmitter::QRegister rt, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
@@ -2171,13 +2171,13 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, LabelType *Label) {
+  void prfm(ARMEmitter::Prefetch prfop, LabelType *Label) {
     AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, 0);
   }
 
-  void ldr(FEXCore::ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2185,7 +2185,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::SRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2193,7 +2193,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::XRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2201,7 +2201,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::DRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2209,7 +2209,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void ldrs(FEXCore::ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
+  void ldrs(ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2217,7 +2217,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::QRegister rt, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
     }
@@ -2225,7 +2225,7 @@ public:
       ldr(rt, &Label->Forward);
     }
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, BiDirectionalLabel *Label) {
+  void prfm(ARMEmitter::Prefetch prfop, BiDirectionalLabel *Label) {
     if (Label->Backward.Location) {
       prfm(prfop, &Label->Backward);
     }
@@ -2237,52 +2237,52 @@ public:
   // Memory copy/set
   // TODO
   // Loadstore no-allocate pair
-  void stnp(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::WRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stnp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0010'1000'00 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 2) & 0b111'1111);
   }
-  void ldnp(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::WRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldnp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0010'1000'01 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 2) & 0b111'1111);
   }
-  void stnp(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::SRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stnp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0010'1100'00 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 2) & 0b111'1111);
   }
-  void ldnp(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::SRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldnp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0010'1100'01 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 2) & 0b111'1111);
   }
-  void stnp(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::XRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stnp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1010'1000'00 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 3) & 0b111'1111);
   }
-  void ldnp(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::XRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldnp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1010'1000'01 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 3) & 0b111'1111);
   }
-  void stnp(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::DRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stnp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0110'1100'00 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 3) & 0b111'1111);
   }
-  void ldnp(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::DRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldnp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0110'1100'01 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 3) & 0b111'1111);
   }
-  void stnp(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::QRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stnp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1010'1100'00 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 4) & 0b111'1111);
   }
-  void ldnp(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::QRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldnp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1010'1100'01 << 22;
     LoadStoreNoAllocate(Op, rt, rt2, rn, static_cast<uint32_t>(Imm >> 4) & 0b111'1111);
@@ -2291,7 +2291,7 @@ public:
   // Loadstore register pair offset
   // Loadstore register pair pre-indexed
   template<IndexType Index>
-  void stp(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::WRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0010'1000'00 << 22) |
       (
@@ -2303,7 +2303,7 @@ public:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
-  void ldp(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::WRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0010'1000'01 << 22) |
       (
@@ -2315,7 +2315,7 @@ public:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template <IndexType Index>
-  void ldpsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::XRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldpsw(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0110'1000'01 << 22) |
       (
@@ -2326,7 +2326,7 @@ public:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
-  void stp(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::XRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b1010'1000'00 << 22) |
       (
@@ -2338,7 +2338,7 @@ public:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
-  void ldp(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::XRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b1010'1000'01 << 22) |
       (
@@ -2350,102 +2350,102 @@ public:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template <IndexType Index>
-  void stp(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::SRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_w<Index>(rt.V(), rt2.V(), rn, Imm);
   }
   template <IndexType Index>
-  void ldp(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::SRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_w<Index>(rt.V(), rt2.V(), rn, Imm);
   }
   template <IndexType Index>
-  void stp(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::DRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_x<Index>(rt.V(), rt2.V(), rn, Imm);
   }
   template <IndexType Index>
-  void ldp(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::DRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_x<Index>(rt.V(), rt2.V(), rn, Imm);
   }
   template <IndexType Index>
-  void stp(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::QRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_q<Index>(rt.V(), rt2.V(), rn, Imm);
   }
   template <IndexType Index>
-  void ldp(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::QRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_q<Index>(rt.V(), rt2.V(), rn, Imm);
   }
 
   // Loadstore register unscaled immediate
-  void sturb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sturb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldurb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldurb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void sturb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sturb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldurb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldurb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldursb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldursb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldursb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldursb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void sturh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sturh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldurh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldurh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void sturh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sturh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldurh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldurh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldursh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldursh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldursh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldursh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void stur(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stur(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldur(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldur(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void stur(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stur(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldur(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldur(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldursw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldursw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsw<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void stur(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stur(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldur(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldur(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void stur(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stur(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldur(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldur(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void stur(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void stur(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  void ldur(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldur(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
   template <IndexType Index>
-  void prfum(FEXCore::ARMEmitter::Prefetch prfop, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void prfum(ARMEmitter::Prefetch prfop, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     static_assert(Index == IndexType::OFFSET, "Doesn't support another index type");
 
@@ -2459,158 +2459,158 @@ public:
   // Loadstore register immediate pre-indexed
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void strb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void strb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void strb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void strb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void strh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void strh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void strh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void strh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void str(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void str(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void str(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void str(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsw<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void str(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void str(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void str(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void str(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void str(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void str(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
   template <IndexType Index>
   requires(Index == IndexType::POST || Index == IndexType::PRE)
-  void ldr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
 
   // Loadstore register unprivileged
-  void sttrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sttrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void sttrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sttrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void sttr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sttr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsw<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void sttr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void sttr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
-  void ldtr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldtr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
   // Atomic memory operations
@@ -3236,151 +3236,151 @@ public:
   }
 
   // Loadstore register-register offset
-  void strb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, bool Shift = false) {
+  void strb(ARMEmitter::Register rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, bool Shift = false) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, bool Shift = false) {
+  void ldrb(ARMEmitter::Register rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, bool Shift = false) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, bool Shift = false) {
+  void ldrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, bool Shift = false) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b10, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, bool Shift = false) {
+  void ldrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, bool Shift = false) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b11, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void strh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void strh(ARMEmitter::Register rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldrh(ARMEmitter::Register rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b10, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b11, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void str(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void str(ARMEmitter::WRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 2, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 2, "Unsupported shift amount: {}", Shift);
     constexpr uint32_t Op = 0b1011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 2, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1011'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b10, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void str(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void str(ARMEmitter::XRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 3, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 3, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void prfm(ARMEmitter::Prefetch prfop, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 3, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1111'1000'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b10, prfop, rn, rm, Option, Shift ? 1 : 0);
   }
-  void strb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option) {
+  void strb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, 0);
   }
-  void ldrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option) {
+  void ldrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     constexpr uint32_t Op = 0b0011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, 0);
   }
-  void strh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void strh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 1, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0111'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void str(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void str(ARMEmitter::SRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 2, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 2, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void str(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void str(ARMEmitter::DRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 3, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1111'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b00, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 3, "Unsupported shift amount");
     constexpr uint32_t Op = 0b1111'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b01, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void str(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void str(ARMEmitter::QRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 4, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b10, rt, rn, rm, Option, Shift ? 1 : 0);
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void ldr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     LOGMAN_THROW_A_FMT((FEXCore::ToUnderlying(Option) & 0b010) == 0b010, "Unsupported Extendtype");
     LOGMAN_THROW_A_FMT(Shift == 0 || Shift == 4, "Unsupported shift amount");
     constexpr uint32_t Op = 0b0011'1100'001 << 21 | (0b10 << 10);
     LoadStoreRegisterOffset(Op, 0b11, rt, rn, rm, Option, Shift ? 1 : 0);
   }
 
-  void strb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void strb(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
     }
     else {
@@ -3404,12 +3404,12 @@ public:
       }
     }
   }
-  void ldrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrb(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
     }
     else {
@@ -3433,12 +3433,12 @@ public:
       }
     }
   }
-  void ldrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrsb(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
     }
     else {
@@ -3462,12 +3462,12 @@ public:
       }
     }
   }
-  void ldrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrsb(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
     }
     else {
@@ -3491,12 +3491,12 @@ public:
       }
     }
   }
-  void strh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void strh(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
     }
     else {
@@ -3520,12 +3520,12 @@ public:
       }
     }
   }
-  void ldrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrh(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
     }
     else {
@@ -3549,12 +3549,12 @@ public:
       }
     }
   }
-  void ldrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrsh(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
     }
     else {
@@ -3578,12 +3578,12 @@ public:
       }
     }
   }
-  void ldrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrsh(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
     }
     else {
@@ -3607,12 +3607,12 @@ public:
       }
     }
   }
-  void str(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void str(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     }
     else {
@@ -3636,12 +3636,12 @@ public:
       }
     }
   }
-  void ldr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldr(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     }
     else {
@@ -3665,12 +3665,12 @@ public:
       }
     }
   }
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrsw(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsw(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsw(rt, MemSrc.rn);
     }
     else {
@@ -3694,12 +3694,12 @@ public:
       }
     }
   }
-  void str(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void str(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     }
     else {
@@ -3723,12 +3723,12 @@ public:
       }
     }
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldr(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     }
     else {
@@ -3752,12 +3752,12 @@ public:
       }
     }
   }
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void prfm(ARMEmitter::Prefetch prfop, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       prfm(prfop, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       prfm(prfop, MemSrc.rn);
     }
     else {
@@ -3776,14 +3776,14 @@ public:
     }
   }
 
-  void strb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void strb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
       // strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
     }
     else {
@@ -3807,14 +3807,14 @@ public:
       }
     }
   }
-  void ldrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
       // ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
     }
     else {
@@ -3838,14 +3838,14 @@ public:
       }
     }
   }
-  void strh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void strh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
       // strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
     }
     else {
@@ -3869,14 +3869,14 @@ public:
       }
     }
   }
-  void ldrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldrh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
       // ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
     }
     else {
@@ -3900,12 +3900,12 @@ public:
       }
     }
   }
-  void str(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void str(ARMEmitter::SRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     }
     else {
@@ -3929,12 +3929,12 @@ public:
       }
     }
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldr(ARMEmitter::SRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     }
     else {
@@ -3958,12 +3958,12 @@ public:
       }
     }
   }
-  void str(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void str(ARMEmitter::DRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     }
     else {
@@ -3987,12 +3987,12 @@ public:
       }
     }
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldr(ARMEmitter::DRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     }
     else {
@@ -4016,12 +4016,12 @@ public:
       }
     }
   }
-  void str(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void str(ARMEmitter::QRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     }
     else {
@@ -4045,12 +4045,12 @@ public:
       }
     }
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::ExtendedMemOperand MemSrc) {
-    if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != FEXCore::ARMEmitter::Reg::r31.Idx()) {
+  void ldr(ARMEmitter::QRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
+    if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
+        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
-    else if (MemSrc.MetaType.Header.MemType == FEXCore::ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     }
     else {
@@ -4170,8 +4170,8 @@ public:
   }
 
 private:
-  void AtomicOp(uint32_t Op, FEXCore::ARMEmitter::Size s, uint32_t L, uint32_t o0, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rt2, FEXCore::ARMEmitter::Register rn) {
-    const uint32_t sz = s == FEXCore::ARMEmitter::Size::i64Bit ? (1U << 30) : 0;
+  void AtomicOp(uint32_t Op, ARMEmitter::Size s, uint32_t L, uint32_t o0, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+    const uint32_t sz = s == ARMEmitter::Size::i64Bit ? (1U << 30) : 0;
     uint32_t Instr = Op;
 
     Instr |= sz;
@@ -4186,7 +4186,7 @@ private:
   }
 
   template<typename T>
-  void SubAtomicOp(uint32_t Op, FEXCore::ARMEmitter::SubRegSize s, uint32_t L, uint32_t o0, T rs, T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
+  void SubAtomicOp(uint32_t Op, ARMEmitter::SubRegSize s, uint32_t L, uint32_t o0, T rs, T rt, T rt2, ARMEmitter::Register rn) {
     const uint32_t sz = FEXCore::ToUnderlying(s) << 30;
     uint32_t Instr = Op;
 
@@ -4202,7 +4202,7 @@ private:
   }
 
   template<typename T>
-  void SubAtomicImm(uint32_t Op, FEXCore::ARMEmitter::SubRegSize s, uint32_t opc, T rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
+  void SubAtomicImm(uint32_t Op, ARMEmitter::SubRegSize s, uint32_t opc, T rt, ARMEmitter::Register rn, uint32_t Imm) {
     const uint32_t sz = FEXCore::ToUnderlying(s) << 30;
     uint32_t Instr = Op;
 
@@ -4226,7 +4226,7 @@ private:
 
   // Loadstore no-allocate pair
   template<typename T>
-  void LoadStoreNoAllocate(uint32_t Op, T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
+  void LoadStoreNoAllocate(uint32_t Op, T rt, T rt2, ARMEmitter::Register rn, uint32_t Imm) {
     uint32_t Instr = Op;
 
     Instr |= Imm << 15;
@@ -4237,7 +4237,7 @@ private:
   }
   // Loadstore register pair post-indexed
   template<typename T>
-  void LoadStorePair(uint32_t Op, T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
+  void LoadStorePair(uint32_t Op, T rt, T rt2, ARMEmitter::Register rn, uint32_t Imm) {
     uint32_t Instr = Op;
     Instr |= Imm << 15;
     Instr |= Encode_rt2(rt2);
@@ -4251,7 +4251,7 @@ private:
   // Loadstore register unprivileged
   // Loadstore register immediate pre-indexed
   template<typename T>
-  void LoadStoreImm(uint32_t Op, uint32_t o2, T rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
+  void LoadStoreImm(uint32_t Op, uint32_t o2, T rt, ARMEmitter::Register rn, uint32_t Imm) {
     uint32_t Instr = Op;
 
     Instr |= Imm << 12;
@@ -4278,7 +4278,7 @@ private:
 
   // Loadstore register-register offset
   template<typename T>
-  void LoadStoreRegisterOffset(uint32_t Op, uint32_t opc, T rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void LoadStoreRegisterOffset(uint32_t Op, uint32_t opc, T rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     uint32_t Instr = Op;
 
     Instr |= opc << 22;
@@ -4321,7 +4321,7 @@ private:
   }
 
   template<IndexType Index>
-  void ldp_w(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldp_w(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0010'1100'01 << 22) |
       (
@@ -4333,7 +4333,7 @@ private:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
-  void ldp_x(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldp_x(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0110'1100'01 << 22) |
       (
@@ -4345,7 +4345,7 @@ private:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
-  void stp_w(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stp_w(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0010'1100'00 << 22) |
       (
@@ -4357,7 +4357,7 @@ private:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
-  void stp_x(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stp_x(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b0110'1100'00 << 22) |
       (
@@ -4369,7 +4369,7 @@ private:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
-  void ldp_q(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldp_q(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b1010'1100'01 << 22) |
       (
@@ -4381,7 +4381,7 @@ private:
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 4) & 0b111'1111);
   }
   template<IndexType Index>
-  void stp_q(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stp_q(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = (0b1010'1100'00 << 22) |
       (
@@ -4394,7 +4394,7 @@ private:
   }
 
   template <IndexType Index>
-  void stXrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'00 << 22;
@@ -4407,7 +4407,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'01 << 22;
@@ -4420,7 +4420,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'00 << 22;
@@ -4433,7 +4433,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'01 << 22;
@@ -4446,7 +4446,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'10 << 22;
@@ -4459,7 +4459,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'11 << 22;
@@ -4472,7 +4472,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'00 << 22;
@@ -4485,7 +4485,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'01 << 22;
@@ -4498,7 +4498,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1100'00 << 22;
@@ -4511,7 +4511,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1100'01 << 22;
@@ -4524,7 +4524,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'10 << 22;
@@ -4537,7 +4537,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'11 << 22;
@@ -4550,7 +4550,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'00 << 22;
@@ -4563,7 +4563,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'01 << 22;
@@ -4576,7 +4576,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1100'00 << 22;
@@ -4589,7 +4589,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1100'01 << 22;
@@ -4602,7 +4602,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'10 << 22;
@@ -4615,7 +4615,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1000'00 << 22;
@@ -4628,7 +4628,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1000'01 << 22;
@@ -4641,7 +4641,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1100'00 << 22;
@@ -4654,7 +4654,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1100'01 << 22;
@@ -4667,7 +4667,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void stXr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void stXr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'10 << 22;
@@ -4680,7 +4680,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
   template <IndexType Index>
-  void ldXr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
+  void ldXr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'11 << 22;

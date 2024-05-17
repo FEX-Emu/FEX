@@ -3,7 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <fcntl.h>
 
-using namespace FEXCore::ARMEmitter;
+using namespace ARMEmitter;
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic AES") {
   if (false) {
@@ -2091,14 +2091,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three same") {
   TEST_SINGLE(bif(DReg::d30, DReg::d29, DReg::d28), "bif v30.8b, v29.8b, v28.8b");
 }
 
+#if TEST_FP16
+TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD modified immediate : fp16") {
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, QReg::q30, 1.0), "fmov v30.8h, #0x70 (1.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, DReg::d30, 1.0), "fmov v30.4h, #0x70 (1.0000)");
+}
+#endif
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD modified immediate") {
   // XXX: ORR - 32-bit/16-bit
   // XXX: MOVI - Shifting ones
-  TEST_SINGLE(fmov(SubRegSize::i16Bit, QReg::q30, 1.0), "fmov v30.8h, #0x70 (1.0000)");
   TEST_SINGLE(fmov(SubRegSize::i32Bit, QReg::q30, 1.0), "fmov v30.4s, #0x70 (1.0000)");
   TEST_SINGLE(fmov(SubRegSize::i64Bit, QReg::q30, 1.0), "fmov v30.2d, #0x70 (1.0000)");
 
-  TEST_SINGLE(fmov(SubRegSize::i16Bit, DReg::d30, 1.0), "fmov v30.4h, #0x70 (1.0000)");
   TEST_SINGLE(fmov(SubRegSize::i32Bit, DReg::d30, 1.0), "fmov v30.2s, #0x70 (1.0000)");
   // TEST_SINGLE(fmov(SubRegSize::i64Bit, DReg::d30, 1.0), "fmov v30.1d, #0x70 (1.0000)");
 

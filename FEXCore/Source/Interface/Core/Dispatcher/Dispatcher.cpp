@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "Interface/Context/Context.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -16,6 +15,8 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+
+#include <CodeEmitter/Emitter.h>
 
 #include <atomic>
 #include <condition_variable>

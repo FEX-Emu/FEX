@@ -1506,13 +1506,14 @@ public:
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
-  void fdup(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                        size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                        size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
+  void fdup(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
+    LOGMAN_THROW_AA_FMT(size == ARMEmitter::SubRegSize::i16Bit ||
+                        size == ARMEmitter::SubRegSize::i32Bit ||
+                        size == ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
     uint32_t Imm{};
     if (size == SubRegSize::i16Bit) {
-      Imm = FP16ToImm8(vixl::Float16(Value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     } else if (size == SubRegSize::i32Bit) {
       Imm = FP32ToImm8(Value);
     } else if (size == SubRegSize::i64Bit) {
@@ -1521,7 +1522,7 @@ public:
 
     SVEBroadcastFloatImmUnpredicated(0b00, 0, Imm, size, zd);
   }
-  void fmov(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
+  void fmov(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
     fdup(size, zd, Value);
   }
 
@@ -3513,7 +3514,8 @@ private:
                         size == SubRegSize::i64Bit, "Unsupported fcpy/fmov size");
     uint32_t imm{};
     if (size == SubRegSize::i16Bit) {
-      imm = FP16ToImm8(vixl::Float16(value));
+      LOGMAN_MSG_A_FMT("Unsupported");
+      FEX_UNREACHABLE;
     } else if (size == SubRegSize::i32Bit) {
       imm = FP32ToImm8(value);
     } else if (size == SubRegSize::i64Bit) {
@@ -3717,7 +3719,7 @@ private:
 
   // SVE bitwise logical operations (predicated)
   void SVEBitwiseLogicalPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_AA_FMT(size != ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -4743,7 +4745,7 @@ private:
     dc32(Instr);
   }
 
-  void SVEPermuteVector(uint32_t op0, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zm, uint32_t Imm) {
+  void SVEPermuteVector(uint32_t op0, ARMEmitter::ZRegister zd, ARMEmitter::ZRegister zm, uint32_t Imm) {
     constexpr uint32_t Op = 0b0000'0101'0010'0000'000 << 13;
     uint32_t Instr = Op;
 
@@ -5228,15 +5230,14 @@ private:
 
   // Alias that returns the equivalently sized unsigned type for a floating-point type T.
   template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, vixl::Float16>)
-  using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, vixl::Float16>, uint16_t,
-                                                   std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>>;
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+  using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
 
   // Determines if a floating-point value is capable of being converted
   // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
   // in ARM A-profile reference manual for a general overview of how this was derived.
   template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, vixl::Float16>)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
   [[nodiscard, maybe_unused]] static bool IsValidFPValueForImm8(T value) {
     const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
     const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
@@ -5275,18 +5276,6 @@ private:
     }
 
     return true;
-  }
-
-  static uint32_t FP16ToImm8(vixl::Float16 value) {
-    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
-                       "Value cannot be encoded into an 8-bit immediate");
-
-    const uint32_t bits = vixl::Float16ToRawbits(value);
-    const uint32_t sign = (bits & 0x8000) >> 8;
-    const uint32_t expb2 = (bits & 0x2000) >> 7;
-    const uint32_t b5_to_0 = (bits >> 6) & 0x3F;
-
-    return sign | expb2 | b5_to_0;
   }
 
   static uint32_t FP32ToImm8(float value) {

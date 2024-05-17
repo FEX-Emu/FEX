@@ -5,9 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
-#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)

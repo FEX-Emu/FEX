@@ -8,11 +8,11 @@ public:
   public:
     // Conditional branch immediate
     ///< Branch conditional
-    void b(FEXCore::ARMEmitter::Condition Cond, uint32_t Imm) {
+    void b(ARMEmitter::Condition Cond, uint32_t Imm) {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, Imm);
     }
-    void b(FEXCore::ARMEmitter::Condition Cond, BackwardLabel const* Label) {
+    void b(ARMEmitter::Condition Cond, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
       constexpr uint32_t Op = 0b0101'010 << 25;
@@ -20,13 +20,13 @@ public:
     }
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void b(FEXCore::ARMEmitter::Condition Cond, LabelType *Label) {
+    void b(ARMEmitter::Condition Cond, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, 0);
     }
 
-    void b(FEXCore::ARMEmitter::Condition Cond, BiDirectionalLabel *Label) {
+    void b(ARMEmitter::Condition Cond, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         b(Cond, &Label->Backward);
       }
@@ -36,11 +36,11 @@ public:
     }
 
     ///< Branch consistent conditional
-    void bc(FEXCore::ARMEmitter::Condition Cond, uint32_t Imm) {
+    void bc(ARMEmitter::Condition Cond, uint32_t Imm) {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 1, Cond, Imm);
     }
-    void bc(FEXCore::ARMEmitter::Condition Cond, BackwardLabel const* Label) {
+    void bc(ARMEmitter::Condition Cond, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
       constexpr uint32_t Op = 0b0101'010 << 25;
@@ -49,13 +49,13 @@ public:
 
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void bc(FEXCore::ARMEmitter::Condition Cond, LabelType *Label) {
+    void bc(ARMEmitter::Condition Cond, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 1, Cond, 0);
     }
 
-    void bc(FEXCore::ARMEmitter::Condition Cond, BiDirectionalLabel *Label) {
+    void bc(ARMEmitter::Condition Cond, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         bc(Cond, &Label->Backward);
       }
@@ -65,7 +65,7 @@ public:
     }
 
     // Unconditional branch register
-    void br(FEXCore::ARMEmitter::Register rn) {
+    void br(ARMEmitter::Register rn) {
       constexpr uint32_t Op = 0b1101011 << 25 |
                               0b0'000 << 21 |   // opc
                               0b1'1111 << 16 |  // op2
@@ -74,7 +74,7 @@ public:
 
       UnconditionalBranch(Op, rn);
     }
-    void blr(FEXCore::ARMEmitter::Register rn) {
+    void blr(ARMEmitter::Register rn) {
       constexpr uint32_t Op = 0b1101011 << 25 |
                               0b0'001 << 21 |   // opc
                               0b1'1111 << 16 |  // op2
@@ -83,7 +83,7 @@ public:
 
       UnconditionalBranch(Op, rn);
     }
-    void ret(FEXCore::ARMEmitter::Register rn = FEXCore::ARMEmitter::Reg::r30) {
+    void ret(ARMEmitter::Register rn = ARMEmitter::Reg::r30) {
       constexpr uint32_t Op = 0b1101011 << 25 |
                               0b0'010 << 21 |   // opc
                               0b1'1111 << 16 |  // op2
@@ -156,13 +156,13 @@ public:
     }
 
     // Compare and branch
-    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, uint32_t Imm) {
+    void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, uint32_t Imm) {
       constexpr uint32_t Op = 0b0011'0100 << 24;
 
       CompareAndBranch(Op, s, rt, Imm);
     }
 
-    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, BackwardLabel const* Label) {
+    void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
@@ -173,7 +173,7 @@ public:
 
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, LabelType *Label) {
+    void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
 
       constexpr uint32_t Op = 0b0011'0100 << 24;
@@ -181,7 +181,7 @@ public:
       CompareAndBranch(Op, s, rt, 0);
     }
 
-    void cbz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, BiDirectionalLabel *Label) {
+    void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         cbz(s, rt, &Label->Backward);
       }
@@ -190,13 +190,13 @@ public:
       }
     }
 
-    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, uint32_t Imm) {
+    void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, uint32_t Imm) {
       constexpr uint32_t Op = 0b0011'0101 << 24;
 
       CompareAndBranch(Op, s, rt, Imm);
     }
 
-    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, BackwardLabel const* Label) {
+    void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
@@ -207,7 +207,7 @@ public:
 
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, LabelType *Label) {
+    void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC });
 
       constexpr uint32_t Op = 0b0011'0101 << 24;
@@ -215,7 +215,7 @@ public:
       CompareAndBranch(Op, s, rt, 0);
     }
 
-    void cbnz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, BiDirectionalLabel *Label) {
+    void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         cbnz(s, rt, &Label->Backward);
       }
@@ -225,12 +225,12 @@ public:
     }
 
     // Test and branch immediate
-    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
+    void tbz(ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
       constexpr uint32_t Op = 0b0011'0110 << 24;
 
       TestAndBranch(Op, rt, Bit, Imm);
     }
-    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, BackwardLabel const* Label) {
+    void tbz(ARMEmitter::Register rt, uint32_t Bit, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
@@ -241,7 +241,7 @@ public:
 
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
+    void tbz(ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH });
 
       constexpr uint32_t Op = 0b0011'0110 << 24;
@@ -249,7 +249,7 @@ public:
       TestAndBranch(Op, rt, Bit, 0);
     }
 
-    void tbz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel *Label) {
+    void tbz(ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         tbz(rt, Bit, &Label->Backward);
       }
@@ -258,12 +258,12 @@ public:
       }
     }
 
-    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
+    void tbnz(ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
       constexpr uint32_t Op = 0b0011'0111 << 24;
 
       TestAndBranch(Op, rt, Bit, Imm);
     }
-    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, BackwardLabel const* Label) {
+    void tbnz(ARMEmitter::Register rt, uint32_t Bit, BackwardLabel const* Label) {
       int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
       LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
@@ -274,14 +274,14 @@ public:
 
     template<typename LabelType>
     requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
+    void tbnz(ARMEmitter::Register rt, uint32_t Bit, LabelType *Label) {
       AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH });
       constexpr uint32_t Op = 0b0011'0111 << 24;
 
       TestAndBranch(Op, rt, Bit, 0);
     }
 
-    void tbnz(FEXCore::ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel *Label) {
+    void tbnz(ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel *Label) {
       if (Label->Backward.Location) {
         tbnz(rt, Bit, &Label->Backward);
       }
@@ -292,7 +292,7 @@ public:
 
 private:
     // Conditional branch immediate
-    void Branch_Conditional(uint32_t Op, uint32_t Op1, uint32_t Op0, FEXCore::ARMEmitter::Condition Cond, uint32_t Imm) {
+    void Branch_Conditional(uint32_t Op, uint32_t Op1, uint32_t Op0, ARMEmitter::Condition Cond, uint32_t Imm) {
       uint32_t Instr = Op;
 
       Instr |= Op1 << 24;
@@ -304,7 +304,7 @@ private:
     }
 
     // Unconditional branch register
-    void UnconditionalBranch(uint32_t Op, FEXCore::ARMEmitter::Register rn) {
+    void UnconditionalBranch(uint32_t Op, ARMEmitter::Register rn) {
       uint32_t Instr = Op;
       Instr |= Encode_rn(rn);
       dc32(Instr);
@@ -318,8 +318,8 @@ private:
     }
 
     // Compare and branch
-    void CompareAndBranch(uint32_t Op, FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rt, uint32_t Imm) {
-      const uint32_t SF = s == FEXCore::ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
+    void CompareAndBranch(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rt, uint32_t Imm) {
+      const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
       uint32_t Instr = Op;
 
@@ -330,7 +330,7 @@ private:
     }
 
     // Test and branch - immediate
-    void TestAndBranch(uint32_t Op, FEXCore::ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
+    void TestAndBranch(uint32_t Op, ARMEmitter::Register rt, uint32_t Bit, uint32_t Imm) {
       uint32_t Instr = Op;
 
       Instr |= (Bit >> 5) << 31;

@@ -11,7 +11,7 @@ public:
     // TODO: AT
     // TODO: CFP
     // TODO: CPP
-    void dc(FEXCore::ARMEmitter::DataCacheOperation DCOp, FEXCore::ARMEmitter::Register rt) {
+    void dc(ARMEmitter::DataCacheOperation DCOp, ARMEmitter::Register rt) {
       constexpr uint32_t Op = 0b1101'0101'0000'1000'0111 << 12;
       SystemInstruction(Op, 0, FEXCore::ToUnderlying(DCOp), rt);
     }
@@ -48,67 +48,67 @@ public:
       ExceptionGeneration(0b101, 0b000, 0b11, Imm);
     }
     // System instructions with register argument
-    void wfet(FEXCore::ARMEmitter::Register rt) {
+    void wfet(ARMEmitter::Register rt) {
       SystemInstructionWithReg(0b0000, 0b000, rt);
     }
-    void wfit(FEXCore::ARMEmitter::Register rt) {
+    void wfit(ARMEmitter::Register rt) {
       SystemInstructionWithReg(0b0000, 0b001, rt);
     }
 
     // Hints
     void nop() {
-      Hint(FEXCore::ARMEmitter::HintRegister::NOP);
+      Hint(ARMEmitter::HintRegister::NOP);
     }
     void yield() {
-      Hint(FEXCore::ARMEmitter::HintRegister::YIELD);
+      Hint(ARMEmitter::HintRegister::YIELD);
     }
     void wfe() {
-      Hint(FEXCore::ARMEmitter::HintRegister::WFE);
+      Hint(ARMEmitter::HintRegister::WFE);
     }
     void wfi() {
-      Hint(FEXCore::ARMEmitter::HintRegister::WFI);
+      Hint(ARMEmitter::HintRegister::WFI);
     }
     void sev() {
-      Hint(FEXCore::ARMEmitter::HintRegister::SEV);
+      Hint(ARMEmitter::HintRegister::SEV);
     }
     void sevl() {
-      Hint(FEXCore::ARMEmitter::HintRegister::SEVL);
+      Hint(ARMEmitter::HintRegister::SEVL);
     }
     void dgh() {
-      Hint(FEXCore::ARMEmitter::HintRegister::DGH);
+      Hint(ARMEmitter::HintRegister::DGH);
     }
     void csdb() {
-      Hint(FEXCore::ARMEmitter::HintRegister::CSDB);
+      Hint(ARMEmitter::HintRegister::CSDB);
     }
 
     // Barriers
     void clrex(uint32_t imm = 15) {
       LOGMAN_THROW_AA_FMT(imm < 16, "Immediate out of range");
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::CLREX, imm);
+      Barrier(ARMEmitter::BarrierRegister::CLREX, imm);
     }
-    void dsb(FEXCore::ARMEmitter::BarrierScope Scope) {
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::DSB, FEXCore::ToUnderlying(Scope));
+    void dsb(ARMEmitter::BarrierScope Scope) {
+      Barrier(ARMEmitter::BarrierRegister::DSB, FEXCore::ToUnderlying(Scope));
     }
-    void dmb(FEXCore::ARMEmitter::BarrierScope Scope) {
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::DMB, FEXCore::ToUnderlying(Scope));
+    void dmb(ARMEmitter::BarrierScope Scope) {
+      Barrier(ARMEmitter::BarrierRegister::DMB, FEXCore::ToUnderlying(Scope));
     }
     void isb() {
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::ISB, FEXCore::ToUnderlying(FEXCore::ARMEmitter::BarrierScope::SY));
+      Barrier(ARMEmitter::BarrierRegister::ISB, FEXCore::ToUnderlying(ARMEmitter::BarrierScope::SY));
     }
     void sb() {
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::SB, 0);
+      Barrier(ARMEmitter::BarrierRegister::SB, 0);
     }
     void tcommit() {
-      Barrier(FEXCore::ARMEmitter::BarrierRegister::TCOMMIT, 0);
+      Barrier(ARMEmitter::BarrierRegister::TCOMMIT, 0);
     }
 
     // System register move
-    void msr(FEXCore::ARMEmitter::SystemRegister reg, FEXCore::ARMEmitter::Register rt) {
+    void msr(ARMEmitter::SystemRegister reg, ARMEmitter::Register rt) {
       constexpr uint32_t Op = 0b1101'0101'0001 << 20;
       SystemRegisterMove(Op, rt, reg);
     }
 
-    void mrs(FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::SystemRegister reg) {
+    void mrs(ARMEmitter::Register rd, ARMEmitter::SystemRegister reg) {
       constexpr uint32_t Op = 0b1101'0101'0011 << 20;
       SystemRegisterMove(Op, rd, reg);
     }
@@ -130,7 +130,7 @@ private:
     }
 
     // System instructions with register argument
-    void SystemInstructionWithReg(uint32_t CRm, uint32_t op2, FEXCore::ARMEmitter::Register rt) {
+    void SystemInstructionWithReg(uint32_t CRm, uint32_t op2, ARMEmitter::Register rt) {
       uint32_t Instr = 0b1101'0101'0000'0011'0001 << 12;
 
       Instr |= CRm << 8;
@@ -140,13 +140,13 @@ private:
     }
 
     // Hints
-    void Hint(FEXCore::ARMEmitter::HintRegister Reg) {
+    void Hint(ARMEmitter::HintRegister Reg) {
       uint32_t Instr = 0b1101'0101'0000'0011'0010'0000'0001'1111U;
       Instr |= FEXCore::ToUnderlying(Reg);
       dc32(Instr);
     }
     // Barriers
-    void Barrier(FEXCore::ARMEmitter::BarrierRegister Reg, uint32_t CRm) {
+    void Barrier(ARMEmitter::BarrierRegister Reg, uint32_t CRm) {
       uint32_t Instr = 0b1101'0101'0000'0011'0011'0000'0001'1111U;
       Instr |= CRm << 8;
       Instr |= FEXCore::ToUnderlying(Reg);
@@ -154,7 +154,7 @@ private:
     }
 
     // System Instruction
-    void SystemInstruction(uint32_t Op, uint32_t L, uint32_t SubOp, FEXCore::ARMEmitter::Register rt) {
+    void SystemInstruction(uint32_t Op, uint32_t L, uint32_t SubOp, ARMEmitter::Register rt) {
       uint32_t Instr = Op;
 
       Instr |= L << 21;
@@ -165,7 +165,7 @@ private:
     }
 
     // System register move
-    void SystemRegisterMove(uint32_t Op, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::SystemRegister reg) {
+    void SystemRegisterMove(uint32_t Op, ARMEmitter::Register rt, ARMEmitter::SystemRegister reg) {
       uint32_t Instr = Op;
 
       Instr |= FEXCore::ToUnderlying(reg);
