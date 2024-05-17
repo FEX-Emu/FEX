@@ -65,9 +65,11 @@ public:
   RegisterAllocationData* GetAllocationData() override;
   RegisterAllocationData::UniquePtr PullAllocationData() override;
 
-private:
   IR::RegisterAllocationData::UniquePtr AllocData;
   RegisterClass Classes[INVALID_CLASS];
+
+  IREmitter *IREmit;
+  IRListView *IR;
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
@@ -89,13 +91,15 @@ RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
 
 #define foreach_valid_arg(IROp, index, arg) foreach_arg(IROp, index, arg) if (IsValidArg(Arg))
 
-bool ConstrainedRAPass::Run(IREmitter* IREmit) {
+bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
-  auto IR = IREmit->ViewIR();
+  IREmit_ = IREmit;
+  auto IR_ = IREmit->ViewIR();
+  IR = &IR_;
 
   // Map of Old nodes to their preferred register, to coalesce load/store reg.
-  fextl::vector<PhysicalRegister> PreferredReg(IR.GetSSACount(), PhysicalRegister::Invalid());
+  fextl::vector<PhysicalRegister> PreferredReg(IR->GetSSACount(), PhysicalRegister::Invalid());
 
   // FEX's original RA could only assign a single register to a given def for
   // its entire live range, and this limitation is baked deep into the IR.
@@ -114,17 +118,17 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
   //
   // Since its indexed by Old nodes, SSAToNewSSA does not grow.
-  fextl::vector<OrderedNode*> SSAToNewSSA(IR.GetSSACount(), nullptr);
+  fextl::vector<OrderedNode*> SSAToNewSSA(IR->GetSSACount(), nullptr);
 
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
-  fextl::vector<OrderedNode*> NewSSAToSSA(IR.GetSSACount(), nullptr);
+  fextl::vector<OrderedNode*> NewSSAToSSA(IR->GetSSACount(), nullptr);
 
   // Map of assigned registers. Grows.
   PhysicalRegister InvalidPhysReg = PhysicalRegister(InvalidClass, InvalidReg);
-  fextl::vector<PhysicalRegister> SSAToReg(IR.GetSSACount(), InvalidPhysReg);
+  fextl::vector<PhysicalRegister> SSAToReg(IR->GetSSACount(), InvalidPhysReg);
 
-  auto IsOld = [&IR, &SSAToNewSSA](OrderedNode* Node) {
-    return IR.GetID(Node).Value < SSAToNewSSA.size();
+  auto IsOld = [this, &SSAToNewSSA](OrderedNode* Node) {
+    return IR->GetID(Node).Value < SSAToNewSSA.size();
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
@@ -159,7 +163,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots(IR.GetSSACount(), 0);
 
-  auto InsertFill = [&IR, &IREmit, &SpillSlots, &IsOld](OrderedNode* Old) {
+  auto InsertFill = [&IR, &IREmit_, &SpillSlots, &IsOld](OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
     auto SlotPlusOne = SpillSlots.at(IR.GetID(Old).Value);
@@ -168,7 +172,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     auto Header = IR.GetOp<IROp_Header>(Old);
     auto RegClass = GetRegClassFromNode(&IR, Header);
 
-    auto Fill = IREmit->_FillRegister(Old, SlotPlusOne - 1, RegClass);
+    auto Fill = IREmit_->_FillRegister(Old, SlotPlusOne - 1, RegClass);
     Fill.first->Header.Size = Header->Size;
     Fill.first->Header.ElementSize = Header->ElementSize;
     return Fill;
@@ -265,7 +269,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
     return std::make_pair(nullptr, PhysicalRegister::Invalid());
   };
 
-  auto SpillReg = [this, &IR, &IREmit, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses,
+  auto SpillReg = [this, &IR, &IREmit_, &SpillSlotCount, &SpillSlots, &SSAToReg, &FreeReg, &Map, &IsOld, &NextUses,
                    &HasSource](auto Class, IROp_Header* Exclude, bool Pair) {
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
@@ -319,7 +323,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
       auto Slot = SpillSlotCount++;
 
       // We must map here in case we're spilling something we shuffled.
-      auto SpillOp = IREmit->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
+      auto SpillOp = IREmit_->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
       SpillOp.first->Header.Size = Header->Size;
       SpillOp.first->Header.ElementSize = Header->ElementSize;
       SpillSlots.at(Value) = Slot + 1;
@@ -364,7 +368,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit) {
   };
 
   // Assign a register for a given Node, spilling if necessary.
-  auto AssignReg = [this, &IR, IREmit, &SpillReg, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask, &PreferredReg, &SSAToReg, &DecodeReg,
+  auto AssignReg = [this, &IR, IREmit_, &SpillReg, &Remap, &FreeReg, &SetReg, &Map, &AvailableMask, &PreferredReg, &SSAToReg, &DecodeReg,
                     &IsOld](OrderedNode* CodeNode, IROp_Header* Pivot) {
     const auto Node = IR.GetID(CodeNode);
     LOGMAN_THROW_AA_FMT(Node.IsValid(), "Node must be valid");
