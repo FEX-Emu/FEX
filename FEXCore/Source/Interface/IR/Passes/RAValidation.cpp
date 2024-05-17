@@ -28,7 +28,7 @@ struct RegState {
   // 1. There will be less than 32 GPRs and 32 FPRs
   // 2. If the GPRFixed class is used, there will be 16 GPRs and 16 FixedGPRs max
   // 3. Same with FPRFixed
-  // 4. If the GPRPairClass is used, it is assumed each GPRPair N will map onto GPRs N*2 and N*2 + 1
+  // 4. If the GPRPairClass is used, it is assumed each GPRPair N will map onto GPRs N and N + 1
 
   // These assumptions were all true for the state of the arm64 and x86 jits at the time this was written
 
@@ -51,8 +51,8 @@ struct RegState {
       return true;
     case GPRPairClass:
       // Alias paired registers onto both
-      GPRs[Reg.Reg * 2] = ssa;
-      GPRs[Reg.Reg * 2 + 1] = ssa;
+      GPRs[Reg.Reg] = ssa;
+      GPRs[Reg.Reg + 1] = ssa;
       return true;
     }
     return false;
@@ -68,8 +68,8 @@ struct RegState {
     case FPRFixedClass: return FPRsFixed[Reg.Reg];
     case GPRPairClass:
       // Make sure both halves of the Pair contain the same SSA
-      if (GPRs[Reg.Reg * 2] == GPRs[Reg.Reg * 2 + 1]) {
-        return GPRs[Reg.Reg * 2];
+      if (GPRs[Reg.Reg] == GPRs[Reg.Reg + 1]) {
+        return GPRs[Reg.Reg];
       }
       return CorruptedPair;
     }

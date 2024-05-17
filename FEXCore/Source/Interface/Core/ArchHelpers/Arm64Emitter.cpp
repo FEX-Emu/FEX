@@ -53,17 +53,13 @@ namespace x64 {
     REG_AF,
   };
 
-  constexpr std::array<ARMEmitter::Register, 7> RA = {
+  constexpr std::array<ARMEmitter::Register, 8> RA = {
     // All these callee saved
     ARMEmitter::Reg::r20, ARMEmitter::Reg::r21, ARMEmitter::Reg::r22, ARMEmitter::Reg::r23,
-    ARMEmitter::Reg::r24, ARMEmitter::Reg::r25, ARMEmitter::Reg::r30,
+    ARMEmitter::Reg::r24, ARMEmitter::Reg::r25, ARMEmitter::Reg::r30, ARMEmitter::Reg::r18,
   };
 
-  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 3> RAPair = {{
-    {ARMEmitter::Reg::r20, ARMEmitter::Reg::r21},
-    {ARMEmitter::Reg::r22, ARMEmitter::Reg::r23},
-    {ARMEmitter::Reg::r24, ARMEmitter::Reg::r25},
-  }};
+  constexpr unsigned RAPairs = 6;
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
@@ -109,11 +105,7 @@ namespace x64 {
     ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 3> RAPair = {{
-    {ARMEmitter::Reg::r6, ARMEmitter::Reg::r7},
-    {ARMEmitter::Reg::r14, ARMEmitter::Reg::r15},
-    {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17},
-  }};
+  constexpr unsigned RAPairs = 6;
 
   constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
     ARMEmitter::VReg::v0,  ARMEmitter::VReg::v1,  ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,
@@ -242,16 +234,7 @@ namespace x32 {
     ARMEmitter::Reg::r19,
   };
 
-  constexpr std::array<std::pair<ARMEmitter::Register, ARMEmitter::Register>, 7> RAPair = {{
-    {ARMEmitter::Reg::r20, ARMEmitter::Reg::r21},
-    {ARMEmitter::Reg::r22, ARMEmitter::Reg::r23},
-    {ARMEmitter::Reg::r24, ARMEmitter::Reg::r25},
-
-    {ARMEmitter::Reg::r12, ARMEmitter::Reg::r13},
-    {ARMEmitter::Reg::r14, ARMEmitter::Reg::r15},
-    {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17},
-    {ARMEmitter::Reg::r29, ARMEmitter::Reg::r30},
-  }};
+  constexpr unsigned RAPairs = 12;
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {
@@ -376,18 +359,18 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;
     GeneralRegisters = x64::RA;
-    GeneralPairRegisters = x64::RAPair;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
+    PairRegisters = x64::RAPairs;
 #ifdef _M_ARM_64EC
     ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
 #endif
   } else {
     ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
+    PairRegisters = x32::RAPairs;
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;
-    GeneralPairRegisters = x32::RAPair;
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;
