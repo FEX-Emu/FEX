@@ -144,7 +144,7 @@ private:
   OrderedNode *InsertFill(OrderedNode* Old) {
     LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
 
-    auto SlotPlusOne = SpillSlots.at(IR.GetID(Old).Value);
+    auto SlotPlusOne = SpillSlots.at(IR->GetID(Old).Value);
     LOGMAN_THROW_AA_FMT(SlotPlusOne >= 1, "Old must have been spilled");
 
     auto Header = IR->GetOp<IROp_Header>(Old);
