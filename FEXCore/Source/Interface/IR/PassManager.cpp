@@ -87,10 +87,6 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool Inli
     InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
     InsertPass(CreatePassDeadCodeElimination());
   }
-
-  // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
-  // Compact before IR, don't worry about RA generating spills/fills
-  InsertPass(CreateIRCompaction(ctx->OpDispatcherAllocator), "Compaction");
 }
 
 void PassManager::AddDefaultValidationPasses() {
