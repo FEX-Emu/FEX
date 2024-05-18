@@ -282,15 +282,14 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char* const _en
   return fextl::make_unique<EnvLoader>(_envp);
 }
 
-fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
+fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, int ProgramFDFromEnv) {
   // If executed with a FEX FD then the Program argument might be empty.
   // In this case we need to scan the FD node to recover the application binary that exists on disk.
   // Only do this if the Program argument is empty, since we would prefer the application's expectation
   // of application name.
-  if (!ProgramFDFromEnv.empty() && Program.empty()) {
+  if (ProgramFDFromEnv != -1 && Program.empty()) {
     // Get the `dev` node of the execveat fd string.
-    Program = "/dev/fd/";
-    Program += ProgramFDFromEnv;
+    Program = fextl::fmt::format("/dev/fd/{}", ProgramFDFromEnv);
   }
 
   // If we were provided a relative path then we need to canonicalize it to become absolute.
@@ -328,7 +327,7 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   //  - Regular execveat with FD. FD points to file on disk that has been deleted.
   //    execveat binfmt_misc args layout: `FEXInterpreter /dev/fd/<FD> <user provided argv[0]> <user provided argv[n]>...`
 #ifndef _WIN32
-  if (ExecFDInterp || !ProgramFDFromEnv.empty()) {
+  if (ExecFDInterp || ProgramFDFromEnv != -1) {
     // Only in the case that FEX is executing an FD will the program argument potentially be a symlink.
     // This symlink will be in the style of `/dev/fd/<FD>`.
     //
@@ -349,8 +348,8 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   return Program;
 }
 
-ApplicationNames LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp,
-                            const std::string_view ProgramFDFromEnv) {
+ApplicationNames
+LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp, int ProgramFDFromEnv) {
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(CreateGlobalMainLayer());

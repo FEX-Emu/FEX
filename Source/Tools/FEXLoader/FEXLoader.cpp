@@ -245,21 +245,38 @@ void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
 }
 } // namespace FEX::TSO
 
+/**
+ * @brief Get an FD from an environment variable and then unset the environment variable.
+ *
+ * @param Env The environment variable to extract the FD from.
+ *
+ * @return -1 if the variable didn't exist.
+ */
+static int StealFEXFDFromEnv(const char* Env) {
+  int FEXFD {-1};
+  const char* FEXFDStr = getenv(Env);
+  if (FEXFDStr) {
+    const std::string_view FEXFDView {FEXFDStr};
+    std::from_chars(FEXFDView.data(), FEXFDView.data() + FEXFDView.size(), FEXFD, 10);
+    unsetenv(Env);
+  }
+  return FEXFD;
+}
+
 int main(int argc, char** argv, char** const envp) {
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
-  const char* FEXFD = getenv("FEX_EXECVEFD");
-  const std::string_view FEXFDView = FEXFD ? std::string_view {FEXFD} : std::string_view {};
+  int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
 
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  auto Program = FEX::Config::LoadConfig(IsInterpreter, true, argc, argv, envp, ExecutedWithFD, FEXFDView);
+  auto Program = FEX::Config::LoadConfig(IsInterpreter, true, argc, argv, envp, ExecutedWithFD, FEXFD);
 
-  if (Program.ProgramPath.empty() && !FEXFD) {
+  if (Program.ProgramPath.empty() && FEXFD == -1) {
     // Early exit if we weren't passed an argument
     return 0;
   }
@@ -345,7 +362,7 @@ int main(int argc, char** argv, char** const envp) {
   RootFSRedirect(&Program.ProgramPath, LDPath());
   InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
-  if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
+  if (!ExecutedWithFD && FEXFD == -1 && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fextl::fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
@@ -365,7 +382,7 @@ int main(int argc, char** argv, char** const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader Loader {Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader Loader {Program.ProgramPath, FEXFD, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
@@ -385,7 +402,7 @@ int main(int argc, char** argv, char** const envp) {
     // Don't need to canonicalize Program.ProgramPath, Config loader will have resolved this already.
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
-  } else if (FEXFD) {
+  } else if (FEXFD != -1) {
     // Anonymous program.
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");

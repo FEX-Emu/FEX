@@ -38,8 +38,8 @@ struct ApplicationNames {
  *
  * @return The application name and path structure
  */
-ApplicationNames LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp,
-                            const std::string_view ProgramFDFromEnv);
+ApplicationNames
+LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp, int ProgramFDFromEnv);
 
 const char* GetHomeDirectory();
 
