@@ -112,7 +112,6 @@ IR to IR Optimization
 - [DeadCodeElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadCodeElimination.cpp)
 - [DeadContextStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadContextStoreElimination.cpp): Transforms ContextLoad/Store to temporaries, similar to mem2reg
 - [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
-- [IRCompaction.cpp](../FEXCore/Source/Interface/IR/Passes/IRCompaction.cpp): Sorts the ssa storage in memory, needed for RA and others
 - [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
 - [InlineCallOptimization.cpp](../FEXCore/Source/Interface/IR/Passes/InlineCallOptimization.cpp): Removes unused arguments if known syscall number
 - [LongDivideRemovalPass.cpp](../FEXCore/Source/Interface/IR/Passes/LongDivideRemovalPass.cpp): Long divide elimination pass

@@ -22,7 +22,6 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore:
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();
-fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator& Allocator);
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
