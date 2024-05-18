@@ -195,14 +195,15 @@ static bool IsShebangFilename(const fextl::string& Filename) {
 }
 
 uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
+  auto SyscallHandler = FEX::HLE::_SyscallHandler;
   fextl::string Filename {};
 
-  fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+  fextl::string RootFS = SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type {};
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
-  const bool SupportsProcFSInterpreter = FEX::HLE::_SyscallHandler->FM.SupportsProcFSInterpreterPath();
+  const bool SupportsProcFSInterpreter = SyscallHandler->FM.SupportsProcFSInterpreterPath();
   fextl::string FDExecEnv;
 
   bool IsShebang {};
@@ -214,7 +215,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   } else {
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
-      auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
+      auto Path = SyscallHandler->FM.GetEmulatedPath(pathname, true);
       if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
         Filename = Path;
       } else {
@@ -240,7 +241,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
         // then we need to redirect this path to the true application path.
         // This is because this path is a symlink to the executing application, which is always `FEXInterpreter` or `FEXLoader`.
         // ex: JRE and shapez.io do this self-execution.
-        Filename = FEX::HLE::_SyscallHandler->Filename();
+        Filename = SyscallHandler->Filename();
       }
     }
 
@@ -256,36 +257,71 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
     return -ENOEXEC;
   }
 
+  fextl::vector<const char*> EnvpArgs {};
+  char* const* EnvpPtr = envp;
+  bool AlreadyCopiedEnvp {};
+
+  auto AppendEnvpVariables = [&EnvpArgs, &AlreadyCopiedEnvp, envp, &EnvpPtr]() {
+    if (AlreadyCopiedEnvp) {
+      ///< If the environment variables were already copied then early return.
+      return;
+    }
+
+    if (envp) {
+      auto OldEnvp = envp;
+      while (*OldEnvp) {
+        ///< Copy the pointers to our own vector of environment variables.
+        EnvpArgs.emplace_back(*OldEnvp);
+        ++OldEnvp;
+      }
+    }
+
+    ///< Set the EnvpPtr to our copy.
+    EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
+
+    AlreadyCopiedEnvp = true;
+  };
+
+  auto AppendNullptrEnvp = [&EnvpArgs, &AlreadyCopiedEnvp]() {
+    if (!AlreadyCopiedEnvp) {
+      ///< If envp wasn't copied then this is unnecessary.
+      return;
+    }
+
+    // Emplace nullptr at the end to stop
+    EnvpArgs.emplace_back(nullptr);
+  };
+
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
   // Kernel does its own checks for file format support for this
   // We can only call execve directly if we both have an interpreter installed AND were ran with the interpreter
   // If the user ran FEX through FEXLoader then we must go down the emulated path
   uint64_t Result {};
-  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && FEX::HLE::_SyscallHandler->IsInterpreter() &&
-      (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
-    // If the FEX interpreter is installed then just execve the ELF file
-    // This will stay inside of our emulated environment since binfmt_misc will capture it
-    Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, envp, Args.flags);
-    SYSCALL_ERRNO();
-  }
 
-  if (Type == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF) {
-    // We are trying to execute an ELF of a different architecture
-    // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
-    // Just execve it and let the kernel handle the process
-    Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, envp, Args.flags);
+  // If the FEX interpreter is installed then just execve the ELF file
+  // This will stay inside of our emulated environment since binfmt_misc will capture it
+  const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && SyscallHandler->IsInterpreter() &&
+                                  (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
+
+  // We are trying to execute an ELF of a different architecture
+  // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
+  // Just execve it and let the kernel handle the process
+  const bool IsOtherELF = Type == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF;
+
+  if (IsBinfmtCompatible || IsOtherELF) {
+    AppendNullptrEnvp();
+
+    Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
     SYSCALL_ERRNO();
   }
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
   fextl::vector<const char*> ExecveArgs {};
-  fextl::vector<const char*> EnvpArgs {};
-  char* const* EnvpPtr = envp;
   const char NullString[] = "";
-  FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
-  if (!FEX::HLE::_SyscallHandler->IsInterpreter()) {
+  SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
+  if (!SyscallHandler->IsInterpreter()) {
     // If we were launched from FEXLoader then we need to make sure to split arguments from FEXLoader and guest
     ExecveArgs.emplace_back("--");
   }
@@ -314,20 +350,16 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
     ExecveArgs.emplace_back(nullptr);
   }
 
+  bool FDExecCopy {};
   if (IsFDExec) {
-    if (envp) {
-      auto OldEnvp = envp;
-      while (*OldEnvp) {
-        EnvpArgs.emplace_back(*OldEnvp);
-        ++OldEnvp;
-      }
-    }
+    AppendEnvpVariables();
 
     int Flags = fcntl(Args.dirfd, F_GETFD);
     if (Flags & FD_CLOEXEC) {
       // FEX needs the FD to live past execve when binfmt_misc isn't used,
       // so duplicate the FD if FD_CLOEXEC is set
       Args.dirfd = dup(Args.dirfd);
+      FDExecCopy = true;
     }
 
     // Remove AT_EMPTY_PATH flag now.
@@ -341,15 +373,18 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
     // Insert the FD for FEX to track.
     EnvpArgs.emplace_back(FDExecEnv.data());
-
-    // Emplace nullptr at the end to stop
-    EnvpArgs.emplace_back(nullptr);
-
-    EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
   }
+
+  // Emplace nullptr at the end to stop
+  AppendNullptrEnvp();
 
   const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
   Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
+
+  if (FDExecCopy) {
+    ///< Had to make a copy, close it now.
+    close(Args.dirfd);
+  }
 
   SYSCALL_ERRNO();
 }
