@@ -102,13 +102,13 @@ private:
 class RAValidation final : public FEXCore::IR::Pass {
 public:
   ~RAValidation() {}
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 };
 
 
-bool RAValidation::Run(IREmitter* IREmit) {
+void RAValidation::Run(IREmitter* IREmit) {
   if (!Manager->HasPass("RA")) {
-    return false;
+    return;
   }
 
   FEXCORE_PROFILE_SCOPED("PassManager::RAValidation");
@@ -210,8 +210,6 @@ bool RAValidation::Run(IREmitter* IREmit) {
 
     Errors.clear();
   }
-
-  return false;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation() {

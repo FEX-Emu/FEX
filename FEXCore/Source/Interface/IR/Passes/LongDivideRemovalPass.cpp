@@ -18,7 +18,7 @@ namespace FEXCore::IR {
 
 class LongDivideEliminationPass final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 private:
   bool IsZeroOp(IREmitter* IREmit, OrderedNodeWrapper Arg);
   bool IsSextOp(IREmitter* IREmit, OrderedNodeWrapper Lower, OrderedNodeWrapper Upper);
@@ -48,10 +48,9 @@ bool LongDivideEliminationPass::IsSextOp(IREmitter* IREmit, OrderedNodeWrapper L
   return false;
 }
 
-bool LongDivideEliminationPass::Run(IREmitter* IREmit) {
+void LongDivideEliminationPass::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::LDE");
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
@@ -74,7 +73,6 @@ bool LongDivideEliminationPass::Run(IREmitter* IREmit) {
               SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
             }
             IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
-            Changed = true;
           }
         } else if (IROp->Op == OP_LUDIV || IROp->Op == OP_LUREM) {
           auto Op = IROp->C<IR::IROp_LUDiv>();
@@ -91,7 +89,6 @@ bool LongDivideEliminationPass::Run(IREmitter* IREmit) {
               UDivOp = IREmit->_URem(OpSize::i64Bit, Lower, Divisor);
             }
             IREmit->ReplaceAllUsesWith(CodeNode, UDivOp);
-            Changed = true;
           }
         }
       }
@@ -99,8 +96,6 @@ bool LongDivideEliminationPass::Run(IREmitter* IREmit) {
   }
 
   IREmit->SetWriteCursor(OriginalWriteCursor);
-
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass() {

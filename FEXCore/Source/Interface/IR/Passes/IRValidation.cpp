@@ -32,7 +32,7 @@ IRValidation::~IRValidation() {
   NodeIsLive.Free();
 }
 
-bool IRValidation::Run(IREmitter* IREmit) {
+void IRValidation::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::IRValidation");
 
   bool HadError = false;
@@ -267,8 +267,6 @@ bool IRValidation::Run(IREmitter* IREmit) {
     Errors.clear();
     Warnings.clear();
   }
-
-  return false;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation() {

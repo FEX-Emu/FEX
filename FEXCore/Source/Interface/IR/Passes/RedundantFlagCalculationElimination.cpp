@@ -53,7 +53,7 @@ struct FlagInfo {
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
   FlagInfo Classify(IROp_Header* Node);
@@ -313,10 +313,9 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 /**
  * @brief This pass removes flag calculations that will otherwise be unused INSIDE of that block
  */
-bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
+void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -342,7 +341,6 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
       // TODO: This whole pass could be merged with DCE?
       bool HasSideEffects = IR::HasSideEffects(IROp->Op);
       if (!HasSideEffects && CodeNode->GetUses() == 0) {
-        Changed = true;
         IREmit->Remove(CodeNode);
       } else {
         // Optimiation algorithm: For each flag written...
@@ -367,10 +365,8 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
             if (Info.CanEliminate && CodeNode->GetUses() == 0) {
               IREmit->Remove(CodeNode);
               Eliminated = true;
-              Changed = true;
             } else if (Info.CanReplace) {
               IROp->Op = Info.Replacement;
-              Changed = true;
             }
           } else {
             FlagsRead &= ~Info.Write;
@@ -392,8 +388,6 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
       --CodeLast;
     }
   }
-
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {

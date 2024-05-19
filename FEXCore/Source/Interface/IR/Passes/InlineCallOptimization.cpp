@@ -23,15 +23,14 @@ class InlineCallOptimization final : public FEXCore::IR::Pass {
 public:
   InlineCallOptimization(const FEXCore::CPUIDEmu* CPUID)
     : CPUID {CPUID} {}
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 private:
   const FEXCore::CPUIDEmu* CPUID;
 };
 
-bool InlineCallOptimization::Run(IREmitter* IREmit) {
+void InlineCallOptimization::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::SyscallOpt");
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
@@ -73,8 +72,6 @@ bool InlineCallOptimization::Run(IREmitter* IREmit) {
           }
 #endif
         }
-
-        Changed = true;
       }
     } else if (IROp->Op == FEXCore::IR::OP_CPUID) {
       auto Op = IROp->CW<IR::IROp_CPUID>();
@@ -98,7 +95,6 @@ bool InlineCallOptimization::Run(IREmitter* IREmit) {
             auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i128Bit, IREmit->_Constant(ResultsLower), IREmit->_Constant(ResultsUpper));
             // Replace all CPUID uses with this inline one
             IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
-            Changed = true;
           }
         }
       }
@@ -115,11 +111,9 @@ bool InlineCallOptimization::Run(IREmitter* IREmit) {
           IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
         // Replace all xgetbv uses with this inline one
         IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
-        Changed = true;
       }
     }
   }
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore::CPUIDEmu* CPUID) {

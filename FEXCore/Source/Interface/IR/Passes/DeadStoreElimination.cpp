@@ -27,7 +27,7 @@ constexpr int PropagationRounds = 5;
 class DeadStoreElimination final : public FEXCore::IR::Pass {
 public:
   explicit DeadStoreElimination() {}
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
   uint64_t FPRBit(RegisterClassType Class, uint32_t Reg) const {
@@ -75,12 +75,11 @@ struct Info {
  * Third pass removes the dead stores.
  *
  */
-bool DeadStoreElimination::Run(IREmitter* IREmit) {
+void DeadStoreElimination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DSE");
 
   fextl::unordered_map<OrderedNode*, Info> InfoMap;
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
   // Pass 1
@@ -185,7 +184,6 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           // If this StoreFlag is never read, remove it
           if (BlockInfo.flag.kill & (1UL << Op->Flag)) {
             IREmit->Remove(CodeNode);
-            Changed = true;
           }
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
@@ -193,14 +191,11 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           // If this OP_STOREREGISTER is never read, remove it
           if ((BlockInfo.gpr.kill & GPRBit(Op->Class, Op->Reg)) || (BlockInfo.fpr.kill & FPRBit(Op->Class, Op->Reg))) {
             IREmit->Remove(CodeNode);
-            Changed = true;
           }
         }
       }
     }
   }
-
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination() {
