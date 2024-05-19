@@ -16,16 +16,15 @@ $end_info$
 namespace FEXCore::IR {
 
 class DeadCodeElimination final : public FEXCore::IR::Pass {
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
   void markUsed(OrderedNodeWrapper* CodeOp, IROp_Header* IROp);
 };
 
-bool DeadCodeElimination::Run(IREmitter* IREmit) {
+void DeadCodeElimination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DCE");
   auto CurrentIR = IREmit->ViewIR();
-  bool Changed = false;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
@@ -78,7 +77,6 @@ bool DeadCodeElimination::Run(IREmitter* IREmit) {
           case OP_ATOMICFETCHNEG: IROp->Op = OP_ATOMICNEG; break;
           default: FEX_UNREACHABLE;
           }
-          Changed = true;
         }
         break;
       }
@@ -89,7 +87,6 @@ bool DeadCodeElimination::Run(IREmitter* IREmit) {
       // Use count tracking can't safely remove anything with side effects
       if (!HasSideEffects) {
         if (CodeNode->GetUses() == 0) {
-          Changed = true;
           IREmit->Remove(CodeNode);
         }
       }
@@ -100,8 +97,6 @@ bool DeadCodeElimination::Run(IREmitter* IREmit) {
       --CodeLast;
     }
   }
-
-  return Changed;
 }
 
 void DeadCodeElimination::markUsed(OrderedNodeWrapper* CodeOp, IROp_Header* IROp) {}

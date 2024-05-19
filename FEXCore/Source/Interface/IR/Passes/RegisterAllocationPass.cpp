@@ -58,7 +58,7 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
 
   RegisterAllocationData* GetAllocationData() override;
@@ -495,7 +495,7 @@ RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
   return std::move(AllocData);
 }
 
-bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
+void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
   IREmit = IREmit_;
@@ -708,9 +708,6 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
   SSAToReg.clear();
   SpillSlots.clear();
   NextUses.clear();
-
-  /* No point tracking this finely, RA is always one-shot */
-  return true;
 }
 
 fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass() {

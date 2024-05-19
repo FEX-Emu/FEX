@@ -32,7 +32,7 @@ class IREmitter;
 class Pass {
 public:
   virtual ~Pass() = default;
-  virtual bool Run(IREmitter* IREmit) = 0;
+  virtual void Run(IREmitter* IREmit) = 0;
 
   void RegisterPassManager(PassManager* _Manager) {
     Manager = _Manager;
@@ -58,7 +58,7 @@ public:
 
   void InsertRegisterAllocationPass();
 
-  bool Run(IREmitter* IREmit);
+  void Run(IREmitter* IREmit);
 
   bool HasPass(fextl::string Name) const {
     return NameToPassMaping.contains(Name);

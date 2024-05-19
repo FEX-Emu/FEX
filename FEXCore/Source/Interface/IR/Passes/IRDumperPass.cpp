@@ -18,7 +18,7 @@ namespace FEXCore::IR::Debug {
 class IRDumper final : public FEXCore::IR::Pass {
 public:
   IRDumper();
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
   FEX_CONFIG_OPT(DumpIR, DUMPIR);
@@ -37,7 +37,7 @@ IRDumper::IRDumper() {
   }
 }
 
-bool IRDumper::Run(IREmitter* IREmit) {
+void IRDumper::Run(IREmitter* IREmit) {
   auto RAPass = Manager->GetPass<IR::RegisterAllocationPass>("RA");
   IR::RegisterAllocationData* RA {};
   if (RAPass) {
@@ -71,8 +71,6 @@ bool IRDumper::Run(IREmitter* IREmit) {
       LogMan::Msg::IFmt("IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
     }
   }
-
-  return false;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateIRDumper() {

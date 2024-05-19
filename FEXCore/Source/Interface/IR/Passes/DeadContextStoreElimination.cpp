@@ -458,7 +458,7 @@ public:
     ClassifyContextStruct(&ClassifiedStruct, SupportsAVX);
     DCE = FEXCore::IR::CreatePassDeadCodeElimination();
   }
-  bool Run(FEXCore::IR::IREmitter* IREmit) override;
+  void Run(FEXCore::IR::IREmitter* IREmit) override;
 private:
   fextl::unique_ptr<FEXCore::IR::Pass> DCE;
 
@@ -473,16 +473,16 @@ private:
   ContextMemberInfo* RecordAccess(ContextInfo* ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
                                   LastAccessType AccessType, FEXCore::IR::OrderedNode* Node, FEXCore::IR::OrderedNode* StoreNode = nullptr);
 
-  bool HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag);
+  void HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag);
 
   // Classify context loads and stores.
-  bool ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
+  void ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
                            uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::NodeIterator BlockEnd);
-  bool ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
+  void ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
                             uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::OrderedNode* ValueNode);
 
   // Block local Passes
-  bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit);
+  void RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit);
 
   unsigned OffsetForReg(FEXCore::IR::RegisterClassType Class, unsigned Reg, unsigned Size) {
     if (Class == FEXCore::IR::FPRClass) {
@@ -531,7 +531,7 @@ ContextMemberInfo* RCLSE::RecordAccess(ContextInfo* ClassifiedInfo, FEXCore::IR:
   return RecordAccess(Info, RegClass, Offset, Size, AccessType, ValueNode, StoreNode);
 }
 
-bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
+void RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
                                 uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::NodeIterator BlockEnd) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
@@ -544,13 +544,11 @@ bool RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* Loc
     // - Previous access was a store, and we are redundantly loading immediately after the store. Eliminating the store.
     IREmit->ReplaceAllUsesWithRange(CodeNode, PreviousMemberInfoCopy.ValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
     RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, PreviousMemberInfoCopy.ValueNode);
-    return true;
   }
   // TODO: Optimize the case of partial loads.
-  return false;
 }
 
-bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
+void RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
                                  uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::OrderedNode* ValueNode) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
@@ -563,15 +561,13 @@ bool RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* Lo
     // Revisit when the new RA lands.
 #if 0
     IREmit->Remove(PreviousMemberInfoCopy.StoreNode);
-    return true;
 #endif
   }
 
   // TODO: Optimize the case of partial stores.
-  return false;
 }
 
-bool RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag) {
+void RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag) {
   const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[Flag]);
   auto Info = FindMemberInfo(LocalInfo, FlagOffset, 1);
   LastAccessType LastAccess = Info->Accessed;
@@ -582,14 +578,10 @@ bool RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInf
     IREmit->SetWriteCursor(CodeNode);
     IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
     RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
-    return true;
   } else if (IsReadAccess(LastAccess)) {
     IREmit->ReplaceAllUsesWith(CodeNode, LastValueNode);
     RecordAccess(Info, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::READ, LastValueNode);
-    return true;
   }
-
-  return false;
 }
 
 /**
@@ -624,11 +616,10 @@ bool RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInf
  *   (%%176) StoreContext %175 i128, 0x10, 0xa0
 
  */
-bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
+void RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
   using namespace FEXCore;
   using namespace FEXCore::IR;
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
@@ -645,19 +636,19 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
-        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+        ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
       } else if (IROp->Op == OP_STOREREGISTER) {
         auto Op = IROp->CW<IR::IROp_StoreRegister>();
         auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
 
-        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+        ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
       } else if (IROp->Op == OP_LOADREGISTER) {
         auto Op = IROp->CW<IR::IROp_LoadRegister>();
         auto Offset = OffsetForReg(Op->Class, Op->Reg, IROp->Size);
-        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, BlockEnd);
+        ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Offset, IROp->Size, CodeNode, BlockEnd);
       } else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->CW<IR::IROp_LoadContext>();
-        Changed |= ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
+        ClassifyContextLoad(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, BlockEnd);
       } else if (IROp->Op == OP_STOREFLAG) {
         const auto Op = IROp->CW<IR::IROp_StoreFlag>();
         const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag;
@@ -668,7 +659,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
         // Flags don't alias, so we can take the simple route here. Kill any flags that have been overwritten
         if (LastStoreNode != nullptr) {
           IREmit->Remove(LastStoreNode);
-          Changed = true;
         }
       } else if (IROp->Op == OP_INVALIDATEFLAGS) {
         auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
@@ -689,15 +679,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
             RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, FlagOffset, 1, LastAccessType::WRITE, IREmit->_Constant(0), CodeNode);
 
             IREmit->Remove(LastStoreNode);
-            Changed = true;
           }
         }
       } else if (IROp->Op == OP_LOADFLAG) {
         const auto Op = IROp->CW<IR::IROp_LoadFlag>();
 
-        Changed |= HandleLoadFlag(IREmit, &LocalInfo, CodeNode, Op->Flag);
+        HandleLoadFlag(IREmit, &LocalInfo, CodeNode, Op->Flag);
       } else if (IROp->Op == OP_LOADDF) {
-        Changed |= HandleLoadFlag(IREmit, &LocalInfo, CodeNode, X86State::RFLAG_DF_RAW_LOC);
+        HandleLoadFlag(IREmit, &LocalInfo, CodeNode, X86State::RFLAG_DF_RAW_LOC);
       } else if (IROp->Op == OP_SYSCALL || IROp->Op == OP_INLINESYSCALL) {
         FEXCore::IR::SyscallFlags Flags {};
         if (IROp->Op == OP_SYSCALL) {
@@ -720,13 +709,11 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
   }
 
   IREmit->SetWriteCursor(OriginalWriteCursor);
-
-  return Changed;
 }
 
-bool RCLSE::Run(FEXCore::IR::IREmitter* IREmit) {
+void RCLSE::Run(FEXCore::IR::IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::RCLSE");
-  return RedundantStoreLoadElimination(IREmit);
+  RedundantStoreLoadElimination(IREmit);
 }
 
 } // namespace
