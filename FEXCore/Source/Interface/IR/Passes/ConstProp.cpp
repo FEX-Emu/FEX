@@ -200,33 +200,6 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
   return std::nullopt;
 }
 
-static OrderedNodeWrapper RemoveUselessMasking(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t mask) {
-#if 1 // HOTFIX: We need to clear up the meaning of opsize and dest size. See #594
-  return src;
-#else
-  auto IROp = IREmit->GetOpHeader(src);
-  if (IROp->Op == OP_AND) {
-    auto Op = IROp->C<IR::IROp_And>();
-    uint64_t imm;
-    if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
-      return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
-    }
-  } else if (IROp->Op == OP_BFE) {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    if (Op->lsb == 0) {
-      uint64_t imm = 1ULL << (Op->Width - 1);
-      imm = (imm - 1) * 2 + 1;
-
-      if ((imm & mask) == mask) {
-        return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
-      }
-    }
-  }
-
-  return src;
-#endif
-}
-
 static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t Width) {
   auto IROp = IREmit->GetOpHeader(src);
   if (IROp->Op == OP_BFE) {
@@ -355,45 +328,6 @@ doneOp:;
 
 void ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp) {
   switch (IROp->Op) {
-  // Generic handling
-  case OP_OR:
-  case OP_XOR:
-  case OP_NOT:
-  case OP_ADD:
-  case OP_SUB:
-  case OP_MUL:
-  case OP_UMUL:
-  case OP_DIV:
-  case OP_UDIV:
-  case OP_LSHR:
-  case OP_ASHR:
-  case OP_LSHL:
-  case OP_ROR: {
-    for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
-      if (newArg.ID() != IROp->Args[i].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
-      }
-    }
-    break;
-  }
-  case OP_AND: {
-    // if AND's arguments are imms, they are masking
-    for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
-      uint64_t imm = 0;
-      if (!IREmit->IsValueConstant(IROp->Args[i ^ 1], &imm)) {
-        continue;
-      }
-
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
-
-      if (newArg.ID() != IROp->Args[i].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
-      }
-    }
-    break;
-  }
-
   case OP_BFE: {
     auto Op = IROp->C<IR::IROp_Bfe>();
 
@@ -416,33 +350,6 @@ void ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
         break;
       }
     }
-
-    // BFE does implicit masking, remove any masks leading to this, if possible
-    uint64_t imm = 1ULL << (Op->Width - 1);
-    imm = (imm - 1) * 2 + 1;
-    imm <<= Op->lsb;
-
-    auto newArg = RemoveUselessMasking(IREmit, Op->Src, imm);
-
-    if (newArg.ID() != Op->Src.ID()) {
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Src_Index, IREmit->UnwrapNode(newArg));
-    }
-    break;
-  }
-
-  case OP_SBFE: {
-    auto Op = IROp->C<IR::IROp_Sbfe>();
-
-    // BFE does implicit masking
-    uint64_t imm = 1ULL << (Op->Width - 1);
-    imm = (imm - 1) * 2 + 1;
-    imm <<= Op->lsb;
-
-    auto newArg = RemoveUselessMasking(IREmit, Op->Src, imm);
-
-    if (newArg.ID() != Op->Src.ID()) {
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Src_Index, IREmit->UnwrapNode(newArg));
-    }
     break;
   }
 
@@ -455,11 +362,6 @@ void ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
         (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
       //  Load mem / load ctx zexts, no need to vmem
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
-    } else if (IROp->Size == sourceHeader->Size) {
-      // VMOV of same size
-      // XXX: This is unsafe of an optimization since in some cases we can't see through garbage data in the upper bits of a vector
-      // RCLSE generates VMOV instructions which are being used as a zero extension
-      // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     }
     break;
   }
@@ -730,11 +632,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->SetWriteCursor(CodeNode);
       OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
-    } else {
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[1], IROp->Size * 8 - 1);
-      if (newArg.ID() != IROp->Args[1].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
-      }
     }
     break;
   }
@@ -751,11 +648,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->SetWriteCursor(CodeNode);
       OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
-    } else {
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[1], IROp->Size * 8 - 1);
-      if (newArg.ID() != IROp->Args[1].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
-      }
     }
     break;
   }
