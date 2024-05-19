@@ -907,23 +907,6 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-  case OP_SELECT: {
-    auto Op = IROp->C<IR::IROp_Select>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Op->Cond == COND_EQ) {
-
-      Constant1 &= getMask(IROp);
-      Constant2 &= getMask(IROp);
-
-      bool is_true = Constant1 == Constant2;
-
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[is_true ? 2 : 3]));
-      Changed = true;
-    }
-    break;
-  }
   default: break;
   }
 
