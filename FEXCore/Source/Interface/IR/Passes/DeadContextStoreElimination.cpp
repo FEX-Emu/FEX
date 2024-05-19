@@ -726,15 +726,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
 
 bool RCLSE::Run(FEXCore::IR::IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::RCLSE");
-  bool Changed = false;
-
-  // Run up to 5 times
-  for (int i = 0; i < 5 && RedundantStoreLoadElimination(IREmit); i++) {
-    Changed = true;
-    DCE->Run(IREmit);
-  }
-
-  return Changed;
+  return RedundantStoreLoadElimination(IREmit);
 }
 
 } // namespace
