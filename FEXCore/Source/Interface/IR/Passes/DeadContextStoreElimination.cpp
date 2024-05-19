@@ -456,12 +456,9 @@ public:
   explicit RCLSE(bool SupportsAVX_)
     : SupportsAVX {SupportsAVX_} {
     ClassifyContextStruct(&ClassifiedStruct, SupportsAVX);
-    DCE = FEXCore::IR::CreatePassDeadCodeElimination();
   }
   void Run(FEXCore::IR::IREmitter* IREmit) override;
 private:
-  fextl::unique_ptr<FEXCore::IR::Pass> DCE;
-
   ContextInfo ClassifiedStruct;
   fextl::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
 
