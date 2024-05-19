@@ -3870,17 +3870,17 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     OrderedNode* Src3Lower {};
     if (GPRSize == 8 && Size == 4) {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
+      Src1Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src1);
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     } else {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags);
+      Src1Lower = Src1;
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     }
 
     if (Size != GPRSize) {
-      Src1Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src1);
       Src3Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src3);
     } else {
-      Src1Lower = Src1;
       Src3Lower = Src3;
     }
 
