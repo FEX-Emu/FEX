@@ -224,7 +224,6 @@ public:
 
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
-  void LoadMemStoreMemImmediatePooling(IREmitter* IREmit, const IRListView& CurrentIR);
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp);
   void ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR);
 
@@ -254,43 +253,9 @@ private:
   constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
 };
 
+// Constants are pooled per block. Similarly for LoadMem / StoreMem, if imms are
+// close by, use address gen to generate the values instead of using a new imm.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
-  // constants are pooled per block
-  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      if (IROp->Op == OP_CONSTANT) {
-        auto Op = IROp->C<IR::IROp_Constant>();
-        const auto NewNodeID = CurrentIR.GetID(CodeNode);
-
-        auto it = ConstPool.find(Op->Constant);
-        if (it != ConstPool.end()) {
-          const auto OldNodeID = it->second.NodeID;
-
-          if ((NewNodeID.Value - OldNodeID.Value) > CONSTANT_POOL_RANGE_LIMIT) {
-            // Don't reuse if the live range is beyond the heurstic range.
-            // Update the tracked value to this new constant.
-            it->second.Node = CodeNode;
-            it->second.NodeID = NewNodeID;
-            continue;
-          }
-
-          auto CodeIter = CurrentIR.at(CodeNode);
-          IREmit->ReplaceUsesWithAfter(CodeNode, it->second.Node, CodeIter);
-        } else {
-          ConstPool[Op->Constant] = ConstPoolData {
-            .Node = CodeNode,
-            .NodeID = NewNodeID,
-          };
-        }
-      }
-    }
-    ConstPool.clear();
-  }
-}
-
-// LoadMem / StoreMem imm pooling
-// If imms are close by, use address gen to generate the values instead of using a new imm
-void ConstProp::LoadMemStoreMemImmediatePooling(IREmitter* IREmit, const IRListView& CurrentIR) {
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
@@ -318,10 +283,36 @@ void ConstProp::LoadMemStoreMemImmediatePooling(IREmitter* IREmit, const IRListV
           AddressgenConsts[IREmit->UnwrapNode(IROp->Args[AddrIndex])] = Addr;
         }
 doneOp:;
+      } else if (IROp->Op == OP_CONSTANT) {
+        auto Op = IROp->C<IR::IROp_Constant>();
+        const auto NewNodeID = CurrentIR.GetID(CodeNode);
+
+        auto it = ConstPool.find(Op->Constant);
+        if (it != ConstPool.end()) {
+          const auto OldNodeID = it->second.NodeID;
+
+          if ((NewNodeID.Value - OldNodeID.Value) > CONSTANT_POOL_RANGE_LIMIT) {
+            // Don't reuse if the live range is beyond the heurstic range.
+            // Update the tracked value to this new constant.
+            it->second.Node = CodeNode;
+            it->second.NodeID = NewNodeID;
+            continue;
+          }
+
+          auto CodeIter = CurrentIR.at(CodeNode);
+          IREmit->ReplaceUsesWithAfter(CodeNode, it->second.Node, CodeIter);
+        } else {
+          ConstPool[Op->Constant] = ConstPoolData {
+            .Node = CodeNode,
+            .NodeID = NewNodeID,
+          };
+        }
       }
+
       IREmit->SetWriteCursor(CodeNode);
     }
     AddressgenConsts.clear();
+    ConstPool.clear();
   }
 }
 
@@ -1020,7 +1011,6 @@ void ConstProp::Run(IREmitter* IREmit) {
   auto CurrentIR = IREmit->ViewIR();
 
   HandleConstantPools(IREmit, CurrentIR);
-  LoadMemStoreMemImmediatePooling(IREmit, CurrentIR);
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
     ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
