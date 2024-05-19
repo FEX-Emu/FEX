@@ -168,17 +168,12 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
                              X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 :
                                                                                                                                   4;
 
-    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false});
-    if (DstSize != SrcSize) {
-      // If the SrcSize isn't the DstSize then we need to zero extend.
-      const uint8_t GPRSize = CTX->GetGPRSize();
-      Src = _Bfe(IR::SizeToOpSize(GPRSize), SrcSize * 8, 0, Src);
-    }
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   } else {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
 
-    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false});
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
 }
@@ -4378,7 +4373,7 @@ OrderedNode* OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, c
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
 
-  if (LoadableType && AddrSize < GPRSize) {
+  if (LoadableType && AddrSize < GPRSize && (LoadData || !AllowUpperGarbage)) {
     // For 64-bit AddrSize can be 32-bit or 64-bit
     // For 32-bit AddrSize can be 32-bit or 16-bit
     //
