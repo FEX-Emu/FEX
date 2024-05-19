@@ -409,7 +409,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
     // Is this value already BFE'd?
     if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
-      // printf("Removed BFE once \n");
       break;
     }
 
@@ -421,7 +420,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
 
       if (Op->Width >= (sourceHeader->Size * 8) &&
           (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-        // printf("Eliminated needless zext bfe\n");
         //  Load mem / load ctx zexts, no need to vmem
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
         break;
@@ -466,14 +464,12 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
 
     if (IROp->Size >= sourceHeader->Size &&
         (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-      // printf("Eliminated needless zext VMOV\n");
       //  Load mem / load ctx zexts, no need to vmem
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     } else if (IROp->Size == sourceHeader->Size) {
       // VMOV of same size
       // XXX: This is unsafe of an optimization since in some cases we can't see through garbage data in the upper bits of a vector
       // RCLSE generates VMOV instructions which are being used as a zero extension
-      // printf("printf vmov of same size?!\n");
       // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     }
     break;
