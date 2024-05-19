@@ -1018,7 +1018,6 @@ void ConstProp::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::ConstProp");
 
   auto CurrentIR = IREmit->ViewIR();
-  auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   HandleConstantPools(IREmit, CurrentIR);
   LoadMemStoreMemImmediatePooling(IREmit, CurrentIR);
@@ -1030,8 +1029,6 @@ void ConstProp::Run(IREmitter* IREmit) {
   if (InlineConstants) {
     ConstantInlining(IREmit, CurrentIR);
   }
-
-  IREmit->SetWriteCursor(OriginalWriteCursor);
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9, bool Is64BitMode) {
