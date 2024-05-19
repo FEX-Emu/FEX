@@ -79,13 +79,9 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool Inli
     }
 
     InsertPass(CreateDeadStoreElimination());
-    InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9, Is64BitMode()));
-
-    InsertPass(CreateDeadFlagCalculationEliminination());
-
     InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
-    InsertPass(CreatePassDeadCodeElimination());
+    InsertPass(CreateDeadFlagCalculationEliminination());
   }
 }
 
