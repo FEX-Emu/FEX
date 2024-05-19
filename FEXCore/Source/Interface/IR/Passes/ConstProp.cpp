@@ -225,7 +225,6 @@ public:
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
   void LoadMemStoreMemImmediatePooling(IREmitter* IREmit, const IRListView& CurrentIR);
-  void ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp);
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp);
   void ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR);
 
@@ -323,49 +322,6 @@ doneOp:;
       IREmit->SetWriteCursor(CodeNode);
     }
     AddressgenConsts.clear();
-  }
-}
-
-void ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp) {
-  switch (IROp->Op) {
-  case OP_BFE: {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-
-    // Is this value already BFE'd?
-    if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
-      break;
-    }
-
-    // Is this value already ZEXT'd?
-    if (Op->lsb == 0) {
-      // LoadMem, LoadMemTSO & LoadContext ZExt
-      auto source = Op->Src;
-      auto sourceHeader = IREmit->GetOpHeader(source);
-
-      if (Op->Width >= (sourceHeader->Size * 8) &&
-          (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-        //  Load mem / load ctx zexts, no need to vmem
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
-        break;
-      }
-    }
-    break;
-  }
-
-  case OP_VMOV: {
-    // elim from load mem
-    auto source = IROp->Args[0];
-    auto sourceHeader = IREmit->GetOpHeader(source);
-
-    if (IROp->Size >= sourceHeader->Size &&
-        (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-      //  Load mem / load ctx zexts, no need to vmem
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
-    }
-    break;
-  }
-  default: break;
   }
 }
 
@@ -654,6 +610,27 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_BFE: {
     auto Op = IROp->C<IR::IROp_Bfe>();
     uint64_t Constant;
+
+    // Is this value already BFE'd?
+    if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
+      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
+      break;
+    }
+
+    // Is this value already ZEXT'd?
+    if (Op->lsb == 0) {
+      // LoadMem, LoadMemTSO & LoadContext ZExt
+      auto source = Op->Src;
+      auto sourceHeader = IREmit->GetOpHeader(source);
+
+      if (Op->Width >= (sourceHeader->Size * 8) &&
+          (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
+        //  Load mem / load ctx zexts, no need to vmem
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+        break;
+      }
+    }
+
     if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
       SourceMask <<= Op->lsb;
@@ -740,6 +717,19 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         auto shift = IREmit->_Lshl(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(amt));
         IREmit->ReplaceAllUsesWith(CodeNode, shift);
       }
+    }
+    break;
+  }
+
+  case OP_VMOV: {
+    // elim from load mem
+    auto source = IROp->Args[0];
+    auto sourceHeader = IREmit->GetOpHeader(source);
+
+    if (IROp->Size >= sourceHeader->Size &&
+        (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
+      //  Load mem / load ctx zexts, no need to vmem
+      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     }
     break;
   }
@@ -1034,7 +1024,6 @@ void ConstProp::Run(IREmitter* IREmit) {
   LoadMemStoreMemImmediatePooling(IREmit, CurrentIR);
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
-    ZextAndMaskingElimination(IREmit, CurrentIR, CodeNode, IROp);
     ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
   }
 
