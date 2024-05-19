@@ -22,3 +22,6 @@ Test_X87/D9_F2.asm
 
 # Relies on rounding correctness
 Test_X87/D9_F8.asm
+
+# This is basically a benchmark.
+FEX_bugs/XeSS_quadratic.asm
