@@ -287,7 +287,7 @@ private:
   // If the range is unbounded then RA interference pressure seems to increase to the point
   // that long blocks of constant usage can slow to a crawl.
   // See https://github.com/FEX-Emu/FEX/issues/2688 for more information.
-  constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 200;
+  constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
 };
 
 bool ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {

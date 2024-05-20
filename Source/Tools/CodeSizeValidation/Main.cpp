@@ -9,6 +9,8 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include <sys/stat.h>
+
 namespace CodeSize {
 class CodeSizeValidation final {
 public:
@@ -251,7 +253,8 @@ struct TestHeader {
   uint8_t Data[];
 };
 
-static fextl::vector<char> TestData;
+static void* TestData;
+static size_t TestDataSize;
 static const TestHeader* TestHeaderData {};
 static const TestInfo* TestsStart {};
 static fextl::vector<std::pair<std::string_view, std::string_view>> EnvironmentVariables {};
@@ -355,11 +358,35 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
 }
 
 bool LoadTests(const char* Path) {
-  if (!FEXCore::FileLoading::LoadFile(TestData, Path)) {
+  constexpr uint64_t Code_start_page = 0x1'0000;
+
+  int FD = open(Path, O_RDONLY | O_CLOEXEC);
+  if (FD == -1) {
     return false;
   }
 
-  TestHeaderData = reinterpret_cast<const TestHeader*>(TestData.data());
+  struct stat buf;
+  if (fstat(FD, &buf) == -1) {
+    close(FD);
+    return false;
+  }
+
+  TestDataSize = buf.st_size;
+  TestData = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Code_start_page), TestDataSize, PROT_READ, MAP_PRIVATE, FD, 0);
+  if (reinterpret_cast<uint64_t>(TestData) == ~0ULL) {
+    close(FD);
+    return false;
+  }
+
+  if (reinterpret_cast<uint64_t>(TestData) != Code_start_page) {
+    FEXCore::Allocator::VirtualFree(TestData, TestDataSize);
+    close(FD);
+    return false;
+  }
+
+  close(FD);
+
+  TestHeaderData = reinterpret_cast<const TestHeader*>(TestData);
 
   // Need to walk past the environment variables to get to the actual tests.
   const uint8_t* Data = TestHeaderData->Data;
@@ -583,5 +610,7 @@ int main(int argc, char** argv, char** const envp) {
   // Test all the instructions.
   auto Result = TestInstructions(CTX.get(), ParentThread, argc >= 2 ? argv[2] : nullptr) ? 0 : 1;
   CTX->DestroyThread(ParentThread);
+
+  FEXCore::Allocator::VirtualFree(TestData, TestDataSize);
   return Result;
 }
