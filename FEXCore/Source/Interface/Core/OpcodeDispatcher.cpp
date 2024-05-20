@@ -1494,7 +1494,7 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   OrderedNode* Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
@@ -1503,7 +1503,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 
 template<bool SHL1Bit>
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
   const auto Size = GetSrcBitSize(Op);
@@ -1517,19 +1517,20 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  auto Size = GetSrcSize(Op);
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
+  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, Size)), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
 template<bool SHR1Bit>
 void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  const auto Size = GetSrcBitSize(Op);
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
   uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
-  const auto Size = GetSrcBitSize(Op);
 
   OrderedNode* Src = _Constant(Size, Shift);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
