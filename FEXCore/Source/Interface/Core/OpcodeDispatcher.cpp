@@ -1495,7 +1495,7 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   OrderedNode* Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
@@ -1518,7 +1518,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, GetSrcSize(Op))), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
@@ -1678,7 +1678,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = GetSrcBitSize(Op);
   if (Size < 32) {
