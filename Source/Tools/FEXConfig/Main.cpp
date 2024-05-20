@@ -105,17 +105,17 @@ bool OpenFile(fextl::string Filename, bool LoadDefault = false) {
   LoadedConfig->Load();
 
   // Load default options and only overwrite only if the option didn't exist
-#define OPT_BASE(type, group, enum, json, default) \
-  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { \
+#define OPT_BASE(type, group, enum, json, default)                                                 \
+  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {                 \
     LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default)); \
   }
-#define OPT_STR(group, enum, json, default) \
+#define OPT_STR(group, enum, json, default)                                        \
   if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { \
     LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, default); \
   }
 #define OPT_STRARRAY(group, enum, json, default) // Do nothing
-#define OPT_STRENUM(group, enum, json, default) \
-  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { \
+#define OPT_STRENUM(group, enum, json, default)                                                                           \
+  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {                                        \
     LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(FEXCore::ToUnderlying(default))); \
   }
 #include <FEXCore/Config/ConfigValues.inl>

@@ -13,10 +13,10 @@ $end_info$
 #include <stdint.h>
 #include <sys/epoll.h>
 
-#define REGISTER_SYSCALL_NOT_IMPL(name) \
+#define REGISTER_SYSCALL_NOT_IMPL(name)                                             \
   REGISTER_SYSCALL_IMPL(name, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { \
-    LogMan::Msg::DFmt("Using deprecated/removed syscall: " #name); \
-    return -ENOSYS; \
+    LogMan::Msg::DFmt("Using deprecated/removed syscall: " #name);                  \
+    return -ENOSYS;                                                                 \
   });
 
 #define REGISTER_SYSCALL_NO_PERM(name) REGISTER_SYSCALL_IMPL(name, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -EPERM; });

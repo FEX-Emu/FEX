@@ -393,15 +393,15 @@ private:
 
 uint64_t HandleSyscall(SyscallHandler* Handler, FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args);
 
-#define SYSCALL_ERRNO() \
-  do { \
+#define SYSCALL_ERRNO()              \
+  do {                               \
     if (Result == -1) return -errno; \
-    return Result; \
+    return Result;                   \
   } while (0)
-#define SYSCALL_ERRNO_NULL() \
-  do { \
+#define SYSCALL_ERRNO_NULL()        \
+  do {                              \
     if (Result == 0) return -errno; \
-    return Result; \
+    return Result;                  \
   } while (0)
 
 extern FEX::HLE::SyscallHandler* _SyscallHandler;
@@ -414,9 +414,9 @@ extern FEX::HLE::SyscallHandler* _SyscallHandler;
 template<typename T>
 struct ArgToFmtString;
 
-#define ARG_TO_STR(tpy, str) \
-  template<> \
-  struct FEX::HLE::ArgToFmtString<tpy> { \
+#define ARG_TO_STR(tpy, str)                      \
+  template<>                                      \
+  struct FEX::HLE::ArgToFmtString<tpy> {          \
     inline static const char* const Format = str; \
   };
 
@@ -614,8 +614,8 @@ namespace FaultSafeMemcpy {
 
 #define REGISTER_SYSCALL_IMPL_PASS_FLAGS(name, flags, lambda) REGISTER_SYSCALL_IMPL_INTERNAL(name, SYSCALL_DEF(name), flags, lambda)
 
-#define REGISTER_SYSCALL_IMPL_INTERNAL(name, number, flags, lambda) \
-  do { \
+#define REGISTER_SYSCALL_IMPL_INTERNAL(name, number, flags, lambda)                                                 \
+  do {                                                                                                              \
     FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, (number), (flags), #name, (lambda)); \
     FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, (number), (flags), #name, (lambda)); \
   } while (false)

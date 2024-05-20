@@ -15,10 +15,10 @@ $end_info$
 #include <stdint.h>
 #include <sys/types.h>
 
-#define SYSCALL_STUB(name) \
-  do { \
+#define SYSCALL_STUB(name)                         \
+  do {                                             \
     ERROR_AND_DIE_FMT("Syscall: " #name " stub!"); \
-    return -ENOSYS; \
+    return -ENOSYS;                                \
   } while (0)
 
 namespace FEXCore::Core {

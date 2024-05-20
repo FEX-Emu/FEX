@@ -19,40 +19,40 @@ enum trapno {
 };
 
 #define CONCAT(x, y) x##y
-#define TestSymbols(num) \
+#define TestSymbols(num)                       \
   extern "C" uint64_t CONCAT(TestBegin_, num); \
   extern "C" uint64_t CONCAT(TestEnd_, num);
 
-#define Test(num, asm, trapno, errno, si_code, signal) \
+#define Test(num, asm, trapno, errno, si_code, signal)                                                      \
   capturing_handler_skip = (unsigned long)&CONCAT(TestEnd_, num) - (unsigned long)&CONCAT(TestBegin_, num); \
-  const unsigned long EXPECTED_RIP = (unsigned long)&CONCAT(TestBegin_, num); \
-  const int EXPECTED_TRAPNO = trapno; \
-  const int EXPECTED_ERR = errno; \
-  const int EXPECTED_SI_CODE = si_code; \
-  const int EXPECTED_SIGNAL = signal; \
-  __asm volatile("TestBegin_" #num ":" asm ";" \
-                                           "TestEnd_" #num ":" :: \
+  const unsigned long EXPECTED_RIP = (unsigned long)&CONCAT(TestBegin_, num);                               \
+  const int EXPECTED_TRAPNO = trapno;                                                                       \
+  const int EXPECTED_ERR = errno;                                                                           \
+  const int EXPECTED_SI_CODE = si_code;                                                                     \
+  const int EXPECTED_SIGNAL = signal;                                                                       \
+  __asm volatile("TestBegin_" #num ":" asm ";"                                                              \
+                                           "TestEnd_" #num ":" ::                                           \
                                              : "memory");
 
 
-#define TEST(num, name, asm, trapno, errno, _si_code, _signal) \
-  TestSymbols(num); \
-  TEST_CASE("Signals: " #name) { \
-    struct sigaction act {}; \
-    act.sa_sigaction = CapturingHandler; \
-    act.sa_flags = SA_SIGINFO; \
-    sigaction(SIGSEGV, &act, nullptr); \
-    sigaction(SIGTRAP, &act, nullptr); \
-    sigaction(SIGILL, &act, nullptr); \
-\
-    Test(num, asm, trapno, errno, _si_code, _signal); \
-\
-    REQUIRE(from_handler.has_value()); \
-    CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP); \
+#define TEST(num, name, asm, trapno, errno, _si_code, _signal)      \
+  TestSymbols(num);                                                 \
+  TEST_CASE("Signals: " #name) {                                    \
+    struct sigaction act {};                                        \
+    act.sa_sigaction = CapturingHandler;                            \
+    act.sa_flags = SA_SIGINFO;                                      \
+    sigaction(SIGSEGV, &act, nullptr);                              \
+    sigaction(SIGTRAP, &act, nullptr);                              \
+    sigaction(SIGILL, &act, nullptr);                               \
+                                                                    \
+    Test(num, asm, trapno, errno, _si_code, _signal);               \
+                                                                    \
+    REQUIRE(from_handler.has_value());                              \
+    CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP);       \
     CHECK(from_handler->mctx.gregs[REG_TRAPNO] == EXPECTED_TRAPNO); \
-    CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR); \
-    CHECK(from_handler->si_code == EXPECTED_SI_CODE); \
-    CHECK(from_handler->signal == EXPECTED_SIGNAL); \
+    CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);       \
+    CHECK(from_handler->si_code == EXPECTED_SI_CODE);               \
+    CHECK(from_handler->signal == EXPECTED_SIGNAL);                 \
   }
 
 // Instructions that explicitly are supported but must only work in CPL-0

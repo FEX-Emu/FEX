@@ -22,13 +22,13 @@ namespace FEXCore::Utils::SpinWaitLock {
  */
 #ifdef _M_ARM_64
 
-#define LOADEXCLUSIVE(LoadExclusiveOp, RegSize) \
+#define LOADEXCLUSIVE(LoadExclusiveOp, RegSize)                 \
   /* Prime the exclusive monitor with the passed in address. */ \
   #LoadExclusiveOp " %" #RegSize "[Result], [%[Futex]];"
 
-#define SPINLOOP_BODY(LoadAtomicOp, RegSize) \
+#define SPINLOOP_BODY(LoadAtomicOp, RegSize)                               \
   /* WFE will wait for either the memory to change or spurious wake-up. */ \
-  "wfe;" /* Load with acquire to get the result of memory. */ \
+  "wfe;" /* Load with acquire to get the result of memory. */              \
     #LoadAtomicOp " %" #RegSize "[Result], [%[Futex]]; "
 
 #define SPINLOOP_WFE_LDX_8BIT LOADEXCLUSIVE(ldaxrb, w)

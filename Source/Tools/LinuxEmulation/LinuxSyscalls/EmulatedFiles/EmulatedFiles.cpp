@@ -124,8 +124,8 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
   // Generate the flags data up front
   // This is the same per core
   {
-#define FLAG(flag, name) \
-  if (flag) { \
+#define FLAG(flag, name)       \
+  if (flag) {                  \
     flags_data << name << " "; \
   }
     FLAG(res_1.edx & (1 << 0), "fpu")

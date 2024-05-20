@@ -54,10 +54,10 @@ static void TraceObject(std::string_view const Format) {}
 static void TraceObject(std::string_view const, uint64_t) {}
 
 #define FEXCORE_PROFILE_INSTANT(...) \
-  do { \
+  do {                               \
   } while (0)
 #define FEXCORE_PROFILE_SCOPED(...) \
-  do { \
+  do {                              \
   } while (0)
 #endif
 } // namespace FEXCore::Profiler

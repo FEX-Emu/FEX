@@ -18,28 +18,28 @@ template<typename signature>
 THUNK_ABI const int (*fexthunks_invoke_callback)(void*);
 
 #ifndef _M_ARM_64
-#define MAKE_THUNK(lib, name, hash) \
+#define MAKE_THUNK(lib, name, hash)                                                                    \
   extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##lib##_##name(void* args); \
   asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash);
 
-#define MAKE_CALLBACK_THUNK(name, signature, hash) \
+#define MAKE_CALLBACK_THUNK(name, signature, hash)                                             \
   extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##name(void* args); \
-  asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash); \
-  template<> \
+  asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash);                            \
+  template<>                                                                                   \
   THUNK_ABI inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
 // The name of that function serves as an error message if this library somehow gets loaded at runtime.
 extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
-#define MAKE_THUNK(lib, name, hash) \
-  extern "C" int fexthunks_##lib##_##name(void* args) { \
+#define MAKE_THUNK(lib, name, hash)                                \
+  extern "C" int fexthunks_##lib##_##name(void* args) {            \
     BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK(); \
-    return 0; \
+    return 0;                                                      \
   }
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
-  extern "C" int fexthunks_##name(void* args); \
-  template<> \
+  extern "C" int fexthunks_##name(void* args);     \
+  template<>                                       \
   inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 #endif
 
@@ -73,11 +73,11 @@ MAKE_THUNK(fex, allocate_host_trampoline_for_guest_function,
            "0x9b, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, "
            "0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a")
 
-#define LOAD_LIB_BASE(name, init_fn) \
+#define LOAD_LIB_BASE(name, init_fn)                   \
   __attribute__((constructor)) static void loadlib() { \
-    LoadlibArgs args = {#name}; \
-    fexthunks_fex_loadlib(&args); \
-    if ((init_fn)) ((void (*)())init_fn)(); \
+    LoadlibArgs args = {#name};                        \
+    fexthunks_fex_loadlib(&args);                      \
+    if ((init_fn)) ((void (*)())init_fn)();            \
   }
 
 #define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr)

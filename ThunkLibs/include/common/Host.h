@@ -53,19 +53,19 @@ struct ExportEntry {
 
 typedef void fex_call_callback_t(uintptr_t callback, void* arg0, void* arg1);
 
-#define EXPORTS(name) \
-  extern "C" { \
+#define EXPORTS(name)                       \
+  extern "C" {                              \
   ExportEntry* fexthunks_exports_##name() { \
-    if (!fexldr_init_##name()) { \
-      return nullptr; \
-    } \
-    return exports; \
-  } \
+    if (!fexldr_init_##name()) {            \
+      return nullptr;                       \
+    }                                       \
+    return exports;                         \
+  }                                         \
   }
 
-#define LOAD_LIB_INIT(init_fn) \
+#define LOAD_LIB_INIT(init_fn)                         \
   __attribute__((constructor)) static void loadlib() { \
-    init_fn(); \
+    init_fn();                                         \
   }
 
 struct GuestcallInfo {

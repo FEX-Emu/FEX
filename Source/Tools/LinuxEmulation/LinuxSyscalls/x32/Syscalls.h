@@ -124,7 +124,7 @@ void RegisterSyscall(SyscallHandler* _Handler, int num, int32_t HostSyscallNumbe
 #define REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL_FLAGS(name, hostname, flags, lambda) \
   REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, SYSCALL_DEF(hostname), flags, lambda)
 
-#define REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, number, flags, lambda) \
-  do { \
+#define REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, number, flags, lambda)                             \
+  do {                                                                                              \
     FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, number, flags, #name, lambda); \
   } while (false)
