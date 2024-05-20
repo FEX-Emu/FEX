@@ -185,22 +185,22 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
 
-#define COMMON_UNARY_X87_OP(OP) \
-  case IR::OP_F80##OP: { \
+#define COMMON_UNARY_X87_OP(OP)                                                                                                          \
+  case IR::OP_F80##OP: {                                                                                                                 \
     *Info = {FABI_F80_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
-    return true; \
+    return true;                                                                                                                         \
   }
 
-#define COMMON_BINARY_X87_OP(OP) \
-  case IR::OP_F80##OP: { \
+#define COMMON_BINARY_X87_OP(OP)                                                                                                             \
+  case IR::OP_F80##OP: {                                                                                                                     \
     *Info = {FABI_F80_I16_F80_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
-    return true; \
+    return true;                                                                                                                             \
   }
 
-#define COMMON_F64_OP(OP) \
-  case IR::OP_F64##OP: { \
+#define COMMON_F64_OP(OP)                                                                              \
+  case IR::OP_F64##OP: {                                                                               \
     *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64##OP>::handle, Core::OPINDEX_F64##OP); \
-    return true; \
+    return true;                                                                                       \
   }
 
     // Unary

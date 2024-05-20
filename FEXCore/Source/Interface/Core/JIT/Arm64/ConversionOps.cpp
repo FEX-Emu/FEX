@@ -384,15 +384,15 @@ DEF_OP(Vector_FToI) {
 // frinti having AdvSIMD, AdvSIMD scalar, and an SVE version),
 // we can't just use a lambda without some seriously ugly casting.
 // This is fairly self-contained otherwise.
-#define ROUNDING_FN(name) \
-  if (ElementSize == 2) { \
-    name(Dst.H(), Vector.H()); \
+#define ROUNDING_FN(name)        \
+  if (ElementSize == 2) {        \
+    name(Dst.H(), Vector.H());   \
   } else if (ElementSize == 4) { \
-    name(Dst.S(), Vector.S()); \
+    name(Dst.S(), Vector.S());   \
   } else if (ElementSize == 8) { \
-    name(Dst.D(), Vector.D()); \
-  } else { \
-    FEX_UNREACHABLE; \
+    name(Dst.D(), Vector.D());   \
+  } else {                       \
+    FEX_UNREACHABLE;             \
   }
 
       switch (Op->Round) {

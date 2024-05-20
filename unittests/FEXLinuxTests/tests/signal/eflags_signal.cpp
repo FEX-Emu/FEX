@@ -9,27 +9,27 @@
 #include <linux/futex.h>
 
 #if __SIZEOF_POINTER__ == 4
-#define DO_ASM(x, y) \
+#define DO_ASM(x, y)                                                                                                               \
   __asm volatile(x                                    /* Need to late move syscall number since incoming asm will overwrite eax */ \
-                 " mov eax, %[Syscall];"              /* Notify we are ready (Without touching flags) */ \
-                 "mov dword ptr [%[ReadyNotify]], 1;" /* Do a futex */ \
-                 "int 0x80;" y \
-                 : \
-                 : [Syscall] "i"(SYS_futex), "b"(Futex), "c"(FUTEX_WAIT), "d"(0), "S"(0), [ReadyNotify] "r"(ReadyNotify) \
+                 " mov eax, %[Syscall];"              /* Notify we are ready (Without touching flags) */                           \
+                 "mov dword ptr [%[ReadyNotify]], 1;" /* Do a futex */                                                             \
+                 "int 0x80;" y                                                                                                     \
+                 :                                                                                                                 \
+                 : [Syscall] "i"(SYS_futex), "b"(Futex), "c"(FUTEX_WAIT), "d"(0), "S"(0), [ReadyNotify] "r"(ReadyNotify)           \
                  : "cc", "memory", "eax")
 #else
 
-#define DO_ASM(x, y) \
-  __asm volatile( \
-    x /* Do a futex */ \
-    " mov rax, %[Syscall];" \
-    " mov rdi, %[FutexAddr];" \
-    " mov rsi, %[FutexOp];" \
-    " mov rdx, %[ExpectedValue];" \
-    " mov r10, %[TimeoutAddr];" /* Notify we are ready (Without touching flags) */ \
-    "mov dword ptr [%[ReadyNotify]], 1;" \
-    "syscall;" y \
-    : \
+#define DO_ASM(x, y)                                                                                                                                            \
+  __asm volatile(                                                                                                                                               \
+    x /* Do a futex */                                                                                                                                          \
+    " mov rax, %[Syscall];"                                                                                                                                     \
+    " mov rdi, %[FutexAddr];"                                                                                                                                   \
+    " mov rsi, %[FutexOp];"                                                                                                                                     \
+    " mov rdx, %[ExpectedValue];"                                                                                                                               \
+    " mov r10, %[TimeoutAddr];" /* Notify we are ready (Without touching flags) */                                                                              \
+    "mov dword ptr [%[ReadyNotify]], 1;"                                                                                                                        \
+    "syscall;" y                                                                                                                                                \
+    :                                                                                                                                                           \
     : [Syscall] "i"(SYS_futex), [FutexAddr] "r"(Futex), [FutexOp] "i"(FUTEX_WAIT), [ExpectedValue] "i"(0), [TimeoutAddr] "i"(0), [ReadyNotify] "r"(ReadyNotify) \
     : "cc", "memory", "rax", "rdi", "rsi", "rdx", "r10")
 #endif

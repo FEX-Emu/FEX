@@ -21,10 +21,10 @@ void key_dtor(void* ptr) {
 }
 
 #define handle_error_en(en, msg) \
-  do { \
-    errno = en; \
-    perror(msg); \
-    exit(EXIT_FAILURE); \
+  do {                           \
+    errno = en;                  \
+    perror(msg);                 \
+    exit(EXIT_FAILURE);          \
   } while (0)
 
 static void* thread_func(void* ignored_argument) {

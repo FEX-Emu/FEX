@@ -92,16 +92,16 @@ static inline void Shutdown(const fextl::string& ApplicationName) {}
 #define FEXCORE_TELEMETRY_STATIC_INIT(Name, Type)
 #define FEXCORE_TELEMETRY_INIT(Name, Type)
 #define FEXCORE_TELEMETRY(Name, Value) \
-  do { \
+  do {                                 \
   } while (0)
 #define FEXCORE_TELEMETRY_SET(Name, Value) \
-  do { \
+  do {                                     \
   } while (0)
 #define FEXCORE_TELEMETRY_OR(Name, Value) \
-  do { \
+  do {                                    \
   } while (0)
 #define FEXCORE_TELEMETRY_INC(Name) \
-  do { \
+  do {                              \
   } while (0)
 #define FEXCORE_TELEMETRY_Addr(Name) reinterpret_cast<std::atomic<uint64_t>*>(nullptr)
 #endif

@@ -1580,9 +1580,9 @@ private:
   // replaced with NewOp. Useful for generic building code. Not safe in general.
   // but does the right handling of ImplicitFlagClobber at least and must be
   // used instead of raw Op mutation.
-#define DeriveOp(Dest, NewOp, Expr) \
+#define DeriveOp(Dest, NewOp, Expr)                \
   if (ImplicitFlagClobber(NewOp)) SaveNZCV(NewOp); \
-  auto Dest = (Expr); \
+  auto Dest = (Expr);                              \
   Dest.first->Header.Op = (NewOp)
 
   // Named constant cache for the current block.

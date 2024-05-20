@@ -63,25 +63,25 @@ namespace Throw {
     MFmt(fmt, fmt::make_format_args(args...));
   }
 
-#define LOGMAN_THROW_A_FMT(pred, ...) \
-  do { \
+#define LOGMAN_THROW_A_FMT(pred, ...)       \
+  do {                                      \
     LogMan::Throw::AFmt(pred, __VA_ARGS__); \
   } while (0)
-#define LOGMAN_THROW_AA_FMT(pred, ...) \
-  do { \
+#define LOGMAN_THROW_AA_FMT(pred, ...)      \
+  do {                                      \
     LogMan::Throw::AFmt(pred, __VA_ARGS__); \
   } while (0)
 #else
   static inline void AFmt(bool, const char*, ...) {}
 #define LOGMAN_THROW_A_FMT(pred, ...) \
-  do { \
+  do {                                \
   } while (0)
   static inline void AAFmt(bool pred, const char*, ...) {
     __builtin_assume(pred);
   }
 #define LOGMAN_THROW_AA_FMT(pred, ...) \
-  do { \
-    __builtin_assume(pred); \
+  do {                                 \
+    __builtin_assume(pred);            \
   } while (0)
 #endif
 
@@ -144,31 +144,31 @@ namespace Msg {
     MFmtImpl(ASSERT, fmt, fmt::make_format_args(args...));
     FEX_TRAP_EXECUTION;
   }
-#define LOGMAN_MSG_A_FMT(...) \
-  do { \
+#define LOGMAN_MSG_A_FMT(...)       \
+  do {                              \
     LogMan::Msg::AFmt(__VA_ARGS__); \
   } while (0)
 #else
   template<typename... Args>
   static inline void AFmt(const char*, const Args&...) {}
 #define LOGMAN_MSG_A_FMT(...) \
-  do { \
+  do {                        \
   } while (0)
 #endif
 
-#define WARN_ONCE_FMT(...) \
-  do { \
-    static bool Warned {}; \
-    if (!Warned) { \
+#define WARN_ONCE_FMT(...)            \
+  do {                                \
+    static bool Warned {};            \
+    if (!Warned) {                    \
       LogMan::Msg::DFmt(__VA_ARGS__); \
-      Warned = true; \
-    } \
+      Warned = true;                  \
+    }                                 \
   } while (0);
 
-#define ERROR_AND_DIE_FMT(...) \
-  do { \
+#define ERROR_AND_DIE_FMT(...)      \
+  do {                              \
     LogMan::Msg::EFmt(__VA_ARGS__); \
-    FEX_TRAP_EXECUTION; \
+    FEX_TRAP_EXECUTION;             \
   } while (0)
 
 } // namespace Msg

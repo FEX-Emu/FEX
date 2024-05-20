@@ -379,16 +379,16 @@ namespace DRM {
   }
 
   uint32_t I915_Handler(int fd, uint32_t cmd, uint32_t args) {
-#define SIMPLE(enum, type) \
-  case _IOC_NR(FEX_##enum): { \
+#define SIMPLE(enum, type)                                               \
+  case _IOC_NR(FEX_##enum): {                                            \
     I915::fex_##type* guest = reinterpret_cast<I915::fex_##type*>(args); \
-    type host = *guest; \
-    uint64_t Result = ::ioctl(fd, enum, &host); \
-    if (Result != -1) { \
-      *guest = host; \
-    } \
-    SYSCALL_ERRNO(); \
-    break; \
+    type host = *guest;                                                  \
+    uint64_t Result = ::ioctl(fd, enum, &host);                          \
+    if (Result != -1) {                                                  \
+      *guest = host;                                                     \
+    }                                                                    \
+    SYSCALL_ERRNO();                                                     \
+    break;                                                               \
   }
 
 
@@ -606,16 +606,16 @@ namespace DRM {
   }
 
   uint32_t Handler(int fd, uint32_t cmd, uint32_t args) {
-#define SIMPLE(enum, type) \
-  case _IOC_NR(FEX_##enum): { \
+#define SIMPLE(enum, type)                                             \
+  case _IOC_NR(FEX_##enum): {                                          \
     DRM::fex_##type* guest = reinterpret_cast<DRM::fex_##type*>(args); \
-    type host = *guest; \
-    uint64_t Result = ::ioctl(fd, enum, &host); \
-    if (Result != -1) { \
-      *guest = host; \
-    } \
-    SYSCALL_ERRNO(); \
-    break; \
+    type host = *guest;                                                \
+    uint64_t Result = ::ioctl(fd, enum, &host);                        \
+    if (Result != -1) {                                                \
+      *guest = host;                                                   \
+    }                                                                  \
+    SYSCALL_ERRNO();                                                   \
+    break;                                                             \
   }
 
     switch (_IOC_NR(cmd)) {

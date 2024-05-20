@@ -59,19 +59,19 @@ static void OverrideFeatures(HostFeatures* Features) {
     return;
   }
 
-#define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name) \
-  do { \
-    const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
-    const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0; \
+#define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name)                                                                        \
+  do {                                                                                                                             \
+    const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0;                          \
+    const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;                            \
     LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
-    const bool AlreadyEnabled = Features->FeatureName; \
-    const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name; \
-    Features->FeatureName = Result; \
+    const bool AlreadyEnabled = Features->FeatureName;                                                                             \
+    const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name;                                                          \
+    Features->FeatureName = Result;                                                                                                \
   } while (0)
 
-#define GET_SINGLE_OPTION(name, enum_name) \
+#define GET_SINGLE_OPTION(name, enum_name)                                                              \
   const bool Disable##name = (HostFeatures() & FEXCore::Config::HostFeatures::DISABLE##enum_name) != 0; \
-  const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0; \
+  const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
   LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
   ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);

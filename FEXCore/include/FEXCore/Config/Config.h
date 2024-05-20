@@ -136,10 +136,10 @@ namespace DefaultValues {
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
   } // namespace Type
-#define FEX_CONFIG_OPT(name, enum) \
+#define FEX_CONFIG_OPT(name, enum)                                          \
   FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::enum> name { \
-    FEXCore::Config::CONFIG_##enum, \
-    FEXCore::Config::DefaultValues::enum \
+    FEXCore::Config::CONFIG_##enum,                                         \
+    FEXCore::Config::DefaultValues::enum                                    \
   }
 
 #undef P
