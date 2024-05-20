@@ -16,6 +16,31 @@ namespace FEXCore::CPU {
 #define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
+
+#define DEF_BINOP_WITH_CONSTANT(FEXOp, VarOp, ConstOp)                                         \
+  DEF_OP(FEXOp) {                                                                              \
+    auto Op = IROp->C<IR::IROp_##FEXOp>();                                                     \
+                                                                                               \
+    uint64_t Const;                                                                            \
+    if (IsInlineConstant(Op->Src2, &Const)) {                                                  \
+      ConstOp(ConvertSize(IROp), GetReg(Node), GetReg(Op->Src1.ID()), Const);                  \
+    } else {                                                                                   \
+      VarOp(ConvertSize(IROp), GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID())); \
+    }                                                                                          \
+  }
+
+DEF_BINOP_WITH_CONSTANT(Add, add, add)
+DEF_BINOP_WITH_CONSTANT(Sub, sub, sub)
+DEF_BINOP_WITH_CONSTANT(AddWithFlags, adds, adds)
+DEF_BINOP_WITH_CONSTANT(SubWithFlags, subs, subs)
+DEF_BINOP_WITH_CONSTANT(Or, orr, orr)
+DEF_BINOP_WITH_CONSTANT(And, and_, and_)
+DEF_BINOP_WITH_CONSTANT(Andn, bic, bic)
+DEF_BINOP_WITH_CONSTANT(Xor, eor, eor)
+DEF_BINOP_WITH_CONSTANT(Lshl, lslv, lsl)
+DEF_BINOP_WITH_CONSTANT(Lshr, lsrv, lsr)
+DEF_BINOP_WITH_CONSTANT(Ror, rorv, ror)
+
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
@@ -65,28 +90,6 @@ DEF_OP(CycleCounter) {
 #else
   mrs(GetReg(Node), ARMEmitter::SystemRegister::CNTVCT_EL0);
 #endif
-}
-
-DEF_OP(Add) {
-  auto Op = IROp->C<IR::IROp_Add>();
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    add(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), Const);
-  } else {
-    add(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
-  }
-}
-
-DEF_OP(AddWithFlags) {
-  auto Op = IROp->C<IR::IROp_AddWithFlags>();
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    adds(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), Const);
-  } else {
-    adds(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()));
-  }
 }
 
 DEF_OP(AddShift) {
@@ -187,32 +190,10 @@ DEF_OP(TestNZ) {
   }
 }
 
-DEF_OP(Sub) {
-  auto Op = IROp->C<IR::IROp_Sub>();
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    sub(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), Const);
-  } else {
-    sub(ConvertSize48(IROp), GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
-  }
-}
-
 DEF_OP(SubShift) {
   auto Op = IROp->C<IR::IROp_SubShift>();
 
   sub(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
-}
-
-DEF_OP(SubWithFlags) {
-  auto Op = IROp->C<IR::IROp_SubWithFlags>();
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    subs(ConvertSize48(IROp), GetReg(Node), GetZeroableReg(Op->Src1), Const);
-  } else {
-    subs(ConvertSize48(IROp), GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
-  }
 }
 
 DEF_OP(SubNZCV) {
@@ -297,32 +278,6 @@ DEF_OP(AXFlag) {
   axflag();
 }
 
-ARMEmitter::Condition MapSelectCC(IR::CondClassType Cond) {
-  switch (Cond.Val) {
-  case FEXCore::IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
-  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-  case FEXCore::IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
-  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-  case FEXCore::IR::COND_FU: return ARMEmitter::Condition::CC_VS;
-  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
-  case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
-  case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
-  default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
-  }
-}
-
 DEF_OP(CondAddNZCV) {
   auto Op = IROp->C<IR::IROp_CondAddNZCV>();
 
@@ -331,9 +286,9 @@ DEF_OP(CondAddNZCV) {
   auto Src1 = GetZeroableReg(Op->Src1);
 
   if (IsInlineConstant(Op->Src2, &Const)) {
-    ccmn(ConvertSize48(IROp), Src1, Const, Flags, MapSelectCC(Op->Cond));
+    ccmn(ConvertSize48(IROp), Src1, Const, Flags, MapCC(Op->Cond));
   } else {
-    ccmn(ConvertSize48(IROp), Src1, GetReg(Op->Src2.ID()), Flags, MapSelectCC(Op->Cond));
+    ccmn(ConvertSize48(IROp), Src1, GetReg(Op->Src2.ID()), Flags, MapCC(Op->Cond));
   }
 }
 
@@ -345,9 +300,9 @@ DEF_OP(CondSubNZCV) {
   auto Src1 = GetZeroableReg(Op->Src1);
 
   if (IsInlineConstant(Op->Src2, &Const)) {
-    ccmp(ConvertSize48(IROp), Src1, Const, Flags, MapSelectCC(Op->Cond));
+    ccmp(ConvertSize48(IROp), Src1, Const, Flags, MapCC(Op->Cond));
   } else {
-    ccmp(ConvertSize48(IROp), Src1, GetReg(Op->Src2.ID()), Flags, MapSelectCC(Op->Cond));
+    ccmp(ConvertSize48(IROp), Src1, GetReg(Op->Src2.ID()), Flags, MapCC(Op->Cond));
   }
 }
 
@@ -357,7 +312,7 @@ DEF_OP(Neg) {
   if (Op->Cond == FEXCore::IR::COND_AL) {
     neg(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src.ID()));
   } else {
-    cneg(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src.ID()), MapSelectCC(Op->Cond));
+    cneg(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src.ID()), MapCC(Op->Cond));
   }
 }
 
@@ -539,21 +494,6 @@ DEF_OP(UMulH) {
   }
 }
 
-DEF_OP(Or) {
-  auto Op = IROp->C<IR::IROp_Or>();
-
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    orr(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    orr(ConvertSize(IROp), Dst, Src1, Src2);
-  }
-}
-
 DEF_OP(Orlshl) {
   auto Op = IROp->C<IR::IROp_Orlshl>();
   const auto Dst = GetReg(Node);
@@ -593,21 +533,6 @@ DEF_OP(Ornror) {
   orn(ConvertSize(IROp), Dst, Src1, Src2, ARMEmitter::ShiftType::ROR, Op->BitShift);
 }
 
-DEF_OP(And) {
-  auto Op = IROp->C<IR::IROp_And>();
-
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    and_(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    and_(ConvertSize(IROp), Dst, Src1, Src2);
-  }
-}
-
 DEF_OP(AndWithFlags) {
   auto Op = IROp->C<IR::IROp_AndWithFlags>();
   const uint8_t OpSize = IROp->Size;
@@ -643,34 +568,6 @@ DEF_OP(AndWithFlags) {
   }
 }
 
-DEF_OP(Andn) {
-  auto Op = IROp->C<IR::IROp_Andn>();
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    bic(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    bic(ConvertSize(IROp), Dst, Src1, Src2);
-  }
-}
-
-DEF_OP(Xor) {
-  auto Op = IROp->C<IR::IROp_Xor>();
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    eor(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    eor(ConvertSize(IROp), Dst, Src1, Src2);
-  }
-}
-
 DEF_OP(XorShift) {
   auto Op = IROp->C<IR::IROp_XorShift>();
 
@@ -681,35 +578,6 @@ DEF_OP(XornShift) {
   auto Op = IROp->C<IR::IROp_XornShift>();
 
   eon(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1.ID()), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
-}
-
-DEF_OP(Lshl) {
-  auto Op = IROp->C<IR::IROp_Lshl>();
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    lsl(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    lslv(ConvertSize(IROp), Dst, Src1, Src2);
-  }
-}
-
-DEF_OP(Lshr) {
-  auto Op = IROp->C<IR::IROp_Lshr>();
-
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    lsr(ConvertSize(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    lsrv(ConvertSize(IROp), Dst, Src1, Src2);
-  }
 }
 
 DEF_OP(Ashr) {
@@ -818,20 +686,6 @@ DEF_OP(ShiftFlags) {
   // TODO: Make RA less dumb so this can't happen (e.g. with late-kill).
   if (PFOutput != PFTemp) {
     mov(ARMEmitter::Size::i64Bit, PFOutput, PFTemp);
-  }
-}
-
-DEF_OP(Ror) {
-  auto Op = IROp->C<IR::IROp_Ror>();
-  const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Src2, &Const)) {
-    ror(ConvertSize48(IROp), Dst, Src1, Const);
-  } else {
-    const auto Src2 = GetReg(Op->Src2.ID());
-    rorv(ConvertSize48(IROp), Dst, Src1, Src2);
   }
 }
 
@@ -1460,7 +1314,7 @@ DEF_OP(Select) {
   const auto CompareEmitSize = Op->CompareSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
-  auto cc = MapSelectCC(Op->Cond);
+  auto cc = MapCC(Op->Cond);
 
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
@@ -1511,7 +1365,7 @@ DEF_OP(NZCVSelect) {
   auto Op = IROp->C<IR::IROp_NZCVSelect>();
   const auto EmitSize = ConvertSize(IROp);
 
-  auto cc = MapSelectCC(Op->Cond);
+  auto cc = MapCC(Op->Cond);
 
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
