@@ -371,6 +371,37 @@ private:
     return Available;
   };
 
+  int PrefersTied(IROps Op) {
+    switch (Op) {
+    case OP_BFI:
+    case OP_ANDWITHFLAGS:
+    case OP_BFXIL:
+    case OP_VLOADVECTORELEMENT:
+    case OP_VUSHL:
+    case OP_VUSHR:
+    case OP_VSSHR:
+    case OP_VUSHLS:
+    case OP_VUSHRS:
+    case OP_VUSHRSWIDE:
+    case OP_VSSHRSWIDE:
+    case OP_VUSHLSWIDE:
+    case OP_VSSHRS:
+    case OP_VINSELEMENT:
+    case OP_VUSHRI:
+    case OP_VUSHRAI:
+    case OP_VSSHRI:
+    case OP_VSHLI:
+    case OP_VUSHRNI2:
+    case OP_VSQXTN2:
+    case OP_VSQXTUN2:
+    case OP_VSRSHR:
+    case OP_VSQSHL:
+    case OP_VTBX1: return 0;
+    case OP_PUSH: return 1;
+    default: return -1;
+    }
+  }
+
   // Assign a register for a given Node, spilling if necessary.
   void AssignReg(IROp_Header* IROp, OrderedNode* CodeNode, IROp_Header* Pivot) {
     const uint32_t Node = IR->GetID(CodeNode).Value;
@@ -385,6 +416,18 @@ private:
           SetReg(CodeNode, Reg);
           return;
         }
+      }
+    }
+
+    // Try to handle tied registers. This can fail, the JIT will insert moves.
+    if (int TiedIdx = PrefersTied(IROp->Op); TiedIdx >= 0) {
+      PhysicalRegister Reg = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[TiedIdx])).Value];
+      RegisterClass* Class = GetClass(Reg);
+      uint32_t RegBits = GetRegBits(Reg);
+
+      if (Reg.Class != GPRFixedClass && Reg.Class != FPRFixedClass && (Class->Available & RegBits) == RegBits) {
+        SetReg(CodeNode, Reg);
+        return;
       }
     }
 

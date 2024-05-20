@@ -237,10 +237,10 @@
         "cmp    r13, qword [rsi+r11*8]"
       ],
       "ExpectedArm64ASM": [
-        "mov x15, x13",
-        "add x20, x10, x15, lsl #3",
+        "add x20, x10, x13, lsl #3",
         "ldr x17, [x20]",
-        "orr x15, x15, #0x1",
+        "mov x15, x13",
+        "orr x15, x13, #0x1",
         "add x20, x10, x15, lsl #3",
         "ldr x20, [x20]",
         "eor w27, w17, w20",
