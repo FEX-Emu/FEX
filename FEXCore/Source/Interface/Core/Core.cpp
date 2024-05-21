@@ -650,7 +650,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   FEXCore::IR::IRListView* IRList {};
   FEXCore::Core::DebugData* DebugData {};
   FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
-  bool GeneratedIR {};
   uint64_t StartAddr {};
   uint64_t Length {};
 
@@ -690,7 +689,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
       DebugData = IRFromAOT->DebugData;
       StartAddr = IRFromAOT->StartAddr;
       Length = IRFromAOT->Length;
-      GeneratedIR = true;
     }
   }
 
@@ -705,9 +703,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     DebugData = new FEXCore::Core::DebugData();
     StartAddr = _StartAddr;
     Length = _Length;
-
-    // These blocks aren't already in the cache
-    GeneratedIR = true;
   }
 
   if (IRList == nullptr) {
@@ -722,7 +717,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     .IRData = IRList,
     .DebugData = DebugData,
     .RAData = std::move(RAData),
-    .GeneratedIR = GeneratedIR,
+    .GeneratedIR = true,
     .StartAddr = StartAddr,
     .Length = Length,
   };
