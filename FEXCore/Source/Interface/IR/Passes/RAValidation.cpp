@@ -81,14 +81,13 @@ struct RegState {
     Spills[SpillSlot] = ssa;
   }
 
-  // Consume (and return) the SSA id currently in a spill slot
+  // Return the SSA id currently in a spill slot
   IR::NodeID Unspill(uint32_t SpillSlot) {
     if (Spills.contains(SpillSlot)) {
-      const auto Value = Spills[SpillSlot];
-      Spills.erase(SpillSlot);
-      return Value;
+      return Spills[SpillSlot];
+    } else {
+      return UninitializedValue;
     }
-    return UninitializedValue;
   }
 
 private:
