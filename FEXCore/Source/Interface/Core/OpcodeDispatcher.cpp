@@ -1457,9 +1457,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   OrderedNode* Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   auto Res = _CPUID(Src, Leaf);
-
-  OrderedNode* Result_Lower = _ExtractElementPair(OpSize::i64Bit, Res, 0);
-  OrderedNode* Result_Upper = _ExtractElementPair(OpSize::i64Bit, Res, 1);
+  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
 
   StoreGPRRegister(X86State::REG_RAX, _Bfe(OpSize::i64Bit, 32, 0, Result_Lower));
   StoreGPRRegister(X86State::REG_RBX, _Bfe(OpSize::i64Bit, 32, 32, Result_Lower));
@@ -1484,9 +1482,7 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
   OrderedNode* Function = LoadGPRRegister(X86State::REG_RCX);
 
   auto Res = _XGetBV(Function);
-
-  OrderedNode* Result_Lower = _ExtractElementPair(OpSize::i32Bit, Res, 0);
-  OrderedNode* Result_Upper = _ExtractElementPair(OpSize::i32Bit, Res, 1);
+  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i32Bit, Res);
 
   StoreGPRRegister(X86State::REG_RAX, Result_Lower);
   StoreGPRRegister(X86State::REG_RDX, Result_Upper);
@@ -3314,9 +3310,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     }
 
     auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1));
-
-    OrderedNode* Result_Dst = _ExtractElementPair(OpSize::i64Bit, Result, 0);
-    OrderedNode* Result_Src = _ExtractElementPair(OpSize::i64Bit, Result, 1);
+    auto [Result_Dst, Result_Src] = ExtractPair(OpSize::i64Bit, Result);
 
     if (DstSegment) {
       Result_Dst = _Sub(OpSize::i64Bit, Result_Dst, DstSegment);
@@ -4000,9 +3994,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   OrderedNode* CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected, Desired, Src1);
 
-  OrderedNode* Result_Lower = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 0);
-  OrderedNode* Result_Upper = _ExtractElementPair(IR::SizeToOpSize(Size), CASResult, 1);
-
   HandleNZCV_RMW();
   _CmpPairZ(IR::SizeToOpSize(Size), CASResult, Expected);
   CalculateDeferredFlags();
@@ -4013,6 +4004,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
     StoreGPRRegister(Reg, _NZCVSelect(OpSize::i64Bit, CondClassType {COND_NEQ}, Value, LoadGPRRegister(Reg)));
   };
 
+  auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
   UpdateIfNotZF(X86State::REG_RAX, Result_Lower);
   UpdateIfNotZF(X86State::REG_RDX, Result_Upper);
 }
@@ -4991,9 +4983,7 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 template<bool Reseed>
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
   auto Res = _RDRAND(Reseed);
-
-  OrderedNode* Result_Lower = _ExtractElementPair(OpSize::i64Bit, Res, 0);
-  OrderedNode* Result_Upper = _ExtractElementPair(OpSize::i64Bit, Res, 1);
+  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
 
   StoreResult(GPRClass, Op, Result_Lower, -1);
   GenerateFlags_RDRAND(Op, Result_Upper);
