@@ -144,54 +144,22 @@ private:
   Utils::FixedSizePooledAllocation<uintptr_t, 5000, 500> PoolObject;
 };
 
-class IRListView final : public FEXCore::Allocator::FEXAllocOperators {
-  enum Flags {
-    FLAG_IsCopy = 1,
-    FLAG_Shared = 2,
-  };
-
+class IRListView final {
 public:
   IRListView() = delete;
   IRListView(IRListView&&) = delete;
 
-  IRListView(DualIntrusiveAllocator* Data, bool _IsCopy) {
-    SetCopy(_IsCopy);
-    DataSize = Data->DataSize();
-    ListSize = Data->ListSize();
+  IRListView(DualIntrusiveAllocator* Data)
+    : IRListView(reinterpret_cast<void*>(Data->DataBegin()), reinterpret_cast<void*>(Data->ListBegin()), Data->DataSize(), Data->ListSize()) {}
 
-    if (_IsCopy) {
-      IRDataInternal = FEXCore::Allocator::malloc(DataSize + ListSize);
-      ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
-      memcpy(IRDataInternal, reinterpret_cast<void*>(Data->DataBegin()), DataSize);
-      memcpy(ListDataInternal, reinterpret_cast<void*>(Data->ListBegin()), ListSize);
-    } else {
-      // We are just pointing to the data
-      IRDataInternal = reinterpret_cast<void*>(Data->DataBegin());
-      ListDataInternal = reinterpret_cast<void*>(Data->ListBegin());
-    }
-  }
+  IRListView(IRListView* Old)
+    : IRListView(Old->IRDataInternal, Old->ListDataInternal, Old->DataSize, Old->ListSize) {}
 
-  IRListView(IRListView* Old, bool _IsCopy) {
-    SetCopy(_IsCopy);
-    DataSize = Old->DataSize;
-    ListSize = Old->ListSize;
-    if (_IsCopy) {
-      IRDataInternal = FEXCore::Allocator::malloc(DataSize + ListSize);
-      ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
-      memcpy(IRDataInternal, Old->IRDataInternal, DataSize);
-      memcpy(ListDataInternal, Old->ListDataInternal, ListSize);
-    } else {
-      IRDataInternal = Old->IRDataInternal;
-      ListDataInternal = Old->ListDataInternal;
-    }
-  }
-
-  ~IRListView() {
-    if (IsCopy()) {
-      FEXCore::Allocator::free(IRDataInternal);
-      // ListData is just offset from IRData
-    }
-  }
+  IRListView(void* IRData_, void* ListData_, size_t DataSize_, size_t ListSize_)
+    : IRDataInternal(IRData_)
+    , ListDataInternal(ListData_)
+    , DataSize(DataSize_)
+    , ListSize(ListSize_) {}
 
   void Serialize(FEXCore::Context::AOTIRWriter& stream) const {
     void* nul = nullptr;
@@ -204,7 +172,7 @@ public:
     // size_t ListSize;
     stream.Write((const char*)&ListSize, sizeof(ListSize));
     // uint64_t Flags;
-    uint64_t WrittenFlags = FLAG_Shared; // on disk format always has the Shared flag
+    uint64_t WrittenFlags = 0;
     stream.Write((const char*)&WrittenFlags, sizeof(WrittenFlags));
 
     // inline data
@@ -227,7 +195,7 @@ public:
     memcpy(ptr, &ListSize, sizeof(ListSize));
     ptr += sizeof(ListSize);
     // uint64_t Flags;
-    uint64_t WrittenFlags = FLAG_Shared; // on disk format always has the Shared flag
+    uint64_t WrittenFlags = 0;
     memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags));
     ptr += sizeof(WrittenFlags);
 
@@ -245,11 +213,6 @@ public:
   }
 
   [[nodiscard]]
-  IRListView* CreateCopy() {
-    return new IRListView(this, true);
-  }
-
-  [[nodiscard]]
   size_t GetDataSize() const {
     return DataSize;
   }
@@ -260,30 +223,6 @@ public:
   [[nodiscard]]
   size_t GetSSACount() const {
     return ListSize / sizeof(OrderedNode);
-  }
-
-  [[nodiscard]]
-  bool IsCopy() const {
-    return (Flags & FLAG_IsCopy) != 0;
-  }
-  void SetCopy(bool Set) {
-    if (Set) {
-      Flags |= FLAG_IsCopy;
-    } else {
-      Flags &= ~FLAG_IsCopy;
-    }
-  }
-
-  [[nodiscard]]
-  bool IsShared() const {
-    return (Flags & FLAG_Shared) != 0;
-  }
-  void SetShared(bool Set) {
-    if (Set) {
-      Flags |= FLAG_Shared;
-    } else {
-      Flags &= ~FLAG_Shared;
-    }
   }
 
   [[nodiscard]]
@@ -471,15 +410,18 @@ private:
   void* ListDataInternal;
   size_t DataSize;
   size_t ListSize;
-  uint64_t Flags {0};
+  [[maybe_unused]] uint64_t Flags {0}; // TODO: Drop. Used for backwards-compatibility
   uint8_t InlineData[0];
 };
 
-struct IRListViewDeleter {
-  void operator()(IRListView* r) {
-    if (!r->IsShared()) {
-      delete r;
-    }
-  }
+class IRStorageBase {
+public:
+  virtual ~IRStorageBase() = default;
+
+  // Optional RA data. Returns nullptr if none present
+  virtual const RegisterAllocationData* RAData() = 0;
+
+  virtual IRListView GetIRView() = 0;
 };
+
 } // namespace FEXCore::IR

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Interface/IR/RegisterAllocationData.h"
+#include "Interface/IR/IntrusiveIRList.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
@@ -74,8 +75,8 @@ struct AOTIRCaptureCacheEntry {
   fextl::unique_ptr<FEXCore::Context::AOTIRWriter> Stream;
   fextl::map<uint64_t, uint64_t> Index;
 
-  void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView* IRList,
-                               FEXCore::IR::RegisterAllocationData* RAData);
+  void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, const FEXCore::IR::IRListView& IRList,
+                               const FEXCore::IR::RegisterAllocationData* RAData);
 };
 
 struct AOTIRCacheEntry {
@@ -103,8 +104,7 @@ public:
   void WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn& Writer);
 
   struct PreGenerateIRFetchResult {
-    FEXCore::IR::IRListView* IRList {};
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
+    fextl::unique_ptr<IRStorageBase> IR;
     FEXCore::Core::DebugData* DebugData {};
     uint64_t StartAddr {};
     uint64_t Length {};
@@ -113,8 +113,7 @@ public:
   std::optional<PreGenerateIRFetchResult> PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
   bool PostCompileCode(FEXCore::Core::InternalThreadState* Thread, void* CodePtr, uint64_t GuestRIP, uint64_t StartAddr, uint64_t Length,
-                       FEXCore::IR::RegisterAllocationData::UniquePtr RAData, FEXCore::IR::IRListView* IRList,
-                       FEXCore::Core::DebugData* DebugData, bool GeneratedIR);
+                       fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR, FEXCore::Core::DebugData* DebugData, bool GeneratedIR);
 
   AOTIRCacheEntry* LoadAOTIRCacheEntry(const fextl::string& filename);
   void UnloadAOTIRCacheEntry(AOTIRCacheEntry* Entry);

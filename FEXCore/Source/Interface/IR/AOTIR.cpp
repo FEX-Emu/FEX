@@ -59,7 +59,7 @@ IR::IRListView* AOTIRInlineEntry::GetIRData() {
 }
 
 void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash,
-                                                     FEXCore::IR::IRListView* IRList, FEXCore::IR::RegisterAllocationData* RAData) {
+                                                     const FEXCore::IR::IRListView& IRList, const FEXCore::IR::RegisterAllocationData* RAData) {
   auto Inserted = Index.emplace(GuestRIP, Stream->Offset());
 
   if (Inserted.second) {
@@ -72,7 +72,7 @@ void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t
     RAData->Serialize(*Stream);
 
     // IRData (inline)
-    IRList->Serialize(*Stream);
+    IRList.Serialize(*Stream);
   }
 }
 
@@ -259,6 +259,21 @@ void AOTIRCaptureCache::WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn&
   }
 }
 
+// IRStorageBase with memory owned by IR cache
+class IRInlineStorage : public IRStorageBase {
+  AOTIRInlineEntry& entry;
+public:
+  IRInlineStorage(AOTIRInlineEntry& entry)
+    : entry(entry) {}
+  const RegisterAllocationData* RAData() override {
+    return entry.GetRAData();
+  }
+  IRListView GetIRView() override {
+    return entry.GetIRData();
+  }
+};
+
+
 std::optional<AOTIRCaptureCache::PreGenerateIRFetchResult>
 AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
@@ -279,10 +294,8 @@ AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread
           auto MappedStart = GuestRIP;
           auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->GuestLength);
           if (hash == AOTEntry->GuestHash) {
-            Result.IRList = AOTEntry->GetIRData();
+            Result.IR = fextl::make_unique<IRInlineStorage>(*AOTEntry);
             // LogMan::Msg::DFmt("using {} + {:x} -> {:x}\n", file->second.fileid, AOTEntry->first, GuestRIP);
-
-            Result.RAData = AOTEntry->GetRAData()->CreateCopy();
             Result.DebugData = new FEXCore::Core::DebugData();
             Result.StartAddr = MappedStart;
             Result.Length = AOTEntry->GuestLength;
@@ -301,8 +314,8 @@ AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread
 }
 
 bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thread, void* CodePtr, uint64_t GuestRIP, uint64_t StartAddr,
-                                        uint64_t Length, FEXCore::IR::RegisterAllocationData::UniquePtr RAData,
-                                        FEXCore::IR::IRListView* IRList, FEXCore::Core::DebugData* DebugData, bool GeneratedIR) {
+                                        uint64_t Length, fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR,
+                                        FEXCore::Core::DebugData* DebugData, bool GeneratedIR) {
 
   // Both generated ir and LibraryJITName need a named region lookup
   if (GeneratedIR || CTX->Config.LibraryJITNaming() || CTX->Config.GDBSymbols()) {
@@ -319,24 +332,20 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
       }
 
       // Add to AOT cache if aot generation is enabled
-      if (GeneratedIR && RAData && (CTX->Config.AOTIRCapture() || CTX->Config.AOTIRGenerate())) {
+      if (GeneratedIR && IR->RAData() && (CTX->Config.AOTIRCapture() || CTX->Config.AOTIRGenerate())) {
 
         auto hash = XXH3_64bits((void*)StartAddr, Length);
 
         auto LocalRIP = GuestRIP - AOTIRCacheEntry.VAFileStart;
         auto LocalStartAddr = StartAddr - AOTIRCacheEntry.VAFileStart;
         auto FileId = AOTIRCacheEntry.Entry->FileId;
-        // The underlying pointer and the unique_ptr deleter for RAData must
-        // be marshalled separately to the lambda below. Otherwise, the
-        // lambda can't be used as an std::function due to being non-copyable
-        auto RADataCopy = RAData->CreateCopy();
-        auto RADataCopyDeleter = RADataCopy.get_deleter();
-        auto IRListCopy = IRList->CreateCopy();
 
         // The lambda is converted to std::function. This is tricky to refactor so it doesn't allocate memory through glibc.
+        // NOTE: unique_ptr must be passed as a raw pointer since std::function requires lambda captures to be copyable
         FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-        AOTIRCaptureCacheWriteoutQueue_Append(
-          [this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy = RADataCopy.release(), RADataCopyDeleter, FileId]() {
+        AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRRaw = IR.release(), FileId]() {
+          fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR(IRRaw);
+
           // It is guaranteed via AOTIRCaptureCacheWriteoutLock and AOTIRCaptureCacheWriteoutFlusing that this will not run concurrently
           // Memory coherency is guaranteed via AOTIRCaptureCacheWriteoutLock
 
@@ -347,9 +356,7 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
             uint64_t tag = FEXCore::IR::AOTIR_COOKIE;
             AotFile->Stream->Write(&tag, sizeof(tag));
           }
-          AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy);
-          RADataCopyDeleter(RADataCopy);
-          delete IRListCopy;
+          AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IR->GetIRView(), IR->RAData());
         });
 
         if (CTX->Config.AOTIRGenerate()) {
@@ -364,9 +371,6 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
     if (GeneratedIR) {
       // If the IR doesn't need to be retained then we can just delete it now
       delete DebugData;
-      if (IRList->IsCopy()) {
-        delete IRList;
-      }
     }
   }
 

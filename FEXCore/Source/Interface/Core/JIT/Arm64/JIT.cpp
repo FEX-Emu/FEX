@@ -668,7 +668,7 @@ bool Arm64JITCore::IsGPRPair(IR::NodeID Node) const {
 }
 
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                                   FEXCore::IR::RegisterAllocationData* RAData) {
+                                                   const FEXCore::IR::RegisterAllocationData* RAData) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();

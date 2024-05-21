@@ -41,10 +41,7 @@ public:
   }
 
   IRListView ViewIR() {
-    return IRListView(&DualListData, false);
-  }
-  IRListView* CreateIRCopy() {
-    return new IRListView(&DualListData, true);
+    return IRListView(&DualListData);
   }
   void ResetWorkingList();
 
