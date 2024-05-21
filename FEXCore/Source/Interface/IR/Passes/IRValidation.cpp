@@ -46,11 +46,12 @@ bool IRValidation::Run(IREmitter* IREmit) {
   OffsetToBlockMap.clear();
   EntryBlock = nullptr;
 
-  if (CurrentIR.GetSSACount() > MaxNodes) {
-    NodeIsLive.Realloc(CurrentIR.GetSSACount());
+  uint32_t Count = CurrentIR.GetSSACount();
+  if (Count > MaxNodes) {
+    NodeIsLive.Realloc(Count);
   }
 
-  fextl::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
+  fextl::vector<uint32_t> Uses(Count, 0);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   auto HeaderOp = CurrentIR.GetHeader();
@@ -62,8 +63,6 @@ bool IRValidation::Run(IREmitter* IREmit) {
     RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
   }
 
-  NodeIsLive.Set(1); // IRHEADER
-
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -74,6 +73,9 @@ bool IRValidation::Run(IREmitter* IREmit) {
 
     const auto BlockID = CurrentIR.GetID(BlockNode);
     BlockInfo* CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
+
+    // We only allow defs local to a single block, so clear live set per block
+    NodeIsLive.MemClear(Count);
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto ID = CurrentIR.GetID(CodeNode);
@@ -125,20 +127,20 @@ bool IRValidation::Run(IREmitter* IREmit) {
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();
-
-        // Was an argument defined after this node?
-        if (ArgID >= ID) {
-          HadError |= true;
-          Errors << "%" << ID << ": Arg[" << i << "] has definition after use at %" << ArgID << std::endl;
-        }
-
-        if (ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
-          HadError |= true;
-          Errors << "%" << ID << ": Arg[" << i << "] references dead %" << ArgID << std::endl;
-        }
+        IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
 
         if (ArgID.IsValid()) {
           Uses[ArgID.Value]++;
+        }
+
+        // We do not validate the location of inline constants because it's
+        // irrelevant, they're ignored by RA and always inlined to where they
+        // need to be. This lets us pool inline constants globally.
+        bool Ignore = (Op == OP_IRHEADER || Op == OP_INLINECONSTANT);
+
+        if (!Ignore && ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
+          HadError |= true;
+          Errors << "%" << ID << ": Arg[" << i << "] references invalid %" << ArgID << std::endl;
         }
       }
 

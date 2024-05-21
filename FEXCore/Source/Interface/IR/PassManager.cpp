@@ -97,7 +97,6 @@ void PassManager::AddDefaultValidationPasses() {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
   InsertValidationPass(Validation::CreateRAValidation());
-  InsertValidationPass(Validation::CreateValueDominanceValidation());
 #endif
 }
 
