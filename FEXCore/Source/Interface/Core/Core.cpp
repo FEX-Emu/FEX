@@ -744,21 +744,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  void* CodePtr {};
-  FEXCore::IR::IRListView* IRList {};
-  FEXCore::Core::DebugData* DebugData {};
-
-  bool GeneratedIR {};
-  uint64_t StartAddr {}, Length {};
-
-  auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP, MaxInst);
-  CodePtr = Code;
-  IRList = IR;
-  DebugData = Data;
-  GeneratedIR = Generated;
-  StartAddr = _StartAddr;
-  Length = _Length;
-
+  auto [CodePtr, IRList, DebugData, RAData, GeneratedIR, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
   }
