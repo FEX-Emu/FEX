@@ -63,11 +63,11 @@ void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t
   auto Inserted = Index.emplace(GuestRIP, Stream->Offset());
 
   if (Inserted.second) {
-    // GuestHash
-    Stream->Write((const char*)&Hash, sizeof(Hash));
-
-    // GuestLength
-    Stream->Write((const char*)&Length, sizeof(Length));
+    AOTIRInlineEntry entry {
+      .GuestHash = Hash,
+      .GuestLength = Length,
+    };
+    Stream->Write((const char*)&entry, sizeof(entry));
 
     RAData->Serialize(*Stream);
 
@@ -170,25 +170,23 @@ void AOTIRCaptureCache::FinalizeAOTIRCache() {
       stream->Write(&Zero, 1);
     }
 
-    // AOTIRInlineIndex
-    const auto FnCount = Entry.Index.size();
-    const size_t DataBase = -stream->Offset();
-
-    stream->Write((const char*)&FnCount, sizeof(FnCount));
-    stream->Write((const char*)&DataBase, sizeof(DataBase));
+    AOTIRInlineIndex index {
+      .Count = Entry.Index.size(),
+      .DataBase = -stream->Offset(),
+    };
+    stream->Write((const char*)&index, sizeof(index));
 
     for (const auto& [GuestStart, DataOffset] : Entry.Index) {
-      // AOTIRInlineIndexEntry
+      AOTIRInlineIndexEntry entry {
+        .GuestStart = GuestStart,
+        .DataOffset = DataOffset,
+      };
 
-      // GuestStart
-      stream->Write((const char*)&GuestStart, sizeof(GuestStart));
-
-      // DataOffset
-      stream->Write((const char*)&DataOffset, sizeof(DataOffset));
+      stream->Write((const char*)&entry, sizeof(entry));
     }
 
     // End of file header
-    const auto IndexSize = FnCount * sizeof(FEXCore::IR::AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
+    const auto IndexSize = sizeof(AOTIRInlineIndex) + index.Count * sizeof(FEXCore::IR::AOTIRInlineIndexEntry);
     stream->Write((const char*)&IndexSize, sizeof(IndexSize));
     stream->Write(String.c_str(), ModSize);
     stream->Write((const char*)&ModSize, sizeof(ModSize));
