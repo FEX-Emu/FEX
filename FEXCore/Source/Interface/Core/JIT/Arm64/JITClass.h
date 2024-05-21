@@ -47,7 +47,7 @@ public:
 
   [[nodiscard]]
   CPUBackend::CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                       FEXCore::IR::RegisterAllocationData* RAData) override;
+                                       const FEXCore::IR::RegisterAllocationData* RAData) override;
 
   [[nodiscard]]
   void* MapRegion(void* HostPtr, uint64_t, uint64_t) override {
@@ -281,7 +281,7 @@ private:
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
   IR::RegisterAllocationPass* RAPass;
-  IR::RegisterAllocationData* RAData;
+  const IR::RegisterAllocationData* RAData;
   FEXCore::Core::DebugData* DebugData;
 
   void ResetStack();

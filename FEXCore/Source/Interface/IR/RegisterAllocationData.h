@@ -43,7 +43,6 @@ class FEX_PACKED RegisterAllocationData {
 public:
   uint32_t SpillSlotCount {};
   uint32_t MapCount {};
-  bool IsShared {false};
   PhysicalRegister Map[0];
 
   PhysicalRegister GetNodeRegister(NodeID Node) const {
@@ -67,18 +66,13 @@ public:
     stream.Write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
     stream.Write((const char*)&MapCount, sizeof(MapCount));
     // RAData (inline)
-    // In file, IsShared is always set
-    bool _IsShared = true;
-    stream.Write((const char*)&_IsShared, sizeof(IsShared));
     stream.Write((const char*)&Map[0], sizeof(Map[0]) * MapCount);
   }
 };
 
 struct RegisterAllocationDataDeleter {
   void operator()(RegisterAllocationData* r) const {
-    if (!r->IsShared) {
-      FEXCore::Allocator::free(r);
-    }
+    FEXCore::Allocator::free(r);
   }
 };
 
@@ -87,7 +81,6 @@ inline auto RegisterAllocationData::Create(uint32_t NodeCount) -> UniquePtr {
   memset(&Ret->Map[0], PhysicalRegister::Invalid().Raw, NodeCount);
   Ret->SpillSlotCount = 0;
   Ret->MapCount = NodeCount;
-  Ret->IsShared = false;
   return UniquePtr {Ret};
 }
 
@@ -96,7 +89,6 @@ inline auto RegisterAllocationData::CreateCopy() const -> UniquePtr {
   memcpy((void*)&copy->Map[0], (void*)&Map[0], MapCount * sizeof(Map[0]));
   copy->SpillSlotCount = SpillSlotCount;
   copy->MapCount = MapCount;
-  copy->IsShared = IsShared;
   return UniquePtr {copy};
 }
 

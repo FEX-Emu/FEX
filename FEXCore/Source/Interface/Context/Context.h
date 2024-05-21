@@ -57,6 +57,7 @@ namespace HLE {
 
 namespace FEXCore::IR {
 class RegisterAllocationData;
+struct IRListCopy;
 class IRListView;
 namespace Validation {
   class IRValidation;
@@ -290,8 +291,7 @@ public:
   void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
   struct GenerateIRResult {
-    FEXCore::IR::IRListView* IRList;
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
+    fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR;
     uint64_t TotalInstructions;
     uint64_t TotalInstructionsLength;
     uint64_t StartAddr;
@@ -302,9 +302,8 @@ public:
 
   struct CompileCodeResult {
     void* CompiledCode;
-    FEXCore::IR::IRListView* IRData;
+    fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR;
     FEXCore::Core::DebugData* DebugData;
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
     bool GeneratedIR;
     uint64_t StartAddr;
     uint64_t Length;
