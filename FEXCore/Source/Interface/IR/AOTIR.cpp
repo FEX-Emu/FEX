@@ -260,7 +260,7 @@ void AOTIRCaptureCache::WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn&
 }
 
 std::optional<AOTIRCaptureCache::PreGenerateIRFetchResult>
-AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, FEXCore::IR::IRListView* IRList) {
+AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
 
   PreGenerateIRFetchResult Result {};
@@ -268,7 +268,7 @@ AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread
   if (AOTIRCacheEntry.Entry) {
     AOTIRCacheEntry.Entry->ContainsCode = true;
 
-    if (IRList == nullptr && CTX->Config.AOTIRLoad()) {
+    if (CTX->Config.AOTIRLoad()) {
       auto Mod = AOTIRCacheEntry.Entry->Array;
 
       if (Mod != nullptr) {

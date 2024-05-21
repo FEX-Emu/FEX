@@ -682,7 +682,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // AOT IR bookkeeping and cache
   {
-    auto IRFromAOT = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP, IRList);
+    auto IRFromAOT = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP);
     if (IRFromAOT) {
       // Setup pointers to internal structures
       IRList = IRFromAOT->IRList;
