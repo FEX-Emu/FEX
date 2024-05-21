@@ -69,8 +69,8 @@
         "ldr x30, [sp], #16",
         "mov w20, w0",
         "lsr x21, x0, #32",
-        "mov w4, w20",
-        "mov w6, w21"
+        "mov w6, w21",
+        "mov w4, w20"
       ]
     },
     "rdtscp": {

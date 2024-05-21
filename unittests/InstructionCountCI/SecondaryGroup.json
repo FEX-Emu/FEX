@@ -776,7 +776,7 @@
       ]
     },
     "cmpxchg8b [rbp]": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -793,20 +793,19 @@
         "caspal w2, w3, w24, w25, [x20]",
         "mov w20, w2",
         "mov w21, w3",
-        "mov w24, w20",
-        "mov w25, w21",
         "mrs x0, nzcv",
         "cmp w20, w22",
         "ccmp w21, w23, #nzcv, eq",
         "cset w1, eq",
         "bfi w0, w1, #30, #1",
         "msr nzcv, x0",
-        "csel x4, x24, x4, ne",
-        "csel x6, x25, x6, ne"
+        "mov w22, w21",
+        "csel x4, x20, x4, ne",
+        "csel x6, x22, x6, ne"
       ]
     },
     "cmpxchg16b [rbp]": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 19,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
         "add x20, x9, #0x0 (0)",
@@ -819,45 +818,42 @@
         "caspal x2, x3, x24, x25, [x20]",
         "mov x20, x2",
         "mov x21, x3",
-        "mov x24, x20",
-        "mov x25, x21",
         "mrs x0, nzcv",
         "cmp w20, w22",
         "ccmp w21, w23, #nzcv, eq",
         "cset w1, eq",
         "bfi w0, w1, #30, #1",
         "msr nzcv, x0",
-        "csel x4, x24, x4, ne",
-        "csel x6, x25, x6, ne"
+        "mov x22, x21",
+        "csel x4, x20, x4, ne",
+        "csel x6, x22, x6, ne"
       ]
     },
     "rdrand ax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
         "cset x21, ne",
-        "mov x22, x20",
-        "mov x20, x21",
-        "bfxil x4, x22, #0, #16",
+        "mov x22, x21",
+        "bfxil x4, x20, #0, #16",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },
     "rdrand eax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
         "cset x21, ne",
-        "mov x22, x20",
-        "mov x20, x21",
-        "mov w4, w22",
+        "mov x22, x21",
+        "mov w4, w20",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },
@@ -867,41 +863,39 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
         "cset x21, ne",
+        "mov x22, x21",
         "mov x4, x20",
-        "mov x20, x21",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },
     "rdseed ax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
         "cset x21, ne",
-        "mov x22, x20",
-        "mov x20, x21",
-        "bfxil x4, x22, #0, #16",
+        "mov x22, x21",
+        "bfxil x4, x20, #0, #16",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },
     "rdseed eax": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
         "cset x21, ne",
-        "mov x22, x20",
-        "mov x20, x21",
-        "mov w4, w22",
+        "mov x22, x21",
+        "mov w4, w20",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },
@@ -911,11 +905,11 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
         "cset x21, ne",
+        "mov x22, x21",
         "mov x4, x20",
-        "mov x20, x21",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "lsl x20, x20, #29",
+        "lsl x20, x22, #29",
         "msr nzcv, x20"
       ]
     },

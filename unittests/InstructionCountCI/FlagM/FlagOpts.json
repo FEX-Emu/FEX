@@ -280,7 +280,7 @@
       ]
     },
     "Dead cmpxchg flags": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 22,
       "x86Insts": [
         "cmpxchg8b [rbp]",
         "test rax, rax"
@@ -300,14 +300,13 @@
         "caspal w2, w3, w24, w25, [x20]",
         "mov w20, w2",
         "mov w21, w3",
-        "mov w24, w20",
-        "mov w25, w21",
         "mrs x0, nzcv",
         "cmp w20, w22",
         "ccmp w21, w23, #nzcv, eq",
         "rmif x0, #0, #NzCV",
-        "csel x4, x24, x4, ne",
-        "csel x6, x25, x6, ne",
+        "mov w22, w21",
+        "csel x4, x20, x4, ne",
+        "csel x6, x22, x6, ne",
         "ands x26, x4, x4"
       ]
     }

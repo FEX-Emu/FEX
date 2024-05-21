@@ -2893,8 +2893,8 @@
         "mov x2, x5",
         "sub x20, x0, x2",
         "sub x21, x1, x2",
-        "mov x11, x20",
         "mov x10, x21",
+        "mov x11, x20",
         "mov w5, #0x0"
       ]
     },
@@ -2982,8 +2982,8 @@
         "mov x2, x5",
         "sub x20, x0, x2, lsl #1",
         "sub x21, x1, x2, lsl #1",
-        "mov x11, x20",
         "mov x10, x21",
+        "mov x11, x20",
         "mov w5, #0x0"
       ]
     },
@@ -3071,8 +3071,8 @@
         "mov x2, x5",
         "sub x20, x0, x2, lsl #2",
         "sub x21, x1, x2, lsl #2",
-        "mov x11, x20",
         "mov x10, x21",
+        "mov x11, x20",
         "mov w5, #0x0"
       ]
     },
@@ -3160,8 +3160,8 @@
         "mov x2, x5",
         "sub x20, x0, x2, lsl #3",
         "sub x21, x1, x2, lsl #3",
-        "mov x11, x20",
         "mov x10, x21",
+        "mov x11, x20",
         "mov w5, #0x0"
       ]
     },
