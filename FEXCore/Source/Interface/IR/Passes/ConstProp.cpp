@@ -33,14 +33,6 @@ $end_info$
 
 namespace FEXCore::IR {
 
-template<typename T>
-uint64_t getMask(T Op) {
-  uint64_t NumBits = Op->Header.Size * 8;
-  return (~0ULL) >> (64 - NumBits);
-}
-
-
-template<>
 uint64_t getMask(IROp_Header* Op) {
   uint64_t NumBits = Op->Size * 8;
   return (~0ULL) >> (64 - NumBits);
@@ -417,7 +409,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
     // Is this value already BFE'd?
     if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
-      // printf("Removed BFE once \n");
       break;
     }
 
@@ -429,7 +420,6 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
 
       if (Op->Width >= (sourceHeader->Size * 8) &&
           (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-        // printf("Eliminated needless zext bfe\n");
         //  Load mem / load ctx zexts, no need to vmem
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
         break;
@@ -474,14 +464,12 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter* IREmit, const IRListView& C
 
     if (IROp->Size >= sourceHeader->Size &&
         (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-      // printf("Eliminated needless zext VMOV\n");
       //  Load mem / load ctx zexts, no need to vmem
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     } else if (IROp->Size == sourceHeader->Size) {
       // VMOV of same size
       // XXX: This is unsafe of an optimization since in some cases we can't see through garbage data in the upper bits of a vector
       // RCLSE generates VMOV instructions which are being used as a zero extension
-      // printf("printf vmov of same size?!\n");
       // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
     }
     break;
@@ -613,15 +601,15 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Add>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
-    bool IsConstant1 = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
-    bool IsConstant2 = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
+    bool IsConstant1 = IREmit->IsValueConstant(IROp->Args[0], &Constant1);
+    bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
 
     if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
-      uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op);
+      uint64_t NewConstant = (Constant1 + Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
     } else if (IsConstant1 && IsConstant2 && IROp->Op == OP_SUB) {
-      uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op);
+      uint64_t NewConstant = (Constant1 - Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
     } else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(-Constant2)) {
@@ -656,50 +644,48 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         Op->Shift == IR::ShiftType::LSL) {
       // Optimize the LSL case when we know both sources are constant.
       // This is a pattern that shows up with direction flag calculations if DF was set just before the operation.
-      uint64_t NewConstant = (Constant1 - (Constant2 << Op->ShiftAmount)) & getMask(Op);
+      uint64_t NewConstant = (Constant1 - (Constant2 << Op->ShiftAmount)) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
     }
     break;
   }
   case OP_AND: {
-    auto Op = IROp->CW<IR::IROp_And>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-      uint64_t NewConstant = (Constant1 & Constant2) & getMask(Op);
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
+      uint64_t NewConstant = (Constant1 & Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
     } else if (Constant2 == 1) {
       // happens from flag calcs
-      auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
+      auto val = IREmit->GetOpHeader(IROp->Args[0]);
 
       uint64_t Constant3;
       if (val->Op == OP_SELECT && IREmit->IsValueConstant(val->Args[2], &Constant2) && IREmit->IsValueConstant(val->Args[3], &Constant3) &&
           Constant2 == 1 && Constant3 == 0) {
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
         Changed = true;
       }
-    } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
       // AND with same value results in original value
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
       Changed = true;
     }
     break;
   }
   case OP_OR: {
-    auto Op = IROp->CW<IR::IROp_Or>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       uint64_t NewConstant = Constant1 | Constant2;
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
       // OR with same value results in original value
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
       Changed = true;
     }
     break;
@@ -709,7 +695,7 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       uint64_t NewConstant = Constant1 | (Constant2 << Op->BitShift);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
@@ -721,7 +707,7 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       uint64_t NewConstant = Constant1 | (Constant2 >> Op->BitShift);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
@@ -729,15 +715,14 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_XOR: {
-    auto Op = IROp->C<IR::IROp_Xor>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       uint64_t NewConstant = Constant1 ^ Constant2;
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
       // XOR with same value results to zero
       IREmit->SetWriteCursor(CodeNode);
       IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
@@ -745,7 +730,7 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     } else {
       // XOR with zero results in the nonzero source
       for (unsigned i = 0; i < 2; ++i) {
-        if (!IREmit->IsValueConstant(Op->Header.Args[i], &Constant1)) {
+        if (!IREmit->IsValueConstant(IROp->Args[i], &Constant1)) {
           continue;
         }
 
@@ -754,7 +739,7 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         }
 
         IREmit->SetWriteCursor(CodeNode);
-        OrderedNode* Arg = CurrentIR.GetNode(Op->Header.Args[1 - i]);
+        OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[1 - i]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
         break;
@@ -763,10 +748,9 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_NEG: {
-    auto Op = IROp->CW<IR::IROp_Neg>();
     uint64_t Constant {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant)) {
       uint64_t NewConstant = -Constant;
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
@@ -774,24 +758,23 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_LSHL: {
-    auto Op = IROp->CW<IR::IROp_Lshl>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       // Shifts mask the shift amount by 63 or 31 depending on operating size;
       uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
-      uint64_t NewConstant = (Constant1 << (Constant2 & ShiftMask)) & getMask(Op);
+      uint64_t NewConstant = (Constant1 << (Constant2 & ShiftMask)) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && Constant2 == 0) {
+    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      OrderedNode* Arg = CurrentIR.GetNode(Op->Header.Args[0]);
+      OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
       Changed = true;
     } else {
-      auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
-      if (newArg.ID() != Op->Header.Args[1].ID()) {
+      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[1], IROp->Size * 8 - 1);
+      if (newArg.ID() != IROp->Args[1].ID()) {
         IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
         Changed = true;
       }
@@ -799,24 +782,23 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_LSHR: {
-    auto Op = IROp->CW<IR::IROp_Lshr>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       // Shifts mask the shift amount by 63 or 31 depending on operating size;
       uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
-      uint64_t NewConstant = (Constant1 >> (Constant2 & ShiftMask)) & getMask(Op);
+      uint64_t NewConstant = (Constant1 >> (Constant2 & ShiftMask)) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && Constant2 == 0) {
+    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      OrderedNode* Arg = CurrentIR.GetNode(Op->Header.Args[0]);
+      OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
       Changed = true;
     } else {
-      auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
-      if (newArg.ID() != Op->Header.Args[1].ID()) {
+      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[1], IROp->Size * 8 - 1);
+      if (newArg.ID() != IROp->Args[1].ID()) {
         IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
         Changed = true;
       }
@@ -833,20 +815,20 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(Op->Header.Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0) {
+    } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(IROp->Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0) {
       // A BFE that extracts all bits results in original value
       // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
-      // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+      // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
       // Changed = true;
     } else if (Op->Width == 1 && Op->lsb == 0) {
       // common from flag codegen
-      auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
+      auto val = IREmit->GetOpHeader(IROp->Args[0]);
 
       uint64_t Constant2 {};
       uint64_t Constant3 {};
       if (val->Op == OP_SELECT && IREmit->IsValueConstant(val->Args[2], &Constant2) && IREmit->IsValueConstant(val->Args[3], &Constant3) &&
           Constant2 == 1 && Constant3 == 0) {
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
         Changed = true;
       }
     }
@@ -877,8 +859,8 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Bfi>();
     uint64_t ConstantDest {};
     uint64_t ConstantSrc {};
-    bool DestIsConstant = IREmit->IsValueConstant(Op->Header.Args[0], &ConstantDest);
-    bool SrcIsConstant = IREmit->IsValueConstant(Op->Header.Args[1], &ConstantSrc);
+    bool DestIsConstant = IREmit->IsValueConstant(IROp->Args[0], &ConstantDest);
+    bool SrcIsConstant = IREmit->IsValueConstant(IROp->Args[1], &ConstantSrc);
 
     if (DestIsConstant && SrcIsConstant) {
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
@@ -894,12 +876,12 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       uint64_t NewConstant = SourceMask << Op->lsb;
 
       if (ConstantSrc & 1) {
-        auto orr = IREmit->_Or(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
+        auto orr = IREmit->_Or(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
         IREmit->ReplaceAllUsesWith(CodeNode, orr);
         Changed = true;
       } else {
         // We are wanting to clear the bitfield.
-        auto andn = IREmit->_Andn(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(NewConstant));
+        auto andn = IREmit->_Andn(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
         IREmit->ReplaceAllUsesWith(CodeNode, andn);
         Changed = true;
       }
@@ -907,39 +889,21 @@ bool ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_MUL: {
-    auto Op = IROp->C<IR::IROp_Mul>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-      uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
+    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
+      uint64_t NewConstant = (Constant1 * Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Changed = true;
-    } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && std::popcount(Constant2) == 1) {
+    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && std::popcount(Constant2) == 1) {
       if (IROp->Size == 4 || IROp->Size == 8) {
         uint64_t amt = std::countr_zero(Constant2);
         IREmit->SetWriteCursor(CodeNode);
-        auto shift = IREmit->_Lshl(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
+        auto shift = IREmit->_Lshl(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(amt));
         IREmit->ReplaceAllUsesWith(CodeNode, shift);
         Changed = true;
       }
-    }
-    break;
-  }
-  case OP_SELECT: {
-    auto Op = IROp->C<IR::IROp_Select>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && Op->Cond == COND_EQ) {
-
-      Constant1 &= getMask(Op);
-      Constant2 &= getMask(Op);
-
-      bool is_true = Constant1 == Constant2;
-
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[is_true ? 2 : 3]));
-      Changed = true;
     }
     break;
   }
@@ -959,11 +923,9 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_ASHR:
     case OP_ROR:
     case OP_LSHL: {
-      auto Op = IROp->C<IR::IROp_Lshr>();
-
       uint64_t Constant2 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-        IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
+        IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
         // this shouldn't be here, but rather on the emitter themselves or the constprop transformation?
         if (IROp->Size <= 4) {
@@ -984,14 +946,12 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_SUBNZCV:
     case OP_ADDWITHFLAGS:
     case OP_SUBWITHFLAGS: {
-      auto Op = IROp->C<IR::IROp_Add>();
-
       uint64_t Constant2 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         // We don't allow 8/16-bit operations to have constants, since no
         // constant would be in bounds after the JIT's 24/16 shift.
-        if (IsImmAddSub(Constant2) && Op->Header.Size >= 4) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+        if (IsImmAddSub(Constant2) && IROp->Size >= 4) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
@@ -1000,9 +960,9 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       } else if (IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS || IROp->Op == OP_SUB) {
         // TODO: Generalize this
         uint64_t Constant1 {};
-        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+        if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
           if (Constant1 == 0) {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+            IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
             IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
             Changed = true;
           }
@@ -1013,12 +973,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     }
     case OP_ADC:
     case OP_ADCWITHFLAGS: {
-      auto Op = IROp->C<IR::IROp_Adc>();
-
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
           IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
           Changed = true;
         }
@@ -1027,12 +985,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_RMIFNZCV: {
-      auto Op = IROp->C<IR::IROp_RmifNZCV>();
-
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
           IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
           Changed = true;
         }
@@ -1042,12 +998,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     }
     case OP_CONDADDNZCV:
     case OP_CONDSUBNZCV: {
-      auto Op = IROp->C<IR::IROp_CondAddNZCV>();
-
       uint64_t Constant2 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (IsImmAddSub(Constant2)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
@@ -1056,9 +1010,9 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       }
 
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
           IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
           Changed = true;
         }
@@ -1066,12 +1020,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_TESTNZ: {
-      auto Op = IROp->C<IR::IROp_TestNZ>();
-
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
         if (IsImmLogical(Constant1, IROp->Size * 8)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
 
@@ -1081,12 +1033,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_SELECT: {
-      auto Op = IROp->C<IR::IROp_Select>();
-
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
         if (IsImmAddSub(Constant1)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
 
@@ -1098,9 +1048,9 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
 
       uint64_t Constant2 {};
       uint64_t Constant3 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) && IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
+      if (IREmit->IsValueConstant(IROp->Args[2], &Constant2) && IREmit->IsValueConstant(IROp->Args[3], &Constant3) &&
           (Constant2 == 1 || Constant2 == AllOnes) && Constant3 == 0) {
-        IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+        IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[2]));
 
         IREmit->ReplaceNodeArgument(CodeNode, 2, CreateInlineConstant(IREmit, Constant2));
         IREmit->ReplaceNodeArgument(CodeNode, 3, CreateInlineConstant(IREmit, Constant3));
@@ -1109,20 +1059,18 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_NZCVSELECT: {
-      auto Op = IROp->C<IR::IROp_NZCVSelect>();
-
       uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
 
       // We always allow source 1 to be zero, but source 0 can only be a
       // special 1/~0 constant if source 1 is 0.
       uint64_t Constant0 {};
       uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1) && Constant1 == 0) {
-        IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant1) && Constant1 == 0) {
+        IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
         IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
 
-        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant0) && (Constant0 == 1 || Constant0 == AllOnes)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+        if (IREmit->IsValueConstant(IROp->Args[0], &Constant0) && (Constant0 == 1 || Constant0 == AllOnes)) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant0));
         }
@@ -1131,12 +1079,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_CONDJUMP: {
-      auto Op = IROp->C<IR::IROp_CondJump>();
-
       uint64_t Constant2 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (IsImmAddSub(Constant2)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
@@ -1173,12 +1119,10 @@ bool ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_AND:
     case OP_ANDWITHFLAGS:
     case OP_ANDN: {
-      auto Op = IROp->CW<IR::IROp_Or>();
-
       uint64_t Constant2 {};
-      if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (IsImmLogical(Constant2, IROp->Size * 8)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
 
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
