@@ -259,7 +259,7 @@ void AOTIRCaptureCache::WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn&
   }
 }
 
-AOTIRCaptureCache::PreGenerateIRFetchResult
+std::optional<AOTIRCaptureCache::PreGenerateIRFetchResult>
 AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, FEXCore::IR::IRListView* IRList) {
   auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
 
@@ -286,7 +286,7 @@ AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread
             Result.DebugData = new FEXCore::Core::DebugData();
             Result.StartAddr = MappedStart;
             Result.Length = AOTEntry->GuestLength;
-            Result.GeneratedIR = true;
+            return Result;
           } else {
             LogMan::Msg::IFmt("AOTIR: hash check failed {:x}\n", MappedStart);
           }
@@ -297,7 +297,7 @@ AOTIRCaptureCache::PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread
     }
   }
 
-  return Result;
+  return std::nullopt;
 }
 
 bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thread, void* CodePtr, uint64_t GuestRIP, uint64_t StartAddr,

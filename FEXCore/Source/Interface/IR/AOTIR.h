@@ -108,10 +108,10 @@ public:
     FEXCore::Core::DebugData* DebugData {};
     uint64_t StartAddr {};
     uint64_t Length {};
-    bool GeneratedIR {};
   };
   [[nodiscard]]
-  PreGenerateIRFetchResult PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, FEXCore::IR::IRListView* IRList);
+  std::optional<PreGenerateIRFetchResult>
+  PreGenerateIRFetch(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, FEXCore::IR::IRListView* IRList);
 
   bool PostCompileCode(FEXCore::Core::InternalThreadState* Thread, void* CodePtr, uint64_t GuestRIP, uint64_t StartAddr, uint64_t Length,
                        FEXCore::IR::RegisterAllocationData::UniquePtr RAData, FEXCore::IR::IRListView* IRList,

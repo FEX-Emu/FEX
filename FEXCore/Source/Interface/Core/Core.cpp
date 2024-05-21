@@ -682,15 +682,15 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // AOT IR bookkeeping and cache
   {
-    auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP, IRList);
-    if (_GeneratedIR) {
+    auto IRFromAOT = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP, IRList);
+    if (IRFromAOT) {
       // Setup pointers to internal structures
-      IRList = IRCopy;
-      RAData = std::move(RACopy);
-      DebugData = DebugDataCopy;
-      StartAddr = _StartAddr;
-      Length = _Length;
-      GeneratedIR = _GeneratedIR;
+      IRList = IRFromAOT->IRList;
+      RAData = std::move(IRFromAOT->RAData);
+      DebugData = IRFromAOT->DebugData;
+      StartAddr = IRFromAOT->StartAddr;
+      Length = IRFromAOT->Length;
+      GeneratedIR = true;
     }
   }
 
