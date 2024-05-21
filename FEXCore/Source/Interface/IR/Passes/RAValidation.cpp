@@ -23,8 +23,6 @@ struct RegState {
   static constexpr IR::NodeID UninitializedValue {0};
   static constexpr IR::NodeID InvalidReg {0xffff'ffff};
   static constexpr IR::NodeID CorruptedPair {0xffff'fffe};
-  static constexpr IR::NodeID ClobberedValue {0xffff'fffd};
-  static constexpr IR::NodeID StaticAssigned {0xffff'ff00};
 
   // This class makes some assumptions about how the host registers are arranged and mapped to virtual registers:
   // 1. There will be less than 32 GPRs and 32 FPRs
@@ -93,84 +91,6 @@ struct RegState {
     return UninitializedValue;
   }
 
-  // Intersect another regstate with this one
-  // Any registers/slots which contain the same SSA id will be persevered
-  // Anything else will be marked as Clobbered
-  //
-  // Useful for merging two branches of control flow.
-  // Any register that differs depending on control flow shouldn't be consumed by
-  // code that follows
-  void Intersect(RegState& other) {
-    for (size_t i = 0; i < GPRs.size(); i++) {
-      if (GPRs[i] != other.GPRs[i]) {
-        GPRs[i] = ClobberedValue;
-      }
-    }
-
-    for (size_t i = 0; i < GPRsFixed.size(); i++) {
-      if (GPRsFixed[i] != other.GPRsFixed[i]) {
-        GPRsFixed[i] = ClobberedValue;
-      }
-    }
-
-    for (size_t i = 0; i < FPRs.size(); i++) {
-      if (FPRs[i] != other.FPRs[i]) {
-        FPRs[i] = ClobberedValue;
-      }
-    }
-
-    for (size_t i = 0; i < FPRsFixed.size(); i++) {
-      if (FPRsFixed[i] != other.FPRsFixed[i]) {
-        FPRsFixed[i] = ClobberedValue;
-      }
-    }
-
-    for (auto it = Spills.begin(); it != Spills.end(); it++) {
-      auto& [SlotID, Value] = *it;
-      if (!other.Spills.contains(SlotID)) {
-        Spills.erase(it);
-      } else if (Value != other.Spills[SlotID]) {
-        Value = ClobberedValue;
-      }
-    }
-  }
-
-  // Filter out all registers/slots containing an SSA id larger than MaxSSA
-  // Mark them as Clobbered.
-  // Useful for backwards edges, where using an SSA from before the
-  void Filter(IR::NodeID MaxSSA) {
-    for (auto& gpr : GPRs) {
-      if (gpr > MaxSSA) {
-        gpr = ClobberedValue;
-      }
-    }
-
-    for (auto& gpr : GPRsFixed) {
-      if (gpr > MaxSSA) {
-        gpr = ClobberedValue;
-      }
-    }
-
-    for (auto& fpr : FPRs) {
-      if (fpr > MaxSSA) {
-        fpr = ClobberedValue;
-      }
-    }
-
-    for (auto& fpr : FPRsFixed) {
-      if (fpr > MaxSSA) {
-        fpr = ClobberedValue;
-      }
-    }
-
-    for (auto it = Spills.begin(); it != Spills.end(); it++) {
-      auto& [SlotID, Value] = *it;
-      if (Value > MaxSSA) {
-        Spills.erase(it);
-      }
-    }
-  }
-
 private:
   std::array<IR::NodeID, 32> GPRsFixed = {};
   std::array<IR::NodeID, 32> FPRsFixed = {};
@@ -178,22 +98,12 @@ private:
   std::array<IR::NodeID, 32> FPRs = {};
 
   fextl::unordered_map<uint32_t, IR::NodeID> Spills;
-
-public:
-  uint32_t Version {}; // Used to force regeneration of RegStates after following backward edges
 };
 
 class RAValidation final : public FEXCore::IR::Pass {
 public:
   ~RAValidation() {}
   bool Run(IREmitter* IREmit) override;
-
-private:
-  // Holds the calculated RegState at the exit of each block
-  fextl::unordered_map<IR::NodeID, RegState> BlockExitState;
-
-  // A queue of blocks we need to visit (or revisit)
-  fextl::deque<OrderedNode*> BlocksToVisit;
 };
 
 
@@ -205,93 +115,15 @@ bool RAValidation::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::RAValidation");
 
   IR::RegisterAllocationData* RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
-  BlockExitState.clear();
-  // BlocksToVisit will already be empty
-
-  // Get the control flow graph from the validation pass
-  auto ValidationPass = Manager->GetPass<IRValidation>("IRValidation");
-  LOGMAN_THROW_AA_FMT(ValidationPass != nullptr, "Couldn't find IRValidation pass");
-
-  auto& OffsetToBlockMap = ValidationPass->OffsetToBlockMap;
-
-  LOGMAN_THROW_AA_FMT(ValidationPass->EntryBlock != nullptr, "No entry point");
-  BlocksToVisit.push_front(ValidationPass->EntryBlock); // Currently only a single entry point
 
   bool HadError = false;
   fextl::ostringstream Errors;
 
   auto CurrentIR = IREmit->ViewIR();
-  uint32_t CurrentVersion = 1; // Incremented every backwards edge
 
-  while (!BlocksToVisit.empty()) {
-    auto BlockNode = BlocksToVisit.front();
-    const auto BlockID = CurrentIR.GetID(BlockNode);
-    auto& BlockInfo = OffsetToBlockMap[BlockID];
-
-    const auto IsFowardsEdge = [&](IR::NodeID PredecessorID) {
-      // Blocks are sorted in FEXes IR, so backwards edges always go to a lower (or equal) Block ID
-      return PredecessorID < BlockID;
-    };
-
-    // First, make sure we have the exit state for all Predecessors that
-    // get here via a forwards branch.
-    bool MissingPredecessor = false;
-
-    for (auto Predecessor : BlockInfo.Predecessors) {
-      const auto PredecessorID = CurrentIR.GetID(Predecessor);
-      const bool HaveState = BlockExitState.contains(PredecessorID) && BlockExitState[PredecessorID].Version == CurrentVersion;
-
-      if (IsFowardsEdge(PredecessorID) && !HaveState) {
-        // We are probably about to visit this node anyway, remove it
-        auto it = std::remove(BlocksToVisit.begin(), BlocksToVisit.end(), Predecessor);
-        BlocksToVisit.erase(it, BlocksToVisit.end());
-
-        // Add the missing predecessor to start of queue
-        BlocksToVisit.push_front(Predecessor);
-        MissingPredecessor = true;
-      }
-    }
-
-    if (MissingPredecessor) {
-      // We'll have to come back to this block later
-      continue;
-    }
-
-    // We have committed to processing this block
-    // Remove from queue
-    BlocksToVisit.pop_front();
-
-    bool FirstVisit = !BlockExitState.contains(BlockID);
-
-    // Second, we need to determine the register status as of Block entry
-    auto BlockOp = CurrentIR.GetOp<IROp_CodeBlock>(BlockNode);
-    const auto FirstSSA = BlockOp->Begin.ID();
-
-    auto& BlockRegState = BlockExitState.try_emplace(BlockID).first->second;
-    bool EmptyRegState = true;
-    auto Intersect = [&](RegState& Other) {
-      if (EmptyRegState) {
-        BlockRegState = Other;
-        EmptyRegState = false;
-      } else {
-        BlockRegState.Intersect(Other);
-      }
-    };
-
-    for (auto Predecessor : BlockInfo.Predecessors) {
-      auto PredecessorID = CurrentIR.GetID(Predecessor);
-      if (BlockExitState.contains(PredecessorID)) {
-        if (IsFowardsEdge(PredecessorID)) {
-          Intersect(BlockExitState[PredecessorID]);
-        } else {
-          RegState Filtered = BlockExitState[PredecessorID];
-          Filtered.Filter(FirstSSA);
-          Intersect(Filtered);
-        }
-      }
-    }
-
-    // Third, we need to iterate over all IR ops in the block
+  for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+    // We only allocate registers locally, so state is reset each block
+    struct RegState BlockRegState = {};
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto ID = CurrentIR.GetID(CodeNode);
@@ -320,11 +152,6 @@ bool RAValidation::Run(IREmitter* IREmit) {
           HadError |= true;
 
           Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it is uninitialized\n", ID, i, PhyReg.Reg, ArgID);
-        } else if (CurrentSSAAtReg == RegState::ClobberedValue) {
-          HadError |= true;
-
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but contents vary depending on control flow\n", ID, i,
-                                       PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg != ArgID) {
           HadError |= true;
           Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it actually contains %{}\n", ID, i, PhyReg.Reg,
@@ -353,10 +180,6 @@ bool RAValidation::Run(IREmitter* IREmit) {
           HadError |= true;
           Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but was undefined in at least one control flow path\n",
                                        ID, ExpectedValue, FillRegister->Slot);
-        } else if (Value == RegState::ClobberedValue) {
-          HadError |= true;
-          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but contents vary depending on control flow\n", ID,
-                                       ExpectedValue, FillRegister->Slot);
         } else if (Value != ExpectedValue) {
           HadError |= true;
           Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but it actually contains %{}\n", ID, ExpectedValue,
@@ -377,72 +200,6 @@ bool RAValidation::Run(IREmitter* IREmit) {
 
       // Update BlockState map
       BlockRegState.Set(RAData->GetNodeRegister(ID), ID);
-    }
-
-    // Forth, Add successors to the queue of blocks to validate
-    for (auto Successor : BlockInfo.Successors) {
-      auto SuccessorID = CurrentIR.GetID(Successor);
-
-      // Blocks are sorted in FEXes IR, so backwards edges always go to a lower (or equal) Block ID
-      bool FowardsEdge = SuccessorID > BlockID;
-
-      if (FowardsEdge) {
-        // Always follow forwards edges, assuming it's not already on the queue
-        if (std::find(BlocksToVisit.begin(), BlocksToVisit.end(), Successor) == std::end(BlocksToVisit)) {
-          // Push to the back of queue so there is a higher chance all predecessors for this block are done first
-          BlocksToVisit.push_back(Successor);
-        }
-      } else if (FirstVisit) {
-        // Now that we have the block data for the backwards edge, we can visit it again and make
-        // sure it (and all it's successors) are still valid.
-
-        // But only do this the first time we encounter each backwards edge.
-
-        // Push to the front of queue, so we get this re-checking done before examining future nodes.
-        BlocksToVisit.push_front(Successor);
-
-        // Make sure states are reprocessed
-        CurrentVersion++;
-      }
-    }
-
-    BlockRegState.Version = CurrentVersion;
-
-    if (CurrentVersion > 10000) {
-      Errors << "Infinite Loop\n";
-      HadError |= true;
-
-      for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-        const auto BlockID = CurrentIR.GetID(BlockNode);
-        const auto& BlockInfo = OffsetToBlockMap[BlockID];
-
-        Errors << fextl::fmt::format("Block {}\n\tPredecessors: ", BlockID);
-
-        for (auto Predecessor : BlockInfo.Predecessors) {
-          const auto PredecessorID = CurrentIR.GetID(Predecessor);
-          const bool FowardsEdge = PredecessorID < BlockID;
-          if (!FowardsEdge) {
-            Errors << "(Backwards): ";
-          }
-          Errors << fextl::fmt::format("Block {} ", PredecessorID);
-        }
-
-        Errors << "\n\tSuccessors: ";
-
-        for (auto Successor : BlockInfo.Successors) {
-          const auto SuccessorID = CurrentIR.GetID(Successor);
-          const bool FowardsEdge = SuccessorID > BlockID;
-
-          if (!FowardsEdge) {
-            Errors << "(Backwards): ";
-          }
-          Errors << fextl::fmt::format("Block {} ", SuccessorID);
-        }
-
-        Errors << "\n\n";
-      }
-
-      break;
     }
   }
 
