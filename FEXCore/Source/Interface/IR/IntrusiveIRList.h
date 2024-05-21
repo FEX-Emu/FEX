@@ -171,9 +171,6 @@ public:
     stream.Write((const char*)&DataSize, sizeof(DataSize));
     // size_t ListSize;
     stream.Write((const char*)&ListSize, sizeof(ListSize));
-    // uint64_t Flags;
-    uint64_t WrittenFlags = 0;
-    stream.Write((const char*)&WrittenFlags, sizeof(WrittenFlags));
 
     // inline data
     stream.Write((const char*)GetData(), DataSize);
@@ -194,10 +191,6 @@ public:
     // size_t ListSize;
     memcpy(ptr, &ListSize, sizeof(ListSize));
     ptr += sizeof(ListSize);
-    // uint64_t Flags;
-    uint64_t WrittenFlags = 0;
-    memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags));
-    ptr += sizeof(WrittenFlags);
 
     // inline data
     memcpy(ptr, (const void*)GetData(), DataSize);
@@ -208,7 +201,7 @@ public:
 
   [[nodiscard]]
   size_t GetInlineSize() const {
-    static_assert(sizeof(*this) == 40);
+    static_assert(sizeof(*this) == 32);
     return sizeof(*this) + DataSize + ListSize;
   }
 
@@ -410,7 +403,6 @@ private:
   void* ListDataInternal;
   size_t DataSize;
   size_t ListSize;
-  [[maybe_unused]] uint64_t Flags {0}; // TODO: Drop. Used for backwards-compatibility
   uint8_t InlineData[0];
 };
 

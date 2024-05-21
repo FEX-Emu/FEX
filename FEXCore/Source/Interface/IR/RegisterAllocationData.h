@@ -43,7 +43,6 @@ class FEX_PACKED RegisterAllocationData {
 public:
   uint32_t SpillSlotCount {};
   uint32_t MapCount {};
-  [[maybe_unused]] uint8_t IsShared_deprecated {};
   PhysicalRegister Map[0];
 
   PhysicalRegister GetNodeRegister(NodeID Node) const {
@@ -67,9 +66,6 @@ public:
     stream.Write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
     stream.Write((const char*)&MapCount, sizeof(MapCount));
     // RAData (inline)
-    // NOTE: IsShared isn't used anymore, but is written for backwards-compatibility
-    uint8_t _IsShared = 1;
-    stream.Write((const char*)&_IsShared, sizeof(_IsShared));
     stream.Write((const char*)&Map[0], sizeof(Map[0]) * MapCount);
   }
 };
