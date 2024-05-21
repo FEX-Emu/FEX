@@ -12,9 +12,13 @@ namespace FEXCore::CPU {
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
 
-  const auto Src = GetRegPair(Op->Pair.ID());
-  const std::array<ARMEmitter::Register, 2> Regs = {Src.first, Src.second};
-  mov(ConvertSize48(IROp), GetReg(Node), Regs[Op->Element]);
+  const auto Dst = GetReg(Node);
+  const auto Pair = GetRegPair(Op->Pair.ID());
+  const auto Src = Op->Element == 0 ? Pair.first : Pair.second;
+
+  if (Dst != Src) {
+    mov(ConvertSize48(IROp), Dst, Src);
+  }
 }
 
 DEF_OP(CreateElementPair) {
