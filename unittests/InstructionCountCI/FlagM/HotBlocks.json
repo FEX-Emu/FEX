@@ -224,6 +224,29 @@
         "subs x26, x11, x4",
         "cfinv"
       ]
+    },
+    "bytemark num sort": {
+      "ExpectedInstructionCount": 9,
+      "Comment": [
+        "Saw this in bytemark"
+      ],
+      "x86Insts": [
+        "mov    r13, qword [rsi+r9*8]",
+        "mov    r11, r9",
+        "or     r11, 0x1",
+        "cmp    r13, qword [rsi+r11*8]"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x15, x13",
+        "add x20, x10, x15, lsl #3",
+        "ldr x17, [x20]",
+        "orr x15, x15, #0x1",
+        "add x20, x10, x15, lsl #3",
+        "ldr x20, [x20]",
+        "eor w27, w17, w20",
+        "subs x26, x17, x20",
+        "cfinv"
+      ]
     }
   }
 }
