@@ -173,16 +173,13 @@ bool RAValidation::Run(IREmitter* IREmit) {
         const auto Value = BlockRegState.Unspill(FillRegister->Slot);
 
         // TODO: This only proves that the Spill has a consistent SSA value
-        //       In the future we need to prove it contains the correct SSA value
+        // In the future we need to prove it contains the correct SSA value. For
+        // this we need to analyze copies/swaps properly. As a hot fix, don't
+        // compare Value with ExpectedValue.
 
         if (Value == RegState::UninitializedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but was undefined in at least one control flow path\n",
-                                       ID, ExpectedValue, FillRegister->Slot);
-        } else if (Value != ExpectedValue) {
-          HadError |= true;
-          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but it actually contains %{}\n", ID, ExpectedValue,
-                                       FillRegister->Slot, Value);
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but was undefined\n", ID, ExpectedValue, FillRegister->Slot);
         }
         break;
       }
