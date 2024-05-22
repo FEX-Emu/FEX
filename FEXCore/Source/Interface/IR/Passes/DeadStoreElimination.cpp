@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
-#include <FEXCore/fextl/unordered_map.h>
 
 #include <memory>
 #include <stddef.h>
@@ -61,16 +60,15 @@ struct Info {
 void DeadStoreElimination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DSE");
 
-  fextl::unordered_map<OrderedNode*, Info> InfoMap;
-
   auto CurrentIR = IREmit->ViewIR();
+  fextl::vector<Info> InfoMap(CurrentIR.GetSSACount());
 
   // Pass 1
   // Compute flags/regs read/writes per block
   // This is conservative and doesn't try to be smart about loads after writes
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-      auto& BlockInfo = InfoMap[BlockNode];
+      auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
@@ -109,10 +107,8 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
 
       if (IROp->Op == OP_JUMP) {
         auto Op = IROp->C<IR::IROp_Jump>();
-        OrderedNode* TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
-
-        auto& BlockInfo = InfoMap[BlockNode];
-        auto& TargetInfo = InfoMap[TargetNode];
+        auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
+        auto& TargetInfo = InfoMap[Op->Header.Args[0].ID().Value];
 
         // stores to remove are written by the next block but not read
         BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
@@ -124,12 +120,9 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
       } else if (IROp->Op == OP_CONDJUMP) {
         auto Op = IROp->C<IR::IROp_CondJump>();
 
-        OrderedNode* TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-        OrderedNode* FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
-
-        auto& BlockInfo = InfoMap[BlockNode];
-        auto& TrueTargetInfo = InfoMap[TrueTargetNode];
-        auto& FalseTargetInfo = InfoMap[FalseTargetNode];
+        auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
+        auto& TrueTargetInfo = InfoMap[Op->TrueBlock.ID().Value];
+        auto& FalseTargetInfo = InfoMap[Op->FalseBlock.ID().Value];
 
         // stores to remove are written by the next blocks but not read
         BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
@@ -149,7 +142,7 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
   // Remove the dead stores
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-      auto& BlockInfo = InfoMap[BlockNode];
+      auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
