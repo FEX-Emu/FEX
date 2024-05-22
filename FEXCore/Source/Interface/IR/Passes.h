@@ -29,7 +29,6 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 namespace Validation {
   fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
   fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
-  fextl::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation();
 } // namespace Validation
 
 namespace Debug {

@@ -20,12 +20,12 @@ struct BitSet final {
 
   ElementType* Memory;
   void Allocate(size_t Elements) {
-    size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
+    size_t AllocateSize = ToBytes(Elements);
     LOGMAN_THROW_AA_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
     Memory = static_cast<ElementType*>(FEXCore::Allocator::malloc(AllocateSize));
   }
   void Realloc(size_t Elements) {
-    size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
+    size_t AllocateSize = ToBytes(Elements);
     LOGMAN_THROW_AA_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
     Memory = static_cast<ElementType*>(FEXCore::Allocator::realloc(Memory, AllocateSize));
   }
@@ -43,10 +43,13 @@ struct BitSet final {
     Memory[Element / MinimumSizeBits] &= (1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
-    memset(Memory, 0, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0, ToBytes(Elements));
   }
   void MemSet(size_t Elements) {
-    memset(Memory, 0xFF, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0xFF, ToBytes(Elements));
+  }
+  uint32_t ToBytes(size_t Elements) {
+    return AlignUp(Elements, MinimumSizeBits) / MinimumSize;
   }
 
   // This very explicitly doesn't let you take an address
