@@ -789,7 +789,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
           auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
           if (GuestRIPLookup.Entry) {
             Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename,
-                             GuestRIP - GuestRIPLookup.VAFileStart);
+                             GuestRIP /*- GuestRIPLookup.VAFileStart*/);
           } else {
             Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
           }
@@ -797,7 +797,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
       } else {
         if (GuestRIPLookup.Entry) {
           Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename,
-                           GuestRIP - GuestRIPLookup.VAFileStart);
+                           GuestRIP /*- GuestRIPLookup.VAFileStart*/);
         } else {
           Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, DebugData->HostCodeSize);
         }
