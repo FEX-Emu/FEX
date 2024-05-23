@@ -1677,7 +1677,11 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto OpSize = std::max<uint8_t>(4, GetDstSize(Op));
 
-  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  // If Size < 4, then we Sbfe the Dest so we can have garbage.
+  // Otherwise, if Size = Opsize, then both are 4 or 8 and match the a64
+  // semantics directly, so again we can have garbage. The only case where we
+  // need zero-extension here is when the sizes mismatch.
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = (OpSize == Size) || (Size < 4)});
 
   if (Size < 4) {
     Dest = _Sbfe(OpSize::i64Bit, Size * 8, 0, Dest);
