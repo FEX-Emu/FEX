@@ -2433,11 +2433,10 @@
       ]
     },
     "movsx ax, bl": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0xbe",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "sxtb x20, w20",
+        "sxtb w20, w7",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2446,34 +2445,30 @@
       "Comment": "0x0f 0xbe",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
-        "sxtb x20, w20",
+        "sxtb w20, w20",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "movsx eax, bl": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0xbe",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "sxtb x20, w20",
-        "mov w4, w20"
+        "sxtb w4, w7"
       ]
     },
     "movsx eax, byte [rax]": {
-      "ExpectedInstructionCount": 3,
-      "Comment": "0x0f 0xbe",
-      "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
-        "sxtb x20, w20",
-        "mov w4, w20"
-      ]
-    },
-    "movsx rax, bl": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0xbe",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "sxtb x4, w20"
+        "ldrb w20, [x4]",
+        "sxtb w4, w20"
+      ]
+    },
+    "movsx rax, bl": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x0f 0xbe",
+      "ExpectedArm64ASM": [
+        "sxtb x4, w7"
       ]
     },
     "movsx rax, byte [rax]": {
@@ -2485,29 +2480,25 @@
       ]
     },
     "movsx eax, bx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0xbf",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "sxth x20, w20",
-        "mov w4, w20"
+        "sxth w4, w7"
       ]
     },
     "movsx eax, word [rax]": {
-      "ExpectedInstructionCount": 3,
-      "Comment": "0x0f 0xbf",
-      "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
-        "sxth x20, w20",
-        "mov w4, w20"
-      ]
-    },
-    "movsx rax, bx": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0xbf",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "sxth x4, w20"
+        "ldrh w20, [x4]",
+        "sxth w4, w20"
+      ]
+    },
+    "movsx rax, bx": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x0f 0xbf",
+      "ExpectedArm64ASM": [
+        "sxth x4, w7"
       ]
     },
     "movsx rax, word [rax]": {
