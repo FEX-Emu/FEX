@@ -1157,12 +1157,13 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   //   Zext(32, Src)
   //
   uint8_t Size = std::min(static_cast<uint8_t>(4), GetSrcSize(Op));
+  bool Sext = (Size != 2) && Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING;
 
-  OrderedNode* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], Size, Op->Flags);
+  OrderedNode* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], Size, Op->Flags, {.AllowUpperGarbage = Sext});
   if (Size == 2) {
     // This'll make sure to insert in to the lower 16bits without modifying upper bits
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, Size, -1);
-  } else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
+  } else if (Sext) {
     // With REX.W then Sext
     Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
     StoreResult(GPRClass, Op, Src, -1);
@@ -1173,11 +1174,14 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
-  // This will ZExt the loaded size
-  // We want to Sext it
+  // Load garbage in upper bits, since we're sign extending anyway
   uint8_t Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
+  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+
+  // Sign-extend to DstSize and zero-extend to the register size, using a fast
+  // path for 32-bit dests where the native 32-bit Sbfe zero extends the top.
+  uint8_t DstSize = GetDstSize(Op);
+  Src = _Sbfe(DstSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 

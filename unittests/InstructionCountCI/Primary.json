@@ -1730,11 +1730,10 @@
       ]
     },
     "movsxd rax, ebx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x63",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "sxtw x4, w20"
+        "sxtw x4, w7"
       ]
     },
     "push word 1": {
