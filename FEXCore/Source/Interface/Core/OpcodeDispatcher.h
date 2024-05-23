@@ -355,9 +355,8 @@ public:
   void SHLDImmediateOp(OpcodeArgs);
   void SHRDOp(OpcodeArgs);
   void SHRDImmediateOp(OpcodeArgs);
+  template<bool IsImmediate, bool Is1Bit>
   void ASHROp(OpcodeArgs);
-  template<bool SHR1Bit>
-  void ASHRImmediateOp(OpcodeArgs);
   template<bool Left, bool IsImmediate, bool Is1Bit>
   void RotateOp(OpcodeArgs);
   void RCROp1Bit(OpcodeArgs);
