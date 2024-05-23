@@ -1009,13 +1009,11 @@
       ]
     },
     "imul rsi, rax, 0xffffffff8646c299": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xaf",
       "ExpectedArm64ASM": [
-        "mov x20, #0xc299",
+        "mov x20, #0xffffffffffffc299",
         "movk x20, #0x8646, lsl #16",
-        "movk x20, #0xffff, lsl #32",
-        "movk x20, #0xffff, lsl #48",
         "smulh x21, x4, x20",
         "mul x10, x4, x20",
         "asr x20, x10, #63",
