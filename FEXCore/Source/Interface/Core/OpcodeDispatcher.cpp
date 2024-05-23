@@ -1173,11 +1173,14 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
-  // This will ZExt the loaded size
-  // We want to Sext it
+  // Load garbage in upper bits, since we're sign extending anyway
   uint8_t Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  Src = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src);
+  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+
+  // Sign-extend to DstSize and zero-extend to the register size, using a fast
+  // path for 32-bit dests where the native 32-bit Sbfe zero extends the top.
+  uint8_t DstSize = GetDstSize(Op);
+  Src = _Sbfe(DstSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
