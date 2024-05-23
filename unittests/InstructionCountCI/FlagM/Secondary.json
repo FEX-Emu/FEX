@@ -1008,6 +1008,19 @@
         "ccmn xzr, #0, #nzCV, eq"
       ]
     },
+    "imul rsi, rax, 0xffffffff8646c299": {
+      "ExpectedInstructionCount": 7,
+      "Comment": "0x0f 0xaf",
+      "ExpectedArm64ASM": [
+        "mov x20, #0xffffffffffffc299",
+        "movk x20, #0x8646, lsl #16",
+        "smulh x21, x4, x20",
+        "mul x10, x4, x20",
+        "asr x20, x10, #63",
+        "cmp x21, x20",
+        "ccmn xzr, #0, #nzCV, eq"
+      ]
+    },
     "cmpxchg cl, bl": {
       "ExpectedInstructionCount": 11,
       "ExpectedArm64ASM": [

@@ -454,6 +454,17 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     }
   }
 
+  // If we can't handle negatives with the orr, try with movn+movk
+  if (Is64Bit && ((~Constant) >> 32) == 0) {
+    movn(s, Reg, (~Constant) & 0xFFFF);
+    movk(s, Reg, (Constant >> 16) & 0xFFFF, 16);
+    if (NOPPad) {
+      nop();
+      nop();
+    }
+    return;
+  }
+
   // ADRP+ADD is specifically optimized in hardware
   // Check if we can use this
   auto PC = GetCursorAddress<uint64_t>();
