@@ -1193,11 +1193,13 @@ void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::CMPOp(OpcodeArgs) {
-  // CMP is an instruction that does a SUB between the sources
-  // Result isn't stored in result, only writes to flags
   OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-  GenerateFlags_SUB(Op, Dest, Src);
+
+  // CMP is an instruction that does a SUB between the sources
+  // Result isn't stored in result, only writes to flags
+  InvalidateDeferredFlags();
+  CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Src, true);
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
