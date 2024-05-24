@@ -401,14 +401,14 @@
       },
       "VectorTSOEnabled": {
         "Type": "bool",
-        "Default": "true",
+        "Default": "false",
         "Desc": [
           "When TSO emulation is enabled, controls if vector loadstores should also be atomic."
         ]
       },
       "MemcpySetTSOEnabled": {
         "Type": "bool",
-        "Default": "true",
+        "Default": "false",
         "Desc": [
           "When TSO emulation is enabled, controls if memcpy and memset should also be atomic.",
           "Only affects REP MOVS and REP STOS instructions"
