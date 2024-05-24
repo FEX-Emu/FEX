@@ -34,15 +34,12 @@
       ]
     },
     "vmovups ymm0, ymm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Comment": [
         "Spurious moves",
         "Map 1 0b00 0x10 256-bit"
       ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z16.d, p7/m, z2.d"
-      ]
+      "ExpectedArm64ASM": []
     },
     "vmovups ymm0, [rax]": {
       "ExpectedInstructionCount": 1,
@@ -73,15 +70,12 @@
       ]
     },
     "vmovupd ymm0, ymm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Comment": [
         "Spurious moves",
         "Map 1 0b01 0x10 256-bit"
       ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z16.d, p7/m, z2.d"
-      ]
+      "ExpectedArm64ASM": []
     },
     "vmovupd ymm0, [rax]": {
       "ExpectedInstructionCount": 1,

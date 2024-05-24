@@ -91,24 +91,9 @@ protected:
   std::span<const ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
   std::span<const ARMEmitter::Register> StaticRegisters {};
   std::span<const ARMEmitter::Register> GeneralRegisters {};
-  std::span<const std::pair<ARMEmitter::Register, ARMEmitter::Register>> GeneralPairRegisters {};
   std::span<const ARMEmitter::VRegister> StaticFPRegisters {};
   std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
-
-  /**
-   * @name Register Allocation
-   * @{ */
-  constexpr static uint32_t RegisterClasses = 6;
-
-  constexpr static uint64_t GPRBase = (0ULL << 32);
-  constexpr static uint64_t FPRBase = (1ULL << 32);
-  constexpr static uint64_t GPRPairBase = (2ULL << 32);
-
-  /**  @} */
-
-  constexpr static uint8_t RA_32 = 0;
-  constexpr static uint8_t RA_64 = 1;
-  constexpr static uint8_t RA_FPR = 2;
+  uint32_t PairRegisters = 0;
 
   void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 

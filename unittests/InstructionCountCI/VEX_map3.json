@@ -297,14 +297,11 @@
       ]
     },
     "vpblendd ymm0, ymm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 0,
       "Comment": [
         "Map 3 0b01 0x02 256-bit"
       ],
-      "ExpectedArm64ASM": [
-        "mov z2.d, p7/m, z16.d",
-        "mov z16.d, p7/m, z2.d"
-      ]
+      "ExpectedArm64ASM": []
     },
     "vpblendd ymm0, ymm1, 01010101b": {
       "ExpectedInstructionCount": 50,
