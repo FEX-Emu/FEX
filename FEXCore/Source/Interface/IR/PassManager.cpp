@@ -79,13 +79,9 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool Inli
     }
 
     InsertPass(CreateDeadStoreElimination());
-    InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9, Is64BitMode()));
-
-    InsertPass(CreateDeadFlagCalculationEliminination());
-
     InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
-    InsertPass(CreatePassDeadCodeElimination());
+    InsertPass(CreateDeadFlagCalculationEliminination());
   }
 }
 
@@ -100,20 +96,17 @@ void PassManager::InsertRegisterAllocationPass() {
   InsertPass(IR::CreateRegisterAllocationPass(), "RA");
 }
 
-bool PassManager::Run(IREmitter* IREmit) {
+void PassManager::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::Run");
 
-  bool Changed = false;
   for (const auto& Pass : Passes) {
-    Changed |= Pass->Run(IREmit);
+    Pass->Run(IREmit);
   }
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   for (const auto& Pass : ValidationPasses) {
-    Changed |= Pass->Run(IREmit);
+    Pass->Run(IREmit);
   }
 #endif
-
-  return Changed;
 }
 } // namespace FEXCore::IR

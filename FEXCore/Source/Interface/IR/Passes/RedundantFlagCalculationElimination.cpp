@@ -53,12 +53,13 @@ struct FlagInfo {
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
 public:
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
   FlagInfo Classify(IROp_Header* Node);
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
+  bool EliminateDeadCode(IREmitter* IREmit, OrderedNode* CodeNode, IROp_Header* IROp);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
@@ -310,13 +311,72 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   return {.Trivial = true};
 }
 
+// General purpose dead code elimination. Returns whether flag handling should
+// be skipped (because it was removed or could not possibly affect flags).
+bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, OrderedNode* CodeNode, IROp_Header* IROp) {
+  bool HasSideEffects = IR::HasSideEffects(IROp->Op);
+
+  switch (IROp->Op) {
+  case OP_SYSCALL:
+  case OP_INLINESYSCALL: {
+    FEXCore::IR::SyscallFlags Flags {};
+    if (IROp->Op == OP_SYSCALL) {
+      auto Op = IROp->C<IR::IROp_Syscall>();
+      Flags = Op->Flags;
+    } else {
+      auto Op = IROp->C<IR::IROp_InlineSyscall>();
+      Flags = Op->Flags;
+    }
+
+    if ((Flags & FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) == FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) {
+      HasSideEffects = false;
+    }
+
+    break;
+  }
+  case OP_ATOMICFETCHADD:
+  case OP_ATOMICFETCHSUB:
+  case OP_ATOMICFETCHAND:
+  case OP_ATOMICFETCHCLR:
+  case OP_ATOMICFETCHOR:
+  case OP_ATOMICFETCHXOR:
+  case OP_ATOMICFETCHNEG: {
+    // If the result of the atomic fetch is completely unused, convert it to a non-fetching atomic operation.
+    if (CodeNode->GetUses() == 0) {
+      switch (IROp->Op) {
+      case OP_ATOMICFETCHADD: IROp->Op = OP_ATOMICADD; break;
+      case OP_ATOMICFETCHSUB: IROp->Op = OP_ATOMICSUB; break;
+      case OP_ATOMICFETCHAND: IROp->Op = OP_ATOMICAND; break;
+      case OP_ATOMICFETCHCLR: IROp->Op = OP_ATOMICCLR; break;
+      case OP_ATOMICFETCHOR: IROp->Op = OP_ATOMICOR; break;
+      case OP_ATOMICFETCHXOR: IROp->Op = OP_ATOMICXOR; break;
+      case OP_ATOMICFETCHNEG: IROp->Op = OP_ATOMICNEG; break;
+      default: FEX_UNREACHABLE;
+      }
+    }
+    return true;
+  }
+  default: break;
+  }
+
+  // Skip over anything that has side effects
+  // Use count tracking can't safely remove anything with side effects
+  if (!HasSideEffects) {
+    if (CodeNode->GetUses() == 0) {
+      IREmit->Remove(CodeNode);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
- * @brief This pass removes flag calculations that will otherwise be unused INSIDE of that block
+ * @brief This pass removes dead code locally.
  */
-bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
+void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -338,13 +398,7 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
       // Optimizing flags can cause earlier flag reads to become dead but dead
       // flag reads should not impede optimiation of earlier dead flag writes.
       // We must DCE as we go to ensure we converge in a single iteration.
-      //
-      // TODO: This whole pass could be merged with DCE?
-      bool HasSideEffects = IR::HasSideEffects(IROp->Op);
-      if (!HasSideEffects && CodeNode->GetUses() == 0) {
-        Changed = true;
-        IREmit->Remove(CodeNode);
-      } else {
+      if (!EliminateDeadCode(IREmit, CodeNode, IROp)) {
         // Optimiation algorithm: For each flag written...
         //
         //  If the flag has a later read (per FlagsRead), remove the flag from
@@ -364,13 +418,11 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
           bool Eliminated = false;
 
           if ((FlagsRead & Info.Write) == 0) {
-            if (Info.CanEliminate && CodeNode->GetUses() == 0) {
+            if ((Info.CanEliminate || Info.CanReplace) && CodeNode->GetUses() == 0) {
               IREmit->Remove(CodeNode);
               Eliminated = true;
-              Changed = true;
             } else if (Info.CanReplace) {
               IROp->Op = Info.Replacement;
-              Changed = true;
             }
           } else {
             FlagsRead &= ~Info.Write;
@@ -392,8 +444,6 @@ bool DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
       --CodeLast;
     }
   }
-
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {

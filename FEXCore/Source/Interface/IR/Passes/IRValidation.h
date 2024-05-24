@@ -21,7 +21,7 @@ class RAValidation;
 class IRValidation final : public FEXCore::IR::Pass {
 public:
   ~IRValidation();
-  bool Run(IREmitter* IREmit) override;
+  void Run(IREmitter* IREmit) override;
 
 private:
 

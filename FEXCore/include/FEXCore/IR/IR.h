@@ -22,7 +22,7 @@ class RegisterAllocationData;
 enum class SyscallFlags : uint8_t {
   DEFAULT = 0,
   // Syscalldoesn't care about CPUState being serialized up to the syscall instruction.
-  // Means DeadCodeElimination can optimize through a syscall operation.
+  // Means dead code elimination can optimize through a syscall operation.
   OPTIMIZETHROUGH = 1 << 0,
   // Syscall only reads the passed in arguments. Doesn't read CPUState.
   NOSYNCSTATEONENTRY = 1 << 1,

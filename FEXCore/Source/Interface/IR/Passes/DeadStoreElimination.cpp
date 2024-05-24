@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
-#include <FEXCore/fextl/unordered_map.h>
 
 #include <memory>
 #include <stddef.h>
@@ -24,71 +23,52 @@ namespace FEXCore::IR {
 
 constexpr int PropagationRounds = 5;
 
+// Return a bit representing a single GPR or FPR.
+static inline uint64_t RegBit(RegisterClassType Class, uint32_t Reg) {
+  uint32_t AdjustedReg = (Class == FPRClass) ? (32 + Reg) : Reg;
+
+  return 1UL << AdjustedReg;
+}
+
 class DeadStoreElimination final : public FEXCore::IR::Pass {
 public:
-  explicit DeadStoreElimination() {}
-  bool Run(IREmitter* IREmit) override;
-
-private:
-  uint64_t FPRBit(RegisterClassType Class, uint32_t Reg) const {
-    return (Class == FPRClass) ? (1UL << Reg) : 0;
-  }
+  void Run(IREmitter* IREmit) override;
 };
 
-struct FlagInfo {
+struct ReadWriteKill {
   uint64_t reads {0};
   uint64_t writes {0};
   uint64_t kill {0};
 };
 
-
-struct GPRInfo {
-  uint32_t reads {0};
-  uint32_t writes {0};
-  uint32_t kill {0};
-};
-
-uint32_t GPRBit(RegisterClassType Class, uint32_t Reg) {
-  return (Class == GPRClass) ? (1U << Reg) : 0;
-}
-
-struct FPRInfo {
-  uint32_t reads {0};
-  uint32_t writes {0};
-  uint32_t kill {0};
-};
-
 struct Info {
-  FlagInfo flag;
-  GPRInfo gpr;
-  FPRInfo fpr;
+  ReadWriteKill flag;
+  ReadWriteKill reg;
 };
 
 /**
- * @brief This is a temporary pass to detect simple multiblock dead flag/gpr/fpr stores
+ * @brief This is a temporary pass to detect simple multiblock dead flag/reg stores
  *
- * First pass computes which flags/gprs/fprs are read and written per block
+ * First pass computes which flags/regs are read and written per block
  *
- * Second pass computes which flags/gprs/fprs are stored, but overwritten by the next block(s).
- * It also propagates this information a few times to catch dead flags/gprs/fprs across multiple blocks.
+ * Second pass computes which flags/regs are stored, but overwritten by the next block(s).
+ * It also propagates this information a few times to catch dead flags/regs across multiple blocks.
  *
  * Third pass removes the dead stores.
  *
  */
-bool DeadStoreElimination::Run(IREmitter* IREmit) {
+void DeadStoreElimination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DSE");
 
-  fextl::unordered_map<OrderedNode*, Info> InfoMap;
-
-  bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
+  fextl::vector<Info> InfoMap(CurrentIR.GetSSACount());
 
   // Pass 1
-  // Compute flags/gprs/fprs read/writes per block
+  // Compute flags/regs read/writes per block
   // This is conservative and doesn't try to be smart about loads after writes
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-      auto& BlockInfo = InfoMap[BlockNode];
+      auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
@@ -107,21 +87,17 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           BlockInfo.flag.reads |= 1UL << X86State::RFLAG_DF_RAW_LOC;
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
-
-          BlockInfo.gpr.writes |= GPRBit(Op->Class, Op->Reg);
-          BlockInfo.fpr.writes |= FPRBit(Op->Class, Op->Reg);
+          BlockInfo.reg.writes |= RegBit(Op->Class, Op->Reg);
         } else if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
-
-          BlockInfo.gpr.reads |= GPRBit(Op->Class, Op->Reg);
-          BlockInfo.fpr.reads |= FPRBit(Op->Class, Op->Reg);
+          BlockInfo.reg.reads |= RegBit(Op->Class, Op->Reg);
         }
       }
     }
   }
 
   // Pass 2
-  // Compute flags/gprs/fprs that are stored, but always ovewritten in the next blocks
+  // Compute flags/registers that are stored, but always ovewritten in the next blocks
   // Propagate the information a few times to eliminate more
   for (int i = 0; i < PropagationRounds; i++) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
@@ -131,43 +107,33 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
 
       if (IROp->Op == OP_JUMP) {
         auto Op = IROp->C<IR::IROp_Jump>();
-        OrderedNode* TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
-
-        auto& BlockInfo = InfoMap[BlockNode];
-        auto& TargetInfo = InfoMap[TargetNode];
+        auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
+        auto& TargetInfo = InfoMap[Op->Header.Args[0].ID().Value];
 
         // stores to remove are written by the next block but not read
         BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
-        BlockInfo.gpr.kill = TargetInfo.gpr.writes & ~(TargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-        BlockInfo.fpr.kill = TargetInfo.fpr.writes & ~(TargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+        BlockInfo.reg.kill = TargetInfo.reg.writes & ~(TargetInfo.reg.reads) & ~BlockInfo.reg.reads;
 
         // Flags that are written by the next block can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-        BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
-        BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
+        BlockInfo.reg.writes |= BlockInfo.reg.kill & ~BlockInfo.reg.reads;
       } else if (IROp->Op == OP_CONDJUMP) {
         auto Op = IROp->C<IR::IROp_CondJump>();
 
-        OrderedNode* TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-        OrderedNode* FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
-
-        auto& BlockInfo = InfoMap[BlockNode];
-        auto& TrueTargetInfo = InfoMap[TrueTargetNode];
-        auto& FalseTargetInfo = InfoMap[FalseTargetNode];
+        auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
+        auto& TrueTargetInfo = InfoMap[Op->TrueBlock.ID().Value];
+        auto& FalseTargetInfo = InfoMap[Op->FalseBlock.ID().Value];
 
         // stores to remove are written by the next blocks but not read
         BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
-        BlockInfo.gpr.kill = TrueTargetInfo.gpr.writes & ~(TrueTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-        BlockInfo.fpr.kill = TrueTargetInfo.fpr.writes & ~(TrueTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+        BlockInfo.reg.kill = TrueTargetInfo.reg.writes & ~(TrueTargetInfo.reg.reads) & ~BlockInfo.reg.reads;
 
         BlockInfo.flag.kill &= FalseTargetInfo.flag.writes & ~(FalseTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
-        BlockInfo.gpr.kill &= FalseTargetInfo.gpr.writes & ~(FalseTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-        BlockInfo.fpr.kill &= FalseTargetInfo.fpr.writes & ~(FalseTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+        BlockInfo.reg.kill &= FalseTargetInfo.reg.writes & ~(FalseTargetInfo.reg.reads) & ~BlockInfo.reg.reads;
 
         // Flags that are written by the next blocks can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-        BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
-        BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
+        BlockInfo.reg.writes |= BlockInfo.reg.kill & ~BlockInfo.reg.reads;
       }
     }
   }
@@ -176,7 +142,7 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
   // Remove the dead stores
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-      auto& BlockInfo = InfoMap[BlockNode];
+      auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_STOREFLAG) {
@@ -185,22 +151,18 @@ bool DeadStoreElimination::Run(IREmitter* IREmit) {
           // If this StoreFlag is never read, remove it
           if (BlockInfo.flag.kill & (1UL << Op->Flag)) {
             IREmit->Remove(CodeNode);
-            Changed = true;
           }
         } else if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
 
           // If this OP_STOREREGISTER is never read, remove it
-          if ((BlockInfo.gpr.kill & GPRBit(Op->Class, Op->Reg)) || (BlockInfo.fpr.kill & FPRBit(Op->Class, Op->Reg))) {
+          if (BlockInfo.reg.kill & RegBit(Op->Class, Op->Reg)) {
             IREmit->Remove(CodeNode);
-            Changed = true;
           }
         }
       }
     }
   }
-
-  return Changed;
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination() {
