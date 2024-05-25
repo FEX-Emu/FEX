@@ -105,7 +105,7 @@ private:
 
   // Return the New node (if it exists) for an Old node, else the Old node.
   OrderedNode* Map(OrderedNode* Old) {
-    LOGMAN_THROW_AA_FMT(IsOld(Old), "Pre-condition");
+    LOGMAN_THROW_A_FMT(IsOld(Old), "Pre-condition");
 
     return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
   };
@@ -117,26 +117,26 @@ private:
 
   // Record a remapping of Old to New.
   void Remap(OrderedNode* Old, OrderedNode* New) {
-    LOGMAN_THROW_AA_FMT(IsOld(Old) && !IsOld(New), "Pre-condition");
+    LOGMAN_THROW_A_FMT(IsOld(Old) && !IsOld(New), "Pre-condition");
 
     uint32_t OldID = IR->GetID(Old).Value;
     uint32_t NewID = IR->GetID(New).Value;
 
-    LOGMAN_THROW_AA_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
+    LOGMAN_THROW_A_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
     NewSSAToSSA.resize(NewID + 1, 0);
 
     SSAToNewSSA[OldID] = New;
     NewSSAToSSA[NewID] = Old;
 
-    LOGMAN_THROW_AA_FMT(Map(Old) == New && Unmap(New) == Old, "Post-condition");
-    LOGMAN_THROW_AA_FMT(Unmap(Old) == Old, "Invariant1");
+    LOGMAN_THROW_A_FMT(Map(Old) == New && Unmap(New) == Old, "Post-condition");
+    LOGMAN_THROW_A_FMT(Unmap(Old) == Old, "Invariant1");
   };
 
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
   OrderedNode* InsertFill(OrderedNode* Old) {
-    LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
+    LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
     IROp_Header* IROp = IR->GetOp<IROp_Header>(Old);
 
     // Remat if we can
@@ -189,7 +189,7 @@ private:
   };
 
   bool IsInRegisterFile(OrderedNode* Old) {
-    LOGMAN_THROW_AA_FMT(IsOld(Old), "Precondition");
+    LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
 
     PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Old)).Value];
     RegisterClass* Class = GetClass(Reg);
@@ -209,11 +209,11 @@ private:
   };
 
   bool HasSource(IROp_Header* I, OrderedNode* Old) {
-    LOGMAN_THROW_AA_FMT(IsOld(Old), "Invariant2");
+    LOGMAN_THROW_A_FMT(IsOld(Old), "Invariant2");
 
     for (auto s = 0; s < IR::GetRAArgs(I->Op); ++s) {
       OrderedNode* Node = IR->GetNode(I->Args[s]);
-      LOGMAN_THROW_AA_FMT(IsOld(Node), "not yet mapped");
+      LOGMAN_THROW_A_FMT(IsOld(Node), "not yet mapped");
 
       if (Node == Old) {
         return true;
@@ -251,7 +251,7 @@ private:
       Reg = Op->Reg;
     }
 
-    LOGMAN_THROW_AA_FMT(Class == GPRClass || Class == FPRClass, "SRA classes");
+    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "SRA classes");
     uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
 
     if (Class == FPRClass) {
@@ -286,7 +286,7 @@ private:
         OrderedNode* Old = Class->RegToSSA[i];
 
         LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
-        LOGMAN_THROW_AA_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
+        LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
 
         // Skip any source used by the current instruction, it is unspillable.
         if (!HasSource(Exclude, Old)) {
@@ -301,7 +301,7 @@ private:
     }
 
     LOGMAN_THROW_AA_FMT(Candidate != nullptr, "must've found something..");
-    LOGMAN_THROW_AA_FMT(IsOld(Candidate), "Invariant5");
+    LOGMAN_THROW_A_FMT(IsOld(Candidate), "Invariant5");
 
     PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Candidate)).Value];
     LOGMAN_THROW_AA_FMT(Reg.Reg == BestReg, "Invariant6");
@@ -313,7 +313,7 @@ private:
     // If we already spilled the Candidate, we don't need to spill again.
     // Similarly, if we can rematerialize the instruction, we don't spill it.
     if (!Spilled && Header->Op != OP_CONSTANT) {
-      LOGMAN_THROW_AA_FMT(Reg.Class == GetRegClassFromNode(IR, Header), "Consistent");
+      LOGMAN_THROW_A_FMT(Reg.Class == GetRegClassFromNode(IR, Header), "Consistent");
 
       // SpillSlots allocation is deferred.
       if (SpillSlots.empty()) {
@@ -413,7 +413,7 @@ private:
     // Pick a scalar blocking a pair and shuffle to make room.
     uint32_t Available = AvailableMask(Class, Pair);
     if (!Available) {
-      LOGMAN_THROW_AA_FMT(OrigClassType == GPRPairClass, "Already spilled");
+      LOGMAN_THROW_A_FMT(OrigClassType == GPRPairClass, "Already spilled");
 
       // Find the first free scalar. There are at least 2.
       unsigned Hole = std::countr_zero(Class->Available);
@@ -430,7 +430,7 @@ private:
 
       IREmit->SetWriteCursorBefore(CodeNode);
       OrderedNode* Old = Class->RegToSSA[Blocked];
-      LOGMAN_THROW_AA_FMT(GetRegClassFromNode(IR, IR->GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
+      LOGMAN_THROW_A_FMT(GetRegClassFromNode(IR, IR->GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
       FreeReg(PhysicalRegister(GPRClass, Blocked));
 
       OrderedNode* Clobber = nullptr;
@@ -447,7 +447,7 @@ private:
 
       if (Clobber) {
         // Swap the registers.
-        LOGMAN_THROW_AA_FMT(IsOld(Clobber), "Not yet mapped");
+        LOGMAN_THROW_A_FMT(IsOld(Clobber), "Not yet mapped");
 
         auto ClobberNew = IREmit->_Swap1(Map(Clobber), Map(Old));
         Remap(Clobber, ClobberNew);
@@ -601,7 +601,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
     // Forward pass: Assign registers, spilling as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      LOGMAN_THROW_AA_FMT(!IsRAOp(IROp->Op), "RA ops inserted before, so not seen iterating forward");
+      LOGMAN_THROW_A_FMT(!IsRAOp(IROp->Op), "RA ops inserted before, so not seen iterating forward");
 
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
@@ -611,8 +611,8 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (Class->Allocated & (1u << Reg.Reg)) {
           OrderedNode* Old = Class->RegToSSA[Reg.Reg];
 
-          LOGMAN_THROW_AA_FMT(IsOld(Old), "RegToSSA invariant");
-          LOGMAN_THROW_AA_FMT(IsOld(Node), "Haven't remapped this instruction");
+          LOGMAN_THROW_A_FMT(IsOld(Old), "RegToSSA invariant");
+          LOGMAN_THROW_A_FMT(IsOld(Node), "Haven't remapped this instruction");
 
           if (Old != Node) {
             IREmit->SetWriteCursorBefore(CodeNode);
@@ -643,7 +643,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
           }
 
           OrderedNode* Old = IR->GetNode(IROp->Args[s]);
-          LOGMAN_THROW_AA_FMT(IsOld(Old), "before remapping");
+          LOGMAN_THROW_A_FMT(IsOld(Old), "before remapping");
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
@@ -664,7 +664,7 @@ bool ConstrainedRAPass::Run(IREmitter* IREmit_) {
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
         OrderedNode* Old = IR->GetNode(IROp->Args[s]);
-        LOGMAN_THROW_AA_FMT(IsInRegisterFile(Old), "sources in file");
+        LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
 
         if (!SourcesNextUses[SourceIndex]) {
           FreeReg(SSAToReg[IR->GetID(Map(Old)).Value]);
