@@ -39,10 +39,10 @@ static bool IsImmLogical(uint64_t value,
                              unsigned* n,
                              unsigned* imm_s,
                              unsigned* imm_r) {
-  constexpr auto kBRegSize = 8;
-  constexpr auto kHRegSize = 16;
-  constexpr auto kSRegSize = 32;
-  constexpr auto kDRegSize = 64;
+  [[maybe_unused]] constexpr auto kBRegSize = 8;
+  [[maybe_unused]] constexpr auto kHRegSize = 16;
+  [[maybe_unused]] constexpr auto kSRegSize = 32;
+  [[maybe_unused]] constexpr auto kDRegSize = 64;
 
   constexpr auto kWRegSize = 32;
   constexpr auto kXRegSize = 64;
