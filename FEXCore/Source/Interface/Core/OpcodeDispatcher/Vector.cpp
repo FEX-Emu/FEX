@@ -5066,14 +5066,9 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
     OrderedNode* IfZero = _Constant(16 >> (Control & 1));
     OrderedNode* IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
-
     OrderedNode* Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
-    const uint8_t GPRSize = CTX->GetGPRSize();
-    if (GPRSize == 8) {
-      // If being stored to an 8-byte register, zero extend the 4-byte result.
-      Result = _Bfe(OpSize::i64Bit, 32, 0, Result);
-    }
+    // Store the result, it is already zero-extended to 64-bit implicitly.
     StoreGPRRegister(X86State::REG_RCX, Result);
   }
 
