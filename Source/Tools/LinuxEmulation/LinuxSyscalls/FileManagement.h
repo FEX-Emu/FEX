@@ -79,6 +79,7 @@ public:
   uint64_t Statfs(const char* path, void* buf);
 
   std::optional<std::string_view> GetSelf(const char* Pathname);
+  bool IsSelfNoFollow(const char* Pathname, int flags) const;
 
   void UpdatePID(uint32_t PID) {
     CurrentPID = PID;
