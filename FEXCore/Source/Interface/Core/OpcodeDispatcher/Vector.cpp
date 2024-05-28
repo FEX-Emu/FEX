@@ -5077,22 +5077,9 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     StoreGPRRegister(X86State::REG_RCX, Result);
   }
 
-  // Set all of the necessary flags.
-  // We use the top 16-bits of the result to store the flags
-  // in the form:
-  //
-  // Bit:  19   18   17   16
-  //      [OF | CF | SF | ZF]
-  //
-  const auto GetFlagBit = [this, IntermediateResult](int BitIndex) {
-    return _Bfe(OpSize::i32Bit, 1, BitIndex, IntermediateResult);
-  };
-
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(GetFlagBit(16));
-  SetRFLAG<X86State::RFLAG_SF_RAW_LOC>(GetFlagBit(17));
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(GetFlagBit(18));
-  SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(GetFlagBit(19));
-
+  // Set all of the necessary flags. NZCV stored in bits 28...31 like the hw op.
+  SetNZCV(IntermediateResult);
+  PossiblySetNZCVBits = ~0;
   ZeroPF_AF();
 }
 
