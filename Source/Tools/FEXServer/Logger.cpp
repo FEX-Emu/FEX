@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace Logging {
-void ClientMsgHandler(int FD, uint64_t Timestamp, uint32_t PID, uint32_t TID, uint32_t Level, const char* Msg);
+void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, const char* MsgStr);
 }
 
 namespace Logger {
@@ -48,7 +48,7 @@ void HandleLogData(int Socket) {
     if (Header->PacketType == FEXServerClient::Logging::PacketTypes::TYPE_MSG) {
       FEXServerClient::Logging::PacketMsg* Msg = reinterpret_cast<FEXServerClient::Logging::PacketMsg*>(&Data[CurrentOffset]);
       const char* MsgText = reinterpret_cast<const char*>(&Data[CurrentOffset + sizeof(FEXServerClient::Logging::PacketMsg)]);
-      Logging::ClientMsgHandler(Socket, Msg->Header.Timestamp, Msg->Header.PID, Msg->Header.TID, Msg->Level, MsgText);
+      Logging::ClientMsgHandler(Socket, Msg, MsgText);
 
       CurrentOffset += sizeof(FEXServerClient::Logging::PacketMsg) + Msg->MessageLength;
     } else {
