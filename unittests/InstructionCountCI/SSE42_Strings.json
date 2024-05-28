@@ -35,7 +35,7 @@
   },
   "Instructions": {
     "pcmpestrm xmm0, xmm1, 0_0_00_00_00b": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0x66 0x0f 0x3A 0x60"
       ],
@@ -73,20 +73,12 @@
         "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
-        "ubfx w21, w20, #16, #1",
-        "lsl x21, x21, #30",
-        "ubfx w22, w20, #17, #1",
-        "orr w21, w21, w22, lsl #31",
-        "ubfx w22, w20, #18, #1",
-        "orr w21, w21, w22, lsl #29",
-        "ubfx w20, w20, #19, #1",
-        "orr w20, w21, w20, lsl #28",
         "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
     "pcmpestri xmm0, xmm1, 0_0_00_00_00b": {
-      "ExpectedInstructionCount": 51,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "0x66 0x0f 0x3A 0x61"
       ],
@@ -130,22 +122,13 @@
         "clz w23, w0",
         "csinv w23, w23, wzr, ne",
         "cmp x21, #0x0 (0)",
-        "csel x21, x22, x23, eq",
-        "mov w5, w21",
-        "ubfx w21, w20, #16, #1",
-        "lsl x21, x21, #30",
-        "ubfx w22, w20, #17, #1",
-        "orr w21, w21, w22, lsl #31",
-        "ubfx w22, w20, #18, #1",
-        "orr w21, w21, w22, lsl #29",
-        "ubfx w20, w20, #19, #1",
-        "orr w20, w21, w20, lsl #28",
+        "csel x5, x22, x23, eq",
         "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
     "pcmpistrm xmm0, xmm1, 0_0_00_00_00b": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0x66 0x0f 0x3A 0x62"
       ],
@@ -181,20 +164,12 @@
         "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
-        "ubfx w21, w20, #16, #1",
-        "lsl x21, x21, #30",
-        "ubfx w22, w20, #17, #1",
-        "orr w21, w21, w22, lsl #31",
-        "ubfx w22, w20, #18, #1",
-        "orr w21, w21, w22, lsl #29",
-        "ubfx w20, w20, #19, #1",
-        "orr w20, w21, w20, lsl #28",
         "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
     "pcmpistri xmm0, xmm1, 0_0_00_00_00b": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 40,
       "Comment": [
         "0x66 0x0f 0x3A 0x63"
       ],
@@ -236,16 +211,7 @@
         "clz w23, w0",
         "csinv w23, w23, wzr, ne",
         "cmp x21, #0x0 (0)",
-        "csel x21, x22, x23, eq",
-        "mov w5, w21",
-        "ubfx w21, w20, #16, #1",
-        "lsl x21, x21, #30",
-        "ubfx w22, w20, #17, #1",
-        "orr w21, w21, w22, lsl #31",
-        "ubfx w22, w20, #18, #1",
-        "orr w21, w21, w22, lsl #29",
-        "ubfx w20, w20, #19, #1",
-        "orr w20, w21, w20, lsl #28",
+        "csel x5, x22, x23, eq",
         "mov w26, #0x1",
         "msr nzcv, x20"
       ]

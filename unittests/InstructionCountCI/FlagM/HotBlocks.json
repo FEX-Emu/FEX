@@ -250,7 +250,7 @@
       ]
     },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 40,
       "Comment": [
         "A Hat In Time spends at least 5% CPU time in this instruction",
         "Comes from vcruntime140.dll wcsstr"
@@ -293,16 +293,7 @@
         "clz w23, w0",
         "csinv w23, w23, wzr, ne",
         "cmp x21, #0x0 (0)",
-        "csel x21, x22, x23, eq",
-        "mov w5, w21",
-        "ubfx w21, w20, #16, #1",
-        "lsl x21, x21, #30",
-        "ubfx w22, w20, #17, #1",
-        "orr w21, w21, w22, lsl #31",
-        "ubfx w22, w20, #18, #1",
-        "orr w21, w21, w22, lsl #29",
-        "ubfx w20, w20, #19, #1",
-        "orr w20, w21, w20, lsl #28",
+        "csel x5, x22, x23, eq",
         "mov w26, #0x1",
         "msr nzcv, x20"
       ]
