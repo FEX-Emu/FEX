@@ -89,7 +89,12 @@ static bool IsTSOImm9(uint64_t imm) {
   }
 }
 
-using MemExtendedAddrResult = std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*>;
+struct MemExtendedAddrResult {
+  MemOffsetType OffsetType;
+  uint8_t OffsetScale;
+  OrderedNode* Base;
+  OrderedNode* OffsetReg;
+};
 
 // If this optimization doesn't succeed, it will return the nullopt
 static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IREmit, uint8_t AccessSize, IROp_Header* AddressHeader) {
@@ -100,10 +105,9 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
       auto Scale = 1U << AddShift->ShiftAmount;
       if (IsMemoryScale(Scale, AccessSize)) {
         // remove shift as it can be folded to the mem op
-        return std::make_optional(
-          std::make_tuple(MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)));
+        return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)};
       } else if (Scale == 1) {
-        return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)));
+        return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)};
       }
     }
 
@@ -119,12 +123,11 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Scale)) {
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove mul as it can be folded to the mem op
-          return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddressHeader->Args[1]),
-                                                    IREmit->UnwrapNode(Src0Header->Args[0])));
+          return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddressHeader->Args[1]),
+                                        IREmit->UnwrapNode(Src0Header->Args[0])};
         } else if (Scale == 1) {
           // remove nop mul
-          return std::make_optional(
-            std::make_tuple(MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
+          return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])};
         }
       }
     }
@@ -132,15 +135,14 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
     else if (Src0Header->Op == OP_LSHL) {
       uint64_t Constant2;
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
-        uint64_t Scale = 1 << Constant2;
+        uint8_t Scale = 1 << Constant2;
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove shift as it can be folded to the mem op
-          return std::make_optional(
-            std::make_tuple(MEM_OFFSET_SXTX, Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
+          return MemExtendedAddrResult {MEM_OFFSET_SXTX, Scale, IREmit->UnwrapNode(AddressHeader->Args[1]),
+                                        IREmit->UnwrapNode(Src0Header->Args[0])};
         } else if (Scale == 1) {
           // remove nop shift
-          return std::make_optional(
-            std::make_tuple(MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
+          return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])};
         }
       }
     }
@@ -149,8 +151,7 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
       auto Bfe = Src0Header->C<IROp_Bfe>();
       if (Bfe->lsb == 0 && Bfe->Width == 32) {
         // todo: arm can also scale here
-        return std::make_optional(
-          std::make_tuple(MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
+        return MemExtendedAddrResult {MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])};
       }
     }
     // Try to optimize: Base + (s32)Offset
@@ -158,8 +159,7 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
       auto Sbfe = Src0Header->C<IROp_Sbfe>();
       if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
         // todo: arm can also scale here
-        return std::make_optional(
-          std::make_tuple(MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])));
+        return MemExtendedAddrResult {MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0])};
       }
     }
   }
@@ -181,9 +181,9 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
     int32_t Val32 = (int32_t)ConstVal;
 
     if (Val32 > -16384 && Val32 < 0) {
-      return std::make_optional(std::make_tuple(MEM_OFFSET_SXTW, 1, Base, Cnt));
+      return MemExtendedAddrResult {MEM_OFFSET_SXTW, 1, Base, Cnt};
     } else if (Val32 >= 0 && Val32 < 16384) {
-      return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, 1, Base, Cnt));
+      return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, Base, Cnt};
     }
   } else if (AddressHeader->Size == 4) {
     // Do not optimize 32bit reg+reg.
@@ -195,7 +195,7 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
     // ldr w7, [x5, w7, sxtx]
     return std::nullopt;
   } else {
-    return std::make_optional(std::make_tuple(MEM_OFFSET_SXTX, 1, Arg0, Arg1));
+    return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, Arg0, Arg1};
   }
   return std::nullopt;
 }
@@ -330,11 +330,11 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       if (!MaybeMemAddr) {
         break;
       }
-      auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+      auto [OffsetType, OffsetScale, Base, OffsetReg] = *MaybeMemAddr;
       Op->OffsetType = OffsetType;
       Op->OffsetScale = OffsetScale;
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Base);        // Addr
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, OffsetReg); // Offset
     }
     break;
   }
@@ -350,11 +350,11 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       if (!MaybeMemAddr) {
         break;
       }
-      auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+      auto [OffsetType, OffsetScale, Base, OffsetReg] = *MaybeMemAddr;
       Op->OffsetType = OffsetType;
       Op->OffsetScale = OffsetScale;
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Base);        // Addr
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, OffsetReg); // Offset
     }
     break;
   }
@@ -368,12 +368,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       if (!MaybeMemAddr) {
         break;
       }
-      auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+      auto [OffsetType, OffsetScale, Base, OffsetReg] = *MaybeMemAddr;
 
       Op->OffsetType = OffsetType;
       Op->OffsetScale = OffsetScale;
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Base);        // Addr
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, OffsetReg); // Offset
     }
     break;
   }
@@ -387,12 +387,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       if (!MaybeMemAddr) {
         break;
       }
-      auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+      auto [OffsetType, OffsetScale, Base, OffsetReg] = *MaybeMemAddr;
 
       Op->OffsetType = OffsetType;
       Op->OffsetScale = OffsetScale;
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Base);        // Addr
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, OffsetReg); // Offset
     }
     break;
   }
@@ -408,12 +408,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       if (!MaybeMemAddr) {
         break;
       }
-      auto [OffsetType, OffsetScale, Arg0, Arg1] = *MaybeMemAddr;
+      auto [OffsetType, OffsetScale, Base, OffsetReg] = *MaybeMemAddr;
 
       Op->OffsetType = OffsetType;
       Op->OffsetScale = OffsetScale;
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0);   // Addr
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Base);        // Addr
+      IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, OffsetReg); // Offset
     }
     break;
   }
