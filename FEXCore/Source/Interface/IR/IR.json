@@ -1001,7 +1001,8 @@
       },
       "GPR = AddShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer Add with shifted register",
-                  "Will truncate to 64 or 32bits"
+                  "Will truncate to 64 or 32bits",
+                  "Dest = Src1 + (Src2 << ShiftAmount)"
                 ],
         "DestSize": "Size",
         "EmitValidation": [
