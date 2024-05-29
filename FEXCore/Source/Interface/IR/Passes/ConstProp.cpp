@@ -105,9 +105,9 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
       auto Scale = 1U << AddShift->ShiftAmount;
       if (IsMemoryScale(Scale, AccessSize)) {
         // remove shift as it can be folded to the mem op
-        return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)};
+        return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
       } else if (Scale == 1) {
-        return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src2), IREmit->UnwrapNode(AddShift->Src1)};
+        return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
       }
     }
 
