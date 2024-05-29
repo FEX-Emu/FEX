@@ -388,6 +388,18 @@ private:
       }
     }
 
+    // Try to handle tied registers. This can fail, the JIT will insert moves.
+    if (int TiedIdx = IR::TiedSource(IROp->Op); TiedIdx >= 0) {
+      PhysicalRegister Reg = SSAToReg[IROp->Args[TiedIdx].ID().Value];
+      RegisterClass* Class = GetClass(Reg);
+      uint32_t RegBits = GetRegBits(Reg);
+
+      if (Reg.Class != GPRFixedClass && Reg.Class != FPRFixedClass && (Class->Available & RegBits) == RegBits) {
+        SetReg(CodeNode, Reg);
+        return;
+      }
+    }
+
     RegisterClassType OrigClassType = GetRegClassFromNode(IR, IROp);
     bool Pair = OrigClassType == GPRPairClass;
     RegisterClassType ClassType = Pair ? GPRClass : OrigClassType;
