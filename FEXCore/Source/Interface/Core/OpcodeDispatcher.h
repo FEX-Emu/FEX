@@ -1322,16 +1322,6 @@ private:
     NZCVDirty = true;
   }
 
-  void ZeroCV() {
-    // Get old NZCV before we mess with PossiblySetNZCVBits
-    auto OldNZCV = GetNZCV();
-
-    // Mask out the NZ bits, clearing CV. Even if the code sets CV after, this can end up faster
-    // moves by allowing orlshl to be used instead of bfi.
-    PossiblySetNZCVBits = (1u << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC)) | (1u << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
-    SetNZCV(_And(OpSize::i32Bit, OldNZCV, _Constant(PossiblySetNZCVBits)));
-  }
-
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode* Res) {
     HandleNZ00Write();
     _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
