@@ -116,7 +116,7 @@ namespace Logging {
   };
 
   struct PacketHeader {
-    uint64_t Timestamp {};
+    struct timespec Timestamp {};
     PacketTypes PacketType {};
     int32_t PID {};
     int32_t TID {};
@@ -131,21 +131,17 @@ namespace Logging {
     uint32_t Pad {};
   };
 
-  static_assert(sizeof(PacketHeader) == 24, "Wrong size");
+  static_assert(sizeof(PacketHeader) == 32, "Wrong size");
 
   [[maybe_unused]]
   static PacketHeader FillHeader(Logging::PacketTypes Type) {
-    struct timespec Time {};
-    uint64_t Timestamp {};
-    clock_gettime(CLOCK_MONOTONIC, &Time);
-    Timestamp = Time.tv_sec * 1e9 + Time.tv_nsec;
 
     Logging::PacketHeader Msg {
-      .Timestamp = Timestamp,
       .PacketType = Type,
       .PID = ::getpid(),
       .TID = FHU::Syscalls::gettid(),
     };
+    clock_gettime(CLOCK_MONOTONIC, &Msg.Timestamp);
 
     return Msg;
   }

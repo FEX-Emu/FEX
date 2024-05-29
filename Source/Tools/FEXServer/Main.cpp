@@ -35,8 +35,9 @@ void AssertHandler(const char* Message) {
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 
-void ClientMsgHandler(int FD, uint64_t Timestamp, uint32_t PID, uint32_t TID, uint32_t Level, const char* Msg) {
-  const auto Output = fmt::format("[{}][{}][{}.{}] {}\n", LogMan::DebugLevelStr(Level), Timestamp, PID, TID, Msg);
+void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, const char* MsgStr) {
+  const auto Output = fmt::format("[{}][{}.{}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
+                                  Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
   write(STDERR_FILENO, Output.c_str(), Output.size());
 }
 } // namespace Logging
