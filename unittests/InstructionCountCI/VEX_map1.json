@@ -5305,7 +5305,7 @@
       ]
     },
     "vpsadbw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "Map 1 0b01 0xf6 256-bit"
       ],
@@ -5330,18 +5330,17 @@
         "mov z2.d, p0/m, z1.d",
         "msr nzcv, x0",
         "mov z1.q, q2",
-        "mov z2.d, z4.d",
         "not p0.b, p7/z, p6.b",
-        "mov z2.b, p0/m, z1.b",
-        "mov z1.d, z2.d[1]",
-        "mov z3.d, z2.d",
+        "mov z4.b, p0/m, z1.b",
+        "mov z1.d, z4.d[1]",
+        "mov z2.d, z4.d",
         "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #0",
-        "mov z3.d, p0/m, z1.d",
+        "mov z2.d, p0/m, z1.d",
         "msr nzcv, x0",
-        "mov z1.d, z2.d[2]",
-        "mov z16.d, z3.d",
+        "mov z1.d, z4.d[2]",
+        "mov z16.d, z2.d",
         "mrs x0, nzcv",
         "index z0.d, #-2, #1",
         "cmpeq p0.d, p7/z, z0.d, #-1",

@@ -2652,7 +2652,7 @@
       ]
     },
     "sahf": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": "0x9e",
       "ExpectedArm64ASM": [
         "ubfx w20, w4, #8, #8",
@@ -2661,16 +2661,14 @@
         "orr x27, x20, #0x2",
         "ubfx x20, x27, #0, #1",
         "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "ubfx w21, w27, #2, #1",
-        "eor w26, w21, #0x1",
-        "ubfx x21, x27, #6, #1",
-        "bfi w20, w21, #30, #1",
-        "ubfx x21, x27, #7, #1",
-        "bfi w20, w21, #31, #1",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "ubfx w20, w27, #2, #1",
+        "eor w26, w20, #0x1",
+        "ubfx x20, x27, #6, #1",
+        "bfi w21, w20, #30, #1",
+        "ubfx x20, x27, #7, #1",
+        "bfi w21, w20, #31, #1",
+        "msr nzcv, x21"
       ]
     },
     "lahf": {
