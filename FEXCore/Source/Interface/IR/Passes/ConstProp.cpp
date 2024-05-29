@@ -96,22 +96,25 @@ struct MemExtendedAddrResult {
   OrderedNode* OffsetReg;
 };
 
+static inline std::optional<MemExtendedAddrResult> TryAddShiftScale(IREmitter* IREmit, uint8_t AccessSize, IROp_Header* AddressHeader) {
+  auto AddShift = AddressHeader->C<IROp_AddShift>();
+  if (AddShift->Shift == IR::ShiftType::LSL) {
+    auto Scale = 1U << AddShift->ShiftAmount;
+    if (IsMemoryScale(Scale, AccessSize)) {
+      // remove shift as it can be folded to the mem op
+      return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
+    } else if (Scale == 1) {
+      return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
+    }
+  }
+  return std::nullopt;
+}
+
 // If this optimization doesn't succeed, it will return the nullopt
 static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IREmit, uint8_t AccessSize, IROp_Header* AddressHeader) {
   // Try to optimize: AddShift Base, LSHL(Offset, Scale)
   if (AddressHeader->Op == OP_ADDSHIFT) {
-    auto AddShift = AddressHeader->C<IROp_AddShift>();
-    if (AddShift->Shift == IR::ShiftType::LSL) {
-      auto Scale = 1U << AddShift->ShiftAmount;
-      if (IsMemoryScale(Scale, AccessSize)) {
-        // remove shift as it can be folded to the mem op
-        return MemExtendedAddrResult {MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
-      } else if (Scale == 1) {
-        return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddShift->Src1), IREmit->UnwrapNode(AddShift->Src2)};
-      }
-    }
-
-    return std::nullopt;
+    return TryAddShiftScale(IREmit, AccessSize, AddressHeader);
   }
 
   LOGMAN_THROW_A_FMT(AddressHeader->Op == OP_ADD, "Invalid address Op");
@@ -197,6 +200,23 @@ static std::optional<MemExtendedAddrResult> MemExtendedAddressing(IREmitter* IRE
   } else {
     return MemExtendedAddrResult {MEM_OFFSET_SXTX, 1, Arg0, Arg1};
   }
+  return std::nullopt;
+}
+
+static std::optional<MemExtendedAddrResult> MemVectorAtomicExtendedAddressing(IREmitter* IREmit, uint8_t AccessSize, IROp_Header* AddressHeader) {
+  // Atomic TSO emulation of vectors use half-barriers. So it gets the full addressing support of vector loadstores
+  // Addressing capabilities
+  // - LDR, [Reg, Reg, LSL <Size>]
+  // - LDR, [Reg], imm12 Scaled <Size> ///< TODO: Implement this
+  // - LDUR, [Reg], imm9 (Signed [-256,256))  ///< TODO: Implement this
+  // TODO: Implement support for FEAT_LRCPC3.
+  // - LDAPUR [reg], imm9 (Signed [-256,256))
+
+  // Try to optimize: AddShift Base, LSHL(Offset, Scale)
+  if (AddressHeader->Op == OP_ADDSHIFT) {
+    return TryAddShiftScale(IREmit, AccessSize, AddressHeader);
+  }
+
   return std::nullopt;
 }
 
@@ -323,10 +343,10 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
     auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
-    if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
+    if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Size == 8) {
       // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
       // Support once hardware is available to use this.
-      auto MaybeMemAddr = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+      auto MaybeMemAddr = MemVectorAtomicExtendedAddressing(IREmit, IROp->Size, AddressHeader);
       if (!MaybeMemAddr) {
         break;
       }
@@ -343,10 +363,10 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
     auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
-    if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
+    if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Size == 8) {
       // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
       // Support once hardware is available to use this.
-      auto MaybeMemAddr = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+      auto MaybeMemAddr = MemVectorAtomicExtendedAddressing(IREmit, IROp->Size, AddressHeader);
       if (!MaybeMemAddr) {
         break;
       }
