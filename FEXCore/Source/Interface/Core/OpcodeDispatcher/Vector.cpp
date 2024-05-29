@@ -5066,33 +5066,15 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
     OrderedNode* IfZero = _Constant(16 >> (Control & 1));
     OrderedNode* IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
-
     OrderedNode* Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
-    const uint8_t GPRSize = CTX->GetGPRSize();
-    if (GPRSize == 8) {
-      // If being stored to an 8-byte register, zero extend the 4-byte result.
-      Result = _Bfe(OpSize::i64Bit, 32, 0, Result);
-    }
+    // Store the result, it is already zero-extended to 64-bit implicitly.
     StoreGPRRegister(X86State::REG_RCX, Result);
   }
 
-  // Set all of the necessary flags.
-  // We use the top 16-bits of the result to store the flags
-  // in the form:
-  //
-  // Bit:  19   18   17   16
-  //      [OF | CF | SF | ZF]
-  //
-  const auto GetFlagBit = [this, IntermediateResult](int BitIndex) {
-    return _Bfe(OpSize::i32Bit, 1, BitIndex, IntermediateResult);
-  };
-
-  SetRFLAG<X86State::RFLAG_ZF_RAW_LOC>(GetFlagBit(16));
-  SetRFLAG<X86State::RFLAG_SF_RAW_LOC>(GetFlagBit(17));
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(GetFlagBit(18));
-  SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(GetFlagBit(19));
-
+  // Set all of the necessary flags. NZCV stored in bits 28...31 like the hw op.
+  SetNZCV(IntermediateResult);
+  PossiblySetNZCVBits = ~0;
   ZeroPF_AF();
 }
 

@@ -50,22 +50,22 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
 
     // Bits are arranged as:
     // Bit #:   3    2    1    0
-    //         [OF | CF | SF | ZF]
+    //         [SF | ZF | CF | OF]
     uint32_t flags = 0;
-    flags |= (valid_rhs < upper_limit) ? 0b01 : 0b00;
-    flags |= (valid_lhs < upper_limit) ? 0b10 : 0b00;
+    flags |= (valid_rhs < upper_limit) ? 0b0100 : 0b0000;
+    flags |= (valid_lhs < upper_limit) ? 0b1000 : 0b0000;
 
     const uint32_t result = HandlePolarity(aggregation, control, upper_limit, valid_rhs);
     if (result != 0) {
-      flags |= 0b0100;
+      flags |= 0b0010;
     }
     if ((result & 1) != 0) {
-      flags |= 0b1000;
+      flags |= 0b0001;
     }
 
-    // We tack the flags on top of the result to avoid needing to handle
-    // multiple return values in the JITs.
-    return result | (flags << 16);
+    // We track the flags in the usual NZCV bit position so we can msr them
+    // later. Avoids handling flags natively in JIT.
+    return result | (flags << 28);
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static int32_t GetExplicitLength(uint64_t reg, uint16_t control) {
