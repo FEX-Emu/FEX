@@ -918,7 +918,7 @@
     "prefetch [rax + rcx*8]": {
       "ExpectedInstructionCount": 1,
       "ExpectedArm64ASM": [
-        "prfm pldl1keep, [x5, x4, sxtx #3]"
+        "prfm pldl1keep, [x4, x5, sxtx #3]"
       ]
     },
     "movzx ebx, byte [rax + rcx*1]": {
