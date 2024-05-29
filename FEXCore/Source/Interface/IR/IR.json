@@ -549,6 +549,7 @@
         "Desc": ["Does a memory load to a single element of a vector.",
                  "Leaves the rest of the vector's data intact.",
                  "Matches arm64 ld1 semantics"],
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -570,6 +571,7 @@
           "The address is decremented by the value size while.",
           "The return value size is the size of the current operating mode"
         ],
+        "TiedSource": 1,
         "HasSideEffects": true,
         "DestSize": "Size"
       },
@@ -1195,6 +1197,7 @@
         "Desc": ["Integer binary and"
                 ],
         "DestSize": "Size",
+        "TiedSource": 0,
         "HasSideEffects": true
       },
       "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1335,6 +1338,7 @@
                  "The bitfield is copied in to Dest[(Width + lsb):lsb]"
                 ],
         "DestSize": "Size",
+        "TiedSource": 0,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1346,6 +1350,7 @@
                  "The bitfield is copied in to Dest[Width:0]"
                 ],
         "DestSize": "Size",
+        "TiedSource": 0,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1776,29 +1781,35 @@
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VShlI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShrI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShraI u8:#RegisterSize, u8:#ElementSize, FPR:$DestVector, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VSShrI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
       "FPR = VUShrNI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
         "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
 
       "FPR = VUShrNI2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
+        "TiedSource": 0,
         "Desc": ["Unsigned shifts right each element and then narrows to the next lower element size",
                  "Inserts results in to the high elements of the first argument"
                 ],
@@ -1830,10 +1841,12 @@
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSQXTN u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
@@ -1861,6 +1874,7 @@
         "Desc": ["Signed rounding shift right by immediate",
                  "Exactly matching Arm64 srshr semantics"
                 ],
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1868,6 +1882,7 @@
         "Desc": ["Signed satuating shift left by immediate",
                  "Exactly matching Arm64 sqshl semantics"
                 ],
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -2076,42 +2091,52 @@
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUShl u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VSShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShlS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShrS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VSShrS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VSShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VUShlSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
       "FPR = VInsElement u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, u8:$SrcIdx, FPR:$DestVector, FPR:$SrcVector": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -2198,6 +2223,7 @@
                  "Table is always treated as a 128bit register",
                  "Indices matches destination size. Either 64bit or 128bit"
                 ],
+        "TiedSource": 0,
         "DestSize": "RegisterSize"
       },
       "FPR = VBSL u8:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
