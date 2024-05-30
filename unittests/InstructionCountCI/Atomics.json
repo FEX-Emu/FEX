@@ -64,8 +64,8 @@
       "Comment": "0x09",
       "ExpectedArm64ASM": [
         "ldsetal w5, w20, [x4]",
-        "orr w26, w20, w5",
-        "tst w26, w26"
+        "orr w20, w20, w5",
+        "ands w26, w20, w20"
       ]
     },
     "lock adc byte [rax], cl": {
@@ -290,8 +290,8 @@
       "Comment": "0x31",
       "ExpectedArm64ASM": [
         "ldeoral w5, w20, [x4]",
-        "eor w26, w20, w5",
-        "tst w26, w26"
+        "eor w20, w20, w5",
+        "ands w26, w20, w20"
       ]
     },
     "lock add qword [rax], rcx": {
@@ -537,8 +537,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x100",
-        "tst w26, w26"
+        "orr w20, w20, #0x100",
+        "ands w26, w20, w20"
       ]
     },
     "lock or dword [rax], 0xFFFFFFFF": {
@@ -547,8 +547,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldsetal w20, w21, [x4]",
-        "orr w26, w21, w20",
-        "tst w26, w26"
+        "orr w20, w21, w20",
+        "ands w26, w20, w20"
       ]
     },
     "lock or qword [rax], 0x100": {
@@ -557,8 +557,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x100",
-        "tst x26, x26"
+        "orr x20, x20, #0x100",
+        "ands x26, x20, x20"
       ]
     },
     "lock or qword [rax], -2147483647": {
@@ -567,8 +567,8 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0xffffffff80000001",
-        "tst x26, x26"
+        "orr x20, x20, #0xffffffff80000001",
+        "ands x26, x20, x20"
       ]
     },
     "lock or word [rax], 1": {
@@ -587,8 +587,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x1",
-        "tst w26, w26"
+        "orr w20, w20, #0x1",
+        "ands w26, w20, w20"
       ]
     },
     "lock or qword [rax], 1": {
@@ -597,8 +597,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x1",
-        "tst x26, x26"
+        "orr x20, x20, #0x1",
+        "ands x26, x20, x20"
       ]
     },
     "lock adc byte [rax], 1": {
@@ -1326,8 +1326,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x100",
-        "tst w26, w26"
+        "eor w20, w20, #0x100",
+        "ands w26, w20, w20"
       ]
     },
     "lock xor dword [rax], 0xFFFFFFFF": {
@@ -1336,8 +1336,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldeoral w20, w21, [x4]",
-        "eor w26, w21, w20",
-        "tst w26, w26"
+        "eor w20, w21, w20",
+        "ands w26, w20, w20"
       ]
     },
     "lock xor qword [rax], 0x100": {
@@ -1346,8 +1346,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x100",
-        "tst x26, x26"
+        "eor x20, x20, #0x100",
+        "ands x26, x20, x20"
       ]
     },
     "lock xor qword [rax], -2147483647": {
@@ -1356,8 +1356,8 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0xffffffff80000001",
-        "tst x26, x26"
+        "eor x20, x20, #0xffffffff80000001",
+        "ands x26, x20, x20"
       ]
     },
     "lock xor word [rax], 1": {
@@ -1376,8 +1376,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x1",
-        "tst w26, w26"
+        "eor w20, w20, #0x1",
+        "ands w26, w20, w20"
       ]
     },
     "lock xor qword [rax], 1": {
@@ -1386,8 +1386,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x1",
-        "tst x26, x26"
+        "eor x20, x20, #0x1",
+        "ands x26, x20, x20"
       ]
     },
     "lock dec byte [rax]": {

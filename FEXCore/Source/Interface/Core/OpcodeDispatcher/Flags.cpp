@@ -511,10 +511,13 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode* Res
   // Undefined
   _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
 
-  CalculatePF(Res);
-
-  // SF/ZF/CF/OF
-  SetNZ_ZeroCV(SrcSize, Res);
+  if (SrcSize >= 4) {
+    HandleNZ00Write();
+    CalculatePF(_AndWithFlags(IR::SizeToOpSize(SrcSize), Res, Res));
+  } else {
+    SetNZ_ZeroCV(SrcSize, Res);
+    CalculatePF(Res);
+  }
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode* UnmaskedRes, OrderedNode* Src1, uint64_t Shift) {
