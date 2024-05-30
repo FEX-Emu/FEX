@@ -503,6 +503,24 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   return std::make_pair(RootFSFD, &SubPath[1]);
 }
 
+///< Returns true if the pathname is self and symlink flags are set NOFOLLOW.
+bool FileManager::IsSelfNoFollow(const char* Pathname, int flags) const {
+  const bool Follow = (flags & AT_SYMLINK_NOFOLLOW) == 0;
+  if (Follow) {
+    // If we are following the self symlink then we don't care about this.
+    return false;
+  }
+
+  if (!Pathname) {
+    return false;
+  }
+
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, sizeof(PidSelfPath), "/proc/%i/exe", CurrentPID);
+
+  return strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, "/proc/thread-self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0;
+}
+
 std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) {
   if (SupportsProcFSInterpreter) {
     // FEX doesn't need to track procfs/exe if this is supported.
@@ -514,7 +532,7 @@ std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) {
   }
 
   char PidSelfPath[50];
-  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
+  snprintf(PidSelfPath, sizeof(PidSelfPath), "/proc/%i/exe", CurrentPID);
 
   if (strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, "/proc/thread-self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0) {
     return Filename();
@@ -829,6 +847,12 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
 }
 
 uint64_t FileManager::Statx(int dirfd, const char* pathname, int flags, uint32_t mask, struct statx* statxbuf) {
+  if (IsSelfNoFollow(pathname, flags)) {
+    // If we aren't following the symlink for self then we need to return data about the symlink itself.
+    // Let's just /actually/ return FEXInterpreter symlink information in this case.
+    return FHU::Syscalls::statx(dirfd, pathname, flags, mask, statxbuf);
+  }
+
   auto NewPath = GetSelf(pathname);
   const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
@@ -870,6 +894,11 @@ uint64_t FileManager::Statfs(const char* path, void* buf) {
 }
 
 uint64_t FileManager::NewFSStatAt(int dirfd, const char* pathname, struct stat* buf, int flag) {
+  if (IsSelfNoFollow(pathname, flag)) {
+    // See Statx
+    return ::fstatat(dirfd, pathname, buf, flag);
+  }
+
   auto NewPath = GetSelf(pathname);
   const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
@@ -885,6 +914,11 @@ uint64_t FileManager::NewFSStatAt(int dirfd, const char* pathname, struct stat* 
 }
 
 uint64_t FileManager::NewFSStatAt64(int dirfd, const char* pathname, struct stat64* buf, int flag) {
+  if (IsSelfNoFollow(pathname, flag)) {
+    // See Statx
+    return ::fstatat64(dirfd, pathname, buf, flag);
+  }
+
   auto NewPath = GetSelf(pathname);
   const char* SelfPath = NewPath ? NewPath->data() : nullptr;
 
