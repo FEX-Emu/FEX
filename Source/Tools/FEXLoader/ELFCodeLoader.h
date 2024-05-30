@@ -231,7 +231,7 @@ public:
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(const fextl::string& Filename, const std::string_view FEXFDString, const fextl::string& RootFS,
+  ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS,
                 [[maybe_unused]] const fextl::vector<fextl::string>& args, const fextl::vector<fextl::string>& ParsedArgs,
                 char** const envp = nullptr, FEXCore::Config::Value<fextl::string>* AdditionalEnvp = nullptr)
     : Args {args} {
@@ -239,16 +239,9 @@ public:
     bool LoadedWithFD = false;
     int FD = getauxval(AT_EXECFD);
 
-    if (!FEXFDString.empty()) {
+    if (ProgramFDFromEnv != -1) {
       // If we passed the execve FD to us then use that.
-      const char* StartPtr = FEXFDString.data();
-      char* EndPtr {};
-      FD = ::strtol(StartPtr, &EndPtr, 10);
-      if (EndPtr == StartPtr) {
-        LogMan::Msg::AFmt("FEXInterpreter passed invalid FD to exececute: {}", FEXFDString);
-        return;
-      }
-      unsetenv("FEX_EXECVEFD");
+      FD = ProgramFDFromEnv;
     }
 
     // If we are provided an EXECFD then attempt to execute that first
