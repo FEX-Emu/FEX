@@ -656,7 +656,7 @@
       ]
     },
     "sha1msg2 xmm0, xmm1": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0x66 0x0f 0x38 0xca"
       ],
@@ -665,17 +665,13 @@
         "ext v2.16b, v2.16b, v17.16b, #12",
         "eor v2.16b, v16.16b, v2.16b",
         "shl v3.4s, v2.4s, #1",
-        "mov v0.16b, v3.16b",
-        "usra v0.4s, v2.4s, #31",
-        "mov v2.16b, v0.16b",
-        "dup v3.4s, v2.s[3]",
-        "eor v3.16b, v16.16b, v3.16b",
-        "shl v4.4s, v3.4s, #1",
-        "mov v0.16b, v4.16b",
-        "usra v0.4s, v3.4s, #31",
-        "mov v3.16b, v0.16b",
-        "mov v16.16b, v2.16b",
-        "mov v16.s[0], v3.s[0]"
+        "usra v3.4s, v2.4s, #31",
+        "dup v2.4s, v3.s[3]",
+        "eor v2.16b, v16.16b, v2.16b",
+        "shl v4.4s, v2.4s, #1",
+        "usra v4.4s, v2.4s, #31",
+        "mov v16.16b, v3.16b",
+        "mov v16.s[0], v4.s[0]"
       ]
     },
     "sha256rnds2 xmm0, xmm1": {
@@ -861,7 +857,7 @@
       ]
     },
     "adcx eax, ebx": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0x66 0x0f 0x38 0xf6"
       ],
@@ -878,14 +874,12 @@
         "cset x21, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x21, x23, eq",
-        "mov w0, w22",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w22, w20, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "adcx rax, rbx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
@@ -900,14 +894,12 @@
         "cset x23, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x23, x22, eq",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "adox eax, ebx": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xf3 0x0f 0x38 0xf6"
       ],
@@ -924,14 +916,12 @@
         "cset x21, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x21, x23, eq",
-        "mov w0, w22",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "adox rax, rbx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xf3 REX.W 0x0f 0x38 0xf6"
       ],
@@ -946,10 +936,8 @@
         "cset x23, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x23, x22, eq",
-        "mov w0, w21",
-        "bfi w0, w20, #28, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #28, #1",
+        "msr nzcv, x21"
       ]
     }
   }

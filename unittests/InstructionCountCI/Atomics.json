@@ -1517,7 +1517,7 @@
       ]
     },
     "lock dec dword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
@@ -1525,14 +1525,12 @@
         "cset w20, hs",
         "subs w26, w27, #0x1 (1)",
         "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock dec qword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP4 0xfe /1",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
@@ -1540,10 +1538,8 @@
         "cset w20, hs",
         "subs x26, x27, #0x1 (1)",
         "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock inc byte [rax]": {
@@ -1577,7 +1573,7 @@
       ]
     },
     "lock inc dword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1585,14 +1581,12 @@
         "cset w20, hs",
         "adds w26, w27, #0x1 (1)",
         "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock inc qword [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP4 0xfe /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -1600,10 +1594,8 @@
         "cset w20, hs",
         "adds x26, x27, #0x1 (1)",
         "mrs x21, nzcv",
-        "mov w0, w21",
-        "bfi w0, w20, #29, #1",
-        "mov w20, w0",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     }
   }

@@ -55,6 +55,7 @@ class OpDefinition:
     DynamicDispatch: bool
     JITDispatch: bool
     JITDispatchOverride: str
+    TiedSource: int
     Arguments: list
     EmitValidation: list
     Desc: list
@@ -77,6 +78,7 @@ class OpDefinition:
         self.DynamicDispatch = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
+        self.TiedSource = -1
         self.Arguments = []
         self.EmitValidation = []
         self.Desc = []
@@ -248,6 +250,9 @@ def parse_ops(ops):
             if "JITDispatchOverride" in op_val:
                 OpDef.JITDispatchOverride = op_val["JITDispatchOverride"]
 
+            if "TiedSource" in op_val:
+                OpDef.TiedSource = op_val["TiedSource"]
+
             # Do some fixups of the data here
             if len(OpDef.EmitValidation) != 0:
                 for i in range(len(OpDef.EmitValidation)):
@@ -372,13 +377,30 @@ def print_ir_sizes():
 
     output_file.write("[[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] std::string_view const& GetName(IROps Op);\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetArgs(IROps Op);\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetRAArgs(IROps Op);\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool ImplicitFlagClobber(IROps Op);\n")
-    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool GetHasDest(IROps Op);\n")
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);\n'
+    )
+    output_file.write(
+        '[[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);\n'
+    )
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
@@ -471,15 +493,25 @@ def print_ir_getraargs():
 def print_ir_hassideeffects():
     output_file.write("#ifdef IROP_HASSIDEEFFECTS_IMPL\n")
 
-    for array, prop in [("SideEffects", "HasSideEffects"),
-                        ("ImplicitFlagClobbers", "ImplicitFlagClobber")]:
-        output_file.write(f"constexpr std::array<uint8_t, OP_LAST + 1> {array} = {{\n")
+    for array, prop, T in [
+        ("SideEffects", "HasSideEffects", "bool"),
+        ("ImplicitFlagClobbers", "ImplicitFlagClobber", "bool"),
+        ("TiedSources", "TiedSource", "int8_t"),
+    ]:
+        output_file.write(
+            f"constexpr std::array<{'uint8_t' if T == 'bool' else T}, OP_LAST + 1> {array} = {{\n"
+        )
         for op in IROps:
-            output_file.write("\t{},\n".format(("true" if getattr(op, prop) else "false")))
+            if T == "bool":
+                output_file.write(
+                    "\t{},\n".format(("true" if getattr(op, prop) else "false"))
+                )
+            else:
+                output_file.write(f"\t{getattr(op, prop)},\n")
 
         output_file.write("};\n\n")
 
-        output_file.write(f"bool {prop}(IROps Op) {{\n")
+        output_file.write(f"{T} {prop}(IROps Op) {{\n")
         output_file.write(f"  return {array}[Op];\n")
         output_file.write("}\n")
 

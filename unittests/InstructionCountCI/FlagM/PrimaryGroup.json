@@ -909,7 +909,7 @@
       ]
     },
     "rcl al, 2": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 18,
       "Comment": "GROUP2 0xC0 /2",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -925,30 +925,26 @@
         "bfi x21, x22, #36, #1",
         "bfi x21, x20, #19, #8",
         "bfi x21, x22, #27, #1",
-        "mov x0, x21",
-        "bfxil x0, x20, #0, #8",
-        "mov x20, x0",
-        "ror x21, x20, #62",
-        "bfxil x4, x21, #0, #8",
-        "ror x20, x20, #61",
+        "bfxil x21, x20, #0, #8",
+        "ror x20, x21, #62",
+        "bfxil x4, x20, #0, #8",
+        "ror x20, x21, #61",
         "rmif x20, #63, #nzCv"
       ]
     },
     "rcr al, 2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP2 0xC0 /3",
       "ExpectedArm64ASM": [
         "cset w20, hs",
         "uxtb w21, w4",
-        "mov x0, x21",
-        "bfi x0, x20, #8, #1",
-        "mov x20, x0",
-        "bfi x20, x20, #9, #9",
-        "bfi x20, x20, #18, #18",
-        "bfi x20, x20, #36, #9",
-        "lsr w21, w20, #2",
-        "bfxil x4, x21, #0, #8",
-        "rmif x20, #0, #nzCv"
+        "bfi x21, x20, #8, #1",
+        "bfi x21, x21, #9, #9",
+        "bfi x21, x21, #18, #18",
+        "bfi x21, x21, #36, #9",
+        "lsr w20, w21, #2",
+        "bfxil x4, x20, #0, #8",
+        "rmif x21, #0, #nzCv"
       ]
     },
     "shl al, 2": {
@@ -1038,7 +1034,7 @@
       ]
     },
     "rcl ax, 2": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": "GROUP2 0xC1 /2",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
@@ -1050,12 +1046,10 @@
         "bfi x21, x22, #46, #1",
         "bfi x21, x20, #13, #16",
         "bfi x21, x22, #29, #1",
-        "mov x0, x21",
-        "bfxil x0, x20, #0, #16",
-        "mov x20, x0",
-        "ror x21, x20, #62",
-        "bfxil x4, x21, #0, #16",
-        "ror x20, x20, #61",
+        "bfxil x21, x20, #0, #16",
+        "ror x20, x21, #62",
+        "bfxil x4, x20, #0, #16",
+        "ror x20, x21, #61",
         "rmif x20, #63, #nzCv"
       ]
     },
@@ -1082,19 +1076,17 @@
       ]
     },
     "rcr ax, 2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xC1 /3",
       "ExpectedArm64ASM": [
         "cset w20, hs",
         "uxth w21, w4",
-        "mov x0, x21",
-        "bfi x0, x20, #16, #1",
-        "mov x20, x0",
-        "bfi x20, x20, #17, #17",
-        "bfi x20, x20, #34, #17",
-        "lsr w21, w20, #2",
-        "bfxil x4, x21, #0, #16",
-        "rmif x20, #0, #nzCv"
+        "bfi x21, x20, #16, #1",
+        "bfi x21, x21, #17, #17",
+        "bfi x21, x21, #34, #17",
+        "lsr w20, w21, #2",
+        "bfxil x4, x20, #0, #16",
+        "rmif x21, #0, #nzCv"
       ]
     },
     "rcr eax, 2": {
@@ -1573,11 +1565,11 @@
       ]
     },
     "rcl al, cl": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 26,
       "Comment": "GROUP2 0xd2 /2",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x6c",
+        "cbz x20, #+0x64",
         "and w20, w5, #0x1f",
         "uxtb w21, w4",
         "mov w22, #0x0",
@@ -1592,40 +1584,36 @@
         "bfi x22, x23, #36, #1",
         "bfi x22, x21, #19, #8",
         "bfi x22, x23, #27, #1",
-        "mov x0, x22",
-        "bfxil x0, x21, #0, #8",
-        "mov x21, x0",
-        "neg w22, w20",
-        "ror x22, x21, x22",
-        "bfxil x4, x22, #0, #8",
+        "bfxil x22, x21, #0, #8",
+        "neg w21, w20",
+        "ror x21, x22, x21",
+        "bfxil x4, x21, #0, #8",
         "mov w23, #0x3f",
         "sub x20, x23, x20",
-        "ror x20, x21, x20",
+        "ror x20, x22, x20",
         "rmif x20, #63, #nzCv",
-        "eor x20, x20, x22, lsr #7",
+        "eor x20, x20, x21, lsr #7",
         "rmif x20, #0, #nzcV"
       ]
     },
     "rcr al, cl": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 15,
       "Comment": "GROUP2 0xd2 /3",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x40",
+        "cbz x20, #+0x38",
         "cset w20, hs",
         "uxtb w21, w4",
-        "mov x0, x21",
-        "bfi x0, x20, #8, #1",
-        "mov x20, x0",
-        "bfi x20, x20, #9, #9",
-        "bfi x20, x20, #18, #18",
-        "bfi x20, x20, #36, #9",
-        "lsr w21, w20, w5",
-        "bfxil x4, x21, #0, #8",
+        "bfi x21, x20, #8, #1",
+        "bfi x21, x21, #9, #9",
+        "bfi x21, x21, #18, #18",
+        "bfi x21, x21, #36, #9",
+        "lsr w20, w21, w5",
+        "bfxil x4, x20, #0, #8",
         "sub w22, w5, #0x1 (1)",
-        "lsr w20, w20, w22",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, w21, lsr #1",
+        "lsr w21, w21, w22",
+        "rmif x21, #63, #nzCv",
+        "eor w20, w20, w20, lsr #1",
         "rmif x20, #6, #nzcV"
       ]
     },
@@ -1760,11 +1748,11 @@
       ]
     },
     "rcl ax, cl": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 22,
       "Comment": "GROUP2 0xd3 /2",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x5c",
+        "cbz x20, #+0x54",
         "and w20, w5, #0x1f",
         "uxth w21, w4",
         "mov w22, #0x0",
@@ -1775,17 +1763,15 @@
         "bfi x22, x23, #46, #1",
         "bfi x22, x21, #13, #16",
         "bfi x22, x23, #29, #1",
-        "mov x0, x22",
-        "bfxil x0, x21, #0, #16",
-        "mov x21, x0",
-        "neg w22, w20",
-        "ror x22, x21, x22",
-        "bfxil x4, x22, #0, #16",
+        "bfxil x22, x21, #0, #16",
+        "neg w21, w20",
+        "ror x21, x22, x21",
+        "bfxil x4, x21, #0, #16",
         "mov w23, #0x3f",
         "sub x20, x23, x20",
-        "ror x20, x21, x20",
+        "ror x20, x22, x20",
         "rmif x20, #63, #nzCv",
-        "eor x20, x20, x22, lsr #15",
+        "eor x20, x20, x21, lsr #15",
         "rmif x20, #0, #nzcV"
       ]
     },
@@ -1830,24 +1816,22 @@
       ]
     },
     "rcr ax, cl": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": "GROUP2 0xd3 /3",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x3c",
+        "cbz x20, #+0x34",
         "cset w20, hs",
         "uxth w21, w4",
-        "mov x0, x21",
-        "bfi x0, x20, #16, #1",
-        "mov x20, x0",
-        "bfi x20, x20, #17, #17",
-        "bfi x20, x20, #34, #17",
-        "lsr w21, w20, w5",
-        "bfxil x4, x21, #0, #16",
+        "bfi x21, x20, #16, #1",
+        "bfi x21, x21, #17, #17",
+        "bfi x21, x21, #34, #17",
+        "lsr w20, w21, w5",
+        "bfxil x4, x20, #0, #16",
         "sub w22, w5, #0x1 (1)",
-        "lsr w20, w20, w22",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, w21, lsr #1",
+        "lsr w21, w21, w22",
+        "rmif x21, #63, #nzCv",
+        "eor w20, w20, w20, lsr #1",
         "rmif x20, #14, #nzcV"
       ]
     },
@@ -2080,7 +2064,7 @@
       ]
     },
     "div bl": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP2 0xf6 /6",
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
@@ -2092,14 +2076,12 @@
         "uxth w1, w20",
         "udiv w2, w0, w1",
         "msub w20, w2, w1, w0",
-        "mov x0, x22",
-        "bfi x0, x20, #8, #8",
-        "mov x20, x0",
-        "bfxil x4, x20, #0, #16"
+        "bfi x22, x20, #8, #8",
+        "bfxil x4, x22, #0, #16"
       ]
     },
     "idiv bl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP2 0xf6 /7",
       "ExpectedArm64ASM": [
         "uxtb w20, w7",
@@ -2109,10 +2091,8 @@
         "sdiv x22, x21, x20",
         "sdiv x0, x21, x20",
         "msub x20, x0, x20, x21",
-        "mov x0, x22",
-        "bfi x0, x20, #8, #8",
-        "mov x20, x0",
-        "bfxil x4, x20, #0, #16"
+        "bfi x22, x20, #8, #8",
+        "bfxil x4, x22, #0, #16"
       ]
     },
     "test bx, 1": {

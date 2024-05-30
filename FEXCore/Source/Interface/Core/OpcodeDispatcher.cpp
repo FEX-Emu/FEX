@@ -1748,12 +1748,6 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
     auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
     StoreResult(GPRClass, Op, Res, -1);
 
-    // Ends up faster overall if we don't have FlagM, slower if we do...
-    // If Shift != 1, OF is undefined so we choose to zero here.
-    if (!CTX->HostFeatures.SupportsFlagM) {
-      ZeroCV();
-    }
-
     // Extract the last bit shifted in to CF
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, Left ? 0 : Size - 1, true);
 
