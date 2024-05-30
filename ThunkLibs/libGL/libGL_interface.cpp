@@ -161,7 +161,9 @@ struct fex_gen_config<glXQueryExtensionsString> {};
 template<>
 struct fex_gen_config<glXQueryServerString> {};
 template<>
-struct fex_gen_config<glXGetCurrentDisplay> {};
+struct fex_gen_config<glXGetCurrentDisplay> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetCurrentDisplay, -1, _XDisplay*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXCreateContext> : fexgen::custom_host_impl {};
 template<>
@@ -6403,7 +6405,9 @@ struct fex_gen_config<glXGetCurrentAssociatedContextAMD> {};
 template<>
 struct fex_gen_config<glXBlitContextFramebufferAMD> {};
 template<>
-struct fex_gen_config<glXGetCurrentDisplayEXT> {};
+struct fex_gen_config<glXGetCurrentDisplayEXT> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetCurrentDisplayEXT, -1, _XDisplay*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXGetAGPOffsetMESA> {};
 template<>

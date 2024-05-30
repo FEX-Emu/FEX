@@ -47,6 +47,9 @@ host_layout<_XDisplay*>::~host_layout() {
   x11_manager.HostXFlush(data);
 }
 
+// Functions returning _XDisplay* should be handled explicitly via ptr_passthrough
+guest_layout<_XDisplay*> to_guest(host_layout<_XDisplay*>) = delete;
+
 static void fexfn_impl_libGL_SetGuestMalloc(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &GuestMalloc);
 }
@@ -118,6 +121,10 @@ auto fexfn_impl_libGL_glXGetProcAddress(const GLubyte* name) -> void (*)() {
     return (VoidFn)fexfn_impl_libGL_glXChooseFBConfig;
   } else if (name_sv == "glXChooseFBConfigSGIX") {
     return (VoidFn)fexfn_impl_libGL_glXChooseFBConfigSGIX;
+  } else if (name_sv == "glXGetCurrentDisplay") {
+    return (VoidFn)fexfn_impl_libGL_glXGetCurrentDisplay;
+  } else if (name_sv == "glXGetCurrentDisplayEXT") {
+    return (VoidFn)fexfn_impl_libGL_glXGetCurrentDisplayEXT;
   } else if (name_sv == "glXGetFBConfigs") {
     return (VoidFn)fexfn_impl_libGL_glXGetFBConfigs;
   } else if (name_sv == "glXGetFBConfigFromVisualSGIX") {
@@ -337,6 +344,16 @@ GLXFBConfig* fexfn_impl_libGL_glXChooseFBConfig(Display* Display, int Screen, co
 GLXFBConfigSGIX* fexfn_impl_libGL_glXChooseFBConfigSGIX(Display* Display, int Screen, int* Attributes, int* NumItems) {
   auto ret = fexldr_ptr_libGL_glXChooseFBConfigSGIX(Display, Screen, Attributes, NumItems);
   return RelocateArrayToGuestHeap(ret, *NumItems);
+}
+
+guest_layout<_XDisplay*> fexfn_impl_libGL_glXGetCurrentDisplay() {
+  auto ret = fexldr_ptr_libGL_glXGetCurrentDisplay();
+  return x11_manager.HostToGuestDisplay(ret);
+}
+
+guest_layout<_XDisplay*> fexfn_impl_libGL_glXGetCurrentDisplayEXT() {
+  auto ret = fexldr_ptr_libGL_glXGetCurrentDisplayEXT();
+  return x11_manager.HostToGuestDisplay(ret);
 }
 
 GLXFBConfig* fexfn_impl_libGL_glXGetFBConfigs(Display* Display, int Screen, int* NumItems) {
