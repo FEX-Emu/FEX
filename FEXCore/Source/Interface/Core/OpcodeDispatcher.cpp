@@ -3064,7 +3064,7 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   }
 
   _StoreMemAutoTSO(GPRClass, 2, DestAddress, _Constant(0));
-  _StoreMemAutoTSO(GPRClass, GDTStoreSize, _Add(OpSize::i64Bit, DestAddress, _Constant(2)), _Constant(GDTAddress));
+  _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = 8}, _Constant(GDTAddress));
 }
 
 void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
