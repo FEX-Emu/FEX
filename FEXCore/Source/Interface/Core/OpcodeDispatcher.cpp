@@ -2969,9 +2969,8 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   OrderedNode* Src = MakeSegmentAddress(X86State::REG_RBX, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   OrderedNode* Offset = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  Src = _Add(OpSize::i64Bit, Src, Offset);
-
-  auto Res = _LoadMemAutoTSO(GPRClass, 1, Src, 1);
+  AddressMode A = {.Base = Src, .Index = Offset, .AddrSize = 8};
+  auto Res = _LoadMemAutoTSO(GPRClass, 1, A, 1);
 
   StoreGPRRegister(X86State::REG_RAX, Res, 1);
 }
