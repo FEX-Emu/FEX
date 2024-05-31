@@ -70,6 +70,17 @@ struct LoadSourceOptions {
   bool AllowUpperGarbage = false;
 };
 
+struct AddressMode {
+  OrderedNode* Base {nullptr};
+  OrderedNode* Index {nullptr};
+  MemOffsetType IndexType = MEM_OFFSET_SXTX;
+  uint8_t IndexScale = 1;
+  int64_t Offset = 0;
+
+  // Size in bytes for the address calculation. 8 for an arm64 hardware mode.
+  uint8_t AddrSize;
+};
+
 class OpDispatchBuilder final : public IREmitter {
   friend class FEXCore::IR::Pass;
   friend class FEXCore::IR::PassManager;
@@ -1198,6 +1209,10 @@ private:
 
   OrderedNode* GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
+  AddressMode AddSegmentToAddress(AddressMode A, uint32_t Flags);
+  OrderedNode* LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage = false);
+  AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize);
+
   OrderedNode* LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                           const LoadSourceOptions& Options = {});
   OrderedNode* LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
@@ -2083,6 +2098,29 @@ private:
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+    }
+  }
+
+  OrderedNode* _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1, bool ForceNonTSO = false) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !ForceNonTSO;
+    A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
+
+    if (AtomicTSO) {
+      return _LoadMemTSO(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+    } else {
+      return _LoadMem(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+    }
+  }
+
+  OrderedNode* _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, OrderedNode* Value, uint8_t Align = 1,
+                                bool ForceNonTSO = false) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !ForceNonTSO;
+    A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
+
+    if (AtomicTSO) {
+      return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+    } else {
+      return _StoreMem(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
     }
   }
 
