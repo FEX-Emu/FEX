@@ -60,32 +60,6 @@ static bool IsImmAddSub(uint64_t imm) {
   return vixl::aarch64::Assembler::IsImmAddSub(imm);
 }
 
-static bool IsSIMM9Range(uint64_t imm) {
-  // AArch64 signed immediate unscaled 9-bit range.
-  // Used for both regular unscaled loadstore instructions
-  // and LRPCPC2 unscaled loadstore instructions.
-  return ((int64_t)imm >= -256) && ((int64_t)imm <= 255);
-}
-
-static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
-  if (IsSIMM9Range(imm)) {
-    return true;
-  } else if ((imm & (AccessSize - 1)) == 0 && imm / AccessSize <= 4095) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-static bool IsTSOImm9(uint64_t imm) {
-  // RCPC2 only has a 9-bit signed offset
-  if (IsSIMM9Range(imm)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t Width) {
   auto IROp = IREmit->GetOpHeader(src);
   if (IROp->Op == OP_BFE) {
@@ -135,6 +109,27 @@ private:
   // that long blocks of constant usage can slow to a crawl.
   // See https://github.com/FEX-Emu/FEX/issues/2688 for more information.
   constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
+
+  void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, OrderedNode* CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
+                          MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
+    uint64_t Imm {};
+    if (OffsetType != MEM_OFFSET_SXTX || !IREmit->IsValueConstant(Offset, &Imm)) {
+      return;
+    }
+
+    // Signed immediate unscaled 9-bit range for both regular and LRCPC2 ops.
+    bool IsSIMM9 = ((int64_t)Imm >= -256) && ((int64_t)Imm <= 255);
+    IsSIMM9 &= (SupportsTSOImm9 || !TSO);
+
+    // Extended offsets for regular loadstore only.
+    bool IsExtended = (Imm & (IROp->Size - 1)) == 0 && Imm / IROp->Size <= 4095;
+    IsExtended &= !TSO;
+
+    if (IsSIMM9 || IsExtended) {
+      IREmit->SetWriteCursor(IR.GetNode(Offset));
+      IREmit->ReplaceNodeArgument(CodeNode, Offset_Index, CreateInlineConstant(IREmit, Imm));
+    }
+  }
 };
 
 // Constants are pooled per block. Similarly for LoadMem / StoreMem, if imms are
@@ -702,54 +697,27 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     }
     case OP_LOADMEM: {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
-
-      uint64_t Constant2 {};
-      if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
-        if (IsImmMemory(Constant2, IROp->Size)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
-          IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
-        }
-      }
+      InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
       break;
     }
     case OP_STOREMEM: {
       auto Op = IROp->CW<IR::IROp_StoreMem>();
-
-      uint64_t Constant2 {};
-      if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
-        if (IsImmMemory(Constant2, IROp->Size)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
-          IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
-        }
-      }
+      InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
+      break;
+    }
+    case OP_PREFETCH: {
+      auto Op = IROp->CW<IR::IROp_Prefetch>();
+      InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
       break;
     }
     case OP_LOADMEMTSO: {
       auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
-
-      uint64_t Constant2 {};
-      if (SupportsTSOImm9) {
-        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
-          if (IsTSOImm9(Constant2)) {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
-            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
-          }
-        }
-      }
+      InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
       break;
     }
     case OP_STOREMEMTSO: {
       auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
-
-      uint64_t Constant2 {};
-      if (SupportsTSOImm9) {
-        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
-          if (IsTSOImm9(Constant2)) {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
-            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
-          }
-        }
-      }
+      InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
       break;
     }
     case OP_MEMCPY: {
@@ -773,18 +741,6 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
 
-    case OP_PREFETCH: {
-      auto Op = IROp->CW<IR::IROp_Prefetch>();
-
-      uint64_t Constant2 {};
-      if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
-        if (IsImmMemory(Constant2, IROp->Size)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
-          IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
-        }
-      }
-      break;
-    }
     default: break;
     }
   }
