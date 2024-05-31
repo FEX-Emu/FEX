@@ -940,6 +940,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
 
       uint64_t Constant2 {};
       if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+        Constant2 *= Op->OffsetScale;
+
         if (IsImmMemory(Constant2, IROp->Size)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
           IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
@@ -952,6 +954,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
 
       uint64_t Constant2 {};
       if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+        Constant2 *= Op->OffsetScale;
+
         if (IsImmMemory(Constant2, IROp->Size)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
           IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
@@ -965,6 +969,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant2 {};
       if (SupportsTSOImm9) {
         if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+          Constant2 *= Op->OffsetScale;
+
           if (IsTSOImm9(Constant2)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
             IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
@@ -979,6 +985,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant2 {};
       if (SupportsTSOImm9) {
         if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+          Constant2 *= Op->OffsetScale;
+
           if (IsTSOImm9(Constant2)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
             IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
