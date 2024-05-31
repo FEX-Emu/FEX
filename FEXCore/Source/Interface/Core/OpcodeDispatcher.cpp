@@ -1859,21 +1859,19 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? GPRSize : Size;
 
   auto* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags);
+  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags, {.AllowUpperGarbage = true});
 
-  auto* Result = [&]() -> OrderedNode* {
+  OrderedNode* Result;
+  if (Op->OP == 0x6F7) {
     // SARX
-    if (Op->OP == 0x6F7) {
-      return _Ashr(IR::SizeToOpSize(Size), Src, Shift);
-    }
+    Result = _Ashr(IR::SizeToOpSize(Size), Src, Shift);
+  } else if (Op->OP == 0x5F7) {
     // SHLX
-    if (Op->OP == 0x5F7) {
-      return _Lshl(IR::SizeToOpSize(Size), Src, Shift);
-    }
-
+    Result = _Lshl(IR::SizeToOpSize(Size), Src, Shift);
+  } else {
     // SHRX
-    return _Lshr(IR::SizeToOpSize(Size), Src, Shift);
-  }();
+    Result = _Lshr(IR::SizeToOpSize(Size), Src, Shift);
+  }
 
   StoreResult(GPRClass, Op, Result, -1);
 }
