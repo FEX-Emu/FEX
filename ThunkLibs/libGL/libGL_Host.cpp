@@ -157,20 +157,26 @@ auto fexfn_impl_libGL_glXGetProcAddress(const GLubyte* name) -> void (*)() {
 
 
 void fexfn_impl_libGL_glCompileShaderIncludeARB(GLuint a_0, GLsizei Count, guest_layout<const GLchar* const*> a_2, const GLint* a_3) {
-  // TODO: Only on 32-bit
+#ifndef IS_32BIT_THUNK
+  auto sources = a_2.force_get_host_pointer();
+#else
   auto sources = (const char**)alloca(Count * sizeof(const char*));
   for (GLsizei i = 0; i < Count; ++i) {
     sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
   }
+#endif
   return fexldr_ptr_libGL_glCompileShaderIncludeARB(a_0, Count, sources, a_3);
 }
 
 GLuint fexfn_impl_libGL_glCreateShaderProgramv(GLuint a_0, GLsizei count, guest_layout<const GLchar* const*> a_2) {
-  // TODO: Only on 32-bit
+#ifndef IS_32BIT_THUNK
+  auto sources = a_2.force_get_host_pointer();
+#else
   auto sources = (const char**)alloca(count * sizeof(const char*));
   for (GLsizei i = 0; i < count; ++i) {
     sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
   }
+#endif
   return fexldr_ptr_libGL_glCreateShaderProgramv(a_0, count, sources);
 }
 
@@ -259,18 +265,26 @@ void fexfn_impl_libGL_glGetVertexArrayPointervEXT(GLuint a_0, GLenum a_1, guest_
 }
 
 void fexfn_impl_libGL_glShaderSource(GLuint a_0, GLsizei count, guest_layout<const GLchar* const*> a_2, const GLint* a_3) {
+#ifndef IS_32BIT_THUNK
+  auto sources = a_2.force_get_host_pointer();
+#else
   auto sources = (const char**)alloca(count * sizeof(const char*));
   for (GLsizei i = 0; i < count; ++i) {
     sources[i] = host_layout<const char* const> {a_2.get_pointer()[i]}.data;
   }
+#endif
   return fexldr_ptr_libGL_glShaderSource(a_0, count, sources, a_3);
 }
 
 void fexfn_impl_libGL_glShaderSourceARB(GLuint a_0, GLsizei count, guest_layout<const GLcharARB**> a_2, const GLint* a_3) {
+#ifndef IS_32BIT_THUNK
+  auto sources = a_2.force_get_host_pointer();
+#else
   auto sources = (const char**)alloca(count * sizeof(const char*));
   for (GLsizei i = 0; i < count; ++i) {
     sources[i] = a_2.get_pointer()[i].force_get_host_pointer();
   }
+#endif
   return fexldr_ptr_libGL_glShaderSourceARB(a_0, count, sources, a_3);
 }
 
