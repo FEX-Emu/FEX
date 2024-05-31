@@ -117,6 +117,9 @@ private:
       return;
     }
 
+    // The immediate may be scaled in the IR, we need to correct for that.
+    Imm *= OffsetScale;
+
     // Signed immediate unscaled 9-bit range for both regular and LRCPC2 ops.
     bool IsSIMM9 = ((int64_t)Imm >= -256) && ((int64_t)Imm <= 255);
     IsSIMM9 &= (SupportsTSOImm9 || !TSO);
@@ -128,6 +131,7 @@ private:
     if (IsSIMM9 || IsExtended) {
       IREmit->SetWriteCursor(IR.GetNode(Offset));
       IREmit->ReplaceNodeArgument(CodeNode, Offset_Index, CreateInlineConstant(IREmit, Imm));
+      OffsetScale = 1;
     }
   }
 };
