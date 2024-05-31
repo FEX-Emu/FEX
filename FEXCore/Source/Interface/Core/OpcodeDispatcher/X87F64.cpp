@@ -74,14 +74,12 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
-  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+  auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
   ReconstructX87StateFromFSW(NewFSW);
 
   {
     // FTW
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 2));
-    SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
+    SetX87FTW(_LoadMem(GPRClass, Size, Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1));
   }
 }
 
@@ -829,53 +827,41 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  {
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
-    _StoreMem(GPRClass, Size, MemLocation, ReconstructFSW(), Size);
-  }
+  { _StoreMem(GPRClass, Size, ReconstructFSW(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1); }
 
   auto ZeroConst = _Constant(0);
 
   {
     // FTW
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 2));
-    _StoreMem(GPRClass, Size, MemLocation, GetX87FTW(), Size);
+    _StoreMem(GPRClass, Size, GetX87FTW(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction Offset
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 3));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 3), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 4));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 4), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer offset
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 5));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 5), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer selector
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 6));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 6), Size, MEM_OFFSET_SXTX, 1);
   }
-
-  OrderedNode* ST0Location = _Add(OpSize::i64Bit, Mem, _Constant(Size * 7));
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  auto TenConst = _Constant(10);
   for (int i = 0; i < 7; ++i) {
     OrderedNode* data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
     data = _F80CVTTo(data, 8);
-    _StoreMem(FPRClass, 16, ST0Location, data, 1);
-    ST0Location = _Add(OpSize::i64Bit, ST0Location, TenConst);
+    _StoreMem(FPRClass, 16, data, Mem, _Constant((Size * 7) + (i * 10)), 1, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
@@ -885,10 +871,9 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  _StoreMem(FPRClass, 8, ST0Location, data, 1);
-  ST0Location = _Add(OpSize::i64Bit, ST0Location, _Constant(8));
+  _StoreMem(FPRClass, 8, data, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
   auto topBytes = _VDupElement(16, 2, data, 4);
-  _StoreMem(FPRClass, 2, ST0Location, topBytes, 1);
+  _StoreMem(FPRClass, 2, topBytes, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
 
   // reset to default
   FNINIT(Op);
@@ -912,21 +897,16 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
-  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+  auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
   auto Top = ReconstructX87StateFromFSW(NewFSW);
 
   {
     // FTW
-    OrderedNode* MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 2));
-    SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
+    SetX87FTW(_LoadMem(GPRClass, Size, Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1));
   }
-
-  OrderedNode* ST0Location = _Add(OpSize::i64Bit, Mem, _Constant(Size * 7));
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  auto TenConst = _Constant(10);
 
   auto low = _Constant(~0ULL);
   auto high = _Constant(0xFFFF);
@@ -934,14 +914,13 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   Mask = _VInsGPR(16, 8, 1, Mask, high);
 
   for (int i = 0; i < 7; ++i) {
-    OrderedNode* Reg = _LoadMem(FPRClass, 16, ST0Location, 1);
+    OrderedNode* Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (i * 10)), 1, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(16, 16, Reg, Mask);
     // Convert to double precision
     Reg = _F80CVT(8, Reg);
     _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
 
-    ST0Location = _Add(OpSize::i64Bit, ST0Location, TenConst);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
@@ -950,9 +929,8 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
 
-  OrderedNode* Reg = _LoadMem(FPRClass, 8, ST0Location, 1);
-  ST0Location = _Add(OpSize::i64Bit, ST0Location, _Constant(8));
-  OrderedNode* RegHigh = _LoadMem(FPRClass, 2, ST0Location, 1);
+  OrderedNode* Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
+  OrderedNode* RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
   Reg = _F80CVT(8, Reg); // Convert to double precision
   _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
