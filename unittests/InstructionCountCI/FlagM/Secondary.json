@@ -935,9 +935,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #13",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldsetalb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -949,9 +949,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #29",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldsetalb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -963,9 +963,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "asr x21, x7, #3",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldsetalb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1278,9 +1278,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #13",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldclralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1292,9 +1292,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #29",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldclralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1306,9 +1306,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "asr x21, x7, #3",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldclralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1400,9 +1400,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #13",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldeoralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1414,9 +1414,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "sbfx x21, x7, #3, #29",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldeoralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
@@ -1428,9 +1428,9 @@
       "ExpectedArm64ASM": [
         "ubfx x20, x7, #0, #3",
         "asr x21, x7, #3",
-        "add x21, x4, x21",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
+        "add x21, x4, x21",
         "ldeoralb w22, w21, [x21]",
         "lsr w20, w21, w20",
         "rmif x20, #63, #nzCv"
