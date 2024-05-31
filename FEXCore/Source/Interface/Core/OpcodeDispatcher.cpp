@@ -4286,6 +4286,32 @@ OrderedNode* OpDispatchBuilder::LoadEffectiveAddress(struct AddressMode A, bool 
 }
 
 struct AddressMode OpDispatchBuilder::SelectAddressMode(struct AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize) {
+  // In the future this also needs to account for LRCPC3.
+  bool SupportsRegIndex = Vector || !AtomicTSO;
+
+  // Try a constant offset. For 64-bit, this maps directly. For 32-bit, this
+  // works only for displacements with magnitude < 16KB, since those bottom
+  // addresses are reserved and therefore wrap around is invalid.
+  //
+  // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
+  if (A.Base && A.Offset && !A.Index && SupportsRegIndex) {
+    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && CTX->GetGPRSize() == 4;
+
+    if ((A.AddrSize == 8) || Const_16K) {
+      return (struct AddressMode) {
+        .Base = A.Base,
+        .Index = _Constant(A.Offset),
+        .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
+        .IndexScale = 1,
+      };
+    }
+  }
+
+  // Try a (possibly scaled) register index.
+  if (A.AddrSize == 8 && A.Base && A.Index && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize) && SupportsRegIndex) {
+    return A;
+  }
+
   // Fallback on software address calculation
   return (struct AddressMode) {
     .Base = LoadEffectiveAddress(A),
