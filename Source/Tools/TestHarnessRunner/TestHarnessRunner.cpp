@@ -198,13 +198,14 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Load();
 
   auto Args = FEX::ArgLoader::Get();
-  auto Filename = Args[0];
-  auto ConfigFile = Args[1];
 
   if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
     return -1;
   }
+
+  auto Filename = Args[0];
+  auto ConfigFile = Args[1];
 
   if (!FHU::Filesystem::Exists(Filename)) {
     LogMan::Msg::EFmt("File {} does not exist", Filename);
