@@ -1859,21 +1859,19 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? GPRSize : Size;
 
   auto* Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags);
+  auto* Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GPRSize, Op->Flags, {.AllowUpperGarbage = true});
 
-  auto* Result = [&]() -> OrderedNode* {
+  OrderedNode* Result;
+  if (Op->OP == 0x6F7) {
     // SARX
-    if (Op->OP == 0x6F7) {
-      return _Ashr(IR::SizeToOpSize(Size), Src, Shift);
-    }
+    Result = _Ashr(IR::SizeToOpSize(Size), Src, Shift);
+  } else if (Op->OP == 0x5F7) {
     // SHLX
-    if (Op->OP == 0x5F7) {
-      return _Lshl(IR::SizeToOpSize(Size), Src, Shift);
-    }
-
+    Result = _Lshl(IR::SizeToOpSize(Size), Src, Shift);
+  } else {
     // SHRX
-    return _Lshr(IR::SizeToOpSize(Size), Src, Shift);
-  }();
+    Result = _Lshr(IR::SizeToOpSize(Size), Src, Shift);
+  }
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -2523,15 +2521,13 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
-
-    // Now add the addresses together and load the memory
-    OrderedNode* MemoryLocation = _Add(OpSize::i64Bit, Dest, Src);
+    AddressMode Address = {.Base = Dest, .Index = Src, .AddrSize = 8};
 
     ConstantShift = 0;
 
     switch (Action) {
     case BTAction::BTNone: {
-      Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+      Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
       break;
     }
 
@@ -2540,12 +2536,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, MemoryLocation);
+        Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
       } else {
-        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+        Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
         auto Modified = _Andn(OpSize::i64Bit, Value, BitMask);
-        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+        _StoreMemAutoTSO(GPRClass, 1, Address, Modified, 1);
       }
       break;
     }
@@ -2555,12 +2551,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchOr(OpSize::i8Bit, BitMask, MemoryLocation);
+        Value = _AtomicFetchOr(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
       } else {
-        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+        Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
         auto Modified = _Or(OpSize::i64Bit, Value, BitMask);
-        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+        _StoreMemAutoTSO(GPRClass, 1, Address, Modified, 1);
       }
       break;
     }
@@ -2570,12 +2566,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchXor(OpSize::i8Bit, BitMask, MemoryLocation);
+        Value = _AtomicFetchXor(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
       } else {
-        Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+        Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
         auto Modified = _Xor(OpSize::i64Bit, Value, BitMask);
-        _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Modified, 1);
+        _StoreMemAutoTSO(GPRClass, 1, Address, Modified, 1);
       }
       break;
     }
@@ -2973,9 +2969,8 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   OrderedNode* Src = MakeSegmentAddress(X86State::REG_RBX, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   OrderedNode* Offset = LoadGPRRegister(X86State::REG_RAX, 1);
 
-  Src = _Add(OpSize::i64Bit, Src, Offset);
-
-  auto Res = _LoadMemAutoTSO(GPRClass, 1, Src, 1);
+  AddressMode A = {.Base = Src, .Index = Offset, .AddrSize = 8};
+  auto Res = _LoadMemAutoTSO(GPRClass, 1, A, 1);
 
   StoreGPRRegister(X86State::REG_RAX, Res, 1);
 }
@@ -3066,7 +3061,7 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   }
 
   _StoreMemAutoTSO(GPRClass, 2, DestAddress, _Constant(0));
-  _StoreMemAutoTSO(GPRClass, GDTStoreSize, _Add(OpSize::i64Bit, DestAddress, _Constant(2)), _Constant(GDTAddress));
+  _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = 8}, _Constant(GDTAddress));
 }
 
 void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
@@ -4240,6 +4235,90 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(OrderedNode* Segment, uint32_t S
   }
 }
 
+AddressMode OpDispatchBuilder::AddSegmentToAddress(AddressMode A, uint32_t Flags) {
+  auto Segment = GetSegment(Flags);
+  if (Segment) {
+    if (!A.Base) {
+      A.Base = Segment;
+    } else if (!A.Index) {
+      A.Index = Segment;
+    } else {
+      A.Base = _Add(IR::SizeToOpSize(CTX->GetGPRSize()), A.Base, Segment);
+    }
+  }
+
+  return A;
+}
+
+OrderedNode* OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  OrderedNode* Tmp = A.Base;
+
+  if (A.Offset) {
+    OrderedNode* Offset = _Constant(A.Offset);
+    Tmp = Tmp ? _Add(IR::SizeToOpSize(GPRSize), Tmp, Offset) : Offset;
+  }
+
+  if (A.Index) {
+    if (A.IndexScale != 1) {
+      LOGMAN_THROW_AA_FMT((A.IndexScale & (A.IndexScale - 1)) == 0, "power of two");
+      uint32_t Log2 = FEXCore::ilog2(A.IndexScale);
+
+      if (Tmp) {
+        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Tmp, A.Index, ShiftType::LSL, Log2);
+      } else {
+        Tmp = _Lshl(IR::SizeToOpSize(GPRSize), A.Index, _Constant(Log2));
+      }
+    } else {
+      Tmp = Tmp ? _Add(IR::SizeToOpSize(GPRSize), Tmp, A.Index) : A.Index;
+    }
+  }
+
+  // For 64-bit AddrSize can be 32-bit or 64-bit
+  // For 32-bit AddrSize can be 32-bit or 16-bit
+  //
+  // If the AddrSize is not the GPRSize then we need to clear the upper bits.
+  if ((A.AddrSize < GPRSize) && !AllowUpperGarbage && Tmp) {
+    Tmp = _Bfe(IR::SizeToOpSize(GPRSize), A.AddrSize * 8, 0, Tmp);
+  }
+
+  return Tmp ?: _Constant(0);
+}
+
+AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize) {
+  // In the future this also needs to account for LRCPC3.
+  bool SupportsRegIndex = Vector || !AtomicTSO;
+
+  // Try a constant offset. For 64-bit, this maps directly. For 32-bit, this
+  // works only for displacements with magnitude < 16KB, since those bottom
+  // addresses are reserved and therefore wrap around is invalid.
+  //
+  // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
+  if (A.Base && A.Offset && !A.Index && SupportsRegIndex) {
+    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && CTX->GetGPRSize() == 4;
+
+    if ((A.AddrSize == 8) || Const_16K) {
+      return {
+        .Base = A.Base,
+        .Index = _Constant(A.Offset),
+        .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
+        .IndexScale = 1,
+      };
+    }
+  }
+
+  // Try a (possibly scaled) register index.
+  if (A.AddrSize == 8 && A.Base && A.Index && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize) && SupportsRegIndex) {
+    return A;
+  }
+
+  // Fallback on software address calculation
+  return {
+    .Base = LoadEffectiveAddress(A),
+    .Index = InvalidNode,
+  };
+}
+
 OrderedNode* OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op,
                                                       const X86Tables::DecodedOperand& Operand, uint8_t OpSize, uint32_t Flags,
                                                       const LoadSourceOptions& Options) {
@@ -4249,54 +4328,51 @@ OrderedNode* OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, c
 
   auto [Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage] = Options;
 
-  OrderedNode* Src {nullptr};
-  bool LoadableType = false;
   const uint8_t GPRSize = CTX->GetGPRSize();
-  const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
+  bool LoadableType = false;
+
+  AddressMode A {};
+  A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.IsLiteral()) {
-    uint64_t constant = Operand.Data.Literal.Value;
+    A.Offset = Operand.Data.Literal.Value;
     uint64_t width = Operand.Data.Literal.Size * 8;
 
     if (Operand.Data.Literal.Size != 8) {
       // zero extend
-      constant = constant & ((1ULL << width) - 1);
+      A.Offset &= ((1ULL << width) - 1);
     }
-    Src = _Constant(width, constant);
   } else if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
     const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      Src = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      A.Base = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
       // Load the full register size if it is a XMM register source.
-      Src = LoadXMMRegister(gprIndex);
+      A.Base = LoadXMMRegister(gprIndex);
 
       // Now extract the subregister if it was a partial load /smaller/ than SSE size
       // TODO: Instead of doing the VMov implicitly on load, hunt down all use cases that require partial loads and do it after load.
       // We don't have information here to know if the operation needs zero upper bits or can contain data.
       if (!AllowUpperGarbage && OpSize < Core::CPUState::XMM_SSE_REG_SIZE) {
-        Src = _VMov(OpSize, Src);
+        A.Base = _VMov(OpSize, A.Base);
       }
     } else {
-      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0, AllowUpperGarbage);
+      A.Base = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0, AllowUpperGarbage);
     }
   } else if (Operand.IsGPRDirect()) {
-    Src = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
+    A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     LoadableType = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
   } else if (Operand.IsGPRIndirect()) {
-    auto GPR = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
-
-    auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
-
-    Src = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
+    A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
+    A.Offset = Operand.Data.GPRIndirect.Displacement;
 
     LoadableType = true;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
@@ -4304,68 +4380,35 @@ OrderedNode* OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, c
     }
   } else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      Src = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
+      A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
     } else {
       // 32bit this isn't RIP relative but instead absolute
-      Src = _Constant(GPRSize * 8, Operand.Data.RIPLiteral.Value.u);
+      A.Offset = Operand.Data.RIPLiteral.Value.u;
     }
 
     LoadableType = true;
   } else if (Operand.IsSIB()) {
     const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
-    OrderedNode* Tmp {};
 
-    if (!IsVSIB && Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-      auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-      if (Operand.Data.SIB.Scale == 1) {
-        Tmp = _Add(IR::SizeToOpSize(GPRSize), Base, Index);
-      } else {
-        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
-      }
-    } else {
-      // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
-      //       since the index in this case is a vector. So, we can't just apply the scale
-      //       to it, since this needs to be applied to each element in the index register
-      //       after said element has been sign extended. So, we pass this through for the
-      //       instruction implementation to handle.
-      //
-      //       What we do handle though, is the applying the displacement value to
-      //       the base register (if a base register is provided), since this is a
-      //       part of the address calculation that can be done ahead of time.
-      if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && !IsVSIB) {
-        Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-
-        if (Operand.Data.SIB.Scale != 1) {
-          auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-          Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
-        }
-      }
-
-      if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-        auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-
-        if (Tmp != nullptr) {
-          Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
-        } else {
-          Tmp = GPR;
-        }
-      }
+    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      A.Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
     }
 
-    if (Operand.Data.SIB.Offset) {
-      if (Tmp != nullptr) {
-        Src = _Add(IR::SizeToOpSize(GPRSize), Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
-      } else {
-        Src = _Constant(GPRSize * 8, Operand.Data.SIB.Offset);
-      }
-    } else {
-      if (Tmp != nullptr) {
-        Src = Tmp;
-      } else {
-        Src = _Constant(GPRSize * 8, 0);
-      }
+    // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
+    //       since the index in this case is a vector. So, we can't just apply the scale
+    //       to it, since this needs to be applied to each element in the index register
+    //       after said element has been sign extended. So, we pass this through for the
+    //       instruction implementation to handle.
+    //
+    //       What we do handle though, is the applying the displacement value to
+    //       the base register (if a base register is provided), since this is a
+    //       part of the address calculation that can be done ahead of time.
+    if (!IsVSIB && Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+      A.Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
+      A.IndexScale = Operand.Data.SIB.Scale;
     }
+
+    A.Offset = Operand.Data.SIB.Offset;
 
     if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP || Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP) &&
         AccessType == MemoryAccessType::DEFAULT) {
@@ -4377,24 +4420,15 @@ OrderedNode* OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, c
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
 
-  if (LoadableType && AddrSize < GPRSize && (LoadData || !AllowUpperGarbage)) {
-    // For 64-bit AddrSize can be 32-bit or 64-bit
-    // For 32-bit AddrSize can be 32-bit or 16-bit
-    //
-    // If the AddrSize is not the GPRSize then we need to clear the upper bits.
-    Src = _Bfe(IR::SizeToOpSize(GPRSize), AddrSize * 8, 0, Src);
-  }
-
   if ((LoadableType && LoadData) || ForceLoad) {
-    Src = AppendSegmentOffset(Src, Flags);
 
-    if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
-      Src = _LoadMem(Class, OpSize, Src, Align == -1 ? OpSize : Align);
-    } else {
-      Src = _LoadMemAutoTSO(Class, OpSize, Src, Align == -1 ? OpSize : Align);
-    }
+    A = AddSegmentToAddress(A, Flags);
+
+    bool ForceNonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
+    return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align, ForceNonTSO);
+  } else {
+    return LoadEffectiveAddress(A, AllowUpperGarbage);
   }
-  return Src;
 }
 
 OrderedNode* OpDispatchBuilder::GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset) {
@@ -4462,13 +4496,14 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
   // 8Bit and 16bit destination types store their result without effecting the upper bits
   // 32bit ops ZEXT the result to 64bit
-  OrderedNode* MemStoreDst {nullptr};
   bool MemStore = false;
   const uint8_t GPRSize = CTX->GetGPRSize();
-  const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
+
+  AddressMode A {};
+  A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.IsLiteral()) {
-    MemStoreDst = _Constant(Operand.Data.Literal.Size * 8, Operand.Data.Literal.Value);
+    A.Offset = Operand.Data.Literal.Value;
     MemStore = true; // Literals are ONLY hardcoded memory destinations
   } else if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
@@ -4517,80 +4552,39 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       }
     }
   } else if (Operand.IsGPRDirect()) {
-    MemStoreDst = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
+    A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     MemStore = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
   } else if (Operand.IsGPRIndirect()) {
-    auto GPR = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
-    auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
+    A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
+    A.Offset = Operand.Data.GPRIndirect.Displacement;
 
-    MemStoreDst = _Add(IR::SizeToOpSize(GPRSize), GPR, Constant);
     MemStore = true;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
   } else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      MemStoreDst = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
+      A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
     } else {
       // 32bit this isn't RIP relative but instead absolute
-      MemStoreDst = _Constant(GPRSize * 8, Operand.Data.RIPLiteral.Value.u);
+      A.Offset = Operand.Data.RIPLiteral.Value.u;
     }
     MemStore = true;
   } else if (Operand.IsSIB()) {
-    OrderedNode* Tmp {};
-
-    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-      auto Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-      if (Operand.Data.SIB.Scale == 1) {
-        Tmp = _Add(IR::SizeToOpSize(GPRSize), Base, Index);
-      } else {
-        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Base, Index, ShiftType::LSL, FEXCore::ilog2(Operand.Data.SIB.Scale));
-      }
-    } else {
-      if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-        Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
-
-        if (Operand.Data.SIB.Scale != 1) {
-          auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
-          Tmp = _Mul(IR::SizeToOpSize(GPRSize), Tmp, Constant);
-        }
-      }
-
-      if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-        auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
-
-        if (Tmp != nullptr) {
-          Tmp = _Add(IR::SizeToOpSize(GPRSize), Tmp, GPR);
-        } else {
-          Tmp = GPR;
-        }
-      }
+    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      A.Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
     }
 
-    if (Operand.Data.SIB.Offset) {
-      if (Tmp != nullptr) {
-        MemStoreDst = _Add(IR::SizeToOpSize(GPRSize), Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
-      } else {
-        MemStoreDst = _Constant(GPRSize * 8, Operand.Data.SIB.Offset);
-      }
-    } else {
-      if (Tmp != nullptr) {
-        MemStoreDst = Tmp;
-      } else {
-        MemStoreDst = _Constant(GPRSize * 8, 0);
-      }
+    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+      A.Index = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
     }
 
-    if (AddrSize < GPRSize) {
-      // If AddrSize == 16 then we need to clear the upper bits
-      // GPRSize will be 32 in this case
-      MemStoreDst = _Bfe(IR::SizeToOpSize(std::max<uint8_t>(4u, AddrSize)), AddrSize * 8, 0, MemStoreDst);
-    }
+    A.IndexScale = Operand.Data.SIB.Scale;
+    A.Offset = Operand.Data.SIB.Offset;
 
     if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP || Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP) &&
         AccessType == MemoryAccessType::DEFAULT) {
@@ -4601,20 +4595,18 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
 
   if (MemStore) {
-    MemStoreDst = AppendSegmentOffset(MemStoreDst, Op->Flags);
+    A = AddSegmentToAddress(A, Op->Flags);
 
     if (OpSize == 10) {
+      OrderedNode* MemStoreDst = LoadEffectiveAddress(A);
+
       // For X87 extended doubles, split before storing
       _StoreMem(FPRClass, 8, MemStoreDst, Src, Align);
       auto Upper = _VExtractToGPR(16, 8, Src, 1);
-      auto DestAddr = _Add(OpSize::i64Bit, MemStoreDst, _Constant(8));
-      _StoreMem(GPRClass, 2, DestAddr, Upper, std::min<uint8_t>(Align, 8));
+      _StoreMem(GPRClass, 2, Upper, MemStoreDst, _Constant(8), std::min<uint8_t>(Align, 8), MEM_OFFSET_SXTX, 1);
     } else {
-      if (AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM) {
-        _StoreMem(Class, OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
-      } else {
-        _StoreMemAutoTSO(Class, OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
-      }
+      bool ForceNonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
+      _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align, ForceNonTSO);
     }
   }
 }

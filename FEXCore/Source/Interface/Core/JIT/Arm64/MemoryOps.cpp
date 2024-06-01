@@ -671,11 +671,17 @@ DEF_OP(LoadMemTSO) {
 
   const auto MemReg = GetReg(Op->Addr.ID());
 
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
+    LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
+    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MEM_OFFSET_SXTX, "unexpected offset type");
+  }
+
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      (void)IsInlineConstant(Op->Offset, &Offset);
+      LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
     }
 
     if (OpSize == 1) {
@@ -1085,11 +1091,17 @@ DEF_OP(StoreMemTSO) {
 
   const auto MemReg = GetReg(Op->Addr.ID());
 
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
+    LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
+    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MEM_OFFSET_SXTX, "unexpected offset type");
+  }
+
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      (void)IsInlineConstant(Op->Offset, &Offset);
+      LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
     }
 
     if (OpSize == 1) {

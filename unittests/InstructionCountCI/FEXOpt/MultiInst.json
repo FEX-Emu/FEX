@@ -1024,7 +1024,7 @@
       ]
     },
     "Sekiro spill block": {
-      "ExpectedInstructionCount": 154,
+      "ExpectedInstructionCount": 148,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1285,25 +1285,19 @@
         "mov x8, x26",
         "ldr x29, [x26]",
         "add x8, x26, #0x8 (8)",
-        "ldr x19, [x26, #8]",
-        "add x20, x8, #0x8 (8)",
-        "mov x21, x8",
-        "mov x8, x20",
-        "ldr x17, [x21, #8]",
-        "add x8, x20, #0x8 (8)",
-        "ldr x16, [x20, #8]",
-        "add x20, x8, #0x8 (8)",
-        "mov x21, x8",
-        "mov x8, x20",
-        "ldr x11, [x21, #8]",
-        "add x8, x20, #0x8 (8)",
-        "ldr x10, [x20, #8]",
-        "add x20, x8, #0x8 (8)",
-        "mov x21, x8",
-        "mov x8, x20",
-        "ldr x9, [x21, #8]",
-        "add x8, x20, #0x8 (8)",
-        "ldr x7, [x20, #8]",
+        "ldr x19, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x17, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x16, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x11, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x10, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x9, [x8]",
+        "add x8, x8, #0x8 (8)",
+        "ldr x7, [x8]",
         "add x8, x8, #0x8 (8)"
       ]
     }
