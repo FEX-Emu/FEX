@@ -1461,17 +1461,15 @@
       ]
     },
     "shld eax, ebx, 1": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 10,
       "Comment": "0x0f 0xac",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w21, w4",
-        "extr w26, w21, w20, #31",
+        "extr w26, w4, w7, #31",
         "tst w26, w26",
-        "ubfx x20, x21, #31, #1",
-        "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w21, w26, w21",
+        "ubfx x20, x4, #31, #1",
+        "mrs x21, nzcv",
+        "orr w20, w21, w20, lsl #29",
+        "eor w21, w26, w4",
         "ubfx x21, x21, #31, #1",
         "orr w20, w20, w21, lsl #28",
         "msr nzcv, x20",
@@ -1479,14 +1477,12 @@
       ]
     },
     "shld eax, ebx, 15": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xac",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w21, w4",
-        "extr w26, w21, w20, #17",
+        "extr w26, w4, w7, #17",
         "tst w26, w26",
-        "ubfx x20, x21, #17, #1",
+        "ubfx x20, x4, #17, #1",
         "mrs x21, nzcv",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20",
@@ -1494,14 +1490,12 @@
       ]
     },
     "shld eax, ebx, 16": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xac",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w21, w4",
-        "extr w26, w21, w20, #16",
+        "extr w26, w4, w7, #16",
         "tst w26, w26",
-        "ubfx x20, x21, #16, #1",
+        "ubfx x20, x4, #16, #1",
         "mrs x21, nzcv",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20",
@@ -1509,14 +1503,12 @@
       ]
     },
     "shld eax, ebx, 31": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xac",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "mov w21, w4",
-        "extr w26, w21, w20, #1",
+        "extr w26, w4, w7, #1",
         "tst w26, w26",
-        "ubfx x20, x21, #1, #1",
+        "ubfx x20, x4, #1, #1",
         "mrs x21, nzcv",
         "orr w20, w21, w20, lsl #29",
         "msr nzcv, x20",

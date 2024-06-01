@@ -1578,11 +1578,11 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
   uint64_t Shift = LoadConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
+
+  OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = Size >= 32});
+  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
   if (Shift != 0) {
     OrderedNode* Res {};
