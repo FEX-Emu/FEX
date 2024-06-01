@@ -259,38 +259,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
   fextl::vector<const char*> EnvpArgs {};
   char* const* EnvpPtr = envp;
-  bool AlreadyCopiedEnvp {};
-
-  auto AppendEnvpVariables = [&EnvpArgs, &AlreadyCopiedEnvp, envp, &EnvpPtr]() {
-    if (AlreadyCopiedEnvp) {
-      ///< If the environment variables were already copied then early return.
-      return;
-    }
-
-    if (envp) {
-      auto OldEnvp = envp;
-      while (*OldEnvp) {
-        ///< Copy the pointers to our own vector of environment variables.
-        EnvpArgs.emplace_back(*OldEnvp);
-        ++OldEnvp;
-      }
-    }
-
-    ///< Set the EnvpPtr to our copy.
-    EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
-
-    AlreadyCopiedEnvp = true;
-  };
-
-  auto AppendNullptrEnvp = [&EnvpArgs, &AlreadyCopiedEnvp]() {
-    if (!AlreadyCopiedEnvp) {
-      ///< If envp wasn't copied then this is unnecessary.
-      return;
-    }
-
-    // Emplace nullptr at the end to stop
-    EnvpArgs.emplace_back(nullptr);
-  };
+  bool FDExecCopy {};
 
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
@@ -309,9 +278,53 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   // Just execve it and let the kernel handle the process
   const bool IsOtherELF = Type == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF;
 
-  if (IsBinfmtCompatible || IsOtherELF) {
-    AppendNullptrEnvp();
+  // Need to copy over envp variables if we are appending data.
+  // Only situation in which an envp copy needs to occur is if we are doing an FD execveat and binfmt_misc can't handle it.
+  // TODO: Additional future tasks that require envp copying in the future:
+  // - seccomp inheritance
+  // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
+  const bool NeedsEnvpCopy = IsFDExec && !(IsBinfmtCompatible || IsOtherELF);
 
+  if (NeedsEnvpCopy) {
+    if (envp) {
+      auto OldEnvp = envp;
+      while (*OldEnvp) {
+        ///< Copy the pointers to our own vector of environment variables.
+        EnvpArgs.emplace_back(*OldEnvp);
+        ++OldEnvp;
+      }
+    }
+
+    if (IsFDExec) {
+      int Flags = fcntl(Args.dirfd, F_GETFD);
+      if (Flags & FD_CLOEXEC) {
+        // FEX needs the FD to live past execve when binfmt_misc isn't used,
+        // so duplicate the FD if FD_CLOEXEC is set
+        Args.dirfd = dup(Args.dirfd);
+        FDExecCopy = true;
+      }
+
+      // Remove AT_EMPTY_PATH flag now.
+      // We need to emulate this flag with `FEX_EXECVEFD` environment variable.
+      // If we passed this flag through to the real `execveat` then the target FD wouldn't get emulated by FEX.
+      Args.flags &= ~AT_EMPTY_PATH;
+
+      // Create the environment variable to pass the FD to our FEX.
+      // Needs to stick around until execveat completes.
+      FDExecEnv = fextl::fmt::format("FEX_EXECVEFD={}", Args.dirfd);
+
+      // Insert the FD for FEX to track.
+      EnvpArgs.emplace_back(FDExecEnv.data());
+    }
+
+    // Emplace nullptr at the end to stop
+    EnvpArgs.emplace_back(nullptr);
+
+    ///< Set the EnvpPtr to our copy.
+    EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
+  }
+
+  if (IsBinfmtCompatible || IsOtherELF) {
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
     SYSCALL_ERRNO();
   }
@@ -349,34 +362,6 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
     // Emplace nullptr at the end to stop
     ExecveArgs.emplace_back(nullptr);
   }
-
-  bool FDExecCopy {};
-  if (IsFDExec) {
-    AppendEnvpVariables();
-
-    int Flags = fcntl(Args.dirfd, F_GETFD);
-    if (Flags & FD_CLOEXEC) {
-      // FEX needs the FD to live past execve when binfmt_misc isn't used,
-      // so duplicate the FD if FD_CLOEXEC is set
-      Args.dirfd = dup(Args.dirfd);
-      FDExecCopy = true;
-    }
-
-    // Remove AT_EMPTY_PATH flag now.
-    // We need to emulate this flag with `FEX_EXECVEFD` environment variable.
-    // If we passed this flag through to the real `execveat` then the target FD wouldn't get emulated by FEX.
-    Args.flags &= ~AT_EMPTY_PATH;
-
-    // Create the environment variable to pass the FD to our FEX.
-    // Needs to stick around until execveat completes.
-    FDExecEnv = fextl::fmt::format("FEX_EXECVEFD={}", Args.dirfd);
-
-    // Insert the FD for FEX to track.
-    EnvpArgs.emplace_back(FDExecEnv.data());
-  }
-
-  // Emplace nullptr at the end to stop
-  AppendNullptrEnvp();
 
   const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
   Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
