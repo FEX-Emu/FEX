@@ -66,7 +66,7 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool InlineConstants) {
+void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
@@ -79,7 +79,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool Inli
     }
 
     InsertPass(CreateDeadStoreElimination());
-    InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9, &ctx->CPUID));
+    InsertPass(CreateConstProp(ctx->HostFeatures.SupportsTSOImm9, &ctx->CPUID));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
 }

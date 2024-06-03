@@ -75,14 +75,11 @@ static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  explicit ConstProp(bool DoInlineConstants, bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID)
-    : InlineConstants(DoInlineConstants)
-    , SupportsTSOImm9 {SupportsTSOImm9}
+  explicit ConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID)
+    : SupportsTSOImm9 {SupportsTSOImm9}
     , CPUID {CPUID} {}
 
   void Run(IREmitter* IREmit) override;
-
-  bool InlineConstants;
 
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
@@ -848,12 +845,10 @@ void ConstProp::Run(IREmitter* IREmit) {
     ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
   }
 
-  if (InlineConstants) {
-    ConstantInlining(IREmit, CurrentIR);
-  }
+  ConstantInlining(IREmit, CurrentIR);
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID) {
-  return fextl::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9, CPUID);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<ConstProp>(SupportsTSOImm9, CPUID);
 }
 } // namespace FEXCore::IR

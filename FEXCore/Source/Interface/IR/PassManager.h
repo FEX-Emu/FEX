@@ -45,7 +45,7 @@ protected:
 class PassManager final {
   friend class ConstProp;
 public:
-  void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool InlineConstants);
+  void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx);
   void AddDefaultValidationPasses();
   Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
     auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
