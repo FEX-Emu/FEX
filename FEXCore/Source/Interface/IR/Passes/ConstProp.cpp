@@ -592,6 +592,58 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
 
+  case OP_LDIV:
+  case OP_LREM: {
+    auto Op = IROp->C<IR::IROp_LDiv>();
+    auto UpperIROp = IREmit->GetOpHeader(Op->Upper);
+
+    // Check upper Op to see if it came from a sign-extension
+    if (UpperIROp->Op != OP_SBFE) {
+      break;
+    }
+
+    auto Sbfe = UpperIROp->C<IR::IROp_Sbfe>();
+    if (Sbfe->Width != 1 || Sbfe->lsb != 63 || Sbfe->Header.Args[0] != Op->Lower) {
+      break;
+    }
+
+    // If it does then it we only need a 64bit SDIV
+    IREmit->SetWriteCursor(CodeNode);
+    Ref Lower = CurrentIR.GetNode(Op->Lower);
+    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+    Ref SDivOp {};
+    if (IROp->Op == OP_LDIV) {
+      SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
+    } else {
+      SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
+    }
+    IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
+    break;
+  }
+
+  case OP_LUDIV:
+  case OP_LUREM: {
+    auto Op = IROp->C<IR::IROp_LUDiv>();
+    // Check upper Op to see if it came from a zeroing op
+    // If it does then it we only need a 64bit UDIV
+    uint64_t Value;
+    if (!IREmit->IsValueConstant(Op->Upper, &Value) || Value != 0) {
+      break;
+    }
+
+    IREmit->SetWriteCursor(CodeNode);
+    Ref Lower = CurrentIR.GetNode(Op->Lower);
+    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+    Ref UDivOp {};
+    if (IROp->Op == OP_LUDIV) {
+      UDivOp = IREmit->_UDiv(OpSize::i64Bit, Lower, Divisor);
+    } else {
+      UDivOp = IREmit->_URem(OpSize::i64Bit, Lower, Divisor);
+    }
+    IREmit->ReplaceAllUsesWith(CodeNode, UDivOp);
+    break;
+  }
+
   default: break;
   }
 }

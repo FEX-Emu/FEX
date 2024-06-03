@@ -21,7 +21,6 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool Supp
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination();
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass();
-fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
 namespace Validation {
   fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();

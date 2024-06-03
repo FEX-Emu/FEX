@@ -141,7 +141,6 @@ set (SRCS
   Interface/IR/Passes/IRDumperPass.cpp
   Interface/IR/Passes/IRValidation.cpp
   Interface/IR/Passes/RAValidation.cpp
-  Interface/IR/Passes/LongDivideRemovalPass.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
   Interface/IR/Passes/DeadStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
