@@ -245,7 +245,14 @@ void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, ui
 
 // Change flags of mappings in a range and split the mappings if needed
 void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
-  const auto Top = Base + Length;
+  // This needs to handle multiple split-merge strategies:
+  // 1) Exact overlap - No Split, no Merge. Only protection tracking changes.
+  // 2) Exact base overlap - Single insert, can never fail.
+  // 3) Insert in middle of VMA range. 1 or 2 inserts, can never fail.
+  // 4) Partial overlapping merge. The most interesting strategy.
+  //    - More information below about this one.
+
+  auto Top = Base + Length;
 
   // find the first Mapping at or after the Range ends, or ::end()
   // Top is the address after the end
@@ -256,69 +263,203 @@ void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length,
     MappingIter--;
 
     auto Current = &MappingIter->second;
-    const auto MapBase = Current->Base;
-    const auto MapTop = MapBase + Current->Length;
-    const auto MapFlags = Current->Flags;
-    const auto MapProt = Current->Prot;
+    const auto CurrentBase = Current->Base;
+    const auto CurrentTop = CurrentBase + Current->Length;
+    const auto CurrentFlags = Current->Flags;
+    const auto CurrentProt = Current->Prot;
 
-    const auto OffsetDiff = Current->Offset - MapBase;
+    ///< Resource mapping base.
+    const auto OffsetDiff = Current->Offset - CurrentBase;
 
-    if (MapTop <= Base) {
-      // Mapping ends before the Range start, exit
+    if (CurrentTop <= Base) {
+      // Mapping is below what we care about
+      // [CurrentBase === CurrentTop)
+      //                            [Base === Top)
       break;
-    } else if (MapProt.All == NewProt.All) {
-      // Mapping already has the needed prots
-      continue;
-    } else {
-      const bool HasFirstPart = MapBase < Base;
-      const bool HasTrailingPart = MapTop > Top;
+    } else if (CurrentBase == Base && CurrentTop == Top) {
+      // Merge strategy 1)
+      // Exact encompassing, quite common.
+      // [CurrentBase ======================== CurrentTop)
+      // [Base ====================================== Top)
+      Current->Prot = NewProt;
+      break;
+    } else if (CurrentBase == Base && CurrentTop > Top) {
+      // Merge strategy 2)
+      // [CurrentBase ======================== CurrentTop)
+      // [Base =============== Top)***********************
+      // VMA fully encompasses with matching base.
+      // VMA needs to split.
 
-      if (HasFirstPart) {
-        // Mapping starts before range, split first part
+      // Steps:
+      // 1) Set new permissions for this VMA
+      // 2) Trim VMA->Length to match [CurrentBase, CurrentBase+Length)
+      // 2) Insert new node at [CurrentBase+Length, CurrentTop)
 
-        // Trim end of original mapping
-        Current->Length = Base - MapBase;
+      // 1) Set new permissions
+      Current->Prot = NewProt;
 
+      // Trim end of original mapping
+      // New length for Current VMA is Top - CurrentBase
+      Current->Length = Top - CurrentBase;
+
+      // Make new VMA with original protections, insert for remaining length
+      auto NewOffset = OffsetDiff + Top;
+      auto NewLength = CurrentTop - Top;
+
+      auto [Iter, Inserted] = VMAs.emplace(Top, VMAEntry {.Resource = Current->Resource,
+                                                          .ResourcePrevVMA = Current,
+                                                          .ResourceNextVMA = Current->ResourceNextVMA,
+                                                          .Base = Top,
+                                                          .Offset = NewOffset,
+                                                          .Length = NewLength,
+                                                          .Flags = CurrentFlags,
+                                                          .Prot = CurrentProt});
+
+      if (!Inserted) [[unlikely]] {
+        // We can't recover from this.
+        // Shouldn't ever happen.
+        ERROR_AND_DIE_FMT("{}:{}: VMA tracking error", __func__, __LINE__);
+      }
+
+      if (Current->Resource) {
+        ListInsertAfter(Current, &Iter->second);
+      }
+      break;
+    } else if (CurrentBase < Base && CurrentTop >= Top) {
+      // Merge strategy 3)
+      // VMA fully encompasses, VMA needs to split.
+      // Explicitly VMA base doesn't match current base.
+      // [CurrentBase ======================== CurrentTop)
+      // ***************[Base =============== Top)********
+
+      // Steps:
+      // 1) Split the CurrentVMA
+      // 2) Set new length of CurrentVMA
+      // 3) If there is tail length still, Insert another new VMA with CurrentVMA data.
+
+      const bool HasTailData = CurrentTop > Top;
+
+      // Trim end of original mapping
+      Current->Length = Base - CurrentBase;
+      {
         // Make new VMA with new flags, insert for length of range
         auto NewOffset = OffsetDiff + Base;
         auto NewLength = Top - Base;
 
-        auto [Iter, Inserted] =
-          VMAs.emplace(Base, VMAEntry {Current->Resource, Current, Current->ResourceNextVMA, Base, NewOffset, NewLength, MapFlags, NewProt});
-        LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
-        auto RestOfMapping = &Iter->second;
+        auto [Iter, Inserted] = VMAs.emplace(Base, VMAEntry {.Resource = Current->Resource,
+                                                             .ResourcePrevVMA = Current,
+                                                             .ResourceNextVMA = Current->ResourceNextVMA,
+                                                             .Base = Base,
+                                                             .Offset = NewOffset,
+                                                             .Length = NewLength,
+                                                             .Flags = CurrentFlags,
+                                                             .Prot = NewProt});
 
-        if (Current->Resource) {
-          ListInsertAfter(Current, RestOfMapping);
+        if (!Inserted) [[unlikely]] {
+          // We can't recover from this.
+          // Shouldn't ever happen.
+          ERROR_AND_DIE_FMT("{}:{}: VMA tracking error", __func__, __LINE__);
         }
 
-        Current = RestOfMapping;
-      } else {
-        // Mapping starts in range, just change Prot
-        Current->Prot = NewProt;
+        if (Current->Resource) {
+          ListInsertAfter(Current, &Iter->second);
+        }
       }
 
-      if (HasTrailingPart) {
-        // ends after Range, split last part and insert with original flags
+      if (HasTailData) {
+        // We now need to insert another VMA entry afterwards to ensure consistency.
+        // This will have the original VMA's protection flags.
 
-        // Trim the mapping (possibly already trimmed)
-        Current->Length = Top - Current->Base;
-
-        // prot has already been changed
-
-        // Make new VMA with original flags, insert for remaining length
+        // Make new VMA with new flags, insert for length of range
         auto NewOffset = OffsetDiff + Top;
-        auto NewLength = MapTop - Top;
+        auto NewLength = CurrentTop - Top;
 
-        auto [Iter, Inserted] =
-          VMAs.emplace(Top, VMAEntry {Current->Resource, Current, Current->ResourceNextVMA, Top, NewOffset, NewLength, MapFlags, MapProt});
-        LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
-        auto TrailingMapping = &Iter->second;
+        auto [Iter, Inserted] = VMAs.emplace(Top, VMAEntry {.Resource = Current->Resource,
+                                                            .ResourcePrevVMA = Current,
+                                                            .ResourceNextVMA = Current->ResourceNextVMA,
+                                                            .Base = Top,
+                                                            .Offset = NewOffset,
+                                                            .Length = NewLength,
+                                                            .Flags = CurrentFlags,
+                                                            .Prot = CurrentProt});
+
+        if (!Inserted) {
+          // We can't recover from this.
+          // Shouldn't ever happen.
+          ERROR_AND_DIE_FMT("{}:{}: VMA tracking error", __func__, __LINE__);
+        }
 
         if (Current->Resource) {
-          ListInsertAfter(Current, TrailingMapping);
+          ListInsertAfter(Current, &Iter->second);
         }
       }
+      break;
+    } else if (CurrentBase > Base && CurrentTop >= Top) {
+      // Merge strategy 4)
+      // CurrentBase range doesn't fully overlap the starting range but does overlap the tail.
+      // This is the most confusing strategy as it requires splitting the protect range itself.
+      //
+      // if the VMA has tail data after the protection range we must first deal with that:
+      // 1) Split the tail data in to new VMA range with original protections. Must not fail.
+      // 2) Adjust the overlapping VMA protections to the new protections and the truncated length
+      // 3) Truncate the mprotecting length and top to be that untouched range. Next loop will continue inserting.
+      // [ Incoming Ranges ]
+      // CurrentVMA:                            [CurrentBase ====== CurrentTop)
+      // CurrentMProtectRange: [Base =============== Top)**********************
+      // [ Modified Ranges ]
+      // New Tail Range:                                [TailBase === Tail Top)
+      // CurrentVMA Modified Range:             [=======)
+      // Remaining Tracking:   [Base ==== NewTop)
+      //
+      // Next loop iterations will decompose the remaining mprotects in to more merge strategies.
+
+      // Steps:
+      // 1) Split VMA if Top != CurrentTop
+      // 2) Change [CurrentBase, Top) protections
+      // 3) Change CurrentVMA length
+      // 4) Adjust searching length for [Base, CurrentBase)
+      const bool HasTailData = CurrentTop > Top;
+
+      if (HasTailData) {
+        // We now need to insert another VMA entry afterwards to ensure consistency.
+        // This will have the original VMA's protection flags.
+
+        // Make new VMA with new flags, insert for length of range
+        auto NewOffset = OffsetDiff + CurrentBase;
+        auto NewLength = CurrentTop - Top;
+
+        auto [Iter, Inserted] = VMAs.emplace(Top, VMAEntry {.Resource = Current->Resource,
+                                                            .ResourcePrevVMA = Current,
+                                                            .ResourceNextVMA = Current->ResourceNextVMA,
+                                                            .Base = Top,
+                                                            .Offset = NewOffset,
+                                                            .Length = NewLength,
+                                                            .Flags = CurrentFlags,
+                                                            .Prot = CurrentProt});
+
+        if (!Inserted) {
+          // We can't recover from this.
+          // Shouldn't ever happen.
+          ERROR_AND_DIE_FMT("{}:{}: VMA tracking error", __func__, __LINE__);
+        }
+
+        if (Current->Resource) {
+          ListInsertAfter(Current, &Iter->second);
+        }
+      }
+
+      // Change CurrentVMA's protections
+      Current->Prot = NewProt;
+
+      // Change CurrentVMA's length
+      Current->Length = Top - CurrentBase;
+
+      // Adjust the protection length we're searching for.
+      // Next loop will pick up the next check.
+      Length = CurrentBase - Base;
+      Top = Base + Length;
+    } else {
+      ERROR_AND_DIE_FMT("Unexpected {} Merge strategy! [0x{:x}, 0x{:x}) Versus [0x{:x}, 0x{:x})\n", __func__, CurrentBase, CurrentTop, Base, Top);
     }
   }
 }
