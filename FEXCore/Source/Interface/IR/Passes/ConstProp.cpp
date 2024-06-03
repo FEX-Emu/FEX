@@ -2,7 +2,7 @@
 /*
 $info$
 tags: ir|opts
-desc: ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
+desc: ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
 $end_info$
 */
 
@@ -91,7 +91,6 @@ private:
     IR::NodeID NodeID;
   };
   fextl::unordered_map<uint64_t, ConstPoolData> ConstPool;
-  fextl::map<Ref, uint64_t> AddressgenConsts;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.
   fextl::robin_map<uint64_t, Ref> InlineConstantGen;
@@ -137,37 +136,11 @@ private:
   }
 };
 
-// Constants are pooled per block. Similarly for LoadMem / StoreMem, if imms are
-// close by, use address gen to generate the values instead of using a new imm.
+// Constants are pooled per block.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
-        size_t AddrIndex = 0;
-        size_t OffsetIndex = 0;
-
-        if (IROp->Op == OP_LOADMEM) {
-          AddrIndex = IR::IROp_LoadMem::Addr_Index;
-          OffsetIndex = IR::IROp_LoadMem::Offset_Index;
-        } else {
-          AddrIndex = IR::IROp_StoreMem::Addr_Index;
-          OffsetIndex = IR::IROp_StoreMem::Offset_Index;
-        }
-        uint64_t Addr;
-
-        if (IREmit->IsValueConstant(IROp->Args[AddrIndex], &Addr) && IROp->Args[OffsetIndex].IsInvalid()) {
-          for (auto& Const : AddressgenConsts) {
-            if ((Addr - Const.second) < 65536) {
-              IREmit->ReplaceNodeArgument(CodeNode, AddrIndex, Const.first);
-              IREmit->ReplaceNodeArgument(CodeNode, OffsetIndex, IREmit->_Constant(Addr - Const.second));
-              goto doneOp;
-            }
-          }
-
-          AddressgenConsts[IREmit->UnwrapNode(IROp->Args[AddrIndex])] = Addr;
-        }
-doneOp:;
-      } else if (IROp->Op == OP_CONSTANT) {
+      if (IROp->Op == OP_CONSTANT) {
         auto Op = IROp->C<IR::IROp_Constant>();
         const auto NewNodeID = CurrentIR.GetID(CodeNode);
 
@@ -192,10 +165,7 @@ doneOp:;
           };
         }
       }
-
-      IREmit->SetWriteCursor(CodeNode);
     }
-    AddressgenConsts.clear();
     ConstPool.clear();
   }
 }
