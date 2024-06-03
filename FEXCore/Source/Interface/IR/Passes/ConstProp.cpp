@@ -237,28 +237,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-  case OP_ORLSHL: {
-    auto Op = IROp->CW<IR::IROp_Orlshl>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 | (Constant2 << Op->BitShift);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
-  case OP_ORLSHR: {
-    auto Op = IROp->CW<IR::IROp_Orlshr>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 | (Constant2 >> Op->BitShift);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
   case OP_XOR: {
     uint64_t Constant1 {};
     uint64_t Constant2 {};
