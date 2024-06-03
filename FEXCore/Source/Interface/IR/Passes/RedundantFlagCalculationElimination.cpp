@@ -314,61 +314,42 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 // General purpose dead code elimination. Returns whether flag handling should
 // be skipped (because it was removed or could not possibly affect flags).
 bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp) {
-  bool HasSideEffects = IR::HasSideEffects(IROp->Op);
+  // Can't remove anything used or with side effects.
+  if (CodeNode->GetUses() > 0 || IR::HasSideEffects(IROp->Op)) {
+    return false;
+  }
 
   switch (IROp->Op) {
-  case OP_SYSCALL:
-  case OP_INLINESYSCALL: {
-    FEXCore::IR::SyscallFlags Flags {};
-    if (IROp->Op == OP_SYSCALL) {
-      auto Op = IROp->C<IR::IROp_Syscall>();
-      Flags = Op->Flags;
-    } else {
-      auto Op = IROp->C<IR::IROp_InlineSyscall>();
-      Flags = Op->Flags;
-    }
-
-    if ((Flags & FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) == FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) {
-      HasSideEffects = false;
+  case OP_SYSCALL: {
+    auto Op = IROp->C<IR::IROp_Syscall>();
+    if ((Op->Flags & IR::SyscallFlags::NOSIDEEFFECTS) != IR::SyscallFlags::NOSIDEEFFECTS) {
+      return false;
     }
 
     break;
   }
-  case OP_ATOMICFETCHADD:
-  case OP_ATOMICFETCHSUB:
-  case OP_ATOMICFETCHAND:
-  case OP_ATOMICFETCHCLR:
-  case OP_ATOMICFETCHOR:
-  case OP_ATOMICFETCHXOR:
-  case OP_ATOMICFETCHNEG: {
-    // If the result of the atomic fetch is completely unused, convert it to a non-fetching atomic operation.
-    if (CodeNode->GetUses() == 0) {
-      switch (IROp->Op) {
-      case OP_ATOMICFETCHADD: IROp->Op = OP_ATOMICADD; break;
-      case OP_ATOMICFETCHSUB: IROp->Op = OP_ATOMICSUB; break;
-      case OP_ATOMICFETCHAND: IROp->Op = OP_ATOMICAND; break;
-      case OP_ATOMICFETCHCLR: IROp->Op = OP_ATOMICCLR; break;
-      case OP_ATOMICFETCHOR: IROp->Op = OP_ATOMICOR; break;
-      case OP_ATOMICFETCHXOR: IROp->Op = OP_ATOMICXOR; break;
-      case OP_ATOMICFETCHNEG: IROp->Op = OP_ATOMICNEG; break;
-      default: FEX_UNREACHABLE;
-      }
+  case OP_INLINESYSCALL: {
+    auto Op = IROp->C<IR::IROp_Syscall>();
+    if ((Op->Flags & IR::SyscallFlags::NOSIDEEFFECTS) != IR::SyscallFlags::NOSIDEEFFECTS) {
+      return false;
     }
-    return true;
+
+    break;
   }
+
+  // If the result of the atomic fetch is completely unused, convert it to a non-fetching atomic operation.
+  case OP_ATOMICFETCHADD: IROp->Op = OP_ATOMICADD; return true;
+  case OP_ATOMICFETCHSUB: IROp->Op = OP_ATOMICSUB; return true;
+  case OP_ATOMICFETCHAND: IROp->Op = OP_ATOMICAND; return true;
+  case OP_ATOMICFETCHCLR: IROp->Op = OP_ATOMICCLR; return true;
+  case OP_ATOMICFETCHOR: IROp->Op = OP_ATOMICOR; return true;
+  case OP_ATOMICFETCHXOR: IROp->Op = OP_ATOMICXOR; return true;
+  case OP_ATOMICFETCHNEG: IROp->Op = OP_ATOMICNEG; return true;
   default: break;
   }
 
-  // Skip over anything that has side effects
-  // Use count tracking can't safely remove anything with side effects
-  if (!HasSideEffects) {
-    if (CodeNode->GetUses() == 0) {
-      IREmit->Remove(CodeNode);
-      return true;
-    }
-  }
-
-  return false;
+  IREmit->Remove(CodeNode);
+  return true;
 }
 
 /**
