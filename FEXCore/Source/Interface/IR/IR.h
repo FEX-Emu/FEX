@@ -360,6 +360,17 @@ static_assert(std::is_trivially_copyable_v<OrderedNode>);
 static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
 
+// This is temporary. We are transitioning away from OrderedNode's in favour of
+// flat Ref words. To ease porting, we have this typedef. Eventually OrderedNode
+// will be removed and this typedef will be replaced by something like:
+//
+//  struct Ref {
+//     uint Flags : 1;
+//     uint ID : 23;
+//     uint Reg : 8;
+//  };
+using Ref = OrderedNode*;
+
 struct RegisterClassType final {
   using value_type = uint32_t;
 
