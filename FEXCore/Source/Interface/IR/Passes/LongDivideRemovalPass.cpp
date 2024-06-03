@@ -64,9 +64,9 @@ void LongDivideEliminationPass::Run(IREmitter* IREmit) {
           // If it does then it we only need a 64bit SDIV
           if (IsSextOp(IREmit, Op->Lower, Op->Upper)) {
             IREmit->SetWriteCursor(CodeNode);
-            OrderedNode* Lower = CurrentIR.GetNode(Op->Lower);
-            OrderedNode* Divisor = CurrentIR.GetNode(Op->Divisor);
-            OrderedNode* SDivOp {};
+            Ref Lower = CurrentIR.GetNode(Op->Lower);
+            Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+            Ref SDivOp {};
             if (IROp->Op == OP_LDIV) {
               SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
             } else {
@@ -80,9 +80,9 @@ void LongDivideEliminationPass::Run(IREmitter* IREmit) {
           // If it does then it we only need a 64bit UDIV
           if (IsZeroOp(IREmit, Op->Upper)) {
             IREmit->SetWriteCursor(CodeNode);
-            OrderedNode* Lower = CurrentIR.GetNode(Op->Lower);
-            OrderedNode* Divisor = CurrentIR.GetNode(Op->Divisor);
-            OrderedNode* UDivOp {};
+            Ref Lower = CurrentIR.GetNode(Op->Lower);
+            Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+            Ref UDivOp {};
             if (IROp->Op == OP_LUDIV) {
               UDivOp = IREmit->_UDiv(OpSize::i64Bit, Lower, Divisor);
             } else {

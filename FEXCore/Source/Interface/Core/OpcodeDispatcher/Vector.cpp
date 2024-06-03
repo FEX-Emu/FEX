@@ -29,7 +29,7 @@ void OpDispatchBuilder::MOVVectorAlignedOp(OpcodeArgs) {
     // Nop
     return;
   }
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   StoreResult(FPRClass, Op, Src, -1);
 }
 
@@ -38,12 +38,12 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
     // Nop
     return;
   }
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
   StoreResult(FPRClass, Op, Src, 1);
 }
 
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
@@ -51,7 +51,7 @@ void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Is128Bit && Op->Dest.IsGPR()) {
     Src = _VMov(16, Src);
@@ -63,7 +63,7 @@ void OpDispatchBuilder::VMOVUPS_VMOVUPDOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
 
   if (Is128Bit && Op->Dest.IsGPR()) {
     Src = _VMov(16, Src);
@@ -75,37 +75,37 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     if (Op->Src[0].IsGPR()) {
       // MOVLHPS between two vector registers.
-      OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
+      Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
       auto Result = _VInsElement(16, 8, 1, 0, Dest, Src);
       StoreResult(FPRClass, Op, Result, -1);
     } else {
       // If the destination is a GPR then the source is memory
       // xmm1[127:64] = src
-      OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-      OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
+      Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+      Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
       auto Result = _VLoadVectorElement(16, 8, Dest, 1, Src);
       StoreResult(FPRClass, Op, Result, -1);
     }
   } else {
     // In this case memory is the destination and the high bits of the XMM are source
     // Mem64 = xmm1[127:64]
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    OrderedNode* Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, 8, Op->Flags, {.LoadData = false});
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, 8, Op->Flags, {.LoadData = false});
     _VStoreVectorElement(16, 8, Src, 1, Dest);
   }
 }
 
 void OpDispatchBuilder::VMOVHPOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
-    OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
-    OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
-    OrderedNode* Result = _VInsElement(16, 8, 1, 0, Src1, Src2);
+    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
+    Ref Result = _VInsElement(16, 8, 1, 0, Src1, Src2);
 
     StoreResult(FPRClass, Op, Result, -1);
   } else {
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
-    OrderedNode* Result = _VInsElement(16, 8, 0, 1, Src, Src);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
+    Ref Result = _VInsElement(16, 8, 0, 1, Src, Src);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 8);
   }
 }
@@ -114,65 +114,65 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // xmm, xmm is movhlps special case
     if (Op->Src[0].IsGPR()) {
-      OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
-      OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, {.Align = 16});
+      Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
+      Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, {.Align = 16});
       auto Result = _VInsElement(16, 8, 0, 1, Dest, Src);
       StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 16, 16);
     } else {
       auto DstSize = GetDstSize(Op);
-      OrderedNode* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8, .LoadData = false});
-      OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
+      Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8, .LoadData = false});
+      Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
       auto Result = _VLoadVectorElement(16, 8, Dest, 0, Src);
       StoreResult(FPRClass, Op, Result, -1);
     }
   } else {
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8});
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8});
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
   }
 }
 
 void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
-    OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
-    OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
-    OrderedNode* Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
+    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
+    Ref Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
 
     StoreResult(FPRClass, Op, Result, -1);
   } else {
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8});
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8});
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
   }
 }
 
 void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = _VTrn2(SrcSize, 4, Src, Src);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = _VTrn2(SrcSize, 4, Src, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = _VTrn(SrcSize, 4, Src, Src);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = _VTrn(SrcSize, 4, Src, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::MOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // MOVSS/SD xmm1, xmm2
-    OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     auto Result = _VInsElement(16, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   } else if (Op->Dest.IsGPR()) {
     // MOVSS/SD xmm1, mem32/mem64
     // xmm1[127:0] <- zext(mem32/mem64)
-    OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags);
+    Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags);
     StoreResult(FPRClass, Op, Src, -1);
   } else {
     // MOVSS/SD mem32/mem64, xmm1
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, ElementSize, -1);
   }
 }
@@ -188,17 +188,17 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
 void OpDispatchBuilder::VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Src[1].IsGPR()) {
     // VMOVSS/SD xmm1, xmm2, xmm3
-    OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-    OrderedNode* Result = _VInsElement(16, ElementSize, 0, 0, Src1, Src2);
+    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+    Ref Result = _VInsElement(16, ElementSize, 0, 0, Src1, Src2);
     StoreResult(FPRClass, Op, Result, -1);
   } else if (Op->Dest.IsGPR()) {
     // VMOVSS/SD xmm1, mem32/mem64
-    OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags);
+    Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags);
     StoreResult(FPRClass, Op, Src, -1);
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, ElementSize, -1);
   }
 }
@@ -213,8 +213,8 @@ void OpDispatchBuilder::VMOVSSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Dest, Src));
 
@@ -295,8 +295,8 @@ template void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
 void OpDispatchBuilder::AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src1, Src2));
 
@@ -373,8 +373,8 @@ template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src, Dest));
 
@@ -390,16 +390,16 @@ template void OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize,
-                                                            const X86Tables::DecodedOperand& Src1Op,
-                                                            const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize,
+                                                   const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+                                                   bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   // If OpSize == ElementSize then it only does the lower scalar op
   DeriveOp(ALUOp, IROp, _VFAddScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits));
@@ -446,16 +446,16 @@ template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARIN
 template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize,
-                                                                 const X86Tables::DecodedOperand& Src1Op,
-                                                                 const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize,
+                                                        const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+                                                        bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   // If OpSize == ElementSize then it only does the lower scalar op
   DeriveOp(ALUOp, IROp, _VFSqrtScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits));
@@ -501,8 +501,8 @@ void OpDispatchBuilder::InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   const auto SrcSize = Op->Src[0].IsGPR() ? 8 : GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   // Always 32-bit.
   const size_t ElementSize = 4;
@@ -512,14 +512,14 @@ void OpDispatchBuilder::InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Dest, DstSize, -1);
 }
 
-OrderedNode* OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                                        const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                               const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
@@ -553,23 +553,23 @@ template void OpDispatchBuilder::InsertCVTGPR_To_FPR<8>(OpcodeArgs);
 template<size_t DstElementSize>
 void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Src[0], Op->Src[1], true);
+  Ref Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Src[0], Op->Src[1], true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 template void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize,
-                                                                    size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                                                    const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+                                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+                                                           bool ZeroUpperBits) {
 
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   return _VFToFScalarInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcElementSize, Src1, Src2, ZeroUpperBits);
 }
@@ -577,7 +577,7 @@ OrderedNode* OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0], false);
+  Ref Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0], false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -587,22 +587,22 @@ template void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<8, 4>(OpcodeArg
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1], true);
+  Ref Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1], true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                                      const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
@@ -627,7 +627,7 @@ void OpDispatchBuilder::InsertScalarRound(OpcodeArgs) {
   const uint64_t Mode = Op->Src[1].Data.Literal.Value;
 
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, false);
+  Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -640,7 +640,7 @@ void OpDispatchBuilder::AVXInsertScalarRound(OpcodeArgs) {
   const uint64_t Mode = Op->Src[2].Data.Literal.Value;
 
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, true);
+  Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -648,15 +648,15 @@ template void OpDispatchBuilder::AVXInsertScalarRound<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarRound<8>(OpcodeArgs);
 
 
-OrderedNode* OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                                       const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits) {
+Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                              const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   switch (CompType) {
   case 0x00:
@@ -688,7 +688,7 @@ OrderedNode* OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSiz
   case 0x0D:
   case 0x15:
   case 0x1D: { // NLT, NGT(Swapped operand)
-    OrderedNode* Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
+    Ref Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
     return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
@@ -697,7 +697,7 @@ OrderedNode* OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSiz
   case 0x0E:
   case 0x16:
   case 0x1E: { // NLE, NGE(Swapped operand)
-    OrderedNode* Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
+    Ref Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
     return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
@@ -718,7 +718,7 @@ void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
+  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -731,7 +731,7 @@ void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Data.Literal.Value;
 
   const auto DstSize = GetGuestVectorLength();
-  OrderedNode* Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
+  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -746,7 +746,7 @@ void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Element
   const auto SrcSize = GetSrcSize(Op);
   const auto OpSize = GetSrcSize(Op);
 
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VFSqrt(OpSize, ElementSize, Src));
 
@@ -776,7 +776,7 @@ void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Elem
   const auto SrcSize = GetSrcSize(Op);
   const auto OpSize = GetSrcSize(Op);
 
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VFSqrt(OpSize, ElementSize, Src));
 
@@ -805,7 +805,7 @@ template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4>(OpcodeArgs)
 void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VFSqrt(ElementSize, ElementSize, Src));
 
@@ -824,7 +824,7 @@ template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>(Opcode
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
   if (Op->Dest.IsGPR()) {
     const auto gpr = Op->Dest.Data.GPR.GPR;
@@ -839,7 +839,7 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
   StoreResult(FPRClass, Op, Src, 1);
 }
 
@@ -848,7 +848,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   uint8_t NumElements = Size / ElementSize;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Size == 16 && ElementSize == 8) {
     // UnZip2 the 64-bit elements as 32-bit to get the sign bits closer.
@@ -856,7 +856,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     Src = _VUnZip2(Size, 4, Src, Src);
 
     // Extract the low 64-bits to GPR in one move.
-    OrderedNode* GPR = _VExtractToGPR(Size, 8, Src, 0);
+    Ref GPR = _VExtractToGPR(Size, 8, Src, 0);
     // BFI the sign bit in 31 in to 62.
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
@@ -873,14 +873,14 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     // Add across the vector so the sign bits will end up in bits [3:0]
     Src = _VAddV(Size, 4, Src);
     // Extract to a GPR.
-    OrderedNode* GPR = _VExtractToGPR(Size, 4, Src, 0);
+    Ref GPR = _VExtractToGPR(Size, 4, Src, 0);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
   } else {
-    OrderedNode* CurrentVal = _Constant(0);
+    Ref CurrentVal = _Constant(0);
 
     for (unsigned i = 0; i < NumElements; ++i) {
       // Extract the top bit of the element
-      OrderedNode* Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
+      Ref Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
       Tmp = _Bfe(IR::SizeToOpSize(ElementSize), 1, ElementSize * 8 - 1, Tmp);
 
       // Shift it to the correct location
@@ -901,8 +901,8 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto ExtractSize = Is256Bit ? 4 : 2;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* VMask = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_MOVMASKB);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref VMask = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_MOVMASKB);
 
   auto VCMP = _VCMPLTZ(SrcSize, 1, Src);
   auto VAnd = _VAnd(SrcSize, 1, VCMP, VMask);
@@ -925,8 +925,8 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto ALUOp = _VZip(Size, ElementSize, Dest, Src);
   StoreResult(FPRClass, Op, ALUOp, -1);
@@ -942,15 +942,15 @@ void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  OrderedNode* Result {};
+  Ref Result {};
   if (Is128Bit) {
     Result = _VZip(SrcSize, ElementSize, Src1, Src2);
   } else {
-    OrderedNode* ZipLo = _VZip(SrcSize, ElementSize, Src1, Src2);
-    OrderedNode* ZipHi = _VZip2(SrcSize, ElementSize, Src1, Src2);
+    Ref ZipLo = _VZip(SrcSize, ElementSize, Src1, Src2);
+    Ref ZipHi = _VZip2(SrcSize, ElementSize, Src1, Src2);
 
     Result = _VInsElement(SrcSize, 16, 1, 0, ZipLo, ZipHi);
   }
@@ -966,8 +966,8 @@ template void OpDispatchBuilder::VPUNPCKLOp<8>(OpcodeArgs);
 template<size_t ElementSize>
 void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto ALUOp = _VZip2(Size, ElementSize, Dest, Src);
   StoreResult(FPRClass, Op, ALUOp, -1);
@@ -983,15 +983,15 @@ void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  OrderedNode* Result {};
+  Ref Result {};
   if (Is128Bit) {
     Result = _VZip2(SrcSize, ElementSize, Src1, Src2);
   } else {
-    OrderedNode* ZipLo = _VZip(SrcSize, ElementSize, Src1, Src2);
-    OrderedNode* ZipHi = _VZip2(SrcSize, ElementSize, Src1, Src2);
+    Ref ZipLo = _VZip(SrcSize, ElementSize, Src1, Src2);
+    Ref ZipHi = _VZip2(SrcSize, ElementSize, Src1, Src2);
 
     Result = _VInsElement(SrcSize, 16, 0, 1, ZipHi, ZipLo);
   }
@@ -1004,9 +1004,9 @@ template void OpDispatchBuilder::VPUNPCKHOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2) {
-  OrderedNode* Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
+Ref OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2) {
+  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -1025,26 +1025,26 @@ OrderedNode* OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::Decode
   // Bits [6:3] is reserved for 64-bit
   const uint8_t MaskImm = SrcSize == 8 ? 0b1000'0111 : 0b1000'1111;
 
-  OrderedNode* MaskVector = _VectorImm(SrcSize, 1, MaskImm);
-  OrderedNode* MaskedIndices = _VAnd(SrcSize, SrcSize, Src2Node, MaskVector);
+  Ref MaskVector = _VectorImm(SrcSize, 1, MaskImm);
+  Ref MaskedIndices = _VAnd(SrcSize, SrcSize, Src2Node, MaskVector);
 
-  OrderedNode* Low = _VTBL1(SanitizedSrcSize, Src1Node, MaskedIndices);
+  Ref Low = _VTBL1(SanitizedSrcSize, Src1Node, MaskedIndices);
   if (!Is256Bit) {
     return Low;
   }
 
-  OrderedNode* HighSrc1 = _VInsElement(SrcSize, 16, 0, 1, Src1Node, Src1Node);
-  OrderedNode* High = _VTBL1(SanitizedSrcSize, HighSrc1, MaskedIndices);
+  Ref HighSrc1 = _VInsElement(SrcSize, 16, 0, 1, Src1Node, Src1Node);
+  Ref High = _VTBL1(SanitizedSrcSize, HighSrc1, MaskedIndices);
   return _VInsElement(SrcSize, 16, 1, 0, Low, High);
 }
 
 void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
-  OrderedNode* Result = PSHUFBOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PSHUFBOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
-  OrderedNode* Result = PSHUFBOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Result = PSHUFBOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1053,8 +1053,8 @@ void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
 
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest {};
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest {};
 
   // TODO: There can be more optimized copies here.
   switch (Shuffle) {
@@ -1098,8 +1098,8 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
 
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest {};
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest {};
 
   const uint8_t NumElements = Size / 2;
   const uint8_t HalfNumElements = NumElements >> 1;
@@ -1165,8 +1165,8 @@ void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
 
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest {};
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest {};
 
   // TODO: There can be more optimized copies here.
   switch (Shuffle) {
@@ -1212,7 +1212,7 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
   auto Shuffle = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // Note/TODO: With better immediate facilities or vector loading in our IR
   //            much of this can be reduced to setting up a table index register
@@ -1227,7 +1227,7 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   //            Should be much nicer than doing repeated inserts in any case.
 
   const size_t BaseElement = Low ? 0 : 4;
-  OrderedNode* Result = Src;
+  Ref Result = Src;
   if (Is256Bit) {
     for (size_t i = 0; i < 4; i++) {
       const auto Index = Shuffle & 0b11;
@@ -1259,10 +1259,10 @@ template void OpDispatchBuilder::VPSHUFWOp<2, false>(OpcodeArgs);
 template void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
 template void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1,
-                                           const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm) {
-  OrderedNode* Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
+Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1,
+                                  const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm) {
+  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
   uint8_t Shuffle = Imm.Data.Literal.Value;
@@ -1276,7 +1276,7 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const
   const uint8_t DstSize = GetDstSize(Op);
   const bool Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  std::array<OrderedNode*, 4> Srcs {};
+  std::array<Ref, 4> Srcs {};
   for (size_t i = 0; i < HalfNumElements; ++i) {
     Srcs[i] = Src1Node;
   }
@@ -1284,7 +1284,7 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const
     Srcs[i] = Src2Node;
   }
 
-  OrderedNode* Dest = Src1Node;
+  Ref Dest = Src1Node;
   const uint8_t SelectionMask = NumElements - 1;
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
@@ -1297,7 +1297,7 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const
       // but VSHUFPD uses different immediate bits for each lane.
       const auto SrcIndex2 = ElementSize == 4 ? SrcIndex1 : ((Shuffle >> 2) & SelectionMask);
 
-      OrderedNode* Insert = _VInsElement(DstSize, ElementSize, Element, SrcIndex1, Dest, Srcs[Element]);
+      Ref Insert = _VInsElement(DstSize, ElementSize, Element, SrcIndex1, Dest, Srcs[Element]);
       Dest = _VInsElement(DstSize, ElementSize, Element + NumElements, SrcIndex2 + NumElements, Insert, Srcs[Element]);
 
       Shuffle >>= ShiftAmount;
@@ -1463,7 +1463,7 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const
 
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
-  OrderedNode* Result = SHUFOpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
+  Ref Result = SHUFOpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::SHUFOp<4>(OpcodeArgs);
@@ -1471,7 +1471,7 @@ template void OpDispatchBuilder::SHUFOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
-  OrderedNode* Result = SHUFOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = SHUFOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::VSHUFOp<4>(OpcodeArgs);
@@ -1480,9 +1480,9 @@ template void OpDispatchBuilder::VSHUFOp<8>(OpcodeArgs);
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Dest = _VBic(SrcSize, SrcSize, Src2, Src1);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Dest = _VBic(SrcSize, SrcSize, Src2, Src1);
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
@@ -1492,12 +1492,12 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   DeriveOp(Res, IROp, _VFAddP(SrcSize, ElementSize, Src1, Src2));
 
-  OrderedNode* Dest = Res;
+  Ref Dest = Res;
   if (Is256Bit) {
     Dest = _VInsElement(SrcSize, 8, 1, 2, Res, Res);
     Dest = _VInsElement(SrcSize, 8, 2, 1, Dest, Res);
@@ -1514,14 +1514,14 @@ template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
 template<size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  OrderedNode* Result {};
+  Ref Result {};
 
   if (Op->Src[0].IsGPR()) {
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
     // Get the address to broadcast from into a GPR.
-    OrderedNode* Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPRSize());
+    Ref Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPRSize());
     Result = _VBroadcastFromMem(DstSize, ElementSize, Address);
   }
 
@@ -1537,13 +1537,13 @@ template void OpDispatchBuilder::VBROADCASTOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
 template void OpDispatchBuilder::VBROADCASTOp<16>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                            const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
+Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                   const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
   const auto Size = GetDstSize(Op);
   const auto NumElements = Size / ElementSize;
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   const uint64_t Index = Imm.Data.Literal.Value & (NumElements - 1);
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags);
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
@@ -1558,7 +1558,7 @@ OrderedNode* OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, cons
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
-  OrderedNode* Result = PINSROpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
+  Ref Result = PINSROpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1568,7 +1568,7 @@ template void OpDispatchBuilder::PINSROp<4>(OpcodeArgs);
 template void OpDispatchBuilder::PINSROp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
-  OrderedNode* Result = PINSROpImpl(Op, 1, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = PINSROpImpl(Op, 1, Op->Src[0], Op->Src[1], Op->Src[2]);
   if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     Result = _VMov(16, Result);
   }
@@ -1577,7 +1577,7 @@ void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
-  OrderedNode* Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
   if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     Result = _VMov(16, Result);
   }
@@ -1585,15 +1585,15 @@ void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
-  OrderedNode* Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
   if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     Result = _VMov(16, Result);
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                               const X86Tables::DecodedOperand& Imm) {
+Ref OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
+                                      const X86Tables::DecodedOperand& Imm) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   const uint8_t ImmValue = Imm.Data.Literal.Value;
   uint8_t CountS = (ImmValue >> 6);
@@ -1602,7 +1602,7 @@ OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::Deco
 
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Dest {};
+  Ref Dest {};
   if (ZMask != 0xF) {
     // Only need to load destination if it isn't a full zero
     Dest = LoadSource_WithOpSize(FPRClass, Op, Src1, DstSize, Op->Flags);
@@ -1610,7 +1610,7 @@ OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::Deco
 
   if ((ZMask & (1 << CountD)) == 0) {
     // In the case that ZMask overwrites the destination element, then don't even insert
-    OrderedNode* Src {};
+    Ref Src {};
     if (Src2.IsGPR()) {
       Src = LoadSource(FPRClass, Op, Src2, Op->Flags);
     } else {
@@ -1640,12 +1640,12 @@ OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::Deco
 }
 
 void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
-  OrderedNode* Result = InsertPSOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  Ref Result = InsertPSOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
-  OrderedNode* Result = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1653,7 +1653,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
@@ -1673,13 +1673,13 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     const uint8_t GPRSize = CTX->GetGPRSize();
     // Extract already zero extends the result.
-    OrderedNode* Result = _VExtractToGPR(16, OverridenElementSize, Src, Index);
+    Ref Result = _VExtractToGPR(16, OverridenElementSize, Src, Index);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
     return;
   }
 
   // If we are storing to memory then we store the size of the element extracted
-  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   _VStoreVectorElement(16, OverridenElementSize, Src, Index, Dest);
 }
 
@@ -1692,37 +1692,37 @@ void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
   const auto DstIsXMM = Op->Dest.IsGPR();
   const auto StoreSize = DstIsXMM ? 32 : 16;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
   const auto Selector = Op->Src[1].Data.Literal.Value & 0b1;
 
   // A selector of zero is the same as doing a 128-bit vector move.
   if (Selector == 0) {
-    OrderedNode* Result = DstIsXMM ? _VMov(16, Src) : Src;
+    Ref Result = DstIsXMM ? _VMov(16, Src) : Src;
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
     return;
   }
 
   // Otherwise replicate the element and only store the first 128-bits.
-  OrderedNode* Result = _VDupElement(32, 16, Src, Selector);
+  Ref Result = _VDupElement(32, 16, Src, Selector);
   if (DstIsXMM) {
     Result = _VMov(16, Result);
   }
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
 }
 
-OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
   if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
-    OrderedNode* Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
+    Ref Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
     Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
     return _VMul(Size, ElementSize, Src1, Control);
   } else {
     auto NegVec = _VNeg(Size, ElementSize, Src1);
-    OrderedNode* CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
-    OrderedNode* CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
+    Ref CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
+    Ref CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
     auto BSLResult = _VBSL(Size, CmpLT, NegVec, Src1);
     return _VBic(Size, Size, BSLResult, CmpEQ);
   }
@@ -1730,9 +1730,9 @@ OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, Ordere
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSIGN(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Res = PSIGNImpl(Op, ElementSize, Dest, Src);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Res = PSIGNImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Res, -1);
 }
@@ -1743,9 +1743,9 @@ template void OpDispatchBuilder::PSIGN<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VPSIGN(OpcodeArgs) {
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Res = PSIGNImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Res = PSIGNImpl(Op, ElementSize, Src1, Src2);
 
   StoreResult(FPRClass, Op, Res, -1);
 }
@@ -1754,7 +1754,7 @@ template void OpDispatchBuilder::VPSIGN<1>(OpcodeArgs);
 template void OpDispatchBuilder::VPSIGN<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPSIGN<4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec) {
+Ref OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
   const auto Size = GetSrcSize(Op);
 
   // Incoming element size for the shift source is always 8
@@ -1763,9 +1763,9 @@ OrderedNode* OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Orde
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1779,9 +1779,9 @@ void OpDispatchBuilder::VPSRLDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Shift = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PSRLDOpImpl(Op, ElementSize, Src, Shift);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Shift = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PSRLDOpImpl(Op, ElementSize, Src, Shift);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -1804,8 +1804,8 @@ void OpDispatchBuilder::PSRLI(OpcodeArgs) {
 
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
   StoreResult(FPRClass, Op, Shift, -1);
 }
 
@@ -1821,8 +1821,8 @@ void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = Src;
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = Src;
 
   if (ShiftConstant != 0) [[likely]] {
     Result = _VUShrI(Size, ElementSize, Src, ShiftConstant);
@@ -1839,7 +1839,7 @@ template void OpDispatchBuilder::VPSRLIOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPSRLIOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPSRLIOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, uint64_t Shift) {
+Ref OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Shift) {
   if (Shift == 0) [[unlikely]] {
     // If zero-shift then just return the source.
     return Src;
@@ -1857,8 +1857,8 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs) {
     return;
   }
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1874,8 +1874,8 @@ void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
   if (ShiftConstant == 0 && Is128Bit) {
     Result = _VMov(16, Result);
   }
@@ -1887,7 +1887,7 @@ template void OpDispatchBuilder::VPSLLIOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPSLLIOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPSLLIOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec) {
+Ref OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
   const auto Size = GetDstSize(Op);
 
   // Incoming element size for the shift source is always 8
@@ -1896,9 +1896,9 @@ OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize, Ordered
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLL(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PSLLImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PSLLImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1912,9 +1912,9 @@ void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
-  OrderedNode* Result = PSLLImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
+  Ref Result = PSLLImpl(Op, ElementSize, Src1, Src2);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -1926,7 +1926,7 @@ template void OpDispatchBuilder::VPSLLOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPSLLOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPSLLOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, OrderedNode* ShiftVec) {
+Ref OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
   const auto Size = GetDstSize(Op);
 
   // Incoming element size for the shift source is always 8
@@ -1935,9 +1935,9 @@ OrderedNode* OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize, Order
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PSRAOpImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PSRAOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1950,9 +1950,9 @@ void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PSRAOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PSRAOpImpl(Op, ElementSize, Src1, Src2);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -1973,8 +1973,8 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 
   const auto Size = GetDstSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Result, Dest, Shift);
@@ -1989,9 +1989,9 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* Result {};
+  Ref Result {};
   if (Shift == 0) [[unlikely]] {
     if (Is128Bit) {
       Result = _VMov(16, Src);
@@ -2007,8 +2007,8 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
       }
     } else {
       if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
-        OrderedNode* ResultBottom = _VExtr(16, 1, Result, Src, Shift);
-        OrderedNode* ResultTop = _VExtr(DstSize, 1, Result, Src, 16 + Shift);
+        Ref ResultBottom = _VExtr(16, 1, Result, Src, Shift);
+        Ref ResultTop = _VExtr(DstSize, 1, Result, Src, 16 + Shift);
 
         Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
       }
@@ -2028,8 +2028,8 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 
   const auto Size = GetDstSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
   }
@@ -2044,9 +2044,9 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* Result = Src;
+  Ref Result = Src;
 
   if (Shift == 0) {
     if (Is128Bit) {
@@ -2060,8 +2060,8 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
       }
     } else {
       if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
-        OrderedNode* ResultBottom = _VExtr(16, 1, Src, Result, 16 - Shift);
-        OrderedNode* ResultTop = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
+        Ref ResultBottom = _VExtr(16, 1, Src, Result, 16 - Shift);
+        Ref ResultTop = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
 
         Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
       }
@@ -2081,8 +2081,8 @@ void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
 
   const auto Size = GetDstSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Result = _VSShrI(Size, ElementSize, Dest, Shift);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Result = _VSShrI(Size, ElementSize, Dest, Shift);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2096,8 +2096,8 @@ void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = Src;
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = Src;
 
   if (Shift != 0) [[likely]] {
     Result = _VSShrI(Size, ElementSize, Src, Shift);
@@ -2117,8 +2117,8 @@ void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   const auto DstSize = GetDstSize(Op);
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
-  OrderedNode* ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags);
+  Ref Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
+  Ref ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags);
 
   DeriveOp(Shift, IROp, _VUShr(DstSize, SrcSize, Vector, ShiftVector, true));
 
@@ -2142,8 +2142,8 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.
   const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  OrderedNode* Res = _VDupElement(16, GetSrcSize(Op), Src, 0);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Res = _VDupElement(16, GetSrcSize(Op), Src, 0);
 
   StoreResult(FPRClass, Op, Res, -1);
 }
@@ -2154,10 +2154,10 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto MemSize = Is256Bit ? 32 : 8;
 
-  OrderedNode* Src = IsSrcGPR ? LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags) :
-                                LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], MemSize, Op->Flags);
+  Ref Src = IsSrcGPR ? LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags) :
+                       LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], MemSize, Op->Flags);
 
-  OrderedNode* Res {};
+  Ref Res {};
   if (Is256Bit) {
     Res = _VTrn(SrcSize, 8, Src, Src);
   } else {
@@ -2167,12 +2167,12 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
-OrderedNode* OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                                  const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                         const X86Tables::DecodedOperand& Src2Op) {
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags);
-  OrderedNode* Converted {};
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags);
+  Ref Converted {};
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
     auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
@@ -2195,7 +2195,7 @@ OrderedNode* OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementS
 
 template<size_t DstElementSize>
 void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
-  OrderedNode* Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Dest, Op->Src[0]);
+  Ref Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2204,7 +2204,7 @@ template void OpDispatchBuilder::CVTGPR_To_FPR<8>(OpcodeArgs);
 
 template<size_t DstElementSize>
 void OpDispatchBuilder::AVXCVTGPR_To_FPR(OpcodeArgs) {
-  OrderedNode* Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Src[0], Op->Src[1]);
+  Ref Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::AVXCVTGPR_To_FPR<4>(OpcodeArgs);
@@ -2216,7 +2216,7 @@ void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.
   const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   // GPR size is determined by REX.W
   // Source Element size is determined by instruction
@@ -2237,10 +2237,10 @@ template void OpDispatchBuilder::CVTFPR_To_GPR<4, false>(OpcodeArgs);
 template void OpDispatchBuilder::CVTFPR_To_GPR<8, true>(OpcodeArgs);
 template void OpDispatchBuilder::CVTFPR_To_GPR<8, false>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
+Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
   const size_t Size = GetDstSize(Op);
 
-  OrderedNode* Src = [&] {
+  Ref Src = [&] {
     if (Widen) {
       // If loading a vector, use the full size, so we don't
       // unnecessarily zero extend the vector. Otherwise, if
@@ -2263,7 +2263,7 @@ OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t S
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
-  OrderedNode* Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
+  Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2272,18 +2272,18 @@ template void OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
-  OrderedNode* Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
+  Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode) {
+Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode) {
   const size_t DstSize = GetDstSize(Op);
   size_t ElementSize = SrcElementSize;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Narrow) {
     Src = _Vector_FToF(DstSize, SrcElementSize >> 1, Src, SrcElementSize);
@@ -2300,7 +2300,7 @@ OrderedNode* OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t S
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   const size_t DstSize = GetDstSize(Op);
-  OrderedNode* Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+  Ref Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -2319,7 +2319,7 @@ void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
   // VCVTPD2DQ/VCVTTPD2DQ only use the bottom lane, even for the 256-bit version.
   const auto Truncate = SrcElementSize == 8 && Narrow;
 
-  OrderedNode* Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+  Ref Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
 
   if (Truncate) {
     Result = _VMov(16, Result);
@@ -2333,24 +2333,24 @@ template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>(Opco
 template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(
-  OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
+                                                     const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   // In the case of vectors, we can just specify the full vector length,
   // so that we don't unnecessarily zero-extend the entire vector.
   // Otherwise, if it's a memory load, then we only want to load its exact size.
   const auto Src2Size = Src2Op.IsGPR() ? 16U : SrcElementSize;
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, Src2Size, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, Src2Size, Op->Flags);
 
-  OrderedNode* Converted = _Float_FToF(DstElementSize, SrcElementSize, Src2);
+  Ref Converted = _Float_FToF(DstElementSize, SrcElementSize, Src2);
 
   return _VInsElement(16, DstElementSize, 0, 0, Src1, Converted);
 }
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
-  OrderedNode* Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0]);
+  Ref Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2359,7 +2359,7 @@ template void OpDispatchBuilder::Scalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float(OpcodeArgs) {
-  OrderedNode* Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1]);
+  Ref Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2374,9 +2374,9 @@ void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElem
 
   const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ? SrcSize / 2 : SrcSize;
 
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
 
-  OrderedNode* Result {};
+  Ref Result {};
   if (DstElementSize > SrcElementSize) {
     Result = _Vector_FToF(SrcSize, SrcElementSize << 1, Src, SrcElementSize);
   } else {
@@ -2410,7 +2410,7 @@ template void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // Always 32-bit.
   size_t ElementSize = 4;
@@ -2431,7 +2431,7 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.
   const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   size_t ElementSize = SrcElementSize;
   size_t Size = GetDstSize(Op);
@@ -2458,17 +2458,17 @@ template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, tru
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* MaskSrc = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  Ref MaskSrc = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   // Mask only cares about the top bit of each byte
   MaskSrc = _VCMPLTZ(Size, 1, MaskSrc);
 
   // Vector that will overwrite byte elements.
-  OrderedNode* VectorSrc = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  Ref VectorSrc = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   // RDI source (DS prefix by default)
   auto MemDest = MakeSegmentAddress(X86State::REG_RDI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-  OrderedNode* XMMReg = _LoadMem(FPRClass, Size, MemDest, 1);
+  Ref XMMReg = _LoadMem(FPRClass, Size, MemDest, 1);
 
   // If the Mask element high bit is set then overwrite the element with the source, else keep the memory variant
   XMMReg = _VBSL(Size, MaskSrc, VectorSrc, XMMReg);
@@ -2482,17 +2482,17 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t Da
     return MakeSegmentAddress(Op, Data, CTX->GetGPRSize());
   };
 
-  OrderedNode* Mask = LoadSource_WithOpSize(FPRClass, Op, MaskOp, DataSize, Op->Flags);
+  Ref Mask = LoadSource_WithOpSize(FPRClass, Op, MaskOp, DataSize, Op->Flags);
 
   if (IsStore) {
-    OrderedNode* Data = LoadSource_WithOpSize(FPRClass, Op, DataOp, DataSize, Op->Flags);
-    OrderedNode* Address = MakeAddress(Op->Dest);
+    Ref Data = LoadSource_WithOpSize(FPRClass, Op, DataOp, DataSize, Op->Flags);
+    Ref Address = MakeAddress(Op->Dest);
     _VStoreVectorMasked(DataSize, ElementSize, Mask, Data, Address, Invalid(), MEM_OFFSET_SXTX, 1);
   } else {
     const auto Is128Bit = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
-    OrderedNode* Address = MakeAddress(DataOp);
-    OrderedNode* Result = _VLoadVectorMasked(DataSize, ElementSize, Mask, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    Ref Address = MakeAddress(DataOp);
+    Ref Result = _VLoadVectorMasked(DataSize, ElementSize, Mask, Address, Invalid(), MEM_OFFSET_SXTX, 1);
 
     if (Is128Bit) {
       Result = _VMov(16, Result);
@@ -2521,17 +2521,17 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
-      OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
+      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
       // zext to 128bit
       auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
       StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
     } else {
       // Loading from Memory as a scalar. Zero extend
-      OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       StoreResult(FPRClass, Op, Op->Dest, Src, -1);
     }
   } else {
-    OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
     if (Op->Dest.IsGPR()) {
       auto ElementSize = GetDstSize(Op);
@@ -2540,16 +2540,16 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
       StoreResult(GPRClass, Op, Op->Dest, Src, -1);
     } else {
       // Storing first element to memory.
-      OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
       _StoreMem(FPRClass, GetDstSize(Op), Dest, Src, 1);
     }
   }
 }
 
-OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2, uint8_t CompType) {
+Ref OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Result {};
+  Ref Result {};
   switch (CompType) {
   case 0x00:
   case 0x08:
@@ -2614,11 +2614,11 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
   const uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Result = VFCMPOpImpl(Op, ElementSize, Dest, Src, CompType);
+  Ref Result = VFCMPOpImpl(Op, ElementSize, Dest, Src, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -2636,9 +2636,9 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
   const uint8_t CompType = Op->Src[2].Data.Literal.Value;
 
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
-  OrderedNode* Result = VFCMPOpImpl(Op, ElementSize, Src1, Src2, CompType);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  Ref Result = VFCMPOpImpl(Op, ElementSize, Src1, Src2, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -2647,7 +2647,7 @@ template void OpDispatchBuilder::AVXVFCMPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVFCMPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
-  OrderedNode* Mem = MakeSegmentAddress(Op, Op->Dest);
+  Ref Mem = MakeSegmentAddress(Op, Op->Dest);
 
   SaveX87State(Op, Mem);
   SaveSSEState(Mem);
@@ -2658,7 +2658,7 @@ void OpDispatchBuilder::XSaveOp(OpcodeArgs) {
   XSaveOpImpl(Op);
 }
 
-OrderedNode* OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
+Ref OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
   return MakeSegmentAddress(Op, Op->Dest);
 }
 
@@ -2668,8 +2668,8 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
 
   const auto StoreIfFlagSet = [this, OpSize](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1) {
-    OrderedNode* Mask = LoadGPRRegister(X86State::REG_RAX);
-    OrderedNode* BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
+    Ref Mask = LoadGPRRegister(X86State::REG_RAX);
+    Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -2706,11 +2706,11 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   // Update XSTATE_BV region of the XSAVE header
   {
-    OrderedNode* Base = XSaveBase(Op);
+    Ref Base = XSaveBase(Op);
 
     // NOTE: We currently only support the first 3 bits (x87, SSE, and AVX)
-    OrderedNode* Mask = LoadGPRRegister(X86State::REG_RAX);
-    OrderedNode* RequestedFeatures = _Bfe(OpSize, 3, 0, Mask);
+    Ref Mask = LoadGPRRegister(X86State::REG_RAX);
+    Ref RequestedFeatures = _Bfe(OpSize, 3, 0, Mask);
 
     // XSTATE_BV section of the header is 8 bytes in size, but we only really
     // care about setting at most 3 bits in the first byte. We zero out the rest.
@@ -2718,7 +2718,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode* MemBase) {
+void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
   if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
@@ -2791,53 +2791,53 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, OrderedNode* MemBase) {
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    OrderedNode* MMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, mm[i]));
+    Ref MMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, mm[i]));
 
     _StoreMem(FPRClass, 16, MMReg, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
   }
 }
 
-void OpDispatchBuilder::SaveSSEState(OrderedNode* MemBase) {
+void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
-    OrderedNode* XMMReg = LoadXMMRegister(i);
+    Ref XMMReg = LoadXMMRegister(i);
 
     _StoreMem(FPRClass, 16, XMMReg, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
   }
 }
 
-void OpDispatchBuilder::SaveMXCSRState(OrderedNode* MemBase) {
+void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
   _StoreMem(GPRClass, 4, GetMXCSR(), MemBase, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
 
   // Store the mask for all bits.
   _StoreMem(GPRClass, 4, _Constant(0xFFFF), MemBase, _Constant(28), 4, MEM_OFFSET_SXTX, 1);
 }
 
-void OpDispatchBuilder::SaveAVXState(OrderedNode* MemBase) {
+void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
-    OrderedNode* Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
+    Ref Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
 
     _StoreMem(FPRClass, 16, Upper, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
   }
 }
 
-OrderedNode* OpDispatchBuilder::GetMXCSR() {
+Ref OpDispatchBuilder::GetMXCSR() {
   // Default MXCSR Value
-  OrderedNode* MXCSR = _Constant(0x1F80);
-  OrderedNode* RoundingMode = _GetRoundingMode();
+  Ref MXCSR = _Constant(0x1F80);
+  Ref RoundingMode = _GetRoundingMode();
   return _Bfi(OpSize::i32Bit, 3, 13, MXCSR, RoundingMode);
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
-  OrderedNode* Mem = MakeSegmentAddress(Op, Op->Src[0]);
+  Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   RestoreX87State(Mem);
   RestoreSSEState(Mem);
 
-  OrderedNode* MXCSR = _LoadMem(GPRClass, 4, Mem, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
+  Ref MXCSR = _LoadMem(GPRClass, 4, Mem, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
   RestoreMXCSRState(MXCSR);
 }
 
@@ -2853,10 +2853,10 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     //
     // Note: we rematerialize Base/Mask in each block to avoid crossblock
     // liveness.
-    OrderedNode* Base = XSaveBase(Op);
-    OrderedNode* Mask = _LoadMem(GPRClass, 8, Base, _Constant(512), 8, MEM_OFFSET_SXTX, 1);
+    Ref Base = XSaveBase(Op);
+    Ref Mask = _LoadMem(GPRClass, 8, Base, _Constant(512), 8, MEM_OFFSET_SXTX, 1);
 
-    OrderedNode* BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
+    Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
 
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -2899,15 +2899,15 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     RestoreIfFlagSetOrDefault(
       1,
       [this, Op] {
-      OrderedNode* Base = XSaveBase(Op);
-      OrderedNode* MXCSR = _LoadMem(GPRClass, 4, Base, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
+      Ref Base = XSaveBase(Op);
+      Ref MXCSR = _LoadMem(GPRClass, 4, Base, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
       RestoreMXCSRState(MXCSR);
       },
       [] { /* Intentionally do nothing*/ }, 2);
   }
 }
 
-void OpDispatchBuilder::RestoreX87State(OrderedNode* MemBase) {
+void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
   auto NewFCW = _LoadMem(GPRClass, 2, MemBase, 2);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
@@ -2928,28 +2928,28 @@ void OpDispatchBuilder::RestoreX87State(OrderedNode* MemBase) {
   }
 }
 
-void OpDispatchBuilder::RestoreSSEState(OrderedNode* MemBase) {
+void OpDispatchBuilder::RestoreSSEState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
-    OrderedNode* XMMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
+    Ref XMMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
     StoreXMMRegister(i, XMMReg);
   }
 }
 
-void OpDispatchBuilder::RestoreMXCSRState(OrderedNode* MXCSR) {
+void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
   // We only support the rounding mode and FTZ bit being set
-  OrderedNode* RoundingMode = _Bfe(OpSize::i32Bit, 3, 13, MXCSR);
+  Ref RoundingMode = _Bfe(OpSize::i32Bit, 3, 13, MXCSR);
   _SetRoundingMode(RoundingMode);
 }
 
-void OpDispatchBuilder::RestoreAVXState(OrderedNode* MemBase) {
+void OpDispatchBuilder::RestoreAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; ++i) {
-    OrderedNode* XMMReg = LoadXMMRegister(i);
-    OrderedNode* YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
-    OrderedNode* YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
+    Ref XMMReg = LoadXMMRegister(i);
+    Ref YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+    Ref YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
     StoreXMMRegister(i, YMM);
   }
 }
@@ -2961,7 +2961,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 
   // On top of resetting the flags to a default state, we also need to clear
   // all of the ST0-7/MM0-7 registers to zero.
-  OrderedNode* ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::MM_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::MM_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     _StoreContext(16, FPRClass, ZeroVector, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
@@ -2970,7 +2970,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 void OpDispatchBuilder::DefaultSSEState() {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  OrderedNode* ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   for (uint32_t i = 0; i < NumRegs; ++i) {
     StoreXMMRegister(i, ZeroVector);
   }
@@ -2980,14 +2980,14 @@ void OpDispatchBuilder::DefaultAVXState() {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i++) {
-    OrderedNode* Reg = LoadXMMRegister(i);
-    OrderedNode* Dst = _VMov(16, Reg);
+    Ref Reg = LoadXMMRegister(i);
+    Ref Dst = _VMov(16, Reg);
     StoreXMMRegister(i, Dst);
   }
 }
 
-OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                              const X86Tables::DecodedOperand& Imm, bool IsAVX) {
+Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
+                                     const X86Tables::DecodedOperand& Imm, bool IsAVX) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
   // For the 256-bit case we handle it as pairs of 128-bit halves.
   const auto DstSize = GetDstSize(Op);
@@ -2996,7 +2996,7 @@ OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::Decod
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Index = Imm.Data.Literal.Value;
 
-  OrderedNode* Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
   if (Index == 0) {
     if (IsAVX && !Is256Bit) {
       // 128-bit AVX needs to zero the upper bits.
@@ -3005,39 +3005,39 @@ OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::Decod
       return Src2Node;
     }
   }
-  OrderedNode* Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
 
   if (Index >= (SanitizedDstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
     return LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
-  OrderedNode* Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
+  Ref Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
   if (!Is256Bit) {
     return Low;
   }
 
-  OrderedNode* HighSrc1 = _VInsElement(DstSize, 16, 0, 1, Src1Node, Src1Node);
-  OrderedNode* HighSrc2 = _VInsElement(DstSize, 16, 0, 1, Src2Node, Src2Node);
-  OrderedNode* High = _VExtr(SanitizedDstSize, 1, HighSrc1, HighSrc2, Index);
+  Ref HighSrc1 = _VInsElement(DstSize, 16, 0, 1, Src1Node, Src1Node);
+  Ref HighSrc2 = _VInsElement(DstSize, 16, 0, 1, Src2Node, Src2Node);
+  Ref High = _VExtr(SanitizedDstSize, 1, HighSrc1, HighSrc2, Index);
   return _VInsElement(DstSize, 16, 1, 0, Low, High);
 }
 
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
-  OrderedNode* Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
+  Ref Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
-  OrderedNode* Result = PALIGNROpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], true);
+  Ref Result = PALIGNROpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], true);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : GetSrcSize(Op);
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   HandleNZCVWrite();
   _FCmp(ElementSize, Src1, Src2);
@@ -3053,7 +3053,7 @@ template void OpDispatchBuilder::UCOMISxOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::UCOMISxOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
   RestoreMXCSRState(Dest);
 }
 
@@ -3061,7 +3061,7 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   StoreResult(GPRClass, Op, GetMXCSR(), -1);
 }
 
-OrderedNode* OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
   return _VSQXTUNPair(Size, ElementSize, Src1, Src2);
@@ -3069,9 +3069,9 @@ OrderedNode* OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize, Ord
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PACKUSOpImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PACKUSOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3084,13 +3084,13 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PACKUSOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PACKUSOpImpl(Op, ElementSize, Src1, Src2);
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
-    OrderedNode* Swapped = _VInsElement(DstSize, 8, 2, 1, Result, Result);
+    Ref Swapped = _VInsElement(DstSize, 8, 2, 1, Result, Result);
     Result = _VInsElement(DstSize, 8, 1, 2, Swapped, Result);
   }
   StoreResult(FPRClass, Op, Result, -1);
@@ -3099,16 +3099,16 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPACKUSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPACKUSOp<4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
   return _VSQXTNPair(Size, ElementSize, Src1, Src2);
 }
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKSSOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PACKSSOpImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PACKSSOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3121,13 +3121,13 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PACKSSOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PACKSSOpImpl(Op, ElementSize, Src1, Src2);
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
-    OrderedNode* Swapped = _VInsElement(DstSize, 8, 2, 1, Result, Result);
+    Ref Swapped = _VInsElement(DstSize, 8, 2, 1, Result, Result);
     Result = _VInsElement(DstSize, 8, 1, 2, Swapped, Result);
   }
   StoreResult(FPRClass, Op, Result, -1);
@@ -3136,7 +3136,7 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPACKSSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPACKSSOp<4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
   if (Size == 8) {
@@ -3161,9 +3161,9 @@ template<size_t ElementSize, bool Signed>
 void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Res = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Res = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
 
   StoreResult(FPRClass, Op, Res, -1);
 }
@@ -3175,9 +3175,9 @@ template<size_t ElementSize, bool Signed>
 void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3187,7 +3187,7 @@ template void OpDispatchBuilder::VPMULLOp<4, true>(OpcodeArgs);
 
 template<bool ToXMM>
 void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
   if constexpr (ToXMM) {
@@ -3204,7 +3204,7 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 template void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
 template void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
   if (CTX->HostFeatures.SupportsFCMA) {
@@ -3224,9 +3224,9 @@ OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, Or
 
 template<size_t ElementSize>
 void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = ADDSUBPOpImpl(Op, ElementSize, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = ADDSUBPOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3236,9 +3236,9 @@ template void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3249,8 +3249,8 @@ template void OpDispatchBuilder::VADDSUBPOp<8>(OpcodeArgs);
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto DestUnzip = _VUnZip(Size, 4, Dest, Src);
   auto SrcUnzip = _VUnZip2(Size, 4, Dest, Src);
@@ -3262,11 +3262,11 @@ void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
 void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* ResAdd {};
-  OrderedNode* ResSub {};
+  Ref ResAdd {};
+  Ref ResSub {};
   auto UpperSubDest = _VDupElement(Size, 4, Dest, 1);
 
   ResSub = _VFSub(4, 4, Dest, UpperSubDest);
@@ -3279,14 +3279,14 @@ void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PSWAPDOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto Result = _VRev64(Size, 4, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   size_t Size = GetDstSize(Op);
 
@@ -3304,7 +3304,7 @@ void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   size_t Size = GetDstSize(Op);
 
@@ -3323,17 +3323,17 @@ void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
 void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* Res {};
+  Ref Res {};
 
   // Implementation is more efficient for 8byte registers
   // Multiplies 4 16bit values in to 4 32bit values
   Res = _VSMull(Size * 2, 2, Dest, Src);
 
   // Load 0x0000_8000 in to each 32-bit element.
-  OrderedNode* VConstant = _VectorImm(16, 4, 0x80, 8);
+  Ref VConstant = _VectorImm(16, 4, 0x80, 8);
 
   Res = _VAdd(Size * 2, 4, Res, VConstant);
 
@@ -3346,10 +3346,10 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
 template<uint8_t CompType>
 void OpDispatchBuilder::VPFCMPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags);
 
-  OrderedNode* Result {};
+  Ref Result {};
   // This maps 1:1 to an AArch64 NEON Op
   // auto ALUOp = _VCMPGT(Size, 4, Dest, Src);
   switch (CompType) {
@@ -3372,7 +3372,7 @@ template void OpDispatchBuilder::VPFCMPOp<0>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<1>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<2>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2) {
+Ref OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2) {
   // This is a pretty curious operation
   // Does two MADD operations across 4 16bit signed integers and accumulates to 32bit integers in the destination
   //
@@ -3383,8 +3383,8 @@ OrderedNode* OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::Decod
 
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
   if (Size == 8) {
     // MMX implementation can be slightly more optimal
@@ -3401,20 +3401,20 @@ OrderedNode* OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::Decod
 }
 
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
-  OrderedNode* Result = PMADDWDOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PMADDWDOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
-  OrderedNode* Result = PMADDWDOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Result = PMADDWDOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   if (Size == 8) {
     // 64bit is more efficient
@@ -3457,16 +3457,16 @@ OrderedNode* OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::Dec
 }
 
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
-  OrderedNode* Result = PMADDUBSWOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PMADDUBSWOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
-  OrderedNode* Result = PMADDUBSWOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Result = PMADDUBSWOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
   if (Signed) {
     return _VSMulH(Size, 2, Src1, Src2);
@@ -3477,9 +3477,9 @@ OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed, OrderedNod
 
 template<bool Signed>
 void OpDispatchBuilder::PMULHW(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PMULHWOpImpl(Op, Signed, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PMULHWOpImpl(Op, Signed, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3492,9 +3492,9 @@ void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PMULHWOpImpl(Op, Signed, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PMULHWOpImpl(Op, Signed, Dest, Src);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -3505,10 +3505,10 @@ void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPMULHWOp<false>(OpcodeArgs);
 template void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Res {};
+  Ref Res {};
   if (Size == 8) {
     // Implementation is more efficient for 8byte registers
     Res = _VSMull(Size * 2, 2, Src1, Src2);
@@ -3518,8 +3518,8 @@ OrderedNode* OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, OrderedNode* Src1, Or
     return _VUShrNI(Size * 2, 4, Res, 1);
   } else {
     // 128-bit and 256-bit are less efficient
-    OrderedNode* ResultLow;
-    OrderedNode* ResultHigh;
+    Ref ResultLow;
+    Ref ResultHigh;
 
     ResultLow = _VSMull(Size, 2, Src1, Src2);
     ResultHigh = _VSMull2(Size, 2, Src1, Src2);
@@ -3538,27 +3538,26 @@ OrderedNode* OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, OrderedNode* Src1, Or
 }
 
 void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = PMULHRSWOpImpl(Op, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = PMULHRSWOpImpl(Op, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  OrderedNode* Result = PMULHRSWOpImpl(Op, Dest, Src);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Result = PMULHRSWOpImpl(Op, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                            const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   auto Even = _VUnZip(SrcSize, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(SrcSize, ElementSize, Src1, Src2);
@@ -3567,7 +3566,7 @@ OrderedNode* OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, cons
 
 template<size_t ElementSize>
 void OpDispatchBuilder::HSUBP(OpcodeArgs) {
-  OrderedNode* Result = HSUBPOpImpl(Op, ElementSize, Op->Dest, Op->Src[0]);
+  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3579,8 +3578,8 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Result = HSUBPOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
-  OrderedNode* Dest = Result;
+  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
+  Ref Dest = Result;
   if (Is256Bit) {
     Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
     Dest = _VInsElement(DstSize, 8, 2, 1, Dest, Result);
@@ -3592,12 +3591,11 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
 template void OpDispatchBuilder::VHSUBPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VHSUBPOp<8>(OpcodeArgs);
 
-OrderedNode*
-OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize) {
+Ref OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
   auto Even = _VUnZip(Size, ElementSize, Src1V, Src2V);
   auto Odd = _VUnZip2(Size, ElementSize, Src1V, Src2V);
@@ -3606,7 +3604,7 @@ OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PHSUB(OpcodeArgs) {
-  OrderedNode* Result = PHSUBOpImpl(Op, Op->Dest, Op->Src[0], ElementSize);
+  Ref Result = PHSUBOpImpl(Op, Op->Dest, Op->Src[0], ElementSize);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3618,9 +3616,9 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Result = PHSUBOpImpl(Op, Op->Src[0], Op->Src[1], ElementSize);
+  Ref Result = PHSUBOpImpl(Op, Op->Src[0], Op->Src[1], ElementSize);
   if (Is256Bit) {
-    OrderedNode* Inserted = _VInsElement(DstSize, 8, 1, 2, Result, Result);
+    Ref Inserted = _VInsElement(DstSize, 8, 1, 2, Result, Result);
     Result = _VInsElement(DstSize, 8, 2, 1, Inserted, Result);
   }
   StoreResult(FPRClass, Op, Result, -1);
@@ -3629,12 +3627,12 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   const auto Size = GetSrcSize(Op);
   const uint8_t ElementSize = 2;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
@@ -3644,7 +3642,7 @@ OrderedNode* OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::Decode
 }
 
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
-  OrderedNode* Result = PHADDSOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PHADDSOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3652,8 +3650,8 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Result = PHADDSOpImpl(Op, Op->Src[0], Op->Src[1]);
-  OrderedNode* Dest = Result;
+  Ref Result = PHADDSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Dest = Result;
 
   if (Is256Bit) {
     Dest = _VInsElement(SrcSize, 8, 1, 2, Result, Result);
@@ -3663,12 +3661,12 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-OrderedNode* OpDispatchBuilder::PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   const auto Size = GetSrcSize(Op);
   const uint8_t ElementSize = 2;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
@@ -3678,7 +3676,7 @@ OrderedNode* OpDispatchBuilder::PHSUBSOpImpl(OpcodeArgs, const X86Tables::Decode
 }
 
 void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
-  OrderedNode* Result = PHSUBSOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PHSUBSOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3686,8 +3684,8 @@ void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Result = PHSUBSOpImpl(Op, Op->Src[0], Op->Src[1]);
-  OrderedNode* Dest = Result;
+  Ref Result = PHSUBSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Dest = Result;
   if (Is256Bit) {
     Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
     Dest = _VInsElement(DstSize, 8, 2, 1, Dest, Result);
@@ -3696,7 +3694,7 @@ void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
   // The documentation is actually incorrect in how this instruction operates
   // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space
   // but it actually operates in more than 8bit space
@@ -3705,8 +3703,8 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::Decode
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   if (Size == 8) {
     auto AbsResult = _VUABDL(Size * 2, 1, Src1, Src2);
@@ -3718,38 +3716,38 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::Decode
   auto AbsResult_Low = _VUABDL(Size, 1, Src1, Src2);
   auto AbsResult_High = _VUABDL2(Size, 1, Src1, Src2);
 
-  OrderedNode* Result_Low = _VAddV(16, 2, AbsResult_Low);
-  OrderedNode* Result_High = _VAddV(16, 2, AbsResult_High);
+  Ref Result_Low = _VAddV(16, 2, AbsResult_Low);
+  Ref Result_High = _VAddV(16, 2, AbsResult_High);
   auto Low = _VZip(Size, 8, Result_Low, Result_High);
 
   if (Is128Bit) {
     return Low;
   }
 
-  OrderedNode* HighSrc1 = _VDupElement(Size, 16, AbsResult_Low, 1);
-  OrderedNode* HighSrc2 = _VDupElement(Size, 16, AbsResult_High, 1);
+  Ref HighSrc1 = _VDupElement(Size, 16, AbsResult_Low, 1);
+  Ref HighSrc2 = _VDupElement(Size, 16, AbsResult_High, 1);
 
-  OrderedNode* HighResult_Low = _VAddV(16, 2, HighSrc1);
-  OrderedNode* HighResult_High = _VAddV(16, 2, HighSrc2);
+  Ref HighResult_Low = _VAddV(16, 2, HighSrc1);
+  Ref HighResult_High = _VAddV(16, 2, HighSrc2);
 
-  OrderedNode* High = _VInsElement(Size, 8, 1, 0, HighResult_Low, HighResult_High);
-  OrderedNode* Full = _VInsElement(Size, 16, 1, 0, Low, High);
+  Ref High = _VInsElement(Size, 8, 1, 0, HighResult_Low, HighResult_High);
+  Ref Full = _VInsElement(Size, 16, 1, 0, Low, High);
 
-  OrderedNode* Tmp = _VInsElement(Size, 8, 2, 1, Full, Full);
+  Ref Tmp = _VInsElement(Size, 8, 2, 1, Full, Full);
   return _VInsElement(Size, 8, 1, 2, Tmp, Full);
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
-  OrderedNode* Result = PSADBWOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Result = PSADBWOpImpl(Op, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
-  OrderedNode* Result = PSADBWOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Result = PSADBWOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed) {
+Ref OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed) {
   const auto DstSize = GetDstSize(Op);
 
   const auto GetSrc = [&] {
@@ -3765,8 +3763,8 @@ OrderedNode* OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t Elem
     }
   };
 
-  OrderedNode* Src = GetSrc();
-  OrderedNode* Result {Src};
+  Ref Src = GetSrc();
+  Ref Result {Src};
 
   for (size_t CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize; CurrentElementSize <<= 1) {
     if (Signed) {
@@ -3781,7 +3779,7 @@ OrderedNode* OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t Elem
 
 template<size_t ElementSize, size_t DstElementSize, bool Signed>
 void OpDispatchBuilder::ExtendVectorElements(OpcodeArgs) {
-  OrderedNode* Result = ExtendVectorElementsImpl(Op, ElementSize, DstElementSize, Signed);
+  Ref Result = ExtendVectorElementsImpl(Op, ElementSize, DstElementSize, Signed);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3799,7 +3797,7 @@ template void OpDispatchBuilder::ExtendVectorElements<2, 4, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<2, 8, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize, OrderedNode* Src, uint64_t Mode) {
+Ref OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode) {
   const auto Size = GetDstSize(Op);
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
@@ -3822,7 +3820,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   // No need to zero extend the vector in the event we have a
   // scalar source, especially since it's only inserted into another vector.
   const auto SrcSize = GetSrcSize(Op);
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Mode = Op->Src[1].Data.Literal.Value;
@@ -3844,8 +3842,8 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
   // scalar source, especially since it's only inserted into another vector.
   const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode* Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  OrderedNode* Result = VectorRoundImpl(Op, ElementSize, Src, Mode);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Result = VectorRoundImpl(Op, ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3860,8 +3858,8 @@ void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Select = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if constexpr (ElementSize == 4) {
     Select &= 0b1111;
@@ -4048,8 +4046,8 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto Mask = LoadXMMRegister(0);
 
@@ -4073,17 +4071,17 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   constexpr auto ElementSizeBits = ElementSize * 8;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
   const auto Src3Selector = Op->Src[2].Data.Literal.Value;
 
   // Mask register is encoded within bits [7:4] of the selector
-  OrderedNode* Mask = LoadXMMRegister((Src3Selector >> 4) & 0b1111);
+  Ref Mask = LoadXMMRegister((Src3Selector >> 4) & 0b1111);
 
-  OrderedNode* Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
-  OrderedNode* Result = _VBSL(SrcSize, Shifted, Src2, Src1);
+  Ref Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
+  Ref Result = _VBSL(SrcSize, Shifted, Src2, Src1);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
@@ -4096,11 +4094,11 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op);
 
-  OrderedNode* Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* Test1 = _VAnd(Size, 1, Dest, Src);
-  OrderedNode* Test2 = _VBic(Size, 1, Src, Dest);
+  Ref Test1 = _VAnd(Size, 1, Dest, Src);
+  Ref Test2 = _VBic(Size, 1, Src, Dest);
 
   // Element size must be less than 32-bit for the sign bit tricks.
   Test1 = _VUMaxV(Size, 2, Test1);
@@ -4131,27 +4129,27 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   const auto ElementSizeInBits = ElementSize * 8;
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  OrderedNode* Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
+  Ref Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
 
-  OrderedNode* AndTest = _VAnd(SrcSize, 1, Src2, Src1);
-  OrderedNode* AndNotTest = _VBic(SrcSize, 1, Src2, Src1);
+  Ref AndTest = _VAnd(SrcSize, 1, Src2, Src1);
+  Ref AndNotTest = _VBic(SrcSize, 1, Src2, Src1);
 
-  OrderedNode* MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
-  OrderedNode* MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
+  Ref MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
+  Ref MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
 
-  OrderedNode* MaxAnd = _VUMaxV(SrcSize, 2, MaskedAnd);
-  OrderedNode* MaxAndNot = _VUMaxV(SrcSize, 2, MaskedAndNot);
+  Ref MaxAnd = _VUMaxV(SrcSize, 2, MaskedAnd);
+  Ref MaxAndNot = _VUMaxV(SrcSize, 2, MaskedAndNot);
 
-  OrderedNode* AndGPR = _VExtractToGPR(SrcSize, 2, MaxAnd, 0);
-  OrderedNode* AndNotGPR = _VExtractToGPR(SrcSize, 2, MaxAndNot, 0);
+  Ref AndGPR = _VExtractToGPR(SrcSize, 2, MaxAnd, 0);
+  Ref AndNotGPR = _VExtractToGPR(SrcSize, 2, MaxAndNot, 0);
 
-  OrderedNode* ZeroConst = _Constant(0);
-  OrderedNode* OneConst = _Constant(1);
+  Ref ZeroConst = _Constant(0);
+  Ref OneConst = _Constant(1);
 
-  OrderedNode* CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst, OneConst, ZeroConst);
+  Ref CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst, OneConst, ZeroConst);
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
   SetNZ_ZeroCV(32, AndGPR);
@@ -4167,10 +4165,10 @@ void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
 template void OpDispatchBuilder::VTESTPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VTESTPOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
+Ref OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // Setup a vector swizzle
   // Initially load a 64-bit mask of immediates
@@ -4207,12 +4205,12 @@ OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
-  OrderedNode* Result = PHMINPOSUWOpImpl(Op);
+  Ref Result = PHMINPOSUWOpImpl(Op);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                          const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
+Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
+                                 const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   const uint8_t Mask = Imm.Data.Literal.Value;
   const auto SizeMask = [ElementSize]() {
@@ -4234,17 +4232,17 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
   }();
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   if (SrcMask == 0 || DstMask == 0) {
     // What are you even doing here? Go away.
     return ZeroVec;
   }
 
-  OrderedNode* Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
   // First step is to do an FMUL
-  OrderedNode* Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
+  Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
 
   // Now mask results based on IndexMask.
   if (SrcMask != SizeMask) {
@@ -4277,7 +4275,7 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
     }
   } else {
     auto BadPath = [&]() {
-      OrderedNode* Result = ZeroVec;
+      Ref Result = ZeroVec;
 
       for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
         const auto Bit = 1U << (i % 4);
@@ -4396,15 +4394,15 @@ OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOp
 
 template<size_t ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  OrderedNode* Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
+  Ref Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 template void OpDispatchBuilder::DPPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                            const X86Tables::DecodedOperand& Imm) {
+Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
+                                   const X86Tables::DecodedOperand& Imm) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   constexpr size_t ElementSize = 4;
   const uint8_t Mask = Imm.Data.Literal.Value;
@@ -4413,13 +4411,13 @@ OrderedNode* OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::Decoded
 
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  OrderedNode* Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
+  Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
+  Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
-  OrderedNode* ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   // First step is to do an FMUL
-  OrderedNode* Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
+  Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
 
   // Now we zero out elements based on src mask
   for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
@@ -4441,7 +4439,7 @@ OrderedNode* OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::Decoded
 
   // Now using the destination mask we choose where the result ends up
   // It can duplicate and zero results
-  OrderedNode* Result = ZeroVec;
+  Ref Result = ZeroVec;
 
   for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
     const auto Bit = 1U << (i % 4);
@@ -4458,7 +4456,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Result {};
+  Ref Result {};
   if (ElementSize == 4 && DstSize == Core::CPUState::XMM_AVX_REG_SIZE) {
     // 256-bit DPPS isn't handled by the 128-bit solution.
     Result = VDPPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
@@ -4474,23 +4472,23 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
 template void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VDPPOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                                              const X86Tables::DecodedOperand& ImmOp) {
-  const auto LaneHelper = [&, this](uint32_t Selector_Src1, uint32_t Selector_Src2, OrderedNode* Src1, OrderedNode* Src2) {
+Ref OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+                                     const X86Tables::DecodedOperand& ImmOp) {
+  const auto LaneHelper = [&, this](uint32_t Selector_Src1, uint32_t Selector_Src2, Ref Src1, Ref Src2) {
     // Src2 will grab a 32bit element and duplicate it across the 128bits
-    OrderedNode* DupSrc = _VDupElement(16, 4, Src2, Selector_Src2);
+    Ref DupSrc = _VDupElement(16, 4, Src2, Selector_Src2);
 
     // Src1/Dest needs a bunch of magic
 
     // Shift right by selected bytes
     // This will give us Dest[15:0], and Dest[79:64]
-    OrderedNode* Dest1 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 0);
+    Ref Dest1 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 0);
     // This will give us Dest[31:16], and Dest[95:80]
-    OrderedNode* Dest2 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 1);
+    Ref Dest2 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 1);
     // This will give us Dest[47:32], and Dest[111:96]
-    OrderedNode* Dest3 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 2);
+    Ref Dest3 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 2);
     // This will give us Dest[63:48], and Dest[127:112]
-    OrderedNode* Dest4 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 3);
+    Ref Dest4 = _VExtr(16, 1, Src1, Src1, Selector_Src1 + 3);
 
     // For each shifted section, we now have two 32-bit values per vector that can be used
     // Dest1.S[0] and Dest1.S[1] = Bytes - 0,1,2,3:4,5,6,7
@@ -4551,10 +4549,10 @@ OrderedNode* OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::Decod
   const uint8_t Select_Src1_Low = ((Select & 0b100) >> 2) * 32 / 8;
   const uint8_t Select_Src2_Low = Select & 0b11;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
-  OrderedNode* Lower = LaneHelper(Select_Src1_Low, Select_Src2_Low, Src1, Src2);
+  Ref Lower = LaneHelper(Select_Src1_Low, Select_Src2_Low, Src1, Src2);
   if (Is128Bit) {
     return Lower;
   }
@@ -4562,44 +4560,44 @@ OrderedNode* OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::Decod
   const uint8_t Select_Src1_High = ((Select & 0b100000) >> 5) * 32 / 8;
   const uint8_t Select_Src2_High = (Select & 0b11000) >> 3;
 
-  OrderedNode* UpperSrc1 = _VDupElement(32, 16, Src1, 1);
-  OrderedNode* UpperSrc2 = _VDupElement(32, 16, Src2, 1);
-  OrderedNode* Upper = LaneHelper(Select_Src1_High, Select_Src2_High, UpperSrc1, UpperSrc2);
+  Ref UpperSrc1 = _VDupElement(32, 16, Src1, 1);
+  Ref UpperSrc2 = _VDupElement(32, 16, Src2, 1);
+  Ref Upper = LaneHelper(Select_Src1_High, Select_Src2_High, UpperSrc1, UpperSrc2);
   return _VInsElement(32, 16, 1, 0, Lower, Upper);
 }
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
-  OrderedNode* Result = MPSADBWOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  Ref Result = MPSADBWOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VMPSADBWOp(OpcodeArgs) {
-  OrderedNode* Result = MPSADBWOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Result = MPSADBWOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VINSERTOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value & 1;
 
-  OrderedNode* Result = _VInsElement(DstSize, 16, Selector, 0, Src1, Src2);
+  Ref Result = _VInsElement(DstSize, 16, Selector, 0, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
-  OrderedNode* Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
     switch (SelectorIdx) {
@@ -4624,12 +4622,12 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
 void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
-  OrderedNode* Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
-  OrderedNode* IndexMask = _VectorImm(DstSize, 4, 0b111);
-  OrderedNode* SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
+  Ref IndexMask = _VectorImm(DstSize, 4, 0b111);
+  Ref SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
 
   // Build up the broadcasted index mask. e.g. On x86-64, the selector index
   // is always in the lower 3 bits of a 32-bit element. However, in order to
@@ -4661,8 +4659,8 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   //
   // Cool! We now have everything we need to take this further.
 
-  OrderedNode* IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
-  OrderedNode* IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
+  Ref IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
+  Ref IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
 
   // Now that we have the indices set up, now we need to multiply each
   // element by 4 to convert the elements into byte indices rather than
@@ -4673,7 +4671,7 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   // ║ 16 ║║ 16 ║║ 16 ║║ 16 ║║ 4  ║║ 4  ║║ 4  ║║ 4  ║║ 8  ║║ 8  ║║ 8  ║║ 8  ║║ 24 ║║ 24 ║║ 24 ║║ 24 ║║ 28 ║║ 28 ║║ 28 ║║ 28 ║║ 0  ║║ 0  ║║ 0 ║║ 0  ║║ 12 ║║ 12 ║║ 12 ║║ 12 ║║ 20 ║║ 20 ║║ 20 ║║ 20 ║
   // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
   //
-  OrderedNode* ShiftedIndices = _VShlI(DstSize, 1, IndexTrn2, 2);
+  Ref ShiftedIndices = _VShlI(DstSize, 1, IndexTrn2, 2);
 
   // Now we need to add a byte vector containing [3, 2, 1, 0] repeating for the
   // entire length of it, to the index register, so that we specify the bytes
@@ -4686,24 +4684,24 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
   //
   // Which finally lets us permute the source vector and be done with everything.
-  OrderedNode* AddConst = _Constant(0x03020100);
-  OrderedNode* AddVector = _VDupFromGPR(DstSize, 4, AddConst);
-  OrderedNode* FinalIndices = _VAdd(DstSize, 1, ShiftedIndices, AddVector);
+  Ref AddConst = _Constant(0x03020100);
+  Ref AddVector = _VDupFromGPR(DstSize, 4, AddConst);
+  Ref FinalIndices = _VAdd(DstSize, 1, ShiftedIndices, AddVector);
 
   // Now lets finally shuffle this bad boy around.
-  OrderedNode* Result = _VTBL1(DstSize, Src, FinalIndices);
+  Ref Result = _VTBL1(DstSize, Src, FinalIndices);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const auto Selector = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode* Result {};
+  Ref Result {};
 
   // If we're just broadcasting one element in particular across the vector
   // then this can be done fairly simply without any individual inserts.
@@ -4720,11 +4718,10 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-static OrderedNode* VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize, OrderedNode* Src1, OrderedNode* Src2,
-                                 OrderedNode* ZeroRegister, uint64_t Selector) {
+static Ref VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector) {
   const std::array Sources {Src1, Src2};
 
-  OrderedNode* Result = ZeroRegister;
+  Ref Result = ZeroRegister;
   const int NumElements = VecSize / ElementSize;
   for (int i = 0; i < NumElements; i++) {
     const auto SelectorIndex = (Selector >> i) & 1;
@@ -4739,26 +4736,26 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    OrderedNode* Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    Ref Result = Is256Bit ? Src1 : _VMov(16, Src1);
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   // Only the first four bits of the 8-bit immediate are used, so only check them.
   if (((Selector & 0b11) == 0b11 && !Is256Bit) || (Selector & 0b1111) == 0b1111) {
-    OrderedNode* Result = Is256Bit ? Src2 : _VMov(16, Src2);
+    Ref Result = Is256Bit ? Src2 : _VMov(16, Src2);
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
 
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  OrderedNode* Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, ZeroRegister, Selector);
+  Ref Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, ZeroRegister, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4766,8 +4763,8 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
@@ -4782,12 +4779,12 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // silly is happening, we have your back.
 
   if (Selector == 0) {
-    OrderedNode* Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    Ref Result = Is256Bit ? Src1 : _VMov(16, Src1);
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   if (Selector == 0xFF && Is256Bit) {
-    OrderedNode* Result = Is256Bit ? Src2 : _VMov(16, Src2);
+    Ref Result = Is256Bit ? Src2 : _VMov(16, Src2);
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
@@ -4801,7 +4798,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   }
 
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  OrderedNode* Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
+  Ref Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
   if (!Is256Bit) {
     Result = _VMov(16, Result);
   }
@@ -4812,19 +4809,19 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  OrderedNode* Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
-    OrderedNode* Result = Is128Bit ? _VMov(16, Src1) : Src1;
+    Ref Result = Is128Bit ? _VMov(16, Src1) : Src1;
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
   if (Selector == 0xFF) {
-    OrderedNode* Result = Is128Bit ? _VMov(16, Src2) : Src2;
+    Ref Result = Is128Bit ? _VMov(16, Src2) : Src2;
     StoreResult(FPRClass, Op, Result, -1);
     return;
   }
@@ -4835,7 +4832,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto NewSelector = Selector << 8 | Selector;
 
   const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  OrderedNode* Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
+  Ref Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
   if (Is128Bit) {
     Result = _VMov(16, Result);
   }
@@ -4853,15 +4850,15 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
 
     for (uint32_t i = 0; i < NumRegs; i++) {
       // Explicitly not caching named vector zero. This ensures that every register gets movi #0.0 directly.
-      OrderedNode* ZeroVector = _LoadNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+      Ref ZeroVector = _LoadNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
       StoreXMMRegister(i, ZeroVector);
     }
   } else {
     // Likewise, VZEROUPPER will only ever zero only up to the first 16 registers
 
     for (uint32_t i = 0; i < NumRegs; i++) {
-      OrderedNode* Reg = LoadXMMRegister(i);
-      OrderedNode* Dst = _VMov(16, Reg);
+      Ref Reg = LoadXMMRegister(i);
+      Ref Dst = _VMov(16, Reg);
       StoreXMMRegister(i, Dst);
     }
   }
@@ -4875,8 +4872,8 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
 
   if constexpr (ElementSize == 8) {
     Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
@@ -4917,46 +4914,46 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   constexpr auto IsPD = ElementSize == 8;
 
-  const auto SanitizeIndices = [&](OrderedNode* Indices) {
+  const auto SanitizeIndices = [&](Ref Indices) {
     const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
-    OrderedNode* IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
+    Ref IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
     return _VAnd(DstSize, 1, Indices, IndexMask);
   };
 
-  OrderedNode* Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  OrderedNode* Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   if constexpr (IsPD) {
     // VPERMILPD stores the selector in the second bit, rather than the
     // first bit of each element in the index vector. So move it over by one.
     Indices = _VUShrI(DstSize, ElementSize, Indices, 1);
   }
 
-  OrderedNode* SanitizedIndices = SanitizeIndices(Indices);
-  OrderedNode* IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
-  OrderedNode* IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
-  OrderedNode* IndexTrn3 = IndexTrn2;
+  Ref SanitizedIndices = SanitizeIndices(Indices);
+  Ref IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
+  Ref IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
+  Ref IndexTrn3 = IndexTrn2;
   if constexpr (IsPD) {
     IndexTrn3 = _VTrn(DstSize, 4, IndexTrn2, IndexTrn2);
   }
 
   constexpr auto IndexShift = IsPD ? 3 : 2;
-  OrderedNode* ShiftedIndices = _VShlI(DstSize, 1, IndexTrn3, IndexShift);
+  Ref ShiftedIndices = _VShlI(DstSize, 1, IndexTrn3, IndexShift);
 
   constexpr uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
-  OrderedNode* VectorConst = _VDupFromGPR(DstSize, ElementSize, _Constant(VConstant));
-  OrderedNode* FinalIndices {};
+  Ref VectorConst = _VDupFromGPR(DstSize, ElementSize, _Constant(VConstant));
+  Ref FinalIndices {};
 
   if (Is256Bit) {
     const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-    OrderedNode* Vector16 = _VInsElement(DstSize, 16, 1, 0, ZeroRegister, _VectorImm(DstSize, 1, 16));
-    OrderedNode* IndexOffsets = _VAdd(DstSize, 1, VectorConst, Vector16);
+    Ref Vector16 = _VInsElement(DstSize, 16, 1, 0, ZeroRegister, _VectorImm(DstSize, 1, 16));
+    Ref IndexOffsets = _VAdd(DstSize, 1, VectorConst, Vector16);
 
     FinalIndices = _VAdd(DstSize, 1, IndexOffsets, ShiftedIndices);
   } else {
     FinalIndices = _VAdd(DstSize, 1, VectorConst, ShiftedIndices);
   }
 
-  OrderedNode* Result = _VTBL1(DstSize, Src, FinalIndices);
+  Ref Result = _VTBL1(DstSize, Src, FinalIndices);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -4978,10 +4975,10 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   //       instructions in the Intel Software Development Manual).
   //
   //       So, we specify Src2 as having an alignment of 1 to indicate this.
-  OrderedNode* Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
-  OrderedNode* Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, {.Align = 1});
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, {.Align = 1});
 
-  OrderedNode* IntermediateResult {};
+  Ref IntermediateResult {};
   if (IsExplicit) {
     // Will be 4 in the absence of a REX.W bit and 8 in the presence of a REX.W bit.
     //
@@ -4992,15 +4989,15 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     const auto Is64Bit = SrcSize == 8;
     const auto NewControl = uint16_t(Control | (uint16_t(Is64Bit) << 8));
 
-    OrderedNode* SrcRAX = LoadGPRRegister(X86State::REG_RAX);
-    OrderedNode* SrcRDX = LoadGPRRegister(X86State::REG_RDX);
+    Ref SrcRAX = LoadGPRRegister(X86State::REG_RAX);
+    Ref SrcRDX = LoadGPRRegister(X86State::REG_RDX);
 
     IntermediateResult = _VPCMPESTRX(Src1, Src2, SrcRAX, SrcRDX, NewControl);
   } else {
     IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
   }
 
-  OrderedNode* ZeroConst = _Constant(0);
+  Ref ZeroConst = _Constant(0);
 
   if (IsMask) {
     // For the masked variant of the instructions, if control[6] is set, then we
@@ -5019,9 +5016,9 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       const auto ElementSize = 1U << (Control & 1);
       const auto NumElements = 16U >> (Control & 1);
 
-      OrderedNode* Result = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+      Ref Result = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
       for (uint32_t i = 0; i < NumElements; i++) {
-        OrderedNode* SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
+        Ref SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
         Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
       }
       StoreXMMRegister(0, Result);
@@ -5035,11 +5032,11 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     // then we store the least significant bit.
     const auto UseMSBIndex = (Control & 0b0100'0000) != 0;
 
-    OrderedNode* ResultNoFlags = _Bfe(OpSize::i32Bit, 16, 0, IntermediateResult);
+    Ref ResultNoFlags = _Bfe(OpSize::i32Bit, 16, 0, IntermediateResult);
 
-    OrderedNode* IfZero = _Constant(16 >> (Control & 1));
-    OrderedNode* IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
-    OrderedNode* Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
+    Ref IfZero = _Constant(16 >> (Control & 1));
+    Ref IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
+    Ref Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
     // Store the result, it is already zero-extended to 64-bit implicitly.
     StoreGPRRegister(X86State::REG_RCX, Result);

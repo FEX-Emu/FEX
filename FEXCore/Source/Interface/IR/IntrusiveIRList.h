@@ -219,12 +219,12 @@ public:
   }
 
   [[nodiscard]]
-  NodeID GetID(const OrderedNode* Node) const {
+  NodeID GetID(const Ref Node) const {
     return Node->Wrapped(GetListData()).ID();
   }
 
   [[nodiscard]]
-  OrderedNode* GetHeaderNode() const {
+  Ref GetHeaderNode() const {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
     return Wrapped.GetNode(GetListData());
@@ -237,7 +237,7 @@ public:
 
   template<typename T>
   [[nodiscard]]
-  T* GetOp(OrderedNode* Node) const {
+  T* GetOp(Ref Node) const {
     auto OpHeader = Node->Op(GetData());
     auto Op = OpHeader->template CW<T>();
 
@@ -258,13 +258,13 @@ public:
   }
 
   [[nodiscard]]
-  OrderedNode* GetNode(OrderedNodeWrapper Wrapper) const {
+  Ref GetNode(OrderedNodeWrapper Wrapper) const {
     return Wrapper.GetNode(GetListData());
   }
 
   ///< Gets an OrderedNode from the IRListView as an OrderedNodeWrapper.
   [[nodiscard]]
-  OrderedNodeWrapper WrapNode(OrderedNode* Node) const {
+  OrderedNodeWrapper WrapNode(Ref Node) const {
     return Node->Wrapped(GetListData());
   }
 
@@ -337,7 +337,7 @@ public:
   }
 
   [[nodiscard]]
-  CodeRange GetCode(const OrderedNode* block) const {
+  CodeRange GetCode(const Ref block) const {
     return CodeRange(this, block->Wrapped(GetListData()));
   }
 
@@ -382,7 +382,7 @@ public:
   }
 
   [[nodiscard]]
-  iterator at(const OrderedNode* Node) const noexcept {
+  iterator at(const Ref Node) const noexcept {
     const auto ListData = GetListData();
     auto Wrapped = Node->Wrapped(ListData);
     return iterator(ListData, GetData(), Wrapped);
