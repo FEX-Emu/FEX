@@ -86,11 +86,7 @@ private:
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
   void ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR);
 
-  struct ConstPoolData {
-    Ref Node;
-    IR::NodeID NodeID;
-  };
-  fextl::unordered_map<uint64_t, ConstPoolData> ConstPool;
+  fextl::unordered_map<uint64_t, Ref> ConstPool;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.
   fextl::robin_map<uint64_t, Ref> InlineConstantGen;
@@ -104,11 +100,6 @@ private:
   }
   bool SupportsTSOImm9 {};
   const FEXCore::CPUIDEmu* CPUID;
-  // This is a heuristic to limit constant pool live ranges to reduce RA interference pressure.
-  // If the range is unbounded then RA interference pressure seems to increase to the point
-  // that long blocks of constant usage can slow to a crawl.
-  // See https://github.com/FEX-Emu/FEX/issues/2688 for more information.
-  constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
 
   void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, Ref CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
                           MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
@@ -142,27 +133,13 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_CONSTANT) {
         auto Op = IROp->C<IR::IROp_Constant>();
-        const auto NewNodeID = CurrentIR.GetID(CodeNode);
-
         auto it = ConstPool.find(Op->Constant);
+
         if (it != ConstPool.end()) {
-          const auto OldNodeID = it->second.NodeID;
-
-          if ((NewNodeID.Value - OldNodeID.Value) > CONSTANT_POOL_RANGE_LIMIT) {
-            // Don't reuse if the live range is beyond the heurstic range.
-            // Update the tracked value to this new constant.
-            it->second.Node = CodeNode;
-            it->second.NodeID = NewNodeID;
-            continue;
-          }
-
           auto CodeIter = CurrentIR.at(CodeNode);
-          IREmit->ReplaceUsesWithAfter(CodeNode, it->second.Node, CodeIter);
+          IREmit->ReplaceUsesWithAfter(CodeNode, it->second, CodeIter);
         } else {
-          ConstPool[Op->Constant] = ConstPoolData {
-            .Node = CodeNode,
-            .NodeID = NewNodeID,
-          };
+          ConstPool[Op->Constant] = CodeNode;
         }
       }
     }
