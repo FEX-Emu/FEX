@@ -54,7 +54,6 @@ void InlineCallOptimization::Run(IREmitter* IREmit) {
           for (uint8_t Arg = (SyscallDef.NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
             IREmit->ReplaceNodeArgument(CodeNode, Arg, IREmit->Invalid());
           }
-#ifdef _M_ARM_64
           // Replace syscall with inline passthrough syscall if we can
           if (SyscallDef.HostSyscallNumber != -1) {
             IREmit->SetWriteCursor(CodeNode);
@@ -70,7 +69,6 @@ void InlineCallOptimization::Run(IREmitter* IREmit) {
             // We must remove here since DCE can't remove a IROp with sideeffects
             IREmit->Remove(CodeNode);
           }
-#endif
         }
       }
     } else if (IROp->Op == FEXCore::IR::OP_CPUID) {
