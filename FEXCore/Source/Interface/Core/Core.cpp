@@ -366,7 +366,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
 
   Thread->CTX = this;
 
-  Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT);
+  Thread->PassManager->AddDefaultPasses(this);
   Thread->PassManager->AddDefaultValidationPasses();
 
   Thread->PassManager->RegisterSyscallHandler(SyscallHandler);

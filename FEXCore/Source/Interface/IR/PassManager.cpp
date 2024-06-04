@@ -66,21 +66,13 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx, bool InlineConstants) {
+void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
     InsertPass(CreateContextLoadStoreElimination(ctx->HostFeatures.SupportsAVX));
-
-    if (Is64BitMode()) {
-      // This needs to run after RCLSE
-      // This only matters for 64-bit code since these instructions don't exist in 32-bit
-      InsertPass(CreateLongDivideEliminationPass());
-    }
-
     InsertPass(CreateDeadStoreElimination());
-    InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9));
-    InsertPass(CreateInlineCallOptimization(&ctx->CPUID));
+    InsertPass(CreateConstProp(ctx->HostFeatures.SupportsTSOImm9, &ctx->CPUID));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
 }

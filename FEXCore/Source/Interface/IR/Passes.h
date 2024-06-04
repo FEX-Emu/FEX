@@ -16,13 +16,11 @@ class Pass;
 class RegisterAllocationPass;
 class RegisterAllocationData;
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX);
-fextl::unique_ptr<FEXCore::IR::Pass> CreateInlineCallOptimization(const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination();
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass();
-fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
 namespace Validation {
   fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();

@@ -2,7 +2,7 @@
 /*
 $info$
 tags: ir|opts
-desc: ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
+desc: ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
 $end_info$
 */
 
@@ -15,8 +15,10 @@ $end_info$
 
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
+#include "Interface/Core/CPUID.h"
 
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/map.h>
@@ -73,25 +75,18 @@ static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  explicit ConstProp(bool DoInlineConstants, bool SupportsTSOImm9)
-    : InlineConstants(DoInlineConstants)
-    , SupportsTSOImm9 {SupportsTSOImm9} {}
+  explicit ConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID)
+    : SupportsTSOImm9 {SupportsTSOImm9}
+    , CPUID {CPUID} {}
 
   void Run(IREmitter* IREmit) override;
-
-  bool InlineConstants;
 
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
   void ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR);
 
-  struct ConstPoolData {
-    Ref Node;
-    IR::NodeID NodeID;
-  };
-  fextl::unordered_map<uint64_t, ConstPoolData> ConstPool;
-  fextl::map<Ref, uint64_t> AddressgenConsts;
+  fextl::unordered_map<uint64_t, Ref> ConstPool;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.
   fextl::robin_map<uint64_t, Ref> InlineConstantGen;
@@ -104,11 +99,7 @@ private:
     return Result.first->second;
   }
   bool SupportsTSOImm9 {};
-  // This is a heuristic to limit constant pool live ranges to reduce RA interference pressure.
-  // If the range is unbounded then RA interference pressure seems to increase to the point
-  // that long blocks of constant usage can slow to a crawl.
-  // See https://github.com/FEX-Emu/FEX/issues/2688 for more information.
-  constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
+  const FEXCore::CPUIDEmu* CPUID;
 
   void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, Ref CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
                           MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
@@ -136,65 +127,22 @@ private:
   }
 };
 
-// Constants are pooled per block. Similarly for LoadMem / StoreMem, if imms are
-// close by, use address gen to generate the values instead of using a new imm.
+// Constants are pooled per block.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
-        size_t AddrIndex = 0;
-        size_t OffsetIndex = 0;
-
-        if (IROp->Op == OP_LOADMEM) {
-          AddrIndex = IR::IROp_LoadMem::Addr_Index;
-          OffsetIndex = IR::IROp_LoadMem::Offset_Index;
-        } else {
-          AddrIndex = IR::IROp_StoreMem::Addr_Index;
-          OffsetIndex = IR::IROp_StoreMem::Offset_Index;
-        }
-        uint64_t Addr;
-
-        if (IREmit->IsValueConstant(IROp->Args[AddrIndex], &Addr) && IROp->Args[OffsetIndex].IsInvalid()) {
-          for (auto& Const : AddressgenConsts) {
-            if ((Addr - Const.second) < 65536) {
-              IREmit->ReplaceNodeArgument(CodeNode, AddrIndex, Const.first);
-              IREmit->ReplaceNodeArgument(CodeNode, OffsetIndex, IREmit->_Constant(Addr - Const.second));
-              goto doneOp;
-            }
-          }
-
-          AddressgenConsts[IREmit->UnwrapNode(IROp->Args[AddrIndex])] = Addr;
-        }
-doneOp:;
-      } else if (IROp->Op == OP_CONSTANT) {
+      if (IROp->Op == OP_CONSTANT) {
         auto Op = IROp->C<IR::IROp_Constant>();
-        const auto NewNodeID = CurrentIR.GetID(CodeNode);
-
         auto it = ConstPool.find(Op->Constant);
+
         if (it != ConstPool.end()) {
-          const auto OldNodeID = it->second.NodeID;
-
-          if ((NewNodeID.Value - OldNodeID.Value) > CONSTANT_POOL_RANGE_LIMIT) {
-            // Don't reuse if the live range is beyond the heurstic range.
-            // Update the tracked value to this new constant.
-            it->second.Node = CodeNode;
-            it->second.NodeID = NewNodeID;
-            continue;
-          }
-
           auto CodeIter = CurrentIR.at(CodeNode);
-          IREmit->ReplaceUsesWithAfter(CodeNode, it->second.Node, CodeIter);
+          IREmit->ReplaceUsesWithAfter(CodeNode, it->second, CodeIter);
         } else {
-          ConstPool[Op->Constant] = ConstPoolData {
-            .Node = CodeNode,
-            .NodeID = NewNodeID,
-          };
+          ConstPool[Op->Constant] = CodeNode;
         }
       }
-
-      IREmit->SetWriteCursor(CodeNode);
     }
-    AddressgenConsts.clear();
     ConstPool.clear();
   }
 }
@@ -286,28 +234,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
       // OR with same value results in original value
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
-    }
-    break;
-  }
-  case OP_ORLSHL: {
-    auto Op = IROp->CW<IR::IROp_Orlshl>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 | (Constant2 << Op->BitShift);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
-  case OP_ORLSHR: {
-    auto Op = IROp->CW<IR::IROp_Orlshr>();
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 | (Constant2 >> Op->BitShift);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     }
     break;
   }
@@ -508,6 +434,141 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
+
+  case OP_SYSCALL: {
+    auto Op = IROp->CW<IR::IROp_Syscall>();
+
+    // Is the first argument a constant?
+    uint64_t Constant;
+    if (IREmit->IsValueConstant(Op->SyscallID, &Constant)) {
+      auto SyscallDef = Manager->SyscallHandler->GetSyscallABI(Constant);
+      auto SyscallFlags = Manager->SyscallHandler->GetSyscallFlags(Constant);
+
+      // Update the syscall flags
+      Op->Flags = SyscallFlags;
+
+      // XXX: Once we have the ability to do real function calls then we can call directly in to the syscall handler
+      if (SyscallDef.NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
+        // If the number of args are less than what the IR op supports then we can remove arg usage
+        // We need +1 since we are still passing in syscall number here
+        for (uint8_t Arg = (SyscallDef.NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
+          IREmit->ReplaceNodeArgument(CodeNode, Arg, IREmit->Invalid());
+        }
+        // Replace syscall with inline passthrough syscall if we can
+        if (SyscallDef.HostSyscallNumber != -1) {
+          IREmit->SetWriteCursor(CodeNode);
+          // Skip Args[0] since that is the syscallid
+          auto InlineSyscall =
+            IREmit->_InlineSyscall(CurrentIR.GetNode(IROp->Args[1]), CurrentIR.GetNode(IROp->Args[2]), CurrentIR.GetNode(IROp->Args[3]),
+                                   CurrentIR.GetNode(IROp->Args[4]), CurrentIR.GetNode(IROp->Args[5]), CurrentIR.GetNode(IROp->Args[6]),
+                                   SyscallDef.HostSyscallNumber, Op->Flags);
+
+          // Replace all syscall uses with this inline one
+          IREmit->ReplaceAllUsesWith(CodeNode, InlineSyscall);
+
+          // We must remove here since DCE can't remove a IROp with sideeffects
+          IREmit->Remove(CodeNode);
+        }
+      }
+    }
+    break;
+  }
+
+  case OP_CPUID: {
+    auto Op = IROp->CW<IR::IROp_CPUID>();
+
+    uint64_t ConstantFunction {}, ConstantLeaf {};
+    bool IsConstantFunction = IREmit->IsValueConstant(Op->Function, &ConstantFunction);
+    bool IsConstantLeaf = IREmit->IsValueConstant(Op->Leaf, &ConstantLeaf);
+    // If the CPUID function is constant then we can try and optimize.
+    if (IsConstantFunction) { // && ConstantFunction != 1) {
+      // Check if it supports constant data reporting for this function.
+      const auto SupportsConstant = CPUID->DoesFunctionReportConstantData(ConstantFunction);
+      if (SupportsConstant.SupportsConstantFunction == CPUIDEmu::SupportsConstant::CONSTANT) {
+        // If the CPUID needs a constant leaf to be optimized then this can't work if we didn't const-prop the leaf register.
+        if (!(SupportsConstant.NeedsLeaf == CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT && !IsConstantLeaf)) {
+          // Calculate the constant data and replace all uses.
+          // DCE will remove the CPUID IR operation.
+          const auto ConstantCPUIDResult = CPUID->RunFunction(ConstantFunction, ConstantLeaf);
+          uint64_t ResultsLower = (static_cast<uint64_t>(ConstantCPUIDResult.ebx) << 32) | ConstantCPUIDResult.eax;
+          uint64_t ResultsUpper = (static_cast<uint64_t>(ConstantCPUIDResult.edx) << 32) | ConstantCPUIDResult.ecx;
+          IREmit->SetWriteCursor(CodeNode);
+          auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i128Bit, IREmit->_Constant(ResultsLower), IREmit->_Constant(ResultsUpper));
+          // Replace all CPUID uses with this inline one
+          IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+        }
+      }
+    }
+    break;
+  }
+
+  case OP_XGETBV: {
+    auto Op = IROp->CW<IR::IROp_XGetBV>();
+
+    uint64_t ConstantFunction {};
+    if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) && CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
+      const auto ConstantXCRResult = CPUID->RunXCRFunction(ConstantFunction);
+      IREmit->SetWriteCursor(CodeNode);
+      auto ElementPair =
+        IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
+      // Replace all xgetbv uses with this inline one
+      IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+    }
+    break;
+  }
+
+  case OP_LDIV:
+  case OP_LREM: {
+    auto Op = IROp->C<IR::IROp_LDiv>();
+    auto UpperIROp = IREmit->GetOpHeader(Op->Upper);
+
+    // Check upper Op to see if it came from a sign-extension
+    if (UpperIROp->Op != OP_SBFE) {
+      break;
+    }
+
+    auto Sbfe = UpperIROp->C<IR::IROp_Sbfe>();
+    if (Sbfe->Width != 1 || Sbfe->lsb != 63 || Sbfe->Header.Args[0] != Op->Lower) {
+      break;
+    }
+
+    // If it does then it we only need a 64bit SDIV
+    IREmit->SetWriteCursor(CodeNode);
+    Ref Lower = CurrentIR.GetNode(Op->Lower);
+    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+    Ref SDivOp {};
+    if (IROp->Op == OP_LDIV) {
+      SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
+    } else {
+      SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
+    }
+    IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
+    break;
+  }
+
+  case OP_LUDIV:
+  case OP_LUREM: {
+    auto Op = IROp->C<IR::IROp_LUDiv>();
+    // Check upper Op to see if it came from a zeroing op
+    // If it does then it we only need a 64bit UDIV
+    uint64_t Value;
+    if (!IREmit->IsValueConstant(Op->Upper, &Value) || Value != 0) {
+      break;
+    }
+
+    IREmit->SetWriteCursor(CodeNode);
+    Ref Lower = CurrentIR.GetNode(Op->Lower);
+    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
+    Ref UDivOp {};
+    if (IROp->Op == OP_LUDIV) {
+      UDivOp = IREmit->_UDiv(OpSize::i64Bit, Lower, Divisor);
+    } else {
+      UDivOp = IREmit->_URem(OpSize::i64Bit, Lower, Divisor);
+    }
+    IREmit->ReplaceAllUsesWith(CodeNode, UDivOp);
+    break;
+  }
+
   default: break;
   }
 }
@@ -761,12 +822,10 @@ void ConstProp::Run(IREmitter* IREmit) {
     ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
   }
 
-  if (InlineConstants) {
-    ConstantInlining(IREmit, CurrentIR);
-  }
+  ConstantInlining(IREmit, CurrentIR);
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9) {
-  return fextl::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<ConstProp>(SupportsTSOImm9, CPUID);
 }
 } // namespace FEXCore::IR
