@@ -83,19 +83,19 @@ public:
 
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
-  void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp);
+  void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
   void ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR);
 
   struct ConstPoolData {
-    OrderedNode* Node;
+    Ref Node;
     IR::NodeID NodeID;
   };
   fextl::unordered_map<uint64_t, ConstPoolData> ConstPool;
-  fextl::map<OrderedNode*, uint64_t> AddressgenConsts;
+  fextl::map<Ref, uint64_t> AddressgenConsts;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.
-  fextl::robin_map<uint64_t, OrderedNode*> InlineConstantGen;
-  OrderedNode* CreateInlineConstant(IREmitter* IREmit, uint64_t Constant) {
+  fextl::robin_map<uint64_t, Ref> InlineConstantGen;
+  Ref CreateInlineConstant(IREmitter* IREmit, uint64_t Constant) {
     const auto it = InlineConstantGen.find(Constant);
     if (it != InlineConstantGen.end()) {
       return it->second;
@@ -110,7 +110,7 @@ private:
   // See https://github.com/FEX-Emu/FEX/issues/2688 for more information.
   constexpr static uint32_t CONSTANT_POOL_RANGE_LIMIT = 500;
 
-  void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, OrderedNode* CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
+  void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, Ref CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
                           MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
     uint64_t Imm {};
     if (OffsetType != MEM_OFFSET_SXTX || !IREmit->IsValueConstant(Offset, &Imm)) {
@@ -200,7 +200,7 @@ doneOp:;
 }
 
 // constprop + some more per instruction logic
-void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, OrderedNode* CodeNode, IROp_Header* IROp) {
+void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp) {
   switch (IROp->Op) {
   case OP_ADD:
   case OP_SUB:
@@ -334,7 +334,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         }
 
         IREmit->SetWriteCursor(CodeNode);
-        OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[1 - i]);
+        Ref Arg = CurrentIR.GetNode(IROp->Args[1 - i]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         break;
       }
@@ -361,7 +361,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
+      Ref Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
     }
     break;
@@ -377,7 +377,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      OrderedNode* Arg = CurrentIR.GetNode(IROp->Args[0]);
+      Ref Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
     }
     break;

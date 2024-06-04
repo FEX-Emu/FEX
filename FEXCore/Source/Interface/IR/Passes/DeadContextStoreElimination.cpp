@@ -75,9 +75,9 @@ struct ContextMemberInfo {
   uint32_t AccessOffset;
   uint8_t AccessSize;
   ///< The last value that was loaded or stored.
-  FEXCore::IR::OrderedNode* ValueNode;
+  FEXCore::IR::Ref ValueNode;
   ///< With a store access, the store node that is doing the operation.
-  FEXCore::IR::OrderedNode* StoreNode;
+  FEXCore::IR::Ref StoreNode;
 };
 
 struct ContextInfo {
@@ -445,8 +445,8 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
 }
 
 struct BlockInfo {
-  fextl::vector<FEXCore::IR::OrderedNode*> Predecessors;
-  fextl::vector<FEXCore::IR::OrderedNode*> Successors;
+  fextl::vector<FEXCore::IR::Ref> Predecessors;
+  fextl::vector<FEXCore::IR::Ref> Successors;
   ContextInfo IncomingClassifiedStruct;
   ContextInfo OutgoingClassifiedStruct;
 };
@@ -466,17 +466,17 @@ private:
 
   ContextMemberInfo* FindMemberInfo(ContextInfo* ClassifiedInfo, uint32_t Offset, uint8_t Size);
   ContextMemberInfo* RecordAccess(ContextMemberInfo* Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
-                                  LastAccessType AccessType, FEXCore::IR::OrderedNode* Node, FEXCore::IR::OrderedNode* StoreNode = nullptr);
+                                  LastAccessType AccessType, FEXCore::IR::Ref Node, FEXCore::IR::Ref StoreNode = nullptr);
   ContextMemberInfo* RecordAccess(ContextInfo* ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
-                                  LastAccessType AccessType, FEXCore::IR::OrderedNode* Node, FEXCore::IR::OrderedNode* StoreNode = nullptr);
+                                  LastAccessType AccessType, FEXCore::IR::Ref Node, FEXCore::IR::Ref StoreNode = nullptr);
 
-  void HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag);
+  void HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::Ref CodeNode, unsigned Flag);
 
   // Classify context loads and stores.
   void ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
-                           uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::NodeIterator BlockEnd);
+                           uint8_t Size, FEXCore::IR::Ref CodeNode, FEXCore::IR::NodeIterator BlockEnd);
   void ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset,
-                            uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::OrderedNode* ValueNode);
+                            uint8_t Size, FEXCore::IR::Ref CodeNode, FEXCore::IR::Ref ValueNode);
 
   // Block local Passes
   void RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit);
@@ -499,7 +499,7 @@ ContextMemberInfo* RCLSE::FindMemberInfo(ContextInfo* ContextClassificationInfo,
 }
 
 ContextMemberInfo* RCLSE::RecordAccess(ContextMemberInfo* Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
-                                       LastAccessType AccessType, FEXCore::IR::OrderedNode* ValueNode, FEXCore::IR::OrderedNode* StoreNode) {
+                                       LastAccessType AccessType, FEXCore::IR::Ref ValueNode, FEXCore::IR::Ref StoreNode) {
   LOGMAN_THROW_AA_FMT((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
   LOGMAN_THROW_AA_FMT(Info->Accessed != LastAccessType::INVALID, "Tried to access invalid member");
 
@@ -523,13 +523,13 @@ ContextMemberInfo* RCLSE::RecordAccess(ContextMemberInfo* Info, FEXCore::IR::Reg
 }
 
 ContextMemberInfo* RCLSE::RecordAccess(ContextInfo* ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
-                                       LastAccessType AccessType, FEXCore::IR::OrderedNode* ValueNode, FEXCore::IR::OrderedNode* StoreNode) {
+                                       LastAccessType AccessType, FEXCore::IR::Ref ValueNode, FEXCore::IR::Ref StoreNode) {
   ContextMemberInfo* Info = FindMemberInfo(ClassifiedInfo, Offset, Size);
   return RecordAccess(Info, RegClass, Offset, Size, AccessType, ValueNode, StoreNode);
 }
 
 void RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
-                                uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::NodeIterator BlockEnd) {
+                                uint32_t Offset, uint8_t Size, FEXCore::IR::Ref CodeNode, FEXCore::IR::NodeIterator BlockEnd) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
   RecordAccess(Info, Class, Offset, Size, LastAccessType::READ, CodeNode);
@@ -546,7 +546,7 @@ void RCLSE::ClassifyContextLoad(FEXCore::IR::IREmitter* IREmit, ContextInfo* Loc
 }
 
 void RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::RegisterClassType Class,
-                                 uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode* CodeNode, FEXCore::IR::OrderedNode* ValueNode) {
+                                 uint32_t Offset, uint8_t Size, FEXCore::IR::Ref CodeNode, FEXCore::IR::Ref ValueNode) {
   auto Info = FindMemberInfo(LocalInfo, Offset, Size);
   ContextMemberInfo PreviousMemberInfoCopy = *Info;
   RecordAccess(Info, Class, Offset, Size, LastAccessType::WRITE, ValueNode, CodeNode);
@@ -564,7 +564,7 @@ void RCLSE::ClassifyContextStore(FEXCore::IR::IREmitter* IREmit, ContextInfo* Lo
   // TODO: Optimize the case of partial stores.
 }
 
-void RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::OrderedNode* CodeNode, unsigned Flag) {
+void RCLSE::HandleLoadFlag(FEXCore::IR::IREmitter* IREmit, ContextInfo* LocalInfo, FEXCore::IR::Ref CodeNode, unsigned Flag) {
   const auto FlagOffset = offsetof(FEXCore::Core::CPUState, flags[Flag]);
   auto Info = FindMemberInfo(LocalInfo, FlagOffset, 1);
   LastAccessType LastAccess = Info->Accessed;

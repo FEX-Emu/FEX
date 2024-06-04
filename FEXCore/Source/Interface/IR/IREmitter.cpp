@@ -34,7 +34,7 @@ bool IsBlockExit(FEXCore::IR::IROps Op) {
   }
 }
 
-FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(OrderedNode* Node) {
+FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(Ref Node) {
   auto Class = GetOpRegClass(Node);
   switch (Class) {
   case GPRClass:
@@ -92,12 +92,12 @@ void IREmitter::ResetWorkingList() {
   CodeBlocks.clear();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
-  InvalidNode = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(sizeof(OrderedNode)));
+  InvalidNode = reinterpret_cast<Ref>(DualListData.ListAllocate(sizeof(OrderedNode)));
   memset(InvalidNode, 0, sizeof(OrderedNode));
   CurrentCodeBlock = nullptr;
 }
 
-void IREmitter::ReplaceAllUsesWithRange(OrderedNode* Node, OrderedNode* NewNode, AllNodesIterator Begin, AllNodesIterator End) {
+void IREmitter::ReplaceAllUsesWithRange(Ref Node, Ref NewNode, AllNodesIterator Begin, AllNodesIterator End) {
   uintptr_t ListBegin = DualListData.ListBegin();
   auto NodeId = Node->Wrapped(ListBegin).ID();
 
@@ -122,19 +122,19 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode* Node, OrderedNode* NewNode,
   }
 }
 
-void IREmitter::ReplaceNodeArgument(OrderedNode* Node, uint8_t Arg, OrderedNode* NewArg) {
+void IREmitter::ReplaceNodeArgument(Ref Node, uint8_t Arg, Ref NewArg) {
   uintptr_t ListBegin = DualListData.ListBegin();
   uintptr_t DataBegin = DualListData.DataBegin();
 
   FEXCore::IR::IROp_Header* IROp = Node->Op(DataBegin);
   OrderedNodeWrapper OldArgWrapper = IROp->Args[Arg];
-  OrderedNode* OldArg = OldArgWrapper.GetNode(ListBegin);
+  Ref OldArg = OldArgWrapper.GetNode(ListBegin);
   OldArg->RemoveUse();
   NewArg->AddUse();
   IROp->Args[Arg].NodeOffset = NewArg->Wrapped(ListBegin).NodeOffset;
 }
 
-void IREmitter::RemoveArgUses(OrderedNode* Node) {
+void IREmitter::RemoveArgUses(Ref Node) {
   uintptr_t ListBegin = DualListData.ListBegin();
   uintptr_t DataBegin = DualListData.DataBegin();
 
@@ -147,13 +147,13 @@ void IREmitter::RemoveArgUses(OrderedNode* Node) {
   }
 }
 
-void IREmitter::Remove(OrderedNode* Node) {
+void IREmitter::Remove(Ref Node) {
   RemoveArgUses(Node);
 
   Node->Unlink(DualListData.ListBegin());
 }
 
-IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode* insertAfter) {
+IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(Ref insertAfter) {
   auto OldCursor = GetWriteCursor();
 
   auto CodeNode = CreateCodeNode();
@@ -179,14 +179,14 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
   return CodeNode;
 }
 
-void IREmitter::SetCurrentCodeBlock(OrderedNode* Node) {
+void IREmitter::SetCurrentCodeBlock(Ref Node) {
   CurrentCodeBlock = Node;
   LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'",
                      IR::GetName(Node->Op(DualListData.DataBegin())->Op));
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 }
 
-void IREmitter::ReplaceWithConstant(OrderedNode* Node, uint64_t Value) {
+void IREmitter::ReplaceWithConstant(Ref Node, uint64_t Value) {
   auto Header = Node->Op(DualListData.DataBegin());
 
   if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {

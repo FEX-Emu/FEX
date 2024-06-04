@@ -50,7 +50,7 @@ public:
    *
    * @{ */
 
-  FEXCore::IR::RegisterClassType WalkFindRegClass(OrderedNode* Node);
+  FEXCore::IR::RegisterClassType WalkFindRegClass(Ref Node);
 
 // These handlers add cost to the constructor and destructor
 // If it becomes an issue then blow them away
@@ -70,14 +70,14 @@ public:
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
-  IRPair<IROp_CondJump> _CondJump(OrderedNode* ssa0, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> _CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
     return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
-  IRPair<IROp_CondJump> _CondJump(OrderedNode* ssa0, OrderedNode* ssa1, OrderedNode* ssa2, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
     return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
   // TODO: Work to remove this implicit sized Select implementation.
-  IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode* ssa0, OrderedNode* ssa1, OrderedNode* ssa2, OrderedNode* ssa3, uint8_t CompareSize = 0) {
+  IRPair<IROp_Select> _Select(uint8_t Cond, Ref ssa0, Ref ssa1, Ref ssa2, Ref ssa3, uint8_t CompareSize = 0) {
     if (CompareSize == 0) {
       CompareSize = std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa0), GetOpSize(ssa1)));
     }
@@ -85,54 +85,53 @@ public:
     return _Select(IR::SizeToOpSize(std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa2), GetOpSize(ssa3)))),
                    IR::SizeToOpSize(CompareSize), CondClassType {Cond}, ssa0, ssa1, ssa2, ssa3);
   }
-  IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* ssa0, uint8_t Align = 1) {
+  IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* ssa0, uint8_t Align = 1) {
+  IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
     return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* Addr, OrderedNode* Value, uint8_t Align = 1) {
+  IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_StoreMemTSO>
-  _StoreMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode* Addr, OrderedNode* Value, uint8_t Align = 1) {
+  IRPair<IROp_StoreMemTSO> _StoreMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
     return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  OrderedNode* Invalid() {
+  Ref Invalid() {
     return InvalidNode;
   }
 
-  void SetJumpTarget(IR::IROp_Jump* Op, OrderedNode* Target) {
+  void SetJumpTarget(IR::IROp_Jump* Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting Jump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->Header.Args[0].NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
-  void SetTrueJumpTarget(IR::IROp_CondJump* Op, OrderedNode* Target) {
+  void SetTrueJumpTarget(IR::IROp_CondJump* Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting CondJump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->TrueBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
-  void SetFalseJumpTarget(IR::IROp_CondJump* Op, OrderedNode* Target) {
+  void SetFalseJumpTarget(IR::IROp_CondJump* Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting CondJump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->FalseBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
 
-  void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode* Target) {
+  void SetJumpTarget(IRPair<IROp_Jump> Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting Jump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op.first->Header.Args[0].NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
-  void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode* Target) {
+  void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting CondJump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->TrueBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
-  void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode* Target) {
+  void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, Ref Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Tried setting CondJump target to %{} {}",
                        Target->Wrapped(DualListData.ListBegin()).ID(), IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->FalseBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
@@ -140,12 +139,12 @@ public:
 
   /**  @} */
   FEXCore::IR::RegisterClassType WalkFindRegClass(OrderedNodeWrapper ssa) {
-    OrderedNode* RealNode = ssa.GetNode(DualListData.ListBegin());
+    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     return WalkFindRegClass(RealNode);
   }
 
   bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t* Constant = nullptr) {
-    OrderedNode* RealNode = ssa.GetNode(DualListData.ListBegin());
+    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
     if (IROp->Op == OP_CONSTANT) {
       auto Op = IROp->C<IR::IROp_Constant>();
@@ -158,7 +157,7 @@ public:
   }
 
   bool IsValueInlineConstant(OrderedNodeWrapper ssa) {
-    OrderedNode* RealNode = ssa.GetNode(DualListData.ListBegin());
+    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
     if (IROp->Op == OP_INLINECONSTANT) {
       return true;
@@ -167,15 +166,15 @@ public:
   }
 
   FEXCore::IR::IROp_Header* GetOpHeader(OrderedNodeWrapper ssa) {
-    OrderedNode* RealNode = ssa.GetNode(DualListData.ListBegin());
+    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     return RealNode->Op(DualListData.DataBegin());
   }
 
-  OrderedNode* UnwrapNode(OrderedNodeWrapper ssa) {
+  Ref UnwrapNode(OrderedNodeWrapper ssa) {
     return ssa.GetNode(DualListData.ListBegin());
   }
 
-  OrderedNodeWrapper WrapNode(OrderedNode* node) {
+  OrderedNodeWrapper WrapNode(Ref node) {
     return node->Wrapped(DualListData.ListBegin());
   }
 
@@ -186,23 +185,23 @@ public:
   // Overwrite a node with a constant
   // Depending on what node has been overwritten, there might be some unallocated space around the node
   // Because we are overwriting the node, we don't have to worry about update all the arguments which use it
-  void ReplaceWithConstant(OrderedNode* Node, uint64_t Value);
+  void ReplaceWithConstant(Ref Node, uint64_t Value);
 
-  void ReplaceAllUsesWithRange(OrderedNode* Node, OrderedNode* NewNode, AllNodesIterator Begin, AllNodesIterator End);
+  void ReplaceAllUsesWithRange(Ref Node, Ref NewNode, AllNodesIterator Begin, AllNodesIterator End);
 
-  void ReplaceUsesWithAfter(OrderedNode* Node, OrderedNode* NewNode, AllNodesIterator After) {
+  void ReplaceUsesWithAfter(Ref Node, Ref NewNode, AllNodesIterator After) {
     ++After;
     ReplaceAllUsesWithRange(Node, NewNode, After, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
   }
 
-  void ReplaceUsesWithAfter(OrderedNode* Node, OrderedNode* NewNode, OrderedNode* After) {
+  void ReplaceUsesWithAfter(Ref Node, Ref NewNode, Ref After) {
     auto Wrapped = After->Wrapped(DualListData.ListBegin());
     AllNodesIterator It = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Wrapped);
 
     ReplaceUsesWithAfter(Node, NewNode, It);
   }
 
-  void ReplaceAllUsesWith(OrderedNode* Node, OrderedNode* NewNode) {
+  void ReplaceAllUsesWith(Ref Node, Ref NewNode) {
     auto Start = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Node->Wrapped(DualListData.ListBegin()));
 
     ReplaceAllUsesWithRange(Node, NewNode, Start, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
@@ -217,12 +216,12 @@ public:
     }
   }
 
-  void ReplaceNodeArgument(OrderedNode* Node, uint8_t Arg, OrderedNode* NewArg);
+  void ReplaceNodeArgument(Ref Node, uint8_t Arg, Ref NewArg);
 
-  void Remove(OrderedNode* Node);
+  void Remove(Ref Node);
 
-  void SetPackedRFLAG(bool Lower8, OrderedNode* Src);
-  OrderedNode* GetPackedRFLAG(bool Lower8);
+  void SetPackedRFLAG(bool Lower8, Ref Src);
+  Ref GetPackedRFLAG(bool Lower8);
 
   void CopyData(const IREmitter& rhs) {
     LOGMAN_THROW_A_FMT(rhs.DualListData.DataBackingSize() <= DualListData.DataBackingSize(), "Trying to take ownership of data that is too "
@@ -238,12 +237,12 @@ public:
     }
   }
 
-  void SetWriteCursor(OrderedNode* Node) {
+  void SetWriteCursor(Ref Node) {
     CurrentWriteCursor = Node;
   }
 
   // Set cursor to write before Node
-  void SetWriteCursorBefore(OrderedNode* Node) {
+  void SetWriteCursorBefore(Ref Node) {
     auto IR = ViewIR();
     auto Before = IR.at(Node);
     --Before;
@@ -251,11 +250,11 @@ public:
     SetWriteCursor(std::get<0>(*Before));
   }
 
-  OrderedNode* GetWriteCursor() {
+  Ref GetWriteCursor() {
     return CurrentWriteCursor;
   }
 
-  OrderedNode* GetCurrentBlock() {
+  Ref GetCurrentBlock() {
     return CurrentCodeBlock;
   }
 
@@ -297,7 +296,7 @@ public:
    *
    * @{ */
   /**  @} */
-  void LinkCodeBlocks(OrderedNode* CodeNode, OrderedNode* Next) {
+  void LinkCodeBlocks(Ref CodeNode, Ref Next) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     FEXCore::IR::IROp_CodeBlock* CurrentIROp =
 #endif
@@ -311,17 +310,17 @@ public:
   IRPair<IROp_CodeBlock> CreateNewCodeBlockAtEnd() {
     return CreateNewCodeBlockAfter(nullptr);
   }
-  IRPair<IROp_CodeBlock> CreateNewCodeBlockAfter(OrderedNode* insertAfter);
-  void SetCurrentCodeBlock(OrderedNode* Node);
+  IRPair<IROp_CodeBlock> CreateNewCodeBlockAfter(Ref insertAfter);
+  void SetCurrentCodeBlock(Ref Node);
 
 protected:
-  void RemoveArgUses(OrderedNode* Node);
+  void RemoveArgUses(Ref Node);
 
-  OrderedNode* CreateNode(IROp_Header* Op) {
+  Ref CreateNode(IROp_Header* Op) {
     uintptr_t ListBegin = DualListData.ListBegin();
     size_t Size = sizeof(OrderedNode);
     void* Ptr = DualListData.ListAllocate(Size);
-    OrderedNode* Node = new (Ptr) OrderedNode();
+    Ref Node = new (Ptr) OrderedNode();
     Node->Header.Value.SetOffset(DualListData.DataBegin(), reinterpret_cast<uintptr_t>(Op));
 
     if (CurrentWriteCursor) {
@@ -331,15 +330,15 @@ protected:
     return Node;
   }
 
-  OrderedNode* GetNode(uint32_t SSANode) {
+  Ref GetNode(uint32_t SSANode) {
     uintptr_t ListBegin = DualListData.ListBegin();
-    OrderedNode* Node = reinterpret_cast<OrderedNode*>(ListBegin + SSANode * sizeof(OrderedNode));
+    Ref Node = reinterpret_cast<Ref>(ListBegin + SSANode * sizeof(OrderedNode));
     return Node;
   }
 
-  OrderedNode* EmplaceOrphanedNode(OrderedNode* OldNode) {
+  Ref EmplaceOrphanedNode(Ref OldNode) {
     size_t Size = sizeof(OrderedNode);
-    OrderedNode* Ptr = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(Size));
+    Ref Ptr = reinterpret_cast<Ref>(DualListData.ListAllocate(Size));
     memcpy(Ptr, OldNode, Size);
     return Ptr;
   }
@@ -348,14 +347,14 @@ protected:
     // Overriden by dispatcher, stubbed for IR tests
   }
 
-  OrderedNode* CurrentWriteCursor = nullptr;
+  Ref CurrentWriteCursor = nullptr;
 
   // These could be combined with a little bit of work to be more efficient with memory usage. Isn't a big deal
   DualIntrusiveAllocatorThreadPool DualListData;
 
-  OrderedNode* InvalidNode;
-  OrderedNode* CurrentCodeBlock {};
-  fextl::vector<OrderedNode*> CodeBlocks;
+  Ref InvalidNode;
+  Ref CurrentCodeBlock {};
+  fextl::vector<Ref> CodeBlocks;
   uint64_t Entry;
 };
 

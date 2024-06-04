@@ -65,12 +65,12 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Mem = MakeSegmentAddress(Op, Op->Src[0]);
+  Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
-  OrderedNode* roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
+  Ref roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
@@ -85,10 +85,10 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
 
 
 void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
-  OrderedNode* NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
-  OrderedNode* roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
+  Ref roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
   _SetRoundingMode(roundingMode);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
@@ -103,8 +103,8 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
 
   size_t read_width = (width == 80) ? 16 : width / 8;
 
-  OrderedNode* data {};
-  OrderedNode* converted {};
+  Ref data {};
+  Ref converted {};
 
   if (!Op->Src[0].IsNone()) {
     // Read from memory
@@ -145,8 +145,8 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   SetX87Top(top);
 
   // Read from memory
-  OrderedNode* data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
-  OrderedNode* converted = _F80BCDLoad(data);
+  Ref data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
+  Ref converted = _F80BCDLoad(data);
   converted = _F80CVT(8, converted);
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
@@ -155,7 +155,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
 
-  OrderedNode* converted = _F80CVTTo(data, 8);
+  Ref converted = _F80CVTTo(data, 8);
   converted = _F80BCDStore(converted);
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
@@ -239,7 +239,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
   auto orig_top = GetX87Top();
-  OrderedNode* data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   if constexpr (Truncate) {
     data = _Float_ToGPR_ZS(Size == 4 ? 4 : 8, 8, data);
   } else {
@@ -262,10 +262,10 @@ template void OpDispatchBuilder::FISTF64<true>(OpcodeArgs);
 template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FADDF64(OpcodeArgs) {
   auto top = GetX87Top();
-  OrderedNode* StackLocation = top;
+  Ref StackLocation = top;
 
-  OrderedNode* arg {};
-  OrderedNode* b {};
+  Ref arg {};
+  Ref b {};
 
   auto mask = _Constant(7);
 
@@ -318,9 +318,9 @@ template void OpDispatchBuilder::FADDF64<32, true, OpDispatchBuilder::OpResult::
 template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FMULF64(OpcodeArgs) {
   auto top = GetX87Top();
-  OrderedNode* StackLocation = top;
-  OrderedNode* arg {};
-  OrderedNode* b {};
+  Ref StackLocation = top;
+  Ref arg {};
+  Ref b {};
 
   auto mask = _Constant(7);
 
@@ -376,9 +376,9 @@ template void OpDispatchBuilder::FMULF64<32, true, OpDispatchBuilder::OpResult::
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
   auto top = GetX87Top();
-  OrderedNode* StackLocation = top;
-  OrderedNode* arg {};
-  OrderedNode* b {};
+  Ref StackLocation = top;
+  Ref arg {};
+  Ref b {};
 
   auto mask = _Constant(7);
 
@@ -409,7 +409,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  OrderedNode* result {};
+  Ref result {};
   if constexpr (reverse) {
     result = _VFDiv(8, 8, b, a);
   } else {
@@ -449,9 +449,9 @@ template void OpDispatchBuilder::FDIVF64<32, true, true, OpDispatchBuilder::OpRe
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
   auto top = GetX87Top();
-  OrderedNode* StackLocation = top;
-  OrderedNode* arg {};
-  OrderedNode* b {};
+  Ref StackLocation = top;
+  Ref arg {};
+  Ref b {};
 
   auto mask = _Constant(7);
 
@@ -482,7 +482,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  OrderedNode* result {};
+  Ref result {};
   if constexpr (reverse) {
     result = _VFSub(8, 8, b, a);
   } else {
@@ -541,7 +541,7 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   auto low = _Constant(0);
-  OrderedNode* data = _VCastFromGPR(8, 8, low);
+  Ref data = _VCastFromGPR(8, 8, low);
 
   // We are going to clobber NZCV, make sure it's in a GPR first.
   GetNZCV();
@@ -571,11 +571,11 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   auto gpr = _VExtractToGPR(8, 8, a, 0);
-  OrderedNode* exp = _And(OpSize::i64Bit, gpr, _Constant(0x7ff0000000000000LL));
+  Ref exp = _And(OpSize::i64Bit, gpr, _Constant(0x7ff0000000000000LL));
   exp = _Lshr(OpSize::i64Bit, exp, _Constant(52));
   exp = _Sub(OpSize::i64Bit, exp, _Constant(1023));
   exp = _Float_FromGPR_S(8, 8, exp);
-  OrderedNode* sig = _And(OpSize::i64Bit, gpr, _Constant(0x800fffffffffffffLL));
+  Ref sig = _And(OpSize::i64Bit, gpr, _Constant(0x800fffffffffffffLL));
   sig = _Or(OpSize::i64Bit, sig, _Constant(0x3ff0000000000000LL));
   sig = _VCastFromGPR(8, 8, sig);
   // Write to ST[TOP]
@@ -589,8 +589,8 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto mask = _Constant(7);
 
-  OrderedNode* arg {};
-  OrderedNode* b {};
+  Ref arg {};
+  Ref b {};
 
   if (!Op->Src[0].IsNone()) {
     // Memory arg
@@ -699,7 +699,7 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
   auto top = GetX87Top();
 
   auto mask = _Constant(7);
-  OrderedNode* st1 = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
+  Ref st1 = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
   st1 = _LoadContextIndexed(st1, 8, MMBaseOffset(), 16, FPRClass);
@@ -747,8 +747,8 @@ void OpDispatchBuilder::X87FYL2XF64(OpcodeArgs) {
   auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
-  OrderedNode* st0 = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  OrderedNode* st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref st0 = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   if (Plus1) {
     auto one = _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000));
@@ -789,7 +789,7 @@ void OpDispatchBuilder::X87ATANF64(OpcodeArgs) {
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  OrderedNode* st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   auto result = _F64ATAN(st1, a);
 
@@ -820,8 +820,8 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   // 4 bytes : data pointer selector
 
   const auto Size = GetDstSize(Op);
-  OrderedNode* Mem = MakeSegmentAddress(Op, Op->Dest);
-  OrderedNode* Top = GetX87Top();
+  Ref Mem = MakeSegmentAddress(Op, Op->Dest);
+  Ref Top = GetX87Top();
   {
     auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
@@ -859,14 +859,14 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
   for (int i = 0; i < 7; ++i) {
-    OrderedNode* data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
+    Ref data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
     data = _F80CVTTo(data, 8);
     _StoreMem(FPRClass, 16, data, Mem, _Constant((Size * 7) + (i * 10)), 1, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
-  OrderedNode* data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
   data = _F80CVTTo(data, 8);
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
@@ -883,12 +883,12 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
-  OrderedNode* Mem = MakeSegmentAddress(Op, Op->Src[0]);
+  Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
-  OrderedNode* roundingMode = NewFCW;
+  Ref roundingMode = NewFCW;
   auto roundShift = _Constant(10);
   auto roundMask = _Constant(3);
   roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
@@ -910,11 +910,11 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
 
   auto low = _Constant(~0ULL);
   auto high = _Constant(0xFFFF);
-  OrderedNode* Mask = _VCastFromGPR(16, 8, low);
+  Ref Mask = _VCastFromGPR(16, 8, low);
   Mask = _VInsGPR(16, 8, 1, Mask, high);
 
   for (int i = 0; i < 7; ++i) {
-    OrderedNode* Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (i * 10)), 1, MEM_OFFSET_SXTX, 1);
+    Ref Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (i * 10)), 1, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(16, 16, Reg, Mask);
     // Convert to double precision
@@ -929,8 +929,8 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
 
-  OrderedNode* Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
-  OrderedNode* RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
+  Ref Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
+  Ref RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
   Reg = _F80CVT(8, Reg); // Convert to double precision
   _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
@@ -941,7 +941,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
 void OpDispatchBuilder::X87FXAMF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  OrderedNode* Result = _VExtractToGPR(8, 8, a, 0);
+  Ref Result = _VExtractToGPR(8, 8, a, 0);
 
   // Extract the sign bit
   Result = _Bfe(OpSize::i64Bit, 1, 63, Result);

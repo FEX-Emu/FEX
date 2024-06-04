@@ -59,7 +59,7 @@ private:
   FlagInfo Classify(IROp_Header* Node);
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
-  bool EliminateDeadCode(IREmitter* IREmit, OrderedNode* CodeNode, IROp_Header* IROp);
+  bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
@@ -313,7 +313,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 
 // General purpose dead code elimination. Returns whether flag handling should
 // be skipped (because it was removed or could not possibly affect flags).
-bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, OrderedNode* CodeNode, IROp_Header* IROp) {
+bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp) {
   bool HasSideEffects = IR::HasSideEffects(IROp->Op);
 
   switch (IROp->Op) {

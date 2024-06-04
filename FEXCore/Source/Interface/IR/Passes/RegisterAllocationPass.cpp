@@ -31,7 +31,7 @@ namespace {
     // If bit R of Allocated is 1, then RegToSSA[R] is the Old node
     // currently allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to
     // clear this when freeing registers.
-    OrderedNode* RegToSSA[32];
+    Ref RegToSSA[32];
 
     // Allocated base registers. Similar to ~Available except for pairs.
     uint32_t Allocated;
@@ -91,32 +91,32 @@ private:
   // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
   //
   // Since its indexed by Old nodes, SSAToNewSSA does not grow.
-  fextl::vector<OrderedNode*> SSAToNewSSA;
+  fextl::vector<Ref> SSAToNewSSA;
 
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
-  fextl::vector<OrderedNode*> NewSSAToSSA;
+  fextl::vector<Ref> NewSSAToSSA;
 
   // Map of assigned registers. Grows.
   fextl::vector<PhysicalRegister> SSAToReg;
 
-  bool IsOld(OrderedNode* Node) {
+  bool IsOld(Ref Node) {
     return IR->GetID(Node).Value < SSAToNewSSA.size();
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
-  OrderedNode* Map(OrderedNode* Old) {
+  Ref Map(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Pre-condition");
 
     return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
   };
 
   // Return the Old node for a possibly-remapped node.
-  OrderedNode* Unmap(OrderedNode* Node) {
+  Ref Unmap(Ref Node) {
     return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
   };
 
   // Record a remapping of Old to New.
-  void Remap(OrderedNode* Old, OrderedNode* New) {
+  void Remap(Ref Old, Ref New) {
     LOGMAN_THROW_A_FMT(IsOld(Old) && !IsOld(New), "Pre-condition");
 
     uint32_t OldID = IR->GetID(Old).Value;
@@ -135,7 +135,7 @@ private:
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
-  OrderedNode* InsertFill(OrderedNode* Old) {
+  Ref InsertFill(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
     IROp_Header* IROp = IR->GetOp<IROp_Header>(Old);
 
@@ -188,7 +188,7 @@ private:
     return ((Reg.Class == GPRPairClass) ? 0b11 : 0b1) << Reg.Reg;
   };
 
-  bool IsInRegisterFile(OrderedNode* Old) {
+  bool IsInRegisterFile(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
 
     PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Old)).Value];
@@ -208,11 +208,11 @@ private:
     Class->Allocated &= ~RegBits;
   };
 
-  bool HasSource(IROp_Header* I, OrderedNode* Old) {
+  bool HasSource(IROp_Header* I, Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Invariant2");
 
     for (auto s = 0; s < IR::GetRAArgs(I->Op); ++s) {
-      OrderedNode* Node = IR->GetNode(I->Args[s]);
+      Ref Node = IR->GetNode(I->Args[s]);
       LOGMAN_THROW_A_FMT(IsOld(Node), "not yet mapped");
 
       if (Node == Old) {
@@ -223,7 +223,7 @@ private:
     return false;
   };
 
-  OrderedNode* DecodeSRANode(const IROp_Header* IROp, OrderedNode* Node) {
+  Ref DecodeSRANode(const IROp_Header* IROp, Ref Node) {
     if (IROp->Op == OP_LOADREGISTER) {
       return Node;
     } else if (IROp->Op == OP_STOREREGISTER) {
@@ -234,7 +234,7 @@ private:
     return nullptr;
   };
 
-  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, OrderedNode* Node) {
+  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
     RegisterClassType Class;
     uint8_t Reg;
 
@@ -271,7 +271,7 @@ private:
     // next-use has the /smallest/ unsigned IP.
     //
     // TODO: Prioritize constants, as they are cheaper to rematerialize.
-    OrderedNode* Candidate = nullptr;
+    Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
 
@@ -283,7 +283,7 @@ private:
       }
 
       if (Class->Allocated & (1u << i)) {
-        OrderedNode* Old = Class->RegToSSA[i];
+        Ref Old = Class->RegToSSA[i];
 
         LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
         LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
@@ -336,7 +336,7 @@ private:
   };
 
   // Record a given assignment of register Reg to Node.
-  void SetReg(OrderedNode* Node, PhysicalRegister Reg) {
+  void SetReg(Ref Node, PhysicalRegister Reg) {
     uint32_t Index = IR->GetID(Node).Value;
     RegisterClass* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
@@ -372,7 +372,7 @@ private:
   };
 
   // Assign a register for a given Node, spilling if necessary.
-  void AssignReg(IROp_Header* IROp, OrderedNode* CodeNode, IROp_Header* Pivot) {
+  void AssignReg(IROp_Header* IROp, Ref CodeNode, IROp_Header* Pivot) {
     const uint32_t Node = IR->GetID(CodeNode).Value;
 
     // Prioritize preferred registers.
@@ -441,11 +441,11 @@ private:
       LOGMAN_THROW_AA_FMT(Class->Available & (1u << NewReg), "Ensured space");
 
       IREmit->SetWriteCursorBefore(CodeNode);
-      OrderedNode* Old = Class->RegToSSA[Blocked];
+      Ref Old = Class->RegToSSA[Blocked];
       LOGMAN_THROW_A_FMT(GetRegClassFromNode(IR, IR->GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
       FreeReg(PhysicalRegister(GPRClass, Blocked));
 
-      OrderedNode* Clobber = nullptr;
+      Ref Clobber = nullptr;
 
       // If that scalar is free because it is killed by this instruction, it
       // needs to be shuffled too, since the copy would clobber it.
@@ -621,14 +621,14 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         RegisterClass* Class = &Classes[Reg.Class];
 
         if (Class->Allocated & (1u << Reg.Reg)) {
-          OrderedNode* Old = Class->RegToSSA[Reg.Reg];
+          Ref Old = Class->RegToSSA[Reg.Reg];
 
           LOGMAN_THROW_A_FMT(IsOld(Old), "RegToSSA invariant");
           LOGMAN_THROW_A_FMT(IsOld(Node), "Haven't remapped this instruction");
 
           if (Old != Node) {
             IREmit->SetWriteCursorBefore(CodeNode);
-            OrderedNode* Copy;
+            Ref Copy;
 
             if (Reg.Class == FPRFixedClass) {
               IROp_Header* Header = IR->GetOp<IROp_Header>(Old);
@@ -654,12 +654,12 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             continue;
           }
 
-          OrderedNode* Old = IR->GetNode(IROp->Args[s]);
+          Ref Old = IR->GetNode(IROp->Args[s]);
           LOGMAN_THROW_A_FMT(IsOld(Old), "before remapping");
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
-            OrderedNode* Fill = InsertFill(Old);
+            Ref Fill = InsertFill(Old);
 
             Remap(Old, Fill);
             AssignReg(IR->GetOp<IROp_Header>(Fill), Fill, IROp);
@@ -675,7 +675,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         SourceIndex--;
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
-        OrderedNode* Old = IR->GetNode(IROp->Args[s]);
+        Ref Old = IR->GetNode(IROp->Args[s]);
         LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
 
         if (!SourcesNextUses[SourceIndex]) {
@@ -692,7 +692,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       // Remap sources last, since AssignReg can shuffle.
       for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-        OrderedNode* Remapped = SSAToNewSSA[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+        Ref Remapped = SSAToNewSSA[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
 
         if (Remapped != nullptr) {
           IREmit->ReplaceNodeArgument(CodeNode, s, Remapped);
