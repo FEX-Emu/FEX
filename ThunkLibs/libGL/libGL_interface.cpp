@@ -74,7 +74,6 @@ struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_
 template<auto, int, typename = void>
 struct fex_gen_param {};
 
-#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<glXQueryCurrentRendererStringMESA> {};
 template<>
@@ -135,8 +134,16 @@ template<>
 struct fex_gen_config<glXDestroyGLXPbufferSGIX> {};
 template<>
 struct fex_gen_config<glXFreeContextEXT> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<glXGetSelectedEventSGIX> {};
+#else
+template<>
+struct fex_gen_config<glXGetSelectedEventSGIX> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetSelectedEventSGIX, 2, unsigned long*> : fexgen::ptr_passthrough {};
+#endif
+
 template<>
 struct fex_gen_config<glXQueryGLXPbufferSGIX> {};
 template<>
@@ -215,8 +222,15 @@ template<>
 struct fex_gen_config<glXDestroyWindow> {};
 template<>
 struct fex_gen_config<glXFreeMemoryNV> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<glXGetSelectedEvent> {};
+#else
+template<>
+struct fex_gen_config<glXGetSelectedEvent> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetSelectedEvent, 2, unsigned long*> : fexgen::ptr_passthrough {};
+#endif
 template<>
 struct fex_gen_config<glXQueryDrawable> {};
 template<>
@@ -241,7 +255,6 @@ template<>
 struct fex_gen_config<glXCreateContextAttribsARB> {};
 template<>
 struct fex_gen_config<glXSwapIntervalEXT> {};
-#endif
 
 template<>
 struct fex_gen_config<glColorP3ui> {};
@@ -6352,7 +6365,6 @@ struct fex_gen_config<glGetPathTexGenfvNV> {};
 template<>
 struct fex_gen_config<glBlendEquationSeparateATI> {};
 
-#ifndef IS_32BIT_THUNK
 // glx.h
 template<>
 struct fex_gen_config<glXWaitX> {};
@@ -6428,8 +6440,11 @@ template<>
 struct fex_gen_config<glXResetFrameCountNV> {};
 template<>
 struct fex_gen_config<glXBindVideoCaptureDeviceNV> {};
+#ifndef IS_32BIT_THUNK
+// TODO: 32-bit support
 template<>
 struct fex_gen_config<glXEnumerateVideoCaptureDevicesNV> {};
+#endif
 template<>
 struct fex_gen_config<glXLockVideoCaptureDeviceNV> {};
 template<>
@@ -6444,10 +6459,13 @@ template<>
 struct fex_gen_config<glXBindVideoImageNV> {};
 template<>
 struct fex_gen_config<glXReleaseVideoImageNV> {};
+#ifndef IS_32BIT_THUNK
+// TODO: 32-bit support
 template<>
 struct fex_gen_config<glXSendPbufferToVideoNV> {};
 template<>
 struct fex_gen_config<glXGetVideoInfoNV> {};
+#endif
 template<>
 struct fex_gen_config<glXQueryHyperpipeNetworkSGIX> {};
 template<>
@@ -6482,6 +6500,8 @@ template<>
 struct fex_gen_config<glXChannelRectSyncSGIX> {};
 template<>
 struct fex_gen_config<glXCushionSGI> {};
+#ifndef IS_32BIT_THUNK
+// TODO: 32-bit support
 template<>
 struct fex_gen_config<glXGetTransparentIndexSUN> {};
 #endif

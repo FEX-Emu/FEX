@@ -35,7 +35,7 @@ struct host_layout<_XDisplay*> {
 
 static X11Manager x11_manager;
 
-static void* (*GuestMalloc)(size_t) = nullptr;
+static void* (*GuestMalloc)(guest_size_t) = nullptr;
 
 host_layout<_XDisplay*>::host_layout(guest_layout<_XDisplay*>& guest)
   : guest_display(guest.force_get_host_pointer()) {
@@ -136,9 +136,18 @@ auto fexfn_impl_libGL_glXGetProcAddress(const GLubyte* name) -> void (*)() {
     return (VoidFn)fexfn_impl_libGL_glXGetConfig;
   } else if (name_sv == "glXGetVisualFromFBConfig") {
     return (VoidFn)fexfn_impl_libGL_glXGetVisualFromFBConfig;
+#ifdef IS_32BIT_THUNK
+  } else if (name_sv == "glXGetSelectedEvent") {
+    return (VoidFn)fexfn_impl_libGL_glXGetSelectedEvent;
+  } else if (name_sv == "glXGetSelectedEventSGIX") {
+    return (VoidFn)fexfn_impl_libGL_glXGetSelectedEventSGIX;
+#endif
   }
   return (VoidFn)glXGetProcAddress((const GLubyte*)name);
 }
+
+// TODO: unsigned int *glXEnumerateVideoDevicesNV (Display *dpy, int screen, int *nelements);
+
 
 void fexfn_impl_libGL_glCompileShaderIncludeARB(GLuint a_0, GLsizei Count, guest_layout<const GLchar* const*> a_2, const GLint* a_3) {
   // TODO: Only on 32-bit
@@ -282,7 +291,8 @@ static XVisualInfo* LookupHostVisualInfo(Display* HostDisplay, guest_layout<XVis
   }
 
   int num_matches;
-  auto ret = x11_manager.HostXGetVisualInfo(HostDisplay, VisualScreenMask | VisualIDMask, GuestInfo.force_get_host_pointer(), &num_matches);
+  auto HostInfo = host_layout<XVisualInfo> {*GuestInfo.get_pointer()}.data;
+  auto ret = x11_manager.HostXGetVisualInfo(HostDisplay, uint64_t {VisualScreenMask | VisualIDMask}, &HostInfo, &num_matches);
   if (num_matches != 1) {
     fprintf(stderr, "ERROR: Did not find unique host XVisualInfo\n");
     std::abort();
@@ -296,9 +306,17 @@ static guest_layout<XVisualInfo*> MapToGuestVisualInfo(Display* HostDisplay, XVi
     return guest_layout<XVisualInfo*> {.data = 0};
   }
 
-  int num_matches;
   auto guest_display = x11_manager.HostToGuestDisplay(HostDisplay);
-  auto ret = x11_manager.GuestXGetVisualInfo(guest_display.get_pointer(), VisualScreenMask | VisualIDMask, HostInfo, &num_matches);
+#ifndef IS_32BIT_THUNK
+  int num_matches;
+  auto GuestInfo = to_guest(to_host_layout(*HostInfo));
+#else
+  GuestStackBumpAllocator GuestStack;
+  auto& num_matches = *GuestStack.New<int>();
+  auto& GuestInfo = *GuestStack.New<guest_layout<XVisualInfo>>(to_guest(to_host_layout(*HostInfo)));
+#endif
+  auto ret = x11_manager.GuestXGetVisualInfo(guest_display.get_pointer(), VisualScreenMask | VisualIDMask, &GuestInfo, &num_matches);
+
   if (num_matches != 1) {
     fprintf(stderr, "ERROR: Did not find unique guest XVisualInfo\n");
     std::abort();
@@ -408,6 +426,17 @@ void fexfn_impl_libGL_glVertexArrayVertexBuffers(GLuint a_0, GLuint a_1, GLsizei
     HostOffsets[i] = Offsets.get_pointer()[i].data;
   }
   fexldr_ptr_libGL_glVertexArrayVertexBuffers(a_0, a_1, count, a_3, HostOffsets, a_5);
+}
+
+void fexfn_impl_libGL_glXGetSelectedEvent(Display* Display, GLXDrawable Drawable, guest_layout<uint32_t*> Mask) {
+  unsigned long HostMask;
+  fexldr_ptr_libGL_glXGetSelectedEvent(Display, Drawable, &HostMask);
+  *Mask.get_pointer() = HostMask;
+}
+void fexfn_impl_libGL_glXGetSelectedEventSGIX(Display* Display, GLXDrawable Drawable, guest_layout<uint32_t*> Mask) {
+  unsigned long HostMask;
+  fexldr_ptr_libGL_glXGetSelectedEventSGIX(Display, Drawable, &HostMask);
+  *Mask.get_pointer() = HostMask;
 }
 #endif
 
