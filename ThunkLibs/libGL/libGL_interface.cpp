@@ -45,6 +45,10 @@ struct fex_gen_type<void> : fexgen::opaque_type {};
 
 template<>
 struct fex_gen_type<std::remove_pointer_t<GLXContext>> : fexgen::opaque_type {};
+// NOTE: The data layout of this is almost the same between 64-bit and 32-bit,
+//       but the total struct size is 4 bytes larger on 64-bit due to stricter
+//       alignment requirements (8 vs 4 bytes). Since it's always allocated on
+//       the host *and* never directly used in arrays, this is not a problem.
 template<>
 struct fex_gen_type<std::remove_pointer_t<GLXFBConfig>> : fexgen::opaque_type {};
 template<>
@@ -88,6 +92,8 @@ template<>
 struct fex_gen_config<glXGetCurrentReadDrawableSGI> {};
 template<>
 struct fex_gen_config<glXChooseFBConfigSGIX> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXChooseFBConfigSGIX, -1, GLXFBConfigSGIX*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXGetFBConfigFromVisualSGIX> : fexgen::custom_host_impl {};
 template<>
@@ -179,7 +185,11 @@ struct fex_gen_config<glXGetCurrentReadDrawable> {};
 template<>
 struct fex_gen_config<glXChooseFBConfig> : fexgen::custom_host_impl {};
 template<>
+struct fex_gen_param<glXChooseFBConfig, -1, GLXFBConfig*> : fexgen::ptr_passthrough {};
+template<>
 struct fex_gen_config<glXGetFBConfigs> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<glXGetFBConfigs, -1, GLXFBConfig*> : fexgen::ptr_passthrough {};
 template<>
 struct fex_gen_config<glXCreatePbuffer> {};
 template<>

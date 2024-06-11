@@ -291,9 +291,9 @@ void fexfn_impl_libGL_glShaderSourceARB(GLuint a_0, GLsizei count, guest_layout<
 // Relocate data to guest heap so it can be called with XFree.
 // The memory at the given host location will be de-allocated.
 template<typename T>
-T* RelocateArrayToGuestHeap(T* Data, int NumItems) {
+guest_layout<T*> RelocateArrayToGuestHeap(T* Data, int NumItems) {
   if (!Data) {
-    return nullptr;
+    return guest_layout<T*> {.data = 0};
   }
 
   guest_layout<T*> GuestData;
@@ -302,7 +302,7 @@ T* RelocateArrayToGuestHeap(T* Data, int NumItems) {
     GuestData.get_pointer()[Index] = to_guest(to_host_layout(Data[Index]));
   }
   x11_manager.HostXFree(Data);
-  return GuestData.force_get_host_pointer();
+  return GuestData;
 }
 
 // Maps to a host-side XVisualInfo, which must be XFree'ed by the caller.
@@ -350,12 +350,12 @@ static guest_layout<XVisualInfo*> MapToGuestVisualInfo(Display* HostDisplay, XVi
   return GuestRet;
 }
 
-GLXFBConfig* fexfn_impl_libGL_glXChooseFBConfig(Display* Display, int Screen, const int* Attributes, int* NumItems) {
+guest_layout<GLXFBConfig*> fexfn_impl_libGL_glXChooseFBConfig(Display* Display, int Screen, const int* Attributes, int* NumItems) {
   auto ret = fexldr_ptr_libGL_glXChooseFBConfig(Display, Screen, Attributes, NumItems);
   return RelocateArrayToGuestHeap(ret, *NumItems);
 }
 
-GLXFBConfigSGIX* fexfn_impl_libGL_glXChooseFBConfigSGIX(Display* Display, int Screen, int* Attributes, int* NumItems) {
+guest_layout<GLXFBConfigSGIX*> fexfn_impl_libGL_glXChooseFBConfigSGIX(Display* Display, int Screen, int* Attributes, int* NumItems) {
   auto ret = fexldr_ptr_libGL_glXChooseFBConfigSGIX(Display, Screen, Attributes, NumItems);
   return RelocateArrayToGuestHeap(ret, *NumItems);
 }
@@ -370,7 +370,7 @@ guest_layout<_XDisplay*> fexfn_impl_libGL_glXGetCurrentDisplayEXT() {
   return x11_manager.HostToGuestDisplay(ret);
 }
 
-GLXFBConfig* fexfn_impl_libGL_glXGetFBConfigs(Display* Display, int Screen, int* NumItems) {
+guest_layout<GLXFBConfig*> fexfn_impl_libGL_glXGetFBConfigs(Display* Display, int Screen, int* NumItems) {
   auto ret = fexldr_ptr_libGL_glXGetFBConfigs(Display, Screen, NumItems);
   return RelocateArrayToGuestHeap(ret, *NumItems);
 }
