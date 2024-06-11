@@ -468,10 +468,16 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
                 types.emplace(context.getCanonicalType(pointee_type.getTypePtr()), RepackedType {});
               } else if (data.param_annotations[param_idx].is_passthrough) {
                 // Nothing to do
-              } else if (false /* TODO: Can't check if this is unsupported until data layout analysis is complete */) {
-                throw report_error(param_loc, "Unsupported parameter type")
-                  .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
-                  .addNote(report_error(template_arg_loc, "used in definition here", clang::DiagnosticsEngine::Note));
+              } else {
+                // Assume this parameter type is unsupported.
+                // Since not all of our libraries are adapted for this yet, so
+                // an error is only thrown for a curated set of functions.
+                // TODO: At least detect and reject pointers-to-pointers on 32-bit
+                if (emitted_function->getNameAsString().starts_with("gl") && pointee_type->isPointerType()) {
+                  throw report_error(param_loc, "Unsupported parameter type")
+                    .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
+                    .addNote(report_error(template_arg_loc, "used in definition here", clang::DiagnosticsEngine::Note));
+                }
               }
             } else {
               // TODO: For non-pointer parameters, perform more elaborate validation to ensure ABI compatibility

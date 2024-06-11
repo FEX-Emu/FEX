@@ -16,9 +16,10 @@ $end_info$
 #undef GL_ARB_viewport_array
 #include "glcorearb.h"
 
-#include <stdio.h>
-#include <cstdlib>
 #include <dlfcn.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <functional>
 #include <string_view>
 #include <unordered_map>

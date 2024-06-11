@@ -405,6 +405,12 @@ struct host_to_guest_convertible {
   {
     return {static_cast<uint32_t>(from.data)};
   }
+
+  // libGL also needs to allow long->int conversions for return values...
+  operator guest_layout<int32_t>() const requires (std::is_same_v<T, long>)
+  {
+    return {static_cast<int32_t>(from.data)};
+  }
 #endif
 
   // Make guest_layout of "long long" and "long" interoperable, since they are
@@ -536,8 +542,8 @@ struct CallbackUnpack<Result(Args...)> {
   }
 };
 
-template<bool Cond, typename T>
-using as_guest_layout_if = std::conditional_t<Cond, guest_layout<T>, T>;
+template<bool Cond, typename T, typename GuestT>
+using as_guest_layout_if = std::conditional_t<Cond, guest_layout<GuestT>, T>;
 
 template<typename, typename...>
 struct GuestWrapperForHostFunction;
@@ -552,7 +558,7 @@ struct GuestWrapperForHostFunction<Result(Args...), GuestArgs...> {
     static_assert(sizeof...(GuestArgs) == sizeof...(Args));
 
     auto args =
-      reinterpret_cast<PackedArguments<as_guest_layout_if<!std::is_void_v<Result>, Result>, guest_layout<GuestArgs>..., uintptr_t>*>(argsv);
+      reinterpret_cast<PackedArguments<as_guest_layout_if<!std::is_void_v<Result>, Result, Result>, guest_layout<GuestArgs>..., uintptr_t>*>(argsv);
     constexpr auto CBIndex = sizeof...(GuestArgs);
     uintptr_t cb;
     static_assert(CBIndex <= 18 || CBIndex == 23);
@@ -600,9 +606,8 @@ struct GuestWrapperForHostFunction<Result(Args...), GuestArgs...> {
 
     // This is almost the same type as "Result func(Args..., uintptr_t)", but
     // individual types annotated as passthrough are wrapped in guest_layout<>
-    auto callback =
-      reinterpret_cast<as_guest_layout_if<RetAnnotations.is_passthrough, Result> (*)(as_guest_layout_if<Annotations.is_passthrough, Args>..., uintptr_t)>(
-        cb);
+    auto callback = reinterpret_cast<as_guest_layout_if<RetAnnotations.is_passthrough, Result, Result> (*)(
+      as_guest_layout_if<Annotations.is_passthrough, Args, GuestArgs>..., uintptr_t)>(cb);
 
     auto f = [&callback](guest_layout<GuestArgs>... args, uintptr_t target) {
       // Fold over each of Annotations, Args, and args. This will match up the elements in triplets.

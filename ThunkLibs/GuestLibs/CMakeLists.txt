@@ -175,18 +175,6 @@ if (BITNESS EQUAL 64)
   generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
   add_guest_lib(asound "libasound.so.2")
 
-  generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
-  add_guest_lib(EGL "libEGL.so.1")
-
-  generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
-  add_guest_lib(GL "libGL.so.1")
-
-  # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
-  add_library(PlaceholderX11 SHARED ../libX11/libX11_NativeGuest.cpp)
-  target_link_options(PlaceholderX11 PRIVATE "LINKER:-soname,libX11.so.6")
-  set_target_properties(PlaceholderX11 PROPERTIES NO_SONAME ON)
-  target_link_libraries(GL-guest PRIVATE PlaceholderX11)
-
   # disabled for now, headers are platform specific
   # find_package(SDL2 REQUIRED)
   # generate(libSDL2)
@@ -240,3 +228,16 @@ if (BUILD_FEX_LINUX_TESTS)
   generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp)
   add_guest_lib(fex_thunk_test "libfex_thunk_test.so")
 endif()
+
+generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
+add_guest_lib(GL "libGL.so.1")
+
+generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
+add_guest_lib(EGL "libEGL.so.1")
+target_link_libraries(EGL-guest PRIVATE GL-guest)
+
+# libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
+add_library(PlaceholderX11 SHARED ../libX11/libX11_NativeGuest.cpp)
+target_link_options(PlaceholderX11 PRIVATE "LINKER:-soname,libX11.so.6")
+set_target_properties(PlaceholderX11 PROPERTIES NO_SONAME ON)
+target_link_libraries(GL-guest PRIVATE PlaceholderX11)

@@ -2,12 +2,21 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <dlfcn.h>
 #include <mutex>
 #include <unordered_map>
 
 #include <X11/Xlib.h>
 #include <xcb/xcb.h>
+
+#ifdef IS_32BIT_THUNK
+using guest_long = int32_t;
+using guest_size_t = int32_t;
+#else
+using guest_long = long;
+using guest_size_t = size_t;
+#endif
 
 /**
  * Guest X11 displays and xcb connections can't be used by the host, so
@@ -47,7 +56,7 @@ struct X11Manager {
     std::unique_lock lock(mutex);
     auto [it, inserted] = displays.emplace(GuestDisplay, nullptr);
     if (inserted) {
-      auto host_display = HostXOpenDisplay(DisplayString(GuestDisplay));
+      auto host_display = HostXOpenDisplay(GuestXDisplayString(GuestDisplay));
       fprintf(stderr, "Opening host-side X11 display: %p -> %p\n", GuestDisplay, host_display);
       if (!host_display) {
         fprintf(stderr, "ERROR: Could not open X display\n");
@@ -104,7 +113,7 @@ struct X11Manager {
 
   // NOTE: Struct pointers are replaced by void* to avoid involving data layout conversion here.
   int (*GuestXSync)(void*, int) = nullptr;
-  void* (*GuestXGetVisualInfo)(void*, long, void*, int*) = nullptr;
+  void* (*GuestXGetVisualInfo)(void*, guest_long, void*, int*) = nullptr;
 
   // XDisplayString internally just reads data from _XDisplay's internal struct definition.
   // This breaks when data layout is different, so allow reading from a guest context instead.
