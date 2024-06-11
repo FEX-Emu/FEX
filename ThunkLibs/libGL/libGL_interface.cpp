@@ -38,6 +38,11 @@ struct fex_gen_config<SetGuestXDisplayString> : fexgen::custom_guest_entrypoint,
 template<typename>
 struct fex_gen_type {};
 
+// Assume void* always points to data with consistent layout.
+// It's used in too many functions to annotate them all.
+template<>
+struct fex_gen_type<void> : fexgen::opaque_type {};
+
 template<>
 struct fex_gen_type<std::remove_pointer_t<GLXContext>> : fexgen::opaque_type {};
 template<>
