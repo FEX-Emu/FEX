@@ -583,7 +583,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_ThreadRemoveCodeEntry();
-          Thread->OpDispatcher->_ExitFunction(
+          Thread->OpDispatcher->ExitFunction(
             Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
@@ -614,7 +614,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           }
           // Invalid instruction
           Thread->OpDispatcher->InvalidOp(DecodedInfo);
-          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
         }
 
         const bool NeedsBlockEnd =
@@ -631,7 +631,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           const uint8_t GPRSize = GetGPRSize();
 
           // We had some instructions. Early exit
-          Thread->OpDispatcher->_ExitFunction(
+          Thread->OpDispatcher->ExitFunction(
             Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
           break;
         }

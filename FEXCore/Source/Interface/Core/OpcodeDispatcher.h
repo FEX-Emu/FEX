@@ -172,6 +172,10 @@ public:
     auto Placeholder = _InlineConstant(0);
     return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
   }
+  IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
+    FlushRegisterCache();
+    return _ExitFunction(NewRIP);
+  }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP
@@ -185,8 +189,6 @@ public:
     //  cmp qword [rdi-8], 0
     //  jne .label
     if (LastOp && !BlockSetRIP) {
-      FlushRegisterCache();
-
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
@@ -194,7 +196,7 @@ public:
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
-        _ExitFunction(RelocatedNextRIP);
+        ExitFunction(RelocatedNextRIP);
       } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
         return true;
