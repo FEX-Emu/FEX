@@ -1321,7 +1321,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
     case FEXCore::X86State::REG_RCX: // CS
     case FEXCore::X86State::REG_R9:  // CS
       // CPL3 can't write to this
-      _Break(FEXCore::IR::BreakDefinition {
+      Break(FEXCore::IR::BreakDefinition {
         .ErrorRegister = 0,
         .Signal = SIGILL,
         .TrapNumber = 0,
@@ -4798,7 +4798,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
     auto NewRIP = GetRelocatedPC(Op);
     _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
-    _Break(Reason);
+    Break(Reason);
 
     // Make sure to start a new block after ending this one
     auto JumpTarget = CreateNewCodeBlockAfter(FalseBlock);
@@ -4807,7 +4807,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     StartNewBlock();
   } else {
     BlockSetRIP = true;
-    _Break(Reason);
+    Break(Reason);
   }
 }
 
@@ -4953,12 +4953,11 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  FlushRegisterCache();
 
   // We don't actually support this instruction
   // Multiblock may hit it though
   _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(BreakDefinition);
+  Break(BreakDefinition);
 
   BlockSetRIP = true;
 
