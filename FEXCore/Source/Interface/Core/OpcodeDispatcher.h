@@ -176,6 +176,10 @@ public:
     FlushRegisterCache();
     return _ExitFunction(NewRIP);
   }
+  IRPair<IROp_Break> Break(BreakDefinition Reason) {
+    FlushRegisterCache();
+    return _Break(Reason);
+  }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP
