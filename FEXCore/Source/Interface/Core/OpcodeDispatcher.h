@@ -1420,10 +1420,10 @@ private:
 
       // For DF, we need to transform 0/1 into 1/-1
       if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
-        Value = _SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1);
+        StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
+      } else {
+        _StoreFlag(Value, BitOffset);
       }
-
-      _StoreFlag(Value, BitOffset);
     }
   }
 
@@ -1462,6 +1462,8 @@ private:
     }
   }
 
+  const int DFIndex = 31;
+
   struct {
     uint64_t Cached;
     uint64_t Written;
@@ -1479,7 +1481,12 @@ private:
     uint64_t Bit = (1ull << (uint64_t)Index);
 
     if (!(RegCache.Cached & Bit)) {
-      RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
+      if (Index == DFIndex) {
+        RegCache.Value[Index] = _LoadDF();
+      } else {
+        RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
+      }
+
       RegCache.Cached |= Bit;
     }
 
@@ -1495,6 +1502,10 @@ private:
     return LoadRegCache(Reg, Reg + 32, FPRClass, Size);
   }
 
+  Ref LoadDF() {
+    return LoadGPR(DFIndex);
+  }
+
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
     LOGMAN_THROW_AA_FMT(Reg < 32, "valid register index");
     LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
@@ -1505,6 +1516,10 @@ private:
     RegCache.Value[Index] = Value;
     RegCache.Cached |= Bit;
     RegCache.Written |= Bit;
+  }
+
+  void StoreDF(Ref Value) {
+    StoreRegister(DFIndex, false, Value);
   }
 
   void FlushRegisterCache() {
@@ -1528,6 +1543,10 @@ private:
       if (RegCache.Written & (1ull << (uint64_t)Index)) {
         _StoreRegister(RegCache.Value[Index], FPR, FPRClass, VectorSize);
       }
+    }
+
+    if (RegCache.Written & (1ull << DFIndex)) {
+      _StoreFlag(RegCache.Value[DFIndex], X86State::RFLAG_DF_RAW_LOC);
     }
 
     RegCache.Cached = 0;
@@ -1555,7 +1574,7 @@ private:
       return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
-      return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
+      return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
       return _LoadFlag(BitOffset);
     }
@@ -1563,7 +1582,7 @@ private:
 
   // Returns (DF ? -Size : Size)
   Ref LoadDir(const unsigned Size) {
-    auto Dir = _LoadDF();
+    auto Dir = LoadDF();
     auto Shift = FEXCore::ilog2(Size);
 
     if (Shift) {
@@ -1577,7 +1596,7 @@ private:
   Ref OffsetByDir(Ref X, const unsigned Size) {
     auto Shift = FEXCore::ilog2(Size);
 
-    return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
+    return _AddShift(OpSize::i64Bit, X, LoadDF(), ShiftType::LSL, Shift);
   }
 
   // Set SSE comparison flags based on the result set by Arm FCMP. This converts
