@@ -180,6 +180,10 @@ public:
     FlushRegisterCache();
     return _Break(Reason);
   }
+  IRPair<IROp_Thunk> Thunk(Ref ArgPtr, SHA256Sum ThunkNameHash) {
+    FlushRegisterCache();
+    return _Thunk(ArgPtr, ThunkNameHash);
+  }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
     // If we are switching to a new block and this current block has yet to set a RIP
