@@ -1206,7 +1206,6 @@ private:
   void UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg);
 
   Ref LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
-  Ref LoadXMMRegister(uint32_t XMM);
   void StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size = -1, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
@@ -1411,9 +1410,9 @@ private:
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::PF_AS_GREG, false, Value);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::AF_AS_GREG, false, Value);
     } else {
       if (ValueOffset || MustMask) {
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1460,8 +1459,67 @@ private:
     }
   }
 
+  struct {
+    uint64_t Written;
+    Ref Value[64];
+  } RegCache {};
+
+  Ref LoadRegCache(uint8_t Reg, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    if (!(RegCache.Written & Bit)) {
+      RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
+      RegCache.Written |= Bit;
+    }
+
+    return RegCache.Value[Index];
+  }
+
+  Ref LoadGPR(uint8_t Reg) {
+    return LoadRegCache(Reg, Reg, GPRClass, CTX->GetGPRSize());
+  }
+
+  Ref LoadXMMRegister(uint8_t Reg) {
+    const auto Size = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+    return LoadRegCache(Reg, Reg + 32, FPRClass, Size);
+  }
+
+  void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
+    LOGMAN_THROW_AA_FMT(Reg < 32, "valid register index");
+    LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
+
+    uint8_t Index = FPR ? (Reg + 32) : Reg;
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    RegCache.Value[Index] = Value;
+    RegCache.Written |= Bit;
+  }
+
   void FlushRegisterCache() {
     CalculateDeferredFlags();
+
+    const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+
+    // Write GPRs backwards. This is a heuristic to improve coalescing, since we
+    // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
+    // instructions like "add rax, 1". This hack will go away with clauses.
+    for (int GPR = 30; GPR >= 0; --GPR) {
+      if (RegCache.Written & (1ull << (uint64_t)GPR)) {
+        _StoreRegister(RegCache.Value[GPR], GPR, GPRClass, GPRSize);
+      }
+    }
+
+    for (unsigned FPR = 0; FPR < 32; ++FPR) {
+      uint32_t Index = FPR + 32;
+
+      if (RegCache.Written & (1ull << (uint64_t)Index)) {
+        _StoreRegister(RegCache.Value[Index], FPR, FPRClass, VectorSize);
+      }
+    }
+
+    RegCache.Written = 0;
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
@@ -1480,9 +1538,9 @@ private:
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::PF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
