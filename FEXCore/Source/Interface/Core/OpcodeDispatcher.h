@@ -134,6 +134,7 @@ public:
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
     PossiblySetNZCVBits = ~0U;
+    FlushRegisterCache();
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
@@ -143,28 +144,28 @@ public:
   }
 
   IRPair<IROp_Jump> Jump() {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _Jump();
   }
   IRPair<IROp_Jump> Jump(Ref _TargetBlock) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _Jump(_TargetBlock);
   }
   IRPair<IROp_CondJump>
   CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
   IRPair<IROp_CondJump> CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(ssa0, cond);
   }
   IRPair<IROp_CondJump> CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(ssa0, ssa1, ssa2, cond);
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
 
     // The jump will ignore the sources, so it doesn't matter what we put here.
     // Put an inline constant so RA+codegen will ignore altogether.
@@ -184,8 +185,7 @@ public:
     //  cmp qword [rdi-8], 0
     //  jne .label
     if (LastOp && !BlockSetRIP) {
-      // Calculate flags first
-      CalculateDeferredFlags();
+      FlushRegisterCache();
 
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
@@ -1440,6 +1440,10 @@ private:
 
     default: FEX_UNREACHABLE;
     }
+  }
+
+  void FlushRegisterCache() {
+    CalculateDeferredFlags();
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
