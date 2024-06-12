@@ -1529,8 +1529,6 @@ private:
       SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
 
       // Note that we store PF inverted.
-      // TODO: We could maybe optimize this xor out for non-flagm platforms with
-      // bfi/bfxil?
       SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
     }
   }
