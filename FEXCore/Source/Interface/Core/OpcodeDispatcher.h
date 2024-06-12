@@ -16,6 +16,7 @@
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <bit>
 #include <cstdint>
 #include <fmt/format.h>
 #include <stddef.h>
@@ -1230,6 +1231,50 @@ public:
     }
   }
 
+  void FlushRegisterCache(bool SRAOnly = false) {
+    CalculateDeferredFlags();
+
+    const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
+
+    // Write backwards. This is a heuristic to improve coalescing, since we
+    // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
+    // instructions like "add rax, 1". This hack will go away with clauses.
+    uint64_t Bits = RegCache.Written;
+
+    // We have an SRA only mode that exists as a hack to make register caching
+    // less aggressive. We should get rid of this once RA can take it.
+    uint64_t Mask = ~0ULL;
+
+    if (SRAOnly) {
+      const uint64_t GPRMask = (1ull << 18) - 1;
+      const uint64_t FPRMask = (~0ULL << 32);
+
+      Mask &= (GPRMask | FPRMask);
+      Bits &= Mask;
+    }
+
+    while (Bits != 0) {
+      uint32_t Index = 63 - std::countl_zero(Bits);
+      Ref Value = RegCache.Value[Index];
+
+      if (Index <= 18) {
+        _StoreRegister(Value, Index, GPRClass, GPRSize);
+      } else if (Index >= 32) {
+        _StoreRegister(Value, Index - 32, FPRClass, VectorSize);
+      } else if (Index == DFIndex) {
+        _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
+      } else {
+        _StoreContext(Index <= MM7Index ? 8 : 1, CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
+      }
+
+      Bits &= ~(1ull << Index);
+    }
+
+    RegCache.Written &= ~Mask;
+    RegCache.Cached &= ~Mask;
+  }
+
 protected:
   void SaveNZCV(IROps Op = OP_DUMMY) override {
     /* Some opcodes are conservatively marked as clobbering flags, but in fact
@@ -1447,7 +1492,6 @@ private:
   void UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg);
 
   Ref LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
-  Ref LoadXMMRegister(uint32_t XMM);
   void StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size = -1, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
@@ -1663,9 +1707,9 @@ private:
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::PF_AS_GREG, false, Value);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::AF_AS_GREG, false, Value);
     } else {
       if (ValueOffset || MustMask) {
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1673,10 +1717,10 @@ private:
 
       // For DF, we need to transform 0/1 into 1/-1
       if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
-        Value = _SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1);
+        StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
+      } else {
+        _StoreFlag(Value, BitOffset);
       }
-
-      _StoreFlag(Value, BitOffset);
     }
   }
 
@@ -1692,10 +1736,13 @@ private:
 
   void InvalidateAF() {
     _InvalidateFlags((1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   void InvalidatePF_AF() {
     _InvalidateFlags((1u << X86State::RFLAG_PF_RAW_LOC) | (1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::PF_AS_GREG);
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
@@ -1712,8 +1759,94 @@ private:
     }
   }
 
-  void FlushRegisterCache() {
-    CalculateDeferredFlags();
+  static const int DFIndex = 31;
+  static const int MM0Index = 20;
+  static const int MM7Index = 27;
+  static const int AbridgedFTWIndex = 28;
+
+  int CacheIndexToContextOffset(int Index) {
+    switch (Index) {
+    case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
+    case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
+    default: return -1;
+    }
+  }
+
+  RegisterClassType CacheIndexClass(int Index) {
+    if ((Index >= MM0Index && Index <= MM7Index) || Index >= 32) {
+      return FPRClass;
+    } else {
+      return GPRClass;
+    }
+  }
+
+  struct {
+    uint64_t Cached;
+    uint64_t Written;
+    Ref Value[64];
+  } RegCache {};
+
+  void InvalidateReg(uint8_t Index) {
+    uint64_t Bit = (1ull << (uint64_t)Index);
+    RegCache.Cached &= ~Bit;
+    RegCache.Written &= ~Bit;
+  }
+
+  Ref LoadRegCache(uint8_t Reg, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    if (!(RegCache.Cached & Bit)) {
+      if (Index == DFIndex) {
+        RegCache.Value[Index] = _LoadDF();
+      } else if (Index >= MM0Index && Index <= AbridgedFTWIndex) {
+        bool MMX = Index <= MM7Index;
+        RegCache.Value[Index] = _LoadContext(MMX ? 8 : 1, MMX ? FPRClass : GPRClass, CacheIndexToContextOffset(Index));
+      } else {
+        RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
+      }
+
+      RegCache.Cached |= Bit;
+    }
+
+    return RegCache.Value[Index];
+  }
+
+  Ref LoadGPR(uint8_t Reg) {
+    return LoadRegCache(Reg, Reg, GPRClass, CTX->GetGPRSize());
+  }
+
+  Ref LoadContext(uint8_t Index) {
+    return LoadGPR(Index);
+  }
+
+  Ref LoadXMMRegister(uint8_t Reg) {
+    const auto Size = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
+    return LoadRegCache(Reg, Reg + 32, FPRClass, Size);
+  }
+
+  Ref LoadDF() {
+    return LoadGPR(DFIndex);
+  }
+
+  void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
+    LOGMAN_THROW_AA_FMT(Reg < 32, "valid register index");
+    LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
+
+    uint8_t Index = FPR ? (Reg + 32) : Reg;
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    RegCache.Value[Index] = Value;
+    RegCache.Cached |= Bit;
+    RegCache.Written |= Bit;
+  }
+
+  void StoreContext(uint8_t Index, Ref Value) {
+    StoreRegister(Index, false, Value);
+  }
+
+  void StoreDF(Ref Value) {
+    StoreContext(DFIndex, Value);
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
@@ -1732,12 +1865,12 @@ private:
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::PF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
-      return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
+      return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
       return _LoadFlag(BitOffset);
     }
@@ -1745,7 +1878,7 @@ private:
 
   // Returns (DF ? -Size : Size)
   Ref LoadDir(const unsigned Size) {
-    auto Dir = _LoadDF();
+    auto Dir = LoadDF();
     auto Shift = FEXCore::ilog2(Size);
 
     if (Shift) {
@@ -1759,7 +1892,7 @@ private:
   Ref OffsetByDir(Ref X, const unsigned Size) {
     auto Shift = FEXCore::ilog2(Size);
 
-    return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
+    return _AddShift(OpSize::i64Bit, X, LoadDF(), ShiftType::LSL, Shift);
   }
 
   // Compares two floats and sets flags for a COMISS instruction
