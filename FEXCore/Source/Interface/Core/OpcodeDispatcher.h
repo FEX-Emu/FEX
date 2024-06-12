@@ -1460,6 +1460,7 @@ private:
   }
 
   struct {
+    uint64_t Cached;
     uint64_t Written;
     Ref Value[64];
   } RegCache {};
@@ -1468,9 +1469,9 @@ private:
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
-    if (!(RegCache.Written & Bit)) {
+    if (!(RegCache.Cached & Bit)) {
       RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
-      RegCache.Written |= Bit;
+      RegCache.Cached |= Bit;
     }
 
     return RegCache.Value[Index];
@@ -1493,6 +1494,7 @@ private:
     uint64_t Bit = (1ull << (uint64_t)Index);
 
     RegCache.Value[Index] = Value;
+    RegCache.Cached |= Bit;
     RegCache.Written |= Bit;
   }
 
@@ -1519,6 +1521,7 @@ private:
       }
     }
 
+    RegCache.Cached = 0;
     RegCache.Written = 0;
   }
 

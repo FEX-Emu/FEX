@@ -4611,6 +4611,7 @@ void OpDispatchBuilder::ResetWorkingList() {
   ShouldDump = false;
   CurrentCodeBlock = nullptr;
   RegCache.Written = 0;
+  RegCache.Cached = 0;
 }
 
 void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
