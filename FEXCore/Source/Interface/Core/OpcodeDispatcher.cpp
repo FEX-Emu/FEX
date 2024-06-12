@@ -126,8 +126,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
     // RIP could have been updated after coming back from the Syscall.
     NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
-    FlushRegisterCache();
-    _ExitFunction(NewRIP);
+    ExitFunction(NewRIP);
   }
 }
 
@@ -152,10 +151,9 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  FlushRegisterCache();
 
   // Store the new RIP
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -204,10 +202,9 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  FlushRegisterCache();
 
   // Store the new RIP
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -265,8 +262,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RSP, SP);
   }
 
-  FlushRegisterCache();
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -275,9 +271,8 @@ void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
   // Store the new RIP
   _CallbackReturn();
   auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
-  FlushRegisterCache();
   // This ExitFunction won't actually get hit but needs to exist
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -682,10 +677,9 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Had wrong operand type");
   const uint64_t TargetRIP = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
-  FlushRegisterCache();
   if (NextRIP != TargetRIP) {
     // Store the RIP
-    _ExitFunction(NewRIP); // If we get here then leave the function now
+    ExitFunction(NewRIP); // If we get here then leave the function now
   } else {
     NeedsBlockEnd = true;
   }
@@ -707,8 +701,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store the RIP
-  FlushRegisterCache();
-  _ExitFunction(JMPPCOffset); // If we get here then leave the function now
+  ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
 Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
@@ -883,7 +876,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, TargetOffset);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -901,7 +894,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -946,7 +939,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -964,7 +957,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1022,7 +1015,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -1040,7 +1033,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1085,7 +1078,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       SetJumpTarget(Jump_, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
-      _ExitFunction(GetRelocatedPC(Op, TargetOffset));
+      ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
     return;
   }
@@ -1096,7 +1089,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     auto NewRIP = _Add(OpSize::i64Bit, _Constant(TargetOffset), RIPTargetConst);
 
     // Store the new RIP
-    _ExitFunction(NewRIP);
+    ExitFunction(NewRIP);
   }
 }
 
@@ -1109,10 +1102,9 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
   auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  CalculateDeferredFlags();
 
   // Store the new RIP
-  _ExitFunction(RIPOffset);
+  ExitFunction(RIPOffset);
 }
 
 template<uint32_t SrcIndex>
@@ -4031,8 +4023,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    FlushRegisterCache();
-    _ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
+    ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
   }
 }
 
