@@ -182,6 +182,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    InvalidatePF_AF();
     // Deferred flags are invalidated now
     InvalidateDeferredFlags();
   }
@@ -654,6 +655,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    InvalidatePF_AF();
     // Deferred flags are invalidated now
     InvalidateDeferredFlags();
   }
@@ -1124,7 +1126,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   HandleNZ00Write();
   CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
@@ -2928,7 +2930,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   SetNZ_ZeroCV(1, Res);
   CalculatePF(Res);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -2943,7 +2945,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 
   SetNZ_ZeroCV(1, Result);
   CalculatePF(Result);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
@@ -4687,7 +4689,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
     HandleNZ00Write();
     CalculatePF(Result);
-    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+    InvalidateAF();
     break;
   }
   default: break;
