@@ -1439,10 +1439,13 @@ private:
 
   void InvalidateAF() {
     _InvalidateFlags((1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   void InvalidatePF_AF() {
     _InvalidateFlags((1u << X86State::RFLAG_PF_RAW_LOC) | (1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::PF_AS_GREG);
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
@@ -1464,6 +1467,12 @@ private:
     uint64_t Written;
     Ref Value[64];
   } RegCache {};
+
+  void InvalidateReg(uint8_t Index) {
+    uint64_t Bit = (1ull << (uint64_t)Index);
+    RegCache.Cached &= ~Bit;
+    RegCache.Written &= ~Bit;
+  }
 
   Ref LoadRegCache(uint8_t Reg, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
