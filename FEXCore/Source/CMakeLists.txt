@@ -137,7 +137,6 @@ set (SRCS
   Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp
   Interface/IR/Passes/ConstProp.cpp
-  Interface/IR/Passes/DeadContextStoreElimination.cpp
   Interface/IR/Passes/IRDumperPass.cpp
   Interface/IR/Passes/IRValidation.cpp
   Interface/IR/Passes/RAValidation.cpp
