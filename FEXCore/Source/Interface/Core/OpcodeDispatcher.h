@@ -1463,6 +1463,7 @@ private:
   }
 
   const int DFIndex = 31;
+  const int AbridgedFTWIndex = 30;
 
   struct {
     uint64_t Cached;
@@ -1483,6 +1484,8 @@ private:
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
+      } else if (Index == AbridgedFTWIndex) {
+        RegCache.Value[Index] = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       } else {
         RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
       }
@@ -1495,6 +1498,10 @@ private:
 
   Ref LoadGPR(uint8_t Reg) {
     return LoadRegCache(Reg, Reg, GPRClass, CTX->GetGPRSize());
+  }
+
+  Ref LoadContext(uint8_t Index) {
+    return LoadGPR(Index);
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
@@ -1518,8 +1525,12 @@ private:
     RegCache.Written |= Bit;
   }
 
+  void StoreContext(uint8_t Index, Ref Value) {
+    StoreRegister(Index, false, Value);
+  }
+
   void StoreDF(Ref Value) {
-    StoreRegister(DFIndex, false, Value);
+    StoreContext(DFIndex, Value);
   }
 
   void FlushRegisterCache() {
@@ -1531,7 +1542,7 @@ private:
     // Write GPRs backwards. This is a heuristic to improve coalescing, since we
     // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
     // instructions like "add rax, 1". This hack will go away with clauses.
-    for (int GPR = 30; GPR >= 0; --GPR) {
+    for (int GPR = 18; GPR >= 0; --GPR) {
       if (RegCache.Written & (1ull << (uint64_t)GPR)) {
         _StoreRegister(RegCache.Value[GPR], GPR, GPRClass, GPRSize);
       }
@@ -1547,6 +1558,10 @@ private:
 
     if (RegCache.Written & (1ull << DFIndex)) {
       _StoreFlag(RegCache.Value[DFIndex], X86State::RFLAG_DF_RAW_LOC);
+    }
+
+    if (RegCache.Written & (1ull << AbridgedFTWIndex)) {
+      _StoreContext(1, GPRClass, RegCache.Value[AbridgedFTWIndex], offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     }
 
     RegCache.Cached = 0;
