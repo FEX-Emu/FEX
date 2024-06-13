@@ -8,6 +8,7 @@ $end_info$
 
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
+#include "Common/JSONPool.h"
 
 #include "FEXCore/Config/Config.h"
 #include "LinuxSyscalls/FileManagement.h"
@@ -42,25 +43,6 @@ $end_info$
 
 #include <tiny-json.h>
 
-namespace JSON {
-struct JsonAllocator {
-  jsonPool_t PoolObject;
-  fextl::unique_ptr<fextl::list<json_t>> json_objects;
-};
-static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
-
-json_t* PoolInit(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-  alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
-  return &*alloc->json_objects->emplace(alloc->json_objects->end());
-}
-
-json_t* PoolAlloc(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-  return &*alloc->json_objects->emplace(alloc->json_objects->end());
-}
-} // namespace JSON
-
 namespace FEX::HLE {
 bool FileManager::RootFSPathExists(const char* Filepath) {
   LOGMAN_THROW_A_FMT(Filepath && Filepath[0] == '/', "Filepath needs to be absolute");
@@ -71,7 +53,6 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   fextl::vector<char> FileData;
   if (FEXCore::FileLoading::LoadFile(FileData, ThunkDBPath)) {
-    FileData.push_back(0);
 
     // If the thunksDB file exists then we need to check if the rootfs supports multi-arch or not.
     const bool RootFSIsMultiarch = RootFSPathExists("/usr/lib/x86_64-linux-gnu/") || RootFSPathExists("/usr/lib/i386-linux-gnu/");
@@ -112,15 +93,12 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
       }
     }
 
-    JSON::JsonAllocator Pool {
-      .PoolObject =
-        {
-          .init = JSON::PoolInit,
-          .alloc = JSON::PoolAlloc,
-        },
-    };
+    FEX::JSON::JsonAllocator Pool {};
+    const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
 
-    const json_t* json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+    if (!json) {
+      return;
+    }
 
     const json_t* DB = json_getProperty(json, "DB");
     if (!DB || JSON_OBJ != json_getType(DB)) {
@@ -258,16 +236,14 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
   for (const auto& Path : ConfigPaths) {
     fextl::vector<char> FileData;
     if (FEXCore::FileLoading::LoadFile(FileData, Path)) {
-      JSON::JsonAllocator Pool {
-        .PoolObject =
-          {
-            .init = JSON::PoolInit,
-            .alloc = JSON::PoolAlloc,
-          },
-      };
+      FEX::JSON::JsonAllocator Pool {};
 
       // If a thunks DB property exists then we pull in data from the thunks database
-      const json_t* json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+      const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
+      if (!json) {
+        continue;
+      }
+
       const json_t* ThunksDB = json_getProperty(json, "ThunksDB");
       if (!ThunksDB) {
         continue;

@@ -5,6 +5,7 @@ set(SRCS
   Config.cpp
   ArgumentLoader.cpp
   EnvironmentLoader.cpp
+  JSONPool.cpp
   StringUtil.cpp)
 
 if (NOT MINGW_BUILD)
