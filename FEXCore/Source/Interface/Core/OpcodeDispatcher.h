@@ -1438,6 +1438,14 @@ private:
 
   void ZeroPF_AF();
 
+  void InvalidateAF() {
+    _InvalidateFlags((1u << X86State::RFLAG_AF_RAW_LOC));
+  }
+
+  void InvalidatePF_AF() {
+    _InvalidateFlags((1u << X86State::RFLAG_PF_RAW_LOC) | (1u << X86State::RFLAG_AF_RAW_LOC));
+  }
+
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
     case FEXCore::X86State::RFLAG_SF_RAW_LOC: return Invert ? CondClassType {COND_PL} : CondClassType {COND_MI};
