@@ -3061,17 +3061,11 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   StoreResult(GPRClass, Op, GetMXCSR(), -1);
 }
 
-Ref OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
-
-  return _VSQXTUNPair(Size, ElementSize, Src1, Src2);
-}
-
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = PACKUSOpImpl(Op, ElementSize, Dest, Src);
+  Ref Result = _VSQXTUNPair(GetSrcSize(Op), ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3086,7 +3080,7 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = PACKUSOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Result = _VSQXTUNPair(GetSrcSize(Op), ElementSize, Src1, Src2);
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
@@ -3099,16 +3093,11 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPACKUSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPACKUSOp<4>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
-  return _VSQXTNPair(Size, ElementSize, Src1, Src2);
-}
-
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKSSOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = PACKSSOpImpl(Op, ElementSize, Dest, Src);
+  Ref Result = _VSQXTNPair(GetSrcSize(Op), ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3123,7 +3112,7 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = PACKSSOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Result = _VSQXTNPair(GetSrcSize(Op), ElementSize, Src1, Src2);
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
