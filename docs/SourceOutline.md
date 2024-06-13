@@ -1,4 +1,4 @@
-# FEX-2405
+# FEX-2406
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -108,13 +108,15 @@ C++ Functions to generate IR. See IR.json for spec.
 IR to IR Optimization
 - [PassManager.cpp](../FEXCore/Source/Interface/IR/PassManager.cpp): Defines which passes are run, and runs them
 - [PassManager.h](../FEXCore/Source/Interface/IR/PassManager.h)
-- [ConstProp.cpp](../FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
+- [ConstProp.cpp](../FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
 - [DeadContextStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadContextStoreElimination.cpp): Transforms ContextLoad/Store to temporaries, similar to mem2reg
 - [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
 - [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
 - [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
 - [RegisterAllocationPass.h](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
+
+
 
 ### opcodes
 
