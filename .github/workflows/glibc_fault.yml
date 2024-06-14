@@ -20,7 +20,6 @@ env:
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
-  FEX_ENABLEAVX: 1
 
 jobs:
   glibc_fault_test:
