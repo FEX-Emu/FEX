@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import re
 
 _Arch = None
 def GetArch():
@@ -131,7 +132,7 @@ def GetCPUFeaturesVersion():
     return _ArchVersion
 
 _PPAInstalled = None
-FEXPPA = "http://ppa.launchpad.net/fex-emu/fex/ubuntu"
+FEXPPA_REGEX = r".*\/fex-emu\/fex\/ubuntu$"
 
 def GetPPAStatus():
     global _PPAInstalled
@@ -147,7 +148,7 @@ def GetPPAStatus():
                 LineSplit = Line.split(" ")
 
                 # 'status' 'URL' 'series' 'arch' 'type'
-                if LineSplit[1] == FEXPPA:
+                if re.match(FEXPPA_REGEX, LineSplit[1]):
                     _PPAInstalled = True
                     break
 
