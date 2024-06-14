@@ -10,7 +10,6 @@ on:
 
 env:
   BUILD_TYPE: Debug
-  FEX_ENABLEAVX: 1
 
 jobs:
   mingw_build:
