@@ -563,14 +563,14 @@ void FillHackConfig() {
     bool MemcpyTSOEnabled = MemcpyTSO.has_value() && **MemcpyTSO == "1";
     bool HalfBarrierTSOEnabled = HalfBarrierTSO.has_value() && **HalfBarrierTSO == "1";
 
-    if (ImGui::Checkbox("TSO Enabled", &TSOEnabled)) {
+    if (ImGui::Checkbox("TSO Emulation Enabled", &TSOEnabled)) {
       LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, TSOEnabled ? "1" : "0");
       ConfigChanged = true;
     }
 
     if (TSOEnabled) {
-      if (ImGui::TreeNodeEx("TSO sub-options", ImGuiTreeNodeFlags_Leaf)) {
-        if (ImGui::Checkbox("Vector TSO Enabled", &VectorTSOEnabled)) {
+      if (ImGui::TreeNodeEx("TSO Emulation sub-options", ImGuiTreeNodeFlags_Leaf)) {
+        if (ImGui::Checkbox("Vector TSO Emulation Enabled", &VectorTSOEnabled)) {
           LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, VectorTSOEnabled ? "1" : "0");
           ConfigChanged = true;
         }
@@ -580,7 +580,7 @@ void FillHackConfig() {
           ImGui::EndTooltip();
         }
 
-        if (ImGui::Checkbox("Memcpy TSO Enabled", &MemcpyTSOEnabled)) {
+        if (ImGui::Checkbox("Memcpy TSO Emulation Enabled", &MemcpyTSOEnabled)) {
           LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, MemcpyTSOEnabled ? "1" : "0");
           ConfigChanged = true;
         }
@@ -590,7 +590,7 @@ void FillHackConfig() {
           ImGui::EndTooltip();
         }
 
-        if (ImGui::Checkbox("Unaligned Half-Barrier TSO Enabled", &HalfBarrierTSOEnabled)) {
+        if (ImGui::Checkbox("Unaligned Half-Barrier TSO Emulation Enabled", &HalfBarrierTSOEnabled)) {
           LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_HALFBARRIERTSOENABLED, HalfBarrierTSOEnabled ? "1" : "0");
           ConfigChanged = true;
         }
