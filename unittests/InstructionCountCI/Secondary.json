@@ -868,11 +868,12 @@
       ]
     },
     "packsswb mm0, mm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0x63",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #768]",
-        "zip1 v2.2d, v2.2d, v2.2d",
+        "ldr d3, [x28, #768]",
+        "zip1 v2.2d, v2.2d, v3.2d",
         "sqxtn v2.8b, v2.8h",
         "str d2, [x28, #768]"
       ]

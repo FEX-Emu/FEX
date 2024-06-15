@@ -203,12 +203,12 @@
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "cset w20, hs",
-        "mov x27, x4",
         "adds w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",
-        "mov x4, x26",
-        "msr nzcv, x21"
+        "msr nzcv, x21",
+        "mov x27, x4",
+        "mov x4, x26"
       ]
     },
     "dec ax": {
@@ -246,12 +246,12 @@
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "cset w20, hs",
-        "mov x27, x4",
         "subs w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",
-        "mov x4, x26",
-        "msr nzcv, x21"
+        "msr nzcv, x21",
+        "mov x27, x4",
+        "mov x4, x26"
       ]
     },
     "pusha": {
