@@ -135,12 +135,16 @@ private:
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
+  bool Rematerializable(IROp_Header* IROp) {
+    return IROp->Op == OP_CONSTANT;
+  }
+
   Ref InsertFill(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
     IROp_Header* IROp = IR->GetOp<IROp_Header>(Old);
 
     // Remat if we can
-    if (IROp->Op == OP_CONSTANT) {
+    if (Rematerializable(IROp)) {
       uint64_t Const = IROp->C<IR::IROp_Constant>()->Constant;
       return IREmit->_Constant(Const);
     }
@@ -269,8 +273,6 @@ private:
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
     // next-use has the /smallest/ unsigned IP.
-    //
-    // TODO: Prioritize constants, as they are cheaper to rematerialize.
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
@@ -291,6 +293,13 @@ private:
         // Skip any source used by the current instruction, it is unspillable.
         if (!HasSource(Exclude, Old)) {
           uint32_t NextUse = NextUses[IR->GetID(Old).Value];
+
+          // Prioritize remat over spilling. It is typically cheaper to remat a
+          // constant multiple times than to spill a single value.
+          if (!Rematerializable(IR->GetOp<IROp_Header>(Old))) {
+            NextUse += 100000;
+          }
+
           if (NextUse < BestDistance) {
             BestDistance = NextUse;
             BestReg = i;
