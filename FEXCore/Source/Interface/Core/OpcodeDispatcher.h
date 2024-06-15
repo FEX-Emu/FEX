@@ -16,6 +16,7 @@
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <bit>
 #include <cstdint>
 #include <fmt/format.h>
 #include <stddef.h>
@@ -1539,33 +1540,29 @@ private:
     const uint8_t GPRSize = CTX->GetGPRSize();
     const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
 
-    // Write GPRs backwards. This is a heuristic to improve coalescing, since we
+    // Write backwards. This is a heuristic to improve coalescing, since we
     // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
     // instructions like "add rax, 1". This hack will go away with clauses.
-    for (int GPR = 18; GPR >= 0; --GPR) {
-      if (RegCache.Written & (1ull << (uint64_t)GPR)) {
-        _StoreRegister(RegCache.Value[GPR], GPR, GPRClass, GPRSize);
+    uint64_t Bits = RegCache.Written;
+    while (Bits != 0) {
+      uint32_t Index = 63 - std::countl_zero(Bits);
+      Ref Value = RegCache.Value[Index];
+
+      if (Index <= 18) {
+        _StoreRegister(Value, Index, GPRClass, GPRSize);
+      } else if (Index >= 32) {
+        _StoreRegister(Value, Index - 32, FPRClass, VectorSize);
+      } else if (Index == DFIndex) {
+        _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
+      } else if (Index == AbridgedFTWIndex) {
+        _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       }
+
+      Bits &= ~(1ull << Index);
     }
 
-    for (unsigned FPR = 0; FPR < 32; ++FPR) {
-      uint32_t Index = FPR + 32;
-
-      if (RegCache.Written & (1ull << (uint64_t)Index)) {
-        _StoreRegister(RegCache.Value[Index], FPR, FPRClass, VectorSize);
-      }
-    }
-
-    if (RegCache.Written & (1ull << DFIndex)) {
-      _StoreFlag(RegCache.Value[DFIndex], X86State::RFLAG_DF_RAW_LOC);
-    }
-
-    if (RegCache.Written & (1ull << AbridgedFTWIndex)) {
-      _StoreContext(1, GPRClass, RegCache.Value[AbridgedFTWIndex], offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-    }
-
-    RegCache.Cached = 0;
     RegCache.Written = 0;
+    RegCache.Cached = 0;
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
