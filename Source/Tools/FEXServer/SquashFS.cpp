@@ -4,6 +4,7 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
@@ -104,7 +105,7 @@ bool DowngradeRootFSPipeToReadLock() {
 
 bool MountRootFSImagePath(const fextl::string& SquashFS, bool EroFS) {
   pid_t ParentTID = ::getpid();
-  MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", FEXServerClient::GetServerMountFolder(), ParentTID);
+  MountFolder = fextl::fmt::format("{}/.FEXMount{}-XXXXXX", FEXServerClient::GetServerMountFolder(), ParentTID);
   char* MountFolderStr = MountFolder.data();
 
   // Make the temporary mount folder

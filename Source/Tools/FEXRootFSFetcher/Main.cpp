@@ -493,13 +493,13 @@ bool DownloadToPathWithZenityProgress(const fextl::string& URL, const fextl::str
   // -# for progress bar
   // -o for output file
   // -f for silent fail
-  std::string CurlPipe = fmt::format("curl -C - -#f {} -o {} 2>&1", URL, PathName);
+  fextl::string CurlPipe = fextl::fmt::format("curl -C - -#f {} -o {} 2>&1", URL, PathName);
   const std::string StdBuf = "stdbuf -oL tr '\\r' '\\n'";
   const std::string SedBuf = "sed -u 's/[^0-9]*\\([0-9]*\\).*/\\1/'";
   // zenity --auto-close can't be used since `curl -C` for whatever reason prints 100% at the start.
   // Making zenity vanish immediately
   const std::string ZenityBuf = "zenity --time-remaining --progress --no-cancel --title 'Downloading'";
-  std::string BigArgs = fmt::format("{} | {} | {} | {}", CurlPipe, StdBuf, SedBuf, ZenityBuf);
+  fextl::string BigArgs = fextl::fmt::format("{} | {} | {} | {}", CurlPipe, StdBuf, SedBuf, ZenityBuf);
   std::vector<const char*> ExecveArgs = {
     "/bin/sh",
     "-c",
@@ -760,8 +760,8 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
 
 bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
   fextl::string Text = fextl::fmt::format("Selected Rootfs: {}\n", Target.DistroName);
-  Text += fmt::format("\tURL: {}\n", Target.URL);
-  Text += fmt::format("Are you sure that you want to download this image");
+  Text += fextl::fmt::format("\tURL: {}\n", Target.URL);
+  Text += fextl::fmt::format("Are you sure that you want to download this image");
 
   if (AskForConfirmation(Text)) {
     fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
@@ -770,7 +770,7 @@ bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
       // Doesn't exist, create the the folder as a user convenience
       if (!std::filesystem::create_directories(RootFS, ec)) {
         // Well I guess we failed
-        Text = fmt::format("Couldn't create {} path for storing RootFS", RootFS);
+        Text = fextl::fmt::format("Couldn't create {} path for storing RootFS", RootFS);
         ExecWithInfo(Text);
         return false;
       }
@@ -817,15 +817,15 @@ void ExecWithInfo(const fextl::string& Text) {
 }
 
 int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fextl::string>& List) {
-  fmt::print("{}\n", Text);
-  fmt::print("Options:\n");
-  fmt::print("\t0: Cancel\n");
+  fextl::fmt::print("{}\n", Text);
+  fextl::fmt::print("Options:\n");
+  fextl::fmt::print("\t0: Cancel\n");
 
   for (size_t i = 0; i < List.size(); ++i) {
-    fmt::print("\t{}: {}\n", i + 1, List[i]);
+    fextl::fmt::print("\t{}: {}\n", i + 1, List[i]);
   }
 
-  fmt::print("\t\nResponse {{1-{}}} or 0 to cancel\n", List.size());
+  fextl::fmt::print("\t\nResponse {{1-{}}} or 0 to cancel\n", List.size());
   fextl::string Response;
   std::cin >> Response;
 
@@ -894,19 +894,19 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
     if (Result == -1) {
       return false;
     }
-    fmt::print("Validating RootFS hash...\n");
+    fextl::fmt::print("Validating RootFS hash...\n");
     auto Res = XXFileHash::HashFile(PathName);
     if (Result == 0) {
       if (Res.first == true && Res.second == ExpectedHash) {
-        fmt::print("{} matches expected hash. Skipping downloading\n", filename);
+        fextl::fmt::print("{} matches expected hash. Skipping downloading\n", filename);
         return false;
       }
     } else if (Result == 1) {
       if (Res.first == false || Res.second != ExpectedHash) {
-        fmt::print("RootFS doesn't match hash!\n");
+        fextl::fmt::print("RootFS doesn't match hash!\n");
         return AskForConfirmation("Do you want to redownload?");
       } else {
-        fmt::print("{} matches expected hash\n", filename);
+        fextl::fmt::print("{} matches expected hash\n", filename);
         return false;
       }
     }
@@ -916,8 +916,8 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
 }
 
 bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
-  fmt::print("Selected Rootfs: {}\n", Target.DistroName);
-  fmt::print("\tURL: {}\n", Target.URL);
+  fextl::fmt::print("Selected Rootfs: {}\n", Target.DistroName);
+  fextl::fmt::print("\tURL: {}\n", Target.URL);
 
   if (AskForConfirmation("Are you sure that you want to download this image")) {
     fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
@@ -926,13 +926,13 @@ bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
       // Doesn't exist, create the the folder as a user convenience
       if (!std::filesystem::create_directories(RootFS, ec)) {
         // Well I guess we failed
-        fmt::print("Couldn't create {} path for storing RootFS\n", RootFS);
+        fextl::fmt::print("Couldn't create {} path for storing RootFS\n", RootFS);
         return false;
       }
     }
     auto DoDownload = [&Target, &RootFS]() -> bool {
       if (!WebFileFetcher::DownloadToPath(Target.URL, RootFS)) {
-        fmt::print("Couldn't download RootFS\n");
+        fextl::fmt::print("Couldn't download RootFS\n");
         return false;
       }
 
@@ -1074,7 +1074,7 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
   if (Extract) {
     ExecWithInfo("Extracting Erofs. This might take a few minutes.");
 
-    const auto ExtractOption = fmt::format("--extract={}", TargetFolder);
+    const auto ExtractOption = fextl::fmt::format("--extract={}", TargetFolder);
     const std::vector<const char*> ExecveArgs = {
       "fsck.erofs",
       ExtractOption.c_str(),
@@ -1101,9 +1101,9 @@ int main(int argc, char** argv, char** const envp) {
   if (ArgOptions::RemainingArgs.size()) {
     auto Res = XXFileHash::HashFile(ArgOptions::RemainingArgs[0]);
     if (Res.first) {
-      fmt::print("{} has hash: {:x}\n", ArgOptions::RemainingArgs[0], Res.second);
+      fextl::fmt::print("{} has hash: {:x}\n", ArgOptions::RemainingArgs[0], Res.second);
     } else {
-      fmt::print("Couldn't generate hash for {}\n", ArgOptions::RemainingArgs[0]);
+      fextl::fmt::print("Couldn't generate hash for {}\n", ArgOptions::RemainingArgs[0]);
     }
     return 0;
   }
@@ -1163,7 +1163,7 @@ int main(int argc, char** argv, char** const envp) {
               auto Res = XXFileHash::HashFile(PathName);
               if (Res.first == false || Res.second != ExpectedHash) {
                 fextl::string Text = fextl::fmt::format("Couldn't hash the rootfs or hash didn't match\n");
-                Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
+                Text += fextl::fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
                 ExecWithInfo(Text);
                 return std::make_pair(-1, true);
               }
