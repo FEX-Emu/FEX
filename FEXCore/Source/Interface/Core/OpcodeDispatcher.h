@@ -1463,8 +1463,26 @@ private:
     }
   }
 
-  const int DFIndex = 31;
-  const int AbridgedFTWIndex = 30;
+  static const int DFIndex = 31;
+  static const int MM0Index = 20;
+  static const int MM7Index = 27;
+  static const int AbridgedFTWIndex = 28;
+
+  int CacheIndexToContextOffset(int Index) {
+    switch (Index) {
+    case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
+    case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
+    default: return -1;
+    }
+  }
+
+  RegisterClassType CacheIndexClass(int Index) {
+    if ((Index >= MM0Index && Index <= MM7Index) || Index >= 32) {
+      return FPRClass;
+    } else {
+      return GPRClass;
+    }
+  }
 
   struct {
     uint64_t Cached;
@@ -1485,8 +1503,9 @@ private:
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
-      } else if (Index == AbridgedFTWIndex) {
-        RegCache.Value[Index] = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      } else if (Index >= MM0Index && Index <= AbridgedFTWIndex) {
+        bool MMX = Index <= MM7Index;
+        RegCache.Value[Index] = _LoadContext(MMX ? 8 : 1, MMX ? FPRClass : GPRClass, CacheIndexToContextOffset(Index));
       } else {
         RegCache.Value[Index] = _LoadRegister(Reg, RegClass, Size);
       }
@@ -1554,8 +1573,8 @@ private:
         _StoreRegister(Value, Index - 32, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
         _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
-      } else if (Index == AbridgedFTWIndex) {
-        _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      } else {
+        _StoreContext(Index <= MM7Index ? 8 : 1, CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
       }
 
       Bits &= ~(1ull << Index);

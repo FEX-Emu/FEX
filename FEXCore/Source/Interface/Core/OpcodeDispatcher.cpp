@@ -4326,7 +4326,8 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      A.Base = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      A.Base = LoadContext(MM0Index + gpr - FEXCore::X86State::REG_MM_0);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
@@ -4480,7 +4481,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   } else if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      _StoreContext(OpSize, Class, Src, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      StoreContext(MM0Index + gpr - FEXCore::X86State::REG_MM_0, Src);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
