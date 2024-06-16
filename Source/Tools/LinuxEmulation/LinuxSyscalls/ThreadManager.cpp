@@ -217,8 +217,8 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
   // Remove all threads but the live thread from Threads
   Threads.clear();
 
-  auto LiveThreadData = static_cast<FEX::HLE::ThreadStateObject*>(LiveThread->FrontendPtr);
-  Threads.push_back(LiveThreadData);
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(LiveThread->CurrentFrame);
+  Threads.push_back(ThreadObject);
 
   // Clean up dead stacks
   FEXCore::Threads::Thread::CleanupAfterFork();

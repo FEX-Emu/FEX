@@ -30,6 +30,11 @@ public:
 
   ~ThreadManager();
 
+  ///< Returns the ThreadStateObject from a CpuStateFrame object.
+  static inline FEX::HLE::ThreadStateObject* GetStateObjectFromCPUState(FEXCore::Core::CpuStateFrame* Frame) {
+    return static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
+  }
+
   FEX::HLE::ThreadStateObject*
   CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState = nullptr, uint64_t ParentTID = 0);
   void TrackThread(FEX::HLE::ThreadStateObject* Thread) {
