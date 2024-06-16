@@ -672,10 +672,13 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   }
 
   auto ConstantPC = GetRelocatedPC(Op);
+  // Call instruction only uses up to 32-bit signed displacement
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  uint64_t InstRIP = Op->PC + Op->InstSize;
+  uint64_t TargetRIP = InstRIP + TargetOffset;
 
-  Ref JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-
-  Ref NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, JMPPCOffset);
+  Ref NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, _Constant(TargetOffset));
 
   // Push the return address.
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
@@ -685,8 +688,6 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Had wrong operand type");
-  const uint64_t TargetRIP = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
   CalculateDeferredFlags();
   if (NextRIP != TargetRIP) {
