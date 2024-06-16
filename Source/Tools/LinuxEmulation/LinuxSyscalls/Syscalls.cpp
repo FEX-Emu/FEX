@@ -44,6 +44,8 @@ $end_info$
 #include <alloca.h>
 #include <charconv>
 #include <functional>
+#include <linux/audit.h>
+#include <linux/seccomp.h>
 #include <memory>
 #include <regex>
 #include <sched.h>
@@ -52,6 +54,7 @@ $end_info$
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
+#include <signal.h>
 #include <system_error>
 #include <syscall.h>
 #include <sys/mman.h>
@@ -194,7 +197,7 @@ static bool IsShebangFilename(const fextl::string& Filename) {
   return IsShebang;
 }
 
-uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   auto SyscallHandler = FEX::HLE::_SyscallHandler;
   fextl::string Filename {};
 
@@ -205,6 +208,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
   const bool SupportsProcFSInterpreter = SyscallHandler->FM.SupportsProcFSInterpreterPath();
   fextl::string FDExecEnv;
+  fextl::string FDSeccompEnv;
 
   bool IsShebang {};
 
@@ -261,6 +265,21 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   char* const* EnvpPtr = envp;
   bool FDExecCopy {};
 
+  auto SeccompFD = SyscallHandler->SeccompEmulator.SerializeFilters(Frame);
+  const auto HasSeccomp = SeccompFD.has_value() && *SeccompFD != -1;
+
+  auto CloseSeccompFD = [&HasSeccomp, &SeccompFD]() {
+    if (HasSeccomp) {
+      close(*SeccompFD);
+    }
+  };
+
+  auto CloseFDExecFD = [&FDExecCopy, &Args]() {
+    if (FDExecCopy) {
+      close(Args.dirfd);
+    }
+  };
+
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
   // Kernel does its own checks for file format support for this
@@ -283,7 +302,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
   // TODO: Additional future tasks that require envp copying in the future:
   // - seccomp inheritance
   // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
-  const bool NeedsEnvpCopy = IsFDExec && !(IsBinfmtCompatible || IsOtherELF);
+  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp;
 
   if (NeedsEnvpCopy) {
     if (envp) {
@@ -295,7 +314,7 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
       }
     }
 
-    if (IsFDExec) {
+    if (IsFDExec && !IsBinfmtCompatible) {
       int Flags = fcntl(Args.dirfd, F_GETFD);
       if (Flags & FD_CLOEXEC) {
         // FEX needs the FD to live past execve when binfmt_misc isn't used,
@@ -317,6 +336,15 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
       EnvpArgs.emplace_back(FDExecEnv.data());
     }
 
+    if (HasSeccomp) {
+      // Create the environment variable to pass the FD to our FEX.
+      // Needs to stick around until execveat completes.
+      FDSeccompEnv = fextl::fmt::format("FEX_SECCOMPFD={}", *SeccompFD);
+
+      // Insert the FD for FEX to track.
+      EnvpArgs.emplace_back(FDSeccompEnv.data());
+    }
+
     // Emplace nullptr at the end to stop
     EnvpArgs.emplace_back(nullptr);
 
@@ -326,6 +354,8 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
   if (IsBinfmtCompatible || IsOtherELF) {
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
+    CloseSeccompFD();
+    CloseFDExecFD();
     SYSCALL_ERRNO();
   }
 
@@ -365,11 +395,8 @@ uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* env
 
   const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
   Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
-
-  if (FDExecCopy) {
-    ///< Had to make a copy, close it now.
-    close(Args.dirfd);
-  }
+  CloseSeccompFD();
+  CloseFDExecFD();
 
   SYSCALL_ERRNO();
 }
@@ -720,6 +747,7 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation)
   : TM {_CTX, _SignalDelegation}
+  , SeccompEmulator {this}
   , FM {_CTX}
   , CTX {_CTX}
   , SignalDelegation {_SignalDelegation} {
@@ -760,6 +788,91 @@ uint32_t SyscallHandler::CalculateGuestKernelVersion() {
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
+  // Need to reconstruct RIP from the return address. Which will be inside the FEX JIT.
+  const uint64_t RIP =
+    CTX->RestoreRIPFromHostPC(Frame->Thread, reinterpret_cast<uint64_t>(__builtin_extract_return_addr(__builtin_return_address(0))));
+
+  const auto SeccompResult = SeccompEmulator.ExecuteFilter(Frame, RIP, Args);
+  const auto ActionMasked = SeccompResult.SeccompResult & SECCOMP_RET_ACTION_FULL;
+  const auto DataMasked = SeccompResult.SeccompResult & SECCOMP_RET_DATA;
+
+  const auto Arch = Is64BitMode() ? AUDIT_ARCH_X86_64 : AUDIT_ARCH_I386;
+
+  // Logging rules
+  // - Log if explicitly returning SECCOMP_RET_LOG
+  // - Log if the filter enabled the logging flag and the action is something other than SECCOMP_RET_ALLOW.
+  if ((SeccompResult.ShouldLog && ActionMasked != SECCOMP_RET_ALLOW) || ActionMasked == SECCOMP_RET_LOG) {
+    int Signal = 0;
+    switch (ActionMasked) {
+    case SECCOMP_RET_KILL_PROCESS:
+    case SECCOMP_RET_KILL_THREAD: Signal = SeccompEmulator.GetKillSignal(); break;
+    case SECCOMP_RET_TRAP: Signal = SIGSYS; break;
+    default: break;
+    }
+
+    // Logs in to dmesg. Log through FEX
+    // ex: `[13572.669277] audit: type=1326 audit(1715469332.533:62): auid=1000 uid=1000 gid=1000 ses=2 subj=unconfined pid=52546 comm="seccomp_bpf"
+    // exe="/mnt/Work/Projects/work/linux/tools/testing/selftests/seccomp/seccomp_bpf" sig=0 arch=c000003e syscall=39 compat=0 ip=0x7d789352725d code=0x7ffc0000`
+    timespec tp {};
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    LogMan::Msg::IFmt("audit: type={} audit({}.{:03}:{}): uid={} gid={} pid={} comm={} sig={} arch={:x} syscall={} ip=0x{:x} code=0x{:x}",
+                      AUDIT_SECCOMP, tp.tv_sec, tp.tv_nsec / 1'000'000, AuditSerialIncrement(), ::getuid(), ::getgid(), ::getpid(),
+                      Filename(), Signal, Arch, Args->Argument[0], RIP, SeccompResult.SeccompResult);
+  }
+
+  switch (ActionMasked) {
+  ///< Unknown actions behave like RET_KILL_PROCESS.
+  default:
+  case SECCOMP_RET_KILL_PROCESS: {
+    LogMan::Msg::DFmt("[Seccomp] Kill Process!\n");
+    const int KillSignal = SeccompEmulator.GetKillSignal();
+    // Ignores signal handler and sigmask
+    uint64_t Mask = 1 << (KillSignal - 1);
+    SignalDelegation->GuestSigProcMask(SIG_UNBLOCK, &Mask, nullptr);
+    SignalDelegation->UninstallHostHandler(KillSignal);
+    kill(0, KillSignal);
+    break;
+  }
+  case SECCOMP_RET_KILL_THREAD: {
+    LogMan::Msg::DFmt("[Seccomp] Kill Thread!\n");
+    // Ignores signal handler and sigmask
+    uint64_t Mask = 1 << (SIGSYS - 1);
+    SignalDelegation->GuestSigProcMask(SIG_UNBLOCK, &Mask, nullptr);
+    SignalDelegation->UninstallHostHandler(SIGSYS);
+    tgkill(::getpid(), ::gettid(), SIGSYS);
+    break;
+  }
+  case SECCOMP_RET_TRAP: {
+    LogMan::Msg::DFmt("[Seccomp] Trap!\n");
+    siginfo_t Info {
+      .si_signo = SIGSYS,
+      .si_errno = static_cast<int32_t>(DataMasked),
+      .si_code = 1, ///< SYS_SECCOMP
+    };
+
+    Info.si_call_addr = reinterpret_cast<void*>(RIP);
+    Info.si_syscall = Args->Argument[0];
+    Info.si_arch = Arch;
+
+    SignalDelegation->QueueSignal(::getpid(), ::gettid(), SIGSYS, &Info, true);
+    break;
+  }
+  case SECCOMP_RET_ERRNO: {
+    LogMan::Msg::DFmt("[Seccomp] ERRNO!\n");
+    ///< errno return is clamped.
+    return -(std::min<uint64_t>(DataMasked, 4095));
+  }
+  case SECCOMP_RET_USER_NOTIF: LogMan::Msg::DFmt("[Seccomp] User notify!\n"); break;
+  case SECCOMP_RET_TRACE: {
+    LogMan::Msg::DFmt("[Seccomp] Tracer!");
+    // When no tracer attached, behave like RET_ERRNO returning ENOSYS.
+    // TODO: Implement once FEX supports tracing.
+    return -ENOSYS;
+  }
+  case SECCOMP_RET_LOG:
+  case SECCOMP_RET_ALLOW: break;
+  }
+
   if (Args->Argument[0] >= Definitions.size()) {
     return -ENOSYS;
   }
