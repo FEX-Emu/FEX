@@ -24,10 +24,6 @@
 #include <utility>
 
 namespace FEXCore::CPU {
-// Register x18 is unused in the current configuration.
-// This is due to it being a platform register on wine platforms.
-// TODO: Allow x18 register allocation on Linux in the future to gain one more register.
-
 namespace x64 {
 #ifndef _M_ARM_64EC
   // All but x19 and x29 are caller saved
