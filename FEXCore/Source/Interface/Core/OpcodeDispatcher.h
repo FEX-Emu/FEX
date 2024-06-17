@@ -1246,7 +1246,7 @@ private:
   }
 
   constexpr OpSize GetGuestVectorLength() const {
-    return CTX->HostFeatures.SupportsAVX ? OpSize::i256Bit : OpSize::i128Bit;
+    return CTX->HostFeatures.SupportsSVE256 ? OpSize::i256Bit : OpSize::i128Bit;
   }
 
   [[nodiscard]]

@@ -624,7 +624,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 
   if (FPRs) {
-    if (EmitterCTX->HostFeatures.SupportsAVX) {
+    if (EmitterCTX->HostFeatures.SupportsSVE256) {
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
 
@@ -709,11 +709,11 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     // We don't bother spilling these in SpillStaticRegs,
     // since all that matters is we restore them on a fill.
     // It's not a concern if they get trounced by something else.
-    if (EmitterCTX->HostFeatures.SupportsSVE) {
+    if (EmitterCTX->HostFeatures.SupportsSVE128) {
       ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
     }
 
-    if (EmitterCTX->HostFeatures.SupportsAVX) {
+    if (EmitterCTX->HostFeatures.SupportsSVE256) {
       ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
 
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
@@ -779,8 +779,8 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   }
 }
 
-void Arm64Emitter::PushVectorRegisters(ARMEmitter::Register TmpReg, bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs) {
-  if (SVERegs) {
+void Arm64Emitter::PushVectorRegisters(ARMEmitter::Register TmpReg, bool SVE256Regs, std::span<const ARMEmitter::VRegister> VRegs) {
+  if (SVE256Regs) {
     size_t i = 0;
 
     for (; i < (VRegs.size() % 4); i += 2) {
@@ -830,8 +830,8 @@ void Arm64Emitter::PushGeneralRegisters(ARMEmitter::Register TmpReg, std::span<c
   }
 }
 
-void Arm64Emitter::PopVectorRegisters(bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs) {
-  if (SVERegs) {
+void Arm64Emitter::PopVectorRegisters(bool SVE256Regs, std::span<const ARMEmitter::VRegister> VRegs) {
+  if (SVE256Regs) {
     size_t i = 0;
     for (; i < (VRegs.size() % 4); i += 2) {
       const auto Reg1 = VRegs[i];
@@ -880,9 +880,9 @@ void Arm64Emitter::PopGeneralRegisters(std::span<const ARMEmitter::Register> Reg
 }
 
 void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
-  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
   const auto GPRSize = (ConfiguredDynamicRegisterBase.size() + 1) * Core::CPUState::GPR_REG_SIZE;
-  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
   const auto FPRSize = GeneralFPRegisters.size() * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
@@ -894,7 +894,7 @@ void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
   LOGMAN_THROW_A_FMT(GeneralFPRegisters.size() % 2 == 0, "Needs to have multiple of 2 FPRs for RA");
 
   // Push the vector registers
-  PushVectorRegisters(TmpReg, CanUseSVE, GeneralFPRegisters);
+  PushVectorRegisters(TmpReg, CanUseSVE256, GeneralFPRegisters);
 
   // Push the general registers.
   PushGeneralRegisters(TmpReg, ConfiguredDynamicRegisterBase);
@@ -905,10 +905,10 @@ void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
-  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
 
   // Pop vectors first
-  PopVectorRegisters(CanUseSVE, GeneralFPRegisters);
+  PopVectorRegisters(CanUseSVE256, GeneralFPRegisters);
 
   // Pop GPRs second
   PopGeneralRegisters(ConfiguredDynamicRegisterBase);
@@ -919,8 +919,8 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
 }
 
 void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {
-  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
-  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
+  const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
 
   std::span<const ARMEmitter::Register> DynamicGPRs {};
   std::span<const ARMEmitter::VRegister> DynamicFPRs {};
@@ -932,7 +932,7 @@ void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool 
     PreserveSRAMask = x64::PreserveAll_SRAMask;
     PreserveSRAFPRMask = x64::PreserveAll_SRAFPRMask;
 
-    if (CanUseSVE) {
+    if (CanUseSVE256) {
       DynamicFPRs = x64::PreserveAll_DynamicFPRSVE;
       PreserveSRAFPRMask = x64::PreserveAll_SRAFPRSVEMask;
     }
@@ -942,7 +942,7 @@ void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool 
     PreserveSRAMask = x32::PreserveAll_SRAMask;
     PreserveSRAFPRMask = x32::PreserveAll_SRAFPRMask;
 
-    if (CanUseSVE) {
+    if (CanUseSVE256) {
       DynamicFPRs = x32::PreserveAll_DynamicFPRSVE;
       PreserveSRAFPRMask = x32::PreserveAll_SRAFPRSVEMask;
     }
@@ -961,14 +961,14 @@ void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool 
   add(ARMEmitter::Size::i64Bit, TmpReg, ARMEmitter::Reg::rsp, 0);
 
   // Push the vector registers.
-  PushVectorRegisters(TmpReg, CanUseSVE, DynamicFPRs);
+  PushVectorRegisters(TmpReg, CanUseSVE256, DynamicFPRs);
 
   // Push the general registers.
   PushGeneralRegisters(TmpReg, DynamicGPRs);
 }
 
 void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
-  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
 
   std::span<const ARMEmitter::Register> DynamicGPRs {};
   std::span<const ARMEmitter::VRegister> DynamicFPRs {};
@@ -981,7 +981,7 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
     PreserveSRAMask = x64::PreserveAll_SRAMask;
     PreserveSRAFPRMask = x64::PreserveAll_SRAFPRMask;
 
-    if (CanUseSVE) {
+    if (CanUseSVE256) {
       DynamicFPRs = x64::PreserveAll_DynamicFPRSVE;
       PreserveSRAFPRMask = x64::PreserveAll_SRAFPRSVEMask;
     }
@@ -991,7 +991,7 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
     PreserveSRAMask = x32::PreserveAll_SRAMask;
     PreserveSRAFPRMask = x32::PreserveAll_SRAFPRMask;
 
-    if (CanUseSVE) {
+    if (CanUseSVE256) {
       DynamicFPRs = x32::PreserveAll_DynamicFPRSVE;
       PreserveSRAFPRMask = x32::PreserveAll_SRAFPRSVEMask;
     }
@@ -1001,7 +1001,7 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
   FillStaticRegs(true, PreserveSRAMask, PreserveSRAFPRMask);
 
   // Pop the vector registers.
-  PopVectorRegisters(CanUseSVE, DynamicFPRs);
+  PopVectorRegisters(CanUseSVE256, DynamicFPRs);
 
   // Pop the general registers.
   PopGeneralRegisters(DynamicGPRs);

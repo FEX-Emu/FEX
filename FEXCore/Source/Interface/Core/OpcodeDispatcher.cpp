@@ -4436,7 +4436,7 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
 }
 
 Ref OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
-  const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+  const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
   return _LoadRegister(XMM, FPRClass, VectorSize);
 }
 
@@ -4457,7 +4457,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Siz
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, const Ref Src) {
-  const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+  const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
   _StoreRegister(Src, XMM, FPRClass, VectorSize);
 }
 
@@ -4491,7 +4491,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       _StoreContext(OpSize, Class, Src, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
-      const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+      const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
 
       auto Result = Src;
       if (OpSize != VectorSize) {
@@ -5476,7 +5476,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOp_RDRAND);
   }
 
-  if (CTX->HostFeatures.SupportsAVX) {
+  if (CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
     InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
   }

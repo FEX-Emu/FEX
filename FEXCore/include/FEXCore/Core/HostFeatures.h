@@ -26,7 +26,8 @@ public:
   bool SupportsSSE4A {};
   bool SupportsAVX {};
   bool SupportsAVX2 {};
-  bool SupportsSVE {};
+  bool SupportsSVE128 {};
+  bool SupportsSVE256 {};
   bool SupportsSHA {};
   bool SupportsBMI1 {};
   bool SupportsBMI2 {};
