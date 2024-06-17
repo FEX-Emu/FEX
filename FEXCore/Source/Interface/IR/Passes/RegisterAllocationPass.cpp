@@ -135,12 +135,16 @@ private:
   // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
+  bool Rematerializable(IROp_Header* IROp) {
+    return IROp->Op == OP_CONSTANT;
+  }
+
   Ref InsertFill(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
     IROp_Header* IROp = IR->GetOp<IROp_Header>(Old);
 
     // Remat if we can
-    if (IROp->Op == OP_CONSTANT) {
+    if (Rematerializable(IROp)) {
       uint64_t Const = IROp->C<IR::IROp_Constant>()->Constant;
       return IREmit->_Constant(Const);
     }
@@ -265,37 +269,44 @@ private:
     }
   };
 
+  // Helper macro to walk the set bits b in a 32-bit word x, using ffs to get
+  // the next set bit and then clearing on each iteration.
+#define foreach_bit(b, x) for (uint32_t __x = (x), b; ((b) = __builtin_ffs(__x) - 1, __x); __x &= ~(1 << (b)))
+
   void SpillReg(RegisterClass* Class, IROp_Header* Exclude, bool Pair) {
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
     // next-use has the /smallest/ unsigned IP.
-    //
-    // TODO: Prioritize constants, as they are cheaper to rematerialize.
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
 
-    for (int i = 0; i < Class->Count; ++i) {
+    foreach_bit(i, Class->Allocated) {
       // We have to prioritize the pair region if we're allocating for a Pair.
       // See the comment at the call site in AssignReg.
       if (Pair && Candidate != nullptr && i >= PairRegs) {
         break;
       }
 
-      if (Class->Allocated & (1u << i)) {
-        Ref Old = Class->RegToSSA[i];
+      Ref Old = Class->RegToSSA[i];
 
-        LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
-        LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
+      LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
+      LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
 
-        // Skip any source used by the current instruction, it is unspillable.
-        if (!HasSource(Exclude, Old)) {
-          uint32_t NextUse = NextUses[IR->GetID(Old).Value];
-          if (NextUse < BestDistance) {
-            BestDistance = NextUse;
-            BestReg = i;
-            Candidate = Old;
-          }
+      // Skip any source used by the current instruction, it is unspillable.
+      if (!HasSource(Exclude, Old)) {
+        uint32_t NextUse = NextUses[IR->GetID(Old).Value];
+
+        // Prioritize remat over spilling. It is typically cheaper to remat a
+        // constant multiple times than to spill a single value.
+        if (!Rematerializable(IR->GetOp<IROp_Header>(Old))) {
+          NextUse += 100000;
+        }
+
+        if (NextUse < BestDistance) {
+          BestDistance = NextUse;
+          BestReg = i;
+          Candidate = Old;
         }
       }
     }
