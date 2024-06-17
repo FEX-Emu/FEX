@@ -723,8 +723,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore
          offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
   }
 
-  // LOGMAN_THROW_A_FMT(RAData->HasFullRA(), "Arm64 JIT only works with RA");
-
   SpillSlots = RAData->SpillSlots();
 
   if (SpillSlots) {
