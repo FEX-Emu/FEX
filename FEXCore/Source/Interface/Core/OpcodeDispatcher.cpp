@@ -113,6 +113,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, 8);
   }
 
+  FlushRegisterCache();
   auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6], DefaultSyscallFlags);
 
   if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER &&
@@ -125,24 +126,20 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
     // RIP could have been updated after coming back from the Syscall.
     NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
-    CalculateDeferredFlags();
-    _ExitFunction(NewRIP);
+    ExitFunction(NewRIP);
   }
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
-  // Calculate flags early.
-  CalculateDeferredFlags();
-
   const uint8_t GPRSize = CTX->GetGPRSize();
   uint8_t* sha256 = (uint8_t*)(Op->PC + 2);
 
   if (CTX->Config.Is64BitMode) {
     // x86-64 ABI puts the function argument in RDI
-    _Thunk(LoadGPRRegister(X86State::REG_RDI), *reinterpret_cast<SHA256Sum*>(sha256));
+    Thunk(LoadGPRRegister(X86State::REG_RDI), *reinterpret_cast<SHA256Sum*>(sha256));
   } else {
     // x86 fastcall ABI puts the function argument in ECX
-    _Thunk(LoadGPRRegister(X86State::REG_RCX), *reinterpret_cast<SHA256Sum*>(sha256));
+    Thunk(LoadGPRRegister(X86State::REG_RCX), *reinterpret_cast<SHA256Sum*>(sha256));
   }
 
   auto Constant = _Constant(GPRSize);
@@ -152,10 +149,9 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
 
   // Store the new RIP
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -186,11 +182,9 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    InvalidatePF_AF();
     // Deferred flags are invalidated now
     InvalidateDeferredFlags();
-  } else {
-    // Calculate flags early.
-    CalculateDeferredFlags();
   }
 
   auto Constant = _Constant(GPRSize);
@@ -207,10 +201,9 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
 
   // Store the new RIP
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -230,9 +223,6 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     DecodeFailure = true;
     return;
   }
-
-  // Calculate flags early.
-  CalculateDeferredFlags();
 
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -271,8 +261,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RSP, SP);
   }
 
-  CalculateDeferredFlags();
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -281,9 +270,8 @@ void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
   // Store the new RIP
   _CallbackReturn();
   auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
-  CalculateDeferredFlags();
   // This ExitFunction won't actually get hit but needs to exist
-  _ExitFunction(NewRIP);
+  ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -407,6 +395,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
@@ -419,6 +408,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   auto NewSP = _Push(GPRSize, Size, Src, OldSP);
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
@@ -468,6 +458,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
+  FlushRegisterCache();
 }
 
 template<uint32_t SegmentReg>
@@ -664,11 +655,9 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    InvalidatePF_AF();
     // Deferred flags are invalidated now
     InvalidateDeferredFlags();
-  } else {
-    // Calculate flags early.
-    CalculateDeferredFlags();
   }
 
   auto ConstantPC = GetRelocatedPC(Op);
@@ -689,19 +678,15 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
 
-  CalculateDeferredFlags();
   if (NextRIP != TargetRIP) {
     // Store the RIP
-    _ExitFunction(NewRIP); // If we get here then leave the function now
+    ExitFunction(NewRIP); // If we get here then leave the function now
   } else {
     NeedsBlockEnd = true;
   }
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
-  // Calculate flags early.
-  CalculateDeferredFlags();
-
   BlockSetRIP = true;
 
   const uint8_t Size = GetSrcSize(Op);
@@ -717,8 +702,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store the RIP
-  CalculateDeferredFlags();
-  _ExitFunction(JMPPCOffset); // If we get here then leave the function now
+  ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
 Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
@@ -861,7 +845,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     Target &= 0xFFFFFFFFU;
   }
 
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
@@ -893,7 +877,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, TargetOffset);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -911,7 +895,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -956,7 +940,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -974,7 +958,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1032,7 +1016,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto NewRIP = GetRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
 
       // Store the new RIP
-      _ExitFunction(NewRIP);
+      ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -1050,7 +1034,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
-      _ExitFunction(RIPTargetConst);
+      ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1095,7 +1079,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       SetJumpTarget(Jump_, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
-      _ExitFunction(GetRelocatedPC(Op, TargetOffset));
+      ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
     return;
   }
@@ -1106,7 +1090,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     auto NewRIP = _Add(OpSize::i64Bit, _Constant(TargetOffset), RIPTargetConst);
 
     // Store the new RIP
-    _ExitFunction(NewRIP);
+    ExitFunction(NewRIP);
   }
 }
 
@@ -1119,10 +1103,9 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
   auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  CalculateDeferredFlags();
 
   // Store the new RIP
-  _ExitFunction(RIPOffset);
+  ExitFunction(RIPOffset);
 }
 
 template<uint32_t SrcIndex>
@@ -1144,7 +1127,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   HandleNZ00Write();
   CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
@@ -1339,7 +1322,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
     case FEXCore::X86State::REG_RCX: // CS
     case FEXCore::X86State::REG_R9:  // CS
       // CPL3 can't write to this
-      _Break(FEXCore::IR::BreakDefinition {
+      Break(FEXCore::IR::BreakDefinition {
         .ErrorRegister = 0,
         .Signal = SIGILL,
         .TrapNumber = 0,
@@ -2948,7 +2931,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
   SetNZ_ZeroCV(1, Res);
   CalculatePF(Res);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -2963,7 +2946,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 
   SetNZ_ZeroCV(1, Result);
   CalculatePF(Result);
-  _InvalidateFlags(1u << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
@@ -3437,7 +3420,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto Src1 = _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
       auto Src2 = _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
       GenerateFlags_SUB(Op, Src2, Src1);
-      CalculateDeferredFlags();
     }
     auto Jump_ = Jump();
 
@@ -4024,9 +4006,8 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
 }
 
 void OpDispatchBuilder::Finalize() {
-  // Calculate flags early.
   // This usually doesn't emit any IR but in the case of hitting the block instruction limit it will
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Node 0 is invalid node
@@ -4043,8 +4024,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    CalculateDeferredFlags();
-    _ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
+    ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
   }
 }
 
@@ -4710,7 +4690,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
     HandleNZ00Write();
     CalculatePF(Result);
-    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+    InvalidateAF();
     break;
   }
   default: break;
@@ -4791,7 +4771,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   // Calculate flags early.
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -4819,7 +4799,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
     auto NewRIP = GetRelocatedPC(Op);
     _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
-    _Break(Reason);
+    Break(Reason);
 
     // Make sure to start a new block after ending this one
     auto JumpTarget = CreateNewCodeBlockAfter(FalseBlock);
@@ -4828,7 +4808,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     StartNewBlock();
   } else {
     BlockSetRIP = true;
-    _Break(Reason);
+    Break(Reason);
   }
 }
 
@@ -4973,15 +4953,12 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
 
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
-  // Ensure flags are calculated on invalid op.
-  CalculateDeferredFlags();
-
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // We don't actually support this instruction
   // Multiblock may hit it though
   _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(BreakDefinition);
+  Break(BreakDefinition);
 
   BlockSetRIP = true;
 

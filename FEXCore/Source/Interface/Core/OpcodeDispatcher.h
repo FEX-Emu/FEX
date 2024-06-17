@@ -134,6 +134,7 @@ public:
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
     PossiblySetNZCVBits = ~0U;
+    FlushRegisterCache();
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
@@ -143,33 +144,45 @@ public:
   }
 
   IRPair<IROp_Jump> Jump() {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _Jump();
   }
   IRPair<IROp_Jump> Jump(Ref _TargetBlock) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _Jump(_TargetBlock);
   }
   IRPair<IROp_CondJump>
   CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
   IRPair<IROp_CondJump> CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(ssa0, cond);
   }
   IRPair<IROp_CondJump> CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
     return _CondJump(ssa0, ssa1, ssa2, cond);
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
-    CalculateDeferredFlags();
+    FlushRegisterCache();
 
     // The jump will ignore the sources, so it doesn't matter what we put here.
     // Put an inline constant so RA+codegen will ignore altogether.
     auto Placeholder = _InlineConstant(0);
     return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
+  }
+  IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
+    FlushRegisterCache();
+    return _ExitFunction(NewRIP);
+  }
+  IRPair<IROp_Break> Break(BreakDefinition Reason) {
+    FlushRegisterCache();
+    return _Break(Reason);
+  }
+  IRPair<IROp_Thunk> Thunk(Ref ArgPtr, SHA256Sum ThunkNameHash) {
+    FlushRegisterCache();
+    return _Thunk(ArgPtr, ThunkNameHash);
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -184,9 +197,6 @@ public:
     //  cmp qword [rdi-8], 0
     //  jne .label
     if (LastOp && !BlockSetRIP) {
-      // Calculate flags first
-      CalculateDeferredFlags();
-
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
@@ -194,7 +204,7 @@ public:
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
-        _ExitFunction(RelocatedNextRIP);
+        ExitFunction(RelocatedNextRIP);
       } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
         return true;
@@ -1075,10 +1085,6 @@ private:
   Ref MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                     const X86Tables::DecodedOperand& ImmOp);
 
-  Ref PACKSSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
-
-  Ref PACKUSOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
-
   Ref PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                     const X86Tables::DecodedOperand& Imm, bool IsAVX);
 
@@ -1432,6 +1438,14 @@ private:
 
   void ZeroPF_AF();
 
+  void InvalidateAF() {
+    _InvalidateFlags((1u << X86State::RFLAG_AF_RAW_LOC));
+  }
+
+  void InvalidatePF_AF() {
+    _InvalidateFlags((1u << X86State::RFLAG_PF_RAW_LOC) | (1u << X86State::RFLAG_AF_RAW_LOC));
+  }
+
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
     case FEXCore::X86State::RFLAG_SF_RAW_LOC: return Invert ? CondClassType {COND_PL} : CondClassType {COND_MI};
@@ -1444,6 +1458,10 @@ private:
 
     default: FEX_UNREACHABLE;
     }
+  }
+
+  void FlushRegisterCache() {
+    CalculateDeferredFlags();
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
@@ -1533,8 +1551,6 @@ private:
       SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
 
       // Note that we store PF inverted.
-      // TODO: We could maybe optimize this xor out for non-flagm platforms with
-      // bfi/bfxil?
       SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
     }
   }

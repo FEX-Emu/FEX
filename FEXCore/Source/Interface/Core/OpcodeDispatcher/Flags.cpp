@@ -459,57 +459,37 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, b
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High) {
   HandleNZCVWrite();
+  InvalidatePF_AF();
 
-  // PF/AF/ZF/SF
-  // Undefined
-  {
-    _InvalidateFlags(1 << X86State::RFLAG_PF_RAW_LOC);
-    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-  }
+  // CF and OF are set if the result of the operation can't be fit in to the destination register
+  // If the value can fit then the top bits will be zero
+  auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
+  _SubNZCV(OpSize::i64Bit, High, SignBit);
 
-  // CF/OF
-  {
-    // CF and OF are set if the result of the operation can't be fit in to the destination register
-    // If the value can fit then the top bits will be zero
-    auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
-    _SubNZCV(OpSize::i64Bit, High, SignBit);
-
-    // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
-    // undefined, this does what we need.
-    auto Zero = _Constant(0);
-    _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
-  }
+  // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
+  // undefined, this does what we need.
+  auto Zero = _Constant(0);
+  _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   HandleNZCVWrite();
+  InvalidatePF_AF();
 
   auto Zero = _Constant(0);
   OpSize Size = IR::SizeToOpSize(GetOpSize(High));
 
-  // AF/SF/PF/ZF
-  // Undefined
-  {
-    _InvalidateFlags(1 << X86State::RFLAG_PF_RAW_LOC);
-    _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
-  }
+  // CF and OF are set if the result of the operation can't be fit in to the destination register
+  // The result register will be all zero if it can't fit due to how multiplication behaves
+  _SubNZCV(Size, High, Zero);
 
-  // CF/OF
-  {
-    // CF and OF are set if the result of the operation can't be fit in to the destination register
-    // The result register will be all zero if it can't fit due to how multiplication behaves
-    _SubNZCV(Size, High, Zero);
-
-    // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
-    // this does what we need.
-    _CondAddNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
-  }
+  // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
+  // this does what we need.
+  _CondAddNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2) {
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 
   CalculatePF(Res);
 
@@ -538,10 +518,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref U
   }
 
   CalculatePF(UnmaskedRes);
-
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 
   // OF
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
@@ -568,10 +545,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   }
 
   CalculatePF(Res);
-
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 
   // OF
   // Only defined when Shift is 1 else undefined. Only is set if the top bit was set to 1 when
@@ -591,10 +565,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   }
 
   CalculatePF(Res);
-
-  // AF
-  // Undefined
-  _InvalidateFlags(1 << X86State::RFLAG_AF_RAW_LOC);
+  InvalidateAF();
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
@@ -640,8 +611,7 @@ void OpDispatchBuilder::CalculateFlags_BEXTR(Ref Src) {
   // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
   // AF are undefined.
   SetNZ_ZeroCV(GetOpSize(Src), Src);
-
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
+  InvalidatePF_AF();
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, Ref Result) {
@@ -651,17 +621,14 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, Ref Result) {
   //
   // ZF/SF/OF set as usual.
   SetNZ_ZeroCV(SrcSize, Result);
+  InvalidatePF_AF();
 
   auto CFOp = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC, true /* Invert */);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-
-  // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Result, Ref Src) {
-  // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
+  InvalidatePF_AF();
 
   // CF set according to the Src
   auto Zero = _Constant(0);
@@ -681,9 +648,7 @@ void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, Ref Result, Ref Src
 
   SetNZ_ZeroCV(SrcSize, Result);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-
-  // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
+  InvalidatePF_AF();
 }
 
 void OpDispatchBuilder::CalculateFlags_POPCOUNT(Ref Result) {
@@ -695,9 +660,7 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(Ref Result) {
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, Ref Result, Ref Src) {
-  // PF/AF undefined
-  _InvalidateFlags((1UL << X86State::RFLAG_PF_RAW_LOC) | (1UL << X86State::RFLAG_AF_RAW_LOC));
-
+  InvalidatePF_AF();
   SetNZ_ZeroCV(SrcSize, Result);
   SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
 }
