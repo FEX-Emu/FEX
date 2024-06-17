@@ -2042,7 +2042,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #138]",
+        "ldrh w20, [x28, #146]",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2050,21 +2050,21 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #138]"
+        "ldrh w4, [x28, #146]"
       ]
     },
     "mov rax, cs": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #138]"
+        "ldrh w4, [x28, #146]"
       ]
     },
     "mov ax, es": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #136]",
+        "ldrh w20, [x28, #144]",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2072,21 +2072,21 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #136]"
+        "ldrh w4, [x28, #144]"
       ]
     },
     "mov rax, es": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #136]"
+        "ldrh w4, [x28, #144]"
       ]
     },
     "mov ax, ss": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #140]",
+        "ldrh w20, [x28, #148]",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2094,21 +2094,21 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #140]"
+        "ldrh w4, [x28, #148]"
       ]
     },
     "mov rax, ss": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #140]"
+        "ldrh w4, [x28, #148]"
       ]
     },
     "mov ax, ds": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #142]",
+        "ldrh w20, [x28, #150]",
         "bfxil x4, x20, #0, #16"
       ]
     },
@@ -2116,14 +2116,14 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #142]"
+        "ldrh w4, [x28, #150]"
       ]
     },
     "mov rax, ds": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x8c",
       "ExpectedArm64ASM": [
-        "ldrh w4, [x28, #142]"
+        "ldrh w4, [x28, #150]"
       ]
     },
     "mov ax, gs": {
@@ -2370,11 +2370,11 @@
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
-        "strh w20, [x28, #136]",
+        "strh w20, [x28, #144]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #896]",
-        "str w20, [x28, #152]"
+        "str w20, [x28, #160]"
       ]
     },
     "mov ss, ax": {
@@ -2382,11 +2382,11 @@
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
-        "strh w20, [x28, #140]",
+        "strh w20, [x28, #148]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #896]",
-        "str w20, [x28, #160]"
+        "str w20, [x28, #168]"
       ]
     },
     "mov ds, ax": {
@@ -2394,11 +2394,11 @@
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
-        "strh w20, [x28, #142]",
+        "strh w20, [x28, #150]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #896]",
-        "str w20, [x28, #164]"
+        "str w20, [x28, #172]"
       ]
     },
     "mov gs, ax": {

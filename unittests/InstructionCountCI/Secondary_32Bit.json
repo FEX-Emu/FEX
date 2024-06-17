@@ -12,7 +12,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0xa0",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #146]",
+        "ldrh w20, [x28, #154]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -22,18 +22,18 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
-        "strh w20, [x28, #146]",
+        "strh w20, [x28, #154]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #896]",
-        "str w20, [x28, #176]"
+        "str w20, [x28, #184]"
       ]
     },
     "push gs": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0xa8",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #144]",
+        "ldrh w20, [x28, #152]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -43,11 +43,11 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
-        "strh w20, [x28, #144]",
+        "strh w20, [x28, #152]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #896]",
-        "str w20, [x28, #168]"
+        "str w20, [x28, #176]"
       ]
     }
   }
