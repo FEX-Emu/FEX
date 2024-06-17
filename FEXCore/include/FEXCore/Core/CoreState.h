@@ -88,6 +88,7 @@ struct CPUState {
     SSE sse;
   };
 
+  uint64_t InlineJITBlockHeader {};
   uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
   uint64_t gregs[16] {};
   // Raw segment register indexes
@@ -99,7 +100,6 @@ struct CPUState {
   uint32_t es_cached {}, cs_cached {}, ss_cached {}, ds_cached {};
   uint64_t gs_cached {};
   uint64_t fs_cached {};
-  uint64_t InlineJITBlockHeader {};
   XMMRegs xmm {};
   uint8_t flags[48] {};
   uint64_t pf_raw {};
@@ -342,7 +342,6 @@ struct CpuStateFrame {
   JITPointers Pointers;
 };
 static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");
-static_assert(offsetof(CpuStateFrame, State.rip) == 0, "rip must be zero offset in CpuStateFrame");
 static_assert(offsetof(CpuStateFrame, Pointers) % 8 == 0, "JITPointers need to be aligned to 8 bytes");
 static_assert(offsetof(CpuStateFrame, Pointers) + sizeof(CpuStateFrame::Pointers) <= 32760, "JITPointers maximum pointer needs to be less "
                                                                                             "than architecture maximum 32768");
