@@ -60,8 +60,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<4>},
     // TODO: {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<8>},
 
-    // TODO: {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
-    // TODO: {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
+    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
 
     // TODO: {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
     // TODO: {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, false>},
@@ -221,7 +221,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>},
     // TODO: {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>},
 
-    // TODO: {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
 
     {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSQSUB, 1>},
     {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSQSUB, 2>},
@@ -286,7 +286,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     // TODO: {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 8>},
-    // TODO: {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     // TODO: {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::VPACKUSOp<4>},
     // TODO: {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::VMASKMOVOp<4, false>},
     // TODO: {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::VMASKMOVOp<8, false>},
@@ -650,6 +650,14 @@ void OpDispatchBuilder::AVX128_VZERO(OpcodeArgs) {
       AVX128_StoreXMMRegister(i, ZeroVector, true);
     }
   }
+}
+
+void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
 }
 
 } // namespace FEXCore::IR
