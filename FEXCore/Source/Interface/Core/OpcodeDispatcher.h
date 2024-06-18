@@ -1029,6 +1029,8 @@ public:
   Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
   template<size_t ElementSize>
   void AVX128_VPSIGN(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_UCOMISx(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
