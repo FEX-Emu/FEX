@@ -48,7 +48,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
     {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
-    // TODO: {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::VMOVSHDUPOp},
+    {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVSHDUP},
     {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
     {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
 
@@ -748,6 +748,11 @@ void OpDispatchBuilder::AVX128_VMOVDDUP(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VMOVSLDUP(OpcodeArgs) {
   AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i32Bit,
                          [this](size_t ElementSize, Ref Src) { return _VTrn(OpSize::i128Bit, ElementSize, Src, Src); });
+}
+
+void OpDispatchBuilder::AVX128_VMOVSHDUP(OpcodeArgs) {
+  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i32Bit,
+                         [this](size_t ElementSize, Ref Src) { return _VTrn2(OpSize::i128Bit, ElementSize, Src, Src); });
 }
 
 } // namespace FEXCore::IR
