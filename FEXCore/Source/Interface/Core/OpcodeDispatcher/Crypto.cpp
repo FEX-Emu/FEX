@@ -65,7 +65,7 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   // This instruction mostly matches ARMv8's SHA1SU1 instruction but one of the elements are flipped in an unexpected way.
   // Do all the work without it.
 
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(OpSize::i32Bit, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  const auto ZeroRegister = LoadZeroVector(OpSize::i32Bit);
 
   // Shift the incoming source left by a 32-bit element, inserting Zeros.
   // This could be slightly improved to use a VInsGPR with the zero register.
@@ -312,8 +312,7 @@ void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESEnc(16, Dest, Src, ZeroRegister);
+  Ref Result = _VAESEnc(16, Dest, Src, LoadZeroVector(16));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -326,8 +325,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 
   Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESEnc(DstSize, State, Key, ZeroRegister);
+  Ref Result = _VAESEnc(DstSize, State, Key, LoadZeroVector(DstSize));
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -335,8 +333,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESEncLast(16, Dest, Src, ZeroRegister);
+  Ref Result = _VAESEncLast(16, Dest, Src, LoadZeroVector(16));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -349,8 +346,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 
   Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESEncLast(DstSize, State, Key, ZeroRegister);
+  Ref Result = _VAESEncLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -358,8 +354,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESDec(16, Dest, Src, ZeroRegister);
+  Ref Result = _VAESDec(16, Dest, Src, LoadZeroVector(16));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -372,8 +367,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 
   Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESDec(DstSize, State, Key, ZeroRegister);
+  Ref Result = _VAESDec(DstSize, State, Key, LoadZeroVector(DstSize));
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -381,8 +375,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESDecLast(16, Dest, Src, ZeroRegister);
+  Ref Result = _VAESDecLast(16, Dest, Src, LoadZeroVector(16));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -395,8 +388,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
 
   Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  Ref Result = _VAESDecLast(DstSize, State, Key, ZeroRegister);
+  Ref Result = _VAESDecLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -407,8 +399,7 @@ Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   const uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
   auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(16, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(16, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
-  return _VAESKeyGenAssist(Src, KeyGenSwizzle, ZeroRegister, RCON);
+  return _VAESKeyGenAssist(Src, KeyGenSwizzle, LoadZeroVector(16), RCON);
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
