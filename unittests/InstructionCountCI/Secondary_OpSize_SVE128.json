@@ -5,7 +5,8 @@
       "SVE128"
     ],
     "DisabledHostFeatures": [
-      "SVE256"
+      "SVE256",
+      "AFP"
     ]
   },
   "Instructions": {
