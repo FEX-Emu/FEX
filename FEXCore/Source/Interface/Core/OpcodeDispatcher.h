@@ -1043,6 +1043,8 @@ public:
   void AVX128_PExtr(OpcodeArgs);
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void AVX128_ExtendVectorElements(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_MOVMSK(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 

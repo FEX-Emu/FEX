@@ -74,8 +74,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::AVX128_UCOMISx<4>},
     {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::AVX128_UCOMISx<8>},
 
-    // TODO: {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<4>},
-    // TODO: {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<8>},
+    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<4>},
+    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<8>},
 
     {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFSQRT, 4>},
     {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFSQRT, 8>},
@@ -1092,6 +1092,57 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  auto Mask8Byte = [this](Ref Src) {
+    // UnZip2 the 64-bit elements as 32-bit to get the sign bits closer.
+    // Sign bits are now in bit positions 31 and 63 after this.
+    Src = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+
+    // Extract the low 64-bits to GPR in one move.
+    Ref GPR = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 0);
+    // BFI the sign bit in 31 in to 62.
+    // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
+    GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
+    // Shift right to only get the two sign bits we care about.
+    return _Lshr(OpSize::i64Bit, GPR, _Constant(62));
+  };
+
+  auto Mask4Byte = [this](Ref Src) {
+    // Shift all the sign bits to the bottom of their respective elements.
+    Src = _VUShrI(OpSize::i128Bit, OpSize::i32Bit, Src, 31);
+    // Load the specific 128-bit movmskps shift elements operator.
+    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_MOVMSKPS_SHIFT);
+    // Shift the sign bits in to specific locations.
+    Src = _VUShl(OpSize::i128Bit, OpSize::i32Bit, Src, ConstantUSHL, false);
+    // Add across the vector so the sign bits will end up in bits [3:0]
+    Src = _VAddV(OpSize::i128Bit, OpSize::i32Bit, Src);
+    // Extract to a GPR.
+    return _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
+  };
+
+  Ref GPR {};
+  if (SrcSize == 16 && ElementSize == 8) {
+    GPR = Mask8Byte(Src.Low);
+  } else if (SrcSize == 16 && ElementSize == 4) {
+    GPR = Mask4Byte(Src.Low);
+  } else if (ElementSize == 4) {
+    auto GPRLow = Mask4Byte(Src.Low);
+    auto GPRHigh = Mask4Byte(Src.High);
+    GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 4);
+  } else {
+    auto GPRLow = Mask8Byte(Src.Low);
+    auto GPRHigh = Mask8Byte(Src.High);
+    GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 2);
+  }
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
 }
 
 } // namespace FEXCore::IR
