@@ -277,12 +277,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VABS, 2>},
     {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VABS, 4>},
 
-    // TODO: {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, true>},
-    // TODO: {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, true>},
-    // TODO: {OPD(2, 0b01, 0x22), 1, &OpDispatchBuilder::ExtendVectorElements<1, 8, true>},
-    // TODO: {OPD(2, 0b01, 0x23), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, true>},
-    // TODO: {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, true>},
-    // TODO: {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, true>},
+    {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 2, true>},
+    {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 4, true>},
+    {OPD(2, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 8, true>},
+    {OPD(2, 0b01, 0x23), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 4, true>},
+    {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 8, true>},
+    {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<4, 8, true>},
 
     // TODO: {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 8>},
@@ -293,12 +293,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(2, 0b01, 0x2E), 1, &OpDispatchBuilder::VMASKMOVOp<4, true>},
     // TODO: {OPD(2, 0b01, 0x2F), 1, &OpDispatchBuilder::VMASKMOVOp<8, true>},
 
-    // TODO: {OPD(2, 0b01, 0x30), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, false>},
-    // TODO: {OPD(2, 0b01, 0x31), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, false>},
-    // TODO: {OPD(2, 0b01, 0x32), 1, &OpDispatchBuilder::ExtendVectorElements<1, 8, false>},
-    // TODO: {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, false>},
-    // TODO: {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, false>},
-    // TODO: {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, false>},
+    {OPD(2, 0b01, 0x30), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 2, false>},
+    {OPD(2, 0b01, 0x31), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 4, false>},
+    {OPD(2, 0b01, 0x32), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 8, false>},
+    {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 4, false>},
+    {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 8, false>},
+    {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<4, 8, false>},
     // TODO: {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
 
     {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 8>},
@@ -1164,6 +1164,59 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   // If we are storing to memory then we store the size of the element extracted
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   _VStoreVectorElement(OpSize::i128Bit, OverridenElementSize, Src.Low, Index, Dest);
+}
+
+template<size_t ElementSize, size_t DstElementSize, bool Signed>
+void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  const auto GetSrc = [&] {
+    if (Op->Src[0].IsGPR()) {
+      return AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false).Low;
+    } else {
+      // For memory operands the 256-bit variant loads twice the size specified in the table.
+      const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+      const auto SrcSize = GetSrcSize(Op);
+      const auto LoadSize = Is256Bit ? SrcSize * 2 : SrcSize;
+
+      return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
+    }
+  };
+
+  auto Transform = [this](Ref Src) {
+    for (size_t CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize; CurrentElementSize <<= 1) {
+      if (Signed) {
+        Src = _VSXTL(OpSize::i128Bit, CurrentElementSize, Src);
+      } else {
+        Src = _VUXTL(OpSize::i128Bit, CurrentElementSize, Src);
+      }
+    }
+    return Src;
+  };
+
+  Ref Src = GetSrc();
+  RefPair Result {};
+
+  if (DstSize == OpSize::i128Bit) {
+    // 128-bit operation is easy, it stays within the single register.
+    Result.Low = Transform(Src);
+  } else {
+    // 256-bit operation is a bit special. It splits the incoming source between lower and upper registers.
+    size_t TotalElementCount = OpSize::i256Bit / DstElementSize;
+    size_t TotalElementsToSplitSize = (TotalElementCount / 2) * ElementSize;
+
+    // Split the number of elements in half between lower and upper.
+    Ref SrcHigh = _VDupElement(OpSize::i128Bit, TotalElementsToSplitSize, Src, 1);
+    Result.Low = Transform(Src);
+    Result.High = Transform(SrcHigh);
+  }
+
+  if (DstSize == OpSize::i128Bit) {
+    // Regular zero-extending semantics.
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
