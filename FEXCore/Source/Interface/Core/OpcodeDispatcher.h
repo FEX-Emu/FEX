@@ -1086,6 +1086,8 @@ public:
   void AVX128_VPSRLDQ(OpcodeArgs);
   void AVX128_VPSLLDQ(OpcodeArgs);
 
+  void AVX128_VINSERT(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

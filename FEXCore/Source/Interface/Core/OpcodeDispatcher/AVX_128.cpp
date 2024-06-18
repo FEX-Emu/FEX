@@ -353,13 +353,13 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
     {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
 
-    // TODO: {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
+    {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
     // TODO: {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
     // TODO: {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
 
-    // TODO: {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::VINSERTOp},
+    {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
     // TODO: {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::VEXTRACT128Op},
 
     // TODO: {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<4>},
@@ -1348,6 +1348,25 @@ void OpDispatchBuilder::AVX128_VPSRLDQ(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_VPSLLDQ(OpcodeArgs) {
   AVX128_ShiftDoubleImm(Op, ShiftDirection::LEFT);
+}
+
+void OpDispatchBuilder::AVX128_VINSERT(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Selector = Op->Src[2].Literal() & 1;
+
+  auto Result = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+  if (Selector == 0) {
+    // Insert in to Low bits
+    Result.Low = Src2.Low;
+  } else {
+    // Insert in to the High bits
+    Result.High = Src2.Low;
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
