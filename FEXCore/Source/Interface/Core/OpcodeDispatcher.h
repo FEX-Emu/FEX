@@ -1095,6 +1095,9 @@ public:
 
   void AVX128_VPHSUBSW(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VADDSUBP(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
