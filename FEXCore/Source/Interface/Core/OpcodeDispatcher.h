@@ -1092,6 +1092,10 @@ public:
   void AVX128_VPMULL(OpcodeArgs);
 
   void AVX128_VPMULHRSW(OpcodeArgs);
+
+  template<bool Signed>
+  void AVX128_VPMULHW(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
