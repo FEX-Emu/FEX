@@ -1039,6 +1039,8 @@ public:
   template<size_t ElementSize>
   void AVX128_InsertScalarFCMP(OpcodeArgs);
 
+  void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
