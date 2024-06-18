@@ -1022,6 +1022,10 @@ public:
   template<size_t SrcElementSize, bool HostRoundingMode>
   void AVX128_CVTFPR_To_GPR(OpcodeArgs);
   void AVX128_VANDN(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPACKSS(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPACKUS(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
