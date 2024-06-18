@@ -745,6 +745,9 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
   auto b = _LoadContextIndexed(arg, 16, MMBaseOffset(), 16, FPRClass);
 
+  // Set C1 to Zero
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+
   // Write to ST[TOP]
   _StoreContextIndexed(b, top, 16, MMBaseOffset(), 16, FPRClass);
   _StoreContextIndexed(a, arg, 16, MMBaseOffset(), 16, FPRClass);
