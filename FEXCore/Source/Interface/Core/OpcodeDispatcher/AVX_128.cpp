@@ -40,8 +40,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
     {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
 
-    // TODO: {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::VPUNPCKLOp<4>},
-    // TODO: {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::VPUNPCKLOp<8>},
+    {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<4>},
+    {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<8>},
 
     // TODO: {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<4>},
     // TODO: {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
@@ -139,9 +139,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
     // TODO: {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
 
-    // TODO: {OPD(1, 0b01, 0x60), 1, &OpDispatchBuilder::VPUNPCKLOp<1>},
-    // TODO: {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::VPUNPCKLOp<2>},
-    // TODO: {OPD(1, 0b01, 0x62), 1, &OpDispatchBuilder::VPUNPCKLOp<4>},
+    {OPD(1, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<1>},
+    {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<2>},
+    {OPD(1, 0b01, 0x62), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<4>},
     // TODO: {OPD(1, 0b01, 0x63), 1, &OpDispatchBuilder::VPACKSSOp<2>},
     {OPD(1, 0b01, 0x64), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 1>},
     {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 2>},
@@ -151,7 +151,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::VPUNPCKHOp<2>},
     // TODO: {OPD(1, 0b01, 0x6A), 1, &OpDispatchBuilder::VPUNPCKHOp<4>},
     // TODO: {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::VPACKSSOp<4>},
-    // TODO: {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::VPUNPCKLOp<8>},
+    {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<8>},
     // TODO: {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
     // TODO: {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
 
@@ -780,6 +780,12 @@ void OpDispatchBuilder::AVX128_VBROADCAST(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPUNPCKL(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VZip(OpSize::i128Bit, _ElementSize, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
