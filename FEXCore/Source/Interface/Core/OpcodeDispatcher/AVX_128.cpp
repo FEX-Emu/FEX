@@ -356,7 +356,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
     // TODO: {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
-    // TODO: {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
+    {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
 
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
@@ -1367,6 +1367,11 @@ void OpDispatchBuilder::AVX128_VINSERT(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VINSERTPS(OpcodeArgs) {
+  Ref Result = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
 } // namespace FEXCore::IR
