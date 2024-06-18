@@ -1036,6 +1036,8 @@ public:
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_InsertScalarFCMP(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
