@@ -1084,6 +1084,10 @@ public:
   Ref AVX128_PHSUBSWImpl(Ref Src1, Ref Src2);
   void AVX128_VPHSUBSW(OpcodeArgs);
 
+  Ref AVX128_ADDSUBPImpl(size_t ElementSize, Ref Src1, Ref Src2);
+  template<size_t ElementSize>
+  void AVX128_VADDSUBP(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

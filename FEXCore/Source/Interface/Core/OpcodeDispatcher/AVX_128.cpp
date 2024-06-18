@@ -190,8 +190,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
     // TODO: {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<8>},
 
-    // TODO: {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
-    // TODO: {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
+    {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<8>},
+    {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<4>},
 
     {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::AVX128_VPSRL<2>},
     {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::AVX128_VPSRL<4>},
@@ -1619,6 +1619,29 @@ Ref OpDispatchBuilder::AVX128_PHSUBSWImpl(Ref Src1, Ref Src2) {
 void OpDispatchBuilder::AVX128_VPHSUBSW(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return AVX128_PHSUBSWImpl(Src1, Src2); });
+}
+
+Ref OpDispatchBuilder::AVX128_ADDSUBPImpl(size_t ElementSize, Ref Src1, Ref Src2) {
+  if (CTX->HostFeatures.SupportsFCMA) {
+    if (ElementSize == OpSize::i32Bit) {
+      auto Swizzle = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Src2);
+      return _VFCADD(OpSize::i128Bit, ElementSize, Src1, Swizzle, 90);
+    } else {
+      auto Swizzle = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src2, Src2, 8);
+      return _VFCADD(OpSize::i128Bit, ElementSize, Src1, Swizzle, 90);
+    }
+  } else {
+    auto ConstantEOR = LoadAndCacheNamedVectorConstant(
+      OpSize::i128Bit, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+    auto InvertedSource = _VXor(OpSize::i128Bit, ElementSize, Src2, ConstantEOR);
+    return _VFAdd(OpSize::i128Bit, ElementSize, Src1, InvertedSource);
+  }
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VADDSUBP(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return AVX128_ADDSUBPImpl(_ElementSize, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
