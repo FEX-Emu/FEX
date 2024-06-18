@@ -552,23 +552,26 @@ def print_ir_arg_printer():
             output_file.write("\t*out << \" \";\n")
 
             SSAArgNum = 0
+            FirstArg = True
             for i in range(0, len(op.Arguments)):
                 arg = op.Arguments[i]
-                LastArg = len(op.Arguments) - i - 1 == 0
 
+                # No point printing temporaries that we can't recover
                 if arg.Temporary:
-                    # Temporary that we can't recover
-                    output_file.write("\t*out << \"{}:Tmp:{}\";\n".format(arg.Type, arg.Name))
-                elif arg.IsSSA:
+                    continue
+
+                if FirstArg:
+                    FirstArg = False
+                else:
+                    output_file.write('\t*out << ", ";\n')
+
+                if arg.IsSSA:
                     # SSA value
                     output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}], RAData);\n".format(SSAArgNum))
                     SSAArgNum = SSAArgNum + 1
                 else:
                     # User defined op that is stored
                     output_file.write("\tPrintArg(out, IR, Op->{});\n".format(arg.Name))
-
-                if not LastArg:
-                    output_file.write("\t*out << \", \";\n")
 
         output_file.write("break;\n")
         output_file.write("}\n")
