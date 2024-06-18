@@ -919,7 +919,7 @@
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
         "str w0, [x28, #728]",
-        "str x8, [x28, #40]",
+        "str x8, [x28, #48]",
         "mov w0, #0x100",
         "str x0, [x28, #1048]",
         "sub sp, sp, #0x10 (16)",
@@ -931,7 +931,7 @@
         "sub sp, sp, #0x10 (16)",
         "ldr w8, [x28, #728]",
         "msr nzcv, x8",
-        "ldr x8, [x28, #40]",
+        "ldr x8, [x28, #48]",
         "str xzr, [x28, #1048]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
@@ -943,7 +943,7 @@
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
         "str w0, [x28, #728]",
-        "str x8, [x28, #40]",
+        "str x8, [x28, #48]",
         "mov w0, #0x100",
         "str x0, [x28, #1048]",
         "sub sp, sp, #0x10 (16)",
@@ -955,7 +955,7 @@
         "sub sp, sp, #0x10 (16)",
         "ldr w8, [x28, #728]",
         "msr nzcv, x8",
-        "ldr x8, [x28, #40]",
+        "ldr x8, [x28, #48]",
         "str xzr, [x28, #1048]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
@@ -1435,14 +1435,14 @@
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
-        "ldr w4, [x28, #176]"
+        "ldr w4, [x28, #184]"
       ]
     },
     "rdfsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
-        "ldr x4, [x28, #176]"
+        "ldr x4, [x28, #184]"
       ]
     },
     "fxrstor [rax]": {
@@ -1511,14 +1511,14 @@
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
-        "ldr w4, [x28, #168]"
+        "ldr w4, [x28, #176]"
       ]
     },
     "rdgsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
-        "ldr x4, [x28, #168]"
+        "ldr x4, [x28, #176]"
       ]
     },
     "ldmxcsr [rax]": {
@@ -1541,14 +1541,14 @@
       "Comment": "GROUP15 0x0F 0xAE /2",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "str x20, [x28, #176]"
+        "str x20, [x28, #184]"
       ]
     },
     "wrfsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /2",
       "ExpectedArm64ASM": [
-        "str x4, [x28, #176]"
+        "str x4, [x28, #184]"
       ]
     },
     "stmxcsr [rax]": {
@@ -1569,14 +1569,14 @@
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "str x20, [x28, #168]"
+        "str x20, [x28, #176]"
       ]
     },
     "wrgsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
-        "str x4, [x28, #168]"
+        "str x4, [x28, #176]"
       ]
     },
     "xsave [rax]": {

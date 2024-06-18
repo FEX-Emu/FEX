@@ -90,6 +90,15 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
 
   ContextClassification->emplace_back(ContextMemberInfo {
     ContextMemberClassification {
+      offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader),
+      sizeof(FEXCore::Core::CPUState::InlineJITBlockHeader),
+    },
+    LastAccessType::INVALID,
+    FEXCore::IR::InvalidClass,
+  });
+
+  ContextClassification->emplace_back(ContextMemberInfo {
+    ContextMemberClassification {
       offsetof(FEXCore::Core::CPUState, rip),
       sizeof(FEXCore::Core::CPUState::rip),
     },
@@ -222,15 +231,6 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
       sizeof(FEXCore::Core::CPUState::fs_cached),
     },
     LastAccessType::NONE,
-    FEXCore::IR::InvalidClass,
-  });
-
-  ContextClassification->emplace_back(ContextMemberInfo {
-    ContextMemberClassification {
-      offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader),
-      sizeof(FEXCore::Core::CPUState::InlineJITBlockHeader),
-    },
-    LastAccessType::INVALID,
     FEXCore::IR::InvalidClass,
   });
 
@@ -386,7 +386,14 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
     ContextClassification->at(Offset).StoreNode = nullptr;
   };
   size_t Offset = 0;
+
+  ///< InlineJITBlockHeader
+  SetAccess(Offset++, LastAccessType::INVALID);
+
+  ///< rip
   SetAccess(Offset++, LastAccessType::NONE);
+
+  ///< gregs
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
@@ -410,37 +417,47 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
   SetAccess(Offset++, LastAccessType::NONE);
   SetAccess(Offset++, LastAccessType::NONE);
 
-  // Pad2
-  SetAccess(Offset++, LastAccessType::INVALID);
-
+  ///< xmm
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
   if (!SupportsAVX) {
+    ///< xmm pad if AVX isn't supported.
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
+  ///< flags
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
-  // PF/AF
-  SetAccess(Offset++, LastAccessType::NONE);
+  ///< pf_raw
   SetAccess(Offset++, LastAccessType::NONE);
 
+  ///< af_raw
+  SetAccess(Offset++, LastAccessType::NONE);
+
+  ///< mm
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
+  ///< gdt
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
-  SetAccess(Offset++, LastAccessType::NONE);
+  ///< FCW
   SetAccess(Offset++, LastAccessType::NONE);
 
+  ///< AbridgedFTW
+  SetAccess(Offset++, LastAccessType::NONE);
+
+  ///< _pad2
   SetAccess(Offset++, LastAccessType::INVALID);
+
+  ///< DeferredSignalRefCount
   SetAccess(Offset++, LastAccessType::INVALID);
 }
 
