@@ -179,8 +179,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    // TODO: {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<4>},
-    // TODO: {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<8>},
+    {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVX128_VFCMP<4>},
+    {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVX128_VFCMP<8>},
     // TODO: {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<4>},
     // TODO: {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<8>},
 
@@ -946,6 +946,75 @@ void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs) {
   DeriveOp(Result_Low, IROp, _VFAddScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, false));
   auto High = LoadZeroVector(OpSize::i128Bit);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = High});
+}
+
+Ref OpDispatchBuilder::AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
+  Ref Result {};
+  switch (CompType) {
+  case 0x00:
+  case 0x08:
+  case 0x10:
+  case 0x18: // EQ
+    return _VFCMPEQ(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  case 0x01:
+  case 0x09:
+  case 0x11:
+  case 0x19: // LT, GT(Swapped operand)
+    return _VFCMPLT(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  case 0x02:
+  case 0x0A:
+  case 0x12:
+  case 0x1A: // LE, GE(Swapped operand)
+    return _VFCMPLE(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  case 0x03:
+  case 0x0B:
+  case 0x13:
+  case 0x1B: // Unordered
+    return _VFCMPUNO(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  case 0x04:
+  case 0x0C:
+  case 0x14:
+  case 0x1C: // NEQ
+    return _VFCMPNEQ(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  case 0x05:
+  case 0x0D:
+  case 0x15:
+  case 0x1D: // NLT, NGT(Swapped operand)
+    Result = _VFCMPLT(OpSize::i128Bit, ElementSize, Src1, Src2);
+    return _VNot(OpSize::i128Bit, ElementSize, Result);
+    break;
+  case 0x06:
+  case 0x0E:
+  case 0x16:
+  case 0x1E: // NLE, NGE(Swapped operand)
+    Result = _VFCMPLE(OpSize::i128Bit, ElementSize, Src1, Src2);
+    return _VNot(OpSize::i128Bit, ElementSize, Result);
+    break;
+  case 0x07:
+  case 0x0F:
+  case 0x17:
+  case 0x1F: // Ordered
+    return _VFCMPORD(OpSize::i128Bit, ElementSize, Src1, Src2);
+    break;
+  default: LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType); break;
+  }
+
+  FEX_UNREACHABLE;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VFCMP(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
+  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
+
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Op, CompType](size_t _ElementSize, Ref Src1, Ref Src2) {
+    return VFCMPOpImpl(Op, _ElementSize, Src1, Src2, CompType);
+  });
 }
 
 } // namespace FEXCore::IR
