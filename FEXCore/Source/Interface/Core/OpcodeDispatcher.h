@@ -1101,6 +1101,7 @@ public:
   template<size_t ElementSize, bool Signed>
   void AVX128_VPMULL(OpcodeArgs);
 
+  void AVX128_VPMULHRSW(OpcodeArgs);
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
