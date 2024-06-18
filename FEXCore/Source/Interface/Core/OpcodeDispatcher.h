@@ -1052,6 +1052,27 @@ public:
   void AVX128_VPINSRB(OpcodeArgs);
   void AVX128_VPINSRW(OpcodeArgs);
   void AVX128_VPINSRDQ(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRA(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSLL(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRL(OpcodeArgs);
+
+  void AVX128_VariableShiftImpl(OpcodeArgs, IROps IROp);
+  void AVX128_VPSLLV(OpcodeArgs);
+  void AVX128_VPSRAVD(OpcodeArgs);
+  void AVX128_VPSRLV(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VPSRLI(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSLLI(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRAI(OpcodeArgs);
+
+  void AVX128_VPSRLDQ(OpcodeArgs);
+  void AVX128_VPSLLDQ(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
