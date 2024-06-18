@@ -110,7 +110,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0x2a",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
+        "ldr d2, [x28, #1040]",
         "sxtl v2.2d, v2.2s",
         "scvtf v16.2d, v2.2d"
       ]
@@ -128,7 +128,7 @@
       "ExpectedArm64ASM": [
         "fcvtn v2.2s, v16.2d",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "cvtpd2pi mm0, xmm0": {
@@ -138,7 +138,7 @@
         "fcvtn v2.2s, v16.2d",
         "frinti v2.2s, v2.2s",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "ucomisd xmm0, xmm1": {
@@ -523,7 +523,7 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1760]",
+        "ldr x0, [x28, #2016]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -537,7 +537,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #1760]",
+        "ldr x0, [x28, #2016]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -1015,7 +1015,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2128]",
+        "ldr q2, [x28, #2384]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.2d, v16.2d, v2.2d"
       ]
@@ -1071,7 +1071,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x66 0x0f 0xd7",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2288]",
+        "ldr q2, [x28, #2544]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",

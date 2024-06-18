@@ -110,7 +110,7 @@ void Dispatcher::EmitDispatcher() {
   add(ARMEmitter::Size::i64Bit, StaticRegisters[X86State::REG_RSP], ARMEmitter::Reg::rsp, 0);
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, TMP1, 0);
 
-  if (EmitterCTX->HostFeatures.SupportsSVE) {
+  if (EmitterCTX->HostFeatures.SupportsSVE128) {
     ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
   }
 
