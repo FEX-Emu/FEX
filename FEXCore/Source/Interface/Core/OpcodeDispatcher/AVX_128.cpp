@@ -43,8 +43,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<4>},
     {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<8>},
 
-    // TODO: {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<4>},
-    // TODO: {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
+    {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<4>},
+    {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<8>},
 
     {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
     {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
@@ -147,12 +147,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 2>},
     {OPD(1, 0b01, 0x66), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 4>},
     // TODO: {OPD(1, 0b01, 0x67), 1, &OpDispatchBuilder::VPACKUSOp<2>},
-    // TODO: {OPD(1, 0b01, 0x68), 1, &OpDispatchBuilder::VPUNPCKHOp<1>},
-    // TODO: {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::VPUNPCKHOp<2>},
-    // TODO: {OPD(1, 0b01, 0x6A), 1, &OpDispatchBuilder::VPUNPCKHOp<4>},
+    {OPD(1, 0b01, 0x68), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<1>},
+    {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<2>},
+    {OPD(1, 0b01, 0x6A), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<4>},
     // TODO: {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::VPACKSSOp<4>},
     {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<8>},
-    // TODO: {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
+    {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<8>},
     // TODO: {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
 
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
@@ -786,6 +786,12 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VPUNPCKL(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VZip(OpSize::i128Bit, _ElementSize, Src1, Src2); });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPUNPCKH(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VZip2(OpSize::i128Bit, _ElementSize, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR

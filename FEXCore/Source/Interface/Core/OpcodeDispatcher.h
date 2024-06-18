@@ -1014,6 +1014,8 @@ public:
   void AVX128_VBROADCAST(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_VPUNPCKL(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPUNPCKH(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
