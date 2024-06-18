@@ -36,7 +36,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
     {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
     // TODO: {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::VMOVSLDUPOp},
-    // TODO: {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::VMOVDDUPOp},
+    {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVDDUP},
     {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
     {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
 
@@ -707,6 +707,41 @@ void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
     // Need to store Bits[127:64]. Duplicate the element to get it in the low bits.
     Src1.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+  }
+}
+
+void OpDispatchBuilder::AVX128_VMOVDDUP(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto IsSrcGPR = Op->Src[0].IsGPR();
+
+  RefPair Src {};
+  if (IsSrcGPR) {
+    Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  } else {
+    // Accesses from memory are a little weird.
+    // 128-bit operation only loads 8-bytes.
+    // 256-bit operation loads a full 32-bytes.
+    if (Is128Bit) {
+      Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
+    } else {
+      Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+    }
+  }
+
+  if (Is128Bit) {
+    // Duplicate Src[63:0] in to low 128-bits
+    auto Result_Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, 0);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
+  } else {
+    // Duplicate Src.Low[63:0] in to low 128-bits
+    auto Result_Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, 0);
+    // Duplicate Src.High[63:0] in to high 128-bits
+    auto Result_High = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.High, 0);
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = Result_High});
   }
 }
 

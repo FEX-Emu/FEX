@@ -1006,6 +1006,7 @@ public:
   void AVX128_MOVQ(OpcodeArgs);
   void AVX128_VMOVLP(OpcodeArgs);
   void AVX128_VMOVHP(OpcodeArgs);
+  void AVX128_VMOVDDUP(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
