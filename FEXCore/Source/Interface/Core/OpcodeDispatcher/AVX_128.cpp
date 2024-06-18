@@ -184,7 +184,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<4>},
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<8>},
 
-    // TODO: {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
+    {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::AVX128_VPINSRW},
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
 
     // TODO: {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
@@ -355,9 +355,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     // TODO: {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
     // TODO: {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
-    // TODO: {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::VPINSRBOp},
+    {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
     // TODO: {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
-    // TODO: {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::VPINSRDQOp},
+    {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
 
     // TODO: {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::VINSERTOp},
     // TODO: {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::VEXTRACT128Op},
@@ -1172,6 +1172,41 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
   }
 
   StoreResult(GPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                         const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
+  const auto NumElements = OpSize::i128Bit / ElementSize;
+  const uint64_t Index = Imm.Literal() & (NumElements - 1);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Src1Op, Op->Flags, false);
+
+  RefPair Result {};
+
+  if (Src2Op.IsGPR()) {
+    // If the source is a GPR then convert directly from the GPR.
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
+    Result.Low = _VInsGPR(OpSize::i128Bit, ElementSize, Index, Src1.Low, Src2);
+  } else {
+    // If loading from memory then we only load the element size
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, {.LoadData = false});
+    Result.Low = _VLoadVectorElement(OpSize::i128Bit, ElementSize, Src1.Low, Index, Src2);
+  }
+
+  Result.High = LoadZeroVector(OpSize::i128Bit);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPINSRB(OpcodeArgs) {
+  AVX128_PINSRImpl(Op, 1, Op->Src[0], Op->Src[1], Op->Src[2]);
+}
+
+void OpDispatchBuilder::AVX128_VPINSRW(OpcodeArgs) {
+  AVX128_PINSRImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
+}
+
+void OpDispatchBuilder::AVX128_VPINSRDQ(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  AVX128_PINSRImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
 }
 
 } // namespace FEXCore::IR
