@@ -224,16 +224,18 @@ DEF_FBINOP_SCALAR_INSERT(VFSubScalarInsert, fsub)
 DEF_FBINOP_SCALAR_INSERT(VFMulScalarInsert, fmul)
 DEF_FBINOP_SCALAR_INSERT(VFDivScalarInsert, fdiv)
 
+
+// VFScalarOperation performs the operation described through ScalarEmit between Vector1 and Vector2,
+// storing it into Dst. This is a scalar operation, so the only lowest element of each vector is used for the operation.
+// The result is stored into the destination. The untouched bits of the destination come from Vector1, unless it's a 256 vector
+// and ZeroUpperBits is true, in which case the upper bits are zero.
 void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit,
                                      ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  if (!Is256Bit) {
-    LOGMAN_THROW_A_FMT(ZeroUpperBits == false, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
-  }
+  LOGMAN_THROW_A_FMT(Is256Bit || !ZeroUpperBits, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
 
   // Bit of a tricky detail.
-  // The upper bits of the destination comes from the first source.
-
+  // The upper bits of the destination comes from Vector1.
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
@@ -261,8 +263,8 @@ void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool Z
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  } else if (Dst != Vector2) {
-    if (!ZeroUpperBits && Is256Bit) {
+  } else if (Dst != Vector2) { // Dst different from both Vector1 and Vector2
+    if (Is256Bit && !ZeroUpperBits) {
       mov(Dst.Z(), Vector1.Z());
     } else {
       mov(Dst.Q(), Vector1.Q());
@@ -279,36 +281,30 @@ void Arm64JITCore::VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool Z
         ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
       }
     }
-  } else {
-    // Destination intersects Vector2, can't do anything optimal in this case.
-    // Do the scalar operation first and then move and insert.
+  } else { // Dst same as Vector2
+
     ScalarEmit(VTMP1, Vector1, Vector2);
 
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    } else {
-      mov(Dst.Q(), Vector1.Q());
-    }
-
-    if (!ZeroUpperBits && Is256Bit) {
       ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
       mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
     } else {
+      mov(Dst.Q(), Vector1.Q());
       ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
     }
   }
 }
 
+// Similarly to VFScalarOperation it performs the operation described through ScalarEmit operating on Vector2.
+// However the result of the scalar operation is inserted into Vector1 and moved to Destination.
+// The untouched bits of the destination come from Vector1, unless it's a 256 vector
+// and ZeroUpperBits is true, in which case the upper bits are zero.
 void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarUnaryOpCaller ScalarEmit,
                                           ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1,
                                           std::variant<ARMEmitter::VRegister, ARMEmitter::Register> Vector2) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  if (!Is256Bit) {
-    LOGMAN_THROW_A_FMT(ZeroUpperBits == false, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
-  }
-
-  // Bit of a tricky detail.
-  // The upper bits of the destination comes from the first source.
+  LOGMAN_THROW_A_FMT(Is256Bit || !ZeroUpperBits, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
@@ -327,7 +323,7 @@ void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, b
       mov(Dst.Q(), Vector1.Q());
     }
 
-    if (HostSupportsAFP) {
+    if (HostSupportsAFP) { // or Dst (here Dst == Vector1)
       // If the host CPU supports AFP then scalar does an insert without modifying upper bits.
       ScalarEmit(Dst, Vector2);
     } else {
@@ -366,14 +362,10 @@ void Arm64JITCore::VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, b
 
     if (!ZeroUpperBits && Is256Bit) {
       mov(Dst.Z(), Vector1.Z());
-    } else {
-      mov(Dst.Q(), Vector1.Q());
-    }
-
-    if (!ZeroUpperBits && Is256Bit) {
       ptrue(SubRegSize.Vector, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
       mov(SubRegSize.Vector, Dst.Z(), Predicate.Merging(), VTMP1.Z());
     } else {
+      mov(Dst.Q(), Vector1.Q());
       ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
     }
   }
@@ -457,12 +449,17 @@ DEF_OP(VFRSqrtScalarInsert) {
 
     fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
     fsqrt(SubRegSize.Scalar, VTMP2, Src);
-    fdiv(SubRegSize.Scalar, Dst, VTMP1, VTMP2);
+    if (HostSupportsAFP) {
+      fdiv(SubRegSize.Scalar, VTMP1, VTMP1, VTMP2);
+      ins(SubRegSize.Vector, Dst, 0, VTMP1, 0);
+    } else {
+      fdiv(SubRegSize.Scalar, Dst, VTMP1, VTMP2);
+    }
   };
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
-    frsqrte(SubRegSize.Scalar, Dst.S(), Src.S());
+    frsqrte(SubRegSize.Scalar, Dst.D(), Src.D());
   };
 
   std::array<ScalarUnaryOpCaller, 2> Handlers = {
@@ -590,7 +587,28 @@ DEF_OP(VSToFVectorInsert) {
   // Claim the element size is 8-bytes.
   // Might be scalar 8-byte (cvtsi2ss xmm0, rax)
   // Might be vector i32v2 (cvtpi2ps xmm0, mm0)
-  VFScalarUnaryOperation(IROp->Size, ElementSize * (HasTwoElements ? 2 : 1), Op->ZeroUpperBits, ScalarEmit, Dst, Vector1, Vector2);
+  if (!HasTwoElements) {
+    VFScalarUnaryOperation(IROp->Size, ElementSize, Op->ZeroUpperBits, ScalarEmit, Dst, Vector1, Vector2);
+    return;
+  }
+
+  // Dealing with the odd case of this being actually a vector operation rather than scalar.
+  const auto Is256Bit = IROp->Size == Core::CPUState::XMM_AVX_REG_SIZE;
+  constexpr auto Predicate = ARMEmitter::PReg::p0;
+
+  ScalarEmit(VTMP1, Vector2);
+  if (!Op->ZeroUpperBits && Is256Bit) {
+    if (Dst != Vector1) {
+      mov(Dst.Z(), Vector1.Z());
+    }
+    ptrue(ARMEmitter::SubRegSize::i64Bit, Predicate, ARMEmitter::PredicatePattern::SVE_VL1);
+    mov(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Predicate.Merging(), VTMP1.Z());
+  } else {
+    if (Dst != Vector1) {
+      mov(Dst.Q(), Vector1.Q());
+    }
+    ins(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0, VTMP1.Q(), 0);
+  }
 }
 
 DEF_OP(VSToFGPRInsert) {
@@ -679,11 +697,11 @@ DEF_OP(VFCMPScalarInsert) {
   auto ScalarEmitEQ = [this, SubRegSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
     case ARMEmitter::ScalarRegSize::i16Bit: {
-      fcmeq(Dst.H(), Src1.H(), Src2.H());
+      fcmeq(Dst.H(), Src2.H(), Src1.H());
       break;
     }
     case ARMEmitter::ScalarRegSize::i32Bit:
-    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, Dst, Src1, Src2); break;
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, Dst, Src2, Src1); break;
     default: break;
     }
   };
@@ -748,11 +766,11 @@ DEF_OP(VFCMPScalarInsert) {
     [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
     case ARMEmitter::ScalarRegSize::i16Bit: {
-      fcmeq(VTMP1.H(), Src1.H(), Src2.H());
+      fcmeq(VTMP1.H(), Src2.H(), Src1.H());
       break;
     }
     case ARMEmitter::ScalarRegSize::i32Bit:
-    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, VTMP1, Src1, Src2); break;
+    case ARMEmitter::ScalarRegSize::i64Bit: fcmeq(SubRegSize.Scalar, VTMP1, Src2, Src1); break;
     default: break;
     }
     // If the destination is a temporary then it is going to do an insert after the operation.
