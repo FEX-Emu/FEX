@@ -385,7 +385,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
                                 // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
                                 FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
-                                auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
+                                auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
                                 if (Thread->ThreadManager.clear_child_tid) {
                                   std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);

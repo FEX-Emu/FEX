@@ -463,7 +463,7 @@ static void PrintFlags(uint64_t Flags) {
 
 static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   StackFrameData* Data = (StackFrameData*)FEXCore::Allocator::malloc(sizeof(StackFrameData));
-  Data->Thread = static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
+  Data->Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
   Data->CTX = Frame->Thread->CTX;
   Data->GuestArgs = *args;
 
@@ -489,7 +489,7 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clo
   constexpr size_t Offset = sizeof(StackFramePlusRet);
   StackFramePlusRet* Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(args->NewStack) + args->StackSize - Offset);
   Data->Ret = (uint64_t)Clone3HandlerRet;
-  Data->Data.Thread = static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
+  Data->Data.Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
   Data->Data.CTX = Frame->Thread->CTX;
   Data->Data.GuestArgs = *args;
 
