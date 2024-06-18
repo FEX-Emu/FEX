@@ -1016,6 +1016,7 @@ public:
   void AVX128_VPUNPCKL(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_VPUNPCKH(OpcodeArgs);
+  void AVX128_MOVVectorUnaligned(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 

@@ -232,7 +232,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSMAX, 2>},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VXOR, 16>},
 
-    // TODO: {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::AVX128_MOVVectorUnaligned},
     // TODO: {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
     // TODO: {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
     // TODO: {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::VPSLLOp<8>},
@@ -792,6 +792,24 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VPUNPCKH(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VZip2(OpSize::i128Bit, _ElementSize, Src1, Src2); });
+}
+
+void OpDispatchBuilder::AVX128_MOVVectorUnaligned(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  if (!Is128Bit && Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    // Nop
+    return;
+  }
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  if (Is128Bit) {
+    Src.High = LoadZeroVector(OpSize::i128Bit);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
 }
 
 } // namespace FEXCore::IR
