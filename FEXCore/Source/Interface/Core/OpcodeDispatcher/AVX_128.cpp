@@ -79,14 +79,14 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFSQRT, 4>},
     {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFSQRT, 8>},
-    // TODO: {OPD(1, 0b10, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x51), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFSQRTSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x51), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFSQRTSCALARINSERT, 8>},
 
     {OPD(1, 0b00, 0x52), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFRSQRT, 4>},
-    // TODO: {OPD(1, 0b10, 0x52), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>},
+    {OPD(1, 0b10, 0x52), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFRSQRTSCALARINSERT, 4>},
 
     {OPD(1, 0b00, 0x53), 1, &OpDispatchBuilder::AVX128_VectorUnary<IR::OP_VFRECP, 4>},
-    // TODO: {OPD(1, 0b10, 0x53), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>},
+    {OPD(1, 0b10, 0x53), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFRECPSCALARINSERT, 4>},
 
     {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VAND, 16>},
     {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VAND, 16>},
@@ -102,13 +102,13 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFADD, 4>},
     {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFADD, 8>},
-    // TODO: {OPD(1, 0b10, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x58), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFADDSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x58), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFADDSCALARINSERT, 8>},
 
     {OPD(1, 0b00, 0x59), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMUL, 4>},
     {OPD(1, 0b01, 0x59), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMUL, 8>},
-    // TODO: {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMULSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMULSCALARINSERT, 8>},
 
     // TODO: {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>},
     // TODO: {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>},
@@ -121,23 +121,23 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFSUB, 4>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFSUB, 8>},
-    // TODO: {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFSUBSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFSUBSCALARINSERT, 8>},
 
     {OPD(1, 0b00, 0x5D), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMIN, 4>},
     {OPD(1, 0b01, 0x5D), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMIN, 8>},
-    // TODO: {OPD(1, 0b10, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x5D), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMINSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x5D), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMINSCALARINSERT, 8>},
 
     {OPD(1, 0b00, 0x5E), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFDIV, 4>},
     {OPD(1, 0b01, 0x5E), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFDIV, 8>},
-    // TODO: {OPD(1, 0b10, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x5E), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFDIVSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x5E), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFDIVSCALARINSERT, 8>},
 
     {OPD(1, 0b00, 0x5F), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMAX, 4>},
     {OPD(1, 0b01, 0x5F), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFMAX, 8>},
-    // TODO: {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
-    // TODO: {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
+    {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMAXSCALARINSERT, 4>},
+    {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMAXSCALARINSERT, 8>},
 
     {OPD(1, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<1>},
     {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<2>},
@@ -925,6 +925,27 @@ void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs) {
   // 0 so the XOR with PF will have no effect, so setting the AF byte to zero
   // will indeed zero AF as intended.
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
+}
+
+template<IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+  } else {
+    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  }
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  DeriveOp(Result_Low, IROp, _VFAddScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, false));
+  auto High = LoadZeroVector(OpSize::i128Bit);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = High});
 }
 
 } // namespace FEXCore::IR
