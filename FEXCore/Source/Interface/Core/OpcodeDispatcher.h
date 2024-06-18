@@ -1089,6 +1089,10 @@ public:
   void AVX128_VINSERT(OpcodeArgs);
   void AVX128_VINSERTPS(OpcodeArgs);
 
+  Ref AVX128_PHSUBImpl(Ref Src1, Ref Src2, size_t ElementSize);
+  template<size_t ElementSize>
+  void AVX128_VPHSUB(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

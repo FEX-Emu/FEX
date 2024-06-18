@@ -255,8 +255,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::VPHADDSWOp},
     // TODO: {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::VPMADDUBSWOp},
 
-    // TODO: {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::VPHSUBOp<2>},
-    // TODO: {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::VPHSUBOp<4>},
+    {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPHSUB<2>},
+    {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPHSUB<4>},
     // TODO: {OPD(2, 0b01, 0x07), 1, &OpDispatchBuilder::VPHSUBSWOp},
 
     {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VPSIGN<1>},
@@ -1372,6 +1372,12 @@ void OpDispatchBuilder::AVX128_VINSERT(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VINSERTPS(OpcodeArgs) {
   Ref Result = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPHSUB(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return PHSUBOpImpl(OpSize::i128Bit, Src1, Src2, _ElementSize); });
 }
 
 } // namespace FEXCore::IR
