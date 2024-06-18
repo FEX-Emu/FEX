@@ -95,6 +95,7 @@ set (SRCS
   Interface/Core/ObjectCache/JobHandling.cpp
   Interface/Core/ObjectCache/NamedRegionObjectHandler.cpp
   Interface/Core/ObjectCache/ObjectCacheService.cpp
+  Interface/Core/OpcodeDispatcher/AVX_128.cpp
   Interface/Core/OpcodeDispatcher/Crypto.cpp
   Interface/Core/OpcodeDispatcher/Flags.cpp
   Interface/Core/OpcodeDispatcher/Vector.cpp
