@@ -1031,6 +1031,8 @@ public:
   void AVX128_VPSIGN(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_UCOMISx(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void AVX128_VectorScalarInsertALU(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
