@@ -185,7 +185,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<8>},
 
     // TODO: {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
-    // TODO: {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
+    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
 
     // TODO: {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
     // TODO: {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<8>},
@@ -348,10 +348,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
     // TODO: {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::VPALIGNROp},
 
-    // TODO: {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::PExtrOp<1>},
-    // TODO: {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::PExtrOp<2>},
-    // TODO: {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::PExtrOp<4>},
-    // TODO: {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::PExtrOp<4>},
+    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_PExtr<1>},
+    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
+    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
+    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
 
     // TODO: {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
     // TODO: {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
@@ -1006,6 +1006,39 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
       _StoreMem(FPRClass, GetDstSize(Op), Dest, Src.Low, 1);
     }
   }
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  uint64_t Index = Op->Src[1].Literal();
+
+  // Fixup of 32-bit element size.
+  // When the element size is 32-bit then it can be overriden as 64-bit because the encoding of PEXTRD/PEXTRQ
+  // is the same except that REX.W or VEX.W is set to 1. Incredibly frustrating.
+  // Use the destination size as the element size in this case.
+  size_t OverridenElementSize = ElementSize;
+  if constexpr (ElementSize == 4) {
+    OverridenElementSize = DstSize;
+  }
+
+  // AVX version only operates on 128-bit.
+  const uint8_t NumElements = std::min<uint8_t>(GetSrcSize(Op), 16) / OverridenElementSize;
+  Index &= NumElements - 1;
+
+  if (Op->Dest.IsGPR()) {
+    const uint8_t GPRSize = CTX->GetGPRSize();
+    // Extract already zero extends the result.
+    Ref Result = _VExtractToGPR(OpSize::i128Bit, OverridenElementSize, Src.Low, Index);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
+    return;
+  }
+
+  // If we are storing to memory then we store the size of the element extracted
+  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  _VStoreVectorElement(OpSize::i128Bit, OverridenElementSize, Src.Low, Index, Dest);
 }
 
 } // namespace FEXCore::IR
