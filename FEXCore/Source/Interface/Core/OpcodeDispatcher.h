@@ -1026,6 +1026,9 @@ public:
   void AVX128_VPACKSS(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_VPACKUS(OpcodeArgs);
+  Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
+  template<size_t ElementSize>
+  void AVX128_VPSIGN(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 

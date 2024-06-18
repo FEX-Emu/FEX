@@ -259,9 +259,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::VPHSUBOp<4>},
     // TODO: {OPD(2, 0b01, 0x07), 1, &OpDispatchBuilder::VPHSUBSWOp},
 
-    // TODO: {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::VPSIGN<1>},
-    // TODO: {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<2>},
-    // TODO: {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::VPSIGN<4>},
+    {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VPSIGN<1>},
+    {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VPSIGN<2>},
+    {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_VPSIGN<4>},
     // TODO: {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
     // TODO: {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
     // TODO: {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
@@ -887,6 +887,26 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VPACKUS(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VSQXTUNPair(OpSize::i128Bit, _ElementSize, Src1, Src2); });
+}
+
+Ref OpDispatchBuilder::AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2) {
+  if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
+    Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, (ElementSize * 8) - 1);
+    Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, (ElementSize * 8) - 1);
+    return _VMul(OpSize::i128Bit, ElementSize, Src1, Control);
+  } else {
+    auto NegVec = _VNeg(OpSize::i128Bit, ElementSize, Src1);
+    Ref CmpLT = _VCMPLTZ(OpSize::i128Bit, ElementSize, Src2);
+    Ref CmpEQ = _VCMPEQZ(OpSize::i128Bit, ElementSize, Src2);
+    auto BSLResult = _VBSL(OpSize::i128Bit, CmpLT, NegVec, Src1);
+    return _VAndn(OpSize::i128Bit, OpSize::i128Bit, BSLResult, CmpEQ);
+  }
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSIGN(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return AVX128_PSIGNImpl(_ElementSize, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
