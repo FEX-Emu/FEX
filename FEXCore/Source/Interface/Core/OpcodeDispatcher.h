@@ -1009,6 +1009,8 @@ public:
   void AVX128_VMOVDDUP(OpcodeArgs);
   void AVX128_VMOVSLDUP(OpcodeArgs);
   void AVX128_VMOVSHDUP(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VBROADCAST(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
