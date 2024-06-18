@@ -1017,6 +1017,8 @@ public:
   template<size_t ElementSize>
   void AVX128_VPUNPCKH(OpcodeArgs);
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
+  template<size_t DstElementSize>
+  void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 

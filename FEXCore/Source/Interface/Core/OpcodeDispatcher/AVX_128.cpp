@@ -57,8 +57,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    // TODO: {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<4>},
-    // TODO: {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<8>},
+    {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<4>},
+    {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<8>},
 
     {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
@@ -810,6 +810,40 @@ void OpDispatchBuilder::AVX128_MOVVectorUnaligned(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
+}
+
+template<size_t DstElementSize>
+void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+
+  RefPair Result {};
+
+  if (Op->Src[1].IsGPR()) {
+    // If the source is a GPR then convert directly from the GPR.
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], CTX->GetGPRSize(), Op->Flags);
+    Result.Low = _VSToFGPRInsert(OpSize::i128Bit, DstElementSize, SrcSize, Src1.Low, Src2, false);
+  } else if (SrcSize != DstElementSize) {
+    // If the source is from memory but the Source size and destination size aren't the same,
+    // then it is more optimal to load in to a GPR and convert between GPR->FPR.
+    // ARM GPR->FPR conversion supports different size source and destinations while FPR->FPR doesn't.
+    auto Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+    Result.Low = _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1.Low, Src2, false);
+  } else {
+    // In the case of cvtsi2s{s,d} where the source and destination are the same size,
+    // then it is more optimal to load in to the FPR register directly and convert there.
+    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+    // Always signed
+    Result.Low = _VSToFVectorInsert(IR::SizeToOpSize(DstSize), DstElementSize, DstElementSize, Src1.Low, Src2.Low, false, false);
+  }
+
+  Result.High = LoadZeroVector(OpSize::i128Bit);
+  LOGMAN_THROW_A_FMT(Is128Bit, "Programming Error: This should never occur!");
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
