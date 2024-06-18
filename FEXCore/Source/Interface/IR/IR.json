@@ -1917,7 +1917,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VBic u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAndn u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
