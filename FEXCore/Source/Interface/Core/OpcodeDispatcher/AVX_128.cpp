@@ -174,7 +174,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<4>},
 
     // TODO: {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
-    // TODO: {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::MOVQOp},
+    {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVQ},
 
     {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
@@ -198,7 +198,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 8>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 2>},
-    // TODO: {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::MOVQOp},
+    {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::AVX128_MOVQ},
     // TODO: {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
 
     {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUQSUB, 1>},
@@ -658,6 +658,20 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
+}
+
+void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 256bit
+  if (Op->Dest.IsGPR()) {
+    // Zero bits [127:64] as well.
+    Src.Low = _VMov(OpSize::i64Bit, Src.Low);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+    Src.High = ZeroVector;
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
+  } else {
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, OpSize::i64Bit, OpSize::i64Bit);
+  }
 }
 
 } // namespace FEXCore::IR

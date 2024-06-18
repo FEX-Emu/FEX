@@ -1003,6 +1003,7 @@ public:
 
   void AVX128_VZERO(OpcodeArgs);
   void AVX128_MOVVectorNT(OpcodeArgs);
+  void AVX128_MOVQ(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
