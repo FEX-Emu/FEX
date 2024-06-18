@@ -17,9 +17,9 @@
         "0x0f 0x0f 0x86"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "frecpe v2.2s, v2.2s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pfrsqrtv mm0, mm1": {
@@ -28,9 +28,9 @@
         "0x0f 0x0f 0x87"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "frsqrte v2.2s, v2.2s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pfrcp mm0, mm1": {
@@ -39,10 +39,10 @@
         "0x0f 0x0f 0x96"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "frecpe s2, s2",
         "dup v2.2s, v2.s[0]",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pfrsqrt mm0, mm1": {
@@ -51,10 +51,10 @@
         "0x0f 0x0f 0x97"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "frsqrte s2, s2",
         "dup v2.2s, v2.s[0]",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     }
   }

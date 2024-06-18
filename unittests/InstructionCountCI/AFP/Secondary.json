@@ -26,7 +26,7 @@
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
+        "ldr d2, [x28, #1040]",
         "scvtf v16.2s, v2.2s"
       ]
     }

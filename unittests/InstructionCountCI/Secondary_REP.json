@@ -354,7 +354,7 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1752]",
+        "ldr x0, [x28, #2008]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -611,7 +611,7 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0xf3 0x0f 0xd6",
       "ExpectedArm64ASM": [
-        "ldr d16, [x28, #768]"
+        "ldr d16, [x28, #1040]"
       ]
     },
     "cvtdq2pd xmm0, xmm1": {

@@ -15,7 +15,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x06",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #144]",
+        "ldrh w20, [x28, #928]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -25,18 +25,18 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
-        "strh w20, [x28, #144]",
+        "strh w20, [x28, #928]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
-        "str w20, [x28, #160]"
+        "ldr w20, [x0, #1168]",
+        "str w20, [x28, #944]"
       ]
     },
     "push cs": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x0e",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #146]",
+        "ldrh w20, [x28, #930]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -44,7 +44,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x16",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #148]",
+        "ldrh w20, [x28, #932]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -54,18 +54,18 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
-        "strh w20, [x28, #148]",
+        "strh w20, [x28, #932]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
-        "str w20, [x28, #168]"
+        "ldr w20, [x0, #1168]",
+        "str w20, [x28, #952]"
       ]
     },
     "push ds": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x1e",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #150]",
+        "ldrh w20, [x28, #934]",
         "str w20, [x8, #-4]!"
       ]
     },
@@ -75,11 +75,11 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "add x8, x8, #0x4 (4)",
-        "strh w20, [x28, #150]",
+        "strh w20, [x28, #934]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #896]",
-        "str w20, [x28, #172]"
+        "ldr w20, [x0, #1168]",
+        "str w20, [x28, #956]"
       ]
     },
     "daa": {

@@ -296,7 +296,7 @@
         "0xf2 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #1744]",
+        "ldr x0, [x28, #2000]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -452,7 +452,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2096]",
+        "ldr q2, [x28, #2352]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.4s, v16.4s, v2.4s"
       ]
@@ -461,7 +461,7 @@
       "ExpectedInstructionCount": 1,
       "Comment": "0xf2 0x0f 0xd6",
       "ExpectedArm64ASM": [
-        "str d16, [x28, #768]"
+        "str d16, [x28, #1040]"
       ]
     },
     "cvtpd2dq xmm0, xmm1": {

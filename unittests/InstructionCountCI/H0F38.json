@@ -18,12 +18,12 @@
         "NP 0x0f 0x38 0x00"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "movi v4.16b, #0x87",
         "and v3.16b, v3.16b, v4.16b",
         "tbl v2.8b, {v2.16b}, v3.8b",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pshufb xmm0, xmm1": {
@@ -43,10 +43,10 @@
         "NP 0x0f 0x38 0x01"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
-        "ldr d3, [x28, #768]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
         "addp v2.4h, v3.4h, v2.4h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phaddw xmm0, xmm1": {
@@ -64,10 +64,10 @@
         "NP 0x0f 0x38 0x02"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
-        "ldr d3, [x28, #768]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
         "addp v2.2s, v3.2s, v2.2s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phaddd xmm0, xmm1": {
@@ -85,12 +85,12 @@
         "NP 0x0f 0x38 0x03"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sqadd v2.8h, v4.8h, v2.8h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phaddsw xmm0, xmm1": {
@@ -110,15 +110,15 @@
         "NP 0x0f 0x38 0x04"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "uxtl v2.8h, v2.8b",
         "sxtl v3.8h, v3.8b",
         "smull v4.4s, v2.4h, v3.4h",
         "smull2 v2.4s, v2.8h, v3.8h",
         "addp v2.4s, v4.4s, v2.4s",
         "sqxtn v2.4h, v2.4s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pmaddubsw xmm0, xmm1": {
@@ -148,12 +148,12 @@
         "NP 0x0f 0x38 0x05"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sub v2.8h, v4.8h, v2.8h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phsubw xmm0, xmm1": {
@@ -173,12 +173,12 @@
         "NP 0x0f 0x38 0x06"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "uzp1 v4.2s, v2.2s, v3.2s",
         "uzp2 v2.2s, v2.2s, v3.2s",
         "sub v2.4s, v4.4s, v2.4s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phsubd xmm0, xmm1": {
@@ -198,12 +198,12 @@
         "NP 0x0f 0x38 0x07"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sqsub v2.8h, v4.8h, v2.8h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "phsubsw xmm0, xmm1": {
@@ -223,12 +223,12 @@
         "NP 0x0f 0x38 0x08"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
-        "ldr d3, [x28, #768]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
         "sqshl v2.8b, v2.8b, #7",
         "srshr v2.8b, v2.8b, #7",
         "mul v2.16b, v3.16b, v2.16b",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "psignb xmm0, xmm1": {
@@ -248,12 +248,12 @@
         "NP 0x0f 0x38 0x09"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
-        "ldr d3, [x28, #768]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
         "sqshl v2.4h, v2.4h, #15",
         "srshr v2.4h, v2.4h, #15",
         "mul v2.8h, v3.8h, v2.8h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "psignw xmm0, xmm1": {
@@ -273,12 +273,12 @@
         "NP 0x0f 0x38 0x0a"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
-        "ldr d3, [x28, #768]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
         "sqshl v2.2s, v2.2s, #31",
         "srshr v2.2s, v2.2s, #31",
         "mul v2.4s, v3.4s, v2.4s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "psignd xmm0, xmm1": {
@@ -299,14 +299,14 @@
         "NP 0x0f 0x38 0x0b"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #768]",
-        "ldr d3, [x28, #784]",
+        "ldr d2, [x28, #1040]",
+        "ldr d3, [x28, #1056]",
         "smull v2.4s, v2.4h, v3.4h",
         "sshr v2.4s, v2.4s, #14",
         "movi v3.4s, #0x1, lsl #0",
         "add v2.4s, v2.4s, v3.4s",
         "shrn v2.4h, v2.4s, #1",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pmulhrsw xmm0, xmm1": {
@@ -417,9 +417,9 @@
         "NP 0x0f 0x38 0x1c"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "abs v2.16b, v2.16b",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pabsb xmm0, xmm1": {
@@ -437,9 +437,9 @@
         "NP 0x0f 0x38 0x1d"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "abs v2.8h, v2.8h",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pabsw xmm0, xmm1": {
@@ -457,9 +457,9 @@
         "NP 0x0f 0x38 0x1e"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #784]",
+        "ldr d2, [x28, #1056]",
         "abs v2.4s, v2.4s",
-        "str d2, [x28, #768]"
+        "str d2, [x28, #1040]"
       ]
     },
     "pabsd xmm0, xmm1": {
@@ -625,7 +625,7 @@
         "0x66 0x0f 0x38 0x41"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2064]",
+        "ldr q2, [x28, #2320]",
         "zip1 v3.8h, v2.8h, v17.8h",
         "zip2 v2.8h, v2.8h, v17.8h",
         "umin v2.4s, v3.4s, v2.4s",

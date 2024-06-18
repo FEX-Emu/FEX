@@ -69,7 +69,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldrb w20, [x10]",
         "strb w20, [x11]",
         "add x10, x10, #0x1 (1)",
@@ -88,7 +88,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldrh w20, [x10]",
         "strh w20, [x11]",
         "add x10, x10, #0x2 (2)",
@@ -107,7 +107,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldr w20, [x10]",
         "str w20, [x11]",
         "add x10, x10, #0x4 (4)",
@@ -126,7 +126,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldr x20, [x10]",
         "str x20, [x11]",
         "add x10, x10, #0x8 (8)",
@@ -145,7 +145,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldrb w20, [x10]",
         "strb w20, [x11]",
         "sub x10, x10, #0x1 (1)",
@@ -164,7 +164,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldrh w20, [x10]",
         "strh w20, [x11]",
         "sub x10, x10, #0x2 (2)",
@@ -183,7 +183,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldr w20, [x10]",
         "str w20, [x11]",
         "sub x10, x10, #0x4 (4)",
@@ -202,7 +202,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "ldr x20, [x10]",
         "str x20, [x11]",
         "sub x10, x10, #0x8 (8)",
@@ -222,7 +222,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -279,7 +279,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -336,7 +336,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -393,7 +393,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -449,7 +449,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -509,7 +509,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -569,7 +569,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -629,7 +629,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -690,7 +690,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "uxtb w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -733,7 +733,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "uxth w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -776,7 +776,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov w21, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -819,7 +819,7 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #714]",
+        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x58",
@@ -860,7 +860,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "uxtb w20, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -904,7 +904,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "uxth w20, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -948,7 +948,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov w20, w4",
         "mov x0, x5",
         "mov x1, x11",
@@ -992,7 +992,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #714]",
+        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x60",
