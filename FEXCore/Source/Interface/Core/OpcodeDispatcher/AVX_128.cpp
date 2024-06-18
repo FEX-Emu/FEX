@@ -46,11 +46,11 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<4>},
     // TODO: {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
 
-    // TODO: {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
-    // TODO: {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
+    {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+    {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
     // TODO: {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::VMOVSHDUPOp},
-    // TODO: {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
-    // TODO: {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
+    {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+    {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
 
     {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b01, 0x28), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
@@ -687,6 +687,25 @@ void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
 
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   } else {
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+  }
+}
+
+void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+
+  if (Op->Dest.IsGPR()) {
+    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+    // Bits[63:0] come from Src1[63:0]
+    // Bits[127:64] come from Src2[63:0]
+    Ref Result_Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, Src2.Low);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
+  } else {
+    // Need to store Bits[127:64]. Duplicate the element to get it in the low bits.
+    Src1.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
   }
 }
