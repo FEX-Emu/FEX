@@ -44,6 +44,13 @@ static uint32_t GetFPCR() {
 static void SetFPCR(uint64_t Value) {
   __asm("msr FPCR, %[Value]" ::[Value] "r"(Value));
 }
+
+static uint32_t GetMIDR() {
+  uint64_t Result {};
+  __asm("mrs %[Res], MIDR_EL1" : [Res] "=r"(Result));
+  return Result;
+}
+
 #else
 static uint32_t GetDCZID() {
   // Return unsupported
@@ -194,6 +201,24 @@ HostFeatures::HostFeatures() {
 
   // Set FPCR back to original just in case anything changed
   SetFPCR(OriginalFPCR);
+
+  if (SupportsRAND) {
+    const auto MIDR = GetMIDR();
+    constexpr uint32_t Implementer_QCOM = 0x51;
+    constexpr uint32_t PartNum_Oryon1 = 0x001;
+    const uint32_t MIDR_Implementer = (MIDR >> 24) & 0xFF;
+    const uint32_t MIDR_PartNum = (MIDR >> 4) & 0xFFF;
+    if (MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon1) {
+      // Work around an errata in Qualcomm's Oryon.
+      // While this CPU implements the RAND extension:
+      // - The RNDR register works.
+      // - The RNDRRS register will never read a random number. (Always return failure)
+      // This is contrary to x86 RNG behaviour where it allows spurious failure with RDSEED, but guarantees eventual success.
+      // This manifested itself on Linux when an x86 processor failed to guarantee forward progress and boot of services would infinite
+      // loop. Just disable this extension if this CPU is detected.
+      SupportsRAND = false;
+    }
+  }
 #endif
 
 #ifdef VIXL_SIMULATOR
