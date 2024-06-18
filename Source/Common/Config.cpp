@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
+#include "Common/JSONPool.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/fmt.h>
@@ -22,38 +23,15 @@
 
 namespace FEX::Config {
 namespace JSON {
-  struct JsonAllocator {
-    jsonPool_t PoolObject;
-    fextl::unique_ptr<fextl::list<json_t>> json_objects;
-  };
-  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
-
-  json_t* PoolInit(jsonPool_t* Pool) {
-    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
-  }
-
-  json_t* PoolAlloc(jsonPool_t* Pool) {
-    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
-  }
-
   static void LoadJSonConfig(const fextl::string& Config, std::function<void(const char* Name, const char* ConfigSring)> Func) {
     fextl::vector<char> Data;
     if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
     }
 
-    JsonAllocator Pool {
-      .PoolObject =
-        {
-          .init = PoolInit,
-          .alloc = PoolAlloc,
-        },
-    };
+    FEX::JSON::JsonAllocator Pool {};
+    const json_t* json = FEX::JSON::CreateJSON(Data, Pool);
 
-    const json_t* json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
     if (!json) {
       LogMan::Msg::EFmt("Couldn't create json");
       return;

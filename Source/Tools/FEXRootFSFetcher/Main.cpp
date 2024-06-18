@@ -3,6 +3,7 @@
 #include <FEXCore/fextl/string.h>
 
 #include "Common/cpp-optparse/OptionParser.h"
+#include "Common/JSONPool.h"
 #include "XXFileHash.h"
 
 #include "Common/ArgumentLoader.h"
@@ -510,23 +511,6 @@ bool DownloadToPathWithZenityProgress(const fextl::string& URL, const fextl::str
   return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
 }
 
-struct JsonAllocator {
-  jsonPool_t PoolObject;
-  std::unique_ptr<std::list<json_t>> json_objects;
-};
-static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
-
-json_t* PoolInit(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-  alloc->json_objects = std::make_unique<std::list<json_t>>();
-  return &*alloc->json_objects->emplace(alloc->json_objects->end());
-}
-
-json_t* PoolAlloc(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-  return &*alloc->json_objects->emplace(alloc->json_objects->end());
-}
-
 std::optional<std::vector<FileTargets>> GetRootFSLinks() {
   // Decode the filetargets
   std::string Data = DownloadToString(DownloadURL);
@@ -535,15 +519,9 @@ std::optional<std::vector<FileTargets>> GetRootFSLinks() {
     return std::nullopt;
   }
 
-  JsonAllocator Pool {
-    .PoolObject =
-      {
-        .init = PoolInit,
-        .alloc = PoolAlloc,
-      },
-  };
+  FEX::JSON::JsonAllocator Pool {};
+  const json_t* json = FEX::JSON::CreateJSON(Data, Pool);
 
-  const json_t* json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
   if (!json) {
     fprintf(stderr, "Couldn't create json");
     return {};
