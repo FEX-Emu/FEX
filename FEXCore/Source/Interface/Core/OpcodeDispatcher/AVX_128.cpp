@@ -214,8 +214,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::AVX128_VPSRA<2>},
     {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::AVX128_VPSRA<4>},
     {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VURAVG, 2>},
-    // TODO: {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
-    // TODO: {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
+    {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::AVX128_VPMULHW<false>},
+    {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::AVX128_VPMULHW<true>},
 
     // TODO: {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, false>},
     // TODO: {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>},
@@ -1404,6 +1404,17 @@ void OpDispatchBuilder::AVX128_VPMULL(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPMULHRSW(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) -> Ref { return PMULHRSWOpImpl(OpSize::i128Bit, Src1, Src2); });
+}
+
+template<bool Signed>
+void OpDispatchBuilder::AVX128_VPMULHW(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit, [this](size_t _ElementSize, Ref Src1, Ref Src2) -> Ref {
+    if (Signed) {
+      return _VSMulH(OpSize::i128Bit, _ElementSize, Src1, Src2);
+    } else {
+      return _VUMulH(OpSize::i128Bit, _ElementSize, Src1, Src2);
+    }
+  });
 }
 
 } // namespace FEXCore::IR
