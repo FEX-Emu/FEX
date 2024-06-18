@@ -153,7 +153,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::AVX128_VPACKSS<4>},
     {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::AVX128_VPUNPCKL<8>},
     {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::AVX128_VPUNPCKH<8>},
-    // TODO: {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR},
 
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
@@ -173,7 +173,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<8>},
     // TODO: {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<4>},
 
-    // TODO: {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVQ},
 
     {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
@@ -1095,6 +1095,40 @@ void OpDispatchBuilder::AVX128_InsertScalarFCMP(OpcodeArgs) {
   Result.Low = AVX128_InsertScalarFCMPImpl(ElementSize, Src1.Low, Src2.Low, CompType);
   Result.High = LoadZeroVector(OpSize::i128Bit);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
+  if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+    ///< XMM <- Reg/Mem
+
+    RefPair Result {};
+    if (Op->Src[0].IsGPR()) {
+      // Loading from GPR and moving to Vector.
+      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
+      // zext to 128bit
+      Result.Low = _VCastFromGPR(OpSize::i128Bit, GetSrcSize(Op), Src);
+    } else {
+      // Loading from Memory as a scalar. Zero extend
+      Result.Low = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    }
+
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+  } else {
+    ///< Reg/Mem <- XMM
+    auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+
+    if (Op->Dest.IsGPR()) {
+      auto ElementSize = GetDstSize(Op);
+      // Extract element from GPR. Zero extending in the process.
+      Src.Low = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src.Low, 0);
+      StoreResult(GPRClass, Op, Op->Dest, Src.Low, -1);
+    } else {
+      // Storing first element to memory.
+      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+      _StoreMem(FPRClass, GetDstSize(Op), Dest, Src.Low, 1);
+    }
+  }
 }
 
 } // namespace FEXCore::IR
