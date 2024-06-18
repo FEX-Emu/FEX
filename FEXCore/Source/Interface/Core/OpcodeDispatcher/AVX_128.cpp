@@ -199,7 +199,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 8>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 2>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::AVX128_MOVQ},
-    // TODO: {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
+    {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::AVX128_MOVMSKB},
 
     {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUQSUB, 1>},
     {OPD(1, 0b01, 0xD9), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUQSUB, 2>},
@@ -1143,6 +1143,35 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
     GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 2);
   }
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
+}
+
+void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  Ref VMask = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_MOVMASKB);
+
+  auto Mask1Byte = [this](Ref Src, Ref VMask) {
+    auto VCMP = _VCMPLTZ(OpSize::i128Bit, OpSize::i8Bit, Src);
+    auto VAnd = _VAnd(OpSize::i128Bit, OpSize::i8Bit, VCMP, VMask);
+
+    auto VAdd1 = _VAddP(OpSize::i128Bit, OpSize::i8Bit, VAnd, VAnd);
+    auto VAdd2 = _VAddP(OpSize::i128Bit, OpSize::i8Bit, VAdd1, VAdd1);
+    auto VAdd3 = _VAddP(OpSize::i64Bit, OpSize::i8Bit, VAdd2, VAdd2);
+
+    ///< 16-bits of data per 128-bit
+    return _VExtractToGPR(OpSize::i128Bit, 2, VAdd3, 0);
+  };
+
+  Ref Result = Mask1Byte(Src.Low, VMask);
+
+  if (!Is128Bit) {
+    auto ResultHigh = Mask1Byte(Src.High, VMask);
+    Result = _Orlshl(OpSize::i64Bit, Result, ResultHigh, 16);
+  }
+
+  StoreResult(GPRClass, Op, Result, -1);
 }
 
 } // namespace FEXCore::IR
