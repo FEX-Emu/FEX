@@ -989,6 +989,8 @@ public:
   void AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize);
   void AVX128_VectorALUImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
+  void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
 
   void AVX128_VMOVAPS(OpcodeArgs);
   void AVX128_VMOVSD(OpcodeArgs);

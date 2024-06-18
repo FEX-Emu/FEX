@@ -578,6 +578,41 @@ void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, IROps IROp, size_t El
   }
 }
 
+void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize,
+                                               std::function<Ref(size_t ElementSize, Ref Src)> Helper) {
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  RefPair Result {};
+  Result.Low = Helper(ElementSize, Src.Low);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Helper(ElementSize, Src.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize,
+                                                std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper) {
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+  RefPair Result {};
+  Result.Low = Helper(ElementSize, Src1.Low, Src2.Low);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Helper(ElementSize, Src1.High, Src2.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
 template<IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::AVX128_VectorALU(OpcodeArgs) {
   AVX128_VectorALUImpl(Op, IROp, ElementSize);
