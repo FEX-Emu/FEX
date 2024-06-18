@@ -5,6 +5,7 @@
       "SVE256"
     ],
     "DisabledHostFeatures": [
+      "AFP",
       "FLAGM",
       "FLAGM2"
     ]

@@ -6,7 +6,9 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "AFP"
+    ]
   },
   "Instructions": {
     "blsr eax, ebx": {

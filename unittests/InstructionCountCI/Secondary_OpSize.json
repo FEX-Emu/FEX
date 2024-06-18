@@ -5,6 +5,7 @@
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256",
+      "AFP",
       "FCMA",
       "FLAGM",
       "FLAGM2"
