@@ -236,7 +236,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::AVX128_VPSLL<2>},
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::AVX128_VPSLL<4>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::AVX128_VPSLL<8>},
-    // TODO: {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
+    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::AVX128_VPMULL<4, false>},
     // TODO: {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     // TODO: {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
     // TODO: {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
@@ -284,7 +284,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 8, true>},
     {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<4, 8, true>},
 
-    // TODO: {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
+    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::AVX128_VPMULL<4, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 8>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_VPACKUS<4>},
@@ -1389,6 +1389,15 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VADDSUBP(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize, [this](size_t _ElementSize, Ref Src1, Ref Src2) {
     return ADDSUBPOpImpl(OpSize::i128Bit, _ElementSize, Src1, Src2);
+  });
+}
+
+template<size_t ElementSize, bool Signed>
+void OpDispatchBuilder::AVX128_VPMULL(OpcodeArgs) {
+  static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
+
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize, [this](size_t _ElementSize, Ref Src1, Ref Src2) -> Ref {
+    return PMULLOpImpl(OpSize::i128Bit, ElementSize, Signed, Src1, Src2);
   });
 }
 
