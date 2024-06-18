@@ -181,8 +181,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVX128_VFCMP<4>},
     {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVX128_VFCMP<8>},
-    // TODO: {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<4>},
-    // TODO: {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<8>},
+    {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<4>},
+    {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<8>},
 
     // TODO: {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
     // TODO: {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
@@ -1015,6 +1015,86 @@ void OpDispatchBuilder::AVX128_VFCMP(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Op, CompType](size_t _ElementSize, Ref Src1, Ref Src2) {
     return VFCMPOpImpl(Op, _ElementSize, Src1, Src2, CompType);
   });
+}
+
+Ref OpDispatchBuilder::AVX128_InsertScalarFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
+  switch (CompType) {
+  case 0x00:
+  case 0x08:
+  case 0x10:
+  case 0x18: // EQ
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::EQ, false);
+  case 0x01:
+  case 0x09:
+  case 0x11:
+  case 0x19: // LT, GT(Swapped operand)
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::LT, false);
+  case 0x02:
+  case 0x0A:
+  case 0x12:
+  case 0x1A: // LE, GE(Swapped operand)
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::LE, false);
+  case 0x03:
+  case 0x0B:
+  case 0x13:
+  case 0x1B: // Unordered
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::UNO, false);
+  case 0x04:
+  case 0x0C:
+  case 0x14:
+  case 0x1C: // NEQ
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::NEQ, false);
+  case 0x05:
+  case 0x0D:
+  case 0x15:
+  case 0x1D: { // NLT, NGT(Swapped operand)
+    Ref Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
+    Result = _VNot(ElementSize, ElementSize, Result);
+    // Insert the lower bits
+    return _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Src1, Result);
+  }
+  case 0x06:
+  case 0x0E:
+  case 0x16:
+  case 0x1E: { // NLE, NGE(Swapped operand)
+    Ref Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
+    Result = _VNot(ElementSize, ElementSize, Result);
+    // Insert the lower bits
+    return _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Src1, Result);
+  }
+  case 0x07:
+  case 0x0F:
+  case 0x17:
+  case 0x1F: // Ordered
+    return _VFCMPScalarInsert(OpSize::i128Bit, ElementSize, Src1, Src2, FloatCompareOp::ORD, false);
+  default: LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType); break;
+  }
+  FEX_UNREACHABLE;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_InsertScalarFCMP(OpcodeArgs) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src2 {};
+
+  if (Op->Src[1].IsGPR()) {
+    Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+  } else {
+    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  }
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
+  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
+
+  RefPair Result {};
+  Result.Low = AVX128_InsertScalarFCMPImpl(ElementSize, Src1.Low, Src2.Low, CompType);
+  Result.High = LoadZeroVector(OpSize::i128Bit);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
