@@ -63,11 +63,11 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
 
-    // TODO: {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
-    // TODO: {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, false>},
+    {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::AVX128_CVTFPR_To_GPR<4, false>},
+    {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::AVX128_CVTFPR_To_GPR<8, false>},
 
-    // TODO: {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
-    // TODO: {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
+    {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::AVX128_CVTFPR_To_GPR<4, true>},
+    {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::AVX128_CVTFPR_To_GPR<8, true>},
 
     // TODO: {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<4>},
     // TODO: {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<8>},
@@ -844,6 +844,32 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Is128Bit, "Programming Error: This should never occur!");
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t SrcElementSize, bool HostRoundingMode>
+void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
+  // If loading a vector, use the full size, so we don't
+  // unnecessarily zero extend the vector. Otherwise, if
+  // memory, then we want to load the element size exactly.
+  RefPair Src {};
+  if (Op->Src[0].IsGPR()) {
+    Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  } else {
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags);
+  }
+
+  // GPR size is determined by REX.W
+  // Source Element size is determined by instruction
+  size_t GPRSize = GetDstSize(Op);
+
+  Ref Result {};
+  if constexpr (HostRoundingMode) {
+    Result = _Float_ToGPR_S(GPRSize, SrcElementSize, Src.Low);
+  } else {
+    Result = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src.Low);
+  }
+
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
 }
 
 } // namespace FEXCore::IR

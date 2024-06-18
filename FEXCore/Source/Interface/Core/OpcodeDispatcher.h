@@ -1019,6 +1019,8 @@ public:
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
   template<size_t DstElementSize>
   void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
+  template<size_t SrcElementSize, bool HostRoundingMode>
+  void AVX128_CVTFPR_To_GPR(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
