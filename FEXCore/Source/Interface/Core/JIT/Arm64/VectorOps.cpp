@@ -194,7 +194,7 @@ DEF_UNOP(VNeg, neg, false)
 DEF_UNOP(VFNeg, fneg, false)
 
 DEF_BITOP(VAnd, and_)
-DEF_BITOP(VBic, bic)
+DEF_BITOP(VAndn, bic)
 DEF_BITOP(VOr, orr)
 DEF_BITOP(VXor, eor)
 

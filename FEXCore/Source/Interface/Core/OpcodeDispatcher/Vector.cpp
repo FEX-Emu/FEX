@@ -386,7 +386,7 @@ void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
   VectorALUROpImpl(Op, IROp, ElementSize);
 }
 
-template void OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>(OpcodeArgs);
+template void OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
@@ -1482,7 +1482,7 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Dest = _VBic(SrcSize, SrcSize, Src2, Src1);
+  Ref Dest = _VAndn(SrcSize, SrcSize, Src2, Src1);
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
@@ -1724,7 +1724,7 @@ Ref OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref S
     Ref CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
     Ref CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
     auto BSLResult = _VBSL(Size, CmpLT, NegVec, Src1);
-    return _VBic(Size, Size, BSLResult, CmpEQ);
+    return _VAndn(Size, Size, BSLResult, CmpEQ);
   }
 }
 
@@ -4087,7 +4087,7 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   Ref Test1 = _VAnd(Size, 1, Dest, Src);
-  Ref Test2 = _VBic(Size, 1, Src, Dest);
+  Ref Test2 = _VAndn(Size, 1, Src, Dest);
 
   // Element size must be less than 32-bit for the sign bit tricks.
   Test1 = _VUMaxV(Size, 2, Test1);
@@ -4124,7 +4124,7 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   Ref Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
 
   Ref AndTest = _VAnd(SrcSize, 1, Src2, Src1);
-  Ref AndNotTest = _VBic(SrcSize, 1, Src2, Src1);
+  Ref AndNotTest = _VAndn(SrcSize, 1, Src2, Src1);
 
   Ref MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
   Ref MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
