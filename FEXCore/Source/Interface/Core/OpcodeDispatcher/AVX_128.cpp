@@ -112,8 +112,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     // TODO: {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>},
     // TODO: {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>},
-    // TODO: {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>},
-    // TODO: {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>},
+    {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<8, 4>},
+    {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<4, 8>},
 
     // TODO: {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>},
     // TODO: {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>},
@@ -1416,5 +1416,19 @@ void OpDispatchBuilder::AVX128_VPMULHW(OpcodeArgs) {
     }
   });
 }
+
+template<size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
+  // Gotta be careful with this operation.
+  // It inserts in to the lowest element, retaining the remainder of the lower 128-bits.
+  // Then zero extends the top 128-bit.
+  const auto SrcSize = GetSrcSize(Op);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  Ref Result = _VFToFScalarInsert(OpSize::i128Bit, DstElementSize, SrcElementSize, Src1.Low, Src2, false);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
+}
+
 
 } // namespace FEXCore::IR
