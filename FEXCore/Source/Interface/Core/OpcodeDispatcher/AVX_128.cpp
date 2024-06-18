@@ -262,7 +262,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VPSIGN<1>},
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VPSIGN<2>},
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_VPSIGN<4>},
-    // TODO: {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
+    {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_VPMULHRSW},
     // TODO: {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
     // TODO: {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
     // TODO: {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<4>},
@@ -1657,6 +1657,27 @@ void OpDispatchBuilder::AVX128_VPMULL(OpcodeArgs) {
     } else {
       return _VUMull(OpSize::i128Bit, ElementSize, InsSrc1, InsSrc2);
     }
+  });
+}
+
+void OpDispatchBuilder::AVX128_VPMULHRSW(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit, [this](size_t _ElementSize, Ref Src1, Ref Src2) -> Ref {
+    Ref ResultLow;
+    Ref ResultHigh;
+
+    ResultLow = _VSMull(OpSize::i128Bit, OpSize::i16Bit, Src1, Src2);
+    ResultHigh = _VSMull2(OpSize::i128Bit, OpSize::i16Bit, Src1, Src2);
+
+    ResultLow = _VSShrI(OpSize::i128Bit, OpSize::i32Bit, ResultLow, 14);
+    ResultHigh = _VSShrI(OpSize::i128Bit, OpSize::i32Bit, ResultHigh, 14);
+    auto OneVector = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 1);
+
+    ResultLow = _VAdd(OpSize::i128Bit, OpSize::i32Bit, ResultLow, OneVector);
+    ResultHigh = _VAdd(OpSize::i128Bit, OpSize::i32Bit, ResultHigh, OneVector);
+
+    // Combine the results
+    auto Res = _VUShrNI(OpSize::i128Bit, OpSize::i32Bit, ResultLow, 1);
+    return _VUShrNI2(OpSize::i128Bit, OpSize::i32Bit, Res, ResultHigh, 1);
   });
 }
 
