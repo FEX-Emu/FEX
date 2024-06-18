@@ -85,7 +85,7 @@ struct ContextInfo {
   fextl::vector<ContextMemberInfo> ClassificationInfo;
 };
 
-static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool SupportsAVX) {
+static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool SupportsSVE256) {
   auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
   ContextClassification->emplace_back(ContextMemberInfo {
@@ -234,7 +234,7 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
     FEXCore::IR::InvalidClass,
   });
 
-  if (SupportsAVX) {
+  if (SupportsSVE256) {
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo {
         ContextMemberClassification {
@@ -376,7 +376,7 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
                      ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
 }
 
-static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, bool SupportsAVX) {
+static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, bool SupportsSVE256) {
   auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
   auto SetAccess = [&](size_t Offset, LastAccessType Access) {
@@ -422,7 +422,7 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
-  if (!SupportsAVX) {
+  if (!SupportsSVE256) {
     ///< xmm pad if AVX isn't supported.
     SetAccess(Offset++, LastAccessType::NONE);
   }
@@ -470,16 +470,16 @@ struct BlockInfo {
 
 class RCLSE final : public FEXCore::IR::Pass {
 public:
-  explicit RCLSE(bool SupportsAVX_)
-    : SupportsAVX {SupportsAVX_} {
-    ClassifyContextStruct(&ClassifiedStruct, SupportsAVX);
+  explicit RCLSE(bool SupportsSVE256)
+    : SupportsSVE256 {SupportsSVE256} {
+    ClassifyContextStruct(&ClassifiedStruct, SupportsSVE256);
   }
   void Run(FEXCore::IR::IREmitter* IREmit) override;
 private:
   ContextInfo ClassifiedStruct;
   fextl::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
 
-  bool SupportsAVX;
+  bool SupportsSVE256;
 
   ContextMemberInfo* FindMemberInfo(ContextInfo* ClassifiedInfo, uint32_t Offset, uint8_t Size);
   ContextMemberInfo* RecordAccess(ContextMemberInfo* Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size,
@@ -645,7 +645,7 @@ void RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
     auto BlockOp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     auto BlockEnd = IREmit->GetIterator(BlockOp->Last);
 
-    ResetClassificationAccesses(&LocalInfo, SupportsAVX);
+    ResetClassificationAccesses(&LocalInfo, SupportsSVE256);
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
@@ -713,11 +713,11 @@ void RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter* IREmit) {
 
         if ((Flags & FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) != FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) {
           // We can't track through these
-          ResetClassificationAccesses(&LocalInfo, SupportsAVX);
+          ResetClassificationAccesses(&LocalInfo, SupportsSVE256);
         }
       } else if (IROp->Op == OP_STORECONTEXTINDEXED || IROp->Op == OP_LOADCONTEXTINDEXED || IROp->Op == OP_BREAK) {
         // We can't track through these
-        ResetClassificationAccesses(&LocalInfo, SupportsAVX);
+        ResetClassificationAccesses(&LocalInfo, SupportsSVE256);
       }
     }
   }
@@ -734,8 +734,8 @@ void RCLSE::Run(FEXCore::IR::IREmitter* IREmit) {
 
 namespace FEXCore::IR {
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX) {
-  return fextl::make_unique<RCLSE>(SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsSVE256) {
+  return fextl::make_unique<RCLSE>(SupportsSVE256);
 }
 
 } // namespace FEXCore::IR

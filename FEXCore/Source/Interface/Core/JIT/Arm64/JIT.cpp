@@ -521,8 +521,8 @@ void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::NodeID Node) {}
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , Arm64Emitter(ctx)
-  , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE}
-  , HostSupportsSVE256 {ctx->HostFeatures.SupportsAVX}
+  , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
+  , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
   , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
   , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
   , CTX {ctx} {

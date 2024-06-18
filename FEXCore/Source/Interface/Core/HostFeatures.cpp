@@ -76,7 +76,7 @@ static void OverrideFeatures(HostFeatures* Features) {
 
   ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);
   ENABLE_DISABLE_OPTION(SupportsAVX2, AVX2, AVX2);
-  ENABLE_DISABLE_OPTION(SupportsSVE, SVE, SVE);
+  ENABLE_DISABLE_OPTION(SupportsSVE128, SVE, SVE);
   ENABLE_DISABLE_OPTION(SupportsAFP, AFP, AFP);
   ENABLE_DISABLE_OPTION(SupportsRCPC, LRCPC, LRCPC);
   ENABLE_DISABLE_OPTION(SupportsTSOImm9, LRCPC2, LRCPC2);
@@ -91,6 +91,7 @@ static void OverrideFeatures(HostFeatures* Features) {
   ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
   ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
+  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
 
 #undef ENABLE_DISABLE_OPTION
 #undef GET_SINGLE_OPTION
@@ -105,6 +106,12 @@ static void OverrideFeatures(HostFeatures* Features) {
     Features->SupportsCRC = false;
     Features->SupportsSHA = false;
     Features->SupportsPMULL_128Bit = false;
+  }
+
+  ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
+  Features->SupportsSVE256 = ForceSVEWidth() && ForceSVEWidth() >= 256;
+  if (!Features->SupportsSVE256) {
+    Features->SupportsAVX = false;
   }
 }
 
@@ -143,12 +150,14 @@ HostFeatures::HostFeatures() {
   SupportsSSE4A = true;
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
-  SupportsSVE = true;
-  SupportsAVX = true;
+  SupportsSVE128 = true;
+  SupportsSVE256 = true;
 #else
-  SupportsSVE = Features.Has(vixl::CPUFeatures::Feature::kSVE);
-  SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
+  SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
+  SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
+  SupportsAVX = SupportsSVE256;
+
   // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
   SupportsAVX2 = false;
   SupportsBMI1 = true;
