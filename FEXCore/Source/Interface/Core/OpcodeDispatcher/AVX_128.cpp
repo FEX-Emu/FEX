@@ -91,8 +91,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VAND, 16>},
     {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VAND, 16>},
 
-    // TODO: {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::VANDNOp},
-    // TODO: {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::VANDNOp},
+    {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::AVX128_VANDN},
+    {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::AVX128_VANDN},
 
     {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VOR, 16>},
     {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VOR, 16>},
@@ -208,7 +208,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUQADD, 1>},
     {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUQADD, 2>},
     {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUMAX, 1>},
-    // TODO: {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
+    {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VANDN},
 
     {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VURAVG, 1>},
     // TODO: {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::VPSRAOp<2>},
@@ -870,6 +870,11 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
   }
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
+}
+
+void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return _VAndn(OpSize::i128Bit, _ElementSize, Src2, Src1); });
 }
 
 } // namespace FEXCore::IR

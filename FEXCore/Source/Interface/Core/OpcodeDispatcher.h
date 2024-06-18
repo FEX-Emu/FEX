@@ -1021,6 +1021,7 @@ public:
   void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
   template<size_t SrcElementSize, bool HostRoundingMode>
   void AVX128_CVTFPR_To_GPR(OpcodeArgs);
+  void AVX128_VANDN(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
