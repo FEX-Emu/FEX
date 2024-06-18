@@ -193,9 +193,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
     // TODO: {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
 
-    // TODO: {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::VPSRLDOp<2>},
-    // TODO: {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::VPSRLDOp<4>},
-    // TODO: {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
+    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::AVX128_VPSRL<2>},
+    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::AVX128_VPSRL<4>},
+    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::AVX128_VPSRL<8>},
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 8>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 2>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::AVX128_MOVQ},
@@ -211,8 +211,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VANDN},
 
     {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VURAVG, 1>},
-    // TODO: {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::VPSRAOp<2>},
-    // TODO: {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::VPSRAOp<4>},
+    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::AVX128_VPSRA<2>},
+    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::AVX128_VPSRA<4>},
     {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VURAVG, 2>},
     // TODO: {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
     // TODO: {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
@@ -233,9 +233,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VXOR, 16>},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::AVX128_MOVVectorUnaligned},
-    // TODO: {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
-    // TODO: {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
-    // TODO: {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::VPSLLOp<8>},
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::AVX128_VPSLL<2>},
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::AVX128_VPSLL<4>},
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::AVX128_VPSLL<8>},
     // TODO: {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
     // TODO: {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     // TODO: {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
@@ -313,9 +313,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 4>},
     // TODO: {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
-    // TODO: {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::VPSRLVOp},
-    // TODO: {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::VPSRAVDOp},
-    // TODO: {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::VPSLLVOp},
+    {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::AVX128_VPSRLV},
+    {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPSRAVD},
+    {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::AVX128_VPSLLV},
 
     {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
@@ -383,18 +383,18 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEX128TableGroupOps[] {
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<2>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<2>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::VPSRAIOp<2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::AVX128_VPSRLI<2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::AVX128_VPSLLI<2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::AVX128_VPSRAI<2>},
 
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<4>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<4>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::VPSRAIOp<4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::AVX128_VPSRLI<4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::AVX128_VPSLLI<4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::AVX128_VPSRAI<4>},
 
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<8>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::VPSRLDQOp},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<8>},
-    // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::VPSLLDQOp},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::AVX128_VPSRLI<8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::AVX128_VPSRLDQ},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::AVX128_VPSLLI<8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::AVX128_VPSLLDQ},
 
     // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
     // TODO: {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b011), 1, &OpDispatchBuilder::STMXCSR},
@@ -608,6 +608,55 @@ void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size
     Result.High = LoadZeroVector(OpSize::i128Bit);
   } else {
     Result.High = Helper(ElementSize, Src1.High, Src2.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp) {
+  const auto Is128Bit = GetSrcSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+  // Incoming element size for the shift source is always 8-bytes in the lower register.
+  DeriveOp(Low, IROp, _VUShrSWide(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low));
+
+  RefPair Result {};
+  Result.Low = Low;
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    DeriveOp(High, IROp, _VUShrSWide(OpSize::i128Bit, ElementSize, Src1.High, Src2.High));
+    Result.High = High;
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const uint64_t ShiftConstant = Op->Src[1].Literal();
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  RefPair Result {};
+
+  if (ShiftConstant == 0) [[unlikely]] {
+    Result = Src;
+  } else {
+    DeriveOp(Low, IROp, _VUShrI(OpSize::i128Bit, ElementSize, Src.Low, ShiftConstant));
+    Result.Low = Low;
+
+    if (!Is128Bit) {
+      DeriveOp(High, IROp, _VUShrI(OpSize::i128Bit, ElementSize, Src.Low, ShiftConstant));
+      Result.High = High;
+    }
+  }
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
@@ -1207,6 +1256,98 @@ void OpDispatchBuilder::AVX128_VPINSRW(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPINSRDQ(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   AVX128_PINSRImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSRA(OpcodeArgs) {
+  AVX128_VectorShiftWideImpl(Op, ElementSize, IROps::OP_VSSHRSWIDE);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSLL(OpcodeArgs) {
+  AVX128_VectorShiftWideImpl(Op, ElementSize, IROps::OP_VUSHLSWIDE);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSRL(OpcodeArgs) {
+  AVX128_VectorShiftWideImpl(Op, ElementSize, IROps::OP_VUSHRSWIDE);
+}
+
+void OpDispatchBuilder::AVX128_VariableShiftImpl(OpcodeArgs, IROps IROp) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), GetSrcSize(Op), [this, IROp](size_t ElementSize, Ref Src1, Ref Src2) {
+    DeriveOp(Shift, IROp, _VUShr(OpSize::i128Bit, ElementSize, Src1, Src2, true));
+    return Shift;
+  });
+}
+
+void OpDispatchBuilder::AVX128_VPSLLV(OpcodeArgs) {
+  AVX128_VariableShiftImpl(Op, IROps::OP_VUSHL);
+}
+
+void OpDispatchBuilder::AVX128_VPSRAVD(OpcodeArgs) {
+  AVX128_VariableShiftImpl(Op, IROps::OP_VSSHR);
+}
+
+void OpDispatchBuilder::AVX128_VPSRLV(OpcodeArgs) {
+  AVX128_VariableShiftImpl(Op, IROps::OP_VUSHR);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSRLI(OpcodeArgs) {
+  AVX128_VectorShiftImmImpl(Op, ElementSize, IROps::OP_VUSHRI);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSLLI(OpcodeArgs) {
+  AVX128_VectorShiftImmImpl(Op, ElementSize, IROps::OP_VSHLI);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPSRAI(OpcodeArgs) {
+  AVX128_VectorShiftImmImpl(Op, ElementSize, IROps::OP_VSSHRI);
+}
+
+void OpDispatchBuilder::AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const bool Right = Dir == ShiftDirection::RIGHT;
+
+  const uint64_t Shift = Op->Src[1].Literal();
+  const uint64_t ExtrShift = Right ? Shift : OpSize::i128Bit - Shift;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  if (Shift == 0) [[unlikely]] {
+    Result = Src;
+  } else if (Shift >= Core::CPUState::XMM_SSE_REG_SIZE) {
+    Result.Low = LoadZeroVector(OpSize::i128Bit);
+    Result.High = Result.High;
+  } else {
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+    RefPair Zero {ZeroVector, ZeroVector};
+    RefPair Src1 = Right ? Zero : Src;
+    RefPair Src2 = Right ? Src : Zero;
+
+    Result.Low = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1.Low, Src2.Low, ExtrShift);
+    if (!Is128Bit) {
+      Result.High = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1.High, Src2.High, ExtrShift);
+    }
+  }
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPSRLDQ(OpcodeArgs) {
+  AVX128_ShiftDoubleImm(Op, ShiftDirection::RIGHT);
+}
+
+void OpDispatchBuilder::AVX128_VPSLLDQ(OpcodeArgs) {
+  AVX128_ShiftDoubleImm(Op, ShiftDirection::LEFT);
 }
 
 } // namespace FEXCore::IR
