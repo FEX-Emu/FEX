@@ -33,12 +33,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b10, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVSS},
     {OPD(1, 0b11, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVSD},
 
-    // TODO: {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
-    // TODO: {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
+    {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+    {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
     // TODO: {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::VMOVSLDUPOp},
     // TODO: {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::VMOVDDUPOp},
-    // TODO: {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
-    // TODO: {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
+    {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+    {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
 
     // TODO: {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::VPUNPCKLOp<4>},
     // TODO: {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::VPUNPCKLOp<8>},
@@ -671,6 +671,23 @@ void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
   } else {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, OpSize::i64Bit, OpSize::i64Bit);
+  }
+}
+
+void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+
+  if (Op->Dest.IsGPR()) {
+    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+    // Bits[63:0] come from Src2[63:0]
+    // Bits[127:64] come from Src1[127:64]
+    Ref Result_Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src2.Low, Src1.Low);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
+  } else {
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
   }
 }
 
