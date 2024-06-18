@@ -89,18 +89,27 @@ struct CPUState {
   };
 
   uint64_t InlineJITBlockHeader {};
+  // Reference counter for FEX's per-thread deferred signals.
+  // Counts the nesting depth of program sections that cause signals to be deferred.
+  NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;
+
+  // The high 128-bits of AVX registers when not being emulated by SVE256.
+  uint64_t avx_high[16][2];
+
   uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
   uint64_t gregs[16] {};
+  uint64_t _pad {};
+  XMMRegs xmm {};
+
   // Raw segment register indexes
   uint16_t es_idx {}, cs_idx {}, ss_idx {}, ds_idx {};
   uint16_t gs_idx {}, fs_idx {};
-  uint16_t _pad[2];
+  uint16_t _pad2[2];
 
   // Segment registers holding base addresses
   uint32_t es_cached {}, cs_cached {}, ss_cached {}, ds_cached {};
   uint64_t gs_cached {};
   uint64_t fs_cached {};
-  XMMRegs xmm {};
   uint8_t flags[48] {};
   uint64_t pf_raw {};
   uint64_t af_raw {};
@@ -113,11 +122,7 @@ struct CPUState {
   uint16_t FCW {0x37F};
   uint8_t AbridgedFTW {};
 
-  uint8_t _pad2[5];
-  // Reference counter for FEX's per-thread deferred signals.
-  // Counts the nesting depth of program sections that cause signals to be deferred.
-  NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;
-
+  uint8_t _pad3[5];
   // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
   // x86 otherwise). This allows a straightforward mapping for SRA.
   static constexpr uint8_t PF_AS_GREG = 16;
@@ -161,6 +166,7 @@ struct CPUState {
 };
 static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
 static_assert(std::is_standard_layout_v<CPUState>, "This needs to be standard layout");
+static_assert(offsetof(CPUState, avx_high) % 16 == 0, "avx_high needs to be 128-bit aligned!");
 static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligned!");
 static_assert(offsetof(CPUState, mm) % 16 == 0, "mm needs to be 128-bit aligned!");
 static_assert(offsetof(CPUState, gregs[15]) <= 504, "gregs maximum offset must be <= 504 for ldp/stp to work");

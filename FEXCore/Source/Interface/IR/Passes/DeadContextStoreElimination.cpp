@@ -97,6 +97,27 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
     FEXCore::IR::InvalidClass,
   });
 
+  // DeferredSignalRefCount
+  ContextClassification->emplace_back(ContextMemberInfo {
+    ContextMemberClassification {
+      offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount),
+      sizeof(FEXCore::Core::CPUState::DeferredSignalRefCount),
+    },
+    LastAccessType::NONE,
+    FEXCore::IR::InvalidClass,
+  });
+
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    ContextClassification->emplace_back(ContextMemberInfo {
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, avx_high[0][0]) + FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * i,
+        FEXCore::Core::CPUState::XMM_SSE_REG_SIZE,
+      },
+      LastAccessType::NONE,
+      FEXCore::IR::InvalidClass,
+    });
+  }
+
   ContextClassification->emplace_back(ContextMemberInfo {
     ContextMemberClassification {
       offsetof(FEXCore::Core::CPUState, rip),
@@ -113,6 +134,48 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
         FEXCore::Core::CPUState::GPR_REG_SIZE,
       },
       LastAccessType::NONE,
+      FEXCore::IR::InvalidClass,
+    });
+  }
+
+  ContextClassification->emplace_back(ContextMemberInfo {
+    ContextMemberClassification {
+      offsetof(FEXCore::Core::CPUState, _pad),
+      sizeof(FEXCore::Core::CPUState::_pad),
+    },
+    LastAccessType::INVALID,
+    FEXCore::IR::InvalidClass,
+  });
+
+  if (SupportsSVE256) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo {
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, xmm.avx.data[0][0]) + FEXCore::Core::CPUState::XMM_AVX_REG_SIZE * i,
+          FEXCore::Core::CPUState::XMM_AVX_REG_SIZE,
+        },
+        LastAccessType::NONE,
+        FEXCore::IR::InvalidClass,
+      });
+    }
+  } else {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo {
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, xmm.sse.data[0][0]) + FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * i,
+          FEXCore::Core::CPUState::XMM_SSE_REG_SIZE,
+        },
+        LastAccessType::NONE,
+        FEXCore::IR::InvalidClass,
+      });
+    }
+
+    ContextClassification->emplace_back(ContextMemberInfo {
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, xmm.sse.pad[0][0]),
+        static_cast<uint16_t>(FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * FEXCore::Core::CPUState::NUM_XMMS),
+      },
+      LastAccessType::INVALID,
       FEXCore::IR::InvalidClass,
     });
   }
@@ -173,8 +236,8 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
 
   ContextClassification->emplace_back(ContextMemberInfo {
     ContextMemberClassification {
-      offsetof(FEXCore::Core::CPUState, _pad),
-      sizeof(FEXCore::Core::CPUState::_pad),
+      offsetof(FEXCore::Core::CPUState, _pad2),
+      sizeof(FEXCore::Core::CPUState::_pad2),
     },
     LastAccessType::INVALID,
     FEXCore::IR::InvalidClass,
@@ -233,39 +296,6 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
     LastAccessType::NONE,
     FEXCore::IR::InvalidClass,
   });
-
-  if (SupportsSVE256) {
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-      ContextClassification->emplace_back(ContextMemberInfo {
-        ContextMemberClassification {
-          offsetof(FEXCore::Core::CPUState, xmm.avx.data[0][0]) + FEXCore::Core::CPUState::XMM_AVX_REG_SIZE * i,
-          FEXCore::Core::CPUState::XMM_AVX_REG_SIZE,
-        },
-        LastAccessType::NONE,
-        FEXCore::IR::InvalidClass,
-      });
-    }
-  } else {
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-      ContextClassification->emplace_back(ContextMemberInfo {
-        ContextMemberClassification {
-          offsetof(FEXCore::Core::CPUState, xmm.sse.data[0][0]) + FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * i,
-          FEXCore::Core::CPUState::XMM_SSE_REG_SIZE,
-        },
-        LastAccessType::NONE,
-        FEXCore::IR::InvalidClass,
-      });
-    }
-
-    ContextClassification->emplace_back(ContextMemberInfo {
-      ContextMemberClassification {
-        offsetof(FEXCore::Core::CPUState, xmm.sse.pad[0][0]),
-        static_cast<uint16_t>(FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * FEXCore::Core::CPUState::NUM_XMMS),
-      },
-      LastAccessType::INVALID,
-      FEXCore::IR::InvalidClass,
-    });
-  }
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
     ContextClassification->emplace_back(ContextMemberInfo {
@@ -337,21 +367,11 @@ static void ClassifyContextStruct(ContextInfo* ContextClassificationInfo, bool S
     FEXCore::IR::InvalidClass,
   });
 
-  // _pad2
+  // _pad3
   ContextClassification->emplace_back(ContextMemberInfo {
     ContextMemberClassification {
-      offsetof(FEXCore::Core::CPUState, _pad2),
-      sizeof(FEXCore::Core::CPUState::_pad2),
-    },
-    LastAccessType::NONE,
-    FEXCore::IR::InvalidClass,
-  });
-
-  // DeferredSignalRefCount
-  ContextClassification->emplace_back(ContextMemberInfo {
-    ContextMemberClassification {
-      offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount),
-      sizeof(FEXCore::Core::CPUState::DeferredSignalRefCount),
+      offsetof(FEXCore::Core::CPUState, _pad3),
+      sizeof(FEXCore::Core::CPUState::_pad3),
     },
     LastAccessType::NONE,
     FEXCore::IR::InvalidClass,
@@ -385,16 +405,38 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
     ContextClassification->at(Offset).AccessOffset = 0;
     ContextClassification->at(Offset).StoreNode = nullptr;
   };
+
   size_t Offset = 0;
 
   ///< InlineJITBlockHeader
   SetAccess(Offset++, LastAccessType::INVALID);
 
-  ///< rip
+  // DeferredSignalRefCount
+  SetAccess(Offset++, LastAccessType::INVALID);
+
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    ///< avx_high
+    SetAccess(Offset++, LastAccessType::NONE);
+  }
+
+  // rip
   SetAccess(Offset++, LastAccessType::NONE);
 
   ///< gregs
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
+    SetAccess(Offset++, LastAccessType::NONE);
+  }
+
+  // pad
+  SetAccess(Offset++, LastAccessType::NONE);
+
+  // xmm
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    SetAccess(Offset++, LastAccessType::NONE);
+  }
+
+  // xmm_pad
+  if (!SupportsSVE256) {
     SetAccess(Offset++, LastAccessType::NONE);
   }
 
@@ -406,7 +448,7 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
   SetAccess(Offset++, LastAccessType::NONE);
   SetAccess(Offset++, LastAccessType::NONE);
 
-  // Pad
+  // Pad2
   SetAccess(Offset++, LastAccessType::INVALID);
 
   // Segments
@@ -416,16 +458,6 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
   SetAccess(Offset++, LastAccessType::NONE);
   SetAccess(Offset++, LastAccessType::NONE);
   SetAccess(Offset++, LastAccessType::NONE);
-
-  ///< xmm
-  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-    SetAccess(Offset++, LastAccessType::NONE);
-  }
-
-  if (!SupportsSVE256) {
-    ///< xmm pad if AVX isn't supported.
-    SetAccess(Offset++, LastAccessType::NONE);
-  }
 
   ///< flags
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
@@ -454,10 +486,7 @@ static void ResetClassificationAccesses(ContextInfo* ContextClassificationInfo, 
   ///< AbridgedFTW
   SetAccess(Offset++, LastAccessType::NONE);
 
-  ///< _pad2
-  SetAccess(Offset++, LastAccessType::INVALID);
-
-  ///< DeferredSignalRefCount
+  // pad3
   SetAccess(Offset++, LastAccessType::INVALID);
 }
 
