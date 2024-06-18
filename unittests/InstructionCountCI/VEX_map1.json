@@ -2394,7 +2394,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "fcmeq s0, s17, s18",
+        "fcmeq s0, s18, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2441,7 +2441,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "fcmeq s0, s17, s18",
+        "fcmeq s0, s18, s17",
         "mvn v0.8b, v0.8b",
         "mov v16.s[0], v0.s[0]"
       ]
@@ -2490,7 +2490,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "fcmeq d0, d17, d18",
+        "fcmeq d0, d18, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
@@ -2537,7 +2537,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "fcmeq d0, d17, d18",
+        "fcmeq d0, d18, d17",
         "mvn v0.8b, v0.8b",
         "mov v16.d[0], v0.d[0]"
       ]

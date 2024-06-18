@@ -136,7 +136,7 @@
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq d16, d16, d17"
+        "fcmeq d16, d17, d16"
       ]
     },
     "cmpsd xmm0, xmm1, 1": {
@@ -176,7 +176,7 @@
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq d0, d16, d17",
+        "fcmeq d0, d17, d16",
         "mvn v0.8b, v0.8b",
         "mov v16.d[0], v0.d[0]"
       ]

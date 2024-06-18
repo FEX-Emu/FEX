@@ -525,7 +525,7 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s0, s16, s17",
+        "fcmeq s0, s17, s16",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -568,7 +568,7 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s0, s16, s17",
+        "fcmeq s0, s17, s16",
         "mvn v0.8b, v0.8b",
         "mov v16.s[0], v0.s[0]"
       ]

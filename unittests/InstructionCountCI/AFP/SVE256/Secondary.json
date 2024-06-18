@@ -10,23 +10,27 @@
   },
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "scvtf v16.2s, v2.2s"
+        "scvtf v0.2s, v2.2s",
+        "ptrue p0.d, vl1",
+        "mov z16.d, p0/m, z0.d"
       ]
     },
     "cvtpi2ps xmm0, mm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
-        "scvtf v16.2s, v2.2s"
+        "scvtf v0.2s, v2.2s",
+        "ptrue p0.d, vl1",
+        "mov z16.d, p0/m, z0.d"
       ]
     }
   }
