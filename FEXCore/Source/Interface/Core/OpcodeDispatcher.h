@@ -1096,6 +1096,9 @@ public:
   template<bool Signed>
   void AVX128_VPMULHW(OpcodeArgs);
 
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
