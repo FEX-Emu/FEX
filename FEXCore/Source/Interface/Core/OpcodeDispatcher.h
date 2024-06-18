@@ -1656,6 +1656,14 @@ private:
     return Constant;
   }
 
+  Ref LoadUncachedZeroVector(uint8_t Size) {
+    return _LoadNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  }
+
+  Ref LoadZeroVector(uint8_t Size) {
+    return LoadAndCacheNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  }
+
   // Reset the named vector constants cache array.
   // These are only cached per block.
   void ClearCachedNamedConstants() {

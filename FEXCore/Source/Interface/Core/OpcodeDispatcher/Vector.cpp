@@ -1624,11 +1624,11 @@ Ref OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperan
 
   // ZMask happens after insert
   if (ZMask == 0xF) {
-    return LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    return LoadZeroVector(DstSize);
   }
 
   if (ZMask) {
-    auto Zero = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    auto Zero = LoadZeroVector(DstSize);
     for (size_t i = 0; i < 4; ++i) {
       if ((ZMask & (1 << i)) != 0) {
         Dest = _VInsElement(DstSize, 4, i, 0, Dest, Zero);
@@ -1974,7 +1974,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Result = LoadZeroVector(Size);
 
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Result, Dest, Shift);
@@ -1999,7 +1999,7 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
       Result = Src;
     }
   } else {
-    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    Result = LoadZeroVector(DstSize);
 
     if (Is128Bit) {
       if (Shift < DstSize) {
@@ -2029,7 +2029,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Result = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Result = LoadZeroVector(Size);
   if (Shift < Size) {
     Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
   }
@@ -2053,7 +2053,7 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
       Result = _VMov(16, Result);
     }
   } else {
-    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    Result = LoadZeroVector(DstSize);
     if (Is128Bit) {
       if (Shift < DstSize) {
         Result = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
@@ -2961,7 +2961,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 
   // On top of resetting the flags to a default state, we also need to clear
   // all of the ST0-7/MM0-7 registers to zero.
-  Ref ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::MM_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVector = LoadZeroVector(Core::CPUState::MM_REG_SIZE);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     _StoreContext(16, FPRClass, ZeroVector, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
@@ -2970,7 +2970,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 void OpDispatchBuilder::DefaultSSEState() {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  Ref ZeroVector = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVector = LoadZeroVector(Core::CPUState::XMM_SSE_REG_SIZE);
   for (uint32_t i = 0; i < NumRegs; ++i) {
     StoreXMMRegister(i, ZeroVector);
   }
@@ -3009,7 +3009,7 @@ Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand
 
   if (Index >= (SanitizedDstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
-    return LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    return LoadZeroVector(DstSize);
   }
 
   Ref Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
@@ -4221,7 +4221,7 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
   }();
   const auto DstSize = GetDstSize(Op);
 
-  Ref ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVec = LoadZeroVector(DstSize);
   if (SrcMask == 0 || DstMask == 0) {
     // What are you even doing here? Go away.
     return ZeroVec;
@@ -4403,7 +4403,7 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
   Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
   Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
 
-  Ref ZeroVec = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref ZeroVec = LoadZeroVector(DstSize);
 
   // First step is to do an FMUL
   Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
@@ -4586,7 +4586,7 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
   const auto Selector = Op->Src[2].Data.Literal.Value;
 
-  Ref Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Result = LoadZeroVector(DstSize);
 
   const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
     switch (SelectorIdx) {
@@ -4698,7 +4698,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
     const auto Index = Selector & 0b11;
     Result = _VDupElement(DstSize, 8, Src, Index);
   } else {
-    Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    Result = LoadZeroVector(DstSize);
     for (size_t i = 0; i < DstSize / 8; i++) {
       const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
       Result = _VInsElement(DstSize, 8, i, SrcIndex, Result, Src);
@@ -4743,7 +4743,7 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
     return;
   }
 
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  const auto ZeroRegister = LoadZeroVector(DstSize);
   Ref Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, ZeroRegister, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -4786,7 +4786,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
     return;
   }
 
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  const auto ZeroRegister = LoadZeroVector(DstSize);
   Ref Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
   if (!Is256Bit) {
     Result = _VMov(16, Result);
@@ -4820,7 +4820,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   // imm for the helper function to use.
   const auto NewSelector = Selector << 8 | Selector;
 
-  const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  const auto ZeroRegister = LoadZeroVector(DstSize);
   Ref Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -4839,7 +4839,7 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
 
     for (uint32_t i = 0; i < NumRegs; i++) {
       // Explicitly not caching named vector zero. This ensures that every register gets movi #0.0 directly.
-      Ref ZeroVector = _LoadNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+      Ref ZeroVector = LoadUncachedZeroVector(DstSize);
       StoreXMMRegister(i, ZeroVector);
     }
   } else {
@@ -4862,7 +4862,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
   const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+  Ref Result = LoadZeroVector(DstSize);
 
   if constexpr (ElementSize == 8) {
     Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
@@ -4933,7 +4933,7 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
   Ref FinalIndices {};
 
   if (Is256Bit) {
-    const auto ZeroRegister = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+    const auto ZeroRegister = LoadZeroVector(DstSize);
     Ref Vector16 = _VInsElement(DstSize, 16, 1, 0, ZeroRegister, _VectorImm(DstSize, 1, 16));
     Ref IndexOffsets = _VAdd(DstSize, 1, VectorConst, Vector16);
 
@@ -5005,7 +5005,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       const auto ElementSize = 1U << (Control & 1);
       const auto NumElements = 16U >> (Control & 1);
 
-      Ref Result = LoadAndCacheNamedVectorConstant(Core::CPUState::XMM_SSE_REG_SIZE, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
+      Ref Result = LoadZeroVector(Core::CPUState::XMM_SSE_REG_SIZE);
       for (uint32_t i = 0; i < NumElements; i++) {
         Ref SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
         Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
