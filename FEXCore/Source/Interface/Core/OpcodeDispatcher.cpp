@@ -4394,7 +4394,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
     A = AddSegmentToAddress(A, Flags);
 
-    return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align, A.NonTSO);
+    return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align);
   } else {
     return LoadEffectiveAddress(A, AllowUpperGarbage);
   }
@@ -4523,7 +4523,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     auto Upper = _VExtractToGPR(16, 8, Src, 1);
     _StoreMem(GPRClass, 2, Upper, MemStoreDst, _Constant(8), std::min<uint8_t>(Align, 8), MEM_OFFSET_SXTX, 1);
   } else {
-    _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align, A.NonTSO);
+    _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align);
   }
 }
 
