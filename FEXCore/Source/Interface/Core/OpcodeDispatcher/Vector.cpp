@@ -4485,8 +4485,7 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
 template void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VDPPOp<8>(OpcodeArgs);
 
-Ref OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                                     const X86Tables::DecodedOperand& ImmOp) {
+Ref OpDispatchBuilder::MPSADBWOpImpl(size_t SrcSize, Ref Src1, Ref Src2, uint8_t Select) {
   const auto LaneHelper = [&, this](uint32_t Selector_Src1, uint32_t Selector_Src2, Ref Src1, Ref Src2) {
     // Src2 will grab a 32bit element and duplicate it across the 128bits
     Ref DupSrc = _VDupElement(16, 4, Src2, Selector_Src2);
@@ -4553,17 +4552,11 @@ Ref OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand
     return _VAddP(16, 2, TmpTranspose1, TmpTranspose2);
   };
 
-  LOGMAN_THROW_A_FMT(ImmOp.IsLiteral(), "ImmOp needs to be literal here");
-  const uint8_t Select = ImmOp.Data.Literal.Value;
-  const uint8_t SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // Src1 needs to be in byte offset
   const uint8_t Select_Src1_Low = ((Select & 0b100) >> 2) * 32 / 8;
   const uint8_t Select_Src2_Low = Select & 0b11;
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   Ref Lower = LaneHelper(Select_Src1_Low, Select_Src2_Low, Src1, Src2);
   if (Is128Bit) {
@@ -4580,12 +4573,27 @@ Ref OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand
 }
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
-  Ref Result = MPSADBWOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "ImmOp needs to be literal here");
+
+  const uint8_t Select = Op->Src[1].Data.Literal.Value;
+  const uint8_t SrcSize = GetSrcSize(Op);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = MPSADBWOpImpl(SrcSize, Src1, Src2, Select);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VMPSADBWOp(OpcodeArgs) {
-  Ref Result = MPSADBWOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "ImmOp needs to be literal here");
+
+  const uint8_t Select = Op->Src[2].Data.Literal.Value;
+  const uint8_t SrcSize = GetSrcSize(Op);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+
+  Ref Result = MPSADBWOpImpl(SrcSize, Src1, Src2, Select);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

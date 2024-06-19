@@ -1113,8 +1113,7 @@ private:
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
 
-  Ref MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                    const X86Tables::DecodedOperand& ImmOp);
+  Ref MPSADBWOpImpl(size_t SrcSize, Ref Src1, Ref Src2, uint8_t Select);
 
   Ref PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                     const X86Tables::DecodedOperand& Imm, bool IsAVX);
