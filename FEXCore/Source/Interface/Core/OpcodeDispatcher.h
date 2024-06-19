@@ -79,6 +79,7 @@ struct AddressMode {
 
   // Size in bytes for the address calculation. 8 for an arm64 hardware mode.
   uint8_t AddrSize;
+  bool NonTSO;
 };
 
 class OpDispatchBuilder final : public IREmitter {
@@ -1224,6 +1225,8 @@ private:
   bool IsNonTSOReg(MemoryAccessType Access, uint8_t Reg) {
     return Access == MemoryAccessType::DEFAULT && Reg == X86State::REG_RSP;
   }
+
+  AddressMode DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, MemoryAccessType AccessType, bool IsLoad);
 
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
