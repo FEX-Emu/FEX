@@ -752,12 +752,15 @@ DEF_OP(LoadMemTSO) {
 }
 
 DEF_OP(VLoadVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VLoadVectorMasked");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "Need SVE support in order to use VLoadVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VLoadVectorMasked with 256-bit operation");
+  }
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -793,12 +796,15 @@ DEF_OP(VLoadVectorMasked) {
 }
 
 DEF_OP(VStoreVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VStoreVectorMasked");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "Need SVE support in order to use VStoreVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreVectorMasked with 256-bit operation");
+  }
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
