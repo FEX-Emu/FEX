@@ -362,8 +362,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
     {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
 
-    // TODO: {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<4>},
-    // TODO: {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::VDPPOp<8>},
+    {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VDPP<4>},
+    {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<8>},
     // TODO: {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::VMPSADBWOp},
 
     // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
@@ -2066,5 +2066,28 @@ void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VDPP(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
+  const uint64_t Literal = Op->Src[2].Data.Literal.Value;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  Result.Low = DPPOpImpl(OpSize::i128Bit, Src1.Low, Src2.Low, Literal, ElementSize);
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = DPPOpImpl(OpSize::i128Bit, Src1.High, Src2.High, Literal, ElementSize);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
 
 } // namespace FEXCore::IR
