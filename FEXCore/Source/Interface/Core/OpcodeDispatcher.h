@@ -1102,6 +1102,9 @@ public:
   template<size_t DstElementSize, size_t SrcElementSize>
   void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
 
+  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

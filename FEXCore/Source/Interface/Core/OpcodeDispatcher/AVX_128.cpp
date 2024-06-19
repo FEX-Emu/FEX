@@ -116,8 +116,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<4, 8>},
 
     // TODO: {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>},
-    // TODO: {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>},
-    // TODO: {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, false>},
+    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<4, false, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<4, false, false>},
 
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFSUB, 4>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFSUB, 8>},
@@ -217,9 +217,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::AVX128_VPMULHW<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::AVX128_VPMULHW<true>},
 
-    // TODO: {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, false>},
+    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<8, true, false>},
     // TODO: {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>},
-    // TODO: {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>},
+    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<8, true, true>},
 
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
 
@@ -1785,6 +1785,46 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
   }
 
   if (Is128BitDst) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+
+  const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  // VCVTPD2DQ/VCVTTPD2DQ only use the bottom lane, even for the 256-bit version.
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
+
+  auto Convert = [this](Ref Src) -> Ref {
+    size_t ElementSize = SrcElementSize;
+    if (Narrow) {
+      Src = _Vector_FToF(OpSize::i128Bit, SrcElementSize >> 1, Src, SrcElementSize);
+      ElementSize >>= 1;
+    }
+
+    if (HostRoundingMode) {
+      return _Vector_FToS(OpSize::i128Bit, ElementSize, Src);
+    } else {
+      return _Vector_FToZS(OpSize::i128Bit, ElementSize, Src);
+    }
+  };
+
+  RefPair Result {};
+
+  Result.Low = Convert(Src.Low);
+
+  if (!Is128BitSrc) {
+    if (!Narrow) {
+      Result.High = Convert(Src.High);
+    } else {
+      Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Result.Low, Convert(Src.High));
+    }
+  } else {
     Result.High = LoadZeroVector(OpSize::i128Bit);
   }
 
