@@ -1914,26 +1914,28 @@
       ]
     },
     "fxch st0, st0": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xc8 /1"
       ],
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #1019]",
-        "add w21, w20, #0x0 (0)",
-        "and w21, w21, #0x7",
+        "mov w21, #0x0",
+        "add w22, w20, #0x0 (0)",
+        "and w22, w22, #0x7",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "ldr q3, [x0, #1040]",
+        "strb w21, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
-        "add x0, x28, x21, lsl #4",
+        "add x0, x28, x22, lsl #4",
         "str q2, [x0, #1040]"
       ]
     },
     "fxch st0, st1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xc9 /1"
       ],
@@ -1945,6 +1947,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -1952,7 +1956,7 @@
       ]
     },
     "fxch st0, st2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xca /1"
       ],
@@ -1964,6 +1968,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -1971,7 +1977,7 @@
       ]
     },
     "fxch st0, st3": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xcb /1"
       ],
@@ -1983,6 +1989,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -1990,7 +1998,7 @@
       ]
     },
     "fxch st0, st4": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xcc /1"
       ],
@@ -2002,6 +2010,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -2009,7 +2019,7 @@
       ]
     },
     "fxch st0, st5": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xcd /1"
       ],
@@ -2021,6 +2031,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -2028,7 +2040,7 @@
       ]
     },
     "fxch st0, st6": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xce /1"
       ],
@@ -2040,6 +2052,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
@@ -2047,7 +2061,7 @@
       ]
     },
     "fxch st0, st7": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd9 11b 0xcf /1"
       ],
@@ -2059,6 +2073,8 @@
         "ldr q2, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
         "ldr q3, [x0, #1040]",
+        "mov w22, #0x0",
+        "strb w22, [x28, #1017]",
         "add x0, x28, x20, lsl #4",
         "str q3, [x0, #1040]",
         "add x0, x28, x21, lsl #4",
