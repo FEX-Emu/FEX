@@ -1137,6 +1137,9 @@ public:
 
   void AVX128_PHMINPOSUW(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VectorRound(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

@@ -339,8 +339,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::VPERMILImmOp<4>},
     // TODO: {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
-    // TODO: {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<4>},
-    // TODO: {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<8>},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
     // TODO: {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<4>},
     // TODO: {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<8>},
     // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
@@ -1685,6 +1685,15 @@ void OpDispatchBuilder::AVX128_VPCMPISTRM(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_PHMINPOSUW(OpcodeArgs) {
   Ref Result = PHMINPOSUWOpImpl(Op);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+  const auto Mode = Op->Src[1].Literal();
+
+  AVX128_VectorUnaryImpl(Op, Size, ElementSize,
+                         [this, Mode](size_t, Ref Src) { return VectorRoundImpl(OpSize::i128Bit, ElementSize, Src, Mode); });
 }
 
 } // namespace FEXCore::IR
