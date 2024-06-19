@@ -187,8 +187,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::AVX128_VPINSRW},
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
 
-    // TODO: {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
-    // TODO: {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<8>},
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<4>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<8>},
 
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<8>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<4>},
@@ -1785,6 +1785,27 @@ void OpDispatchBuilder::AVX128_VPSHUF(OpcodeArgs) {
 
     return Result;
   });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VSHUF(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  auto Shuffle = Op->Src[2].Literal();
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  Result.Low = SHUFOpImpl(Op, OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, Shuffle);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    constexpr uint8_t ShiftAmount = ElementSize == OpSize::i32Bit ? 0 : 2;
+    Result.High = SHUFOpImpl(Op, OpSize::i128Bit, ElementSize, Src1.High, Src2.High, Shuffle >> ShiftAmount);
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
