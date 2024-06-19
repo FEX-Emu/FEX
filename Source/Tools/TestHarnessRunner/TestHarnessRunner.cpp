@@ -264,11 +264,12 @@ int main(int argc, char** argv, char** const envp) {
   SupportsAVX = HostFeatures.SupportsAVX;
   SupportsAVX2 = HostFeatures.SupportsAVX2;
 
-  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) || (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
-                         (!SupportsAVX && Loader.RequiresAVX()) || (!SupportsAVX2 && Loader.RequiresAVX2()) ||
-                         (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) || (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) ||
-                         (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) || (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
-                         (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) || (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
+  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) ||
+                         (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) || (!SupportsAVX && Loader.RequiresAVX()) ||
+                         (!SupportsAVX2 && Loader.RequiresAVX2()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
+                         (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) || (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
+                         (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) || (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
+                         (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) || (!HostFeatures.SupportsAES256 && Loader.RequiresAES256());
 
 #ifdef _WIN32
   TestUnsupported |= Loader.RequiresLinux();

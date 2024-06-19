@@ -308,6 +308,7 @@ public:
     FEATURE_CLWB = (1 << 8),
     FEATURE_LINUX = (1 << 9),
     FEATURE_AVX2 = (1 << 10),
+    FEATURE_AES256 = (1 << 11),
   };
 
   bool Requires3DNow() const {
@@ -342,6 +343,9 @@ public:
   }
   bool RequiresLinux() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_LINUX;
+  }
+  bool RequiresAES256() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AES256;
   }
 
 private:
@@ -511,6 +515,9 @@ public:
   }
   bool RequiresLinux() const {
     return Config.RequiresLinux();
+  }
+  bool RequiresAES256() const {
+    return Config.RequiresAES256();
   }
 
 private:
