@@ -364,7 +364,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VDPP<4>},
     {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<8>},
-    // TODO: {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::VMPSADBWOp},
+    {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::AVX128_VMPSADBW},
 
     // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
 
@@ -1893,6 +1893,28 @@ void OpDispatchBuilder::AVX128_VPSHUFB(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPSADBW(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i8Bit,
                           [this](size_t, Ref Src1, Ref Src2) { return PSADBWOpImpl(OpSize::i128Bit, Src1, Src2); });
+}
+
+void OpDispatchBuilder::AVX128_VMPSADBW(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const uint64_t Selector = Op->Src[2].Literal();
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+
+  Result.Low = MPSADBWOpImpl(OpSize::i128Bit, Src1.Low, Src2.Low, Selector);
+
+  if (Is128Bit) {
+    Result.High = ZeroRegister;
+  } else {
+    Result.High = MPSADBWOpImpl(OpSize::i128Bit, Src1.High, Src2.High, Selector >> 3);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
