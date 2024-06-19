@@ -3403,13 +3403,8 @@ void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-Ref OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
-  const auto Size = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
-
-  if (Size == 8) {
+Ref OpDispatchBuilder::PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2) {
+  if (Size == OpSize::i64Bit) {
     // 64bit is more efficient
 
     // Src1 is unsigned
@@ -3450,12 +3445,22 @@ Ref OpDispatchBuilder::PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOpera
 }
 
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
-  Ref Result = PMADDUBSWOpImpl(Op, Op->Dest, Op->Src[0]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = PMADDUBSWOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
-  Ref Result = PMADDUBSWOpImpl(Op, Op->Src[0], Op->Src[1]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = PMADDUBSWOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

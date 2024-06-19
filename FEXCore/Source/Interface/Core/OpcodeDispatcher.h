@@ -1133,7 +1133,7 @@ private:
 
   Ref PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
 
-  Ref PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
   Ref PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2);
 
