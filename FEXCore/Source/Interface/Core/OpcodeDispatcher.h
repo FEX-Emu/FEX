@@ -1123,6 +1123,8 @@ public:
   void AVX128_VPCMPISTRI(OpcodeArgs);
   void AVX128_VPCMPISTRM(OpcodeArgs);
 
+  void AVX128_PHMINPOSUW(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
