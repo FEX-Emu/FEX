@@ -115,7 +115,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<4, 8>},
 
-    // TODO: {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>},
+    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float<4, false>},
     {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<4, false, true>},
     {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<4, false, false>},
 
@@ -218,7 +218,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::AVX128_VPMULHW<true>},
 
     {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<8, true, false>},
-    // TODO: {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>},
+    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float<4, true>},
     {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<8, true, true>},
 
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
@@ -1529,6 +1529,50 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
     }
   } else {
     Result = AVX128_Zext(Result.Low);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t SrcElementSize, bool Widen>
+void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
+  const size_t Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  RefPair Src = [&] {
+    if (Widen && !Op->Src[0].IsGPR()) {
+      // If loading a vector, use the full size, so we don't
+      // unnecessarily zero extend the vector. Otherwise, if
+      // memory, then we want to load the element size exactly.
+      const auto LoadSize = 8 * (Size / 16);
+      return RefPair {.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags)};
+    } else {
+      return AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+    }
+  }();
+
+  auto Convert = [this](size_t Size, Ref Src, IROps Op) -> Ref {
+    size_t ElementSize = SrcElementSize;
+    if (Widen) {
+      DeriveOp(Extended, Op, _VSXTL(Size, ElementSize, Src));
+      Src = Extended;
+      ElementSize <<= 1;
+    }
+
+    return _Vector_SToF(Size, ElementSize, Src);
+  };
+
+  RefPair Result {};
+  Result.Low = Convert(Size, Src.Low, IROps::OP_VSXTL);
+
+  if (Is128Bit) {
+    Result = AVX128_Zext(Result.Low);
+  } else {
+    if (Widen) {
+      Result.High = Convert(Size, Src.Low, IROps::OP_VSXTL2);
+    } else {
+      Result.High = Convert(Size, Src.High, IROps::OP_VSXTL);
+    }
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
