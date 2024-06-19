@@ -355,6 +355,31 @@ DEF_OP(Vector_FToF) {
   }
 }
 
+DEF_OP(Vector_FToF2) {
+  const auto Op = IROp->C<IR::IROp_Vector_FToF2>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
+  const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  switch (Conv) {
+  case 0x0402:   // Float <- Half
+  case 0x0804: { // Double <- Float
+    fcvtl2(SubEmitSize, Dst.D(), Vector.D());
+    break;
+  }
+  case 0x0204:   // Half <- Float
+  case 0x0408: { // Float <- Double
+    fcvtn2(SubEmitSize, Dst.D(), Vector.D());
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF2 Type : 0x{:04x}", Conv); break;
+  }
+}
+
 DEF_OP(Vector_FToI) {
   const auto Op = IROp->C<IR::IROp_Vector_FToI>();
   const auto OpSize = IROp->Size;
