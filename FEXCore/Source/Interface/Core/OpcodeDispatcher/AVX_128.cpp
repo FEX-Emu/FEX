@@ -239,7 +239,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::AVX128_VPMULL<4, false>},
     {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::AVX128_VPMADDWD},
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::AVX128_VPSADBW},
-    // TODO: {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
+    {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::AVX128_MASKMOV},
 
     {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSUB, 1>},
     {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSUB, 2>},
@@ -1982,6 +1982,29 @@ void OpDispatchBuilder::AVX128_VPMASKMOV(OpcodeArgs) {
 template<size_t ElementSize, bool IsStore>
 void OpDispatchBuilder::AVX128_VMASKMOV(OpcodeArgs) {
   AVX128_VMASKMOVImpl(Op, ElementSize, GetDstSize(Op), IsStore, Op->Src[0], Op->Src[1]);
+}
+
+void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
+  ///< This instruction only supports 128-bit.
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto MaskSrc = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  // Mask only cares about the top bit of each byte
+  MaskSrc.Low = _VCMPLTZ(Size, 1, MaskSrc.Low);
+
+  // Vector that will overwrite byte elements.
+  auto VectorSrc = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+
+  // RDI source (DS prefix by default)
+  auto MemDest = MakeSegmentAddress(X86State::REG_RDI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+
+  Ref XMMReg = _LoadMem(FPRClass, Size, MemDest, 1);
+
+  // If the Mask element high bit is set then overwrite the element with the source, else keep the memory variant
+  XMMReg = _VBSL(Size, MaskSrc.Low, VectorSrc.Low, XMMReg);
+  _StoreMem(FPRClass, Size, MemDest, XMMReg, 1);
 }
 
 } // namespace FEXCore::IR

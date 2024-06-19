@@ -1189,6 +1189,8 @@ public:
   template<size_t ElementSize, bool IsStore>
   void AVX128_VMASKMOV(OpcodeArgs);
 
+  void AVX128_MASKMOV(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
