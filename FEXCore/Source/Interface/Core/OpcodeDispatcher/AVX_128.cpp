@@ -110,8 +110,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMULSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVX128_VectorScalarInsertALU<IR::OP_VFMULSCALARINSERT, 8>},
 
-    // TODO: {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>},
-    // TODO: {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>},
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float<8, 4>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float<4, 8>},
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<4, 8>},
 
@@ -1430,5 +1430,68 @@ void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
+template<size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+
+  const auto IsFloatSrc = SrcElementSize == 4;
+  auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  auto Is128BitDst = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  ///< Decompose correctly.
+  if (DstElementSize > SrcElementSize && !Is128BitDst) {
+    Is128BitSrc = true;
+  } else if (SrcElementSize > DstElementSize && !Is128BitSrc) {
+    Is128BitDst = true;
+  }
+
+  const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ? SrcSize / 2 : SrcSize;
+
+  RefPair Src {};
+  if (Op->Src[0].IsGPR() || LoadSize >= OpSize::i128Bit) {
+    Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
+  } else {
+    // Handle 64-bit memory source.
+    // In the case of cvtps2pd xmm, m64.
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
+  }
+
+  RefPair Result {};
+
+  auto TransformLow = [this](Ref Src) -> Ref {
+    return _Vector_FToF(OpSize::i128Bit, DstElementSize, Src, SrcElementSize);
+  };
+
+  auto TransformHigh = [this](Ref Src) -> Ref {
+    return _Vector_FToF2(OpSize::i128Bit, DstElementSize, Src, SrcElementSize);
+  };
+
+  Result.Low = TransformLow(Src.Low);
+  if (Is128BitSrc) {
+    if (Is128BitDst) {
+      // cvtps2pd xmm, xmm or cvtpd2ps xmm, xmm
+      // Done here
+    } else {
+      LOGMAN_THROW_A_FMT(DstElementSize > SrcElementSize, "cvtpd2ps ymm, xmm doesn't exist");
+
+      // cvtps2pd ymm, xmm
+      Result.High = TransformHigh(Src.Low);
+    }
+  } else {
+    // 256-bit src
+    LOGMAN_THROW_A_FMT(Is128BitDst, "Not real: cvt{ps2pd,pd2ps} ymm, ymm");
+    LOGMAN_THROW_A_FMT(DstElementSize < SrcElementSize, "cvtps2pd xmm, ymm doesn't exist");
+
+    // cvtpd2ps xmm, ymm
+    Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Result.Low, TransformLow(Src.High));
+  }
+
+  if (Is128BitDst) {
+    Result = AVX128_Zext(Result.Low);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
 
 } // namespace FEXCore::IR
