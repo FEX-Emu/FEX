@@ -1123,6 +1123,12 @@ public:
   void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
 
   void AVX128_VEXTRACT128(OpcodeArgs);
+  void AVX128_VAESImc(OpcodeArgs);
+  void AVX128_VAESEnc(OpcodeArgs);
+  void AVX128_VAESEncLast(OpcodeArgs);
+  void AVX128_VAESDec(OpcodeArgs);
+  void AVX128_VAESDecLast(OpcodeArgs);
+  void AVX128_VAESKeyGenAssist(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
