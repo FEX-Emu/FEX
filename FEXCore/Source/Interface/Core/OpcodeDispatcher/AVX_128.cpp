@@ -312,7 +312,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUMAX, 4>},
 
     {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 4>},
-    // TODO: {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
+    {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_PHMINPOSUW},
     {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::AVX128_VPSRLV},
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPSRAVD},
     {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::AVX128_VPSLLV},
@@ -1680,6 +1680,11 @@ void OpDispatchBuilder::AVX128_VPCMPISTRM(OpcodeArgs) {
 
   ///< Zero the upper 128-bits of hardcoded YMM0
   AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_PHMINPOSUW(OpcodeArgs) {
+  Ref Result = PHMINPOSUWOpImpl(Op);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
 } // namespace FEXCore::IR
