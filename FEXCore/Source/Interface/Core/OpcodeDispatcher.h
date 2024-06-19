@@ -1178,6 +1178,7 @@ public:
   void AVX128_VPSADBW(OpcodeArgs);
 
   void AVX128_VMPSADBW(OpcodeArgs);
+  void AVX128_VPALIGNR(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
