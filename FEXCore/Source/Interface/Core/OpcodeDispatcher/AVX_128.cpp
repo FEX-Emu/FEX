@@ -368,9 +368,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
 
-    // TODO: {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVXVectorVariableBlend<4>},
-    // TODO: {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVXVectorVariableBlend<8>},
-    // TODO: {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVXVectorVariableBlend<1>},
+    {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<4>},
+    {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<8>},
+    {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<1>},
 
     {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPCMPESTRM},
     {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPCMPESTRI},
@@ -2425,6 +2425,40 @@ void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
   // If the Mask element high bit is set then overwrite the element with the source, else keep the memory variant
   XMMReg = _VBSL(Size, MaskSrc.Low, VectorSrc.Low, XMMReg);
   _StoreMem(FPRClass, Size, MemDest, XMMReg, 1);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  constexpr auto ElementSizeBits = ElementSize * 8;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
+  const auto Src3Selector = Op->Src[2].Data.Literal.Value;
+
+  // Mask register is encoded within bits [7:4] of the selector
+  RefPair Mask {.Low = AVX128_LoadXMMRegister((Src3Selector >> 4) & 0b1111, false)};
+
+  if (!Is128Bit) {
+    Mask.High = AVX128_LoadXMMRegister((Src3Selector >> 4) & 0b1111, true);
+  }
+
+  auto Convert = [this](Ref Src1, Ref Src2, Ref Mask) {
+    Ref Shifted = _VSShrI(OpSize::i128Bit, ElementSize, Mask, ElementSizeBits - 1);
+    return _VBSL(OpSize::i128Bit, Shifted, Src2, Src1);
+  };
+
+  RefPair Result {};
+  Result.Low = Convert(Src1.Low, Src2.Low, Mask.Low);
+  if (!Is128Bit) {
+    Result.High = Convert(Src1.High, Src2.High, Mask.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR

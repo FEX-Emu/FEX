@@ -1176,6 +1176,9 @@ public:
 
   void AVX128_MASKMOV(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VectorVariableBlend(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
