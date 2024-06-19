@@ -10,6 +10,10 @@ Test_VEX/vaesdeclast.asm
 Test_VEX/vaesenc.asm
 Test_VEX/vaesenclast.asm
 Test_VEX/vaesimc.asm
+Test_VEX/vaesdec256.asm
+Test_VEX/vaesdeclast256.asm
+Test_VEX/vaesenc256.asm
+Test_VEX/vaesenclast256.asm
 Test_VEX/vaeskeygenassist.asm
 
 # PCMUL considered to be part of crypto operations. Simulator doesn't support this.
