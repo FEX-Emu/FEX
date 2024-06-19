@@ -237,7 +237,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::AVX128_VPSLL<4>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::AVX128_VPSLL<8>},
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::AVX128_VPMULL<4, false>},
-    // TODO: {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
+    {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::AVX128_VPMADDWD},
     // TODO: {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
     // TODO: {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
 
@@ -2256,6 +2256,11 @@ void OpDispatchBuilder::AVX128_VPHADDSW(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPMADDUBSW(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return PMADDUBSWOpImpl(OpSize::i128Bit, Src1, Src2); });
+}
+
+void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return PMADDWDOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
