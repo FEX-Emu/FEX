@@ -3365,7 +3365,7 @@ template void OpDispatchBuilder::VPFCMPOp<0>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<1>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<2>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2) {
+Ref OpDispatchBuilder::PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2) {
   // This is a pretty curious operation
   // Does two MADD operations across 4 16bit signed integers and accumulates to 32bit integers in the destination
   //
@@ -3374,32 +3374,37 @@ Ref OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand
   //              xmm1[63:32] = (xmm1[47:32] * xmm2[47:32]) + (xmm1[63:48] * xmm2[63:48])
   //              etc.. for larger registers
 
-  auto Size = GetSrcSize(Op);
-
-  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
-
-  if (Size == 8) {
+  if (Size == OpSize::i64Bit) {
     // MMX implementation can be slightly more optimal
     Size <<= 1;
-    auto MullResult = _VSMull(Size, 2, Src1Node, Src2Node);
+    auto MullResult = _VSMull(Size, 2, Src1, Src2);
     return _VAddP(Size, 4, MullResult, MullResult);
   }
 
-  auto Lower = _VSMull(Size, 2, Src1Node, Src2Node);
-  auto Upper = _VSMull2(Size, 2, Src1Node, Src2Node);
+  auto Lower = _VSMull(Size, 2, Src1, Src2);
+  auto Upper = _VSMull2(Size, 2, Src1, Src2);
 
   // [15:0 ] + [31:16], [32:47 ] + [63:48  ], [79:64] + [95:80], [111:96] + [127:112]
   return _VAddP(Size, 4, Lower, Upper);
 }
 
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
-  Ref Result = PMADDWDOpImpl(Op, Op->Dest, Op->Src[0]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = PMADDWDOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
-  Ref Result = PMADDWDOpImpl(Op, Op->Src[0], Op->Src[1]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = PMADDWDOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
