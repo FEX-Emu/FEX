@@ -249,7 +249,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 2>},
     {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 4>},
 
-    // TODO: {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
+    {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPSHUFB},
     {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 2>},
     {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 4>},
     {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::AVX128_VPHADDSW},
@@ -1883,6 +1883,11 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VHSUBP(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize,
                           [this](size_t, Ref Src1, Ref Src2) { return HSUBPOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2); });
+}
+
+void OpDispatchBuilder::AVX128_VPSHUFB(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i8Bit,
+                          [this](size_t, Ref Src1, Ref Src2) { return PSHUFBOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
