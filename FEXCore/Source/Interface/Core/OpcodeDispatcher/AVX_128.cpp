@@ -354,13 +354,13 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
 
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
-    // TODO: {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
+    {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
     {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
 
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
-    // TODO: {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::VEXTRACT128Op},
+    {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
 
     // TODO: {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<4>},
     // TODO: {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::VDPPOp<8>},
@@ -1573,6 +1573,28 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
     } else {
       Result.High = Convert(Size, Src.High, IROps::OP_VSXTL);
     }
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VEXTRACT128(OpcodeArgs) {
+  const auto DstIsXMM = Op->Dest.IsGPR();
+  const auto Selector = Op->Src[1].Literal() & 0b1;
+
+  ///< TODO: Once we support loading only upper-half of the ymm register we can load the half depending on selection literal.
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+
+  RefPair Result {};
+  if (Selector == 0) {
+    Result.Low = Src.Low;
+  } else {
+    Result.Low = Src.High;
+  }
+
+  if (DstIsXMM) {
+    // Only zero the upper-half when destination is XMM, otherwise this is a memory store.
+    Result = AVX128_Zext(Result.Low);
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
