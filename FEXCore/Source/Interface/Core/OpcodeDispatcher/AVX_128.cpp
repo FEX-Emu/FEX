@@ -372,10 +372,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVXVectorVariableBlend<8>},
     // TODO: {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVXVectorVariableBlend<1>},
 
-    // TODO: {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
-    // TODO: {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
-    // TODO: {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
-    // TODO: {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPCMPESTRM},
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPCMPESTRI},
+    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::AVX128_VPCMPISTRM},
+    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::AVX128_VPCMPISTRI},
 
     {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESKeyGenAssist},
   };
@@ -1652,6 +1652,34 @@ void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
   AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, ZeroRegister, KeyGenSwizzle, RCON](size_t, Ref Src) {
     return _VAESKeyGenAssist(Src, KeyGenSwizzle, ZeroRegister, RCON);
   });
+}
+
+void OpDispatchBuilder::AVX128_VPCMPESTRI(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, true, false);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPESTRM(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, true, true);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPISTRI(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, false);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPISTRM(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, true);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
 }
 
 } // namespace FEXCore::IR
