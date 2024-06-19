@@ -170,8 +170,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VFADDP, 8>},
     {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VFADDP, 4>},
-    // TODO: {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<8>},
-    // TODO: {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<4>},
+    {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::AVX128_VHSUBP<OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::AVX128_VHSUBP<OpSize::i32Bit>},
 
     {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVQ},
@@ -1877,6 +1877,12 @@ void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, ZeroRegister, Selector](size_t _ElementSize, Ref Src1, Ref Src2) {
     return VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2, ZeroRegister, Selector);
   });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VHSUBP(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize,
+                          [this](size_t, Ref Src1, Ref Src2) { return HSUBPOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2); });
 }
 
 } // namespace FEXCore::IR

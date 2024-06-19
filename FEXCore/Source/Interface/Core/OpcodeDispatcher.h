@@ -1171,6 +1171,9 @@ public:
   template<size_t ElementSize>
   void AVX128_VBLEND(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VHSUBP(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
