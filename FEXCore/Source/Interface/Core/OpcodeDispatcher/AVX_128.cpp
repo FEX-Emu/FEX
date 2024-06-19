@@ -333,8 +333,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::AVX128_VAESDec},
     {OPD(2, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESDecLast},
 
-    // TODO: {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
-    // TODO: {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
+    {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPERMQ},
+    {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     // TODO: {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::VPBLENDDOp},
     // TODO: {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::VPERMILImmOp<4>},
     // TODO: {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
@@ -1727,5 +1727,47 @@ void OpDispatchBuilder::AVX128_VDPP(OpcodeArgs) {
   });
 }
 
+void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
+  ///< Only ever 256-bit.
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+  const auto Selector = Op->Src[1].Literal();
+
+  RefPair Result {};
+
+  if (Selector == 0x00 || Selector == 0x55) {
+    // If we're just broadcasting one element in particular across the vector
+    // then this can be done fairly simply without any individual inserts.
+    // Low 128-bit version.
+    const auto Index = Selector & 0b11;
+    Result.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, Index);
+    Result.High = Result.Low;
+  } else if (Selector == 0xAA || Selector == 0xFF) {
+    // High 128-bit version.
+    const auto Index = (Selector & 0b11) - 2;
+    Result.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.High, Index);
+    Result.High = Result.Low;
+  } else {
+    ///< TODO: This can be more optimized.
+    auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+    Ref Selections[4] = {
+      Src.Low,
+      Src.Low,
+      Src.High,
+      Src.High,
+    };
+    uint8_t SrcIndex {};
+    SrcIndex = (Selector >> (0 * 2)) & 0b11;
+    Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, SrcIndex & 1, ZeroRegister, Selections[SrcIndex]);
+    SrcIndex = (Selector >> (1 * 2)) & 0b11;
+    Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, SrcIndex & 1, Result.Low, Selections[SrcIndex]);
+
+    SrcIndex = (Selector >> (2 * 2)) & 0b11;
+    Result.High = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, SrcIndex & 1, ZeroRegister, Selections[SrcIndex]);
+    SrcIndex = (Selector >> (3 * 2)) & 0b11;
+    Result.High = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, SrcIndex & 1, Result.High, Selections[SrcIndex]);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
 
 } // namespace FEXCore::IR
