@@ -1165,6 +1165,15 @@ public:
   void AVX128_VMPSADBW(OpcodeArgs);
   void AVX128_VPALIGNR(OpcodeArgs);
 
+  void AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+                           const X86Tables::DecodedOperand& DataOp);
+
+  template<bool IsStore>
+  void AVX128_VPMASKMOV(OpcodeArgs);
+
+  template<size_t ElementSize, bool IsStore>
+  void AVX128_VMASKMOV(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

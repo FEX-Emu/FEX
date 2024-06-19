@@ -288,10 +288,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 8>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_VPACKUS<4>},
-    // TODO: {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::VMASKMOVOp<4, false>},
-    // TODO: {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::VMASKMOVOp<8, false>},
-    // TODO: {OPD(2, 0b01, 0x2E), 1, &OpDispatchBuilder::VMASKMOVOp<4, true>},
-    // TODO: {OPD(2, 0b01, 0x2F), 1, &OpDispatchBuilder::VMASKMOVOp<8, true>},
+    {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::AVX128_VMASKMOV<OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::AVX128_VMASKMOV<OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x2E), 1, &OpDispatchBuilder::AVX128_VMASKMOV<OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x2F), 1, &OpDispatchBuilder::AVX128_VMASKMOV<OpSize::i64Bit, true>},
 
     {OPD(2, 0b01, 0x30), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 2, false>},
     {OPD(2, 0b01, 0x31), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<1, 4, false>},
@@ -324,8 +324,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::AVX128_VBROADCAST<1>},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::AVX128_VBROADCAST<2>},
 
-    // TODO: {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
-    // TODO: {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
+    {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<false>},
+    {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<true>},
 
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AVX128_VAESImc},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::AVX128_VAESEnc},
@@ -2354,6 +2354,54 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
 
     return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, Index);
   });
+}
+
+void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore,
+                                            const X86Tables::DecodedOperand& MaskOp, const X86Tables::DecodedOperand& DataOp) {
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Mask = AVX128_LoadSource_WithOpSize(Op, MaskOp, Op->Flags, !Is128Bit);
+
+  const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
+    return MakeSegmentAddress(Op, Data, CTX->GetGPRSize());
+  };
+
+  ///< TODO: Needs SVE for masked loadstores.
+  if (IsStore) {
+    auto Address = MakeAddress(Op->Dest);
+
+    auto Data = AVX128_LoadSource_WithOpSize(Op, DataOp, Op->Flags, !Is128Bit);
+    _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Data.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    if (!Is128Bit) {
+      ///< TODO: This can be cleaner if AVX128_LoadSource_WithOpSize could return both constructed addresses.
+      auto AddressHigh = _Add(OpSize::i64Bit, Address, _Constant(16));
+      _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, Data.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, 1);
+    }
+  } else {
+    auto Address = MakeAddress(DataOp);
+
+    RefPair Result {};
+    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+
+    if (Is128Bit) {
+      Result.High = LoadZeroVector(OpSize::i128Bit);
+    } else {
+      ///< TODO: This can be cleaner if AVX128_LoadSource_WithOpSize could return both constructed addresses.
+      auto AddressHigh = _Add(OpSize::i64Bit, Address, _Constant(16));
+      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, 1);
+    }
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+  }
+}
+
+template<bool IsStore>
+void OpDispatchBuilder::AVX128_VPMASKMOV(OpcodeArgs) {
+  AVX128_VMASKMOVImpl(Op, GetSrcSize(Op), GetDstSize(Op), IsStore, Op->Src[0], Op->Src[1]);
+}
+
+template<size_t ElementSize, bool IsStore>
+void OpDispatchBuilder::AVX128_VMASKMOV(OpcodeArgs) {
+  AVX128_VMASKMOVImpl(Op, ElementSize, GetDstSize(Op), IsStore, Op->Src[0], Op->Src[1]);
 }
 
 } // namespace FEXCore::IR
