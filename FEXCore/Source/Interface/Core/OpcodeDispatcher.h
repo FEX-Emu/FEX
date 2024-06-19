@@ -1118,6 +1118,11 @@ public:
   void AVX128_VAESDecLast(OpcodeArgs);
   void AVX128_VAESKeyGenAssist(OpcodeArgs);
 
+  void AVX128_VPCMPESTRI(OpcodeArgs);
+  void AVX128_VPCMPESTRM(OpcodeArgs);
+  void AVX128_VPCMPISTRI(OpcodeArgs);
+  void AVX128_VPCMPISTRM(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
