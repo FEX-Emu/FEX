@@ -4309,6 +4309,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   auto [Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage] = Options;
 
   const uint8_t GPRSize = CTX->GetGPRSize();
+  bool NonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
 
   AddressMode A {};
   A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
@@ -4345,16 +4346,12 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPR.GPR);
   } else if (Operand.IsGPRIndirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
     A.Offset = Operand.Data.GPRIndirect.Displacement;
 
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPRIndirect.GPR);
   } else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
       A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
@@ -4385,10 +4382,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
 
     A.Offset = Operand.Data.SIB.Offset;
 
-    if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP || Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP) &&
-        AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.SIB.Base) || IsNonTSOReg(AccessType, Operand.Data.SIB.Index);
   } else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
@@ -4396,8 +4390,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
     A = AddSegmentToAddress(A, Flags);
 
-    bool ForceNonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
-    return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align, ForceNonTSO);
+    return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align, NonTSO);
   } else {
     return LoadEffectiveAddress(A, AllowUpperGarbage);
   }
@@ -4469,6 +4462,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   // 8Bit and 16bit destination types store their result without effecting the upper bits
   // 32bit ops ZEXT the result to 64bit
   const uint8_t GPRSize = CTX->GetGPRSize();
+  bool NonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
 
   AddressMode A {};
   A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
@@ -4524,16 +4518,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
-    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPR.GPR);
   } else if (Operand.IsGPRIndirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
     A.Offset = Operand.Data.GPRIndirect.Displacement;
 
-    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPRIndirect.GPR);
   } else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
       A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
@@ -4553,10 +4543,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     A.IndexScale = Operand.Data.SIB.Scale;
     A.Offset = Operand.Data.SIB.Offset;
 
-    if ((Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP || Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP) &&
-        AccessType == MemoryAccessType::DEFAULT) {
-      AccessType = MemoryAccessType::NONTSO;
-    }
+    NonTSO |= IsNonTSOReg(AccessType, Operand.Data.SIB.Base) || IsNonTSOReg(AccessType, Operand.Data.SIB.Index);
   }
 
   if (IsOperandMem(Operand, false)) {
@@ -4570,8 +4557,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       auto Upper = _VExtractToGPR(16, 8, Src, 1);
       _StoreMem(GPRClass, 2, Upper, MemStoreDst, _Constant(8), std::min<uint8_t>(Align, 8), MEM_OFFSET_SXTX, 1);
     } else {
-      bool ForceNonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
-      _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align, ForceNonTSO);
+      _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align, NonTSO);
     }
   }
 }

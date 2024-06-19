@@ -1221,6 +1221,10 @@ private:
     return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
   }
 
+  bool IsNonTSOReg(MemoryAccessType Access, uint8_t Reg) {
+    return Access == MemoryAccessType::DEFAULT && Reg == X86State::REG_RSP;
+  }
+
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
