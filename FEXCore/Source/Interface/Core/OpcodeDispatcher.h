@@ -1168,6 +1168,9 @@ public:
   void AVX128_VPMADDUBSW(OpcodeArgs);
   void AVX128_VPMADDWD(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VBLEND(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

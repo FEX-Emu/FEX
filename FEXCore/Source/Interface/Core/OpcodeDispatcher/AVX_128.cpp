@@ -335,7 +335,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VPERMQ},
-    // TODO: {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::VPBLENDDOp},
+    {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
     {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
@@ -343,9 +343,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
     {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
     {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<8>},
-    // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
-    // TODO: {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
-    // TODO: {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
+    {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i16Bit>},
     // TODO: {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::VPALIGNROp},
 
     {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_PExtr<1>},
@@ -1865,6 +1865,18 @@ void OpDispatchBuilder::AVX128_VPMADDUBSW(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return PMADDWDOpImpl(OpSize::i128Bit, Src1, Src2); });
+}
+
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
+  const uint64_t Selector = Op->Src[2].Literal();
+  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+
+  ///< TODO: VBLEND implementation can be more optimal.
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, ZeroRegister, Selector](size_t _ElementSize, Ref Src1, Ref Src2) {
+    return VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2, ZeroRegister, Selector);
+  });
 }
 
 } // namespace FEXCore::IR
