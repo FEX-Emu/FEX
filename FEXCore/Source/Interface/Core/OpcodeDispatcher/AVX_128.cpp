@@ -341,8 +341,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
-    // TODO: {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<4>},
-    // TODO: {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<8>},
+    {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
+    {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<8>},
     // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
     // TODO: {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
     // TODO: {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
@@ -2026,6 +2026,45 @@ void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
     const auto SourceMode = SourceModes[(RoundControlSource << 2) | RoundControl];
     return _Vector_FToI(OpSize::i128Bit, ElementSize, Src, SourceMode);
   });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Mode = Op->Src[2].Data.Literal.Value;
+
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+  } else {
+    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  }
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  const uint64_t RoundControlSource = (Mode >> 2) & 1;
+  uint64_t RoundControl = Mode & 0b11;
+
+  static constexpr std::array SourceModes = {
+    FEXCore::IR::Round_Nearest,
+    FEXCore::IR::Round_Negative_Infinity,
+    FEXCore::IR::Round_Positive_Infinity,
+    FEXCore::IR::Round_Towards_Zero,
+  };
+
+  const auto SourceMode = RoundControlSource ? Round_Host : SourceModes[RoundControl];
+
+  RefPair Result = {
+    .Low = _VFToIScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, SourceMode, false),
+    .High = LoadZeroVector(OpSize::i128Bit),
+  };
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
