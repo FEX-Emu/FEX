@@ -341,8 +341,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
-    // TODO: {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<4>},
-    // TODO: {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<8>},
+    {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
+    {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<8>},
     // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
     // TODO: {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
     // TODO: {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
@@ -1694,6 +1694,28 @@ void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
 
   AVX128_VectorUnaryImpl(Op, Size, ElementSize,
                          [this, Mode](size_t, Ref Src) { return VectorRoundImpl(OpSize::i128Bit, ElementSize, Src, Mode); });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+  } else {
+    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  }
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  const auto SourceMode = TranslateRoundType(Op->Src[2].Literal());
+
+  Ref Result = _VFToIScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, SourceMode, false);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
 } // namespace FEXCore::IR
