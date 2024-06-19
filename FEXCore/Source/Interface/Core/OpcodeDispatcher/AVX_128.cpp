@@ -158,9 +158,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    // TODO: {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<4, true>},
-    // TODO: {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, false>},
-    // TODO: {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, true>},
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<4, true>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, true>},
 
     {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 1>},
     {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 2>},
@@ -1768,6 +1768,23 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize, bool Low>
+void OpDispatchBuilder::AVX128_VPSHUF(OpcodeArgs) {
+  auto Shuffle = Op->Src[1].Literal();
+
+  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Shuffle](size_t _, Ref Src) {
+    Ref Result = Src;
+    const size_t BaseElement = Low ? 0 : 4;
+
+    for (size_t i = 0; i < 4; i++) {
+      const auto Index = (Shuffle >> (2 * i)) & 0b11;
+      Result = _VInsElement(OpSize::i128Bit, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
+    }
+
+    return Result;
+  });
 }
 
 } // namespace FEXCore::IR
