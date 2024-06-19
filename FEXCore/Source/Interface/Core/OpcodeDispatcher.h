@@ -1155,6 +1155,10 @@ public:
   template<size_t ElementSize>
   void AVX128_VBLEND(OpcodeArgs);
 
+  Ref AVX128_HSUBPImpl(size_t ElementSize, Ref Src1, Ref Src2);
+  template<size_t ElementSize>
+  void AVX128_VHSUBP(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
