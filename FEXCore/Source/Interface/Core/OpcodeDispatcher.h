@@ -1155,8 +1155,7 @@ private:
 
   Ref PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                 const X86Tables::DecodedOperand& Imm);
+  Ref SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
   void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);

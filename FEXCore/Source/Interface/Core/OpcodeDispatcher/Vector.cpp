@@ -1259,32 +1259,24 @@ template void OpDispatchBuilder::VPSHUFWOp<2, false>(OpcodeArgs);
 template void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
 template void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1,
-                                  const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm) {
-  Ref Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
-  uint8_t Shuffle = Imm.Data.Literal.Value;
-
+Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
   // Since 256-bit variants and up don't lane cross, we can construct
   // everything in terms of the 128-variant, as each lane is essentially
   // its own 128-bit segment.
   const uint8_t NumElements = Core::CPUState::XMM_SSE_REG_SIZE / ElementSize;
   const uint8_t HalfNumElements = NumElements >> 1;
 
-  const uint8_t DstSize = GetDstSize(Op);
   const bool Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   std::array<Ref, 4> Srcs {};
   for (size_t i = 0; i < HalfNumElements; ++i) {
-    Srcs[i] = Src1Node;
+    Srcs[i] = Src1;
   }
   for (size_t i = HalfNumElements; i < NumElements; ++i) {
-    Srcs[i] = Src2Node;
+    Srcs[i] = Src2;
   }
 
-  Ref Dest = Src1Node;
+  Ref Dest = Src1;
   const uint8_t SelectionMask = NumElements - 1;
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
@@ -1311,96 +1303,96 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Table
         // Combining of low 64-bits.
         // Dest[63:0]   = Src1[63:0]
         // Dest[127:64] = Src2[63:0]
-        return _VZip(DstSize, 8, Src1Node, Src2Node);
+        return _VZip(DstSize, 8, Src1, Src2);
       case 0b11'10'11'10:
         // Combining of high 64-bits.
         // Dest[63:0]   = Src1[127:64]
         // Dest[127:64] = Src2[127:64]
-        return _VZip2(DstSize, 8, Src1Node, Src2Node);
+        return _VZip2(DstSize, 8, Src1, Src2);
       case 0b11'10'01'00:
         // Mixing Low and high elements
         // Dest[63:0]   = Src1[63:0]
         // Dest[127:64] = Src2[127:64]
-        return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        return _VInsElement(DstSize, 8, 1, 1, Src1, Src2);
       case 0b01'00'11'10:
         // Mixing Low and high elements, inverse of above
         // Dest[63:0]   = Src1[127:64]
         // Dest[127:64] = Src2[63:0]
-        return _VExtr(DstSize, 1, Src2Node, Src1Node, 8);
+        return _VExtr(DstSize, 1, Src2, Src1, 8);
       case 0b10'00'10'00:
         // Mixing even elements.
         // Dest[31:0]   = Src1[31:0]
         // Dest[63:32]  = Src1[95:64]
         // Dest[95:64]  = Src2[31:0]
         // Dest[127:96] = Src2[95:64]
-        return _VUnZip(DstSize, ElementSize, Src1Node, Src2Node);
+        return _VUnZip(DstSize, ElementSize, Src1, Src2);
       case 0b11'01'11'01:
         // Mixing odd elements.
         // Dest[31:0]   = Src1[63:32]
         // Dest[63:32]  = Src1[127:96]
         // Dest[95:64]  = Src2[63:32]
         // Dest[127:96] = Src2[127:96]
-        return _VUnZip2(DstSize, ElementSize, Src1Node, Src2Node);
+        return _VUnZip2(DstSize, ElementSize, Src1, Src2);
       case 0b11'10'00'00:
       case 0b11'10'01'01:
       case 0b11'10'10'10:
       case 0b11'10'11'11: {
         // Bottom elements duplicated, Top 64-bits inserted
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
-        return _VZip2(DstSize, 8, DupSrc1, Src2Node);
+        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
+        return _VZip2(DstSize, 8, DupSrc1, Src2);
       }
       case 0b01'00'00'00:
       case 0b01'00'01'01:
       case 0b01'00'10'10:
       case 0b01'00'11'11: {
         // Bottom elements duplicated, Bottom 64-bits inserted
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
-        return _VZip(DstSize, 8, DupSrc1, Src2Node);
+        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
+        return _VZip(DstSize, 8, DupSrc1, Src2);
       }
       case 0b00'00'01'00:
       case 0b01'01'01'00:
       case 0b10'10'01'00:
       case 0b11'11'01'00: {
         // Top elements duplicated, Bottom 64-bits inserted
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
-        return _VZip(DstSize, 8, Src1Node, DupSrc2);
+        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
+        return _VZip(DstSize, 8, Src1, DupSrc2);
       }
       case 0b00'00'11'10:
       case 0b01'01'11'10:
       case 0b10'10'11'10:
       case 0b11'11'11'10: {
         // Top elements duplicated, Top 64-bits inserted
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
-        return _VZip2(DstSize, 8, Src1Node, DupSrc2);
+        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
+        return _VZip2(DstSize, 8, Src1, DupSrc2);
       }
       case 0b01'00'01'11: {
         // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
         // With RA fixes this would be 2 instructions.
         // Odd elements inverted, Low 64-bits inserted
-        Src1Node = _VInsElement(DstSize, 4, 0, 3, Src1Node, Src1Node);
-        return _VZip(DstSize, 8, Src1Node, Src2Node);
+        Src1 = _VInsElement(DstSize, 4, 0, 3, Src1, Src1);
+        return _VZip(DstSize, 8, Src1, Src2);
       }
       case 0b11'10'01'11: {
         // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
         // With RA fixes this would be 2 instructions.
         // Odd elements inverted, Top 64-bits inserted
-        Src1Node = _VInsElement(DstSize, 4, 0, 3, Src1Node, Src1Node);
-        return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        Src1 = _VInsElement(DstSize, 4, 0, 3, Src1, Src1);
+        return _VInsElement(DstSize, 8, 1, 1, Src1, Src2);
       }
       case 0b01'00'00'01: {
         // Lower 32-bit elements inverted, low 64-bits inserted
-        Src1Node = _VRev64(DstSize, 4, Src1Node);
-        return _VZip(DstSize, 8, Src1Node, Src2Node);
+        Src1 = _VRev64(DstSize, 4, Src1);
+        return _VZip(DstSize, 8, Src1, Src2);
       }
       case 0b11'10'00'01: {
         // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1Node is dead after VInsElement due to SRA class differences.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
         // With RA fixes this would be 2 instructions.
         // Lower 32-bit elements inverted, Top 64-bits inserted
-        Src1Node = _VRev64(DstSize, 4, Src1Node);
-        return _VInsElement(DstSize, 8, 1, 1, Src1Node, Src2Node);
+        Src1 = _VRev64(DstSize, 4, Src1);
+        return _VInsElement(DstSize, 8, 1, 1, Src1, Src2);
       }
       case 0b00'00'00'00:
       case 0b00'00'01'01:
@@ -1419,8 +1411,8 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Table
       case 0b11'11'10'10:
       case 0b11'11'11'11: {
         // Duplicate element in upper and lower across each 64-bit segment.
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1Node, Shuffle & 0b11);
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2Node, (Shuffle >> 4) & 0b11);
+        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
+        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
         return _VZip(DstSize, 8, DupSrc1, DupSrc2);
       }
       default:
@@ -1428,7 +1420,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Table
         if (CTX->BackendFeatures.SupportsVTBL2) {
           auto LookupIndexes =
             LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
-          return _VTBL2(DstSize, Src1Node, Src2Node, LookupIndexes);
+          return _VTBL2(DstSize, Src1, Src2, LookupIndexes);
         }
         break;
       }
@@ -1436,18 +1428,18 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Table
       switch (Shuffle & 0b11) {
       case 0b00:
         // Low 64-bits of each source interleaved.
-        return _VZip(DstSize, ElementSize, Src1Node, Src2Node);
+        return _VZip(DstSize, ElementSize, Src1, Src2);
       case 0b01:
         // Upper 64-bits of Src1 in lower bits
         // Lower 64-bits of Src2 in upper bits.
-        return _VExtr(DstSize, 1, Src2Node, Src1Node, 8);
+        return _VExtr(DstSize, 1, Src2, Src1, 8);
       case 0b10:
         // Lower 32-bits of Src1 in lower bits.
         // Upper 64-bits of Src2 in upper bits.
-        return _VInsElement(DstSize, ElementSize, 1, 1, Src1Node, Src2Node);
+        return _VInsElement(DstSize, ElementSize, 1, 1, Src1, Src2);
       case 0b11:
         // Upper 64-bits of each source interleaved.
-        return _VZip2(DstSize, ElementSize, Src1Node, Src2Node);
+        return _VZip2(DstSize, ElementSize, Src1, Src2);
       }
     }
 
@@ -1463,7 +1455,13 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Table
 
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
-  Ref Result = SHUFOpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
+  Ref Src1Node = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Imm needs to be a literal");
+  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
+
+  Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::SHUFOp<4>(OpcodeArgs);
@@ -1471,7 +1469,13 @@ template void OpDispatchBuilder::SHUFOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
-  Ref Result = SHUFOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+  Ref Src1Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Imm needs to be a literal");
+  uint8_t Shuffle = Op->Src[2].Data.Literal.Value;
+
+  Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
 }
 template void OpDispatchBuilder::VSHUFOp<4>(OpcodeArgs);
