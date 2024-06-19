@@ -339,8 +339,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::VPERMILImmOp<4>},
     // TODO: {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
-    // TODO: {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<4>},
-    // TODO: {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<8>},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
     // TODO: {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<4>},
     // TODO: {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<8>},
     // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
@@ -1998,6 +1998,34 @@ void OpDispatchBuilder::AVX128_PHMINPOSUW(OpcodeArgs) {
   };
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const auto Mode = Op->Src[1].Data.Literal.Value;
+
+  AVX128_VectorUnaryImpl(Op, Size, ElementSize, [this, Mode](size_t, Ref Src) {
+    const uint64_t RoundControlSource = (Mode >> 2) & 1;
+    uint64_t RoundControl = Mode & 0b11;
+
+    if (RoundControlSource) {
+      RoundControl = 0; // MXCSR
+    }
+
+    static constexpr std::array SourceModes = {
+      FEXCore::IR::Round_Nearest,
+      FEXCore::IR::Round_Negative_Infinity,
+      FEXCore::IR::Round_Positive_Infinity,
+      FEXCore::IR::Round_Towards_Zero,
+      FEXCore::IR::Round_Host,
+    };
+
+    const auto SourceMode = SourceModes[(RoundControlSource << 2) | RoundControl];
+    return _Vector_FToI(OpSize::i128Bit, ElementSize, Src, SourceMode);
+  });
 }
 
 } // namespace FEXCore::IR
