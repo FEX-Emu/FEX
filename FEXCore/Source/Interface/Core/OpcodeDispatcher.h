@@ -1216,6 +1216,11 @@ private:
   Ref LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage = false);
   AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize);
 
+  bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
+    // Literals are immediates as sources but memory addresses as destinations.
+    return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
+  }
+
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,

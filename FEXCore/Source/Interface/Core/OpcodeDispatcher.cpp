@@ -4309,7 +4309,6 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   auto [Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage] = Options;
 
   const uint8_t GPRSize = CTX->GetGPRSize();
-  bool LoadableType = false;
 
   AddressMode A {};
   A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
@@ -4346,7 +4345,6 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
-    LoadableType = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
@@ -4354,7 +4352,6 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
     A.Offset = Operand.Data.GPRIndirect.Displacement;
 
-    LoadableType = true;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
@@ -4365,8 +4362,6 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
       // 32bit this isn't RIP relative but instead absolute
       A.Offset = Operand.Data.RIPLiteral.Value.u;
     }
-
-    LoadableType = true;
   } else if (Operand.IsSIB()) {
     const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
 
@@ -4394,14 +4389,11 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
         AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
-
-    LoadableType = true;
   } else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
 
-  if ((LoadableType && LoadData) || ForceLoad) {
-
+  if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
     A = AddSegmentToAddress(A, Flags);
 
     bool ForceNonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
@@ -4476,7 +4468,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
   // 8Bit and 16bit destination types store their result without effecting the upper bits
   // 32bit ops ZEXT the result to 64bit
-  bool MemStore = false;
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   AddressMode A {};
@@ -4484,7 +4475,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
   if (Operand.IsLiteral()) {
     A.Offset = Operand.Data.Literal.Value;
-    MemStore = true; // Literals are ONLY hardcoded memory destinations
   } else if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
@@ -4534,7 +4524,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
-    MemStore = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
@@ -4542,7 +4531,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
     A.Offset = Operand.Data.GPRIndirect.Displacement;
 
-    MemStore = true;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
@@ -4553,7 +4541,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       // 32bit this isn't RIP relative but instead absolute
       A.Offset = Operand.Data.RIPLiteral.Value.u;
     }
-    MemStore = true;
   } else if (Operand.IsSIB()) {
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
       A.Base = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
@@ -4570,11 +4557,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         AccessType == MemoryAccessType::DEFAULT) {
       AccessType = MemoryAccessType::NONTSO;
     }
-
-    MemStore = true;
   }
 
-  if (MemStore) {
+  if (IsOperandMem(Operand, false)) {
     A = AddSegmentToAddress(A, Op->Flags);
 
     if (OpSize == 10) {
