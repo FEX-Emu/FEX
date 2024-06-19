@@ -4214,10 +4214,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                 const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
-  const uint8_t Mask = Imm.Data.Literal.Value;
+Ref OpDispatchBuilder::DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize) {
   const auto SizeMask = [ElementSize]() {
     if (ElementSize == 4) {
       return 0b1111;
@@ -4235,7 +4232,6 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
 
     return FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK;
   }();
-  const auto DstSize = GetDstSize(Op);
 
   Ref ZeroVec = LoadZeroVector(DstSize);
   if (SrcMask == 0 || DstMask == 0) {
@@ -4243,11 +4239,8 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
     return ZeroVec;
   }
 
-  Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
-
   // First step is to do an FMUL
-  Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
+  Ref Temp = _VFMul(DstSize, ElementSize, Src1, Src2);
 
   // Now mask results based on IndexMask.
   if (SrcMask != SizeMask) {
@@ -4399,7 +4392,12 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
 
 template<size_t ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  Ref Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Imm needs to be literal here");
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = DPPOpImpl(GetDstSize(Op), Dest, Src, Op->Src[1].Data.Literal.Value, ElementSize);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4466,7 +4464,11 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
     // 256-bit DPPS isn't handled by the 128-bit solution.
     Result = VDPPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   } else {
-    Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+    LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Imm needs to be literal here");
+    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+    Result = DPPOpImpl(GetDstSize(Op), Src1, Src2, Op->Src[2].Data.Literal.Value, ElementSize);
   }
 
   // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
