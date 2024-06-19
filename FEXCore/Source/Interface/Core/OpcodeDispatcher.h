@@ -609,6 +609,7 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
+  Ref VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);

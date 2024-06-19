@@ -4721,7 +4721,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-static Ref VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector) {
+Ref OpDispatchBuilder::VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector) {
   const std::array Sources {Src1, Src2};
 
   Ref Result = ZeroRegister;
@@ -4729,7 +4729,7 @@ static Ref VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize, R
   for (int i = 0; i < NumElements; i++) {
     const auto SelectorIndex = (Selector >> i) & 1;
 
-    Result = IR._VInsElement(VecSize, ElementSize, i, i, Result, Sources[SelectorIndex]);
+    Result = _VInsElement(VecSize, ElementSize, i, i, Result, Sources[SelectorIndex]);
   }
 
   return Result;
@@ -4758,7 +4758,7 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   }
 
   const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(*this, DstSize, 8, Src1, Src2, ZeroRegister, Selector);
+  Ref Result = VBLENDOpImpl(DstSize, 8, Src1, Src2, ZeroRegister, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4801,7 +4801,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   }
 
   const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, ZeroRegister, Selector);
+  Ref Result = VBLENDOpImpl(DstSize, 4, Src1, Src2, ZeroRegister, Selector);
   if (!Is256Bit) {
     Result = _VMov(16, Result);
   }
@@ -4835,7 +4835,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto NewSelector = Selector << 8 | Selector;
 
   const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
+  Ref Result = VBLENDOpImpl(DstSize, 2, Src1, Src2, ZeroRegister, NewSelector);
   if (Is128Bit) {
     Result = _VMov(16, Result);
   }
