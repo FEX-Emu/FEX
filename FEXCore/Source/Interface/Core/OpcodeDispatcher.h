@@ -1144,7 +1144,7 @@ private:
 
   Ref PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
+  Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2);
 
   Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
 
