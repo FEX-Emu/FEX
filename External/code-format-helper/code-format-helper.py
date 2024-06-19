@@ -20,8 +20,7 @@ the coding style of LLVM. It can also be installed as a pre-commit git hook to
 check the coding style before submitting it. The canonical source of this script
 is in the LLVM source tree under llvm/utils/git.
 
-For C/C++ code it uses clang-format and for Python code it uses darker (which
-in turn invokes black).
+For C/C++ code it uses clang-format.
 
 You can learn more about the LLVM coding style on llvm.org:
 https://llvm.org/docs/CodingStandards.html
@@ -31,8 +30,8 @@ directory:
 
 ln -s $(pwd)/llvm/utils/git/code-format-helper.py .git/hooks/pre-commit
 
-You can control the exact path to clang-format or darker with the following
-environment variables: $CLANG_FORMAT_PATH and $DARKER_FORMAT_PATH.
+You can control the exact path to clang-format with the following
+environment variable: $CLANG_FORMAT_PATH.
 """
 
 
@@ -245,74 +244,7 @@ class ClangFormatHelper(FormatHelper):
         else:
             return None
 
-
-class DarkerFormatHelper(FormatHelper):
-    name = "darker"
-    friendly_name = "Python code formatter"
-
-    @property
-    def instructions(self) -> str:
-        return " ".join(self.darker_cmd)
-
-    def filter_changed_files(self, changed_files: List[str]) -> List[str]:
-        filtered_files = []
-        for path in changed_files:
-            name, ext = os.path.splitext(path)
-            if ext == ".py":
-                filtered_files.append(path)
-
-        return filtered_files
-
-    @property
-    def darker_fmt_path(self) -> str:
-        if "DARKER_FORMAT_PATH" in os.environ:
-            return os.environ["DARKER_FORMAT_PATH"]
-        return "darker"
-
-    def has_tool(self) -> bool:
-        cmd = [self.darker_fmt_path, "--version"]
-        proc = None
-        try:
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except:
-            return False
-        return proc.returncode == 0
-
-    def format_run(self, changed_files: List[str], args: FormatArgs) -> Optional[str]:
-        py_files = self.filter_changed_files(changed_files)
-        if not py_files:
-            return None
-        darker_cmd = [
-            self.darker_fmt_path,
-            "--check",
-            "--diff",
-        ]
-        if args.start_rev and args.end_rev:
-            darker_cmd += ["-r", f"{args.start_rev}...{args.end_rev}"]
-        darker_cmd += py_files
-        if args.verbose:
-            print(f"Running: {' '.join(darker_cmd)}")
-        self.darker_cmd = darker_cmd
-        proc = subprocess.run(
-            darker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        if args.verbose:
-            sys.stdout.write(proc.stderr.decode("utf-8"))
-
-        if proc.returncode != 0:
-            # formatting needed, or the command otherwise failed
-            if args.verbose:
-                print(f"error: {self.name} exited with code {proc.returncode}")
-                # Print the diff in the log so that it is viewable there
-                print(proc.stdout.decode("utf-8"))
-            return proc.stdout.decode("utf-8")
-        else:
-            sys.stdout.write(proc.stdout.decode("utf-8"))
-            return None
-
-
-ALL_FORMATTERS = (DarkerFormatHelper(), ClangFormatHelper())
-
+ALL_FORMATTERS = [ClangFormatHelper()]
 
 def hook_main():
     # fill out args
