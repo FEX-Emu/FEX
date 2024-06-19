@@ -346,7 +346,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i16Bit>},
-    // TODO: {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::VPALIGNROp},
+    {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VPALIGNR},
 
     {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_PExtr<1>},
     {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
@@ -2334,6 +2334,26 @@ void OpDispatchBuilder::AVX128_VMPSADBW(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Imm needs to be a literal");
+  const auto Index = Op->Src[2].Data.Literal.Value;
+  const auto Size = GetDstSize(Op);
+  const auto SanitizedDstSize = std::min(Size, uint8_t {16});
+
+  AVX128_VectorBinaryImpl(Op, Size, OpSize::i8Bit, [this, Index, SanitizedDstSize](size_t, Ref Src1, Ref Src2) -> Ref {
+    if (Index >= (SanitizedDstSize * 2)) {
+      // If the immediate is greater than both vectors combined then it zeroes the vector
+      return LoadZeroVector(OpSize::i128Bit);
+    }
+
+    if (Index == 0) {
+      return Src2;
+    }
+
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, Index);
+  });
 }
 
 } // namespace FEXCore::IR
