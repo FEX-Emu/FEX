@@ -252,7 +252,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
     {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 2>},
     {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 4>},
-    // TODO: {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::VPHADDSWOp},
+    {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::AVX128_VPHADDSW},
     // TODO: {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::VPMADDUBSWOp},
 
     {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPHSUB<2>},
@@ -2236,6 +2236,21 @@ void OpDispatchBuilder::AVX128_VHADDP(OpcodeArgs) {
     DeriveOp(Res, IROp, _VFAddP(OpSize::i128Bit, ElementSize, Src1, Src2));
     return Res;
   });
+}
+
+Ref OpDispatchBuilder::AVX128_VPHADDSWImpl(Ref Src1, Ref Src2) {
+  const uint8_t ElementSize = 2;
+
+  auto Even = _VUnZip(OpSize::i128Bit, ElementSize, Src1, Src2);
+  auto Odd = _VUnZip2(OpSize::i128Bit, ElementSize, Src1, Src2);
+
+  // Saturate back down to the result
+  return _VSQAdd(OpSize::i128Bit, ElementSize, Even, Odd);
+}
+
+void OpDispatchBuilder::AVX128_VPHADDSW(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
+                          [this](size_t _ElementSize, Ref Src1, Ref Src2) { return AVX128_VPHADDSWImpl(Src1, Src2); });
 }
 
 } // namespace FEXCore::IR
