@@ -168,8 +168,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::AVX128_VZERO},
 
-    // TODO: {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>},
-    // TODO: {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>},
+    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VFADDP, 8>},
+    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VFADDP, 4>},
     // TODO: {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<8>},
     // TODO: {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<4>},
 
@@ -250,8 +250,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VADD, 4>},
 
     // TODO: {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
-    // TODO: {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>},
-    // TODO: {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>},
+    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 2>},
+    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VHADDP<IR::OP_VADDP, 4>},
     // TODO: {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::VPHADDSWOp},
     // TODO: {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::VPMADDUBSWOp},
 
@@ -1842,6 +1842,14 @@ void OpDispatchBuilder::AVX128_VPERMILImm(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVX128_VHADDP(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](size_t, Ref Src1, Ref Src2) {
+    DeriveOp(Res, IROp, _VFAddP(OpSize::i128Bit, ElementSize, Src1, Src2));
+    return Res;
+  });
 }
 
 } // namespace FEXCore::IR
