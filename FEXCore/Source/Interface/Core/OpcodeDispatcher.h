@@ -1108,6 +1108,8 @@ public:
   template<size_t SrcElementSize, bool Widen>
   void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
 
+  void AVX128_VEXTRACT128(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
