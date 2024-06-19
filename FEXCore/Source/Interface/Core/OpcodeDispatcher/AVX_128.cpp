@@ -158,9 +158,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    // TODO: {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<4, true>},
-    // TODO: {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, false>},
-    // TODO: {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, true>},
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<4, true>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, true>},
 
     {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 1>},
     {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPEQ, 2>},
@@ -2131,6 +2131,40 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
     Result.High = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, SrcIndex & 1, Result.High, Selections[SrcIndex]);
   }
 
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize, bool Low>
+void OpDispatchBuilder::AVX128_VPSHUF(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
+  auto Shuffle = Op->Src[1].Data.Literal.Value;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+
+  const size_t BaseElement = Low ? 0 : 4;
+  auto ShuffleReg = [this](Ref Src, size_t BaseElement, uint8_t Shuffle) {
+    Ref Result = Src;
+    for (size_t i = 0; i < 4; i++) {
+      const auto Index = Shuffle & 0b11;
+      Result = _VInsElement(OpSize::i128Bit, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
+      Shuffle >>= 2;
+    }
+
+    return Result;
+  };
+
+  Result.Low = ShuffleReg(Src.Low, BaseElement, Shuffle);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = ShuffleReg(Src.High, BaseElement, Shuffle);
+  }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
