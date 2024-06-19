@@ -1142,7 +1142,7 @@ private:
 
   Ref PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
   Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2);
 

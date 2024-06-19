@@ -3701,19 +3701,15 @@ void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-Ref OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
+Ref OpDispatchBuilder::PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2) {
   // The documentation is actually incorrect in how this instruction operates
   // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space
   // but it actually operates in more than 8bit space
   // This can be seen with `abs(0 - 0xFF)` returning a different result depending
   // on bit length
-  const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
-
-  if (Size == 8) {
+  if (Size == OpSize::i64Bit) {
     auto AbsResult = _VUABDL(Size * 2, 1, Src1, Src2);
 
     // Now vector-wide add the results for each
@@ -3745,12 +3741,22 @@ Ref OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand&
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
-  Ref Result = PSADBWOpImpl(Op, Op->Dest, Op->Src[0]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = PSADBWOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
-  Ref Result = PSADBWOpImpl(Op, Op->Src[0], Op->Src[1]);
+  const auto Size = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = PSADBWOpImpl(Size, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
