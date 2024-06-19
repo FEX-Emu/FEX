@@ -336,8 +336,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     // TODO: {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::VPBLENDDOp},
-    // TODO: {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::VPERMILImmOp<4>},
-    // TODO: {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
+    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
@@ -2188,6 +2188,45 @@ void OpDispatchBuilder::AVX128_VSHUF(OpcodeArgs) {
     constexpr uint8_t ShiftAmount = ElementSize == OpSize::i32Bit ? 0 : 2;
     Result.High = SHUFOpImpl(Op, OpSize::i128Bit, ElementSize, Src1.High, Src2.High, Shuffle >> ShiftAmount);
   }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPERMILImm(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  Result.Low = LoadZeroVector(OpSize::i128Bit);
+  Result.High = Result.Low;
+
+  ///< TODO: This could be optimized.
+  if constexpr (ElementSize == OpSize::i64Bit) {
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, Selector & 0b0001, Result.Low, Src.Low);
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 1, (Selector & 0b0010) >> 1, Result.Low, Src.Low);
+
+    if (!Is128Bit) {
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 0, ((Selector & 0b0100) >> 2), Result.High, Src.High);
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 1, ((Selector & 0b1000) >> 3), Result.High, Src.High);
+    }
+  } else {
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, Selector & 0b00000011, Result.Low, Src.Low);
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 1, (Selector & 0b00001100) >> 2, Result.Low, Src.Low);
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 2, (Selector & 0b00110000) >> 4, Result.Low, Src.Low);
+    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 3, (Selector & 0b11000000) >> 6, Result.Low, Src.Low);
+
+    if (!Is128Bit) {
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 0, (Selector & 0b00000011), Result.High, Src.High);
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 1, ((Selector & 0b00001100) >> 2), Result.High, Src.High);
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 2, ((Selector & 0b00110000) >> 4), Result.High, Src.High);
+      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 3, ((Selector & 0b11000000) >> 6), Result.High, Src.High);
+    }
+  }
+
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
