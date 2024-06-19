@@ -1147,6 +1147,8 @@ public:
   template<size_t ElementSize>
   void AVX128_InsertScalarRound(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void AVX128_VDPP(OpcodeArgs);
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);

@@ -362,8 +362,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
     {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
 
-    // TODO: {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<4>},
-    // TODO: {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::VDPPOp<8>},
+    {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VDPP<4>},
+    {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<8>},
     // TODO: {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::VMPSADBWOp},
 
     // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
@@ -1717,5 +1717,15 @@ void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
   Ref Result = _VFToIScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, SourceMode, false);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VDPP(OpcodeArgs) {
+  const uint64_t Literal = Op->Src[2].Literal();
+
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Literal](size_t, Ref Src1, Ref Src2) {
+    return DPPOpImpl(OpSize::i128Bit, Src1, Src2, Literal, ElementSize);
+  });
+}
+
 
 } // namespace FEXCore::IR
