@@ -1004,6 +1004,8 @@ public:
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
   void AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+  void AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
+                                std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
 
   enum class ShiftDirection { RIGHT, LEFT };
   void AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir);
