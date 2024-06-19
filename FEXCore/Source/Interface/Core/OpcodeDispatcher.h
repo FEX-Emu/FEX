@@ -1163,6 +1163,8 @@ public:
   template<IROps IROp, size_t ElementSize>
   void AVX128_VHADDP(OpcodeArgs);
 
+  void AVX128_VPHADDSW(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
