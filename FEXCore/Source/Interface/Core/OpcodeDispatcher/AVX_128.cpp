@@ -338,7 +338,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
     {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
-    // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
+    {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPERM2},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
     {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
@@ -366,7 +366,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<8>},
     {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::AVX128_VMPSADBW},
 
-    // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
+    {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPERM2},
 
     {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<4>},
     {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<8>},
@@ -2068,6 +2068,25 @@ void OpDispatchBuilder::AVX128_DefaultAVXState() {
   for (uint32_t i = 0; i < NumRegs; i++) {
     AVX128_StoreXMMRegister(i, ZeroRegister, true);
   }
+}
+
+void OpDispatchBuilder::AVX128_VPERM2(OpcodeArgs) {
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, true);
+  const auto Selector = Op->Src[2].Literal();
+
+  RefPair Result = AVX128_Zext(LoadZeroVector(OpSize::i128Bit));
+  Ref Elements[4] = {Src1.Low, Src1.High, Src2.Low, Src2.High};
+
+  if ((Selector & 0b00001000) == 0) {
+    Result.Low = Elements[Selector & 0b11];
+  }
+
+  if ((Selector & 0b10000000) == 0) {
+    Result.High = Elements[(Selector >> 4) & 0b11];
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
