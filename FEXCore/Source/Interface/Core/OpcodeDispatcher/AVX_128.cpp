@@ -268,7 +268,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
-    // TODO: {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
+    {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VPERMD},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
     {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
@@ -299,7 +299,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 4, false>},
     {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 8, false>},
     {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<4, 8, false>},
-    // TODO: {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
+    {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::AVX128_VPERMD},
 
     {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 8>},
     {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSMIN, 1>},
@@ -2214,6 +2214,28 @@ void OpDispatchBuilder::AVX128_VPERMILReg(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](size_t _ElementSize, Ref Src, Ref Indices) {
     return VPERMILRegOpImpl(OpSize::i128Bit, ElementSize, Src, Indices);
   });
+}
+
+void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
+  // Only 256-bit
+  auto Indices = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, true);
+
+  auto DoPerm = [this](RefPair Src, Ref Indices, Ref IndexMask, Ref AddVector) {
+    Ref FinalIndices = VPERMDIndices(OpSize::i128Bit, Indices, IndexMask, AddVector);
+    return _VTBL2(OpSize::i128Bit, Src.Low, Src.High, FinalIndices);
+  };
+
+  RefPair Result {};
+
+  Ref IndexMask = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 0b111);
+  Ref AddConst = _Constant(0x03020100);
+  Ref Repeating3210 = _VDupFromGPR(OpSize::i128Bit, OpSize::i32Bit, AddConst);
+
+  Result.Low = DoPerm(Src, Indices.Low, IndexMask, Repeating3210);
+  Result.High = DoPerm(Src, Indices.High, IndexMask, Repeating3210);
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR

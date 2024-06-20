@@ -1206,6 +1206,8 @@ public:
   template<size_t ElementSize>
   void AVX128_VPERMILReg(OpcodeArgs);
 
+  void AVX128_VPERMD(OpcodeArgs);
+
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
