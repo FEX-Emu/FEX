@@ -3135,7 +3135,7 @@ DEF_OP(VSXTL) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
+  if (HostSupportsSVE256 && Is256Bit) {
     sunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl(SubRegSize, Dst.D(), Vector.D());
@@ -3152,7 +3152,7 @@ DEF_OP(VSXTL2) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
+  if (HostSupportsSVE256 && Is256Bit) {
     sunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl2(SubRegSize, Dst.Q(), Vector.Q());
@@ -3169,7 +3169,7 @@ DEF_OP(VUXTL) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
+  if (HostSupportsSVE256 && Is256Bit) {
     uunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl(SubRegSize, Dst.D(), Vector.D());
@@ -3186,7 +3186,7 @@ DEF_OP(VUXTL2) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) || (HostSupportsSVE256 && Is256Bit)) {
+  if (HostSupportsSVE256 && Is256Bit) {
     uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl2(SubRegSize, Dst.Q(), Vector.Q());
