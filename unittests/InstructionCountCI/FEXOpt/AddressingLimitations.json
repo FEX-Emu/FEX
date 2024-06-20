@@ -1025,6 +1025,32 @@
       "ExpectedArm64ASM": [
         "ldr x7, [x4, x5, sxtx #3]"
       ]
+    },
+    "mov ebx, fs:0x14": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldr x20, [x28, #968]",
+        "ldr w7, [x20, #20]"
+      ]
+    },
+    "mov rbx, gs:0x14": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldr x20, [x28, #960]",
+        "ldur x7, [x20, #20]"
+      ]
+    },
+    "Multiple segment registers": {
+      "x86Insts": [
+        "mov rax, gs:0x100",
+        "mov rbx, gs:0x14"
+      ],
+      "ExpectedInstructionCount": 3,
+      "ExpectedArm64ASM": [
+        "ldr x20, [x28, #960]",
+        "ldr x4, [x20, #256]",
+        "ldur x7, [x20, #20]"
+      ]
     }
   }
 }
