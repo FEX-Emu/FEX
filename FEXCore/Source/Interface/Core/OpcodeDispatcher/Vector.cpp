@@ -2612,7 +2612,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   }
   // AVX
   if (CTX->HostFeatures.SupportsAVX) {
-    StoreIfFlagSet(2, [this, Op] { SaveAVXState(XSaveBase(Op)); });
+    StoreIfFlagSet(2, [this, Op] { std::invoke(SaveAVXStateFunc, this, XSaveBase(Op)); });
   }
 
   // We need to save MXCSR and MXCSR_MASK if either SSE or AVX are requested to be saved
@@ -2808,7 +2808,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // AVX
   if (CTX->HostFeatures.SupportsAVX) {
     RestoreIfFlagSetOrDefault(
-      2, [this, Op] { RestoreAVXState(XSaveBase(Op)); }, [this] { DefaultAVXState(); });
+      2, [this, Op] { std::invoke(RestoreAVXStateFunc, this, XSaveBase(Op)); }, [this] { std::invoke(DefaultAVXStateFunc, this); });
   }
 
   {
