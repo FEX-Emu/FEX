@@ -194,6 +194,11 @@ public:
   ///< Sets FEX's internal EFLAGS representation to the passed in compacted form.
   FEX_DEFAULT_VISIBILITY virtual void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) = 0;
 
+  FEX_DEFAULT_VISIBILITY virtual void
+  ReconstructXMMRegisters(const FEXCore::Core::InternalThreadState* Thread, __uint128_t* XMM_Low, __uint128_t* YMM_High) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void
+  SetXMMRegistersFromState(FEXCore::Core::InternalThreadState* Thread, const __uint128_t* XMM_Low, const __uint128_t* YMM_High) = 0;
+
   /**
    * @brief Create a new thread object that doesn't inherit any state.
    * Used to create FEX thread objects in preparation for creating a true OS thread.

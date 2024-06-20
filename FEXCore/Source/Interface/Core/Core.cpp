@@ -216,6 +216,55 @@ uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadSt
   return EFLAGS;
 }
 
+void ContextImpl::ReconstructXMMRegisters(const FEXCore::Core::InternalThreadState* Thread, __uint128_t* XMM_Low, __uint128_t* YMM_High) {
+  const size_t MaximumRegisters = Config.Is64BitMode ? FEXCore::Core::CPUState::NUM_XMMS : 8;
+
+  if (YMM_High != nullptr && HostFeatures.SupportsAVX) {
+    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256;
+
+    if (SupportsConvergedRegisters) {
+      ///< Output wants to de-interleave
+      for (size_t i = 0; i < MaximumRegisters; ++i) {
+        memcpy(&XMM_Low[i], &Thread->CurrentFrame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
+        memcpy(&YMM_High[i], &Thread->CurrentFrame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
+      }
+    } else {
+      ///< Matches what FEX wants with non-converged registers
+      for (size_t i = 0; i < MaximumRegisters; ++i) {
+        memcpy(&XMM_Low[i], &Thread->CurrentFrame->State.xmm.sse.data[i][0], sizeof(__uint128_t));
+        memcpy(&YMM_High[i], &Thread->CurrentFrame->State.avx_high[i][0], sizeof(__uint128_t));
+      }
+    }
+  } else {
+    // Only support SSE, no AVX here, even if requested.
+    memcpy(XMM_Low, Thread->CurrentFrame->State.xmm.sse.data, MaximumRegisters * sizeof(__uint128_t));
+  }
+}
+
+void ContextImpl::SetXMMRegistersFromState(FEXCore::Core::InternalThreadState* Thread, const __uint128_t* XMM_Low, const __uint128_t* YMM_High) {
+  const size_t MaximumRegisters = Config.Is64BitMode ? FEXCore::Core::CPUState::NUM_XMMS : 8;
+  if (YMM_High != nullptr && HostFeatures.SupportsAVX) {
+    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256;
+
+    if (SupportsConvergedRegisters) {
+      ///< Output wants to de-interleave
+      for (size_t i = 0; i < MaximumRegisters; ++i) {
+        memcpy(&Thread->CurrentFrame->State.xmm.avx.data[i][0], &XMM_Low[i], sizeof(__uint128_t));
+        memcpy(&Thread->CurrentFrame->State.xmm.avx.data[i][2], &YMM_High[i], sizeof(__uint128_t));
+      }
+    } else {
+      ///< Matches what FEX wants with non-converged registers
+      for (size_t i = 0; i < MaximumRegisters; ++i) {
+        memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &XMM_Low[i], sizeof(__uint128_t));
+        memcpy(&Thread->CurrentFrame->State.avx_high[i][0], &YMM_High[i], sizeof(__uint128_t));
+      }
+    }
+  } else {
+    // Only support SSE, no AVX here, even if requested.
+    memcpy(Thread->CurrentFrame->State.xmm.sse.data, XMM_Low, MaximumRegisters * sizeof(__uint128_t));
+  }
+}
+
 void ContextImpl::SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) {
   const auto Frame = Thread->CurrentFrame;
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
