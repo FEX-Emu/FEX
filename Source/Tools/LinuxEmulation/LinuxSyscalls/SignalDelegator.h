@@ -256,14 +256,14 @@ private:
                           GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags);
 
   ///< Setup the signal frame for a 32-bit signal without SA_SIGINFO.
-  uint64_t SetupFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame* Frame, int Signal,
-                           siginfo_t* HostSigInfo, void* ucontext, GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP,
-                           const uint32_t eflags);
+  uint64_t SetupFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* ContextBackup,
+                           FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
+                           GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags);
 
   ///< Setup the signal frame for a 32-bit signal with SA_SIGINFO.
-  uint64_t SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame* Frame, int Signal,
-                             siginfo_t* HostSigInfo, void* ucontext, GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP,
-                             const uint32_t eflags);
+  uint64_t SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* ContextBackup,
+                             FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
+                             GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags);
 
   enum class RestoreType {
     TYPE_REALTIME,    ///< Signal restore type is from a `realtime` signal.
