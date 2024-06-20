@@ -338,7 +338,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
     {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
-    // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
+    {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPERM2},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
     {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
@@ -366,7 +366,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<8>},
     {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::AVX128_VMPSADBW},
 
-    // TODO: {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
+    {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPERM2},
 
     {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<4>},
     {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<8>},
@@ -2490,6 +2490,38 @@ void OpDispatchBuilder::AVX128_DefaultAVXState() {
   for (uint32_t i = 0; i < NumRegs; i++) {
     AVX128_StoreXMMRegister(i, ZeroRegister, true);
   }
+}
+
+void OpDispatchBuilder::AVX128_VPERM2(OpcodeArgs) {
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, true);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
+  const auto Selector = Op->Src[2].Data.Literal.Value;
+
+  RefPair Result {};
+  Result.Low = LoadZeroVector(OpSize::i128Bit);
+  Result.High = Result.Low;
+
+  const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
+    switch (SelectorIdx) {
+    case 0: return Src1.Low;
+    case 1: return Src1.High;
+    case 2: return Src2.Low;
+    case 3: return Src2.High;
+    }
+    FEX_UNREACHABLE;
+  };
+
+  if ((Selector & 0b00001000) == 0) {
+    Result.Low = SelectElement(0, Selector & 0b11);
+  }
+
+  if ((Selector & 0b10000000) == 0) {
+    Result.High = SelectElement(1, (Selector >> 4) & 0b11);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR

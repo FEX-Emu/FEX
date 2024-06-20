@@ -1183,6 +1183,8 @@ public:
   void AVX128_RestoreAVXState(Ref MemBase);
   void AVX128_DefaultAVXState();
 
+  void AVX128_VPERM2(OpcodeArgs);
+
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
