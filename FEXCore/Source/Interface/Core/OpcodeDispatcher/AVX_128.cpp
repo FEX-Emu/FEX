@@ -269,7 +269,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
     // TODO: {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
-    // TODO: {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
+    {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
     {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
     {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::AVX128_VBROADCAST<16>},
@@ -2629,6 +2629,87 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
     Result = GenerateResult256(Src1, Src2);
   }
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
+  SetNZ_ZeroCV(32, Result.ZF);
+  SetRFLAG(Result.CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+  ZeroPF_AF();
+}
+
+void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
+  // Invalidate deferred flags early
+  InvalidateDeferredFlags();
+
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  struct FlagResults {
+    Ref ZF;
+    Ref CF;
+  };
+
+  auto GenerateResult128 = [this](Ref Src1, Ref Src2) {
+    Ref Test1 = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2);
+    Ref Test2 = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2, Src1);
+
+    // Element size must be less than 32-bit for the sign bit tricks.
+    Test1 = _VUMaxV(OpSize::i128Bit, OpSize::i16Bit, Test1);
+    Test2 = _VUMaxV(OpSize::i128Bit, OpSize::i16Bit, Test2);
+
+    Test1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test1, 0);
+    Test2 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test2, 0);
+
+    auto ZeroConst = _Constant(0);
+    auto OneConst = _Constant(1);
+
+    Test2 = _Select(FEXCore::IR::COND_EQ, Test2, ZeroConst, OneConst, ZeroConst);
+
+    return FlagResults {
+      .ZF = Test1,
+      .CF = Test2,
+    };
+  };
+
+  auto GenerateResult256 = [this](RefPair Src1, RefPair Src2) {
+    Ref Test1Low = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src1.Low, Src2.Low);
+    Ref Test2Low = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
+
+    Ref Test1High = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src1.High, Src2.High);
+    Ref Test2High = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+
+    // Element size must be less than 32-bit for the sign bit tricks.
+    Ref Test1Max = _VUMax(OpSize::i128Bit, OpSize::i16Bit, Test1Low, Test1High);
+    Ref Test2Max = _VUMax(OpSize::i128Bit, OpSize::i16Bit, Test2Low, Test2High);
+
+    Ref Test1 = _VUMaxV(OpSize::i128Bit, OpSize::i16Bit, Test1Max);
+    Ref Test2 = _VUMaxV(OpSize::i128Bit, OpSize::i16Bit, Test2Max);
+
+    Test1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test1, 0);
+    Test2 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test2, 0);
+
+    auto ZeroConst = _Constant(0);
+    auto OneConst = _Constant(1);
+
+    Test2 = _Select(FEXCore::IR::COND_EQ, Test2, ZeroConst, OneConst, ZeroConst);
+
+    return FlagResults {
+      .ZF = Test1,
+      .CF = Test2,
+    };
+  };
+
+  // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
+  // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
+  // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
+  // cleared even if the 16-bit scalars were negative.
+  FlagResults Result {};
+  if (Is128Bit) {
+    Result = GenerateResult128(Src1.Low, Src2.Low);
+  } else {
+    Result = GenerateResult256(Src1, Src2);
+  }
   SetNZ_ZeroCV(32, Result.ZF);
   SetRFLAG(Result.CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
