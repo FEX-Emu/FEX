@@ -282,5 +282,11 @@ HostFeatures::HostFeatures() {
 #endif
   SupportsPreserveAllABI = FEXCORE_HAS_PRESERVE_ALL_ATTR;
   OverrideFeatures(this);
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  if (!Is64BitMode()) {
+    ///< Always disable AVX and AVX2 in 32-bit mode.
+    SupportsAVX = false;
+    SupportsAVX2 = false;
+  }
 }
 } // namespace FEXCore
