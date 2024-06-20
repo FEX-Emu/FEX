@@ -263,8 +263,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VPSIGN<2>},
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_VPSIGN<4>},
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_VPMULHRSW},
-    // TODO: {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
-    // TODO: {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
+    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::AVX128_VPERMILReg<4>},
+    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::AVX128_VPERMILReg<8>},
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
@@ -2207,6 +2207,13 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   SetRFLAG(Test2, FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   ZeroPF_AF();
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPERMILReg(OpcodeArgs) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](size_t _ElementSize, Ref Src, Ref Indices) {
+    return VPERMILRegOpImpl(OpSize::i128Bit, ElementSize, Src, Indices);
+  });
 }
 
 } // namespace FEXCore::IR
