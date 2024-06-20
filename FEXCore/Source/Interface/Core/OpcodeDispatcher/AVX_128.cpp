@@ -268,7 +268,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
-    // TODO: {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
+    {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VPERMD},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
     {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
@@ -299,7 +299,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 4, false>},
     {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<2, 8, false>},
     {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::AVX128_ExtendVectorElements<4, 8, false>},
-    // TODO: {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
+    {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::AVX128_VPERMD},
 
     {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VCMPGT, 8>},
     {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSMIN, 1>},
@@ -2766,6 +2766,88 @@ void OpDispatchBuilder::AVX128_VPERMILReg(OpcodeArgs) {
   } else {
     Result.High = DoPerm(Src.High, Indices.High);
   }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
+  // Only 256-bit
+  auto Indices = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, true);
+
+  auto DoPerm = [this](RefPair Src, Ref Indices, Ref IndexMask, Ref AddVector) {
+    // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
+    Ref SanitizedIndices = _VAnd(OpSize::i128Bit, 1, Indices, IndexMask);
+
+    // Build up the broadcasted index mask. e.g. On x86-64, the selector index
+    // is always in the lower 3 bits of a 32-bit element. However, in order to
+    // build up a vector we can use with the ARMv8 TBL instruction, we need the
+    // selector index for each particular element to be within each byte of the
+    // 32-bit element.
+    //
+    // We can do this by TRN-ing the selector index vector twice. Once using byte elements
+    // then once more using half-word elements.
+    //
+    // The first pass creates the half-word elements, and then the second pass uses those
+    // halfword elements to place the indices in the top part of the 32-bit element.
+    //
+    // e.g. Consider a selector vector with indices in 32-bit elements like:
+    //
+    // ╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗
+    // ║     4     ║║     1     ║║     2     ║║     6     ║║     7     ║║     0     ║║     3     ║║     5     ║
+    // ╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝
+    //
+    // TRNing once using byte elements by itself will create a vector with 8-bit elements like:
+    // ╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗
+    // ║ 0 ║║ 0 ║║ 4 ║║ 4 ║║ 0 ║║ 0 ║║ 1 ║║ 1 ║║ 0 ║║ 0 ║║ 2 ║║ 2 ║║ 0 ║║ 0 ║║ 6 ║║ 6 ║║ 0 ║║ 0 ║║ 7 ║║ 7 ║║ 0 ║║ 0 ║║ 0 ║║ 0 ║║ 0 ║║ 0 ║║ 3 ║║ 3 ║║ 0 ║║ 0 ║║ 5 ║║ 5 ║
+    // ╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝
+    //
+    // TRNing once using half-word elements by itself will then transform the vector into:
+    // ╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗
+    // ║ 4 ║║ 4 ║║ 4 ║║ 4 ║║ 1 ║║ 1 ║║ 1 ║║ 1 ║║ 2 ║║ 2 ║║ 2 ║║ 2 ║║ 6 ║║ 6 ║║ 6 ║║ 6 ║║ 7 ║║ 7 ║║ 7 ║║ 7 ║║ 0 ║║ 0 ║║ 0 ║║ 0 ║║ 3 ║║ 3 ║║ 3 ║║ 3 ║║ 5 ║║ 5 ║║ 5 ║║ 5 ║
+    // ╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝╚═══╝
+    //
+    // Cool! We now have everything we need to take this further.
+
+    Ref IndexTrn1 = _VTrn(OpSize::i128Bit, 1, SanitizedIndices, SanitizedIndices);
+    Ref IndexTrn2 = _VTrn(OpSize::i128Bit, 2, IndexTrn1, IndexTrn1);
+
+    // Now that we have the indices set up, now we need to multiply each
+    // element by 4 to convert the elements into byte indices rather than
+    // 32-bit word indices.
+    //
+    // e.g. We turn our vector into:
+    // ╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗
+    // ║ 16 ║║ 16 ║║ 16 ║║ 16 ║║ 4  ║║ 4  ║║ 4  ║║ 4  ║║ 8  ║║ 8  ║║ 8  ║║ 8  ║║ 24 ║║ 24 ║║ 24 ║║ 24 ║║ 28 ║║ 28 ║║ 28 ║║ 28 ║║ 0  ║║ 0  ║║ 0 ║║ 0  ║║ 12 ║║ 12 ║║ 12 ║║ 12 ║║ 20 ║║ 20 ║║ 20 ║║ 20 ║
+    // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
+    //
+    Ref ShiftedIndices = _VShlI(OpSize::i128Bit, 1, IndexTrn2, 2);
+
+    // Now we need to add a byte vector containing [3, 2, 1, 0] repeating for the
+    // entire length of it, to the index register, so that we specify the bytes
+    // that make up the entire word in the source register.
+    //
+    // e.g. Our vector finally looks like so:
+    //
+    // ╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗╔════╗
+    // ║ 19 ║║ 18 ║║ 17 ║║ 16 ║║ 7  ║║ 6  ║║ 5  ║║ 4  ║║ 11 ║║ 10 ║║ 9  ║║ 8  ║║ 27 ║║ 26 ║║ 25 ║║ 24 ║║ 31 ║║ 30 ║║ 29 ║║ 28 ║║ 3  ║║ 2  ║║ 1 ║║ 0  ║║ 15 ║║ 14 ║║ 13 ║║ 12 ║║ 23 ║║ 22 ║║ 21 ║║ 20 ║
+    // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
+    //
+    // Which finally lets us permute the source vector and be done with everything.
+    Ref FinalIndices = _VAdd(OpSize::i128Bit, 1, ShiftedIndices, AddVector);
+
+    // Now lets finally shuffle this bad boy around.
+    return _VTBL2(OpSize::i128Bit, Src.Low, Src.High, FinalIndices);
+  };
+
+  RefPair Result {};
+
+  Ref IndexMask = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 0b111);
+  Ref AddConst = _Constant(0x03020100);
+  Ref AddVector = _VDupFromGPR(OpSize::i128Bit, OpSize::i32Bit, AddConst);
+
+  Result.Low = DoPerm(Src, Indices.Low, IndexMask, AddVector);
+  Result.High = DoPerm(Src, Indices.High, IndexMask, AddVector);
+
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
