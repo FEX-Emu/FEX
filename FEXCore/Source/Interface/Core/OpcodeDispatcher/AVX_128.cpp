@@ -263,8 +263,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VPSIGN<2>},
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_VPSIGN<4>},
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_VPMULHRSW},
-    // TODO: {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
-    // TODO: {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
+    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::AVX128_VPERMILReg<4>},
+    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::AVX128_VPERMILReg<8>},
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
@@ -2714,6 +2714,59 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   SetRFLAG(Result.CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   ZeroPF_AF();
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VPERMILReg(OpcodeArgs) {
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Indices = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  constexpr auto IsPD = ElementSize == 8;
+
+  auto DoPerm = [this](Ref Src, Ref Indices) -> Ref {
+    const auto SanitizeIndices = [&](Ref Indices) {
+      const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
+      Ref IndexMask = _VectorImm(OpSize::i128Bit, ElementSize, ShiftAmount);
+      return _VAnd(OpSize::i128Bit, 1, Indices, IndexMask);
+    };
+
+    if constexpr (IsPD) {
+      // VPERMILPD stores the selector in the second bit, rather than the
+      // first bit of each element in the index vector. So move it over by one.
+      Indices = _VUShrI(OpSize::i128Bit, ElementSize, Indices, 1);
+    }
+
+    Ref SanitizedIndices = SanitizeIndices(Indices);
+    Ref IndexTrn1 = _VTrn(OpSize::i128Bit, 1, SanitizedIndices, SanitizedIndices);
+    Ref IndexTrn2 = _VTrn(OpSize::i128Bit, 2, IndexTrn1, IndexTrn1);
+    Ref IndexTrn3 = IndexTrn2;
+    if constexpr (IsPD) {
+      IndexTrn3 = _VTrn(OpSize::i128Bit, 4, IndexTrn2, IndexTrn2);
+    }
+
+    constexpr auto IndexShift = IsPD ? 3 : 2;
+    Ref ShiftedIndices = _VShlI(OpSize::i128Bit, 1, IndexTrn3, IndexShift);
+
+    constexpr uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
+    Ref VectorConst = _VDupFromGPR(OpSize::i128Bit, ElementSize, _Constant(VConstant));
+
+    Ref FinalIndices = _VAdd(OpSize::i128Bit, 1, VectorConst, ShiftedIndices);
+
+    return _VTBL1(OpSize::i128Bit, Src, FinalIndices);
+  };
+
+  RefPair Result {};
+  Result.Low = DoPerm(Src.Low, Indices.Low);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = DoPerm(Src.High, Indices.High);
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 } // namespace FEXCore::IR
