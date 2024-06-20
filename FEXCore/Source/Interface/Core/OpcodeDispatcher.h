@@ -1179,8 +1179,11 @@ public:
   template<size_t ElementSize>
   void AVX128_VectorVariableBlend(OpcodeArgs);
 
-  // End of AVX 128-bit implementation
+  void AVX128_SaveAVXState(Ref MemBase);
+  void AVX128_RestoreAVXState(Ref MemBase);
+  void AVX128_DefaultAVXState();
 
+  // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);
@@ -1260,6 +1263,12 @@ private:
   bool NeedsBlockEnd {false};
   // Used during new op bringup
   bool ShouldDump {false};
+
+  using SaveStoreAVXStatePtr = void (OpDispatchBuilder::*)(Ref MemBase);
+  using DefaultAVXStatePtr = void (OpDispatchBuilder::*)();
+  SaveStoreAVXStatePtr SaveAVXStateFunc {&OpDispatchBuilder::SaveAVXState};
+  SaveStoreAVXStatePtr RestoreAVXStateFunc {&OpDispatchBuilder::RestoreAVXState};
+  DefaultAVXStatePtr DefaultAVXStateFunc {&OpDispatchBuilder::DefaultAVXState};
 
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
 

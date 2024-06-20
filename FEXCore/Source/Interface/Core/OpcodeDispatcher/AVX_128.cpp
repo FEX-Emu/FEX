@@ -414,6 +414,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
   InstallToTable(FEXCore::X86Tables::VEXTableOps, AVX128Table);
   InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEX128TableGroupOps);
+  SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
+  RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
+  DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;
 }
 
 OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
@@ -2459,6 +2462,33 @@ void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_SaveAVXState(Ref MemBase) {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  for (uint32_t i = 0; i < NumRegs; ++i) {
+    Ref Upper = AVX128_LoadXMMRegister(i, true);
+    _StoreMem(FPRClass, 16, Upper, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+  }
+}
+
+void OpDispatchBuilder::AVX128_RestoreAVXState(Ref MemBase) {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  for (uint32_t i = 0; i < NumRegs; ++i) {
+    Ref YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+    AVX128_StoreXMMRegister(i, YMMHReg, true);
+  }
+}
+
+void OpDispatchBuilder::AVX128_DefaultAVXState() {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+  for (uint32_t i = 0; i < NumRegs; i++) {
+    AVX128_StoreXMMRegister(i, ZeroRegister, true);
+  }
 }
 
 } // namespace FEXCore::IR
