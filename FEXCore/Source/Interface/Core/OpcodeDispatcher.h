@@ -1199,6 +1199,8 @@ public:
   void AVX128_DefaultAVXState();
 
   void AVX128_VPERM2(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VTESTP(OpcodeArgs);
 
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);

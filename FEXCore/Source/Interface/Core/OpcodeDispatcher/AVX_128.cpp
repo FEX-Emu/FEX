@@ -265,8 +265,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_VPMULHRSW},
     // TODO: {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
     // TODO: {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
-    // TODO: {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<4>},
-    // TODO: {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::VTESTPOp<8>},
+    {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
     // TODO: {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
     // TODO: {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
@@ -2087,6 +2087,78 @@ void OpDispatchBuilder::AVX128_VPERM2(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  // For 128-bit, we use the common path.
+  if (Is128Bit) {
+    VTESTOpImpl(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low);
+    return;
+  }
+
+  // For 256-bit, we need to split up the operation. This is nontrivial.
+  // Let's go the simple route here.
+  Ref ZF, CF;
+  Ref ZeroConst = _Constant(0);
+  Ref OneConst = _Constant(1);
+
+  const auto ElementSizeInBits = ElementSize * 8;
+
+  {
+    // Calculate ZF first.
+    auto AndLow = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
+    auto AndHigh = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+
+    auto ShiftLow = _VUShrI(OpSize::i128Bit, ElementSize, AndLow, ElementSizeInBits - 1);
+    auto ShiftHigh = _VUShrI(OpSize::i128Bit, ElementSize, AndHigh, ElementSizeInBits - 1);
+    // Only have the signs now, add it all
+    auto AddResult = _VAdd(OpSize::i128Bit, ElementSize, ShiftHigh, ShiftLow);
+    Ref AddWide {};
+    if (ElementSize == OpSize::i32Bit) {
+      AddWide = _VAddV(OpSize::i128Bit, ElementSize, AddResult);
+    } else {
+      AddWide = _VAddP(OpSize::i128Bit, ElementSize, AddResult, AddResult);
+    }
+
+    // ExtGPR will either be [0, 8] or [0, 16] If 0 then set Flag.
+    ZF = _VExtractToGPR(OpSize::i128Bit, ElementSize, AddWide, 0);
+  }
+
+  {
+    // Calculate CF Second
+    auto AndLow = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
+    auto AndHigh = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+
+    auto ShiftLow = _VUShrI(OpSize::i128Bit, ElementSize, AndLow, ElementSizeInBits - 1);
+    auto ShiftHigh = _VUShrI(OpSize::i128Bit, ElementSize, AndHigh, ElementSizeInBits - 1);
+    // Only have the signs now, add it all
+    auto AddResult = _VAdd(OpSize::i128Bit, ElementSize, ShiftHigh, ShiftLow);
+    Ref AddWide {};
+    if (ElementSize == OpSize::i32Bit) {
+      AddWide = _VAddV(OpSize::i128Bit, ElementSize, AddResult);
+    } else {
+      AddWide = _VAddP(OpSize::i128Bit, ElementSize, AddResult, AddResult);
+    }
+
+    // ExtGPR will either be [0, 8] or [0, 16] If 0 then set Flag.
+    auto ExtGPR = _VExtractToGPR(OpSize::i128Bit, ElementSize, AddWide, 0);
+    CF = _Select(IR::COND_EQ, ExtGPR, ZeroConst, OneConst, ZeroConst);
+  }
+
+  // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
+  SetNZ_ZeroCV(32, ZF);
+  SetRFLAG(CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+  ZeroPF_AF();
 }
 
 } // namespace FEXCore::IR
