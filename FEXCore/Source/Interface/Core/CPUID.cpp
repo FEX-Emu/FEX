@@ -637,38 +637,38 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 30) |                              // Reserved
               (0 << 31);                               // Reserved
 
-    Res.ecx = (1 << 0) |  // PREFETCHWT1
-              (0 << 1) |  // AVX512VBMI
-              (0 << 2) |  // Usermode instruction prevention
-              (0 << 3) |  // Protection keys for user mode pages
-              (0 << 4) |  // OS protection keys
-              (0 << 5) |  // waitpkg
-              (0 << 6) |  // AVX512_VBMI2
-              (0 << 7) |  // CET shadow stack
-              (0 << 8) |  // GFNI
-              (0 << 9) |  // VAES
-              (0 << 10) | // VPCLMULQDQ
-              (0 << 11) | // AVX512_VNNI
-              (0 << 12) | // AVX512_BITALG
-              (0 << 13) | // Intel Total Memory Encryption
-              (0 << 14) | // AVX512_VPOPCNTDQ
-              (0 << 15) | // Reserved
-              (0 << 16) | // 5 Level page tables
-              (0 << 17) | // MPX MAWAU
-              (0 << 18) | // MPX MAWAU
-              (0 << 19) | // MPX MAWAU
-              (0 << 20) | // MPX MAWAU
-              (0 << 21) | // MPX MAWAU
-              (1 << 22) | // RDPID Read Processor ID
-              (0 << 23) | // Reserved
-              (0 << 24) | // Reserved
-              (0 << 25) | // CLDEMOTE
-              (0 << 26) | // Reserved
-              (0 << 27) | // MOVDIRI
-              (0 << 28) | // MOVDIR64B
-              (0 << 29) | // Reserved
-              (0 << 30) | // SGX Launch configuration
-              (0 << 31);  // Reserved
+    Res.ecx = (1 << 0) |                                // PREFETCHWT1
+              (0 << 1) |                                // AVX512VBMI
+              (0 << 2) |                                // Usermode instruction prevention
+              (0 << 3) |                                // Protection keys for user mode pages
+              (0 << 4) |                                // OS protection keys
+              (0 << 5) |                                // waitpkg
+              (0 << 6) |                                // AVX512_VBMI2
+              (0 << 7) |                                // CET shadow stack
+              (0 << 8) |                                // GFNI
+              (CTX->HostFeatures.SupportsAES256 << 9) | // VAES
+              (0 << 10) |                               // VPCLMULQDQ
+              (0 << 11) |                               // AVX512_VNNI
+              (0 << 12) |                               // AVX512_BITALG
+              (0 << 13) |                               // Intel Total Memory Encryption
+              (0 << 14) |                               // AVX512_VPOPCNTDQ
+              (0 << 15) |                               // Reserved
+              (0 << 16) |                               // 5 Level page tables
+              (0 << 17) |                               // MPX MAWAU
+              (0 << 18) |                               // MPX MAWAU
+              (0 << 19) |                               // MPX MAWAU
+              (0 << 20) |                               // MPX MAWAU
+              (0 << 21) |                               // MPX MAWAU
+              (1 << 22) |                               // RDPID Read Processor ID
+              (0 << 23) |                               // Reserved
+              (0 << 24) |                               // Reserved
+              (0 << 25) |                               // CLDEMOTE
+              (0 << 26) |                               // Reserved
+              (0 << 27) |                               // MOVDIRI
+              (0 << 28) |                               // MOVDIR64B
+              (0 << 29) |                               // Reserved
+              (0 << 30) |                               // SGX Launch configuration
+              (0 << 31);                                // Reserved
 
     Res.edx = (0 << 0) |                   // Reserved
               (0 << 1) |                   // Reserved

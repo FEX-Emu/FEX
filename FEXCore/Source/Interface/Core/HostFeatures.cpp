@@ -108,11 +108,13 @@ static void OverrideFeatures(HostFeatures* Features) {
     Features->SupportsCRC = true;
     Features->SupportsSHA = true;
     Features->SupportsPMULL_128Bit = true;
+    Features->SupportsAES256 = true;
   } else if (DisableCrypto) {
     Features->SupportsAES = false;
     Features->SupportsCRC = false;
     Features->SupportsSHA = false;
     Features->SupportsPMULL_128Bit = false;
+    Features->SupportsAES256 = false;
   }
 
   ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
@@ -164,6 +166,8 @@ HostFeatures::HostFeatures() {
   SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
   SupportsAVX = SupportsSVE256;
+
+  SupportsAES256 = SupportsAVX && SupportsAES;
 
   // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
   SupportsAVX2 = false;
@@ -259,6 +263,7 @@ HostFeatures::HostFeatures() {
   SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
   SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
   SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
+  SupportsAES256 = SupportsAES && X86Features.has(Xbyak::util::Cpu::tVAES);
 
   // xbyak doesn't know how to check for CLZero
   // First ensure we support a new enough extended CPUID function range

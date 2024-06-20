@@ -39,6 +39,7 @@ public:
   bool SupportsFlagM2 {};
   bool SupportsRPRES {};
   bool SupportsPreserveAllABI {};
+  bool SupportsAES256 {};
 
   // Float exception behaviour
   bool SupportsAFP {};

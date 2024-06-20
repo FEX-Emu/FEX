@@ -53,6 +53,7 @@ class HostFeatures(Flag) :
     FEATURE_FLAGM  = (1 << 8)
     FEATURE_FLAGM2 = (1 << 9)
     FEATURE_CRYPTO = (1 << 10)
+    FEATURE_AES256 = (1 << 11)
 
 HostFeaturesLookup = {
     "SVE128"  : HostFeatures.FEATURE_SVE128,
@@ -66,6 +67,7 @@ HostFeaturesLookup = {
     "FLAGM"   : HostFeatures.FEATURE_FLAGM,
     "FLAGM2"  : HostFeatures.FEATURE_FLAGM2,
     "CRYPTO"  : HostFeatures.FEATURE_CRYPTO,
+    "AES256"  : HostFeatures.FEATURE_AES256,
 }
 
 def GetHostFeatures(data):
