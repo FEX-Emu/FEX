@@ -5415,6 +5415,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   if (CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
     InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
+  } else if (CTX->HostFeatures.SupportsAVX) {
+    InstallAVX128Handlers();
   }
 
   if (CTX->HostFeatures.SupportsPMULL_128Bit) {

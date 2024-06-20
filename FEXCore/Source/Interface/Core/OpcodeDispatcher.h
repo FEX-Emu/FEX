@@ -973,6 +973,35 @@ public:
   void UnimplementedOp(OpcodeArgs);
   void PermissionRestrictedOp(OpcodeArgs);
 
+  // AVX 128-bit operations
+  Ref AVX128_LoadXMMRegister(uint32_t XMM, bool High);
+  void AVX128_StoreXMMRegister(uint32_t XMM, const Ref Src, bool High);
+
+  struct RefPair {
+    Ref Low, High;
+  };
+  RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
+                                       bool NeedsHigh, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+
+  void AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand, const RefPair Src,
+                                     MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void InstallAVX128Handlers();
+  void AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize);
+  void AVX128_VectorALUImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorUnaryImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+
+  void AVX128_VMOVAPS(OpcodeArgs);
+  void AVX128_VMOVSD(OpcodeArgs);
+  void AVX128_VMOVSS(OpcodeArgs);
+
+  template<IROps IROp, size_t ElementSize>
+  void AVX128_VectorALU(OpcodeArgs);
+  template<IROps IROp, size_t ElementSize>
+  void AVX128_VectorUnary(OpcodeArgs);
+
+  void AVX128_VZERO(OpcodeArgs);
+  // End of AVX 128-bit implementation
+
   void InvalidOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);
