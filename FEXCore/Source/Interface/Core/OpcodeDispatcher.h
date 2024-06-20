@@ -79,6 +79,7 @@ struct AddressMode {
 
   // Size in bytes for the address calculation. 8 for an arm64 hardware mode.
   uint8_t AddrSize;
+  bool NonTSO;
 };
 
 class OpDispatchBuilder final : public IREmitter {
@@ -1216,6 +1217,17 @@ private:
   Ref LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage = false);
   AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize);
 
+  bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
+    // Literals are immediates as sources but memory addresses as destinations.
+    return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
+  }
+
+  bool IsNonTSOReg(MemoryAccessType Access, uint8_t Reg) {
+    return Access == MemoryAccessType::DEFAULT && Reg == X86State::REG_RSP;
+  }
+
+  AddressMode DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, MemoryAccessType AccessType, bool IsLoad);
+
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
@@ -2122,8 +2134,8 @@ private:
     }
   }
 
-  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1, bool ForceNonTSO = false) {
-    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !ForceNonTSO;
+  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
@@ -2133,8 +2145,8 @@ private:
     }
   }
 
-  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1, bool ForceNonTSO = false) {
-    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !ForceNonTSO;
+  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
