@@ -47,7 +47,7 @@
       ]
     },
     "rsqrtss xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0xf3 0x0f 0x52"
@@ -55,7 +55,8 @@
       "ExpectedArm64ASM": [
         "fmov s0, #0x70 (1.0000)",
         "fsqrt s1, s17",
-        "fdiv s16, s0, s1"
+        "fdiv s0, s0, s1",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "rcpss xmm0, xmm1": {
@@ -144,7 +145,7 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s16, s16, s17"
+        "fcmeq s16, s17, s16"
       ]
     },
     "cmpss xmm0, xmm1, 1": {
@@ -184,7 +185,7 @@
         "0xf3 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "fcmeq s0, s16, s17",
+        "fcmeq s0, s17, s16",
         "mvn v0.8b, v0.8b",
         "mov v16.s[0], v0.s[0]"
       ]
