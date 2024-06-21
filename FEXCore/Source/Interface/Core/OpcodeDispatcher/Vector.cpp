@@ -646,41 +646,33 @@ template void OpDispatchBuilder::AVXInsertScalarRound<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarRound<8>(OpcodeArgs);
 
 
-Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                              const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits) {
-  // We load the full vector width when dealing with a source vector,
-  // so that we don't do any unnecessary zero extension to the scalar
-  // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
-
+Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType,
+                                              bool ZeroUpperBits) {
   switch (CompType & 7) {
   case 0x0: // EQ
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::EQ, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::EQ, ZeroUpperBits);
   case 0x1: // LT, GT(Swapped operand)
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LT, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::LT, ZeroUpperBits);
   case 0x2: // LE, GE(Swapped operand)
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LE, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::LE, ZeroUpperBits);
   case 0x3: // Unordered
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::UNO, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::UNO, ZeroUpperBits);
   case 0x4: // NEQ
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::NEQ, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::NEQ, ZeroUpperBits);
   case 0x5: { // NLT, NGT(Swapped operand)
     Ref Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
-    return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    return _VInsElement(OpDstSize, ElementSize, 0, 0, Src1, Result);
   }
   case 0x6: { // NLE, NGE(Swapped operand)
     Ref Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
-    return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    return _VInsElement(OpDstSize, ElementSize, 0, 0, Src1, Result);
   }
   case 0x7: // Ordered
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::ORD, ZeroUpperBits);
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::ORD, ZeroUpperBits);
   }
   FEX_UNREACHABLE;
 }
@@ -689,8 +681,12 @@ template<size_t ElementSize>
 void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
+  const auto SrcSize = GetSrcSize(Op);
 
-  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  Ref Result = InsertScalarFCMPOpImpl(IR::SizeToOpSize(DstSize), GetDstSize(Op), ElementSize, Src1, Src2, CompType, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -701,8 +697,15 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
+  const auto SrcSize = GetSrcSize(Op);
 
-  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  Ref Result = InsertScalarFCMPOpImpl(IR::SizeToOpSize(DstSize), GetDstSize(Op), ElementSize, Src1, Src2, CompType, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
