@@ -1723,17 +1723,9 @@ void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
 Ref OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
   const auto Size = GetSrcSize(Op);
 
-  if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
-    Ref Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
-    Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
-    return _VMul(Size, ElementSize, Src1, Control);
-  } else {
-    auto NegVec = _VNeg(Size, ElementSize, Src1);
-    Ref CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
-    Ref CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
-    auto BSLResult = _VBSL(Size, CmpLT, NegVec, Src1);
-    return _VAndn(Size, Size, BSLResult, CmpEQ);
-  }
+  Ref Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
+  Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
+  return _VMul(Size, ElementSize, Src1, Control);
 }
 
 template<size_t ElementSize>

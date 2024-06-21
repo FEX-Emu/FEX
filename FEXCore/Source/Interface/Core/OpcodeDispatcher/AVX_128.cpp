@@ -890,17 +890,9 @@ void OpDispatchBuilder::AVX128_VPACKUS(OpcodeArgs) {
 }
 
 Ref OpDispatchBuilder::AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2) {
-  if (CTX->BackendFeatures.SupportsSaturatingRoundingShifts) {
-    Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, (ElementSize * 8) - 1);
-    Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, (ElementSize * 8) - 1);
-    return _VMul(OpSize::i128Bit, ElementSize, Src1, Control);
-  } else {
-    auto NegVec = _VNeg(OpSize::i128Bit, ElementSize, Src1);
-    Ref CmpLT = _VCMPLTZ(OpSize::i128Bit, ElementSize, Src2);
-    Ref CmpEQ = _VCMPEQZ(OpSize::i128Bit, ElementSize, Src2);
-    auto BSLResult = _VBSL(OpSize::i128Bit, CmpLT, NegVec, Src1);
-    return _VAndn(OpSize::i128Bit, OpSize::i128Bit, BSLResult, CmpEQ);
-  }
+  Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, (ElementSize * 8) - 1);
+  Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, (ElementSize * 8) - 1);
+  return _VMul(OpSize::i128Bit, ElementSize, Src1, Control);
 }
 
 template<size_t ElementSize>
