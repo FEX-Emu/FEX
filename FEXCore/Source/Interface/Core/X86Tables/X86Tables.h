@@ -137,6 +137,10 @@ struct DecodedOperand {
   bool IsSIB() const {
     return Type == OpType::SIB;
   }
+  uint64_t Literal() const {
+    LOGMAN_THROW_A_FMT(IsLiteral(), "Precondition: must be a literal");
+    return Data.Literal.Value;
+  }
 
   union TypeUnion {
     struct GPRType {
