@@ -662,8 +662,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   auto ConstantPC = GetRelocatedPC(Op);
   // Call instruction only uses up to 32-bit signed displacement
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  int64_t TargetOffset = Op->Src[0].Literal();
   uint64_t InstRIP = Op->PC + Op->InstSize;
   uint64_t TargetRIP = InstRIP + TargetOffset;
 
@@ -828,8 +827,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   // Jump instruction only uses up to 32-bit signed displacement
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  int64_t TargetOffset = Op->Src[0].Literal();
   uint64_t InstRIP = Op->PC + Op->InstSize;
   uint64_t Target = InstRIP + TargetOffset;
 
@@ -913,9 +911,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   TakeBranch = _Constant(1);
   DoNotTakeBranch = _Constant(0);
 
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Literal();
 
   Ref CondReg = LoadGPRRegister(X86State::REG_RCX, JcxGPRSize);
 
@@ -980,9 +976,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     OpSize = OpSize::i32Bit;
   }
 
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Literal();
 
   Ref CondReg = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   CondReg = _Sub(OpSize, CondReg, _Constant(SrcSize * 8, 1));
@@ -1046,8 +1040,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   // Jump instruction only uses up to 32-bit signed displacement
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  int64_t TargetOffset = Op->Src[0].Literal();
   uint64_t InstRIP = Op->PC + Op->InstSize;
   uint64_t TargetRIP = InstRIP + TargetOffset;
 
@@ -1456,8 +1449,7 @@ uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1B
     const uint32_t Size = GetSrcBitSize(Op);
     uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
 
-    LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-    return Op->Src[1].Data.Literal.Value & Mask;
+    return Op->Src[1].Literal() & Mask;
   }
 }
 
@@ -1891,8 +1883,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const auto Amount = Op->Src[1].Data.Literal.Value;
+  const auto Amount = Op->Src[1].Literal();
   const auto SrcSize = GetSrcSize(Op);
   const auto SrcSizeBits = SrcSize * 8;
   const auto GPRSize = CTX->GetGPRSize();
@@ -2989,9 +2980,7 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
 
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-
-  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Value = Op->Src[0].Data.Literal.Value;
+  const uint64_t Value = Op->Src[0].Literal();
 
   const uint16_t AllocSpace = Value & 0xFFFF;
   const uint8_t Level = (Value >> 16) & 0x1F;
@@ -4309,7 +4298,7 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
   A.NonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
 
   if (Operand.IsLiteral()) {
-    A.Offset = Operand.Data.Literal.Value;
+    A.Offset = Operand.Literal();
 
     if (Operand.Data.Literal.Size != 8 && IsLoad) {
       // zero extend

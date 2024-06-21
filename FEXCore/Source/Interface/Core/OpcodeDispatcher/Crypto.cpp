@@ -90,8 +90,6 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here to indicate function and constants");
-
   using FnType = Ref (*)(OpDispatchBuilder&, Ref, Ref, Ref);
 
   const auto f0 = [](OpDispatchBuilder& Self, Ref B, Ref C, Ref D) -> Ref {
@@ -121,7 +119,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     f3,
   };
 
-  const uint64_t Imm8 = Op->Src[1].Data.Literal.Value & 0b11;
+  const uint64_t Imm8 = Op->Src[1].Literal() & 0b11;
   const FnType Fn = fn_array[Imm8];
   auto K = _Constant(32, k_array[Imm8]);
 
@@ -395,8 +393,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t RCON = Op->Src[1].Data.Literal.Value;
+  const uint64_t RCON = Op->Src[1].Literal();
 
   auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(16, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
   return _VAESKeyGenAssist(Src, KeyGenSwizzle, LoadZeroVector(16), RCON);
@@ -408,24 +405,20 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Selector needs to be literal here");
-
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  const auto Selector = static_cast<uint8_t>(Op->Src[1].Data.Literal.Value);
+  const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
   auto Res = _PCLMUL(16, Dest, Src, Selector);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Selector needs to be literal here");
-
   const auto DstSize = GetDstSize(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
+  const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
   Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector);
   StoreResult(FPRClass, Op, Res, -1);
