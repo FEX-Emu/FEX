@@ -755,18 +755,19 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
 
 void OpDispatchBuilder::FST(OpcodeArgs) {
   auto top = GetX87Top();
-  Ref arg;
-
   auto mask = _Constant(7);
 
   // Implicit arg
   auto offset = _Constant(Op->OP & 7);
-  arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
+  Ref arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
 
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
-  // Write to ST[TOP]
+  // Write to ST[i]
   _StoreContextIndexed(a, arg, 16, MMBaseOffset(), 16, FPRClass);
+
+  // Set Tag for ST[i]
+  SetX87ValidTag(arg, true);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
