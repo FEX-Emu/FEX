@@ -1579,10 +1579,14 @@ private:
     return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
   }
 
-  // Set SSE comparison flags based on the result set by Arm FCMP. This converts
-  // NZCV from the Arm representation to an eXternal representation that's
-  // totally not a euphemism for x86 or anything, nuh-uh.
-  void ConvertNZCVToSSE() {
+  // Compares two floats and sets flags for a COMISS instruction
+  void Comiss(size_t ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
+    // First, set flags according to Arm FCMP.
+    HandleNZCVWrite();
+    _FCmp(ElementSize, Src1, Src2);
+
+    // Now set COMISS flags by converts NZCV from the Arm representation to an
+    // eXternal representation that's totally not a euphemism for x86, nuh-uh.
     if (CTX->HostFeatures.SupportsFlagM2) {
       LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
 
@@ -1621,6 +1625,13 @@ private:
 
       // Note that we store PF inverted.
       SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+    }
+
+    if (!InvalidateAF) {
+      // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
+      // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
+      // byte to zero will indeed zero AF as intended.
+      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
     }
   }
 

@@ -3039,14 +3039,7 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  HandleNZCVWrite();
-  _FCmp(ElementSize, Src1, Src2);
-  ConvertNZCVToSSE();
-
-  // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so PF[4] is
-  // 0 so the XOR with PF will have no effect, so setting the AF byte to zero
-  // will indeed zero AF as intended.
-  SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
+  Comiss(ElementSize, Src1, Src2);
 }
 
 template void OpDispatchBuilder::UCOMISxOp<4>(OpcodeArgs);
