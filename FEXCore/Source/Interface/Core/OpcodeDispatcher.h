@@ -609,6 +609,7 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
+  Ref VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
@@ -1112,8 +1113,7 @@ private:
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
 
-  Ref MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                    const X86Tables::DecodedOperand& ImmOp);
+  Ref MPSADBWOpImpl(size_t SrcSize, Ref Src1, Ref Src2, uint8_t Select);
 
   Ref PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                     const X86Tables::DecodedOperand& Imm, bool IsAVX);
@@ -1131,9 +1131,9 @@ private:
   Ref PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
 
-  Ref PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
+  Ref PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
   Ref PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2);
 
@@ -1141,9 +1141,9 @@ private:
 
   Ref PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
+  Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2);
 
   Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
 
@@ -1155,8 +1155,7 @@ private:
 
   Ref PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref SHUFOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                 const X86Tables::DecodedOperand& Imm);
+  Ref SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
   void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
