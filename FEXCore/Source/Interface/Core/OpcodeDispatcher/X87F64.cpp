@@ -623,13 +623,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
     PossiblySetNZCVBits = ~0;
     ConvertNZCVToX87();
   } else {
-    // Invalidate deferred flags early
-    // OF, SF, AF, PF all undefined
-    InvalidateDeferredFlags();
-
-    _FCmp(8, a, b);
-    PossiblySetNZCVBits = ~0;
-    ConvertNZCVToSSE();
+    Comiss(8, a, b, true /* InvalidateAF */);
   }
 
   if constexpr (poptwice) {
