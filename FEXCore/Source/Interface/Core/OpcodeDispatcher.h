@@ -1225,8 +1225,7 @@ private:
   Ref InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  Ref InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                             const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits);
+  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
   Ref VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode);
 
