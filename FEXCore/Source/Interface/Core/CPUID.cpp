@@ -601,6 +601,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     // This is due to LRCPC performance on Cortex being abysmal.
     // Only enable EnhancedREPMOVS if SoftwareTSO isn't required OR if MemcpySetTSO is not enabled.
     const uint32_t SupportsEnhancedREPMOVS = CTX->SoftwareTSORequired() == false || MemcpySetTSOEnabled() == false;
+    const uint32_t SupportsVPCLMULQDQ = CTX->HostFeatures.SupportsPMULL_128Bit && SupportsAVX();
 
     // Number of subfunctions
     Res.eax = 0x0;
@@ -647,7 +648,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 7) |                                // CET shadow stack
               (0 << 8) |                                // GFNI
               (CTX->HostFeatures.SupportsAES256 << 9) | // VAES
-              (0 << 10) |                               // VPCLMULQDQ
+              (SupportsVPCLMULQDQ << 10) |              // VPCLMULQDQ
               (0 << 11) |                               // AVX512_VNNI
               (0 << 12) |                               // AVX512_BITALG
               (0 << 13) |                               // Intel Total Memory Encryption
