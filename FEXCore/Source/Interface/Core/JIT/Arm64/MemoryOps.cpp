@@ -752,12 +752,14 @@ DEF_OP(LoadMemTSO) {
 }
 
 DEF_OP(VLoadVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VLoadVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VLoadVectorMasked with 256-bit operation");
+  }
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -766,39 +768,90 @@ DEF_OP(VLoadVectorMasked) {
   const auto Dst = GetVReg(Node);
   const auto MaskReg = GetVReg(Op->Mask.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
-  const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  // Check if the sign bit is set for the given element size.
-  cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+  if (HostSupportsSVE128 || HostSupportsSVE256) {
+    const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  switch (IROp->ElementSize) {
-  case 1: {
-    ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-    break;
-  }
-  case 2: {
-    ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-    break;
-  }
-  case 4: {
-    ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-    break;
-  }
-  case 8: {
-    ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
-    break;
-  }
-  default: break;
+    // Check if the sign bit is set for the given element size.
+    cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+
+    switch (IROp->ElementSize) {
+    case 1: {
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 2: {
+      ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 4: {
+      ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 8: {
+      ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    default: break;
+    }
+  } else {
+    // Prepare yourself adventurer. For a masked load without instructions that implement it.
+    LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
+    size_t NumElements = IROp->Size / IROp->ElementSize;
+
+    // Use VTMP1 as the temporary destination
+    auto TempDst = VTMP1;
+    auto WorkingReg = TMP1;
+    auto TempMemReg = MemReg;
+    movi(ARMEmitter::SubRegSize::i64Bit, TempDst.Q(), 0);
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+
+    uint64_t MaskIndex {};
+    const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
+    for (size_t i = 0; i < NumElements; ++i) {
+      if (((i * IROp->ElementSize) % 8) == 0) {
+        // Extract the mask element.
+        umov<ARMEmitter::SubRegSize::i64Bit>(WorkingReg, MaskReg, MaskIndex);
+        ++MaskIndex;
+      }
+
+      // If the sign bit is zero then skip the load
+      ARMEmitter::SingleUseForwardLabel Skip {};
+      const size_t ElementOffset = (64 - (i * ElementSizeInBits) % 64) - 1;
+      tbz(WorkingReg, ElementOffset, &Skip);
+      // Do the gather load for this element into the destination
+      switch (IROp->ElementSize) {
+      case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(TempDst.Q(), i, TempMemReg); break;
+      case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(TempDst.Q(), i, TempMemReg); break;
+      case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(TempDst.Q(), i, TempMemReg); break;
+      case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(TempDst.Q(), i, TempMemReg); break;
+      case 16: ldr(TempDst.Q(), TempMemReg, 0); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
+      }
+
+      Bind(&Skip);
+
+      if ((i + 1) != NumElements) {
+        // Handle register rename to save a move.
+        auto WorkingReg = TempMemReg;
+        TempMemReg = TMP2;
+        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IROp->ElementSize);
+      }
+    }
+
+    // Move result.
+    mov(Dst.Q(), TempDst.Q());
   }
 }
 
 DEF_OP(VStoreVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VStoreVectorMasked");
-
   const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreVectorMasked with 256-bit operation");
+  }
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -807,29 +860,73 @@ DEF_OP(VStoreVectorMasked) {
   const auto RegData = GetVReg(Op->Data.ID());
   const auto MaskReg = GetVReg(Op->Mask.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
-  const auto MemDst = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  if (HostSupportsSVE128 || HostSupportsSVE256) {
+    const auto MemDst = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  // Check if the sign bit is set for the given element size.
-  cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+    // Check if the sign bit is set for the given element size.
+    cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
-  switch (IROp->ElementSize) {
-  case 1: {
-    st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-    break;
-  }
-  case 2: {
-    st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-    break;
-  }
-  case 4: {
-    st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-    break;
-  }
-  case 8: {
-    st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
-    break;
-  }
-  default: break;
+    switch (IROp->ElementSize) {
+    case 1: {
+      st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 2: {
+      st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 4: {
+      st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 8: {
+      st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    default: break;
+    }
+  } else {
+    // Prepare yourself adventurer. For a masked store without instructions that implement it.
+    LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
+    size_t NumElements = IROp->Size / IROp->ElementSize;
+
+    // Use VTMP1 as the temporary destination
+    auto WorkingReg = TMP1;
+    auto TempMemReg = MemReg;
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+
+    uint64_t MaskIndex {};
+    const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
+    for (size_t i = 0; i < NumElements; ++i) {
+      if (((i * IROp->ElementSize) % 8) == 0) {
+        // Extract the mask element.
+        umov<ARMEmitter::SubRegSize::i64Bit>(WorkingReg, MaskReg, MaskIndex);
+        ++MaskIndex;
+      }
+
+      // If the sign bit is zero then skip the load
+      ARMEmitter::SingleUseForwardLabel Skip {};
+      const size_t ElementOffset = (64 - (i * ElementSizeInBits) % 64) - 1;
+      tbz(WorkingReg, ElementOffset, &Skip);
+      // Do the gather load for this element into the destination
+      switch (IROp->ElementSize) {
+      case 1: st1<ARMEmitter::SubRegSize::i8Bit>(RegData.Q(), i, TempMemReg); break;
+      case 2: st1<ARMEmitter::SubRegSize::i16Bit>(RegData.Q(), i, TempMemReg); break;
+      case 4: st1<ARMEmitter::SubRegSize::i32Bit>(RegData.Q(), i, TempMemReg); break;
+      case 8: st1<ARMEmitter::SubRegSize::i64Bit>(RegData.Q(), i, TempMemReg); break;
+      case 16: str(RegData.Q(), TempMemReg, 0); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
+      }
+
+      Bind(&Skip);
+
+      if ((i + 1) != NumElements) {
+        // Handle register rename to save a move.
+        auto WorkingReg = TempMemReg;
+        TempMemReg = TMP2;
+        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IROp->ElementSize);
+      }
+    }
   }
 }
 
