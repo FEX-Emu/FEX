@@ -659,6 +659,9 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       if (CTX->Config.Is64BitMode && (Byte1 & 0b00100000) == 0) {
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
       }
+      if (options.w) {
+        DecodeInst->Flags |= DecodeFlags::FLAG_OPTION_AVX_W;
+      }
       if (!(map_select >= 1 && map_select <= 3)) {
         LogMan::Msg::EFmt("We don't understand a map_select of: {}", map_select);
         return false;
