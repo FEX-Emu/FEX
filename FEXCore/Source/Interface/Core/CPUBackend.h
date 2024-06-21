@@ -36,7 +36,6 @@ namespace CodeSerialize {
 namespace CPU {
   struct CPUBackendFeatures {
     bool SupportsFlags = false;
-    bool SupportsSaturatingRoundingShifts = false;
     bool SupportsVTBL2 = false;
   };
 

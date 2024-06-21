@@ -1012,6 +1012,23 @@ public:
   void AVX128_VMOVSHDUP(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_VBROADCAST(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPUNPCKL(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPUNPCKH(OpcodeArgs);
+  void AVX128_MOVVectorUnaligned(OpcodeArgs);
+  template<size_t DstElementSize>
+  void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
+  template<size_t SrcElementSize, bool HostRoundingMode>
+  void AVX128_CVTFPR_To_GPR(OpcodeArgs);
+  void AVX128_VANDN(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPACKSS(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPACKUS(OpcodeArgs);
+  Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
+  template<size_t ElementSize>
+  void AVX128_VPSIGN(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
