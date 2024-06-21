@@ -887,7 +887,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
             (0 << 18) | // Reserved
             (0 << 19) | // Reserved
             (0 << 20) | // Reserved
-            (0 << 21) | // Reserved
+            (0 << 21) | // XOP-TBM
             (0 << 22) | // Topology extensions support
             (0 << 23) | // Core performance counter extensions
             (0 << 24) | // NB performance counter extensions
@@ -895,7 +895,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
             (0 << 26) | // Data breakpoints extensions
             (0 << 27) | // Performance TSC
             (0 << 28) | // L2 perf counter extensions
-            (0 << 29) | // Reserved
+            (0 << 29) | // MONITORX
             (0 << 30) | // Reserved
             (0 << 31);  // Reserved
 
