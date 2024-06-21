@@ -402,6 +402,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
   };
 #undef OPD
 
+#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEX128_PCLMUL[] = {
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::AVX128_VPCLMULQDQ},
+  };
+#undef OPD
+
   auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
@@ -415,6 +421,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
   InstallToTable(FEXCore::X86Tables::VEXTableOps, AVX128Table);
   InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEX128TableGroupOps);
+  if (CTX->HostFeatures.SupportsPMULL_128Bit) {
+    InstallToTable(FEXCore::X86Tables::VEXTableOps, VEX128_PCLMUL);
+  }
+
   SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
   RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
   DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;
@@ -2848,6 +2858,25 @@ void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
   Result.Low = DoPerm(Src, Indices.Low, IndexMask, AddVector);
   Result.High = DoPerm(Src, Indices.High, IndexMask, AddVector);
 
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Selector needs to be literal here");
+
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
+
+  RefPair Result {};
+  Result.Low = _PCLMUL(OpSize::i128Bit, Src1.Low, Src2.Low, Selector);
+  if (!Is128Bit) {
+    Result.High = _PCLMUL(OpSize::i128Bit, Src1.High, Src2.High, Selector);
+  }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 

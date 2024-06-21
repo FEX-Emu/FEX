@@ -1193,6 +1193,8 @@ public:
 
   void AVX128_VPERMD(OpcodeArgs);
 
+  void AVX128_VPCLMULQDQ(OpcodeArgs);
+
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
