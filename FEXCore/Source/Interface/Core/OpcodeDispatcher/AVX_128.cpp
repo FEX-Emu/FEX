@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-Licens-Identifier: MIT
 /*
 $info$
 tags: frontend|x86-to-ir, opcodes|dispatcher-implementations
