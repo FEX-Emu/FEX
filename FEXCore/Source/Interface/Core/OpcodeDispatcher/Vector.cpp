@@ -5076,4 +5076,110 @@ void OpDispatchBuilder::VPCMPISTRMOp(OpcodeArgs) {
   PCMPXSTRXOpImpl(Op, false, true);
 }
 
+OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags) {
+  const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+  LOGMAN_THROW_A_FMT(Operand.IsSIB() && IsVSIB, "Trying to load VSIB for something that isn't the correct type!");
+
+  // VSIB is a very special case which has a ton of encoded data.
+  // Get it in a format we can reason about.
+
+  const auto Index_gpr = Operand.Data.SIB.Index;
+  const auto Base_gpr = Operand.Data.SIB.Base;
+  LOGMAN_THROW_AA_FMT(Index_gpr >= FEXCore::X86State::REG_XMM_0 && Index_gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
+  LOGMAN_THROW_AA_FMT(
+    Base_gpr == FEXCore::X86State::REG_INVALID || (Base_gpr >= FEXCore::X86State::REG_RAX && Base_gpr <= FEXCore::X86State::REG_R15),
+    "Base must be a GPR.");
+  const auto Index_XMM_gpr = Index_gpr - X86State::REG_XMM_0;
+
+  RefVSIB Result {
+    .Low = LoadXMMRegister(Index_XMM_gpr),
+    .BaseAddr = Base_gpr != FEXCore::X86State::REG_INVALID ? LoadGPRRegister(Base_gpr, OpSize::i64Bit, 0, false) : nullptr,
+    .Displacement = Operand.Data.SIB.Offset,
+    .Scale = Operand.Data.SIB.Scale,
+  };
+  return Result;
+}
+
+template<size_t AddrElementSize>
+void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
+
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  ///< Element size is determined by W flag.
+  const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto VSIB = LoadVSIB(Op, Op->Src[0], Op->Flags);
+
+  const bool SupportsSVELoad = (VSIB.Scale == 1 || VSIB.Scale == AddrElementSize) && (AddrElementSize == ElementLoadSize);
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Mask = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result {};
+  if (!SupportsSVELoad) {
+    // We need to go down the fallback path in the case that we don't hit the backend's SVE mode.
+    RefPair Dest128 {
+      .Low = Dest,
+      .High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Dest, 1),
+    };
+
+    RefPair Mask128 {
+      .Low = Mask,
+      .High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Mask, 1),
+    };
+
+    RefVSIB VSIB128 = VSIB;
+    if (Is128Bit) {
+      ///< A bit careful for the VSIB index register duplicating.
+      VSIB128.High = VSIB128.Low;
+    } else {
+      VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
+    }
+
+    auto Result128 = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest128, Mask128, VSIB128);
+    // The registers are current split, need to merge them.
+    Result = _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Result128.Low, Result128.High);
+  } else {
+    ///< Calculate the full operation.
+    ///< BaseAddr doesn't need to exist, calculate that here.
+    Ref BaseAddr = VSIB.BaseAddr;
+    if (BaseAddr && VSIB.Displacement) {
+      BaseAddr = _Add(OpSize::i64Bit, BaseAddr, _Constant(VSIB.Displacement));
+    } else if (VSIB.Displacement) {
+      BaseAddr = _Constant(VSIB.Displacement);
+    } else if (!BaseAddr) {
+      BaseAddr = Invalid();
+    }
+
+    Result = _VLoadVectorGatherMasked(Size, ElementLoadSize, Dest, Mask, BaseAddr, VSIB.Low, Invalid(), AddrElementSize, VSIB.Scale, 0, 0);
+  }
+
+  if (Is128Bit) {
+    if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+      // Special case for the 128-bit gather load using 64-bit address indexes with 32-bit results.
+      // Only loads two 32-bit elements in to the lower 64-bits of the first destination.
+      // Bits [255:65] all become zero.
+      Result = _VMov(OpSize::i64Bit, Result);
+    } else if (Is128Bit) {
+      Result = _VMov(OpSize::i128Bit, Result);
+    }
+  } else {
+    if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+      // If we only fetched 128-bits worth of data then the upper-result is all zero.
+      Result = _VMov(OpSize::i128Bit, Result);
+    }
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+
+  ///< Assume non-faulting behaviour and clear the mask register.
+  auto Zero = LoadZeroVector(Size);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Src[1], Zero, Size, -1);
+}
+
+template void OpDispatchBuilder::VPGATHER<4>(OpcodeArgs);
+template void OpDispatchBuilder::VPGATHER<8>(OpcodeArgs);
+
 } // namespace FEXCore::IR

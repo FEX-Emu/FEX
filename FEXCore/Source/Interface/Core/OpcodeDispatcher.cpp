@@ -5308,6 +5308,11 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
 
+    {OPD(2, 0b01, 0x90), 1, &OpDispatchBuilder::VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x91), 1, &OpDispatchBuilder::VPGATHER<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x92), 1, &OpDispatchBuilder::VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x93), 1, &OpDispatchBuilder::VPGATHER<OpSize::i64Bit>},
+
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},

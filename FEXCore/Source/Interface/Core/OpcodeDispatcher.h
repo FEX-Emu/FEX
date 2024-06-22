@@ -956,6 +956,10 @@ public:
     uint8_t Scale;
   };
 
+  RefVSIB LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags);
+  template<size_t AddrElementSize>
+  void VPGATHER(OpcodeArgs);
+
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
   template<size_t ElementSize>
