@@ -545,6 +545,19 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
+      "FPR = VLoadVectorGatherMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart": {
+        "Desc": [
+          "Does a masked load similar to VPGATHERD* where the upper bit of each element",
+          "determines whether or not that element will be loaded from memory.",
+          "Most of VSIB encoding is passed directly through to the IR operation."
+        ],
+        "ImplicitFlagClobber": true,
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "EmitValidation": [
+          "$VectorIndexElementSize == OpSize::i32Bit || $VectorIndexElementSize == OpSize::i64Bit"
+        ]
+      },
       "FPR = VLoadVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory load to a single element of a vector.",
                  "Leaves the rest of the vector's data intact.",
