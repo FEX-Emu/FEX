@@ -183,6 +183,14 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
         return "addsubpd_invert";
       case NamedVectorConstant::NAMED_VECTOR_PADDSUBPD_INVERT_UPPER:
         return "addsubpd_invert_upper";
+      case NamedVectorConstant::NAMED_VECTOR_PSUBADDPS_INVERT:
+        return "subaddps_invert";
+      case NamedVectorConstant::NAMED_VECTOR_PSUBADDPS_INVERT_UPPER:
+        return "subaddps_invert_upper";
+      case NamedVectorConstant::NAMED_VECTOR_PSUBADDPD_INVERT:
+        return "subaddpd_invert";
+      case NamedVectorConstant::NAMED_VECTOR_PSUBADDPD_INVERT_UPPER:
+        return "subaddpd_invert_upper";
       case NamedVectorConstant::NAMED_VECTOR_MOVMSKPS_SHIFT:
         return "movmskps_shift";
       case NamedVectorConstant::NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE:
