@@ -348,41 +348,41 @@ std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
     {OPD(2, 0b01, 0x92), 1, X86InstInfo{"VGATHERDPS/D", TYPE_UNDEC, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_2ND_SRC | FLAGS_VEX_VSIB | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x93), 1, X86InstInfo{"VGATHERQPS/D", TYPE_UNDEC, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_2ND_SRC | FLAGS_VEX_VSIB | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0x96), 1, X86InstInfo{"VFMADDSUB132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x97), 1, X86InstInfo{"VFMSUBADD132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x96), 1, X86InstInfo{"VFMADDSUB132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x97), 1, X86InstInfo{"VFMSUBADD132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0x98), 1, X86InstInfo{"VFMADD132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x99), 1, X86InstInfo{"VFMADD132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9A), 1, X86InstInfo{"VFMSUB132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9B), 1, X86InstInfo{"VFMSUB132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9C), 1, X86InstInfo{"VFNMADD132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9D), 1, X86InstInfo{"VFNMADD132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9E), 1, X86InstInfo{"VFNMSUB132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x9F), 1, X86InstInfo{"VFNMSUB132", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x98), 1, X86InstInfo{"VFMADD132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x99), 1, X86InstInfo{"VFMADD132_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9A), 1, X86InstInfo{"VFMSUB132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9B), 1, X86InstInfo{"VFMSUB132_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9C), 1, X86InstInfo{"VFNMADD132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9D), 1, X86InstInfo{"VFNMADD132_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9E), 1, X86InstInfo{"VFNMSUB132", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x9F), 1, X86InstInfo{"VFNMSUB132_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0xA8), 1, X86InstInfo{"VFMADD213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xA9), 1, X86InstInfo{"VFMADD213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAA), 1, X86InstInfo{"VFMSUB213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAB), 1, X86InstInfo{"VFMSUB213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAC), 1, X86InstInfo{"VFNMADD213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAD), 1, X86InstInfo{"VFNMADD213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAE), 1, X86InstInfo{"VFNMSUB213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xAF), 1, X86InstInfo{"VFNMSUB213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xA8), 1, X86InstInfo{"VFMADD213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xA9), 1, X86InstInfo{"VFMADD213_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAA), 1, X86InstInfo{"VFMSUB213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAB), 1, X86InstInfo{"VFMSUB213_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAC), 1, X86InstInfo{"VFNMADD213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAD), 1, X86InstInfo{"VFNMADD213_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAE), 1, X86InstInfo{"VFNMSUB213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xAF), 1, X86InstInfo{"VFNMSUB213_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0xB8), 1, X86InstInfo{"VFMADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xB9), 1, X86InstInfo{"VFMADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBA), 1, X86InstInfo{"VFMSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBB), 1, X86InstInfo{"VFMSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBC), 1, X86InstInfo{"VFNMADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBD), 1, X86InstInfo{"VFNMADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBE), 1, X86InstInfo{"VFNMSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xBF), 1, X86InstInfo{"VFNMSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xB8), 1, X86InstInfo{"VFMADD231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xB9), 1, X86InstInfo{"VFMADD231_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBA), 1, X86InstInfo{"VFMSUB231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBB), 1, X86InstInfo{"VFMSUB231_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBC), 1, X86InstInfo{"VFNMADD231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBD), 1, X86InstInfo{"VFNMADD231_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBE), 1, X86InstInfo{"VFNMSUB231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xBF), 1, X86InstInfo{"VFNMSUB231_S", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0xA6), 1, X86InstInfo{"VFMADDSUB213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xA7), 1, X86InstInfo{"VFMSUBADD213", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xA6), 1, X86InstInfo{"VFMADDSUB213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xA7), 1, X86InstInfo{"VFMSUBADD213", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0xB6), 1, X86InstInfo{"VFMADDSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xB7), 1, X86InstInfo{"VFMSUBADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xB6), 1, X86InstInfo{"VFMADDSUB231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xB7), 1, X86InstInfo{"VFMSUBADD231", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(2, 0b01, 0xDB), 1, X86InstInfo{"VAESIMC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0xDC), 1, X86InstInfo{"VAESENC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -452,33 +452,33 @@ std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
     {OPD(3, 0b01, 0x4B), 1, X86InstInfo{"VBLENDVPD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x4C), 1, X86InstInfo{"VPBLENDVB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
 
-    {OPD(3, 0b01, 0x5C), 1, X86InstInfo{"VFMADDSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x5D), 1, X86InstInfo{"VFMADDSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x5E), 1, X86InstInfo{"VFMSUBADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x5F), 1, X86InstInfo{"VFMSUBADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x5C), 1, X86InstInfo{"VFMADDSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x5D), 1, X86InstInfo{"VFMADDSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x5E), 1, X86InstInfo{"VFMSUBADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x5F), 1, X86InstInfo{"VFMSUBADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
 
     {OPD(3, 0b01, 0x60), 1, X86InstInfo{"VPCMPESTRM", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x61), 1, X86InstInfo{"VPCMPESTRI", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x62), 1, X86InstInfo{"VPCMPISTRM", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x63), 1, X86InstInfo{"VPCMPISTRI", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
-    {OPD(3, 0b01, 0x68), 1, X86InstInfo{"VFMADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x69), 1, X86InstInfo{"VFMADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6A), 1, X86InstInfo{"VFMADDSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6B), 1, X86InstInfo{"VFMADDSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6C), 1, X86InstInfo{"VFMSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6D), 1, X86InstInfo{"VFMSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6E), 1, X86InstInfo{"VFMSUBSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x6F), 1, X86InstInfo{"VFMSUBSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x68), 1, X86InstInfo{"VFMADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x69), 1, X86InstInfo{"VFMADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6A), 1, X86InstInfo{"VFMADDSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6B), 1, X86InstInfo{"VFMADDSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6C), 1, X86InstInfo{"VFMSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6D), 1, X86InstInfo{"VFMSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6E), 1, X86InstInfo{"VFMSUBSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x6F), 1, X86InstInfo{"VFMSUBSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
 
-    {OPD(3, 0b01, 0x78), 1, X86InstInfo{"VFNMADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x79), 1, X86InstInfo{"VFNMADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7A), 1, X86InstInfo{"VFNMADDSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7B), 1, X86InstInfo{"VFNMADDSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7C), 1, X86InstInfo{"VFNMSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7D), 1, X86InstInfo{"VFNMSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7E), 1, X86InstInfo{"VFNMSUBSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x7F), 1, X86InstInfo{"VFNMSUBSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x78), 1, X86InstInfo{"VFNMADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x79), 1, X86InstInfo{"VFNMADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7A), 1, X86InstInfo{"VFNMADDSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7B), 1, X86InstInfo{"VFNMADDSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7C), 1, X86InstInfo{"VFNMSUBPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7D), 1, X86InstInfo{"VFNMSUBPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7E), 1, X86InstInfo{"VFNMSUBSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
+    {OPD(3, 0b01, 0x7F), 1, X86InstInfo{"VFNMSUBSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, ///< FMA4
 
     {OPD(3, 0b01, 0xDF), 1, X86InstInfo{"VAESKEYGENASSIST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
