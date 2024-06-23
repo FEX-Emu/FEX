@@ -307,8 +307,7 @@ public:
     FEATURE_BMI2 = (1 << 7),
     FEATURE_CLWB = (1 << 8),
     FEATURE_LINUX = (1 << 9),
-    FEATURE_AVX2 = (1 << 10),
-    FEATURE_AES256 = (1 << 11),
+    FEATURE_AES256 = (1 << 10),
   };
 
   bool Requires3DNow() const {
@@ -319,9 +318,6 @@ public:
   }
   bool RequiresAVX() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX;
-  }
-  bool RequiresAVX2() const {
-    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX2;
   }
   bool RequiresRAND() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_RAND;
@@ -491,9 +487,6 @@ public:
   }
   bool RequiresAVX() const {
     return Config.RequiresAVX();
-  }
-  bool RequiresAVX2() const {
-    return Config.RequiresAVX2();
   }
   bool RequiresRAND() const {
     return Config.RequiresRAND();

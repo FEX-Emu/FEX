@@ -25,7 +25,6 @@ public:
   bool Supports3DNow {};
   bool SupportsSSE4A {};
   bool SupportsAVX {};
-  bool SupportsAVX2 {};
   bool SupportsSVE128 {};
   bool SupportsSVE256 {};
   bool SupportsSHA {};
