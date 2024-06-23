@@ -623,10 +623,9 @@ Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t 
 
 template<size_t ElementSize>
 void OpDispatchBuilder::InsertScalarRound(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Mode = Op->Src[1].Data.Literal.Value;
-
+  const uint64_t Mode = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
+
   Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -636,10 +635,9 @@ template void OpDispatchBuilder::InsertScalarRound<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::AVXInsertScalarRound(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Mode = Op->Src[2].Data.Literal.Value;
-
+  const uint64_t Mode = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
+
   Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -714,10 +712,9 @@ Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t
 
 template<size_t ElementSize>
 void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[2] needs to be literal");
-  const uint8_t CompType = Op->Src[1].Data.Literal.Value;
-
+  const uint8_t CompType = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
+
   Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -727,10 +724,9 @@ template void OpDispatchBuilder::InsertScalarFCMPOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
-  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
-
+  const uint8_t CompType = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
+
   Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -1212,9 +1208,7 @@ template<size_t ElementSize, bool Low>
 void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
-  auto Shuffle = Op->Src[1].Data.Literal.Value;
+  auto Shuffle = Op->Src[1].Literal();
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -1461,9 +1455,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Imm needs to be a literal");
-  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
+  uint8_t Shuffle = Op->Src[1].Literal();
 
   Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
@@ -1475,9 +1467,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Imm needs to be a literal");
-  uint8_t Shuffle = Op->Src[2].Data.Literal.Value;
+  uint8_t Shuffle = Op->Src[2].Literal();
 
   Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
@@ -1549,8 +1539,7 @@ Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tabl
                                    const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
   const auto Size = GetDstSize(Op);
   const auto NumElements = Size / ElementSize;
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
-  const uint64_t Index = Imm.Data.Literal.Value & (NumElements - 1);
+  const uint64_t Index = Imm.Literal() & (NumElements - 1);
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags);
 
   if (Src2Op.IsGPR()) {
@@ -1602,8 +1591,7 @@ void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                       const X86Tables::DecodedOperand& Imm) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
-  const uint8_t ImmValue = Imm.Data.Literal.Value;
+  const uint8_t ImmValue = Imm.Literal();
   uint8_t CountS = (ImmValue >> 6);
   uint8_t CountD = (ImmValue >> 4) & 0b11;
   const uint8_t ZMask = ImmValue & 0xF;
@@ -1662,8 +1650,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Index = Op->Src[1].Data.Literal.Value;
+  uint64_t Index = Op->Src[1].Literal();
 
   // Fixup of 32-bit element size.
   // When the element size is 32-bit then it can be overriden as 64-bit because the encoding of PEXTRD/PEXTRQ
@@ -1699,11 +1686,9 @@ template void OpDispatchBuilder::PExtrOp<8>(OpcodeArgs);
 void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
   const auto DstIsXMM = Op->Dest.IsGPR();
   const auto StoreSize = DstIsXMM ? 32 : 16;
+  const auto Selector = Op->Src[1].Literal() & 0b1;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const auto Selector = Op->Src[1].Data.Literal.Value & 0b1;
 
   // A selector of zero is the same as doing a 128-bit vector move.
   if (Selector == 0) {
@@ -1795,8 +1780,7 @@ template void OpDispatchBuilder::VPSRLDOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Literal();
   if (ShiftConstant == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
@@ -1817,9 +1801,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Literal();
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = Src;
@@ -1850,8 +1832,7 @@ Ref OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Literal();
   if (ShiftConstant == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
@@ -1869,8 +1850,7 @@ template void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Literal();
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -1964,8 +1944,7 @@ template void OpDispatchBuilder::VPSRAOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPSRAOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
   if (Shift == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
@@ -1985,9 +1964,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -2019,8 +1996,7 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
   if (Shift == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
@@ -2040,9 +2016,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -2072,8 +2046,7 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
   if (Shift == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
@@ -2091,8 +2064,7 @@ template void OpDispatchBuilder::PSRAIOp<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+  const uint64_t Shift = Op->Src[1].Literal();
   const auto Size = GetDstSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2632,9 +2604,7 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   // all we need is an insert at the end of the operation.
   const auto SrcSize = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
-
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
-  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
+  const uint8_t CompType = Op->Src[2].Literal();
 
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
@@ -2988,13 +2958,12 @@ void OpDispatchBuilder::DefaultAVXState() {
 
 Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                      const X86Tables::DecodedOperand& Imm, bool IsAVX) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
   // For the 256-bit case we handle it as pairs of 128-bit halves.
   const auto DstSize = GetDstSize(Op);
   const auto SanitizedDstSize = std::min(DstSize, uint8_t {16});
 
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  const auto Index = Imm.Data.Literal.Value;
+  const auto Index = Imm.Literal();
 
   Ref Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags);
   if (Index == 0) {
@@ -3820,9 +3789,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const uint64_t Mode = Op->Src[1].Data.Literal.Value;
-
+  const uint64_t Mode = Op->Src[1].Literal();
   Src = VectorRoundImpl(Op, ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Src, -1);
@@ -3833,8 +3800,7 @@ template void OpDispatchBuilder::VectorRound<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const auto Mode = Op->Src[1].Data.Literal.Value;
+  const auto Mode = Op->Src[1].Literal();
 
   // No need to zero extend the vector in the event we have a
   // scalar source, especially since it's only inserted into another vector.
@@ -3852,9 +3818,7 @@ template void OpDispatchBuilder::AVXVectorRound<8>(OpcodeArgs);
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint8_t Select = Op->Src[1].Data.Literal.Value;
+  uint8_t Select = Op->Src[1].Literal();
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -4072,10 +4036,8 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
-  const auto Src3Selector = Op->Src[2].Data.Literal.Value;
-
   // Mask register is encoded within bits [7:4] of the selector
+  const auto Src3Selector = Op->Src[2].Literal();
   Ref Mask = LoadXMMRegister((Src3Selector >> 4) & 0b1111);
 
   Ref Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
@@ -4209,8 +4171,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                  const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
-  const uint8_t Mask = Imm.Data.Literal.Value;
+  const uint8_t Mask = Imm.Literal();
   const auto SizeMask = [ElementSize]() {
     if (ElementSize == 4) {
       return 0b1111;
@@ -4401,9 +4362,8 @@ template void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
 
 Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                    const X86Tables::DecodedOperand& Imm) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
   constexpr size_t ElementSize = 4;
-  const uint8_t Mask = Imm.Data.Literal.Value;
+  const uint8_t Mask = Imm.Literal();
   const uint8_t SrcMask = Mask >> 4;
   const uint8_t DstMask = Mask & 0xF;
 
@@ -4558,9 +4518,7 @@ Ref OpDispatchBuilder::MPSADBWOpImpl(size_t SrcSize, Ref Src1, Ref Src2, uint8_t
 }
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "ImmOp needs to be literal here");
-
-  const uint8_t Select = Op->Src[1].Data.Literal.Value;
+  const uint8_t Select = Op->Src[1].Literal();
   const uint8_t SrcSize = GetSrcSize(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -4570,13 +4528,10 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VMPSADBWOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "ImmOp needs to be literal here");
-
-  const uint8_t Select = Op->Src[2].Data.Literal.Value;
+  const uint8_t Select = Op->Src[2].Literal();
   const uint8_t SrcSize = GetSrcSize(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
 
   Ref Result = MPSADBWOpImpl(SrcSize, Src1, Src2, Select);
   StoreResult(FPRClass, Op, Result, -1);
@@ -4587,9 +4542,7 @@ void OpDispatchBuilder::VINSERTOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
-  const auto Selector = Op->Src[2].Data.Literal.Value & 1;
-
+  const auto Selector = Op->Src[2].Literal() & 1;
   Ref Result = _VInsElement(DstSize, 16, Selector, 0, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -4600,9 +4553,7 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
-  const auto Selector = Op->Src[2].Data.Literal.Value;
-
+  const auto Selector = Op->Src[2].Literal();
   Ref Result = LoadZeroVector(DstSize);
 
   const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
@@ -4704,9 +4655,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const auto Selector = Op->Src[1].Data.Literal.Value;
-
+  const auto Selector = Op->Src[1].Literal();
   Ref Result {};
 
   // If we're just broadcasting one element in particular across the vector
@@ -4741,12 +4690,10 @@ Ref OpDispatchBuilder::VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref 
 void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Selector = Op->Src[2].Literal();
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
-  const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
     Ref Result = Is256Bit ? Src1 : _VMov(16, Src1);
@@ -4768,12 +4715,10 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
 void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Selector = Op->Src[2].Literal();
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
-  const auto Selector = Op->Src[2].Data.Literal.Value;
 
   // Each bit in the selector chooses between Src1 and Src2.
   // If a bit is set, then we select it's corresponding 32-bit element from Src2
@@ -4814,12 +4759,10 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
 void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Selector = Op->Src[2].Literal();
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
-  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
-  const auto Selector = Op->Src[2].Data.Literal.Value;
 
   if (Selector == 0) {
     Ref Result = Is128Bit ? _VMov(16, Src1) : Src1;
@@ -4874,9 +4817,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
+  const auto Selector = Op->Src[1].Literal() & 0xFF;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = LoadZeroVector(DstSize);
@@ -4968,8 +4909,7 @@ template void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
-  const uint16_t Control = Op->Src[1].Data.Literal.Value;
+  const uint16_t Control = Op->Src[1].Literal();
 
   // SSE4.2 string instructions modify flags, so invalidate
   // any previously deferred flags.

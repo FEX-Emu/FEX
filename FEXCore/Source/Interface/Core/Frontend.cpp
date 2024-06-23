@@ -944,14 +944,12 @@ void Decoder::BranchTargetInMultiblockRange() {
     // auto RIPOffset = LoadSource(Op, Op->Src[0], Op->Flags);
     // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
     // Target offset is PC + InstSize + Literal
-    LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
+    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
     break;
   }
   case 0xE9:
   case 0xEB: // Both are unconditional JMP instructions
-    LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
+    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
     Conditional = false;
     break;
   case 0xE8: // Call - Immediate target, We don't want to inline calls
@@ -1003,8 +1001,7 @@ bool Decoder::BranchTargetCanContinue(bool FinalInstruction) const {
 
   if (DecodeInst->OP == 0xE8) { // Call - immediate target
     const uint64_t NextRIP = DecodeInst->PC + DecodeInst->InstSize;
-    LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
+    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
 
     if (GPRSize == 4) {
       // If we are running a 32bit guest then wrap around addresses that go above 32bit
