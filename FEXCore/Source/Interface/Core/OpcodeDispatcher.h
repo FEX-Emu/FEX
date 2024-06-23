@@ -960,6 +960,23 @@ public:
   template<size_t AddrElementSize>
   void VPGATHER(OpcodeArgs);
 
+  void VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMSUB(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFNMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFNMSUB(OpcodeArgs);
+
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMADDSUB(OpcodeArgs);
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMSUBADD(OpcodeArgs);
+
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
   template<size_t ElementSize>
