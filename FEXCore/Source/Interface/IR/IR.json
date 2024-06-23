@@ -2262,6 +2262,42 @@
       "FPR = VFCADD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFMLA u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (Vector1 * Vector2) + Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFMLS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (Vector1 * Vector2) - Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFNMLA u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (-Vector1 * Vector2) + Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFNMLS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (-Vector1 * Vector2) - Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
       }
     },
     "Conv": {

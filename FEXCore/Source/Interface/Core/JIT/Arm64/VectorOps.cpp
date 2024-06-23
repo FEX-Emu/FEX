@@ -3978,5 +3978,257 @@ DEF_OP(VFCADD) {
   }
 }
 
+DEF_OP(VFMLA) {
+  ///< Dest = (Vector1 * Vector2) + Addend
+  // Matches:
+  // - SVE    - FMLA
+  // - ASIMD  - FMLA
+  // - Scalar - FMADD
+  const auto Op = IROp->C<IR::IROp_VFMLA>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+  const auto VectorAddend = GetVReg(Op->Addend.ID());
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else {
+    if (IROp->ElementSize == OpSize) {
+      if (IROp->ElementSize == 2) {
+        fmadd(Dst.H(), Vector1.H(), Vector2.H(), VectorAddend.H());
+      } else if (IROp->ElementSize == 4) {
+        fmadd(Dst.S(), Vector1.S(), Vector2.S(), VectorAddend.S());
+      } else if (IROp->ElementSize == 8) {
+        fmadd(Dst.D(), Vector1.D(), Vector2.D(), VectorAddend.D());
+      }
+      return;
+    }
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Q(), VectorAddend.Q());
+    }
+    if (OpSize == 16) {
+      fmla(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+    } else {
+      fmla(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
+    }
+
+    if (Dst != VectorAddend) {
+      mov(Dst.Q(), DestTmp.Q());
+    }
+  }
+}
+
+DEF_OP(VFMLS) {
+  ///< Dest = (Vector1 * Vector2) - Addend
+  // Matches:
+  // - SVE    - FNMLS
+  // - ASIMD  - FMLA (With negated addend)
+  // - Scalar - FNMSUB
+  const auto Op = IROp->C<IR::IROp_VFMLS>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+  const auto VectorAddend = GetVReg(Op->Addend.ID());
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fnmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else if (HostSupportsSVE128 && Is128Bit) {
+    const auto Mask = PRED_TMP_16B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fnmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else {
+    if (IROp->ElementSize == OpSize) {
+      if (IROp->ElementSize == 2) {
+        fnmsub(Dst.H(), Vector1.H(), Vector2.H(), VectorAddend.H());
+      } else if (IROp->ElementSize == 4) {
+        fnmsub(Dst.S(), Vector1.S(), Vector2.S(), VectorAddend.S());
+      } else if (IROp->ElementSize == 8) {
+        fnmsub(Dst.D(), Vector1.D(), Vector2.D(), VectorAddend.D());
+      }
+      return;
+    }
+
+    // Addend needs to get negated to match correct behaviour here.
+    ARMEmitter::VRegister DestTmp = VTMP1;
+    if (Is128Bit) {
+      fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
+      fmla(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+      mov(Dst.Q(), DestTmp.Q());
+    } else {
+      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
+      fmla(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
+      mov(Dst.D(), DestTmp.D());
+    }
+  }
+}
+
+DEF_OP(VFNMLA) {
+  ///< Dest = (-Vector1 * Vector2) + Addend
+  // Matches:
+  // - SVE    - FMLS
+  // - ASIMD  - FMLS
+  // - Scalar - FMSUB
+  const auto Op = IROp->C<IR::IROp_VFMLA>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+  const auto VectorAddend = GetVReg(Op->Addend.ID());
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else {
+    if (IROp->ElementSize == OpSize) {
+      if (IROp->ElementSize == 2) {
+        fmsub(Dst.H(), Vector1.H(), Vector2.H(), VectorAddend.H());
+      } else if (IROp->ElementSize == 4) {
+        fmsub(Dst.S(), Vector1.S(), Vector2.S(), VectorAddend.S());
+      } else if (IROp->ElementSize == 8) {
+        fmsub(Dst.D(), Vector1.D(), Vector2.D(), VectorAddend.D());
+      }
+      return;
+    }
+
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Q(), VectorAddend.Q());
+    }
+    if (OpSize == 16) {
+      fmls(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+    } else {
+      fmls(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
+    }
+
+    if (Dst != VectorAddend) {
+      mov(Dst.Q(), DestTmp.Q());
+    }
+  }
+}
+
+DEF_OP(VFNMLS) {
+  ///< Dest = (-Vector1 * Vector2) - Addend
+  // Matches:
+  // - SVE    - FNMLA
+  // - ASIMD  - FMLS (With Negated addend)
+  // - Scalar - FNMADD
+
+  const auto Op = IROp->C<IR::IROp_VFMLS>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+  const auto VectorAddend = GetVReg(Op->Addend.ID());
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fnmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else if (HostSupportsSVE128 && Is128Bit) {
+    const auto Mask = PRED_TMP_16B.Merging();
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst != VectorAddend) {
+      DestTmp = VTMP1;
+      mov(DestTmp.Z(), VectorAddend.Z());
+    }
+
+    fnmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
+    if (Dst != VectorAddend) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else {
+    if (IROp->ElementSize == OpSize) {
+      if (IROp->ElementSize == 2) {
+        fnmadd(Dst.H(), Vector1.H(), Vector2.H(), VectorAddend.H());
+      } else if (IROp->ElementSize == 4) {
+        fnmadd(Dst.S(), Vector1.S(), Vector2.S(), VectorAddend.S());
+      } else if (IROp->ElementSize == 8) {
+        fnmadd(Dst.D(), Vector1.D(), Vector2.D(), VectorAddend.D());
+      }
+      return;
+    }
+
+    // Addend needs to get negated to match correct behaviour here.
+    ARMEmitter::VRegister DestTmp = VTMP1;
+    if (Is128Bit) {
+      fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
+      fmls(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+      mov(Dst.Q(), DestTmp.Q());
+    } else {
+      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
+      fmls(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
+      mov(Dst.D(), DestTmp.D());
+    }
+  }
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU
