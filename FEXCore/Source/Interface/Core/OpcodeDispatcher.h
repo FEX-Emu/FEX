@@ -1214,6 +1214,23 @@ public:
   template<size_t AddrElementSize>
   void AVX128_VPGATHER(OpcodeArgs);
 
+  void AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMSUB(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFNMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFNMSUB(OpcodeArgs);
+
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMADDSUB(OpcodeArgs);
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMSUBADD(OpcodeArgs);
+
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
