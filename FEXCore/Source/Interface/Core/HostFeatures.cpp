@@ -118,9 +118,6 @@ static void OverrideFeatures(HostFeatures* Features) {
 
   ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
   Features->SupportsSVE256 = ForceSVEWidth() && ForceSVEWidth() >= 256;
-  if (!Features->SupportsSVE256) {
-    Features->SupportsAVX = false;
-  }
 }
 
 HostFeatures::HostFeatures() {
