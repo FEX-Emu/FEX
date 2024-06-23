@@ -5297,6 +5297,42 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
 
+    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::VFMADDSUB<1, 3, 2>},
+    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::VFMSUBADD<1, 3, 2>},
+
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::VFMADD<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::VFMADD<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::VFMSUB<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::VFMSUB<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::VFNMADD<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::VFNMADD<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::VFNMSUB<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::VFNMSUB<true, 1, 3, 2>},
+
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::VFMADD<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::VFMADD<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::VFMSUB<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::VFMSUB<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::VFNMADD<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::VFNMADD<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::VFNMSUB<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::VFNMSUB<true, 2, 1, 3>},
+
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::VFMADD<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::VFMADD<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::VFMSUB<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::VFMSUB<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::VFNMADD<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::VFNMADD<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::VFNMSUB<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::VFNMSUB<true, 2, 3, 1>},
+
+    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::VFMADDSUB<2, 1, 3>},
+    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::VFMSUBADD<2, 1, 3>},
+
+    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::VFMADDSUB<2, 3, 1>},
+    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::VFMSUBADD<2, 3, 1>},
+
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
