@@ -2,19 +2,8 @@
 {
   "RegData": {
     "XMM1":  ["0", "0", "0", "0"],
-    "XMM3":  ["0xcb60805f6799bee3", "0x6778ae2a2522e0af", "0", "0"],
-    "XMM4":  ["0xe273f1177f80d2ec", "0xd7e273f1177f80d2", "0", "0"],
-    "XMM5":  ["0x341ce2bf6334292d", "0x1ce2bf6334292db6", "0", "0"],
-    "XMM6":  ["0x2db6b85f6135a9d7", "0x2db6b85f6135a9d7", "0", "0"],
-    "XMM7":  ["0xe273f1177f80d2ec", "0x0f350767409162b7", "0", "0"],
-    "XMM8":  ["0x341ce2bf6334292d", "0x0f350767409162b7", "0", "0"],
-    "XMM9":  ["0x2db6b85f6135a9d7", "0x0f350767409162b7", "0", "0"],
-    "XMM10": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"],
-    "XMM11": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"],
-    "XMM12": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"],
-    "XMM13": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"],
-    "XMM14": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"],
-    "XMM15": ["0xf1cda2562209301d", "0x0f350767409162b7", "0", "0"]
+    "XMM3":  ["0x2522e0af6799bee3", "0xa2ff64bc388e768d", "0", "0"],
+    "XMM4":  ["0x2522e0af6799bee3", "0xa2ff64bc388e768d", "0x13a833a3666d909d", "0xf6300511c21448dd"]
   },
   "HostFeatures": ["AVX"]
 }
@@ -24,77 +13,29 @@
 ; 1x displacement
 ; 32-bit indexes
 
+; Testing no base address
+
 lea rax, [rel .data_mid]
+%assign i 0
+%rep 8
+  movsx rbx, dword [rel .index_full_range + (i * 4)]
+  add ebx, eax
+  mov[rel .index_full_range + (i * 4)], ebx
+%assign i i+1
+%endrep
 
-vmovapd ymm15, [rel .data]
-vmovapd ymm14, [rel .data]
-vmovapd ymm13, [rel .data]
-vmovapd ymm12, [rel .data]
-vmovapd ymm11, [rel .data]
-vmovapd ymm10, [rel .data]
-vmovapd ymm9, [rel .data]
-vmovapd ymm8, [rel .data]
-vmovapd ymm7, [rel .data]
-vmovapd ymm6, [rel .data]
-vmovapd ymm5, [rel .data]
-vmovapd ymm4, [rel .data]
-
-; Zero mask
-vmovaps xmm0, [rel .index_d0]
-vmovaps xmm1, [rel .mask_0000]
-vpgatherdq xmm15, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_positive_increment]
-vmovaps xmm1, [rel .mask_0000]
-vpgatherdq xmm14, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_negative_decrement]
-vmovaps xmm1, [rel .mask_0000]
-vpgatherdq xmm13, [xmm0 * 1 + rax], xmm1
-
-; First element Mask
-vmovaps xmm0, [rel .index_d0]
-vmovaps xmm1, [rel .mask_0001]
-vpgatherdq xmm12, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_positive_increment]
-vmovaps xmm1, [rel .mask_0001]
-vpgatherdq xmm11, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_negative_decrement]
-vmovaps xmm1, [rel .mask_0001]
-vpgatherdq xmm10, [xmm0 * 1 + rax], xmm1
-
-; Top element mask
-vmovaps xmm0, [rel .index_d0]
-vmovaps xmm1, [rel .mask_1000]
-vpgatherdq xmm9, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_positive_increment]
-vmovaps xmm1, [rel .mask_1000]
-vpgatherdq xmm8, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_negative_decrement]
-vmovaps xmm1, [rel .mask_1000]
-vpgatherdq xmm7, [xmm0 * 1 + rax], xmm1
-
-; Full Mask
-vmovaps xmm0, [rel .index_d0]
-vmovaps xmm1, [rel .mask_1111]
-vpgatherdq xmm6, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_positive_increment]
-vmovaps xmm1, [rel .mask_1111]
-vpgatherdq xmm5, [xmm0 * 1 + rax], xmm1
-
-vmovaps xmm0, [rel .index_negative_decrement]
-vmovaps xmm1, [rel .mask_1111]
-vpgatherdq xmm4, [xmm0 * 1 + rax], xmm1
+vmovapd ymm3, [rel .data]
 
 ; Full range, full mask
+vmovaps ymm0, [rel .index_full_range]
+vmovaps ymm1, [rel .mask_11111111]
+vpgatherdd ymm4, [ymm0 * 1], ymm1
+
 vmovaps xmm0, [rel .index_full_range]
-vmovaps xmm1, [rel .mask_1111]
-vpgatherdq xmm3, [xmm0 * 1 + rax], xmm1
+vmovaps xmm1, [rel .mask_11111111]
+vpgatherdd xmm3, [xmm0 * 1], xmm1
+
+
 
 ; xmm1 will be zero after this.
 
@@ -103,28 +44,10 @@ hlt
 align 32
 
 ; Masks only care about the sign bit.
-.mask_0000:
-dq 0, 0, 0, 0
-
-.mask_0001:
-dq 0, 0, 0, 0x8000_0000_0000_0000
-
-.mask_1000:
-dq 0x8000_0000_0000_0000, 0, 0, 0
-
-.mask_1111:
-dq 0x8000_0000_0000_0000, 0x8000_0000_0000_0000, 0x8000_0000_0000_0000, 0x8000_0000_0000_0000
+.mask_11111111:
+dd 0x8000_0000, 0x8000_0000, 0x8000_0000, 0x8000_0000, 0x8000_0000, 0x8000_0000, 0x8000_0000, 0x8000_0000
 
 ; Indexing is a signed 32-bit integer.
-.index_d0:
-dd 0, 0, 0, 0, 0, 0, 0, 0
-
-.index_positive_increment:
-dd 7, 6, 5, 4, 3, 2, 1, 0
-
-.index_negative_decrement:
-dd -8, -7, -6, -5, -4, -3, -2, -1
-
 .index_full_range:
 dd -992, -512, -256, -128, 128, 256, 512, 992
 
