@@ -2314,6 +2314,18 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DestElementSize"
       },
+
+      "FPR = Vector_FToF2 u8:#RegisterSize, u8:#DestElementSize, FPR:$Vector, u8:$SrcElementSize": {
+        "Desc": [
+          "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
+          "Selecting from the high half of the register."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / DestElementSize",
+        "EmitValidation": [
+          "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
+        ]
+      },
       "FPR = Vector_FToI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, RoundType:$Round": {
         "Desc": ["Vector op: Rounds float to integral",
                  "Rounding mode determined by argument"

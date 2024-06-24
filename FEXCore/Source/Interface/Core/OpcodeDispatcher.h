@@ -981,6 +981,14 @@ public:
   struct RefPair {
     Ref Low, High;
   };
+
+  RefPair AVX128_Zext(Ref R) {
+    RefPair Pair;
+    Pair.Low = R;
+    Pair.High = LoadZeroVector(OpSize::i128Bit);
+    return Pair;
+  }
+
   RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                                        bool NeedsHigh, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
@@ -1078,6 +1086,40 @@ public:
   void AVX128_VPSRLDQ(OpcodeArgs);
   void AVX128_VPSLLDQ(OpcodeArgs);
 
+  void AVX128_VINSERT(OpcodeArgs);
+  void AVX128_VINSERTPS(OpcodeArgs);
+
+  Ref AVX128_PHSUBImpl(Ref Src1, Ref Src2, size_t ElementSize);
+  template<size_t ElementSize>
+  void AVX128_VPHSUB(OpcodeArgs);
+
+  void AVX128_VPHSUBSW(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VADDSUBP(OpcodeArgs);
+
+  template<size_t ElementSize, bool Signed>
+  void AVX128_VPMULL(OpcodeArgs);
+
+  void AVX128_VPMULHRSW(OpcodeArgs);
+
+  template<bool Signed>
+  void AVX128_VPMULHW(OpcodeArgs);
+
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
+
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
+
+  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
+
+  template<size_t SrcElementSize, bool Widen>
+  void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
+
+  void AVX128_VEXTRACT128(OpcodeArgs);
+
   // End of AVX 128-bit implementation
 
   void InvalidOp(OpcodeArgs);
@@ -1164,7 +1206,7 @@ private:
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
-  Ref ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
   void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
@@ -1201,9 +1243,9 @@ private:
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
-  Ref PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize);
+  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize);
 
-  Ref PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
@@ -1212,11 +1254,11 @@ private:
 
   Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2);
+  Ref PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
+  Ref PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
 
   Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
