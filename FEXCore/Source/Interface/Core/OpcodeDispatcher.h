@@ -992,6 +992,11 @@ public:
   void AVX128_VectorUnaryImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
+  void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+  void AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+
+  enum class ShiftDirection { RIGHT, LEFT };
+  void AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir);
 
   void AVX128_VMOVAPS(OpcodeArgs);
   void AVX128_VMOVSD(OpcodeArgs);
@@ -1029,6 +1034,49 @@ public:
   Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
   template<size_t ElementSize>
   void AVX128_VPSIGN(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_UCOMISx(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void AVX128_VectorScalarInsertALU(OpcodeArgs);
+  Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
+  template<size_t ElementSize>
+  void AVX128_VFCMP(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_InsertScalarFCMP(OpcodeArgs);
+  void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_PExtr(OpcodeArgs);
+  template<size_t ElementSize, size_t DstElementSize, bool Signed>
+  void AVX128_ExtendVectorElements(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_MOVMSK(OpcodeArgs);
+  void AVX128_MOVMSKB(OpcodeArgs);
+  void AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+                        const X86Tables::DecodedOperand& Imm);
+  void AVX128_VPINSRB(OpcodeArgs);
+  void AVX128_VPINSRW(OpcodeArgs);
+  void AVX128_VPINSRDQ(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRA(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSLL(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRL(OpcodeArgs);
+
+  void AVX128_VariableShiftImpl(OpcodeArgs, IROps IROp);
+  void AVX128_VPSLLV(OpcodeArgs);
+  void AVX128_VPSRAVD(OpcodeArgs);
+  void AVX128_VPSRLV(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VPSRLI(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSLLI(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VPSRAI(OpcodeArgs);
+
+  void AVX128_VPSRLDQ(OpcodeArgs);
+  void AVX128_VPSLLDQ(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
@@ -1225,8 +1273,7 @@ private:
   Ref InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  Ref InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                             const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits);
+  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
   Ref VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode);
 

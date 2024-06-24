@@ -646,66 +646,33 @@ template void OpDispatchBuilder::AVXInsertScalarRound<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarRound<8>(OpcodeArgs);
 
 
-Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                              const X86Tables::DecodedOperand& Src2Op, uint8_t CompType, bool ZeroUpperBits) {
-  // We load the full vector width when dealing with a source vector,
-  // so that we don't do any unnecessary zero extension to the scalar
-  // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
-
-  switch (CompType) {
-  case 0x00:
-  case 0x08:
-  case 0x10:
-  case 0x18: // EQ
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::EQ, ZeroUpperBits);
-  case 0x01:
-  case 0x09:
-  case 0x11:
-  case 0x19: // LT, GT(Swapped operand)
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LT, ZeroUpperBits);
-  case 0x02:
-  case 0x0A:
-  case 0x12:
-  case 0x1A: // LE, GE(Swapped operand)
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::LE, ZeroUpperBits);
-  case 0x03:
-  case 0x0B:
-  case 0x13:
-  case 0x1B: // Unordered
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::UNO, ZeroUpperBits);
-  case 0x04:
-  case 0x0C:
-  case 0x14:
-  case 0x1C: // NEQ
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::NEQ, ZeroUpperBits);
-  case 0x05:
-  case 0x0D:
-  case 0x15:
-  case 0x1D: { // NLT, NGT(Swapped operand)
+Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType,
+                                              bool ZeroUpperBits) {
+  switch (CompType & 7) {
+  case 0x0: // EQ
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::EQ, ZeroUpperBits);
+  case 0x1: // LT, GT(Swapped operand)
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::LT, ZeroUpperBits);
+  case 0x2: // LE, GE(Swapped operand)
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::LE, ZeroUpperBits);
+  case 0x3: // Unordered
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::UNO, ZeroUpperBits);
+  case 0x4: // NEQ
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::NEQ, ZeroUpperBits);
+  case 0x5: { // NLT, NGT(Swapped operand)
     Ref Result = _VFCMPLT(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
-    return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    return _VInsElement(OpDstSize, ElementSize, 0, 0, Src1, Result);
   }
-  case 0x06:
-  case 0x0E:
-  case 0x16:
-  case 0x1E: { // NLE, NGE(Swapped operand)
+  case 0x6: { // NLE, NGE(Swapped operand)
     Ref Result = _VFCMPLE(ElementSize, ElementSize, Src1, Src2);
     Result = _VNot(ElementSize, ElementSize, Result);
     // Insert the lower bits
-    return _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
+    return _VInsElement(OpDstSize, ElementSize, 0, 0, Src1, Result);
   }
-  case 0x07:
-  case 0x0F:
-  case 0x17:
-  case 0x1F: // Ordered
-    return _VFCMPScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, FloatCompareOp::ORD, ZeroUpperBits);
-  default: LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType); break;
+  case 0x7: // Ordered
+    return _VFCMPScalarInsert(Size, ElementSize, Src1, Src2, FloatCompareOp::ORD, ZeroUpperBits);
   }
   FEX_UNREACHABLE;
 }
@@ -714,8 +681,12 @@ template<size_t ElementSize>
 void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
+  const auto SrcSize = GetSrcSize(Op);
 
-  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], CompType, false);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  Ref Result = InsertScalarFCMPOpImpl(IR::SizeToOpSize(DstSize), GetDstSize(Op), ElementSize, Src1, Src2, CompType, false);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -726,8 +697,15 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
+  const auto SrcSize = GetSrcSize(Op);
 
-  Ref Result = InsertScalarFCMPOpImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], CompType, true);
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  Ref Result = InsertScalarFCMPOpImpl(IR::SizeToOpSize(DstSize), GetDstSize(Op), ElementSize, Src1, Src2, CompType, true);
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
@@ -2522,61 +2500,27 @@ Ref OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref
   const auto Size = GetSrcSize(Op);
 
   Ref Result {};
-  switch (CompType) {
-  case 0x00:
-  case 0x08:
-  case 0x10:
-  case 0x18: // EQ
-    Result = _VFCMPEQ(Size, ElementSize, Src1, Src2);
-    break;
-  case 0x01:
-  case 0x09:
-  case 0x11:
-  case 0x19: // LT, GT(Swapped operand)
+  switch (CompType & 0x7) {
+  case 0x0: // EQ
+    return _VFCMPEQ(Size, ElementSize, Src1, Src2);
+  case 0x1: // LT, GT(Swapped operand)
+    return _VFCMPLT(Size, ElementSize, Src1, Src2);
+  case 0x2: // LE, GE(Swapped operand)
+    return _VFCMPLE(Size, ElementSize, Src1, Src2);
+  case 0x3: // Unordered
+    return _VFCMPUNO(Size, ElementSize, Src1, Src2);
+  case 0x4: // NEQ
+    return _VFCMPNEQ(Size, ElementSize, Src1, Src2);
+  case 0x5: // NLT, NGT(Swapped operand)
     Result = _VFCMPLT(Size, ElementSize, Src1, Src2);
-    break;
-  case 0x02:
-  case 0x0A:
-  case 0x12:
-  case 0x1A: // LE, GE(Swapped operand)
+    return _VNot(Size, ElementSize, Result);
+  case 0x6: // NLE, NGE(Swapped operand)
     Result = _VFCMPLE(Size, ElementSize, Src1, Src2);
-    break;
-  case 0x03:
-  case 0x0B:
-  case 0x13:
-  case 0x1B: // Unordered
-    Result = _VFCMPUNO(Size, ElementSize, Src1, Src2);
-    break;
-  case 0x04:
-  case 0x0C:
-  case 0x14:
-  case 0x1C: // NEQ
-    Result = _VFCMPNEQ(Size, ElementSize, Src1, Src2);
-    break;
-  case 0x05:
-  case 0x0D:
-  case 0x15:
-  case 0x1D: // NLT, NGT(Swapped operand)
-    Result = _VFCMPLT(Size, ElementSize, Src1, Src2);
-    Result = _VNot(Size, ElementSize, Result);
-    break;
-  case 0x06:
-  case 0x0E:
-  case 0x16:
-  case 0x1E: // NLE, NGE(Swapped operand)
-    Result = _VFCMPLE(Size, ElementSize, Src1, Src2);
-    Result = _VNot(Size, ElementSize, Result);
-    break;
-  case 0x07:
-  case 0x0F:
-  case 0x17:
-  case 0x1F: // Ordered
-    Result = _VFCMPORD(Size, ElementSize, Src1, Src2);
-    break;
-  default: LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType); break;
+    return _VNot(Size, ElementSize, Result);
+  case 0x7: // Ordered
+    return _VFCMPORD(Size, ElementSize, Src1, Src2);
   }
-
-  return Result;
+  FEX_UNREACHABLE;
 }
 
 template<size_t ElementSize>
