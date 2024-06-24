@@ -4504,14 +4504,8 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-
-  Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
+Ref OpDispatchBuilder::VPERMDIndices(OpSize DstSize, Ref Indices, Ref IndexMask, Ref Repeating3210) {
   // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
-  Ref IndexMask = _VectorImm(DstSize, 4, 0b111);
   Ref SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
 
   // Build up the broadcasted index mask. e.g. On x86-64, the selector index
@@ -4569,9 +4563,21 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
   //
   // Which finally lets us permute the source vector and be done with everything.
+  return _VAdd(DstSize, 1, ShiftedIndices, Repeating3210);
+}
+
+void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
+  Ref IndexMask = _VectorImm(DstSize, 4, 0b111);
+
   Ref AddConst = _Constant(0x03020100);
-  Ref AddVector = _VDupFromGPR(DstSize, 4, AddConst);
-  Ref FinalIndices = _VAdd(DstSize, 1, ShiftedIndices, AddVector);
+  Ref Repeating3210 = _VDupFromGPR(DstSize, 4, AddConst);
+  Ref FinalIndices = VPERMDIndices(OpSizeFromDst(Op), Indices, IndexMask, Repeating3210);
 
   // Now lets finally shuffle this bad boy around.
   Ref Result = _VTBL1(DstSize, Src, FinalIndices);
