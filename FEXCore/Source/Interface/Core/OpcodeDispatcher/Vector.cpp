@@ -3099,9 +3099,7 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 template void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
 template void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
-
+Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2) {
   if (CTX->HostFeatures.SupportsFCMA) {
     if (ElementSize == 4) {
       auto Swizzle = _VRev64(Size, 4, Src2);
@@ -3121,7 +3119,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = ADDSUBPOpImpl(Op, ElementSize, Dest, Src);
+  Ref Result = ADDSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3133,7 +3131,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
+  Ref Result = ADDSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
 }

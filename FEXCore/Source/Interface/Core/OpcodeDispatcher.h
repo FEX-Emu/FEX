@@ -1172,7 +1172,7 @@ private:
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
-  Ref ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
   void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
