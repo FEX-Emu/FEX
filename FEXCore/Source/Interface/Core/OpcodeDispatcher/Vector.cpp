@@ -3528,12 +3528,8 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
-  const auto Size = GetSrcSize(Op);
+Ref OpDispatchBuilder::PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   const uint8_t ElementSize = 2;
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
@@ -3543,7 +3539,10 @@ Ref OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand&
 }
 
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
-  Ref Result = PHADDSOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = PHADDSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3551,7 +3550,10 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  Ref Result = PHADDSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = PHADDSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
   Ref Dest = Result;
 
   if (Is256Bit) {

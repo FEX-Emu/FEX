@@ -1261,7 +1261,7 @@ private:
 
   void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
 
-  Ref PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
+  Ref PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
