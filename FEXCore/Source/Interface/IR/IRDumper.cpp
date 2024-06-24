@@ -82,7 +82,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData* RAData) {
+static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNodeWrapper Arg, const IR::RegisterAllocationData* RAData) {
   auto [CodeNode, IROp] = IR->at(Arg)();
   const auto ArgID = Arg.ID();
 
@@ -271,7 +271,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocationData* RAData) {
+void Dump(fextl::stringstream* out, const IRListView* IR, const IR::RegisterAllocationData* RAData) {
   auto HeaderOp = IR->GetHeader();
 
   int8_t CurrentIndent = 0;

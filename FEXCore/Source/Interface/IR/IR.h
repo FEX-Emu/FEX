@@ -724,7 +724,7 @@ inline NodeID NodeWrapperBase<Type>::ID() const {
 bool IsFragmentExit(FEXCore::IR::IROps Op);
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
-void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocationData* RAData);
+void Dump(fextl::stringstream* out, const IRListView* IR, const IR::RegisterAllocationData* RAData);
 } // namespace FEXCore::IR
 
 template<>
