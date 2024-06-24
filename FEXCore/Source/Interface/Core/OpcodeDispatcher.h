@@ -1224,7 +1224,7 @@ private:
 
   Ref PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
+  Ref PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
 
   Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
 

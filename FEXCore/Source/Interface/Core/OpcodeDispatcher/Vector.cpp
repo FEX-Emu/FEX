@@ -3031,10 +3031,8 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPACKSSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPACKSSOp<4>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
-
-  if (Size == 8) {
+Ref OpDispatchBuilder::PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2) {
+  if (Size == OpSize::i64Bit) {
     if (Signed) {
       return _VSMull(16, ElementSize, Src1, Src2);
     } else {
@@ -3058,7 +3056,7 @@ void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Res = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
+  Ref Res = PMULLOpImpl(OpSizeFromSrc(Op), ElementSize, Signed, Src1, Src2);
 
   StoreResult(FPRClass, Op, Res, -1);
 }
@@ -3072,7 +3070,7 @@ void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
+  Ref Result = PMULLOpImpl(OpSizeFromSrc(Op), ElementSize, Signed, Src1, Src2);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
