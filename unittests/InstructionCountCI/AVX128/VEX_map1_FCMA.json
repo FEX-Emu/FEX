@@ -1,0 +1,134 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "AFP",
+      "FCMA",
+      "AVX"
+    ],
+    "DisabledHostFeatures": [
+      "SVE256",
+      "SVE128"
+    ]
+  },
+  "Instructions": {
+    "vaddsubpd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 1 0b01 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ext v2.16b, v18.16b, v18.16b, #8",
+        "fcadd v16.2d, v17.2d, v2.2d, #90",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubpd ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #16]",
+        "ldr q3, [x28, #48]",
+        "ext v4.16b, v18.16b, v18.16b, #8",
+        "fcadd v16.2d, v16.2d, v4.2d, #90",
+        "ext v3.16b, v3.16b, v3.16b, #8",
+        "fcadd v2.2d, v2.2d, v3.2d, #90",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubpd ymm0, ymm1, ymm0": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b01 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "ldr q3, [x28, #16]",
+        "ext v4.16b, v16.16b, v16.16b, #8",
+        "fcadd v16.2d, v17.2d, v4.2d, #90",
+        "ext v3.16b, v3.16b, v3.16b, #8",
+        "fcadd v2.2d, v2.2d, v3.2d, #90",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubpd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Map 1 0b01 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "ldr q3, [x28, #48]",
+        "ext v4.16b, v18.16b, v18.16b, #8",
+        "fcadd v16.2d, v17.2d, v4.2d, #90",
+        "ext v3.16b, v3.16b, v3.16b, #8",
+        "fcadd v2.2d, v2.2d, v3.2d, #90",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 1 0b11 0xd0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "rev64 v2.4s, v18.4s",
+        "fcadd v16.4s, v17.4s, v2.4s, #90",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubps ymm0, ymm1, ymm0": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b11 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "ldr q3, [x28, #16]",
+        "rev64 v4.4s, v16.4s",
+        "fcadd v16.4s, v17.4s, v4.4s, #90",
+        "rev64 v3.4s, v3.4s",
+        "fcadd v2.4s, v2.4s, v3.4s, #90",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubps ymm0, ymm0, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Aliasing source and destination",
+        "Map 1 0b11 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #16]",
+        "ldr q3, [x28, #48]",
+        "rev64 v4.4s, v18.4s",
+        "fcadd v16.4s, v16.4s, v4.4s, #90",
+        "rev64 v3.4s, v3.4s",
+        "fcadd v2.4s, v2.4s, v3.4s, #90",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vaddsubps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Map 1 0b11 0xd0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "ldr q3, [x28, #48]",
+        "rev64 v4.4s, v18.4s",
+        "fcadd v16.4s, v17.4s, v4.4s, #90",
+        "rev64 v3.4s, v3.4s",
+        "fcadd v2.4s, v2.4s, v3.4s, #90",
+        "str q2, [x28, #16]"
+      ]
+    }
+  }
+}
