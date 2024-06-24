@@ -981,6 +981,14 @@ public:
   struct RefPair {
     Ref Low, High;
   };
+
+  RefPair AVX128_Zext(Ref R) {
+    RefPair Pair;
+    Pair.Low = R;
+    Pair.High = LoadZeroVector(OpSize::i128Bit);
+    return Pair;
+  }
+
   RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                                        bool NeedsHigh, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
