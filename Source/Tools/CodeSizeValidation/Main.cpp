@@ -505,6 +505,8 @@ int main(int argc, char** argv, char** const envp) {
     FEATURE_FLAGM = (1U << 8),
     FEATURE_FLAGM2 = (1U << 9),
     FEATURE_CRYPTO = (1U << 10),
+    FEATURE_AES256 = (1U << 11),
+    FEATURE_AVX = (1U << 12),
   };
 
   uint64_t SVEWidth = 0;
@@ -544,6 +546,9 @@ int main(int argc, char** argv, char** const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_CRYPTO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECRYPTO);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_AVX) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEAVX);
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
@@ -552,7 +557,9 @@ int main(int argc, char** argv, char** const envp) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVE);
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE256) {
-    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEAVX);
+    if (TestHeaderData->EnabledHostFeatures & FEATURE_SVE128) {
+      SVEWidth = 128;
+    }
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_CLZERO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECLZERO);
@@ -580,6 +587,9 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_CRYPTO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECRYPTO);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_AVX) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEAVX);
   }
 
   // Always enable preserve_all abi.
