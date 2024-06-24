@@ -724,6 +724,10 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+
+  if (Op->Dest.IsGPR() && Is128Bit) {
+    Src.High = LoadZeroVector(OpSize::i128Bit);
+  }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
 }
 
