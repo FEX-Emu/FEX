@@ -1041,15 +1041,6 @@ void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
     Dest = Src;
     break;
   }
-  case 0b01'01'00'00: {
-    // Zip with self.
-    // Dest[0] = Src[0]
-    // Dest[1] = Src[0]
-    // Dest[2] = Src[1]
-    // Dest[3] = Src[1]
-    Dest = _VZip(Size, 2, Src, Src);
-    break;
-  }
   case 0b00'00'00'00:
   case 0b01'01'01'01:
   case 0b10'10'10'10:
@@ -1087,20 +1078,6 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
   case IdentityCopy: {
     // Special case identity copy.
     Dest = Src;
-    break;
-  }
-  case 0b01'01'00'00: {
-    // Zip with self.
-    // Dest[0] = Src[0]
-    // Dest[1] = Src[0]
-    // Dest[2] = Src[1]
-    // Dest[3] = Src[1]
-    auto Zip = _VZip(Size, 2, Src, Src);
-    if (Low) {
-      Dest = _VZip(Size, 8, Zip, Src);
-    } else {
-      Dest = _VZip(Size, 8, Src, Zip);
-    }
     break;
   }
   case 0b00'00'00'00:
