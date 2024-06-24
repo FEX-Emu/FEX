@@ -3702,8 +3702,7 @@ template void OpDispatchBuilder::ExtendVectorElements<2, 4, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<2, 8, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode) {
-  const auto Size = GetDstSize(Op);
+Ref OpDispatchBuilder::VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode) {
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
 
@@ -3728,7 +3727,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   const uint64_t Mode = Op->Src[1].Literal();
-  Src = VectorRoundImpl(Op, ElementSize, Src, Mode);
+  Src = VectorRoundImpl(OpSizeFromDst(Op), ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
@@ -3745,7 +3744,7 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  Ref Result = VectorRoundImpl(Op, ElementSize, Src, Mode);
+  Ref Result = VectorRoundImpl(OpSizeFromDst(Op), ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Result, -1);
 }

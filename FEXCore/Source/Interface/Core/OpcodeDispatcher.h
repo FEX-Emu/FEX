@@ -1317,7 +1317,7 @@ private:
 
   Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
-  Ref VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode);
+  Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
 
   Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
                                     const X86Tables::DecodedOperand& Src2Op);
