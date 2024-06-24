@@ -795,6 +795,16 @@ DEF_OP(VLoadVectorMasked) {
     default: break;
     }
   } else {
+    const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+      switch (ElementSize) {
+      case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+      case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+      case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+      case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
+      }
+    };
+
     // Prepare yourself adventurer. For a masked load without instructions that implement it.
     LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
     size_t NumElements = IROp->Size / IROp->ElementSize;
@@ -806,19 +816,14 @@ DEF_OP(VLoadVectorMasked) {
     movi(ARMEmitter::SubRegSize::i64Bit, TempDst.Q(), 0);
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
 
-    uint64_t MaskIndex {};
     const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
     for (size_t i = 0; i < NumElements; ++i) {
-      if (((i * IROp->ElementSize) % 8) == 0) {
-        // Extract the mask element.
-        umov<ARMEmitter::SubRegSize::i64Bit>(WorkingReg, MaskReg, MaskIndex);
-        ++MaskIndex;
-      }
+      // Extract the mask element.
+      PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
 
       // If the sign bit is zero then skip the load
       ARMEmitter::SingleUseForwardLabel Skip {};
-      const size_t ElementOffset = (64 - (i * ElementSizeInBits) % 64) - 1;
-      tbz(WorkingReg, ElementOffset, &Skip);
+      tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
       case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(TempDst.Q(), i, TempMemReg); break;
@@ -886,6 +891,16 @@ DEF_OP(VStoreVectorMasked) {
     default: break;
     }
   } else {
+    const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+      switch (ElementSize) {
+      case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+      case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+      case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+      case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
+      }
+    };
+
     // Prepare yourself adventurer. For a masked store without instructions that implement it.
     LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
     size_t NumElements = IROp->Size / IROp->ElementSize;
@@ -895,19 +910,14 @@ DEF_OP(VStoreVectorMasked) {
     auto TempMemReg = MemReg;
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
 
-    uint64_t MaskIndex {};
     const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
     for (size_t i = 0; i < NumElements; ++i) {
-      if (((i * IROp->ElementSize) % 8) == 0) {
-        // Extract the mask element.
-        umov<ARMEmitter::SubRegSize::i64Bit>(WorkingReg, MaskReg, MaskIndex);
-        ++MaskIndex;
-      }
+      // Extract the mask element.
+      PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
 
       // If the sign bit is zero then skip the load
       ARMEmitter::SingleUseForwardLabel Skip {};
-      const size_t ElementOffset = (64 - (i * ElementSizeInBits) % 64) - 1;
-      tbz(WorkingReg, ElementOffset, &Skip);
+      tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
       case 1: st1<ARMEmitter::SubRegSize::i8Bit>(RegData.Q(), i, TempMemReg); break;
