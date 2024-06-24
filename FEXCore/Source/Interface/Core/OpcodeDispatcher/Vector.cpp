@@ -3408,11 +3408,9 @@ void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPMULHWOp<false>(OpcodeArgs);
 template void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
-
+Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   Ref Res {};
-  if (Size == 8) {
+  if (Size == OpSize::i64Bit) {
     // Implementation is more efficient for 8byte registers
     Res = _VSMull(Size * 2, 2, Src1, Src2);
     Res = _VSShrI(Size * 2, 4, Res, 14);
@@ -3443,7 +3441,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2) {
 void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = PMULHRSWOpImpl(Op, Dest, Src);
+  Ref Result = PMULHRSWOpImpl(OpSizeFromSrc(Op), Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3451,7 +3449,7 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
 void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = PMULHRSWOpImpl(Op, Dest, Src);
+  Ref Result = PMULHRSWOpImpl(OpSizeFromSrc(Op), Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }

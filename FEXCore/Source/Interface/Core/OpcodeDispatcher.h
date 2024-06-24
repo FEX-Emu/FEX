@@ -1220,7 +1220,7 @@ private:
 
   Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref PMULHRSWOpImpl(OpcodeArgs, Ref Src1, Ref Src2);
+  Ref PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2);
 
