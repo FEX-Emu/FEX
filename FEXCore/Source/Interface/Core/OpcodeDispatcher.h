@@ -1211,7 +1211,7 @@ private:
 
   Ref PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize);
 
-  Ref PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
