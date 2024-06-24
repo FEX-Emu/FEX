@@ -594,16 +594,7 @@ void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits) {
-  // We load the full vector width when dealing with a source vector,
-  // so that we don't do any unnecessary zero extension to the scalar
-  // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
-  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
-
+RoundType OpDispatchBuilder::TranslateRoundType(uint8_t Mode) {
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
 
@@ -614,8 +605,20 @@ Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t 
     FEXCore::IR::Round_Towards_Zero,
   };
 
-  const auto SourceMode = RoundControlSource ? Round_Host : SourceModes[RoundControl];
+  return RoundControlSource ? Round_Host : SourceModes[RoundControl];
+}
 
+Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
+  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+
+  const auto SourceMode = TranslateRoundType(Mode);
   auto ALUOp = _VFToIScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, SourceMode, ZeroUpperBits);
 
   return ALUOp;
@@ -3702,22 +3705,8 @@ template void OpDispatchBuilder::ExtendVectorElements<2, 4, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<2, 8, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode) {
-  const auto Size = GetDstSize(Op);
-  const uint64_t RoundControlSource = (Mode >> 2) & 1;
-  uint64_t RoundControl = Mode & 0b11;
-
-  if (RoundControlSource) {
-    RoundControl = 0; // MXCSR
-  }
-
-  static constexpr std::array SourceModes = {
-    FEXCore::IR::Round_Nearest, FEXCore::IR::Round_Negative_Infinity, FEXCore::IR::Round_Positive_Infinity, FEXCore::IR::Round_Towards_Zero,
-    FEXCore::IR::Round_Host,
-  };
-
-  const auto SourceMode = SourceModes[(RoundControlSource << 2) | RoundControl];
-  return _Vector_FToI(Size, ElementSize, Src, SourceMode);
+Ref OpDispatchBuilder::VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode) {
+  return _Vector_FToI(Size, ElementSize, Src, TranslateRoundType(Mode));
 }
 
 template<size_t ElementSize>
@@ -3728,7 +3717,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   const uint64_t Mode = Op->Src[1].Literal();
-  Src = VectorRoundImpl(Op, ElementSize, Src, Mode);
+  Src = VectorRoundImpl(OpSizeFromDst(Op), ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
@@ -3745,7 +3734,7 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  Ref Result = VectorRoundImpl(Op, ElementSize, Src, Mode);
+  Ref Result = VectorRoundImpl(OpSizeFromDst(Op), ElementSize, Src, Mode);
 
   StoreResult(FPRClass, Op, Result, -1);
 }

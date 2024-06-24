@@ -312,7 +312,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VUMAX, 4>},
 
     {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VMUL, 4>},
-    // TODO: {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
+    {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_PHMINPOSUW},
     {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::AVX128_VPSRLV},
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPSRAVD},
     {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::AVX128_VPSLLV},
@@ -327,11 +327,11 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
     // TODO: {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
 
-    // TODO: {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
-    // TODO: {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
-    // TODO: {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
-    // TODO: {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::VAESDecOp},
-    // TODO: {OPD(2, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESDecLastOp},
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AVX128_VAESImc},
+    {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::AVX128_VAESEnc},
+    {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::AVX128_VAESEncLast},
+    {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::AVX128_VAESDec},
+    {OPD(2, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESDecLast},
 
     // TODO: {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     // TODO: {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
@@ -339,10 +339,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::VPERMILImmOp<4>},
     // TODO: {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
     // TODO: {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
-    // TODO: {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<4>},
-    // TODO: {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<8>},
-    // TODO: {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<4>},
-    // TODO: {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<8>},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
+    {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<4>},
+    {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<8>},
     // TODO: {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
     // TODO: {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
     // TODO: {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
@@ -372,12 +372,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     // TODO: {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVXVectorVariableBlend<8>},
     // TODO: {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVXVectorVariableBlend<1>},
 
-    // TODO: {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
-    // TODO: {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
-    // TODO: {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
-    // TODO: {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPCMPESTRM},
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPCMPESTRI},
+    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::AVX128_VPCMPISTRM},
+    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::AVX128_VPCMPISTRI},
 
-    // TODO: {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESKeyGenAssist},
   };
 #undef OPD
 
@@ -608,6 +608,24 @@ void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size
     Result.High = LoadZeroVector(OpSize::i128Bit);
   } else {
     Result.High = Helper(ElementSize, Src1.High, Src2.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
+                                                 std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper) {
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+  RefPair Result {};
+  Result.Low = Helper(ElementSize, Src1.Low, Src2.Low, Src3);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Helper(ElementSize, Src1.High, Src2.High, Src3);
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
@@ -1598,6 +1616,106 @@ void OpDispatchBuilder::AVX128_VEXTRACT128(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VAESImc(OpcodeArgs) {
+  ///< 128-bit only.
+  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this](size_t, Ref Src) { return _VAESImc(Src); });
+}
+
+void OpDispatchBuilder::AVX128_VAESEnc(OpcodeArgs) {
+  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESEnc(OpSize::i128Bit, Src1, Src2, Src3); });
+}
+
+void OpDispatchBuilder::AVX128_VAESEncLast(OpcodeArgs) {
+  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESEncLast(OpSize::i128Bit, Src1, Src2, Src3); });
+}
+
+void OpDispatchBuilder::AVX128_VAESDec(OpcodeArgs) {
+  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESDec(OpSize::i128Bit, Src1, Src2, Src3); });
+}
+
+void OpDispatchBuilder::AVX128_VAESDecLast(OpcodeArgs) {
+  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESDecLast(OpSize::i128Bit, Src1, Src2, Src3); });
+}
+
+void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
+  ///< 128-bit only.
+  const uint64_t RCON = Op->Src[1].Literal();
+  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+  auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
+
+  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, ZeroRegister, KeyGenSwizzle, RCON](size_t, Ref Src) {
+    return _VAESKeyGenAssist(Src, KeyGenSwizzle, ZeroRegister, RCON);
+  });
+}
+
+void OpDispatchBuilder::AVX128_VPCMPESTRI(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, true, false);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPESTRM(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, true, true);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPISTRI(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, false);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_VPCMPISTRM(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, true);
+
+  ///< Zero the upper 128-bits of hardcoded YMM0
+  AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
+}
+
+void OpDispatchBuilder::AVX128_PHMINPOSUW(OpcodeArgs) {
+  Ref Result = PHMINPOSUWOpImpl(Op);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+  const auto Mode = Op->Src[1].Literal();
+
+  AVX128_VectorUnaryImpl(Op, Size, ElementSize,
+                         [this, Mode](size_t, Ref Src) { return VectorRoundImpl(OpSize::i128Bit, ElementSize, Src, Mode); });
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
+  // We load the full vector width when dealing with a source vector,
+  // so that we don't do any unnecessary zero extension to the scalar
+  // element that we're going to operate on.
+  const auto SrcSize = GetSrcSize(Op);
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+  } else {
+    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+  }
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  const auto SourceMode = TranslateRoundType(Op->Src[2].Literal());
+
+  Ref Result = _VFToIScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, SourceMode, false);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
 } // namespace FEXCore::IR

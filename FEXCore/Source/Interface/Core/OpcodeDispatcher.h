@@ -583,6 +583,8 @@ public:
   template<size_t DstElementSize, size_t SrcElementSize>
   void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
+  RoundType TranslateRoundType(uint8_t Mode);
+
   template<size_t ElementSize>
   void InsertScalarRound(OpcodeArgs);
   template<size_t ElementSize>
@@ -1002,6 +1004,8 @@ public:
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
   void AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+  void AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
+                                std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
 
   enum class ShiftDirection { RIGHT, LEFT };
   void AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir);
@@ -1119,6 +1123,24 @@ public:
   void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
 
   void AVX128_VEXTRACT128(OpcodeArgs);
+  void AVX128_VAESImc(OpcodeArgs);
+  void AVX128_VAESEnc(OpcodeArgs);
+  void AVX128_VAESEncLast(OpcodeArgs);
+  void AVX128_VAESDec(OpcodeArgs);
+  void AVX128_VAESDecLast(OpcodeArgs);
+  void AVX128_VAESKeyGenAssist(OpcodeArgs);
+
+  void AVX128_VPCMPESTRI(OpcodeArgs);
+  void AVX128_VPCMPESTRM(OpcodeArgs);
+  void AVX128_VPCMPISTRI(OpcodeArgs);
+  void AVX128_VPCMPISTRM(OpcodeArgs);
+
+  void AVX128_PHMINPOSUW(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VectorRound(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_InsertScalarRound(OpcodeArgs);
 
   // End of AVX 128-bit implementation
 
@@ -1317,7 +1339,7 @@ private:
 
   Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
-  Ref VectorRoundImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Mode);
+  Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
 
   Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
                                     const X86Tables::DecodedOperand& Src2Op);
