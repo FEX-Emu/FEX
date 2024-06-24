@@ -1209,7 +1209,7 @@ private:
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
-  Ref PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, size_t ElementSize);
+  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize);
 
   Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
