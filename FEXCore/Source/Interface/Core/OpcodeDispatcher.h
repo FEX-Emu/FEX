@@ -583,6 +583,8 @@ public:
   template<size_t DstElementSize, size_t SrcElementSize>
   void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
+  RoundType TranslateRoundType(uint8_t Mode);
+
   template<size_t ElementSize>
   void InsertScalarRound(OpcodeArgs);
   template<size_t ElementSize>
