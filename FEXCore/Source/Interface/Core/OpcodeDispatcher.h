@@ -1249,7 +1249,7 @@ private:
 
   Ref ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
 
-  Ref HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref HSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);

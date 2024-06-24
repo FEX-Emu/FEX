@@ -3455,12 +3455,7 @@ void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-Ref OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
-  const auto SrcSize = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
-
+Ref OpDispatchBuilder::HSUBPOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
   auto Even = _VUnZip(SrcSize, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(SrcSize, ElementSize, Src1, Src2);
   return _VFSub(SrcSize, ElementSize, Even, Odd);
@@ -3468,7 +3463,9 @@ Ref OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tabl
 
 template<size_t ElementSize>
 void OpDispatchBuilder::HSUBP(OpcodeArgs) {
-  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Dest, Op->Src[0]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3480,7 +3477,10 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
   Ref Dest = Result;
   if (Is256Bit) {
     Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
