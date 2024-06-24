@@ -336,14 +336,15 @@
       ]
     },
     "pshufhw xmm0, xmm1, 01010000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Upper elements Self-zip",
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "zip1 v2.8h, v17.8h, v17.8h",
-        "zip1 v16.2d, v17.2d, v2.2d"
+        "ldr x0, [x28, #2008]",
+        "ldr q2, [x0, #1280]",
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "pshufhw xmm0, xmm1, 1": {
