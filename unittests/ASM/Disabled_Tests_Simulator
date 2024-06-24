@@ -19,6 +19,7 @@ Test_VEX/vaeskeygenassist.asm
 # PCMUL considered to be part of crypto operations. Simulator doesn't support this.
 Test_H0F3A/pclmulqdq.asm
 Test_VEX/vpclmulqdq.asm
+Test_VEX/vpclmulqdq_256.asm
 
 # Simulator can't handle self-modifying code
 Test_SelfModifyingCode/Delinking.asm
