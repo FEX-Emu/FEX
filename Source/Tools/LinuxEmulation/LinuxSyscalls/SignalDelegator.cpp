@@ -439,14 +439,9 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     memcpy(Frame->State.mm, fpstate->_st, sizeof(Frame->State.mm));
 
     if (IsAVXEnabled) {
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
-      }
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
-      }
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
-      memcpy(Frame->State.xmm.sse.data, fpstate->_xmm, sizeof(Frame->State.xmm.sse.data));
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
     }
 
     // FCW store default
@@ -517,14 +512,9 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
 
     // Extended XMM state
     if (IsAVXEnabled) {
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
-      }
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
-      }
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
-      memcpy(Frame->State.xmm.sse.data, fpstate->_xmm, sizeof(Frame->State.xmm.sse.data));
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
     }
 
     // FCW store default
@@ -596,14 +586,9 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
 
     // Extended XMM state
     if (IsAVXEnabled) {
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
-      }
-      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&Frame->State.xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
-      }
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
-      memcpy(Frame->State.xmm.sse.data, fpstate->_xmm, sizeof(Frame->State.xmm.sse.data));
+      CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
     }
 
     // FCW store default
@@ -726,14 +711,9 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   memcpy(fpstate->_st, Frame->State.mm, sizeof(Frame->State.mm));
 
   if (IsAVXEnabled) {
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-      memcpy(&fpstate->_xmm[i], &Frame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
-    }
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-      memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
-    }
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
-    memcpy(fpstate->_xmm, Frame->State.xmm.sse.data, sizeof(Frame->State.xmm.sse.data));
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
   }
 
   // FCW store default
@@ -771,9 +751,9 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   return NewGuestSP;
 }
 
-uint64_t SignalDelegator::SetupFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame* Frame,
-                                          int Signal, siginfo_t* HostSigInfo, void* ucontext, GuestSigAction* GuestAction,
-                                          stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
+uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* ContextBackup,
+                                          FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
+                                          GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
 
   const bool IsAVXEnabled = Config.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(VDSOPointers.VDSO_kernel_sigreturn);
@@ -851,15 +831,11 @@ uint64_t SignalDelegator::SetupFrame_ia32(ArchHelpers::Context::ContextBackup* C
 
   // Extended XMM state
   fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
+
   if (IsAVXEnabled) {
-    for (size_t i = 0; i < std::size(Frame->State.xmm.avx.data); i++) {
-      memcpy(&fpstate->_xmm[i], &Frame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
-    }
-    for (size_t i = 0; i < std::size(Frame->State.xmm.avx.data); i++) {
-      memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
-    }
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
-    memcpy(fpstate->_xmm, Frame->State.xmm.sse.data, sizeof(Frame->State.xmm.sse.data));
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
   }
 
   // FCW store default
@@ -904,9 +880,9 @@ uint64_t SignalDelegator::SetupFrame_ia32(ArchHelpers::Context::ContextBackup* C
   return NewGuestSP;
 }
 
-uint64_t SignalDelegator::SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame* Frame,
-                                            int Signal, siginfo_t* HostSigInfo, void* ucontext, GuestSigAction* GuestAction,
-                                            stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
+uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* ContextBackup,
+                                            FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
+                                            GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
 
   const bool IsAVXEnabled = Config.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(VDSOPointers.VDSO_kernel_rt_sigreturn);
@@ -990,15 +966,11 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup*
 
   // Extended XMM state
   fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
+
   if (IsAVXEnabled) {
-    for (size_t i = 0; i < std::size(Frame->State.xmm.avx.data); i++) {
-      memcpy(&fpstate->_xmm[i], &Frame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
-    }
-    for (size_t i = 0; i < std::size(Frame->State.xmm.avx.data); i++) {
-      memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
-    }
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
-    memcpy(fpstate->_xmm, Frame->State.xmm.sse.data, sizeof(Frame->State.xmm.sse.data));
+    CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
   }
 
   // FCW store default
@@ -1193,9 +1165,9 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
   } else {
     const bool SigInfoFrame = (GuestAction->sa_flags & SA_SIGINFO) == SA_SIGINFO;
     if (SigInfoFrame) {
-      NewGuestSP = SetupRTFrame_ia32(ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
+      NewGuestSP = SetupRTFrame_ia32(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
     } else {
-      NewGuestSP = SetupFrame_ia32(ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
+      NewGuestSP = SetupFrame_ia32(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
     }
   }
 

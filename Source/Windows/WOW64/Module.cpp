@@ -159,7 +159,7 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread, uint64_
   // Floating-point register state
   const auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(Context->ExtendedRegisters);
 
-  memcpy(State.xmm.sse.data, XSave->XmmRegisters, sizeof(State.xmm.sse.data));
+  CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(XSave->XmmRegisters), nullptr);
   memcpy(State.mm, XSave->FloatRegisters, sizeof(State.mm));
 
   State.FCW = XSave->ControlWord;
@@ -199,7 +199,7 @@ void StoreWowContextFromState(FEXCore::Core::InternalThreadState* Thread, WOW64_
 
   auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(Context->ExtendedRegisters);
 
-  memcpy(XSave->XmmRegisters, State.xmm.sse.data, sizeof(State.xmm.sse.data));
+  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(XSave->XmmRegisters), nullptr);
   memcpy(XSave->FloatRegisters, State.mm, sizeof(State.mm));
 
   XSave->ControlWord = State.FCW;
