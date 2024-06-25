@@ -4795,19 +4795,17 @@ Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref 
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   auto IsPD = ElementSize == 8;
 
-  const auto SanitizeIndices = [&](Ref Indices) {
-    const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
-    Ref IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
-    return _VAnd(DstSize, 1, Indices, IndexMask);
-  };
-
   if (IsPD) {
     // VPERMILPD stores the selector in the second bit, rather than the
     // first bit of each element in the index vector. So move it over by one.
     Indices = _VUShrI(DstSize, ElementSize, Indices, 1);
   }
 
-  Ref SanitizedIndices = SanitizeIndices(Indices);
+  // Sanitize indices first
+  const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
+  Ref IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
+  Ref SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
+
   Ref IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
   Ref IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
   Ref IndexTrn3 = IndexTrn2;
