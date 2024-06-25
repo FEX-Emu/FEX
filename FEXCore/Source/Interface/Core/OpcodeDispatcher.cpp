@@ -5404,13 +5404,15 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   if (CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
     InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
+    if (CTX->HostFeatures.SupportsPMULL_128Bit) {
+      InstallToTable(FEXCore::X86Tables::VEXTableOps, VEX_PCLMUL);
+    }
   } else if (CTX->HostFeatures.SupportsAVX) {
     InstallAVX128Handlers();
   }
 
   if (CTX->HostFeatures.SupportsPMULL_128Bit) {
     InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3A_PCLMUL);
-    InstallToTable(FEXCore::X86Tables::VEXTableOps, VEX_PCLMUL);
   }
   Initialized = true;
 }

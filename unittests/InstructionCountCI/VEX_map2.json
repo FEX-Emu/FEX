@@ -623,13 +623,13 @@
       ],
       "ExpectedArm64ASM": [
         "mov z2.s, #7",
+        "mov w20, #0x100",
+        "movk w20, #0x302, lsl #16",
+        "mov z3.s, w20",
         "and z2.d, z17.d, z2.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
         "lsl z2.b, p7/m, z2.b, #2",
-        "mov w20, #0x100",
-        "movk w20, #0x302, lsl #16",
-        "mov z3.s, w20",
         "add z2.b, z2.b, z3.b",
         "tbl z16.b, {z18.b}, z2.b"
       ]
@@ -1207,13 +1207,13 @@
       ],
       "ExpectedArm64ASM": [
         "mov z2.s, #7",
+        "mov w20, #0x100",
+        "movk w20, #0x302, lsl #16",
+        "mov z3.s, w20",
         "and z2.d, z17.d, z2.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
         "lsl z2.b, p7/m, z2.b, #2",
-        "mov w20, #0x100",
-        "movk w20, #0x302, lsl #16",
-        "mov z3.s, w20",
         "add z2.b, z2.b, z3.b",
         "tbl z16.b, {z18.b}, z2.b"
       ]

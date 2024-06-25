@@ -2597,7 +2597,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   }
   // AVX
   if (CTX->HostFeatures.SupportsAVX) {
-    StoreIfFlagSet(2, [this, Op] { SaveAVXState(XSaveBase(Op)); });
+    StoreIfFlagSet(2, [this, Op] { std::invoke(SaveAVXStateFunc, this, XSaveBase(Op)); });
   }
 
   // We need to save MXCSR and MXCSR_MASK if either SSE or AVX are requested to be saved
@@ -2793,7 +2793,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   // AVX
   if (CTX->HostFeatures.SupportsAVX) {
     RestoreIfFlagSetOrDefault(
-      2, [this, Op] { RestoreAVXState(XSaveBase(Op)); }, [this] { DefaultAVXState(); });
+      2, [this, Op] { std::invoke(RestoreAVXStateFunc, this, XSaveBase(Op)); }, [this] { std::invoke(DefaultAVXStateFunc, this); });
   }
 
   {
@@ -3440,12 +3440,7 @@ void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-Ref OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
-  const auto SrcSize = GetSrcSize(Op);
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
-
+Ref OpDispatchBuilder::HSUBPOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
   auto Even = _VUnZip(SrcSize, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(SrcSize, ElementSize, Src1, Src2);
   return _VFSub(SrcSize, ElementSize, Even, Odd);
@@ -3453,7 +3448,9 @@ Ref OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tabl
 
 template<size_t ElementSize>
 void OpDispatchBuilder::HSUBP(OpcodeArgs) {
-  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Dest, Op->Src[0]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3465,7 +3462,10 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  Ref Result = HSUBPOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
   Ref Dest = Result;
   if (Is256Bit) {
     Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
@@ -3513,12 +3513,8 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
-  const auto Size = GetSrcSize(Op);
+Ref OpDispatchBuilder::PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   const uint8_t ElementSize = 2;
-
-  Ref Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
 
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
@@ -3528,7 +3524,10 @@ Ref OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand&
 }
 
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
-  Ref Result = PHADDSOpImpl(Op, Op->Dest, Op->Src[0]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = PHADDSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3536,7 +3535,10 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  Ref Result = PHADDSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = PHADDSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
   Ref Dest = Result;
 
   if (Is256Bit) {
@@ -3960,14 +3962,9 @@ template void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
 
-void OpDispatchBuilder::PTestOp(OpcodeArgs) {
+void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
   // Invalidate deferred flags early
   InvalidateDeferredFlags();
-
-  auto Size = GetSrcSize(Op);
-
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   Ref Test1 = _VAnd(Size, 1, Dest, Src);
   Ref Test2 = _VAndn(Size, 1, Src, Dest);
@@ -3994,15 +3991,18 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   ZeroPF_AF();
 }
 
-void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::PTestOp(OpcodeArgs) {
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  PTestOpImpl(OpSizeFromSrc(Op), Dest, Src);
+}
+
+void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
   InvalidateDeferredFlags();
 
-  const auto SrcSize = GetSrcSize(Op);
   const auto ElementSizeInBits = ElementSize * 8;
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
-
-  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   Ref Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
 
@@ -4032,7 +4032,10 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
-  VTESTOpImpl(Op, ElementSize);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  VTESTOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
 }
 template void OpDispatchBuilder::VTESTPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VTESTPOp<8>(OpcodeArgs);
@@ -4081,9 +4084,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                                 const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
-  const uint8_t Mask = Imm.Literal();
+Ref OpDispatchBuilder::DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize) {
   const auto SizeMask = [ElementSize]() {
     if (ElementSize == 4) {
       return 0b1111;
@@ -4101,7 +4102,6 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
 
     return FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK;
   }();
-  const auto DstSize = GetDstSize(Op);
 
   Ref ZeroVec = LoadZeroVector(DstSize);
   if (SrcMask == 0 || DstMask == 0) {
@@ -4109,11 +4109,8 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
     return ZeroVec;
   }
 
-  Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
-  Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
-
   // First step is to do an FMUL
-  Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
+  Ref Temp = _VFMul(DstSize, ElementSize, Src1, Src2);
 
   // Now mask results based on IndexMask.
   if (SrcMask != SizeMask) {
@@ -4265,7 +4262,11 @@ Ref OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Sr
 
 template<size_t ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  Ref Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = DPPOpImpl(GetDstSize(Op), Dest, Src, Op->Src[1].Literal(), ElementSize);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -4331,7 +4332,10 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
     // 256-bit DPPS isn't handled by the 128-bit solution.
     Result = VDPPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   } else {
-    Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+    Result = DPPOpImpl(GetDstSize(Op), Src1, Src2, Op->Src[2].Literal(), ElementSize);
   }
 
   // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
@@ -4488,14 +4492,8 @@ void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-
-  Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-
+Ref OpDispatchBuilder::VPERMDIndices(OpSize DstSize, Ref Indices, Ref IndexMask, Ref Repeating3210) {
   // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
-  Ref IndexMask = _VectorImm(DstSize, 4, 0b111);
   Ref SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
 
   // Build up the broadcasted index mask. e.g. On x86-64, the selector index
@@ -4553,9 +4551,21 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   // ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝
   //
   // Which finally lets us permute the source vector and be done with everything.
+  return _VAdd(DstSize, 1, ShiftedIndices, Repeating3210);
+}
+
+void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
+  Ref IndexMask = _VectorImm(DstSize, 4, 0b111);
+
   Ref AddConst = _Constant(0x03020100);
-  Ref AddVector = _VDupFromGPR(DstSize, 4, AddConst);
-  Ref FinalIndices = _VAdd(DstSize, 1, ShiftedIndices, AddVector);
+  Ref Repeating3210 = _VDupFromGPR(DstSize, 4, AddConst);
+  Ref FinalIndices = VPERMDIndices(OpSizeFromDst(Op), Indices, IndexMask, Repeating3210);
 
   // Now lets finally shuffle this bad boy around.
   Ref Result = _VTBL1(DstSize, Src, FinalIndices);
@@ -4762,43 +4772,37 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPERMILImmOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
+Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices) {
   // NOTE: See implementation of VPERMD for the gist of what we do to make this work.
   //
   //       The only difference here is that we need to add 16 to the upper lane
   //       before doing the final addition to build up the indices for TBL.
 
-  const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  constexpr auto IsPD = ElementSize == 8;
+  auto IsPD = ElementSize == 8;
 
-  const auto SanitizeIndices = [&](Ref Indices) {
-    const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
-    Ref IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
-    return _VAnd(DstSize, 1, Indices, IndexMask);
-  };
-
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  if constexpr (IsPD) {
+  if (IsPD) {
     // VPERMILPD stores the selector in the second bit, rather than the
     // first bit of each element in the index vector. So move it over by one.
     Indices = _VUShrI(DstSize, ElementSize, Indices, 1);
   }
 
-  Ref SanitizedIndices = SanitizeIndices(Indices);
+  // Sanitize indices first
+  const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
+  Ref IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
+  Ref SanitizedIndices = _VAnd(DstSize, 1, Indices, IndexMask);
+
   Ref IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
   Ref IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
   Ref IndexTrn3 = IndexTrn2;
-  if constexpr (IsPD) {
+  if (IsPD) {
     IndexTrn3 = _VTrn(DstSize, 4, IndexTrn2, IndexTrn2);
   }
 
-  constexpr auto IndexShift = IsPD ? 3 : 2;
+  auto IndexShift = IsPD ? 3 : 2;
   Ref ShiftedIndices = _VShlI(DstSize, 1, IndexTrn3, IndexShift);
 
-  constexpr uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
+  uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
   Ref VectorConst = _VDupFromGPR(DstSize, ElementSize, _Constant(VConstant));
   Ref FinalIndices {};
 
@@ -4812,8 +4816,15 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
     FinalIndices = _VAdd(DstSize, 1, VectorConst, ShiftedIndices);
   }
 
-  Ref Result = _VTBL1(DstSize, Src, FinalIndices);
+  return _VTBL1(DstSize, Src, FinalIndices);
+}
 
+template<size_t ElementSize>
+void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = VPERMILRegOpImpl(OpSizeFromDst(Op), ElementSize, Src, Indices);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

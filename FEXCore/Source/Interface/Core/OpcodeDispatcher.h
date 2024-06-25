@@ -663,12 +663,16 @@ public:
   void VPCMPISTRIOp(OpcodeArgs);
   void VPCMPISTRMOp(OpcodeArgs);
 
+  Ref VPERMDIndices(OpSize DstSize, Ref Indices, Ref IndexMask, Ref Repeating3210);
+
   void VPERM2Op(OpcodeArgs);
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
   template<size_t ElementSize>
   void VPERMILImmOp(OpcodeArgs);
+
+  Ref VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices);
   template<size_t ElementSize>
   void VPERMILRegOp(OpcodeArgs);
 
@@ -961,6 +965,7 @@ public:
 
   template<size_t ElementSize>
   void VectorVariableBlend(OpcodeArgs);
+  void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
   template<size_t ElementSize>
@@ -1142,8 +1147,70 @@ public:
   template<size_t ElementSize>
   void AVX128_InsertScalarRound(OpcodeArgs);
 
-  // End of AVX 128-bit implementation
+  template<size_t ElementSize>
+  void AVX128_VDPP(OpcodeArgs);
+  void AVX128_VPERMQ(OpcodeArgs);
 
+  template<size_t ElementSize, bool Low>
+  void AVX128_VPSHUF(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VSHUF(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VPERMILImm(OpcodeArgs);
+
+  template<IROps IROp, size_t ElementSize>
+  void AVX128_VHADDP(OpcodeArgs);
+
+  void AVX128_VPHADDSW(OpcodeArgs);
+
+  void AVX128_VPMADDUBSW(OpcodeArgs);
+  void AVX128_VPMADDWD(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VBLEND(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VHSUBP(OpcodeArgs);
+
+  void AVX128_VPSHUFB(OpcodeArgs);
+  void AVX128_VPSADBW(OpcodeArgs);
+
+  void AVX128_VMPSADBW(OpcodeArgs);
+  void AVX128_VPALIGNR(OpcodeArgs);
+
+  void AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+                           const X86Tables::DecodedOperand& DataOp);
+
+  template<bool IsStore>
+  void AVX128_VPMASKMOV(OpcodeArgs);
+
+  template<size_t ElementSize, bool IsStore>
+  void AVX128_VMASKMOV(OpcodeArgs);
+
+  void AVX128_MASKMOV(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VectorVariableBlend(OpcodeArgs);
+
+  void AVX128_SaveAVXState(Ref MemBase);
+  void AVX128_RestoreAVXState(Ref MemBase);
+  void AVX128_DefaultAVXState();
+
+  void AVX128_VPERM2(OpcodeArgs);
+  template<size_t ElementSize>
+  void AVX128_VTESTP(OpcodeArgs);
+  void AVX128_PTest(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void AVX128_VPERMILReg(OpcodeArgs);
+
+  void AVX128_VPERMD(OpcodeArgs);
+
+  void AVX128_VPCLMULQDQ(OpcodeArgs);
+
+  // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);
@@ -1224,6 +1291,12 @@ private:
   // Used during new op bringup
   bool ShouldDump {false};
 
+  using SaveStoreAVXStatePtr = void (OpDispatchBuilder::*)(Ref MemBase);
+  using DefaultAVXStatePtr = void (OpDispatchBuilder::*)();
+  SaveStoreAVXStatePtr SaveAVXStateFunc {&OpDispatchBuilder::SaveAVXState};
+  SaveStoreAVXStatePtr RestoreAVXStateFunc {&OpDispatchBuilder::RestoreAVXState};
+  DefaultAVXStatePtr DefaultAVXStateFunc {&OpDispatchBuilder::DefaultAVXState};
+
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
@@ -1242,14 +1315,13 @@ private:
 
   Ref CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
-                const X86Tables::DecodedOperand& Imm, size_t ElementSize);
+  Ref DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize);
 
   Ref VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm);
 
   Ref ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
 
-  Ref HSUBPOpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref HSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
@@ -1261,7 +1333,7 @@ private:
 
   void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
 
-  Ref PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2);
+  Ref PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
@@ -1306,7 +1378,7 @@ private:
 
   Ref VFCMPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
 
-  void VTESTOpImpl(OpcodeArgs, size_t ElementSize);
+  void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
 
   void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
