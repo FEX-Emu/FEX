@@ -409,7 +409,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
-  auto Res = _PCLMUL(16, Dest, Src, Selector);
+  auto Res = _PCLMUL(16, Dest, Src, Selector & 0b1'0001);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -420,7 +420,7 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
-  Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector);
+  Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector & 0b1'0001);
   StoreResult(FPRClass, Op, Res, -1);
 }
 

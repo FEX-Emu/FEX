@@ -2268,9 +2268,11 @@ void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result.Low = _PCLMUL(OpSize::i128Bit, Src1.Low, Src2.Low, Selector);
-  if (!Is128Bit) {
-    Result.High = _PCLMUL(OpSize::i128Bit, Src1.High, Src2.High, Selector);
+  Result.Low = _PCLMUL(OpSize::i128Bit, Src1.Low, Src2.Low, Selector & 0b1'0001);
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = _PCLMUL(OpSize::i128Bit, Src1.High, Src2.High, Selector & 0b1'0001);
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
