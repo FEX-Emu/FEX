@@ -4011,15 +4011,11 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   ZeroPF_AF();
 }
 
-void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
   InvalidateDeferredFlags();
 
-  const auto SrcSize = GetSrcSize(Op);
   const auto ElementSizeInBits = ElementSize * 8;
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
-
-  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   Ref Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
 
@@ -4049,7 +4045,10 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
-  VTESTOpImpl(Op, ElementSize);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  VTESTOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
 }
 template void OpDispatchBuilder::VTESTPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VTESTPOp<8>(OpcodeArgs);
