@@ -3977,14 +3977,9 @@ template void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
 
-void OpDispatchBuilder::PTestOp(OpcodeArgs) {
+void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
   // Invalidate deferred flags early
   InvalidateDeferredFlags();
-
-  auto Size = GetSrcSize(Op);
-
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   Ref Test1 = _VAnd(Size, 1, Dest, Src);
   Ref Test2 = _VAndn(Size, 1, Src, Dest);
@@ -4009,6 +4004,13 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
 
   ZeroPF_AF();
+}
+
+void OpDispatchBuilder::PTestOp(OpcodeArgs) {
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  PTestOpImpl(OpSizeFromSrc(Op), Dest, Src);
 }
 
 void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {

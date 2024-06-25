@@ -963,6 +963,7 @@ public:
 
   template<size_t ElementSize>
   void VectorVariableBlend(OpcodeArgs);
+  void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
   template<size_t ElementSize>
