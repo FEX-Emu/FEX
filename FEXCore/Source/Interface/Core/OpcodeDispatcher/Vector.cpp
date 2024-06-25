@@ -4786,16 +4786,14 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPERMILImmOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
+Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices) {
   // NOTE: See implementation of VPERMD for the gist of what we do to make this work.
   //
   //       The only difference here is that we need to add 16 to the upper lane
   //       before doing the final addition to build up the indices for TBL.
 
-  const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  constexpr auto IsPD = ElementSize == 8;
+  auto IsPD = ElementSize == 8;
 
   const auto SanitizeIndices = [&](Ref Indices) {
     const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
@@ -4803,9 +4801,7 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
     return _VAnd(DstSize, 1, Indices, IndexMask);
   };
 
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  if constexpr (IsPD) {
+  if (IsPD) {
     // VPERMILPD stores the selector in the second bit, rather than the
     // first bit of each element in the index vector. So move it over by one.
     Indices = _VUShrI(DstSize, ElementSize, Indices, 1);
@@ -4815,14 +4811,14 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
   Ref IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
   Ref IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
   Ref IndexTrn3 = IndexTrn2;
-  if constexpr (IsPD) {
+  if (IsPD) {
     IndexTrn3 = _VTrn(DstSize, 4, IndexTrn2, IndexTrn2);
   }
 
-  constexpr auto IndexShift = IsPD ? 3 : 2;
+  auto IndexShift = IsPD ? 3 : 2;
   Ref ShiftedIndices = _VShlI(DstSize, 1, IndexTrn3, IndexShift);
 
-  constexpr uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
+  uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
   Ref VectorConst = _VDupFromGPR(DstSize, ElementSize, _Constant(VConstant));
   Ref FinalIndices {};
 
@@ -4836,8 +4832,15 @@ void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
     FinalIndices = _VAdd(DstSize, 1, VectorConst, ShiftedIndices);
   }
 
-  Ref Result = _VTBL1(DstSize, Src, FinalIndices);
+  return _VTBL1(DstSize, Src, FinalIndices);
+}
 
+template<size_t ElementSize>
+void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Result = VPERMILRegOpImpl(OpSizeFromDst(Op), ElementSize, Src, Indices);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

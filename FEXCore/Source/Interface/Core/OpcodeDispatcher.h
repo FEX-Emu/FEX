@@ -671,6 +671,8 @@ public:
 
   template<size_t ElementSize>
   void VPERMILImmOp(OpcodeArgs);
+
+  Ref VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices);
   template<size_t ElementSize>
   void VPERMILRegOp(OpcodeArgs);
 
