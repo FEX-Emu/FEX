@@ -2143,7 +2143,6 @@ private:
   // Future ideas: Use an invalidation mask to do partial generation of flags.
   // Particularly for the instructions that don't do the full set of flags calculations.
   // These instructions currently calculate the deferred RFLAGS immediately then overwrite rflags state.
-  // RCLSE IR pass will catch and remove redundant rflags stores like this currently.
   struct DeferredFlagData {
     // What type of flags to generate
     FlagsGenerationType Type {FlagsGenerationType::TYPE_NONE};
