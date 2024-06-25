@@ -197,9 +197,9 @@
       "Comment": "0x40",
       "ExpectedArm64ASM": [
         "cset w20, hs",
-        "mov x27, x4",
         "adds w26, w4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
+        "mov x27, x4",
         "mov x4, x26"
       ]
     },
@@ -234,9 +234,9 @@
       "Comment": "0x48",
       "ExpectedArm64ASM": [
         "cset w20, hs",
-        "mov x27, x4",
         "subs w26, w4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
+        "mov x27, x4",
         "mov x4, x26"
       ]
     },

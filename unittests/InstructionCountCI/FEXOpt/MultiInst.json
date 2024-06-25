@@ -69,11 +69,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #986]",
-        "ldrb w20, [x10]",
-        "strb w20, [x11]",
+        "ldrb w21, [x10]",
+        "strb w21, [x11]",
         "add x10, x10, #0x1 (1)",
-        "add x11, x11, #0x1 (1)"
+        "add x11, x11, #0x1 (1)",
+        "strb w20, [x28, #986]"
       ]
     },
     "positive movsw": {
@@ -88,11 +88,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #986]",
-        "ldrh w20, [x10]",
-        "strh w20, [x11]",
+        "ldrh w21, [x10]",
+        "strh w21, [x11]",
         "add x10, x10, #0x2 (2)",
-        "add x11, x11, #0x2 (2)"
+        "add x11, x11, #0x2 (2)",
+        "strb w20, [x28, #986]"
       ]
     },
     "positive movsd": {
@@ -107,11 +107,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #986]",
-        "ldr w20, [x10]",
-        "str w20, [x11]",
+        "ldr w21, [x10]",
+        "str w21, [x11]",
         "add x10, x10, #0x4 (4)",
-        "add x11, x11, #0x4 (4)"
+        "add x11, x11, #0x4 (4)",
+        "strb w20, [x28, #986]"
       ]
     },
     "positive movsq": {
@@ -126,11 +126,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x28, #986]",
-        "ldr x20, [x10]",
-        "str x20, [x11]",
+        "ldr x21, [x10]",
+        "str x21, [x11]",
         "add x10, x10, #0x8 (8)",
-        "add x11, x11, #0x8 (8)"
+        "add x11, x11, #0x8 (8)",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative movsb": {
@@ -145,11 +145,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "ldrb w20, [x10]",
-        "strb w20, [x11]",
+        "ldrb w21, [x10]",
+        "strb w21, [x11]",
         "sub x10, x10, #0x1 (1)",
-        "sub x11, x11, #0x1 (1)"
+        "sub x11, x11, #0x1 (1)",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative movsw": {
@@ -164,11 +164,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "ldrh w20, [x10]",
-        "strh w20, [x11]",
+        "ldrh w21, [x10]",
+        "strh w21, [x11]",
         "sub x10, x10, #0x2 (2)",
-        "sub x11, x11, #0x2 (2)"
+        "sub x11, x11, #0x2 (2)",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative movsd": {
@@ -183,11 +183,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "ldr w20, [x10]",
-        "str w20, [x11]",
+        "ldr w21, [x10]",
+        "str w21, [x11]",
         "sub x10, x10, #0x4 (4)",
-        "sub x11, x11, #0x4 (4)"
+        "sub x11, x11, #0x4 (4)",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative movsq": {
@@ -202,11 +202,11 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "ldr x20, [x10]",
-        "str x20, [x11]",
+        "ldr x21, [x10]",
+        "str x21, [x11]",
         "sub x10, x10, #0x8 (8)",
-        "sub x11, x11, #0x8 (8)"
+        "sub x11, x11, #0x8 (8)",
+        "strb w20, [x28, #986]"
       ]
     },
     "positive rep movsb": {
@@ -222,7 +222,6 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -263,6 +262,7 @@
         "add x23, x1, x2",
         "mov x10, x23",
         "mov x11, x22",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -279,7 +279,6 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -320,6 +319,7 @@
         "add x23, x1, x2, lsl #1",
         "mov x10, x23",
         "mov x11, x22",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -336,7 +336,6 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -377,6 +376,7 @@
         "add x23, x1, x2, lsl #2",
         "mov x10, x23",
         "mov x11, x22",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -393,7 +393,6 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -434,6 +433,7 @@
         "add x23, x1, x2, lsl #3",
         "mov x10, x23",
         "mov x11, x22",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -449,7 +449,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -490,11 +489,12 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "sub x20, x0, x2",
-        "sub x21, x1, x2",
-        "mov x10, x21",
-        "mov x11, x20",
-        "mov w5, #0x0"
+        "sub x22, x0, x2",
+        "sub x23, x1, x2",
+        "mov x10, x23",
+        "mov x11, x22",
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep movsw": {
@@ -509,7 +509,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -550,11 +549,12 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "sub x20, x0, x2, lsl #1",
-        "sub x21, x1, x2, lsl #1",
-        "mov x10, x21",
-        "mov x11, x20",
-        "mov w5, #0x0"
+        "sub x22, x0, x2, lsl #1",
+        "sub x23, x1, x2, lsl #1",
+        "mov x10, x23",
+        "mov x11, x22",
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep movsd": {
@@ -569,7 +569,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -610,11 +609,12 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "sub x20, x0, x2, lsl #2",
-        "sub x21, x1, x2, lsl #2",
-        "mov x10, x21",
-        "mov x11, x20",
-        "mov w5, #0x0"
+        "sub x22, x0, x2, lsl #2",
+        "sub x23, x1, x2, lsl #2",
+        "mov x10, x23",
+        "mov x11, x22",
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep movsq": {
@@ -629,7 +629,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "mov x2, x10",
@@ -670,11 +669,12 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "sub x20, x0, x2, lsl #3",
-        "sub x21, x1, x2, lsl #3",
-        "mov x10, x21",
-        "mov x11, x20",
-        "mov w5, #0x0"
+        "sub x22, x0, x2, lsl #3",
+        "sub x23, x1, x2, lsl #3",
+        "mov x10, x23",
+        "mov x11, x22",
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "positive rep stosb": {
@@ -690,14 +690,13 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
-        "uxtb w21, w4",
+        "uxtb w22, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x58",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.16b, w21",
+        "dup v1.16b, w22",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #32",
@@ -713,10 +712,11 @@
         "tbz x0, #63, #-0x8",
         "add x0, x0, #0x20 (32)",
         "cbz x0, #+0x10",
-        "strb w21, [x1], #1",
+        "strb w22, [x1], #1",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "add x11, x11, x5",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -733,14 +733,13 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
-        "uxth w21, w4",
+        "uxth w22, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x58",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.8h, w21",
+        "dup v1.8h, w22",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #32",
@@ -756,10 +755,11 @@
         "tbz x0, #63, #-0x8",
         "add x0, x0, #0x10 (16)",
         "cbz x0, #+0x10",
-        "strh w21, [x1], #2",
+        "strh w22, [x1], #2",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "add x11, x11, x5, lsl #1",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -776,14 +776,13 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
-        "mov w21, w4",
+        "mov w22, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x58",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.4s, w21",
+        "dup v1.4s, w22",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #32",
@@ -799,10 +798,11 @@
         "tbz x0, #63, #-0x8",
         "add x0, x0, #0x8 (8)",
         "cbz x0, #+0x10",
-        "str w21, [x1], #4",
+        "str w22, [x1], #4",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "add x11, x11, x5, lsl #2",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -819,7 +819,6 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x0",
         "mov w21, #0x1",
-        "strb w21, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x58",
@@ -845,6 +844,7 @@
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "add x11, x11, x5, lsl #3",
+        "strb w21, [x28, #986]",
         "mov x5, x20"
       ]
     },
@@ -860,15 +860,14 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "uxtb w20, w4",
+        "uxtb w21, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x60",
         "sub x1, x1, #0x1f (31)",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.16b, w20",
+        "dup v1.16b, w21",
         "sub x0, x0, #0x20 (32)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #-32",
@@ -885,11 +884,12 @@
         "add x0, x0, #0x20 (32)",
         "cbz x0, #+0x14",
         "add x1, x1, #0x1f (31)",
-        "strb w20, [x1], #-1",
+        "strb w21, [x1], #-1",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "sub x11, x11, x5",
-        "mov w5, #0x0"
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep stosw": {
@@ -904,15 +904,14 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "uxth w20, w4",
+        "uxth w21, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x60",
         "sub x1, x1, #0x1e (30)",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.8h, w20",
+        "dup v1.8h, w21",
         "sub x0, x0, #0x10 (16)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #-32",
@@ -929,11 +928,12 @@
         "add x0, x0, #0x10 (16)",
         "cbz x0, #+0x14",
         "add x1, x1, #0x1e (30)",
-        "strh w20, [x1], #-2",
+        "strh w21, [x1], #-2",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "sub x11, x11, x5, lsl #1",
-        "mov w5, #0x0"
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep stosd": {
@@ -948,15 +948,14 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
-        "mov w20, w4",
+        "mov w21, w4",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x60",
         "sub x1, x1, #0x1c (28)",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x3c",
-        "dup v1.4s, w20",
+        "dup v1.4s, w21",
         "sub x0, x0, #0x8 (8)",
         "tbnz x0, #63, #+0x14",
         "stp q1, q1, [x1], #-32",
@@ -973,11 +972,12 @@
         "add x0, x0, #0x8 (8)",
         "cbz x0, #+0x14",
         "add x1, x1, #0x1c (28)",
-        "str w20, [x1], #-4",
+        "str w21, [x1], #-4",
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "sub x11, x11, x5, lsl #2",
-        "mov w5, #0x0"
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "negative rep stosq": {
@@ -992,7 +992,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "strb w20, [x28, #986]",
         "mov x0, x5",
         "mov x1, x11",
         "cbz x0, #+0x60",
@@ -1020,11 +1019,12 @@
         "sub x0, x0, #0x1 (1)",
         "cbnz x0, #-0x8",
         "sub x11, x11, x5, lsl #3",
-        "mov w5, #0x0"
+        "mov w5, #0x0",
+        "strb w20, [x28, #986]"
       ]
     },
     "Sekiro spill block": {
-      "ExpectedInstructionCount": 148,
+      "ExpectedInstructionCount": 147,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1173,7 +1173,8 @@
         "ldr w11, [x6, #32]",
         "mov w20, #0x13",
         "mul w4, w5, w20",
-        "str w5, [x8, #104]",
+        "mov w21, w5",
+        "str w21, [x8, #104]",
         "mov w21, #0x1000000",
         "add w4, w4, w21",
         "lsr w4, w4, #25",
@@ -1258,33 +1259,31 @@
         "sub w17, w17, w14",
         "mov w20, w17",
         "str w20, [x4, #20]",
-        "ldr w20, [x8, #112]",
-        "mov x21, x4",
-        "mov x4, x20",
+        "ldr w4, [x8, #112]",
         "lsl w15, w15, #26",
-        "sub w4, w20, w15",
+        "sub w4, w4, w15",
         "lsl w7, w7, #25",
         "mov w20, w4",
-        "str w20, [x21, #24]",
+        "str w20, [x10, #24]",
         "ldr w4, [x8, #120]",
         "sub w4, w4, w7",
         "lsl w11, w11, #26",
         "mov w20, w4",
-        "str w20, [x21, #28]",
+        "str w20, [x10, #28]",
         "ldr w4, [x8]",
         "sub w4, w4, w11",
         "mov w20, w4",
-        "str w20, [x21, #32]",
-        "mov x4, x5",
-        "and w4, w5, #0xfe000000",
+        "str w20, [x10, #32]",
+        "mov w4, w5",
+        "and w4, w4, #0xfe000000",
         "sub w5, w5, w4",
         "mov w20, w5",
-        "str w20, [x21, #36]",
+        "str w20, [x10, #36]",
         "mvn w27, w8",
         "adds x26, x8, #0x18 (24)",
         "mov x8, x26",
-        "ldr x29, [x26]",
-        "add x8, x26, #0x8 (8)",
+        "ldr x29, [x8]",
+        "add x8, x8, #0x8 (8)",
         "ldr x19, [x8]",
         "add x8, x8, #0x8 (8)",
         "ldr x17, [x8]",

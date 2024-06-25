@@ -3172,9 +3172,9 @@
         "Map 2 0b00 0xf2 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic w4, w5, w7",
-        "mov x26, x4",
-        "tst w4, w4"
+        "bic w26, w5, w7",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "andn rax, rbx, rcx": {
@@ -3183,9 +3183,9 @@
         "Map 2 0b00 0xf2 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic x4, x5, x7",
-        "mov x26, x4",
-        "tst x4, x4"
+        "bic x26, x5, x7",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "bzhi eax, ebx, ecx": {
