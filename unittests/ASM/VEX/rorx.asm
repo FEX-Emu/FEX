@@ -7,7 +7,10 @@
       "RDX": "0x80000000",
       "RSI": "0xFF",
       "RDI": "0xF000000F",
-      "R8":  "0"
+      "R8":  "0",
+      "R9": "0x0000000045464748",
+      "R10": "0x0000000022a323a4"
+
   },
   "HostFeatures": ["BMI2"]
 }
@@ -40,5 +43,11 @@ rorx edi, edi, 32
 ; Zero-extending behavior
 mov r8, 0xFFFFFFFF00000000
 rorx r8d, r8d, 0
+
+mov r9, 0x4142434445464748
+rorx r9d, r9d, 0xE0
+
+mov r10, 0x4142434445464748
+rorx r10d, r10d, 0xE1
 
 hlt
