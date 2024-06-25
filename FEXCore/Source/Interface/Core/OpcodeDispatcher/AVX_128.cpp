@@ -2260,19 +2260,11 @@ void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
-  const auto Size = GetDstSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
-  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
-  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
-
-  RefPair Result {};
-  Result.Low = _PCLMUL(OpSize::i128Bit, Src1.Low, Src2.Low, Selector);
-  if (!Is128Bit) {
-    Result.High = _PCLMUL(OpSize::i128Bit, Src1.High, Src2.High, Selector);
-  }
-  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), 0, [this, Selector](size_t _, Ref Src1, Ref Src2) {
+    return _PCLMUL(OpSize::i128Bit, Src1, Src2, Selector & 0b1'0001);
+  });
 }
 
 } // namespace FEXCore::IR
