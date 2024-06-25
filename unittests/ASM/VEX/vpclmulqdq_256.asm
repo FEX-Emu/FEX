@@ -7,7 +7,8 @@
       "XMM3": ["0x1E2017C5BEE29400", "0x38358E40CC367C7A", "0x4b4b4b4b4b4b4b4b", "0x4b4b4b4b4b4b4b4b"],
       "XMM4": ["0xE208147952DE57A0", "0x317D360F86C80DC9", "0x4646464646464646", "0x4646464646464646"],
       "XMM5": ["0xBBA54C87DA872B40", "0x6495428B7641EBE6", "0x4444444444444444", "0x4444444444444444"],
-      "XMM6": ["0x170B5A1B5CDD42EA", "0x719F094BB2358CA1", "0x4848484848484848", "0x4848484848484848"]
+      "XMM6": ["0x170B5A1B5CDD42EA", "0x719F094BB2358CA1", "0x4848484848484848", "0x4848484848484848"],
+      "XMM7": ["0x1e2017c5bee29400", "0x38358e40cc367c7a", "0", "0"]
   }
 }
 %endif
@@ -23,6 +24,7 @@ vmovaps ymm3, [rdx + 32 * 0]
 vmovaps ymm4, [rdx + 32 * 0]
 vmovaps ymm5, [rdx + 32 * 0]
 vmovaps ymm6, [rdx + 32 * 0]
+vmovaps ymm7, [rdx + 32 * 0]
 
 ; With imm = 0b00000000
 vpclmulqdq ymm3, ymm1, ymm2, 0
@@ -35,6 +37,10 @@ vpclmulqdq ymm5, ymm1, ymm2, 16
 
 ; With imm = 0b00010001
 vpclmulqdq ymm6, ymm1, ymm2, 17
+
+; Test zero-extension
+; Also test a wacky immediate.
+vpclmulqdq xmm7, xmm1, xmm2, 11101110b
 
 hlt
 
