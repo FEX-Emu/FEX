@@ -216,8 +216,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "mov v16.16b, v17.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mov v16.16b, v2.16b",
+        "mov v16.d[1], v17.d[1]"
       ]
     },
     "vmovlpd xmm0, xmm1, [rax]": {
@@ -228,8 +228,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "mov v16.16b, v17.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mov v16.16b, v2.16b",
+        "mov v16.d[1], v17.d[1]"
       ]
     },
     "vmovsldup xmm0, [rax]": {

@@ -748,17 +748,26 @@ void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
 
-  if (Op->Dest.IsGPR()) {
-    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
-
+  if (!Op->Dest.IsGPR()) {
+    ///< VMOVLPS/PD mem64, xmm1
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+  } else if (!Op->Src[1].IsGPR()) {
+    ///< VMOVLPS/PD xmm1, xmm2, mem64
     // Bits[63:0] come from Src2[63:0]
     // Bits[127:64] come from Src1[127:64]
-    Ref Result_Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src2.Low, Src1.Low);
+    auto Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags);
+    Ref Result_Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src2, Src1.Low);
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
 
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   } else {
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+    ///< VMOVHLPS/PD xmm1, xmm2, xmm3
+    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+    Ref Result_Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, 1, Src1.Low, Src2.Low);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   }
 }
 

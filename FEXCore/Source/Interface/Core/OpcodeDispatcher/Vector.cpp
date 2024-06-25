@@ -132,15 +132,23 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
-  if (Op->Dest.IsGPR()) {
-    Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
-    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
-    Ref Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 16});
 
+  if (!Op->Dest.IsGPR()) {
+    ///< VMOVLPS/PD mem64, xmm1
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1, 8, 8);
+  } else if (!Op->Src[1].IsGPR()) {
+    ///< VMOVLPS/PD xmm1, xmm2, mem64
+    // Bits[63:0] come from Src2[63:0]
+    // Bits[127:64] come from Src1[127:64]
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 8});
+    Ref Result = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src2, Src1);
     StoreResult(FPRClass, Op, Result, -1);
   } else {
-    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8});
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
+    ///< VMOVHLPS/PD xmm1, xmm2, xmm3
+    Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, {.Align = 16});
+    Ref Result = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, 1, Src1, Src2);
+    StoreResult(FPRClass, Op, Result, -1);
   }
 }
 
