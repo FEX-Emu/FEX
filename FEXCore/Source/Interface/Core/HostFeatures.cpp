@@ -161,7 +161,7 @@ HostFeatures::HostFeatures() {
   SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
   SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
-  SupportsAVX = SupportsSVE256;
+  SupportsAVX = true;
 
   SupportsAES256 = SupportsAVX && SupportsAES;
 
