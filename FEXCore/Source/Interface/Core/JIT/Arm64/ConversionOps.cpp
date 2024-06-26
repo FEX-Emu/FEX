@@ -355,21 +355,36 @@ DEF_OP(Vector_FToF) {
   }
 }
 
-DEF_OP(Vector_FToF2) {
-  const auto Op = IROp->C<IR::IROp_Vector_FToF2>();
+DEF_OP(VFCVTL2) {
+  const auto Op = IROp->C<IR::IROp_VFCVTL2>();
 
-  const auto ElementSize = Op->Header.ElementSize;
   const auto SubEmitSize = ConvertSubRegSize248(IROp);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if (ElementSize > Op->SrcElementSize) {
-    LOGMAN_THROW_AA_FMT(Op->SrcElementSize == (ElementSize >> 1), "IR invariant");
-    fcvtl2(SubEmitSize, Dst.D(), Vector.D());
-  } else {
-    LOGMAN_THROW_AA_FMT(Op->SrcElementSize == (ElementSize << 1), "IR invariant");
-    fcvtn2(SubEmitSize, Dst.D(), Vector.D());
+  fcvtl2(SubEmitSize, Dst.D(), Vector.D());
+}
+
+DEF_OP(VFCVTN2) {
+  const auto Op = IROp->C<IR::IROp_VFCVTN2>();
+
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
+
+  auto Lower = VectorLower;
+  if (Dst != VectorLower) {
+    mov(VTMP1.Q(), VectorLower.Q());
+    Lower = VTMP1;
+  }
+
+  fcvtn2(SubEmitSize, Lower.Q(), VectorUpper.Q());
+
+  if (Dst != VectorLower) {
+    mov(Dst.Q(), Lower.Q());
   }
 }
 

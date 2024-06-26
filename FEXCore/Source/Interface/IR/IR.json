@@ -2375,13 +2375,27 @@
         "NumElements": "RegisterSize / DestElementSize"
       },
 
-      "FPR = Vector_FToF2 u8:#RegisterSize, u8:#DestElementSize, FPR:$Vector, u8:$SrcElementSize": {
+      "FPR = VFCVTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "Desc": [
-          "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
+          "Vector op: Converts float from source element size to destination size (fp32->fp64)",
           "Selecting from the high half of the register."
         ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / DestElementSize",
+        "NumElements": "RegisterSize / (ElementSize << 1)",
+        "EmitValidation": [
+          "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
+        ]
+      },
+      "FPR = VFCVTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "TiedSource": 0,
+        "Desc": [
+          "Vector op: Converts float from source element size and inserting in to the high bits.",
+          "Bottom half is untouched",
+          "Narrowing to the element size below what is passed in.",
+          "F64->F32, F32->F16"
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / (ElementSize >> 1)",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
