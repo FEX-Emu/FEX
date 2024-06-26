@@ -3058,119 +3058,61 @@
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x1D 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x0",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffff3fffff",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0"
+        "msr fpcr, x20"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x1D 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x1",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffffbfffff",
+        "orr x0, x0, #0x800000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0"
+        "msr fpcr, x20"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x1D 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x2",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffff7fffff",
+        "orr x0, x0, #0x400000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0"
+        "msr fpcr, x20"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x1D 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x3",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "orr x0, x20, #0xc00000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0"
+        "msr fpcr, x20"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000100b": {
@@ -3184,126 +3126,68 @@
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000000b": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x0",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffff3fffff",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",
         "uzp2 z2.h, z2.h, z2.h",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0",
+        "msr fpcr, x20",
         "mov v16.16b, v2.16b"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000001b": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x1",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffffbfffff",
+        "orr x0, x0, #0x800000",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",
         "uzp2 z2.h, z2.h, z2.h",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0",
+        "msr fpcr, x20",
         "mov v16.16b, v2.16b"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000010b": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x2",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "and x0, x20, #0xffffffffff7fffff",
+        "orr x0, x0, #0x400000",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",
         "uzp2 z2.h, z2.h, z2.h",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0",
+        "msr fpcr, x20",
         "mov v16.16b, v2.16b"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000011b": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "ubfx x20, x20, #22, #3",
-        "rbit w0, w20",
-        "bfi x20, x0, #30, #2",
-        "mov w21, #0x3",
-        "rbit w1, w21",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
-        "bfi x0, x1, #24, #1",
+        "orr x0, x20, #0xc00000",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",
         "uzp2 z2.h, z2.h, z2.h",
-        "rbit w1, w20",
-        "lsr w1, w1, #30",
-        "mrs x0, fpcr",
-        "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
-        "bfi x0, x1, #24, #1",
-        "msr fpcr, x0",
+        "msr fpcr, x20",
         "mov v16.16b, v2.16b"
       ]
     },
