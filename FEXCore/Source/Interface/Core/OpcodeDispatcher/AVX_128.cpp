@@ -2677,7 +2677,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
     Result = AVX128_Zext(Result.Low);
   }
 
-  if (StoreSize == 8) {
+  if (!Op->Dest.IsGPR()) {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, -1);
   } else {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
