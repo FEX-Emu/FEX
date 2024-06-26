@@ -975,6 +975,17 @@ public:
   template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
   void VFMSUBADD(OpcodeArgs);
 
+  struct RefVSIB {
+    Ref Low, High;
+    Ref BaseAddr;
+    int32_t Displacement;
+    uint8_t Scale;
+  };
+
+  RefVSIB LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags);
+  template<size_t AddrElementSize>
+  void VPGATHER(OpcodeArgs);
+
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
   template<size_t ElementSize>
@@ -1019,6 +1030,7 @@ public:
   RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                                        bool NeedsHigh, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
+  RefVSIB AVX128_LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags, bool NeedsHigh);
   void AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand, const RefPair Src,
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void InstallAVX128Handlers();
@@ -1246,6 +1258,12 @@ public:
   void AVX128_VFMADDSUB(OpcodeArgs);
   template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
   void AVX128_VFMSUBADD(OpcodeArgs);
+
+  template<size_t AddrElementSize>
+  RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
+
+  template<size_t AddrElementSize>
+  void AVX128_VPGATHER(OpcodeArgs);
 
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);

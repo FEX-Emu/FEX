@@ -327,6 +327,11 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<true>},
 
+    {OPD(2, 0b01, 0x90), 1, &OpDispatchBuilder::AVX128_VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x91), 1, &OpDispatchBuilder::AVX128_VPGATHER<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x92), 1, &OpDispatchBuilder::AVX128_VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x93), 1, &OpDispatchBuilder::AVX128_VPGATHER<OpSize::i64Bit>},
+
     {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::AVX128_VFMADDSUB<1, 3, 2>},
     {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::AVX128_VFMSUBADD<1, 3, 2>},
 
@@ -486,10 +491,9 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
     AddressMode HighA = A;
     HighA.Offset += 16;
 
-    ///< TODO: Implement VSIB once we get there.
     if (Operand.IsSIB()) {
       const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
-      LOGMAN_THROW_AA_FMT(!IsVSIB, "VSIB currently unsupported");
+      LOGMAN_THROW_AA_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
     return {
@@ -497,6 +501,31 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
       .High = NeedsHigh ? _LoadMemAutoTSO(FPRClass, 16, HighA, 1) : nullptr,
     };
   }
+}
+
+OpDispatchBuilder::RefVSIB
+OpDispatchBuilder::AVX128_LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags, bool NeedsHigh) {
+  const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+  LOGMAN_THROW_A_FMT(Operand.IsSIB() && IsVSIB, "Trying to load VSIB for something that isn't the correct type!");
+
+  // VSIB is a very special case which has a ton of encoded data.
+  // Get it in a format we can reason about.
+
+  const auto Index_gpr = Operand.Data.SIB.Index;
+  const auto Base_gpr = Operand.Data.SIB.Base;
+  LOGMAN_THROW_AA_FMT(Index_gpr >= FEXCore::X86State::REG_XMM_0 && Index_gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
+  LOGMAN_THROW_AA_FMT(
+    Base_gpr == FEXCore::X86State::REG_INVALID || (Base_gpr >= FEXCore::X86State::REG_RAX && Base_gpr <= FEXCore::X86State::REG_R15),
+    "Base must be a GPR.");
+  const auto Index_XMM_gpr = Index_gpr - X86State::REG_XMM_0;
+
+  return {
+    .Low = AVX128_LoadXMMRegister(Index_XMM_gpr, false),
+    .High = NeedsHigh ? AVX128_LoadXMMRegister(Index_XMM_gpr, true) : Invalid(),
+    .BaseAddr = Base_gpr != FEXCore::X86State::REG_INVALID ? LoadGPRRegister(Base_gpr, OpSize::i64Bit, 0, false) : nullptr,
+    .Displacement = Operand.Data.SIB.Offset,
+    .Scale = Operand.Data.SIB.Scale,
+  };
 }
 
 void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand,
@@ -2007,7 +2036,6 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size
     return MakeSegmentAddress(Op, Data, CTX->GetGPRSize());
   };
 
-  ///< TODO: Needs SVE for masked loadstores.
   if (IsStore) {
     auto Address = MakeAddress(Op->Dest);
 
@@ -2485,6 +2513,98 @@ void OpDispatchBuilder::AVX128_VFMADDSUB(OpcodeArgs) {
 template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
 void OpDispatchBuilder::AVX128_VFMSUBADD(OpcodeArgs) {
   AVX128_VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template<size_t AddrElementSize>
+OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, RefPair Dest, RefPair Mask, RefVSIB VSIB) {
+  LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  ///< BaseAddr doesn't need to exist, calculate that here.
+  Ref BaseAddr = VSIB.BaseAddr;
+  if (BaseAddr && VSIB.Displacement) {
+    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, _Constant(VSIB.Displacement));
+  } else if (VSIB.Displacement) {
+    BaseAddr = _Constant(VSIB.Displacement);
+  } else if (!BaseAddr) {
+    BaseAddr = Invalid();
+  }
+
+  RefPair Result {};
+  ///< Calculate the low-half.
+  Result.Low = _VLoadVectorGatherMasked(OpSize::i128Bit, ElementLoadSize, Dest.Low, Mask.Low, BaseAddr, VSIB.Low, VSIB.High,
+                                        AddrElementSize, VSIB.Scale, 0, 0);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+    if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+      // Special case for the 128-bit gather load using 64-bit address indexes with 32-bit results.
+      // Only loads two 32-bit elements in to the lower 64-bits of the first destination.
+      // Bits [255:65] all become zero.
+      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, Result.High);
+    }
+  } else {
+    RefPair AddrAddressing {};
+
+    Ref DestReg = Dest.High;
+    Ref MaskReg = Mask.High;
+    uint8_t IndexElementOffset {};
+    uint8_t DataElementOffset {};
+    if (AddrElementSize == ElementLoadSize) {
+      // If the address size matches the loading element size then it will be fetching at the same rate between low and high
+      AddrAddressing.Low = VSIB.High;
+      AddrAddressing.High = Invalid();
+    } else if (AddrElementSize == OpSize::i32Bit && ElementLoadSize == OpSize::i64Bit) {
+      // If the address element size if half the size of the Element load size then we need to start fetching half-way through the low register.
+      AddrAddressing.Low = VSIB.Low;
+      AddrAddressing.High = VSIB.High;
+      IndexElementOffset = OpSize::i128Bit / AddrElementSize / 2;
+    } else if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+      AddrAddressing.Low = VSIB.High;
+      AddrAddressing.High = Invalid();
+      DestReg = Result.Low; ///< Start mixing with the low register.
+      MaskReg = Mask.Low;   ///< Mask starts with the low mask here.
+      IndexElementOffset = 0;
+      DataElementOffset = OpSize::i128Bit / ElementLoadSize / 2;
+    }
+
+    ///< Calculate the high-half.
+    auto ResultHigh = _VLoadVectorGatherMasked(OpSize::i128Bit, ElementLoadSize, DestReg, MaskReg, BaseAddr, AddrAddressing.Low,
+                                               AddrAddressing.High, AddrElementSize, VSIB.Scale, DataElementOffset, IndexElementOffset);
+
+    if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+      // If we only fetched 128-bits worth of data then the upper-result is all zero.
+      Result = AVX128_Zext(ResultHigh);
+    } else {
+      Result.High = ResultHigh;
+    }
+  }
+
+  return Result;
+}
+
+template<size_t AddrElementSize>
+void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
+
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  ///< Element size is determined by W flag.
+  const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  Result = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest, Mask, VSIB);
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+
+  ///< Assume non-faulting behaviour and clear the mask register.
+  RefPair ZeroPair {};
+  ZeroPair.Low = LoadZeroVector(OpSize::i128Bit);
+  ZeroPair.High = ZeroPair.Low;
+  AVX128_StoreResult_WithOpSize(Op, Op->Src[1], ZeroPair);
 }
 
 } // namespace FEXCore::IR
