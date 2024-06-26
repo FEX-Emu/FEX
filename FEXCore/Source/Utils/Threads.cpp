@@ -47,6 +47,8 @@ uint64_t SetSignalMask(uint64_t Mask) {
 #ifndef _WIN32
   ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, 8);
   return Mask;
+#else
+  return 0;
 #endif
 }
 
