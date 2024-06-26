@@ -603,17 +603,43 @@
       ]
     },
     "vcvtph2ps xmm0, xmm1": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0b01 0x13 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcvtl v16.4s, v17.4h"
+      ]
+    },
+    "vcvtph2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0x13 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "fcvtl v16.4s, v2.4h"
       ]
     },
     "vcvtph2ps ymm0, xmm1": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 2 0b01 0x13 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 z16.h, z17.h, z17.h",
+        "fcvtlt z16.s, p7/m, z16.h"
+      ]
+    },
+    "vcvtph2ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x13 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "zip1 z16.h, z2.h, z2.h",
+        "fcvtlt z16.s, p7/m, z16.h"
       ]
     },
     "vpermps ymm0, ymm1, ymm2": {

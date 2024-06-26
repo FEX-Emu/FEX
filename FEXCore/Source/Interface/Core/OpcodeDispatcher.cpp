@@ -5238,6 +5238,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<4>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::VTESTPOp<8>},
 
+    {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::VCVTPH2PSOp},
     {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::VBROADCASTOp<4>},
@@ -5361,6 +5362,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
+    {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::VCVTPS2PHOp},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::VPINSRBOp},
     {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::VPINSRDQOp},

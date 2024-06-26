@@ -88,6 +88,10 @@ Test_VEX/vroundpd.asm
 Test_VEX/vroundps.asm
 Test_VEX/vroundsd.asm
 Test_VEX/vroundss.asm
+Test_VEX/vcvtps2ph_rtne.asm
+Test_VEX/vcvtps2ph_rd.asm
+Test_VEX/vcvtps2ph_ru.asm
+Test_VEX/vcvtps2ph_trunc.asm
 
 # Simulator doesn't support cycle counter reading
 Test_TwoByte/0F_31.asm

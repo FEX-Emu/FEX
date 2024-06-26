@@ -4464,6 +4464,55 @@ void OpDispatchBuilder::VINSERTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VCVTPH2PSOp(OpcodeArgs) {
+  // In the event that a memory operand is used as the source operand,
+  // the access width will always be half the size of the destination vector width
+  // (i.e. 128-bit vector -> 64-bit mem, 256-bit vector -> 128-bit mem)
+  const auto DstSize = GetDstSize(Op);
+  const auto SrcLoadSize = Op->Src[0].IsGPR() ? DstSize : DstSize / 2;
+
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcLoadSize, Op->Flags);
+  Ref Result = _Vector_FToF(DstSize, 4, Src, 2);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VCVTPS2PHOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto StoreSize = Op->Dest.IsGPR() ? 16 : SrcSize / 2;
+
+  const auto Imm8 = Op->Src[1].Literal();
+  const auto UseMXCSR = (Imm8 & 0b100) != 0;
+
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+
+  Ref Result = nullptr;
+  if (UseMXCSR) {
+    Result = _Vector_FToF(SrcSize, 2, Src, 4);
+  } else {
+    // No ARM float conversion instructions allow passing in
+    // a rounding mode as an immediate. All of them depend on
+    // the RM field in the FPCR. And so! We have to do some ugly
+    // rounding mode shuffling.
+    const auto NewRMode = Imm8 & 0b11;
+
+    Ref OldRMode = _GetRoundingMode();
+    _SetRoundingMode(_Constant(NewRMode));
+
+    Result = _Vector_FToF(SrcSize, 2, Src, 4);
+
+    _SetRoundingMode(OldRMode);
+  }
+
+  // We need to eliminate upper junk if we're storing into a register with
+  // a 256-bit source (VCVTPS2PH's destination for registers is an XMM).
+  if (Op->Src[0].IsGPR() && SrcSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
+}
+
 void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);

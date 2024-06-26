@@ -434,7 +434,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (SupportsAVX() << 26) |                         // XSAVE
             (SupportsAVX() << 27) |                         // OSXSAVE
             (SupportsAVX() << 28) |                         // AVX
-            (0 << 29) |                                     // F16C
+            (SupportsAVX() << 29) |                         // F16C
             (CTX->HostFeatures.SupportsRAND << 30) |        // RDRAND
             (Hypervisor << 31);
 
