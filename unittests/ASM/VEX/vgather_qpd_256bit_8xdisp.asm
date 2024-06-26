@@ -16,7 +16,7 @@
     "XMM14": ["0xf1cda2562209301d", "0x0f350767409162b7", "0x002fd22652633359", "0xc0a14faff7b7368a"],
     "XMM15": ["0xf1cda2562209301d", "0x0f350767409162b7", "0x002fd22652633359", "0xc0a14faff7b7368a"]
   },
-  "HostFeatures": ["AVX2"]
+  "HostFeatures": ["AVX"]
 }
 %endif
 

@@ -4,7 +4,7 @@
     "XMM1":  ["0", "0", "0", "0"],
     "XMM15": ["0x2db6b85f6135a9d7", "0xe273f1177f80d2ec", "0x7be65e82db698176", "0x3fd4ea2f8a34fff5"]
   },
-  "HostFeatures": ["AVX2"]
+  "HostFeatures": ["AVX"]
 }
 %endif
 
