@@ -23,5 +23,5 @@ target_link_libraries(wow64fex
 
 install(TARGETS wow64fex
   RUNTIME
-  DESTINATION bin
+  DESTINATION lib
   COMPONENT runtime)
