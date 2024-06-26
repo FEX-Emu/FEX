@@ -1574,7 +1574,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
   };
 
   auto TransformHigh = [this](Ref Src) -> Ref {
-    return _Vector_FToF2(OpSize::i128Bit, DstElementSize, Src, SrcElementSize);
+    return _VFCVTL2(OpSize::i128Bit, SrcElementSize, Src);
   };
 
   Result.Low = TransformLow(Src.Low);
