@@ -17,6 +17,6 @@ build_implib(wow64)
 
 add_subdirectory(Common)
 
-if (_M_ARM_64)
+if (_M_ARM_64 AND (NOT _M_ARM_64EC))
   add_subdirectory(WOW64)
 endif()
