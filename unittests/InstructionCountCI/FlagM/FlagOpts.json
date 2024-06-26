@@ -95,9 +95,9 @@
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
         "cset w20, hs",
-        "mov x27, x4",
         "adds x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
+        "mov x27, x4",
         "mov x4, x26"
       ]
     },
@@ -124,9 +124,9 @@
         "subs x4, x4, x7",
         "cfinv",
         "cset w20, hs",
-        "mov x27, x4",
         "subs x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
+        "mov x27, x4",
         "mov x4, x26"
       ]
     },
@@ -263,15 +263,16 @@
       ]
     },
     "AND use only PF": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "x86Insts": [
         "and eax, ebx",
         "setp cl",
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "and w4, w4, w7",
-        "eor w20, w4, w4, lsr #4",
+        "and w26, w4, w7",
+        "mov x4, x26",
+        "eor w20, w26, w26, lsr #4",
         "eor w20, w20, w20, lsr #2",
         "eon w20, w20, w20, lsr #1",
         "and x20, x20, #0x1",

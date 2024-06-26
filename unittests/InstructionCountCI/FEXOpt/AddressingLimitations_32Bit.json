@@ -323,10 +323,11 @@
         "mov eax, gs:0x100",
         "mov ebx, gs:0x14"
       ],
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #960]",
         "ldr w4, [x20, #256]",
+        "ldr w20, [x28, #960]",
         "ldr w7, [x20, #20]"
       ]
     }
