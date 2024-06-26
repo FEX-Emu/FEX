@@ -231,6 +231,17 @@
                 ],
         "HasSideEffects": true
       },
+      "GPR = PushRoundingMode u8:$RoundMode": {
+        "Desc": ["Override the current rounding mode options for the thread, returning old FPCR"
+                ],
+        "DestSize": "8",
+        "HasSideEffects": true
+      },
+      "PopRoundingMode GPR:$FPCR": {
+        "Desc": ["Resets rounding mode after PushRoundingMode operation"
+                ],
+        "HasSideEffects": true
+      },
       "Print SSA:$Value": {
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",

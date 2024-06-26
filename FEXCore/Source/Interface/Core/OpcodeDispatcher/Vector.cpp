@@ -4493,13 +4493,10 @@ void OpDispatchBuilder::VCVTPS2PHOp(OpcodeArgs) {
     // the RM field in the FPCR. And so! We have to do some ugly
     // rounding mode shuffling.
     const auto NewRMode = Imm8 & 0b11;
-
-    Ref OldRMode = _GetRoundingMode();
-    _SetRoundingMode(_Constant(NewRMode));
+    Ref SavedFPCR = _PushRoundingMode(NewRMode);
 
     Result = _Vector_FToF(SrcSize, 2, Src, 4);
-
-    _SetRoundingMode(OldRMode);
+    _PopRoundingMode(SavedFPCR);
   }
 
   // We need to eliminate upper junk if we're storing into a register with

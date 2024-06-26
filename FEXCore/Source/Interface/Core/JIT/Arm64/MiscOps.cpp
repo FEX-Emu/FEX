@@ -120,6 +120,39 @@ DEF_OP(SetRoundingMode) {
   msr(ARMEmitter::SystemRegister::FPCR, TMP1);
 }
 
+DEF_OP(PushRoundingMode) {
+  auto Op = IROp->C<IR::IROp_PushRoundingMode>();
+  auto Dest = GetReg(Node);
+
+  // Save the old rounding mode
+  mrs(Dest, ARMEmitter::SystemRegister::FPCR);
+
+  // vixl simulator doesn't support anything beyond ties-to-even rounding
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    return;
+  }
+
+  // Insert the rounding flags, reversing the mode bits as above
+  if (Op->RoundMode == 3) {
+    orr(ARMEmitter::Size::i64Bit, TMP1, Dest, 3 << 22);
+  } else if (Op->RoundMode == 0) {
+    and_(ARMEmitter::Size::i64Bit, TMP1, Dest, ~(3 << 22));
+  } else {
+    LOGMAN_THROW_AA_FMT(Op->RoundMode == 1 || Op->RoundMode == 2, "expect a valid round mode");
+
+    and_(ARMEmitter::Size::i64Bit, TMP1, Dest, ~(Op->RoundMode << 22));
+    orr(ARMEmitter::Size::i64Bit, TMP1, TMP1, (Op->RoundMode == 2 ? 1 : 2) << 22);
+  }
+
+  // Now save the new FPCR
+  msr(ARMEmitter::SystemRegister::FPCR, TMP1);
+}
+
+DEF_OP(PopRoundingMode) {
+  auto Op = IROp->C<IR::IROp_PopRoundingMode>();
+  msr(ARMEmitter::SystemRegister::FPCR, GetReg(Op->FPCR.ID()));
+}
+
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
