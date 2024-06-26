@@ -41,6 +41,7 @@ if (NOT CONTAINS_MINGW EQUAL -1)
   message (STATUS "Mingw build")
   set (MINGW_BUILD TRUE)
   set (ENABLE_JEMALLOC FALSE)
+  set (ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
 endif()
 
 if (NOT MINGW_BUILD)
@@ -195,7 +196,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
   add_definitions(-DENABLE_JEMALLOC_GLIBC=1)
   add_subdirectory(External/jemalloc_glibc/)
-else()
+elseif (NOT MINGW_BUILD)
   message (STATUS
     " jemalloc glibc allocator disabled!\n"
     " This is not a recommended configuration!\n"
@@ -208,7 +209,7 @@ if (ENABLE_JEMALLOC)
   add_definitions(-DENABLE_JEMALLOC=1)
   add_subdirectory(External/jemalloc/)
   include_directories(External/jemalloc/pregen/include/)
-else()
+elseif (NOT MINGW_BUILD)
   message (STATUS
     " jemalloc disabled!\n"
     " This is not a recommended configuration!\n"
