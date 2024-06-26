@@ -268,6 +268,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VTESTP<OpSize::i64Bit>},
 
+
+    {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VCVTPH2PS},
     {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VPERMD},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
@@ -396,6 +398,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
+    {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::AVX128_VCVTPS2PH},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
     {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
@@ -2605,6 +2608,80 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   ZeroPair.Low = LoadZeroVector(OpSize::i128Bit);
   ZeroPair.High = ZeroPair.Low;
   AVX128_StoreResult_WithOpSize(Op, Op->Src[1], ZeroPair);
+}
+
+void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = DstSize / 2;
+  const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128BitDst = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  RefPair Src {};
+  if (Op->Src[0].IsGPR()) {
+    Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
+  } else {
+    // In the event that a memory operand is used as the source operand,
+    // the access width will always be half the size of the destination vector width
+    // (i.e. 128-bit vector -> 64-bit mem, 256-bit vector -> 128-bit mem)
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  }
+
+  RefPair Result {};
+  Result.Low = _Vector_FToF(OpSize::i128Bit, OpSize::i32Bit, Src.Low, OpSize::i16Bit);
+
+  if (Is128BitSrc) {
+    Result.High = _VFCVTL2(OpSize::i128Bit, OpSize::i16Bit, Src.Low);
+  }
+
+  if (Is128BitDst) {
+    Result = AVX128_Zext(Result.Low);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto StoreSize = Op->Dest.IsGPR() ? OpSize::i128Bit : SrcSize / 2;
+
+  const auto Imm8 = Op->Src[1].Literal();
+  const auto UseMXCSR = (Imm8 & 0b100) != 0;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
+
+  RefPair Result {};
+
+  Ref OldFPCR {};
+  if (!UseMXCSR) {
+    // No ARM float conversion instructions allow passing in
+    // a rounding mode as an immediate. All of them depend on
+    // the RM field in the FPCR. And so! We have to do some ugly
+    // rounding mode shuffling.
+    const auto NewRMode = Imm8 & 0b11;
+    OldFPCR = _PushRoundingMode(NewRMode);
+  }
+
+  Result.Low = _Vector_FToF(OpSize::i128Bit, OpSize::i16Bit, Src.Low, OpSize::i32Bit);
+  if (!Is128BitSrc) {
+    Result.Low = _VFCVTN2(OpSize::i128Bit, OpSize::i32Bit, Result.Low, Src.High);
+  }
+
+  if (!UseMXCSR) {
+    _PopRoundingMode(OldFPCR);
+  }
+
+  // We need to eliminate upper junk if we're storing into a register with
+  // a 256-bit source (VCVTPS2PH's destination for registers is an XMM).
+  if (Op->Src[0].IsGPR() && SrcSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+    Result = AVX128_Zext(Result.Low);
+  }
+
+  if (StoreSize == 8) {
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, -1);
+  } else {
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+  }
 }
 
 } // namespace FEXCore::IR

@@ -1265,6 +1265,9 @@ public:
   template<size_t AddrElementSize>
   void AVX128_VPGATHER(OpcodeArgs);
 
+  void AVX128_VCVTPH2PS(OpcodeArgs);
+  void AVX128_VCVTPS2PH(OpcodeArgs);
+
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);
 
