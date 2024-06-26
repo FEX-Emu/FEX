@@ -298,8 +298,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
     if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       // Shifts mask the shift amount by 63 or 31 depending on operating size;
-      uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
-      uint64_t NewConstant = (Constant1 >> (Constant2 & ShiftMask)) & getMask(IROp);
+      // The source is masked, which will produce a correctly masked
+      // destination. Masking the destination without the source instead will
+      // right-shift garbage into the upper bits instead of zeroes.
+      Constant1 &= getMask(IROp);
+      Constant2 &= (IROp->Size == 8 ? 63 : 31);
+      uint64_t NewConstant = (Constant1 >> Constant2);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
