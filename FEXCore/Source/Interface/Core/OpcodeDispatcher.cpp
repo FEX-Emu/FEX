@@ -1883,9 +1883,9 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
-  const auto Amount = Op->Src[1].Literal();
   const auto SrcSize = GetSrcSize(Op);
   const auto SrcSizeBits = SrcSize * 8;
+  const auto Amount = Op->Src[1].Literal() & (SrcSizeBits - 1);
   const auto GPRSize = CTX->GetGPRSize();
 
   const auto DoRotation = Amount != 0 && Amount < SrcSizeBits;
