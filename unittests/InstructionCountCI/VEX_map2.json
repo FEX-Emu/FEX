@@ -2,7 +2,8 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
-      "SVE256"
+      "SVE256",
+      "SVE128"
     ],
     "DisabledHostFeatures": [
       "AFP",
