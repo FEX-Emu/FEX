@@ -4930,4 +4930,133 @@ void OpDispatchBuilder::VPCMPISTRMOp(OpcodeArgs) {
   PCMPXSTRXOpImpl(Op, false, true);
 }
 
+void OpDispatchBuilder::VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+  const auto Size = GetDstSize(Op);
+  const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Sources[3] = {
+    Dest,
+    Src1,
+    Src2,
+  };
+
+  DeriveOp(FMAResult, IROp, _VFMLA(Size, ElementSize, Sources[Src1Idx - 1], Sources[Src2Idx - 1], Sources[AddendIdx - 1]));
+  Ref Result = FMAResult;
+  if (Scalar) {
+    // Special case, scalar inserts in to the low bits of the destination.
+    Result = _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Dest, Result);
+  }
+
+  if (!Is256Bit) {
+    Result = _VMov(OpSize::i128Bit, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+  const auto Size = GetDstSize(Op);
+  const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+
+  Ref Sources[3] = {
+    Dest,
+    Src1,
+    Src2,
+  };
+
+  Ref ConstantEOR {};
+  if (AddSub) {
+    ConstantEOR =
+      LoadAndCacheNamedVectorConstant(Size, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+  } else {
+    ConstantEOR =
+      LoadAndCacheNamedVectorConstant(Size, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PSUBADDPS_INVERT : NAMED_VECTOR_PSUBADDPD_INVERT);
+  }
+
+  auto InvertedSourc = _VXor(Size, ElementSize, Sources[AddendIdx - 1], ConstantEOR);
+
+  Ref Result = _VFMLA(Size, ElementSize, Sources[Src1Idx - 1], Sources[Src2Idx - 1], InvertedSourc);
+  if (!Is256Bit) {
+    Result = _VMov(OpSize::i128Bit, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFMADD(OpcodeArgs) {
+  VFMAImpl(Op, OP_VFMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFMADD<false, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADD<false, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADD<false, 2, 3, 1>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADD<true, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADD<true, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADD<true, 2, 3, 1>(OpcodeArgs);
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFMSUB(OpcodeArgs) {
+  VFMAImpl(Op, OP_VFMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFMSUB<false, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUB<false, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUB<false, 2, 3, 1>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUB<true, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUB<true, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUB<true, 2, 3, 1>(OpcodeArgs);
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFNMADD(OpcodeArgs) {
+  VFMAImpl(Op, OP_VFNMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFNMADD<false, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMADD<false, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMADD<false, 2, 3, 1>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMADD<true, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMADD<true, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMADD<true, 2, 3, 1>(OpcodeArgs);
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFNMSUB(OpcodeArgs) {
+  VFMAImpl(Op, OP_VFNMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFNMSUB<false, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMSUB<false, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMSUB<false, 2, 3, 1>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMSUB<true, 1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMSUB<true, 2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFNMSUB<true, 2, 3, 1>(OpcodeArgs);
+
+template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFMADDSUB(OpcodeArgs) {
+  VFMAddSubImpl(Op, true, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFMADDSUB<1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADDSUB<2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMADDSUB<2, 3, 1>(OpcodeArgs);
+
+template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::VFMSUBADD(OpcodeArgs) {
+  VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template void OpDispatchBuilder::VFMSUBADD<1, 3, 2>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUBADD<2, 1, 3>(OpcodeArgs);
+template void OpDispatchBuilder::VFMSUBADD<2, 3, 1>(OpcodeArgs);
+
 } // namespace FEXCore::IR

@@ -646,7 +646,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #2416]",
+        "ldr q3, [x28, #2512]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -657,7 +657,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #2416]",
+        "ldr q3, [x28, #2512]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -1041,7 +1041,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
-        "ldr x0, [x28, #2000]",
+        "ldr x0, [x28, #2032]",
         "ldr d3, [x0, #16]",
         "tbl v2.8b, {v2.16b}, v3.8b",
         "str d2, [x28, #1040]"
@@ -1052,7 +1052,7 @@
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "ldr x0, [x28, #2000]",
+        "ldr x0, [x28, #2032]",
         "ldr d3, [x0, #16]",
         "tbl v2.8b, {v2.16b}, v3.8b",
         "str d2, [x28, #1040]"
@@ -3283,7 +3283,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2024]",
+        "ldr x0, [x28, #2056]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v16.16b, v17.16b}, v2.16b"
       ]
@@ -3292,7 +3292,7 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2024]",
+        "ldr x0, [x28, #2056]",
         "ldr q2, [x0, #16]",
         "mov v0.16b, v17.16b",
         "mov v1.16b, v16.16b",
@@ -3304,7 +3304,7 @@
       "Comment": "0x0f 0xc6",
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2024]",
+        "ldr x0, [x28, #2056]",
         "ldr q3, [x0, #16]",
         "mov v0.16b, v16.16b",
         "mov v1.16b, v2.16b",
@@ -3402,7 +3402,7 @@
       "Comment": "0x0f 0xd7",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
-        "ldr d3, [x28, #2544]",
+        "ldr d3, [x28, #2640]",
         "cmlt v2.16b, v2.16b, #0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v2.16b",

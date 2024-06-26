@@ -955,6 +955,23 @@ public:
   void AESDecLastOp(OpcodeArgs);
   void AESKeyGenAssist(OpcodeArgs);
 
+  void VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMSUB(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFNMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFNMSUB(OpcodeArgs);
+
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMADDSUB(OpcodeArgs);
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void VFMSUBADD(OpcodeArgs);
+
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
   template<size_t ElementSize>
@@ -1209,6 +1226,23 @@ public:
   void AVX128_VPERMD(OpcodeArgs);
 
   void AVX128_VPCLMULQDQ(OpcodeArgs);
+
+  void AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMSUB(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFNMADD(OpcodeArgs);
+  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFNMSUB(OpcodeArgs);
+
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMADDSUB(OpcodeArgs);
+  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+  void AVX128_VFMSUBADD(OpcodeArgs);
 
   // End of AVX 128-bit implementation
   void InvalidOp(OpcodeArgs);

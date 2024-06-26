@@ -327,6 +327,42 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<true>},
 
+    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::AVX128_VFMADDSUB<1, 3, 2>},
+    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::AVX128_VFMSUBADD<1, 3, 2>},
+
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::AVX128_VFMADD<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::AVX128_VFMADD<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::AVX128_VFMSUB<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::AVX128_VFMSUB<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::AVX128_VFNMADD<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::AVX128_VFNMADD<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::AVX128_VFNMSUB<false, 1, 3, 2>},
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::AVX128_VFNMSUB<true, 1, 3, 2>},
+
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::AVX128_VFMADD<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::AVX128_VFMADD<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::AVX128_VFMSUB<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::AVX128_VFMSUB<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::AVX128_VFNMADD<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::AVX128_VFNMADD<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::AVX128_VFNMSUB<false, 2, 1, 3>},
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::AVX128_VFNMSUB<true, 2, 1, 3>},
+
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::AVX128_VFMADD<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::AVX128_VFMADD<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::AVX128_VFMSUB<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::AVX128_VFMSUB<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::AVX128_VFNMADD<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::AVX128_VFNMADD<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::AVX128_VFNMSUB<false, 2, 3, 1>},
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::AVX128_VFNMSUB<true, 2, 3, 1>},
+
+    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::AVX128_VFMADDSUB<2, 1, 3>},
+    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::AVX128_VFMSUBADD<2, 1, 3>},
+
+    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::AVX128_VFMADDSUB<2, 3, 1>},
+    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::AVX128_VFMSUBADD<2, 3, 1>},
+
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AVX128_VAESImc},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::AVX128_VAESEnc},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::AVX128_VAESEncLast},
@@ -2265,6 +2301,190 @@ void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), 0, [this, Selector](size_t _, Ref Src1, Ref Src2) {
     return _PCLMUL(OpSize::i128Bit, Src1, Src2, Selector & 0b1'0001);
   });
+}
+
+// FMA differences between AArch64 and x86 make this really confusing to remember how things match.
+// Here's a little guide for remembering how these instructions related across the architectures.
+//
+///< AArch64 Vector FMA behaviour
+// FMLA vd, vn, vm
+// - vd = (vn * vm) + vd
+// FMLS vd, vn, vm
+// - vd = (-vn * vm) + vd
+//
+// SVE ONLY! No FNMLA or FNMLS variants until SVE!
+// FMLA zda, pg/m, zn, zm - Ignore predicate here
+// - zda = (zn * zm) + zda
+// FMLS zda, pg/m, zn, zm - Ignore predicate here
+// - zda = (-zn * zm) + zda
+// FNMLA zda, pg/m, zn, zm - Ignore predicate here
+// - zda = (-zn * zm) - zda
+// FNMLS zda, pg/m, zn, zm - Ignore predicate here
+// - zda = (zn * zm) - zda
+//
+///< AArch64 Scalar FMA behaviour (FMA4 versions!)
+// All variants support 16-bit, 32-bit, and 64-bit.
+// FMADD d, n, m, a
+// - d = (n * m) + a
+// FMSUB d, n, m, a
+// - d = (-n * m) + a
+// FNMADD d, n, m, a
+// - d = (-n * m) - a
+// FNMSUB d, n, m, a
+// - d = (n * m) - a
+//
+///< x86 FMA behaviour
+// ## Packed variants
+// - VFMADD{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1 = (src1 * src3) + src2
+// - 213 - src1 = (src2 * src1) + src3
+// - 231 - src1 = (src2 * src3) + src1
+//   ^ Matches ARM FMLA
+//
+// - VFMSUB{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1 = (src1 * src3) - src2
+// - 213 - src1 = (src2 * src1) - src3
+// - 231 - src1 = (src2 * src3) - src1
+//   ^ Matches ARM FMLA with addend negated first
+//   ^ Or just SVE FNMLS
+//   ^ or scalar FNMSUB
+//
+// - VFNMADD{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1 = (-src1 * src3) + src2
+// - 213 - src1 = (-src2 * src1) + src3
+// - 231 - src1 = (-src2 * src3) + src1
+//   ^ Matches ARM FMLS behaviour! (REALLY CONFUSINGLY NAMED!)
+//   ^ Or Scalar FMSUB
+//
+// - VFNMSUB{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1 = (-src1 * src3) - src2
+// - 213 - src1 = (-src2 * src1) - src3
+// - 231 - src1 = (-src2 * src3) - src1
+//   ^ Matches ARM FMLS behaviour with addend negated first! (REALLY CONFUSINGLY NAMED!)
+//   ^ Or just SVE FNMLA
+//   ^ Or scalar FNMADD
+//
+// - VFNMADDSUB{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1.odd  = (src1.odd  * src3.odd)  + src2.odd
+//       - src1.even = (src1.even * src3.even) - src2.even
+// - 213 - src1.odd  = (src2.odd  * src1.odd)  + src3.odd
+//       - src1.even = (src2.even * src1.even) - src3.even
+// - 231 - src1.odd  = (src2.odd  * src3.odd)  + src1.odd
+//       - src1.even = (src2.even * src3.even) - src1.even
+//   ^ Matches ARM FMLA behaviour with addend.even negated first!
+//
+// - VFNMSUBADD{PD,PS}suffix src1, src2, src3/mem
+// - 132 - src1.odd  = (src1.odd  * src3.odd)  - src2.odd
+//       - src1.even = (src1.even * src3.even) + src2.even
+// - 213 - src1.odd  = (src2.odd  * src1.odd)  - src3.odd
+//       - src1.even = (src2.even * src1.even) + src3.even
+// - 231 - src1.odd  = (src2.odd  * src3.odd)  - src1.odd
+//       - src1.even = (src2.even * src3.even) + src1.even
+//   ^ Matches ARM FMLA behaviour with addend.odd negated first!
+//
+// As shown only the 231 suffixed instructions matches AArch64 behaviour.
+// FEX will insert moves to transpose the vectors to match AArch64 behaviour for 132 and 213 variants.
+
+void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Sources[3] = {
+    Dest,
+    Src1,
+    Src2,
+  };
+
+  RefPair Result {};
+  DeriveOp(Result_Low, IROp, _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
+  Result.Low = Result_Low;
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+    if (Scalar) {
+      // Special case, scalar inserts in to the low bits of the destination.
+      ///< TODO: This can be optimized with AFP.NEP.
+      Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Dest.Low, Result.Low);
+    }
+  } else {
+    DeriveOp(Result_High, IROp,
+             _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, Sources[AddendIdx - 1].High));
+    Result.High = Result_High;
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFMADD(OpcodeArgs) {
+  AVX128_VFMAImpl(Op, OP_VFMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFMSUB(OpcodeArgs) {
+  AVX128_VFMAImpl(Op, OP_VFMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFNMADD(OpcodeArgs) {
+  AVX128_VFMAImpl(Op, OP_VFNMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFNMSUB(OpcodeArgs) {
+  AVX128_VFMAImpl(Op, OP_VFNMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
+}
+
+void OpDispatchBuilder::AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Sources[3] = {
+    Dest,
+    Src1,
+    Src2,
+  };
+
+  RefPair Result {};
+
+  Ref ConstantEOR {};
+  if (AddSub) {
+    ConstantEOR = LoadAndCacheNamedVectorConstant(
+      OpSize::i128Bit, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PADDSUBPS_INVERT : NAMED_VECTOR_PADDSUBPD_INVERT);
+  } else {
+    ConstantEOR = LoadAndCacheNamedVectorConstant(
+      OpSize::i128Bit, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PSUBADDPS_INVERT : NAMED_VECTOR_PSUBADDPD_INVERT);
+  }
+  auto InvertedSourceLow = _VXor(OpSize::i128Bit, ElementSize, Sources[AddendIdx - 1].Low, ConstantEOR);
+
+  Result.Low = _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, InvertedSourceLow);
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    auto InvertedSourceHigh = _VXor(OpSize::i128Bit, ElementSize, Sources[AddendIdx - 1].High, ConstantEOR);
+    Result.High = _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, InvertedSourceHigh);
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFMADDSUB(OpcodeArgs) {
+  AVX128_VFMAddSubImpl(Op, true, Src1Idx, Src2Idx, AddendIdx);
+}
+
+template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
+void OpDispatchBuilder::AVX128_VFMSUBADD(OpcodeArgs) {
+  AVX128_VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
 }
 
 } // namespace FEXCore::IR

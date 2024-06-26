@@ -417,7 +417,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (1 << 9) |                                      // SSSE3
             (0 << 10) |                                     // L1 context ID
             (0 << 11) |                                     // Silicon debug
-            (0 << 12) |                                     // FMA3
+            (SupportsAVX() << 12) |                         // FMA3
             (1 << 13) |                                     // CMPXCHG16B
             (0 << 14) |                                     // xTPR update control
             (0 << 15) |                                     // Perfmon and debug capability
