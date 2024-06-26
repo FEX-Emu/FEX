@@ -92,6 +92,10 @@ Test_VEX/vcvtps2ph_rtne.asm
 Test_VEX/vcvtps2ph_rd.asm
 Test_VEX/vcvtps2ph_ru.asm
 Test_VEX/vcvtps2ph_trunc.asm
+Test_VEX/vcvtps2ph_rtne_mxcsr.asm
+Test_VEX/vcvtps2ph_rd_mxcsr.asm
+Test_VEX/vcvtps2ph_ru_mxcsr.asm
+Test_VEX/vcvtps2ph_trunc_mxcsr.asm
 
 # Simulator doesn't support cycle counter reading
 Test_TwoByte/0F_31.asm
