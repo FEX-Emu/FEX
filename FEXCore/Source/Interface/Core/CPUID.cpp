@@ -609,7 +609,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 2) |                               // SGX
               (SupportsAVX() << 3) |                   // BMI1
               (0 << 4) |                               // Intel Hardware Lock Elison
-              (0 << 5) |                               // AVX2 support
+              (SupportsAVX() << 5) |                   // AVX2 support
               (1 << 6) |                               // FPU data pointer updated only on exception
               (1 << 7) |                               // SMEP support
               (SupportsAVX() << 8) |                   // BMI2
