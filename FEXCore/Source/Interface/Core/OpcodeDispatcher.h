@@ -1347,6 +1347,17 @@ protected:
       if (CTX->HostFeatures.SupportsAFP) {
         return;
       }
+      break;
+
+    case OP_VLOADVECTORMASKED:
+    case OP_VLOADVECTORGATHERMASKED:
+    case OP_VSTOREVECTORMASKED:
+      /* On ASIMD platforms, the emulation happens to preserve NZCV, unlike the
+       * more optimal SVE implementation that clobbers.
+       */
+      if (!CTX->HostFeatures.SupportsSVE128 && !CTX->HostFeatures.SupportsSVE256) {
+        return;
+      }
 
       break;
     default: break;
