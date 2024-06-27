@@ -242,7 +242,6 @@ int main(int argc, char** argv, char** const envp) {
 #endif
 
   bool SupportsAVX = false;
-  bool SupportsAVX2 = false;
   FEXCore::Core::CPUState State;
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
@@ -262,11 +261,9 @@ int main(int argc, char** argv, char** const envp) {
   // Skip any tests that the host doesn't support features for
   auto HostFeatures = CTX->GetHostFeatures();
   SupportsAVX = HostFeatures.SupportsAVX;
-  SupportsAVX2 = HostFeatures.SupportsAVX2;
 
-  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) ||
-                         (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) || (!SupportsAVX && Loader.RequiresAVX()) ||
-                         (!SupportsAVX2 && Loader.RequiresAVX2()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
+  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) || (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
+                         (!SupportsAVX && Loader.RequiresAVX()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
                          (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) || (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
                          (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) || (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
                          (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) || (!HostFeatures.SupportsAES256 && Loader.RequiresAES256());

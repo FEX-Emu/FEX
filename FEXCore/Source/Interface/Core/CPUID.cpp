@@ -347,8 +347,7 @@ void CPUIDEmu::SetupHostHybridFlag() {}
 
 
 void CPUIDEmu::SetupFeatures() {
-  // TODO: Enable once AVX is supported.
-  if (false && CTX->HostFeatures.SupportsAVX) {
+  if (CTX->HostFeatures.SupportsAVX) {
     XCR0 |= XCR0_AVX;
   }
 

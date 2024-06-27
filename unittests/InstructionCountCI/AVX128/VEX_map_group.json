@@ -1,0 +1,673 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE256",
+      "SVE128"
+    ]
+  },
+  "Instructions": {
+    "vpsrlw xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrlw xmm0, xmm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.8h, v17.8h, #15",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlw xmm0, xmm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlw ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrlw ymm0, ymm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.8h, v17.8h, #15",
+        "ushr v2.8h, v17.8h, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlw ymm0, ymm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsraw xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsraw xmm0, xmm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.8h, v17.8h, #15",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsraw xmm0, xmm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.8h, v17.8h, #15",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsraw ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsraw ymm0, ymm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.8h, v17.8h, #15",
+        "sshr v2.8h, v17.8h, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsraw ymm0, ymm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.8h, v17.8h, #15",
+        "sshr v2.8h, v17.8h, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllw xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsllw xmm0, xmm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.8h, v17.8h, #15",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllw xmm0, xmm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllw ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsllw ymm0, ymm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.8h, v17.8h, #15",
+        "shl v2.8h, v17.8h, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllw ymm0, ymm1, 16": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 12 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrld xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrld xmm0, xmm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.4s, v17.4s, #31",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrld xmm0, xmm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrld ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrld ymm0, ymm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.4s, v17.4s, #31",
+        "ushr v2.4s, v17.4s, #31",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrld ymm0, ymm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrad xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrad xmm0, xmm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.4s, v17.4s, #31",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrad xmm0, xmm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.4s, v17.4s, #31",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrad ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrad ymm0, ymm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.4s, v17.4s, #31",
+        "sshr v2.4s, v17.4s, #31",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrad ymm0, ymm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b100 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sshr v16.4s, v17.4s, #31",
+        "sshr v2.4s, v17.4s, #31",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslld xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpslld xmm0, xmm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.4s, v17.4s, #31",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslld xmm0, xmm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslld ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpslld ymm0, ymm1, 31": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.4s, v17.4s, #31",
+        "shl v2.4s, v17.4s, #31",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslld ymm0, ymm1, 32": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 13 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlq xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrlq xmm0, xmm1, 63": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.2d, v17.2d, #63",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlq xmm0, xmm1, 64": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlq ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrlq ymm0, ymm1, 63": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v16.2d, v17.2d, #63",
+        "ushr v2.2d, v17.2d, #63",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrlq ymm0, ymm1, 64": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b010 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrldq xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b011 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrldq xmm0, xmm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b011 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v17.16b, v2.16b, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrldq xmm0, xmm1, 16": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map group 14 0b011 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vpsrldq ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b011 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsrldq ymm0, ymm1, 15": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map group 14 0b011 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "movi v3.2d, #0x0",
+        "ext v16.16b, v17.16b, v3.16b, #15",
+        "ext v2.16b, v2.16b, v3.16b, #15",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsrldq ymm0, ymm1, 16": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map group 14 0b011 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
+    "vpsllq xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsllq xmm0, xmm1, 63": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.2d, v17.2d, #63",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllq xmm0, xmm1, 64": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllq ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpsllq ymm0, ymm1, 63": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "shl v16.2d, v17.2d, #63",
+        "shl v2.2d, v17.2d, #63",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpsllq ymm0, ymm1, 64": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b110 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslldq xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b111 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpslldq xmm0, xmm1, 15": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b111 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v2.16b, v17.16b, #1",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslldq xmm0, xmm1, 16": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map group 14 0b111 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vpslldq ymm0, ymm1, 0": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map group 14 0b111 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpslldq ymm0, ymm1, 15": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map group 14 0b111 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "movi v3.2d, #0x0",
+        "ext v16.16b, v3.16b, v17.16b, #1",
+        "ext v2.16b, v3.16b, v2.16b, #1",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vpslldq ymm0, ymm1, 16": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map group 14 0b111 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    }
+  }
+}

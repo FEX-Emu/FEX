@@ -514,7 +514,6 @@ int main(int argc, char** argv, char** const envp) {
     SVEWidth = 128;
   }
   if (TestHeaderData->EnabledHostFeatures & FEATURE_SVE256) {
-    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEAVX);
     SVEWidth = 256;
   }
   if (TestHeaderData->EnabledHostFeatures & FEATURE_CLZERO) {
@@ -550,9 +549,6 @@ int main(int argc, char** argv, char** const envp) {
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE128) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVE);
-  }
-  if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE256) {
-    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEAVX);
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_CLZERO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECLZERO);

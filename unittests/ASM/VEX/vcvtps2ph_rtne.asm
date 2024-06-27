@@ -9,7 +9,8 @@
     "XMM4": ["0x7E007C0000003C00", "0x0000FC007C004300", "0", "0"],
     "XMM5": ["0x008000003F800000", "0x7FC000007F7FFFFF", "0x7F80000040600000", "0x00000001FF800000"],
     "XMM6": ["0x7E007C0000003C00", "0x0000FC007C004300", "0", "0"],
-    "XMM7": ["0x7E007C0000003C00", "0x0000FC007C004300", "0", "0"]
+    "XMM7": ["0x7E007C0000003C00", "0x0000FC007C004300", "0", "0"],
+    "XMM8": ["0x4800440040003c00", "0xc800c400c000bc00", "0x4142434445464748", "0x4142434445464748"]
   }
 }
 %endif
@@ -46,6 +47,11 @@ vcvtps2ph xmm6, ymm5, 0
 vcvtps2ph [rel .memarea + 16], ymm5, 0
 vmovapd xmm7, [rel .memarea + 16]
 
+; GCC test failure
+vmovaps ymm8, [rel .data_in]
+vcvtps2ph [rel .data_bad], ymm8, 0
+vmovaps ymm8, [rel .data_bad]
+
 hlt
 
 align 32
@@ -56,3 +62,12 @@ dd 0x40600000, 0x7F800000, 0xFF800000, 0x00000001 ; 3.5, +inf, -inf, FLT_TRUE_MI
 ; A quaint little area for testing the store variant of VCVTPS2PH
 .memarea: times 16 dq 0
 
+align 32
+.data_in:
+dd 1.0, 2.0, 4.0, 8.0, -1.0, -2.0, -4.0, -8.0
+
+.data_bad:
+dq 0x4142434445464748
+dq 0x4142434445464748
+dq 0x4142434445464748
+dq 0x4142434445464748

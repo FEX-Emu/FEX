@@ -1,0 +1,68 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "vucomiss xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b00 0x2e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmp s16, s17",
+        "mov w27, #0x0",
+        "cset w26, vc",
+        "axflag",
+        "cfinv"
+      ]
+    },
+    "vucomisd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b01 0x2e 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmp d16, d17",
+        "mov w27, #0x0",
+        "cset w26, vc",
+        "axflag",
+        "cfinv"
+      ]
+    },
+    "vcomiss xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b00 0x2f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmp s16, s17",
+        "mov w27, #0x0",
+        "cset w26, vc",
+        "axflag",
+        "cfinv"
+      ]
+    },
+    "vcomisd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b01 0x2f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmp d16, d17",
+        "mov w27, #0x0",
+        "cset w26, vc",
+        "axflag",
+        "cfinv"
+      ]
+    }
+  }
+}

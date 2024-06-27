@@ -4525,6 +4525,16 @@ OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx)
   , CTX {ctx} {
   ResetWorkingList();
   InstallHostSpecificOpcodeHandlers();
+
+  if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
+    SaveAVXStateFunc = &OpDispatchBuilder::SaveAVXState;
+    RestoreAVXStateFunc = &OpDispatchBuilder::RestoreAVXState;
+    DefaultAVXStateFunc = &OpDispatchBuilder::DefaultAVXState;
+  } else if (CTX->HostFeatures.SupportsAVX) {
+    SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
+    RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
+    DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;
+  }
 }
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator& Allocator)
   : IREmitter {Allocator}

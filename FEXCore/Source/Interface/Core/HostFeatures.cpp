@@ -82,7 +82,6 @@ static void OverrideFeatures(HostFeatures* Features) {
   LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
   ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);
-  ENABLE_DISABLE_OPTION(SupportsAVX2, AVX2, AVX2);
   ENABLE_DISABLE_OPTION(SupportsSVE128, SVE, SVE);
   ENABLE_DISABLE_OPTION(SupportsAFP, AFP, AFP);
   ENABLE_DISABLE_OPTION(SupportsRCPC, LRCPC, LRCPC);
@@ -119,9 +118,6 @@ static void OverrideFeatures(HostFeatures* Features) {
 
   ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
   Features->SupportsSVE256 = ForceSVEWidth() && ForceSVEWidth() >= 256;
-  if (!Features->SupportsSVE256) {
-    Features->SupportsAVX = false;
-  }
 }
 
 HostFeatures::HostFeatures() {
@@ -165,12 +161,10 @@ HostFeatures::HostFeatures() {
   SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
   SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
-  SupportsAVX = SupportsSVE256;
+  SupportsAVX = true;
 
   SupportsAES256 = SupportsAVX && SupportsAES;
 
-  // TODO: AVX2 is currently unsupported. Disable until the remaining features are implemented.
-  SupportsAVX2 = false;
   SupportsBMI1 = true;
   SupportsBMI2 = true;
   SupportsCLWB = true;
@@ -257,7 +251,6 @@ HostFeatures::HostFeatures() {
   Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
   SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
   SupportsAVX = true;
-  SupportsAVX2 = true;
   SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
   SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
   SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);

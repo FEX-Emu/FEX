@@ -16,7 +16,7 @@
     "XMM14": ["0xf1cda2562209301d", "0", "0", "0"],
     "XMM15": ["0xf1cda2562209301d", "0", "0", "0"]
   },
-  "HostFeatures": ["AVX2"]
+  "HostFeatures": ["AVX"]
 }
 %endif
 

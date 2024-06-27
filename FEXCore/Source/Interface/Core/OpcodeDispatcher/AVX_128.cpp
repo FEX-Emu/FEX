@@ -1107,8 +1107,16 @@ template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VFCMP(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Literal();
 
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Op, CompType](size_t _ElementSize, Ref Src1, Ref Src2) {
-    return VFCMPOpImpl(Op, _ElementSize, Src1, Src2, CompType);
+  struct {
+    FEXCore::X86Tables::DecodedOp Op;
+    uint8_t CompType {};
+  } Capture {
+    .Op = Op,
+    .CompType = CompType,
+  };
+
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, &Capture](size_t _ElementSize, Ref Src1, Ref Src2) {
+    return VFCMPOpImpl(Capture.Op, _ElementSize, Src1, Src2, Capture.CompType);
   });
 }
 
@@ -1744,8 +1752,18 @@ void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
   auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
   auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
 
-  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, ZeroRegister, KeyGenSwizzle, RCON](size_t, Ref Src) {
-    return _VAESKeyGenAssist(Src, KeyGenSwizzle, ZeroRegister, RCON);
+  struct {
+    Ref ZeroRegister;
+    Ref KeyGenSwizzle;
+    uint64_t RCON;
+  } Capture {
+    .ZeroRegister = ZeroRegister,
+    .KeyGenSwizzle = KeyGenSwizzle,
+    .RCON = RCON,
+  };
+
+  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, &Capture](size_t, Ref Src) {
+    return _VAESKeyGenAssist(Src, Capture.KeyGenSwizzle, Capture.ZeroRegister, Capture.RCON);
   });
 }
 
@@ -1960,14 +1978,13 @@ void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
                           [this](size_t _ElementSize, Ref Src1, Ref Src2) { return PMADDWDOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
-
 template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
   const uint64_t Selector = Op->Src[2].Literal();
-  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
 
   ///< TODO: VBLEND implementation can be more optimal.
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, ZeroRegister, Selector](size_t _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Selector](size_t _ElementSize, Ref Src1, Ref Src2) {
+    auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
     return VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2, ZeroRegister, Selector);
   });
 }
@@ -2015,7 +2032,7 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
   const auto SanitizedDstSize = std::min(Size, uint8_t {16});
 
-  AVX128_VectorBinaryImpl(Op, Size, OpSize::i8Bit, [this, Index, SanitizedDstSize](size_t, Ref Src1, Ref Src2) -> Ref {
+  AVX128_VectorBinaryImpl(Op, Size, SanitizedDstSize, [this, Index](size_t SanitizedDstSize, Ref Src1, Ref Src2) -> Ref {
     if (Index >= (SanitizedDstSize * 2)) {
       // If the immediate is greater than both vectors combined then it zeroes the vector
       return LoadZeroVector(OpSize::i128Bit);
@@ -2677,7 +2694,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
     Result = AVX128_Zext(Result.Low);
   }
 
-  if (StoreSize == 8) {
+  if (!Op->Dest.IsGPR()) {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, -1);
   } else {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
