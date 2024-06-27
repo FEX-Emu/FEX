@@ -1655,7 +1655,7 @@
       ]
     },
     "vzeroall": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "Might be able to use DZ ZVA",
         "Map 1 0b01 0x77 L=1"
@@ -1677,23 +1677,22 @@
         "movi v29.2d, #0x0",
         "movi v30.2d, #0x0",
         "movi v31.2d, #0x0",
-        "movi v2.2d, #0x0",
-        "str q2, [x28, #256]",
-        "str q2, [x28, #240]",
-        "str q2, [x28, #224]",
-        "str q2, [x28, #208]",
-        "str q2, [x28, #192]",
-        "str q2, [x28, #176]",
-        "str q2, [x28, #160]",
-        "str q2, [x28, #144]",
-        "str q2, [x28, #128]",
-        "str q2, [x28, #112]",
-        "str q2, [x28, #96]",
-        "str q2, [x28, #80]",
-        "str q2, [x28, #64]",
-        "str q2, [x28, #48]",
-        "str q2, [x28, #32]",
-        "str q2, [x28, #16]"
+        "str q31, [x28, #256]",
+        "str q31, [x28, #240]",
+        "str q31, [x28, #224]",
+        "str q31, [x28, #208]",
+        "str q31, [x28, #192]",
+        "str q31, [x28, #176]",
+        "str q31, [x28, #160]",
+        "str q31, [x28, #144]",
+        "str q31, [x28, #128]",
+        "str q31, [x28, #112]",
+        "str q31, [x28, #96]",
+        "str q31, [x28, #80]",
+        "str q31, [x28, #64]",
+        "str q31, [x28, #48]",
+        "str q31, [x28, #32]",
+        "str q31, [x28, #16]"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x00": {
