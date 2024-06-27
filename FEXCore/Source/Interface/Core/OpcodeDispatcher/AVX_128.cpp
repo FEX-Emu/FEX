@@ -1980,13 +1980,29 @@ void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t Selector = Op->Src[2].Literal();
 
-  ///< TODO: VBLEND implementation can be more optimal.
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Selector](size_t _ElementSize, Ref Src1, Ref Src2) {
-    auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
-    return VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2, ZeroRegister, Selector);
-  });
+  ///< High Selector shift depends on element size:
+  /// i16Bit: Reuses same bits, no shift
+  /// i32Bit: Shift by 4
+  /// i64Bit: Shift by 2
+  constexpr uint64_t SelectorShift = ElementSize == OpSize::i64Bit ? 2 : ElementSize == OpSize::i32Bit ? 4 : 0;
+
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+  Result.Low = VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, ZeroRegister, Selector);
+
+  if (Is128Bit) {
+    Result.High = ZeroRegister;
+  } else {
+    Result.High = VBLENDOpImpl(OpSize::i128Bit, ElementSize, Src1.High, Src2.High, ZeroRegister, Selector >> SelectorShift);
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
 template<size_t ElementSize>
