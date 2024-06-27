@@ -367,16 +367,6 @@ function(AddLibrary Name Type)
   target_link_libraries(${Name} FEXCore_Base)
   target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
-  if (MINGW_BUILD)
-    # Mingw build isn't building a linux shared library, so it can't have a SONAME.
-    set_target_properties(${Name} PROPERTIES NO_SONAME ON)
-    # Change the suffixes otherwise cmake continues using .a and .so
-    if (${Type} STREQUAL SHARED)
-      set_target_properties(${Name} PROPERTIES SUFFIX ".dll")
-    elseif(${Type} STREQUAL STATIC)
-      set_target_properties(${Name} PROPERTIES SUFFIX ".lib")
-    endif()
-  endif()
 
   AddDefaultOptionsToTarget(${Name})
 endfunction()

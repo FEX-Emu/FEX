@@ -81,7 +81,7 @@ ssize_t LoadFileToBuffer(const fextl::string& Filepath, std::span<char> Buffer) 
 #else
 template<typename T>
 static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSize) {
-  std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
+  std::ifstream f(Filepath.c_str(), std::ios::binary | std::ios::ate);
   if (f.fail()) {
     return false;
   }
@@ -93,7 +93,7 @@ static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSiz
 }
 
 ssize_t LoadFileToBuffer(const fextl::string& Filepath, std::span<char> Buffer) {
-  std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
+  std::ifstream f(Filepath.c_str(), std::ios::binary | std::ios::ate);
   return f.readsome(Buffer.data(), Buffer.size());
 }
 
