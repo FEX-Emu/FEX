@@ -4307,6 +4307,7 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
     }
   } else if (Operand.IsGPR()) {
     // Not an address, let the caller deal with it
+    A.AddrSize = GPRSize;
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPR.GPR);
