@@ -750,7 +750,7 @@ void OpDispatchBuilder::AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize
     Result.Low = Low;
 
     if (!Is128Bit) {
-      DeriveOp(High, IROp, _VUShrI(OpSize::i128Bit, ElementSize, Src.Low, ShiftConstant));
+      DeriveOp(High, IROp, _VUShrI(OpSize::i128Bit, ElementSize, Src.High, ShiftConstant));
       Result.High = High;
     }
   }
