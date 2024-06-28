@@ -56,22 +56,24 @@
       ]
     },
     "vpsrlw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "ushr v16.8h, v17.8h, #15",
-        "ushr v2.8h, v17.8h, #15",
+        "ushr v2.8h, v2.8h, #15",
         "str q2, [x28, #16]"
       ]
     },
     "vpsrlw ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
@@ -122,24 +124,26 @@
       ]
     },
     "vpsraw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "sshr v16.8h, v17.8h, #15",
-        "sshr v2.8h, v17.8h, #15",
+        "sshr v2.8h, v2.8h, #15",
         "str q2, [x28, #16]"
       ]
     },
     "vpsraw ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "sshr v16.8h, v17.8h, #15",
-        "sshr v2.8h, v17.8h, #15",
+        "sshr v2.8h, v2.8h, #15",
         "str q2, [x28, #16]"
       ]
     },
@@ -188,22 +192,24 @@
       ]
     },
     "vpsllw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "shl v16.8h, v17.8h, #15",
-        "shl v2.8h, v17.8h, #15",
+        "shl v2.8h, v2.8h, #15",
         "str q2, [x28, #16]"
       ]
     },
     "vpsllw ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
@@ -254,22 +260,24 @@
       ]
     },
     "vpsrld ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "ushr v16.4s, v17.4s, #31",
-        "ushr v2.4s, v17.4s, #31",
+        "ushr v2.4s, v2.4s, #31",
         "str q2, [x28, #16]"
       ]
     },
     "vpsrld ymm0, ymm1, 32": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
@@ -320,24 +328,26 @@
       ]
     },
     "vpsrad ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "sshr v16.4s, v17.4s, #31",
-        "sshr v2.4s, v17.4s, #31",
+        "sshr v2.4s, v2.4s, #31",
         "str q2, [x28, #16]"
       ]
     },
     "vpsrad ymm0, ymm1, 32": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "sshr v16.4s, v17.4s, #31",
-        "sshr v2.4s, v17.4s, #31",
+        "sshr v2.4s, v2.4s, #31",
         "str q2, [x28, #16]"
       ]
     },
@@ -386,22 +396,24 @@
       ]
     },
     "vpslld ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "shl v16.4s, v17.4s, #31",
-        "shl v2.4s, v17.4s, #31",
+        "shl v2.4s, v2.4s, #31",
         "str q2, [x28, #16]"
       ]
     },
     "vpslld ymm0, ymm1, 32": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
@@ -452,22 +464,24 @@
       ]
     },
     "vpsrlq ymm0, ymm1, 63": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "ushr v16.2d, v17.2d, #63",
-        "ushr v2.2d, v17.2d, #63",
+        "ushr v2.2d, v2.2d, #63",
         "str q2, [x28, #16]"
       ]
     },
     "vpsrlq ymm0, ymm1, 64": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
@@ -583,22 +597,24 @@
       ]
     },
     "vpsllq ymm0, ymm1, 63": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "shl v16.2d, v17.2d, #63",
-        "shl v2.2d, v17.2d, #63",
+        "shl v2.2d, v2.2d, #63",
         "str q2, [x28, #16]"
       ]
     },
     "vpsllq ymm0, ymm1, 64": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
         "movi v16.2d, #0x0",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
