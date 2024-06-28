@@ -375,6 +375,16 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
                                               FLAG(res_7.edx & (1 << 28), "flush_l1d") FLAG(res_7.edx & (1 << 29), "arch_capabilities")
   }
 
+  // Get the cycle counter frequency from CPUID function 15h.
+  auto res_15 = ctx->RunCPUIDFunction(0x15, 0);
+  // Frequency is calculated in Hz, we need to convert it to megahertz since FEX is guaranteed to return >= 1Ghz.
+  constexpr double HzInMhz = 1000000.0;
+  double Frequency = 1.0 / (static_cast<double>(res_15.eax) / (static_cast<double>(res_15.ebx) * static_cast<double>(res_15.ecx)));
+  Frequency /= HzInMhz;
+  // Generate the cycle counter frequency string in the format expected by cpuinfo.
+  // ex: `4000.000`
+  const auto FrequencyString = fextl::fmt::format("{:.3f}", Frequency);
+
   for (int i = 0; i < CPUCores; ++i) {
     cpu_stream << "processor\t: " << i << std::endl; // Logical id
     cpu_stream << "vendor_id\t: " << vendorid.Str << std::endl;
@@ -392,7 +402,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     cpu_stream << "model name\t: " << modelname.Str << std::endl;
     cpu_stream << "stepping\t: " << info.Stepping << std::endl;
     cpu_stream << "microcode\t: 0x0" << std::endl;
-    cpu_stream << "cpu MHz\t\t: 3000" << std::endl;
+    cpu_stream << "cpu MHz\t\t: " << FrequencyString << std::endl;
     cpu_stream << "cache size\t: 512 KB" << std::endl;
     cpu_stream << "physical id\t: 0" << std::endl;          // Socket id (always 0 for a single socket system)
     cpu_stream << "siblings\t: " << CPUCores << std::endl;  // Number of logical cores
