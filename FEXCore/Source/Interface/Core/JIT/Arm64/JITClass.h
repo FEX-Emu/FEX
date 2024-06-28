@@ -72,6 +72,7 @@ private:
 
   const bool HostSupportsSVE128 {};
   const bool HostSupportsSVE256 {};
+  const bool HostSupportsAVX256 {};
   const bool HostSupportsRPRES {};
   const bool HostSupportsAFP {};
 
