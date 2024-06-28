@@ -58,7 +58,7 @@ static uint32_t GetDCZID() {
 }
 #endif
 
-static void OverrideFeatures(HostFeatures* Features) {
+static void OverrideFeatures(HostFeatures* Features, uint64_t ForceSVEWidth) {
   // Override features if the user has specifically called for it.
   FEX_CONFIG_OPT(HostFeatures, HOSTFEATURES);
   if (!HostFeatures()) {
@@ -97,7 +97,6 @@ static void OverrideFeatures(HostFeatures* Features) {
   ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
   ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
-  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
 
 #undef ENABLE_DISABLE_OPTION
 #undef GET_SINGLE_OPTION
@@ -117,7 +116,7 @@ static void OverrideFeatures(HostFeatures* Features) {
   }
 
   ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
-  Features->SupportsSVE256 = ForceSVEWidth() && ForceSVEWidth() >= 256;
+  Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
 HostFeatures::HostFeatures() {
@@ -133,6 +132,9 @@ HostFeatures::HostFeatures() {
   // Need to use ID registers in WINE.
   auto Features = vixl::CPUFeatures::InferFromIDRegisters();
 #endif
+
+  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
@@ -153,10 +155,11 @@ HostFeatures::HostFeatures() {
 
   Supports3DNow = true;
   SupportsSSE4A = true;
+
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
-  SupportsSVE128 = true;
-  SupportsSVE256 = true;
+  SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
+  SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
 #else
   SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
   SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
@@ -274,6 +277,17 @@ HostFeatures::HostFeatures() {
 #endif
 #endif
   SupportsPreserveAllABI = FEXCORE_HAS_PRESERVE_ALL_ATTR;
-  OverrideFeatures(this);
+
+  if (!Is64BitMode()) {
+    ///< Always disable AVX and AVX2 in 32-bit mode.
+    // When AVX256 is enabled, signal frames start using significantly more stack space.
+    //   - 16bytes * 16 registers = 256 bytes for XMM registers.
+    //   - 32bytes * 16 registers = 512 bytes for YMM registers.
+    // There are known game failures on real x86 hardware where a 32-bit game is running up against the wall on stack space on non-AVX
+    // hardware and then explodes when run on AVX hardware. This is to guard against that.
+    SupportsAVX = false;
+  }
+
+  OverrideFeatures(this, ForceSVEWidth());
 }
 } // namespace FEXCore

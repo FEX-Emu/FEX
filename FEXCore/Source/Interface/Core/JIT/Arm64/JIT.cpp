@@ -523,6 +523,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   , Arm64Emitter(ctx)
   , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
   , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
+  , HostSupportsAVX256 {ctx->HostFeatures.SupportsAVX && ctx->HostFeatures.SupportsSVE256}
   , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
   , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
   , CTX {ctx} {

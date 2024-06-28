@@ -99,7 +99,7 @@ DEF_OP(LoadRegister) {
       }
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
 
@@ -107,7 +107,7 @@ DEF_OP(LoadRegister) {
     const auto host = GetVReg(Node);
 
     if (host.Idx() != guest.Idx()) {
-      if (HostSupportsSVE256) {
+      if (HostSupportsAVX256) {
         mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
       } else {
         mov(host.Q(), guest.Q());
@@ -137,7 +137,7 @@ DEF_OP(StoreRegister) {
       mov(ARMEmitter::Size::i64Bit, reg, Src);
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
     LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
 
@@ -145,7 +145,7 @@ DEF_OP(StoreRegister) {
     const auto host = GetVReg(Op->Value.ID());
 
     if (guest.Idx() != host.Idx()) {
-      if (HostSupportsSVE256) {
+      if (HostSupportsAVX256) {
         mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
       } else {
         mov(guest.Q(), host.Q());

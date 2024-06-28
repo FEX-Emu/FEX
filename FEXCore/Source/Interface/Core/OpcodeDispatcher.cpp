@@ -4453,7 +4453,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       StoreContext(MM0Index + gpr - FEXCore::X86State::REG_MM_0, Src);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
-      const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
+      const auto VectorSize = (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? 32 : 16;
 
       auto Result = Src;
       if (OpSize != VectorSize) {
@@ -5451,7 +5451,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOp_RDRAND);
   }
 
-  if (CTX->HostFeatures.SupportsSVE256) {
+  if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
     InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
     if (CTX->HostFeatures.SupportsPMULL_128Bit) {

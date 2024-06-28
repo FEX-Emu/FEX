@@ -1292,7 +1292,7 @@ public:
     CalculateDeferredFlags();
 
     const uint8_t GPRSize = CTX->GetGPRSize();
-    const auto VectorSize = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
+    const auto VectorSize = (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? 32 : 16;
 
     // Write backwards. This is a heuristic to improve coalescing, since we
     // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
@@ -1610,7 +1610,7 @@ private:
   }
 
   constexpr OpSize GetGuestVectorLength() const {
-    return CTX->HostFeatures.SupportsSVE256 ? OpSize::i256Bit : OpSize::i128Bit;
+    return (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? OpSize::i256Bit : OpSize::i128Bit;
   }
 
   [[nodiscard]]
@@ -1910,8 +1910,8 @@ private:
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
-    const auto Size = CTX->HostFeatures.SupportsSVE256 ? 32 : 16;
-    return LoadRegCache(Reg, FPR0Index + Reg, FPRClass, Size);
+    const auto VectorSize = (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? 32 : 16;
+    return LoadRegCache(Reg, FPR0Index + Reg, FPRClass, VectorSize);
   }
 
   Ref LoadDF() {
