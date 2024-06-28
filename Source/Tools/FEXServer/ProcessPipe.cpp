@@ -449,6 +449,7 @@ void WaitForRequests() {
               int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
 
               // Add the new client to the temporary array
+              LogMan::Msg::DFmt("[FEXServer] New connection accepted");
               NewPollFDs.emplace_back(pollfd {
                 .fd = NewFD,
                 .events = POLLIN | POLLPRI | POLLRDHUP,

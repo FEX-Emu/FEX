@@ -168,6 +168,7 @@ MainLoader::MainLoader(FEXCore::Config::LayerType Type, const char* ConfigFile)
   , Config {ConfigFile} {}
 
 void MainLoader::Load() {
+  LogMan::Msg::DFmt("[MainLoader] Loading config file: {}", Config.c_str());
   JSON::LoadJSonConfig(Config, [this](const char* Name, const char* ConfigString) { MapNameToOption(Name, ConfigString); });
 }
 
@@ -181,6 +182,7 @@ AppLoader::AppLoader(const fextl::string& Filename, FEXCore::Config::LayerType T
 }
 
 void AppLoader::Load() {
+  LogMan::Msg::DFmt("[AppLoader] Loading config file: {}", Config.c_str());
   JSON::LoadJSonConfig(Config, [this](const char* Name, const char* ConfigString) { MapNameToOption(Name, ConfigString); });
 }
 
