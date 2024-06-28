@@ -1,0 +1,1069 @@
+#include "FEXCore/Utils/LogManager.h"
+#include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
+#include "Interface/IR/IR.h"
+#include "Interface/IR/IREmitter.h"
+#include "Interface/IR/PassManager.h"
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/deque.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <stdint.h>
+
+// This file adds a pass to process X87 stack instructions.
+// These instructions are marked in IR.json with `X87: true` and are generated
+// by X87 guest instructions.
+// The way is works is that there's a virtual stack `StackData`, where we load and store
+// and apply the operations in a block of code. Once the block finishes, we emit the necessary operations
+// that we recorded onto the virtual stack. This allows us to save a lot of code movement
+// to and from stack registers, top management and valid flags. It also allows us to
+// perform memcpy optimizations like the one performed in STORESTACKMEMORY.
+//
+// By default we run on the fast path - i.e. we assume all values are in the stack and we have a complete
+// stack overview. However, if we encounter a value that's not in the virtual stack - maybe it was added
+// to the stack in a previous block, we move onto the slow path which loads and stores values to the stack
+// registers.
+// Once in a slow path, we won't return to the fast pass until the beginning of the following block.
+
+namespace FEXCore::IR {
+
+// FIXME(pmatos): copy from OpcodeDispatcher.h
+inline uint32_t MMBaseOffset() {
+  return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
+}
+
+// Similar helper to the one in OpcodeDispatcher.h except we do not
+// need to handle flags, etc.
+template<typename T>
+void DeriveOp(Ref& RefV, IROps NewOp, IREmitter::IRPair<T> Expr) {
+  Expr.first->Header.Op = NewOp;
+  RefV = Expr;
+}
+
+enum class StackSlot { UNUSED, INVALID, VALID };
+// FixedSizeStack is a model of the x87 Stack where each element in this
+// fixed size stack lives at an offset from top. The top of the stack is at
+// index 0.
+template<typename T>
+class FixedSizeStack {
+public:
+  static constexpr uint8_t size = 8;
+
+  // Real top as an offset from stored top value (or the one at the beginning of the block)
+  // For example, if we start and push a value to our simulated stack, because we don't
+  // update top straight away the TopOffset is 1.
+  // If SlowPath is true, then TopOffset is always zero.
+  int8_t TopOffset = 0;
+
+  FixedSizeStack()
+    : buffer(FixedSizeStack::size, {StackSlot::UNUSED, T()}) {}
+
+  void push(const T& Value) {
+    rotate();
+    buffer.front() = {StackSlot::VALID, Value};
+  }
+
+  // Rotate the elements with the direction controlled by Right
+  void rotate(bool Right = true) {
+    if (Right) {
+      std::rotate(buffer.begin(), buffer.end() - 1, buffer.end());
+      TopOffset++;
+    } else {
+      std::rotate(buffer.begin(), buffer.begin() + 1, buffer.end());
+      TopOffset--;
+    }
+  }
+
+  void pop() {
+    buffer.front() = {StackSlot::INVALID, T()};
+    rotate(false);
+  }
+
+  const std::pair<StackSlot, T>& top(size_t Offset = 0) const {
+    return buffer[Offset];
+  }
+
+  void setTop(T Value, size_t Offset = 0) {
+    buffer[Offset] = {StackSlot::VALID, Value};
+  }
+
+  bool isValid(size_t Offset) const {
+    return buffer[Offset].first;
+  }
+
+  void clear() {
+    for (auto& Elem : buffer) {
+      Elem = {StackSlot::UNUSED, T()};
+    }
+    TopOffset = 0;
+  }
+
+  void dump() const {
+    LogMan::Msg::DFmt("-- Stack");
+
+    for (size_t i = 0; i < 8; i++) {
+      const auto& [Valid, Element] = buffer[i];
+      if (Valid == StackSlot::VALID) {
+        LogMan::Msg::DFmt("| ST{}: 0x{:x}", i, (uintptr_t)(Element.StackDataNode));
+      } else if (Valid == StackSlot::INVALID) {
+        LogMan::Msg::DFmt("| ST{}: INVALID", i);
+      }
+    }
+    LogMan::Msg::DFmt("--");
+  }
+
+  void setTagInvalid(size_t Index) {
+    buffer[Index].first = StackSlot::INVALID;
+  }
+
+  // Returns a mask to set in AbridgedTagWord
+  uint8_t getValidMask() {
+    uint8_t Mask = 0;
+    for (size_t i = 0; i < buffer.size(); i++) {
+      if (buffer[i].first == StackSlot::VALID) {
+        Mask |= 1U << i;
+      }
+    }
+    return Mask;
+  }
+
+  // Returns a mask to set in AbridgedTagWord
+  uint8_t getInvalidMask() {
+    uint8_t Mask = 0;
+    for (size_t i = 0; i < buffer.size(); i++) {
+      if (buffer[i].first == StackSlot::INVALID) {
+        Mask |= 1U << i;
+      }
+    }
+    return Mask;
+  }
+
+private:
+  fextl::vector<std::pair<StackSlot, T>> buffer;
+};
+
+class X87StackOptimization final : public Pass {
+public:
+  X87StackOptimization() {
+    FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
+    ReducedPrecisionMode = ReducedPrecision;
+  }
+  void Run(IREmitter* Emit) override;
+
+private:
+  bool ReducedPrecisionMode;
+
+  // Helpers
+  std::tuple<Ref, Ref> SplitF64SigExp(Ref Node);
+  Ref RotateRight8(uint32_t V, Ref Amount);
+
+  // Handles a Unary operation.
+  // Takes the op we are handling, the Node for the reduced precision case and the node for the normal case.
+  // Depending on the type of Op64, we might need to pass a couple of extra constant arguments, this happens
+  // when VFOp64 is true.
+  void HandleUnop(IROps Op64, bool VFOp64, IROps Op80);
+  void HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, bool MarkDestValid, uint8_t StackOffset,
+                        Ref ValueNode, bool Reverse = false);
+  void HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, uint8_t StackOffset1, uint8_t StackOffset2,
+                        bool Reverse = false);
+
+  // Top Management Helpers
+  /// Set the valid tag for Value as valid (if Valid is true), or invalid (if Valid is false).
+  void SetX87ValidTag(Ref Value, bool Valid);
+  // Generates slow code to load/store a value from an offset from the top of the stack
+  Ref LoadStackValueAtOffset_Slow(uint8_t Offset = 0);
+  void StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset = 0, bool SetValid = true);
+  // Update Top value in slow path for a pop
+  void UpdateTopForPop_Slow();
+  void UpdateTopForPush_Slow();
+  // Synchronizes the current simulated stack with the actual values.
+  // Returns a new value for Top, that's synchronized between the simulated stack
+  // and the actual FPU stack.
+  Ref SynchronizeStackValues();
+  // Moves us from the fast to the slow path if ShouldMigrate is true.
+  void MigrateToSlowPathIf(bool ShouldMigrate);
+  // Top Cache Management
+  Ref GetTopWithCache_Slow();
+  Ref GetOffsetTopWithCache_Slow(uint8_t Offset);
+  void SetTopWithCache_Slow(Ref Value);
+  Ref GetX87ValidTag_Slow(uint8_t Offset);
+  // Resets fields to initial values
+  void Reset(bool AlsoSlowPath = true);
+
+  struct StackMemberInfo {
+    StackMemberInfo() {}
+    StackMemberInfo(Ref Data)
+      : StackDataNode(Data)
+      , Source(std::nullopt)
+      , InterpretAsFloat(false) {}
+    StackMemberInfo(Ref Data, Ref Source, OpSize Size, bool Float)
+      : StackDataNode(Data)
+      , Source({Size, Source})
+      , InterpretAsFloat(Float) {}
+    Ref StackDataNode; // Reference to the data in the Stack.
+                       // This is the source data node in the stack format, possibly converted to 64/80 bits.
+    // Tuple is only valid if we have information about the Source of the Stack Data Node.
+    // In it's valid then OpSize is the original source size and Ref is the original source node.
+    std::optional<std::pair<OpSize, Ref>> Source;
+    bool InterpretAsFloat; // True if this is a floating point value, false if integer
+  };
+
+  // StackData, TopCache need to be always properly set to ensure
+  // they reflect the current state of the FPU. This sync only makes sense while
+  // taking the fast path. Once in the slow path, these don't make sense anymore
+  // and we are syncing everything.
+
+  // Index on vector is offset to top value at start of block
+  // If slow path is true, then StackData is always empty.
+  FixedSizeStack<StackMemberInfo> StackData;
+
+  void InvalidateCaches();
+  void InvalidateTopOffsetCache();
+
+  // Path Migration helper management
+  std::optional<StackMemberInfo> MigrateToSlowPath_IfInvalid(uint8_t Offset = 0);
+  Ref LoadStackValue(uint8_t Offset = 0);
+  void StoreStackValue(Ref Value, uint8_t Offset = 0, bool SetValid = false);
+  void StackPop();
+
+  // Cache for Constants
+  // ConstantPoll[i] has IREmit->_Constant(i);
+  std::array<Ref, 8> ConstantPool;
+  Ref GetConstant(ssize_t Offset);
+
+  // Cached value for Top
+  // If slowpath is false, then TopCache is nullptr.
+  std::array<Ref, 8> TopOffsetCache;
+  // Are we on the slow path?
+  // Once we enter the slow path, we never come out.
+  // This just simplifies the code atm. If there's a need to return to the fast path in the future
+  // we can implement that but I would expect that there would be very few cases where that's necessary.
+  // On the slow path TopCache is always the last obtained version of top.
+  // TopOffset is ignored
+  bool SlowPath = false;
+  // Keeping IREmitter not to pass arguments around
+  IREmitter* IREmit = nullptr;
+};
+
+inline void X87StackOptimization::InvalidateCaches() {
+  InvalidateTopOffsetCache();
+  ConstantPool.fill(nullptr);
+}
+
+inline void X87StackOptimization::InvalidateTopOffsetCache() {
+  TopOffsetCache.fill(nullptr);
+}
+
+inline void X87StackOptimization::Reset(bool AlsoSlowPath) {
+  if (AlsoSlowPath) {
+    SlowPath = false;
+  }
+  StackData.clear();
+  InvalidateCaches();
+}
+
+inline Ref X87StackOptimization::GetConstant(ssize_t Offset) {
+  if (Offset < 0 || Offset >= X87StackOptimization::ConstantPool.size()) {
+    // not dealt by pool
+    return IREmit->_Constant(Offset);
+  }
+  if (ConstantPool[Offset] == nullptr) {
+
+    ConstantPool[Offset] = IREmit->_Constant(Offset);
+  }
+  return ConstantPool[Offset];
+}
+
+inline void X87StackOptimization::MigrateToSlowPathIf(bool ShouldMigrate) {
+  if (ShouldMigrate && !SlowPath) {
+    SynchronizeStackValues();
+    Reset(false); // Reset everything but no need to change slowpath
+    SlowPath = true;
+  }
+}
+
+inline Ref X87StackOptimization::GetTopWithCache_Slow() {
+  if (!TopOffsetCache[0]) {
+    TopOffsetCache[0] = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  }
+  return TopOffsetCache[0];
+}
+
+inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset) {
+  if (TopOffsetCache[Offset]) {
+    return TopOffsetCache[Offset];
+  }
+
+  auto* OffsetTop = GetTopWithCache_Slow();
+  if (Offset != 0) {
+    OffsetTop = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, OffsetTop, GetConstant(Offset)), GetConstant(7));
+    // GetTopWithCache_Slow already sets the cache so we don't need to set it here for offset == 0
+    TopOffsetCache[Offset] = OffsetTop;
+  }
+
+  return OffsetTop;
+}
+
+
+inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
+  IREmit->_StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  InvalidateTopOffsetCache();
+  TopOffsetCache[0] = Value;
+}
+
+inline void X87StackOptimization::SetX87ValidTag(Ref Value, bool Valid) {
+  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), Value);
+  Ref NewAbridgedFTW = Valid ? IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RegMask) : IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RegMask);
+  IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+}
+
+inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
+  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  return IREmit->_And(OpSize::i32Bit, IREmit->_Lshr(OpSize::i32Bit, AbridgedFTW, GetOffsetTopWithCache_Slow(Offset)), GetConstant(1));
+}
+
+inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
+  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+}
+
+inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
+  OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
+  // store
+  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+  // mark it valid
+  // In some cases we might already know it has been previously set as valid so we don't need to do it again
+  if (SetValid) {
+    SetX87ValidTag(TopOffset, true);
+  }
+}
+
+inline Ref X87StackOptimization::RotateRight8(uint32_t V, Ref Amount) {
+  return IREmit->_Lshr(OpSize::i32Bit, GetConstant(V | (V << 8)), Amount);
+}
+
+inline std::optional<X87StackOptimization::StackMemberInfo> X87StackOptimization::MigrateToSlowPath_IfInvalid(uint8_t Offset) {
+  const auto& [Valid, StackMember] = StackData.top(Offset);
+  MigrateToSlowPathIf(Valid != StackSlot::VALID);
+  if (Valid == StackSlot::VALID) {
+    return StackMember;
+  }
+  return {};
+}
+
+inline Ref X87StackOptimization::LoadStackValue(uint8_t Offset) {
+  const auto& StackValue = MigrateToSlowPath_IfInvalid(Offset);
+  return SlowPath ? LoadStackValueAtOffset_Slow(Offset) : StackValue->StackDataNode;
+}
+
+inline void X87StackOptimization::StoreStackValue(Ref Value, uint8_t Offset, bool SetValid) {
+  if (SlowPath) {
+    StoreStackValueAtOffset_Slow(Value, Offset, SetValid);
+  } else {
+    StackData.setTop(StackMemberInfo {Value}, Offset);
+  }
+}
+
+inline void X87StackOptimization::StackPop() {
+  if (SlowPath) {
+    UpdateTopForPop_Slow();
+  } else {
+    StackData.pop();
+  }
+}
+
+
+void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80) {
+  Ref St0 = LoadStackValue();
+  Ref Value {};
+
+  if (ReducedPrecisionMode) {
+    if (VFOp64) {
+      DeriveOp(Value, Op64, IREmit->_VFSqrt(8, 8, St0));
+    } else {
+      DeriveOp(Value, Op64, IREmit->_F64SIN(St0));
+    }
+  } else {
+    DeriveOp(Value, Op80, IREmit->_F80SQRT(St0));
+  }
+
+  StoreStackValue(Value);
+}
+
+
+void X87StackOptimization::HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, bool MarkDestValid,
+                                            uint8_t StackOffset, Ref ValueNode, bool Reverse) {
+  LOGMAN_THROW_A_FMT(!Reverse || VFOp64, "There are no reverse operations using non VFOp64 ops");
+  auto StackNode = LoadStackValue(StackOffset);
+
+  Ref Node = {};
+  if (ReducedPrecisionMode) {
+    if (Reverse) {
+      DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, ValueNode, StackNode));
+    } else {
+      if (VFOp64) {
+        DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, StackNode, ValueNode));
+      } else {
+        DeriveOp(Node, Op64, IREmit->_F64FPREM(StackNode, ValueNode));
+      }
+    }
+  } else {
+    if (Reverse) {
+      DeriveOp(Node, Op80, IREmit->_F80Add(ValueNode, StackNode));
+    } else {
+      DeriveOp(Node, Op80, IREmit->_F80Add(StackNode, ValueNode));
+    }
+  }
+
+  StoreStackValue(Node, DestStackOffset, MarkDestValid && StackOffset != DestStackOffset);
+}
+
+void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, uint8_t StackOffset1,
+                                            uint8_t StackOffset2, bool Reverse) {
+  auto StackNode = LoadStackValue(StackOffset2);
+  HandleBinopValue(Op64, VFOp64, Op80, DestStackOffset, StackOffset2 != DestStackOffset, StackOffset1, StackNode, Reverse);
+}
+
+inline void X87StackOptimization::UpdateTopForPop_Slow() {
+  // Pop the top of the x87 stack
+  auto* TopOffset = GetTopWithCache_Slow();
+  TopOffset = IREmit->_Add(OpSize::i32Bit, TopOffset, GetConstant(1));
+  TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
+  SetTopWithCache_Slow(TopOffset);
+}
+
+inline void X87StackOptimization::UpdateTopForPush_Slow() {
+  // Pop the top of the x87 stack
+  auto* TopOffset = GetTopWithCache_Slow();
+  TopOffset = IREmit->_Sub(OpSize::i32Bit, TopOffset, GetConstant(1));
+  TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
+  SetTopWithCache_Slow(TopOffset);
+}
+
+// We synchronize stack values in a few occasions but one of the most important of those,
+// is when we move from fast to a slow path and need to make sure that the context is properly
+// written.
+Ref X87StackOptimization::SynchronizeStackValues() {
+  if (SlowPath) { // Nothing to do here.
+    return GetTopWithCache_Slow();
+  }
+
+  // Store new top which is now the original top minus recorded top offset
+  // Careful with underflow wraparound.
+  const auto TopOffset = StackData.TopOffset;
+
+  if (TopOffset != 0) {
+    auto* OrigTop = GetTopWithCache_Slow();
+    Ref NewTop {};
+    if (TopOffset > 0) {
+      NewTop = IREmit->_And(OpSize::i32Bit, IREmit->_Sub(OpSize::i32Bit, OrigTop, GetConstant(TopOffset)), GetConstant(0x7));
+    } else {
+      NewTop = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, OrigTop, GetConstant(-TopOffset)), GetConstant(0x7));
+    }
+    SetTopWithCache_Slow(NewTop);
+  }
+  StackData.TopOffset = 0;
+
+  // Before leaving we need to write the current values in the stack to
+  // context so that the values are correct. Copy SourceDataNode in the
+  // stack to the respective mmX register.
+  Ref TopValue = GetTopWithCache_Slow();
+  for (size_t i = 0; i < StackData.size; ++i) {
+    const auto& [Valid, StackMember] = StackData.top(i);
+
+    if (Valid == StackSlot::UNUSED) {
+      continue;
+    }
+    Ref TopIndex = GetOffsetTopWithCache_Slow(i);
+    if (Valid == StackSlot::VALID) {
+      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+    }
+  }
+  { // Set valid tags
+    uint8_t Mask = StackData.getValidMask();
+    if (Mask == 0xff) {
+      IREmit->_StoreContext(1, GPRClass, GetConstant(Mask), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    } else if (Mask != 0) {
+      if (std::popcount(Mask) == 1) {
+        uint8_t BitIdx = __builtin_ctz(Mask);
+        SetX87ValidTag(GetOffsetTopWithCache_Slow(BitIdx), true);
+      } else {
+        // perform a rotate right on mask by top
+        auto* TopValue = GetTopWithCache_Slow();
+        Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
+        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref NewAbridgedFTW = IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
+        IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      }
+    }
+  }
+  { // Set invalid tags
+    uint8_t Mask = StackData.getInvalidMask();
+    if (Mask == 0xff) {
+      IREmit->_StoreContext(1, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    } else if (Mask != 0) {
+      if (std::popcount(Mask)) {
+        uint8_t BitIdx = __builtin_ctz(Mask);
+        SetX87ValidTag(GetOffsetTopWithCache_Slow(BitIdx), false);
+      } else {
+        // Same rotate right as above but this time on the invalid mask
+        auto* TopValue = GetTopWithCache_Slow();
+        Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
+        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref NewAbridgedFTW = IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
+        IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      }
+    }
+  }
+  return TopValue;
+}
+
+std::tuple<Ref, Ref> X87StackOptimization::SplitF64SigExp(Ref Node) {
+  Ref Gpr = IREmit->_VExtractToGPR(8, 8, Node, 0);
+
+  Ref Exp = IREmit->_And(OpSize::i64Bit, Gpr, GetConstant(0x7ff0000000000000LL));
+  Exp = IREmit->_Lshr(OpSize::i64Bit, Exp, GetConstant(52));
+  Exp = IREmit->_Sub(OpSize::i64Bit, Exp, GetConstant(1023));
+  Exp = IREmit->_Float_FromGPR_S(8, 8, Exp);
+  Ref Sig = IREmit->_And(OpSize::i64Bit, Gpr, GetConstant(0x800fffffffffffffLL));
+  Sig = IREmit->_Or(OpSize::i64Bit, Sig, GetConstant(0x3ff0000000000000LL));
+  Sig = IREmit->_VCastFromGPR(8, 8, Sig);
+
+  return std::tuple {Exp, Sig};
+}
+
+void X87StackOptimization::Run(IREmitter* Emit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::x87StackOpt");
+
+  auto CurrentIR = Emit->ViewIR();
+  auto* HeaderOp = CurrentIR.GetHeader();
+  LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+
+  if (!HeaderOp->HasX87) {
+    // If there is no x87 in this, just early exit.
+    return;
+  }
+
+  // Initialize IREmit member
+  IREmit = Emit;
+
+  // Run optimization proper
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+    // Each time we deal with a new block we need to start over.
+    // The optimization should run per-block
+    Reset();
+
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      if (!LoweredX87(IROp->Op)) {
+        continue;
+      }
+      IREmit->SetWriteCursor(CodeNode);
+      switch (IROp->Op) {
+      case OP_F80ADDSTACK: {
+        const auto* Op = IROp->C<IROp_F80AddStack>();
+        HandleBinopStack(OP_VFADD, true, OP_F80ADD, Op->SrcStack1, Op->SrcStack1, Op->SrcStack2);
+        break;
+      }
+
+      case OP_F80SUBSTACK: {
+        const auto* Op = IROp->C<IROp_F80SubStack>();
+        HandleBinopStack(OP_VFSUB, true, OP_F80SUB, Op->DstStack, Op->SrcStack1, Op->SrcStack2);
+        break;
+      }
+
+      case OP_F80MULSTACK: {
+        const auto* Op = IROp->C<IROp_F80MulStack>();
+        HandleBinopStack(OP_VFMUL, true, OP_F80MUL, Op->SrcStack1, Op->SrcStack1, Op->SrcStack2);
+        break;
+      }
+
+      case OP_F80DIVSTACK: {
+        const auto* Op = IROp->C<IROp_F80DivStack>();
+        HandleBinopStack(OP_VFDIV, true, OP_F80DIV, Op->DstStack, Op->SrcStack1, Op->SrcStack2);
+        break;
+      }
+
+      case OP_F80FPREMSTACK: {
+        HandleBinopStack(OP_F64FPREM, false, OP_F80FPREM, 0, 0, 1);
+        break;
+      }
+
+      case OP_F80FPREM1STACK: {
+        HandleBinopStack(OP_F64FPREM1, false, OP_F80FPREM1, 0, 0, 1);
+        break;
+      }
+
+      case OP_F80SCALESTACK: {
+        HandleBinopStack(OP_F64SCALE, false, OP_F80SCALE, 0, 0, 1);
+        break;
+      }
+
+      case OP_F80FYL2XSTACK: {
+        HandleBinopStack(OP_F64FYL2X, false, OP_F80FYL2X, 1, 0, 1);
+        StackPop();
+        break;
+      }
+
+      case OP_F80ATANSTACK: {
+        HandleBinopStack(OP_F64ATAN, false, OP_F80ATAN, 1, 1, 0);
+        StackPop();
+        break;
+      }
+
+      case OP_F80ADDVALUE: {
+        const auto* Op = IROp->C<IROp_F80AddValue>();
+        HandleBinopValue(OP_VFADD, true, OP_F80ADD, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src));
+        break;
+      }
+
+      case OP_F80SUBRVALUE:
+      case OP_F80SUBVALUE: {
+        const auto* Op = IROp->C<IROp_F80SubValue>();
+        HandleBinopValue(OP_VFSUB, true, OP_F80SUB, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src), IROp->Op == OP_F80SUBRVALUE);
+        break;
+      }
+
+      case OP_F80DIVRVALUE:
+      case OP_F80DIVVALUE: {
+        const auto* Op = IROp->C<IROp_F80DivValue>();
+        HandleBinopValue(OP_VFDIV, true, OP_F80DIV, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src), IROp->Op == OP_F80DIVRVALUE);
+        break;
+      }
+
+      case OP_F80MULVALUE: {
+        const auto* Op = IROp->C<IROp_F80MulValue>();
+        HandleBinopValue(OP_VFMUL, true, OP_F80MUL, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src));
+        break;
+      }
+
+      case OP_F80SQRTSTACK: {
+        HandleUnop(OP_VFSQRT, true, OP_F80SQRT);
+        break;
+      }
+
+      case OP_F80SINSTACK: {
+        HandleUnop(OP_F64SIN, false, OP_F80SIN);
+
+        break;
+      }
+
+      case OP_F80COSSTACK: {
+        HandleUnop(OP_F64COS, false, OP_F80COS);
+        break;
+      }
+
+      case OP_F80F2XM1STACK: {
+        HandleUnop(OP_F64F2XM1, false, OP_F80F2XM1);
+        break;
+      }
+
+
+      case OP_F80PTANSTACK: {
+        HandleUnop(OP_F64TAN, false, OP_F80TAN);
+        Ref OneConst {};
+        if (ReducedPrecisionMode) {
+          OneConst = IREmit->_VCastFromGPR(8, 8, GetConstant(0x3FF0000000000000));
+        } else {
+          OneConst = IREmit->_LoadNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
+        }
+
+        if (SlowPath) {
+          UpdateTopForPush_Slow();
+          StoreStackValueAtOffset_Slow(OneConst);
+        } else {
+          StackData.push(StackMemberInfo {OneConst});
+        }
+        break;
+      }
+
+      case OP_F80SINCOSSTACK: {
+        Ref St0 = LoadStackValue();
+
+        Ref SinValue {};
+        Ref CosValue {};
+        if (ReducedPrecisionMode) {
+          SinValue = IREmit->_F64SIN(St0);
+          CosValue = IREmit->_F64COS(St0);
+        } else {
+          SinValue = IREmit->_F80SIN(St0);
+          CosValue = IREmit->_F80COS(St0);
+        }
+
+        // Push values
+        if (SlowPath) {
+          StoreStackValueAtOffset_Slow(SinValue, 0, false);
+          UpdateTopForPush_Slow();
+          StoreStackValueAtOffset_Slow(CosValue, 0, true);
+        } else {
+          StackData.setTop(StackMemberInfo {SinValue});
+          StackData.push(StackMemberInfo {CosValue});
+        }
+        break;
+      }
+
+      case OP_INITSTACK: {
+        StackData.clear();
+        break;
+      }
+
+      case OP_INVALIDATESTACK: {
+        const auto* Op = IROp->C<IROp_ReadStackValue>();
+        auto Offset = Op->StackLocation;
+
+        if (Offset != 0xff) { // invalidate single offset
+          if (SlowPath) {
+            auto* TopValue = GetTopWithCache_Slow();
+            if (Offset != 0) {
+              auto* Mask = GetConstant(7);
+              TopValue = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, TopValue, GetConstant(Offset)), Mask);
+            }
+            SetX87ValidTag(TopValue, false);
+          } else {
+            StackData.setTagInvalid(Offset);
+          }
+        } else { // invalidate all
+          if (SlowPath) {
+            IREmit->_StoreContext(1, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+          } else {
+            for (size_t i = 0; i < StackData.size; i++) {
+              StackData.setTagInvalid(i);
+            }
+          }
+        }
+        break;
+      }
+
+      case OP_PUSHSTACK: {
+        const auto* Op = IROp->C<IROp_PushStack>();
+        auto* SourceNode = CurrentIR.GetNode(Op->X80Src);
+
+        if (SlowPath) {
+          UpdateTopForPush_Slow();
+          StoreStackValueAtOffset_Slow(SourceNode);
+        } else {
+          auto* SourceNode = CurrentIR.GetNode(Op->X80Src);
+          auto* OriginalNode = CurrentIR.GetNode(Op->OriginalValue);
+          StackData.push(StackMemberInfo {SourceNode, OriginalNode, SizeToOpSize(Op->LoadSize), Op->Float});
+        }
+        break;
+      }
+
+      case OP_COPYPUSHSTACK: {
+        const auto* Op = IROp->C<IROp_CopyPushStack>();
+        auto Offset = Op->StackLocation;
+        auto Value = MigrateToSlowPath_IfInvalid(Offset);
+
+        if (SlowPath) {
+          Ref St0 = LoadStackValueAtOffset_Slow(Offset);
+          UpdateTopForPush_Slow();
+          StoreStackValueAtOffset_Slow(St0);
+        } else {
+          StackData.push(*Value);
+        }
+        break;
+      }
+
+      case OP_READSTACKVALUE: {
+        const auto* Op = IROp->C<IROp_ReadStackValue>();
+        auto Offset = Op->StackLocation;
+        Ref NewValue = LoadStackValue(Offset);
+
+        IREmit->ReplaceUsesWithAfter(CodeNode, NewValue, CodeNode);
+        break;
+      }
+
+      case OP_STACKVALIDTAG: {
+        // Returns 0 if value is valid and 1 otherwise.
+        const auto* Op = IROp->C<IROp_StackValidTag>();
+        auto Offset = Op->StackLocation;
+        auto Value = MigrateToSlowPath_IfInvalid(Offset);
+
+        Ref Tag {};
+        if (SlowPath) {
+          Tag = GetX87ValidTag_Slow(Offset);
+        } else {
+          Tag = Value ? GetConstant(1) : GetConstant(0);
+        }
+
+        IREmit->ReplaceUsesWithAfter(CodeNode, Tag, CodeNode);
+        break;
+      }
+
+      case OP_STORESTACKMEMORY: {
+        const auto* Op = IROp->C<IROp_StoreStackMemory>();
+        const auto& Value = MigrateToSlowPath_IfInvalid();
+        Ref StackNode = SlowPath ? LoadStackValueAtOffset_Slow() : Value->StackDataNode;
+        Ref AddrNode = CurrentIR.GetNode(Op->Addr);
+
+        // On the fast path we can optimize memory copies.
+        // If we are doing:
+        // fld dword [rax]
+        // fst dword [rbx]
+        // We can optimize this to:
+        // ldr w2, [x0]
+        // str w2, [x1]
+        // or similar. As long as the source size and dest size are one and the same.
+        // This will avoid any conversions between source and stack element size and conversion back.
+        if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, AddrNode, Value->Source->second);
+        } else {
+          if (ReducedPrecisionMode) {
+            switch (Op->StoreSize) {
+            case 4: {
+              StackNode = IREmit->_Float_FToF(4, 8, StackNode);
+              IREmit->_StoreMem(FPRClass, 4, AddrNode, StackNode);
+              break;
+            }
+            case 8: {
+              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              break;
+            }
+            case 10: {
+              StackNode = IREmit->_F80CVTTo(StackNode, 8);
+              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
+              IREmit->_StoreMem(GPRClass, 2, Upper, AddrNode, GetConstant(8), 8, MEM_OFFSET_SXTX, 1);
+              break;
+            }
+            }
+          } else {
+            if (Op->StoreSize != 10) { // if it's not 80bits then convert
+              StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
+            }
+            if (Op->StoreSize == 10) { // Part of code from StoreResult_WithOpSize()
+              // For X87 extended doubles, split before storing
+              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
+              auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
+              IREmit->_StoreMem(GPRClass, 2, DestAddr, Upper, 8);
+            } else {
+              IREmit->_StoreMem(FPRClass, Op->StoreSize, AddrNode, StackNode);
+            }
+          }
+        }
+        break;
+      }
+
+      case OP_STORESTACKTOSTACK: { // stores top of stack in another place in stack.
+        const auto* Op = IROp->C<IROp_StoreStackToStack>();
+        auto Offset = Op->StackLocation;
+
+        if (Offset != 0) {
+          auto Value = MigrateToSlowPath_IfInvalid();
+
+          // Need to store st0 to stack location - basically a copy.
+          if (SlowPath) {
+            StoreStackValueAtOffset_Slow(LoadStackValueAtOffset_Slow(), Offset);
+          } else {
+            StackData.setTop(*Value, Offset);
+          }
+        }
+        break;
+      }
+      case OP_POPSTACKDESTROY: {
+        if (SlowPath) {
+          SetX87ValidTag(GetTopWithCache_Slow(), false);
+        }
+        StackPop();
+        break;
+      }
+
+      case OP_F80STACKXCHANGE: {
+        const auto* Op = IROp->C<IROp_F80StackXchange>();
+        auto Offset = Op->SrcStack;
+        Ref ValueTop = LoadStackValue();
+        Ref ValueOffset = LoadStackValue(Offset);
+
+        StoreStackValue(ValueOffset);
+        StoreStackValue(ValueTop, Offset);
+        break;
+      }
+
+      case OP_F80STACKCHANGESIGN: {
+        Ref Value = LoadStackValue();
+
+        // We need a couple of intermediate instructions to change the sign
+        // of a value
+        Ref ResultNode {};
+        if (ReducedPrecisionMode) {
+          ResultNode = IREmit->_VFNeg(8, 8, Value);
+        } else {
+          Ref Low = GetConstant(0);
+          Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
+          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
+          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
+          ResultNode = IREmit->_VXor(16, 1, Value, HelperNode);
+        }
+        StoreStackValue(ResultNode);
+        break;
+      }
+
+      case OP_F80STACKABS: {
+        Ref Value = LoadStackValue();
+
+        Ref ResultNode {};
+        if (ReducedPrecisionMode) {
+          ResultNode = IREmit->_VFAbs(8, 8, Value);
+        } else {
+          // Intermediate insts
+          Ref Low = GetConstant(~0ULL);
+          Ref High = GetConstant(0b0'111'1111'1111'1111ULL);
+          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
+          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
+          ResultNode = IREmit->_VAnd(16, 1, Value, HelperNode);
+        }
+        StoreStackValue(ResultNode);
+        break;
+      }
+
+      case OP_F80CMPSTACK: {
+        const auto* Op = IROp->C<IROp_F80CmpStack>();
+        auto Offset = Op->SrcStack;
+        Ref StackValue1 = LoadStackValue();
+        Ref StackValue2 = LoadStackValue(Offset);
+
+        Ref CmpNode {};
+        if (ReducedPrecisionMode) {
+          CmpNode = IREmit->_FCmp(8, StackValue1, StackValue2);
+        } else {
+          CmpNode = IREmit->_F80Cmp(StackValue1, StackValue2);
+        }
+
+        IREmit->ReplaceUsesWithAfter(CodeNode, CmpNode, CodeNode);
+        break;
+      }
+      case OP_F80STACKTEST: {
+        const auto* Op = IROp->C<IROp_F80StackTest>();
+        auto Offset = Op->SrcStack;
+        auto StackNode = LoadStackValue(Offset);
+        Ref ZeroConst = IREmit->_VCastFromGPR(ReducedPrecisionMode ? 8 : 16, 8, GetConstant(0));
+
+        Ref CmpNode {};
+        if (ReducedPrecisionMode) {
+          CmpNode = IREmit->_FCmp(8, StackNode, ZeroConst);
+        } else {
+          CmpNode = IREmit->_F80Cmp(StackNode, ZeroConst);
+        }
+        IREmit->ReplaceUsesWithAfter(CodeNode, CmpNode, CodeNode);
+        break;
+      }
+
+
+      case OP_F80CMPVALUE: {
+        const auto* Op = IROp->C<IROp_F80CmpValue>();
+        const auto& Value = CurrentIR.GetNode(Op->X80Src);
+        auto StackNode = LoadStackValue();
+
+        Ref CmpNode {};
+        if (ReducedPrecisionMode) {
+          CmpNode = IREmit->_FCmp(8, StackNode, Value);
+        } else {
+          CmpNode = IREmit->_F80Cmp(StackNode, Value);
+        }
+        IREmit->ReplaceUsesWithAfter(CodeNode, CmpNode, CodeNode);
+        break;
+      }
+
+      case OP_F80XTRACTSTACK: {
+        Ref St0 = LoadStackValue();
+
+        Ref Exp {};
+        Ref Sig {};
+        if (ReducedPrecisionMode) {
+          std::tie(Exp, Sig) = SplitF64SigExp(St0);
+        } else {
+          Exp = IREmit->_F80XTRACT_EXP(St0);
+          Sig = IREmit->_F80XTRACT_SIG(St0);
+        }
+
+        if (SlowPath) {
+          // Write exp to top, update top for a push and set sig at new top.
+          StoreStackValueAtOffset_Slow(Exp, 0, false);
+          UpdateTopForPush_Slow();
+          StoreStackValueAtOffset_Slow(Sig);
+        } else {
+          StackData.setTop(StackMemberInfo {Exp});
+          StackData.push(StackMemberInfo {Sig});
+        }
+        break;
+      }
+
+      case OP_SYNCSTACKTOSLOW: {
+        // This synchronizes stack values but doesn't necessarily moves us off the FastPath!
+        Ref NewTop = SynchronizeStackValues();
+        IREmit->ReplaceUsesWithAfter(CodeNode, NewTop, CodeNode);
+        break;
+      }
+
+      case OP_STACKFORCESLOW: {
+        MigrateToSlowPathIf(true);
+        break;
+      }
+
+      case OP_INCSTACKTOP: {
+        if (SlowPath) {
+          UpdateTopForPush_Slow();
+        } else {
+          StackData.rotate(false);
+        }
+        break;
+      }
+
+      case OP_DECSTACKTOP: {
+        if (SlowPath) {
+          UpdateTopForPop_Slow();
+        } else {
+          StackData.rotate(true);
+        }
+        break;
+      }
+
+      case OP_F80ROUNDSTACK: {
+        Ref St0 = LoadStackValue();
+
+        Ref Value {};
+        if (ReducedPrecisionMode) {
+          Value = IREmit->_Vector_FToI(8, 8, St0, Round_Host);
+        } else {
+          Value = IREmit->_F80Round(St0);
+        }
+        StoreStackValue(Value);
+        break;
+      }
+
+      case OP_F80VBSLSTACK: {
+        const auto* Op = IROp->C<IROp_F80VBSLStack>();
+
+        auto StackOffset1 = Op->SrcStack1;
+        auto StackOffset2 = Op->SrcStack2;
+        Ref Value1 = LoadStackValue(StackOffset1);
+        Ref Value2 = LoadStackValue(StackOffset2);
+
+        Ref StackNode = IREmit->_VBSL(16, CurrentIR.GetNode(Op->VectorMask), Value1, Value2);
+        StoreStackValue(StackNode, 0, StackOffset1 && StackOffset2);
+        break;
+      }
+
+      default: LOGMAN_THROW_A_FMT(false, "IROp was expected to be lowered");
+      }
+      IREmit->Remove(CodeNode);
+    }
+
+    auto Last = CurrentIR.at(BlockIROp->Last);
+    --Last;
+    auto [LastCodeNode, LastIROp] = Last();
+    LOGMAN_THROW_A_FMT(IsBlockExit(LastIROp->Op), "must be exit");
+    IREmit->SetWriteCursorBefore(LastCodeNode);
+    SynchronizeStackValues();
+  }
+
+  return;
+}
+
+fextl::unique_ptr<Pass> CreateX87StackOptimizationPass() {
+  return fextl::make_unique<X87StackOptimization>();
+}
+} // namespace FEXCore::IR

@@ -20,6 +20,7 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination();
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateX87StackOptimizationPass();
 
 namespace Validation {
   fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();

@@ -731,45 +731,42 @@ public:
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
-  Ref ReconstructFSW();
+  Ref ReconstructFSW_Helper(Ref T = nullptr);
   // Returns new x87 stack top from FSW.
-  Ref ReconstructX87StateFromFSW(Ref FSW);
-  void FLD(OpcodeArgs, size_t width);
-  void FLD_Const(OpcodeArgs, NamedVectorConstant constant);
+  Ref ReconstructX87StateFromFSW_Helper(Ref FSW);
+  void FLD(OpcodeArgs, size_t Width);
+  void FLDFromStack(OpcodeArgs);
+  void FLD_Const(OpcodeArgs, NamedVectorConstant Constant);
 
   void FBLD(OpcodeArgs);
   void FBSTP(OpcodeArgs);
 
   void FILD(OpcodeArgs);
 
-  void FSTWithWidth(OpcodeArgs, size_t width);
-
-  void FST(OpcodeArgs);
+  void FST(OpcodeArgs, size_t Width);
+  void FSTToStack(OpcodeArgs);
 
   void FIST(OpcodeArgs, bool Truncate);
 
+  // OpResult is used for Stack operations,
+  // describes if the result of the operation is stored in ST(0) or ST(i),
+  // where ST(i) is one of the arguments to the operation.
   enum class OpResult {
     RES_ST0,
     RES_STI,
   };
-  void FADD(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  void FMUL(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  void FDIV(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  void FSUB(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  void FCHS(OpcodeArgs);
-  void FABS(OpcodeArgs);
+
+  void X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2);
+  void FADD(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
+  void FMUL(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
+  void FDIV(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUB(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FTST(OpcodeArgs);
-  void FRNDINT(OpcodeArgs);
-  void FXTRACT(OpcodeArgs);
   void FNINIT(OpcodeArgs);
 
-  void X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
-  void X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87SinCos(OpcodeArgs);
-  void X87FYL2X(OpcodeArgs);
-  void X87TAN(OpcodeArgs);
-  void X87ATAN(OpcodeArgs);
+  void X87FYL2X(OpcodeArgs, bool IsFYL2XP1);
   void X87LDENV(OpcodeArgs);
   void X87FLDCW(OpcodeArgs);
   void X87FNSTENV(OpcodeArgs);
@@ -789,27 +786,25 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  void FCOMI(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
+  void FCOMI(OpcodeArgs, size_t Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
 
   // F64 X87 Ops
-  void FLDF64(OpcodeArgs, size_t width);
-  void FLDF64_Const(OpcodeArgs, uint64_t num);
+  void FLDF64(OpcodeArgs, size_t Width);
+  void FLDF64_Const(OpcodeArgs, uint64_t Num);
 
   void FBLDF64(OpcodeArgs);
   void FBSTPF64(OpcodeArgs);
 
   void FILDF64(OpcodeArgs);
 
-  void FSTF64WithWidth(OpcodeArgs, size_t width);
-
-  void FSTF64(OpcodeArgs);
+  void FSTF64(OpcodeArgs, size_t Width);
 
   void FISTF64(OpcodeArgs, bool Truncate);
 
-  void FADDF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  void FMULF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  void FDIVF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  void FSUBF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
+  void FADDF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
+  void FMULF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
+  void FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
@@ -821,7 +816,6 @@ public:
   void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87SinCosF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
-  void X87FYL2XF64(OpcodeArgs);
   void X87TANF64(OpcodeArgs);
   void X87ATANF64(OpcodeArgs);
   void X87FNSAVEF64(OpcodeArgs);
@@ -1323,6 +1317,8 @@ protected:
   }
 
 private:
+  FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+
   struct JumpTargetInfo {
     Ref BlockEntry;
     bool HaveEmitted;
@@ -1962,7 +1958,11 @@ private:
     // First, set flags according to Arm FCMP.
     HandleNZCVWrite();
     _FCmp(ElementSize, Src1, Src2);
+    ComissFlags(InvalidateAF);
+  }
 
+  // Sets flags for a COMISS instruction
+  void ComissFlags(bool InvalidateAF = false) {
     // Now set COMISS flags by converts NZCV from the Arm representation to an
     // eXternal representation that's totally not a euphemism for x86, nuh-uh.
     if (CTX->HostFeatures.SupportsFlagM2) {
@@ -2262,12 +2262,9 @@ private:
   /**  @} */
 
   Ref GetX87Top();
-  void SetX87ValidTag(Ref Value, bool Valid);
-  Ref GetX87ValidTag(Ref Value);
   Ref GetX87Tag(Ref Value, Ref AbridgedFTW);
-  Ref GetX87Tag(Ref Value);
   void SetX87FTW(Ref FTW);
-  Ref GetX87FTW();
+  Ref GetX87FTW_Helper();
   void SetX87Top(Ref Value);
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {

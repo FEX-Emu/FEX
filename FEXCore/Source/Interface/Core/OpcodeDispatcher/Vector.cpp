@@ -2688,7 +2688,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     _StoreMem(GPRClass, 2, MemBase, FCW, 2);
   }
 
-  { _StoreMem(GPRClass, 2, ReconstructFSW(), MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, 2, ReconstructFSW_Helper(), MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1); }
 
   {
     // Abridged FTW
@@ -2863,7 +2863,7 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 
   {
     auto NewFSW = _LoadMem(GPRClass, 2, MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1);
-    ReconstructX87StateFromFSW(NewFSW);
+    ReconstructX87StateFromFSW_Helper(NewFSW);
   }
 
   {
