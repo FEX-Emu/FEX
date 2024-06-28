@@ -7,20 +7,22 @@
 
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR static void LoadDeferredFCW(uint16_t NewFCW) {
-  auto PC = (NewFCW >> 8) & 3;
+  // This function is in a hot path in fex since many of the x87 fallback functions
+  // call it.
+  auto PC = NewFCW & 0x0300;
   switch (PC) {
-  case 0: extF80_roundingPrecision = 32; break;
-  case 2: extF80_roundingPrecision = 64; break;
-  case 3: extF80_roundingPrecision = 80; break;
-  case 1: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
+  case 0x0000: extF80_roundingPrecision = 32; break;
+  case 0x0200: extF80_roundingPrecision = 64; break;
+  case 0x0300: extF80_roundingPrecision = 80; break;
+  default: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
   }
 
-  auto RC = (NewFCW >> 10) & 3;
+  auto RC = NewFCW & 0x0C00;
   switch (RC) {
-  case 0: softfloat_roundingMode = softfloat_round_near_even; break;
-  case 1: softfloat_roundingMode = softfloat_round_min; break;
-  case 2: softfloat_roundingMode = softfloat_round_max; break;
-  case 3: softfloat_roundingMode = softfloat_round_minMag; break;
+  case 0x0000: softfloat_roundingMode = softfloat_round_near_even; break;
+  case 0x0400: softfloat_roundingMode = softfloat_round_min; break;
+  case 0x0800: softfloat_roundingMode = softfloat_round_max; break;
+  case 0x0C00: softfloat_roundingMode = softfloat_round_minMag; break;
   }
 }
 

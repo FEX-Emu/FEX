@@ -1079,7 +1079,9 @@ void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs) {
     Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   }
 
-  Comiss(ElementSize, Src1.Low, Src2.Low);
+  HandleNZCVWrite();
+  _FCmp(ElementSize, Src1.Low, Src2.Low);
+  ComissFlags();
 }
 
 template<IROps IROp, size_t ElementSize>

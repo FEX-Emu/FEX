@@ -748,9 +748,9 @@ public:
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
-  Ref ReconstructFSW();
+  Ref ReconstructFSW_Helper(Ref T = nullptr);
   // Returns new x87 stack top from FSW.
-  Ref ReconstructX87StateFromFSW(Ref FSW);
+  Ref ReconstructX87StateFromFSW_Helper(Ref FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
   template<NamedVectorConstant constant>
@@ -769,10 +769,14 @@ public:
   template<bool Truncate>
   void FIST(OpcodeArgs);
 
+  // OpResult is used for Stack operations,
+  // describes if the result of the operation is stored in ST(0) or ST(i),
+  // where ST(i) is one of the arguments to the operation.
   enum class OpResult {
     RES_ST0,
     RES_STI,
   };
+
   template<size_t width, bool Integer, OpResult ResInST0>
   void FADD(OpcodeArgs);
   template<size_t width, bool Integer, OpResult ResInST0>
@@ -787,11 +791,14 @@ public:
   void FRNDINT(OpcodeArgs);
   void FXTRACT(OpcodeArgs);
   void FNINIT(OpcodeArgs);
+  void F80FPREM(OpcodeArgs);
+  void F80FPREM1(OpcodeArgs);
+  void F80SCALE(OpcodeArgs);
+  void F80SIN(OpcodeArgs);
+  void F80COS(OpcodeArgs);
+  void F80SQRT(OpcodeArgs);
+  void F80F2XM1(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp>
-  void X87UnaryOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp>
-  void X87BinaryOp(OpcodeArgs);
   template<bool Inc>
   void X87ModifySTP(OpcodeArgs);
   void X87SinCos(OpcodeArgs);
@@ -1375,6 +1382,8 @@ protected:
   }
 
 private:
+  FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+
   struct JumpTargetInfo {
     Ref BlockEntry;
     bool HaveEmitted;
@@ -1984,12 +1993,8 @@ private:
     return _AddShift(OpSize::i64Bit, X, LoadDF(), ShiftType::LSL, Shift);
   }
 
-  // Compares two floats and sets flags for a COMISS instruction
-  void Comiss(size_t ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
-    // First, set flags according to Arm FCMP.
-    HandleNZCVWrite();
-    _FCmp(ElementSize, Src1, Src2);
-
+  // Sets flags for a COMISS instruction
+  void ComissFlags(bool InvalidateAF = false) {
     // Now set COMISS flags by converts NZCV from the Arm representation to an
     // eXternal representation that's totally not a euphemism for x86, nuh-uh.
     if (CTX->HostFeatures.SupportsFlagM2) {
@@ -2573,7 +2578,7 @@ private:
   Ref GetX87Tag(Ref Value, Ref AbridgedFTW);
   Ref GetX87Tag(Ref Value);
   void SetX87FTW(Ref FTW);
-  Ref GetX87FTW();
+  Ref GetX87FTW_Helper();
   void SetX87Top(Ref Value);
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
@@ -2589,6 +2594,7 @@ private:
 
   bool Multiblock {};
   uint64_t Entry;
+  IROp_IRHeader* CurrentHeader {};
 
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
     if (CTX->IsAtomicTSOEnabled()) {

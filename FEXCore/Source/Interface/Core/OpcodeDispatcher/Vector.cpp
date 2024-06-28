@@ -2643,7 +2643,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     _StoreMem(GPRClass, 2, MemBase, FCW, 2);
   }
 
-  { _StoreMem(GPRClass, 2, ReconstructFSW(), MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, 2, ReconstructFSW_Helper(), MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1); }
 
   {
     // Abridged FTW
@@ -2817,7 +2817,7 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 
   {
     auto NewFSW = _LoadMem(GPRClass, 2, MemBase, _Constant(2), 2, MEM_OFFSET_SXTX, 1);
-    ReconstructX87StateFromFSW(NewFSW);
+    ReconstructX87StateFromFSW_Helper(NewFSW);
   }
 
   {
@@ -2941,7 +2941,9 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  Comiss(ElementSize, Src1, Src2);
+  HandleNZCVWrite();
+  _FCmp(ElementSize, Src1, Src2);
+  ComissFlags();
 }
 
 template void OpDispatchBuilder::UCOMISxOp<4>(OpcodeArgs);

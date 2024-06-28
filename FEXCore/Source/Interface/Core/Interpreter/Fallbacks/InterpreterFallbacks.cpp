@@ -89,7 +89,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
   uint8_t OpSize = IROp->Size;
   switch (IROp->Op) {
   case IR::OP_F80CVTTO: {
-    auto Op = IROp->C<IR::IROp_F80CVTTo>();
+    const auto* Op = IROp->C<IR::IROp_F80CVTTo>();
 
     switch (Op->SrcSize) {
     case 4: {
@@ -119,7 +119,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
   case IR::OP_F80CVTINT: {
-    auto Op = IROp->C<IR::IROp_F80CVTInt>();
+    const auto* Op = IROp->C<IR::IROp_F80CVTInt>();
 
     switch (OpSize) {
     case 2: {
@@ -154,7 +154,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
   case IR::OP_F80CMP: {
-    auto Op = IROp->C<IR::IROp_F80Cmp>();
+    const auto* Op = IROp->C<IR::IROp_F80Cmp>();
 
     static constexpr std::array handlers {
       &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<0>, &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<1>,
@@ -169,7 +169,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
   }
 
   case IR::OP_F80CVTTOINT: {
-    auto Op = IROp->C<IR::IROp_F80CVTToInt>();
+    const auto* Op = IROp->C<IR::IROp_F80CVTToInt>();
 
     switch (Op->SrcSize) {
     case 2: {
