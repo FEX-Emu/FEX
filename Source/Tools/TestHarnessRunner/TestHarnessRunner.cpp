@@ -316,21 +316,23 @@ int main(int argc, char** argv, char** const envp) {
     // Just re-use compare state. It also checks against the expected values in config.
     memcpy(&State, &ParentThread->Thread->CurrentFrame->State, sizeof(State));
 
-    SignalDelegation->UninstallTLSState(ParentThread);
-    FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
-
-    SyscallHandler.reset();
-
+    __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
     if (SupportsAVX) {
       ///< Reconstruct the XMM registers even if they are in split view, then remerge them.
-      __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
       __uint128_t YMM_High[FEXCore::Core::CPUState::NUM_XMMS];
       CTX->ReconstructXMMRegisters(ParentThread->Thread, XMM_Low, YMM_High);
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
         memcpy(&State.xmm.avx.data[i][0], &XMM_Low[i], sizeof(__uint128_t));
         memcpy(&State.xmm.avx.data[i][2], &YMM_High[i], sizeof(__uint128_t));
       }
+    } else {
+      CTX->ReconstructXMMRegisters(ParentThread->Thread, reinterpret_cast<__uint128_t*>(State.xmm.sse.data), nullptr);
     }
+
+    SignalDelegation->UninstallTLSState(ParentThread);
+    FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
+
+    SyscallHandler.reset();
   }
 #ifndef _WIN32
   else {
