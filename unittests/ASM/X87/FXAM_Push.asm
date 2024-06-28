@@ -11,7 +11,7 @@ mov rdx, 0xe0000000
 ; This behaviour was seen around Wine 32-bit libraries
 ; Anything doing a call to a double application would spin
 ; the x87 stack on to the stack looking for fxam to return empty
-; Empty in this case is that C0 and C3 is set whiel C2 is not
+; Empty in this case is that C0 and C3 is set while C2 is not
 
 fninit
 ; Fill the x87 stack
