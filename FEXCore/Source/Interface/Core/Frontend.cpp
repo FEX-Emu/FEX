@@ -221,14 +221,16 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     {
       // If we have a VSIB byte (as opposed to SIB), then the index register is a vector.
       const bool IsIndexVector = (DecodeInst->TableInfo->Flags & InstFlags::FLAGS_VEX_VSIB) != 0;
+      uint8_t InvalidSIBIndex = 0b100; ///< SIB Index where there is no register encoding.
       if (IsIndexVector) {
         DecodeInst->Flags |= X86Tables::DecodeFlags::FLAG_VSIB_BYTE;
+        InvalidSIBIndex = ~0; ///< No Invalid SIB Index with Index Vectors.
       }
 
       const uint8_t IndexREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X) != 0 ? 1 : 0;
       const uint8_t BaseREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B) != 0 ? 1 : 0;
 
-      Operand->Data.SIB.Index = MapModRMToReg(IndexREX, SIB.index, false, false, IsIndexVector, false, 0b100);
+      Operand->Data.SIB.Index = MapModRMToReg(IndexREX, SIB.index, false, false, IsIndexVector, false, InvalidSIBIndex);
       Operand->Data.SIB.Base = MapModRMToReg(BaseREX, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
     }
 
