@@ -1008,16 +1008,6 @@ DEF_OP(VLoadVectorGatherMasked) {
       ModType = ARMEmitter::SVEModType::MOD_LSL;
     }
 
-    ARMEmitter::Register AddrReg = TMP1;
-
-    if (BaseAddr.has_value()) {
-      AddrReg = GetReg(Op->AddrBase.ID());
-    } else {
-      ///< OpcodeDispatcher didn't provide a Base address while SVE requires one.
-      LoadConstant(ARMEmitter::Size::i64Bit, AddrReg, 0);
-    }
-
-    const auto MemDst = ARMEmitter::SVEMemOperand(AddrReg.X(), VectorIndexLow.Z(), ModType, SVEScale);
     const auto SubRegSize = ConvertSubRegSize8(IROp);
 
     const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -1026,6 +1016,19 @@ DEF_OP(VLoadVectorGatherMasked) {
     // Check if the sign bit is set for the given element size.
     cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
     auto TempDst = VTMP1;
+
+    // No need to load a temporary register in the case that we weren't provided a base address and there is no scaling.
+    ARMEmitter::SVEMemOperand MemDst {ARMEmitter::SVEMemOperand(VectorIndexLow.Z(), 0)};
+    if (BaseAddr.has_value() || OffsetScale != 1) {
+      ARMEmitter::Register AddrReg = TMP1;
+      if (BaseAddr.has_value()) {
+        AddrReg = GetReg(Op->AddrBase.ID());
+      } else {
+        ///< OpcodeDispatcher didn't provide a Base address while SVE requires one.
+        LoadConstant(ARMEmitter::Size::i64Bit, AddrReg, 0);
+      }
+      MemDst = ARMEmitter::SVEMemOperand(AddrReg.X(), VectorIndexLow.Z(), ModType, SVEScale);
+    }
 
     switch (IROp->ElementSize) {
     case 1: {
