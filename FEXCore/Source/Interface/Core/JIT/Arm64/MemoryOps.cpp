@@ -1051,6 +1051,15 @@ DEF_OP(VLoadVectorGatherMasked) {
     sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
+
+    // FEX needs to use a temporary destination vector register in a couple of instances.
+    // When Dst overlaps MaskReg, VectorIndexLow, or VectorIndexHigh
+    // Due to x86 gather instruction limitations, it is highly likely that a destination temporary isn't required.
+    const bool NeedsDestTmp = Dst == MaskReg || Dst == VectorIndexLow || (VectorIndexHigh.has_value() && Dst == *VectorIndexHigh);
+
+    // If the incoming destination isn't the destination then we need to move.
+    const bool NeedsIncomingDestMove = Dst != IncomingDst || NeedsDestTmp;
+
     ///< Adventurers beware, emulated ASIMD style gather masked load operation.
     // Number of elements to load is calculated by the number of index elements available.
     size_t NumAddrElements = (VectorIndexHigh.has_value() ? 32 : 16) / VectorIndexSize;
@@ -1063,13 +1072,19 @@ DEF_OP(VLoadVectorGatherMasked) {
       LOGMAN_THROW_A_FMT(VectorIndexHigh.has_value(), "Need High vector index register!");
     }
 
-    // Use VTMP1 as the temporary destination
-    auto TempReg = VTMP1;
+    auto ResultReg = Dst;
+    if (NeedsDestTmp) {
+      // Use VTMP1 as the temporary destination
+      ResultReg = VTMP1;
+    }
     auto WorkingReg = TMP1;
     auto TempMemReg = TMP2;
     const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
 
-    mov(TempReg.Q(), IncomingDst.Q());
+    if (NeedsIncomingDestMove) {
+      mov(ResultReg.Q(), IncomingDst.Q());
+    }
+
     for (size_t i = DataElementOffsetStart, IndexElement = IndexElementOffsetStart; i < NumDataElements; ++i, ++IndexElement) {
       ARMEmitter::SingleUseForwardLabel Skip {};
       // Extract mask element
@@ -1106,18 +1121,21 @@ DEF_OP(VLoadVectorGatherMasked) {
 
       // Now that the address is calculated. Do the load.
       switch (IROp->ElementSize) {
-      case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(TempReg.Q(), i, TempMemReg); break;
-      case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(TempReg.Q(), i, TempMemReg); break;
-      case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(TempReg.Q(), i, TempMemReg); break;
-      case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(TempReg.Q(), i, TempMemReg); break;
-      case 16: ldr(TempReg.Q(), TempMemReg, 0); break;
+      case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(ResultReg.Q(), i, TempMemReg); break;
+      case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(ResultReg.Q(), i, TempMemReg); break;
+      case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(ResultReg.Q(), i, TempMemReg); break;
+      case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(ResultReg.Q(), i, TempMemReg); break;
+      case 16: ldr(ResultReg.Q(), TempMemReg, 0); break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); FEX_UNREACHABLE;
       }
 
       Bind(&Skip);
     }
-    // Move result.
-    mov(Dst.Q(), TempReg.Q());
+
+    if (NeedsDestTmp) {
+      // Move result.
+      mov(Dst.Q(), ResultReg.Q());
+    }
   }
 }
 
