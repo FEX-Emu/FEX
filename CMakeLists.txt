@@ -7,8 +7,9 @@ CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
-option(BUILD_FEXCONFIG "Build FEXConfig, requires SDL2 and X11" TRUE)
 option(ENABLE_CLANG_THUNKS "Build thunks with clang" FALSE)
+option(BUILD_GUEST_LIBS "Build guest library wrappers as part of the main project" TRUE)
+option(BUILD_FEXCONFIG "Build FEXConfig, requires SDL2 and X11" TRUE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
 option(ENABLE_LTO "Enable LTO with compilation" TRUE)
 option(ENABLE_XRAY "Enable building with LLVM X-Ray" FALSE)
@@ -34,6 +35,7 @@ option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hookin
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
+set (X86_DEV_ROOTFS "/" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
@@ -394,83 +396,7 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_THUNKS)
-  set (FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-  add_subdirectory(ThunkLibs/Generator)
-
-  # Thunk targets for both host libraries and IDE integration
-  add_subdirectory(ThunkLibs/HostLibs)
-
-  # Thunk targets for IDE integration of guest code, only
-  add_subdirectory(ThunkLibs/GuestLibs)
-
-  # Thunk targets for guest libraries
-  include(ExternalProject)
-  ExternalProject_Add(guest-libs
-    PREFIX guest-libs
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-    BINARY_DIR "Guest"
-    CMAKE_ARGS
-      "-DBITNESS=64"
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DBUILD_FEX_LINUX_TESTS=${BUILD_FEX_LINUX_TESTS}"
-      "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
-      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-      "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
-      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
-
-  ExternalProject_Add(guest-libs-32
-    PREFIX guest-libs-32
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-    BINARY_DIR "Guest_32"
-    CMAKE_ARGS
-      "-DBITNESS=32"
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DBUILD_FEX_LINUX_TESTS=${BUILD_FEX_LINUX_TESTS}"
-      "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
-      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_32_TOOLCHAIN_FILE}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-      "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
-      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
-
-  install(
-    CODE "MESSAGE(\"-- Installing: guest-libs\")"
-    CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
-    )"
-    DEPENDS guest-libs
-  )
-
-  install(
-    CODE "MESSAGE(\"-- Installing: guest-libs-32\")"
-    CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
-    )"
-    DEPENDS guest-libs-32
-  )
-
-  add_custom_target(uninstall_guest-libs
-    COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
-  )
-
-  add_custom_target(uninstall_guest-libs-32
-    COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
-  )
-
-  add_dependencies(uninstall uninstall_guest-libs)
-  add_dependencies(uninstall uninstall_guest-libs-32)
+  add_subdirectory(ThunkLibs)
 endif()
 
 set(FEX_VERSION_MAJOR "0")
