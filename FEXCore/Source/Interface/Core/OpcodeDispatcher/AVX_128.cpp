@@ -2012,8 +2012,9 @@ void OpDispatchBuilder::AVX128_VHSUBP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VPSHUFB(OpcodeArgs) {
+  auto MaskVector = GeneratePSHUFBMask(OpSize::i128Bit);
   AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i8Bit,
-                          [this](size_t, Ref Src1, Ref Src2) { return PSHUFBOpImpl(OpSize::i128Bit, Src1, Src2); });
+                          [this, MaskVector](size_t, Ref Src1, Ref Src2) { return PSHUFBOpImpl(OpSize::i128Bit, Src1, Src2, MaskVector); });
 }
 
 void OpDispatchBuilder::AVX128_VPSADBW(OpcodeArgs) {
