@@ -25,19 +25,18 @@
       ]
     },
     "vpshufb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
-        "ldr q3, [x28, #48]",
-        "movi v4.16b, #0x8f",
-        "and v4.16b, v18.16b, v4.16b",
-        "tbl v16.16b, {v17.16b}, v4.16b",
-        "movi v4.16b, #0x8f",
-        "and v3.16b, v3.16b, v4.16b",
-        "tbl v2.16b, {v2.16b}, v3.16b",
+        "movi v2.16b, #0x8f",
+        "ldr q3, [x28, #32]",
+        "ldr q4, [x28, #48]",
+        "and v5.16b, v18.16b, v2.16b",
+        "tbl v16.16b, {v17.16b}, v5.16b",
+        "and v2.16b, v4.16b, v2.16b",
+        "tbl v2.16b, {v3.16b}, v2.16b",
         "str q2, [x28, #16]"
       ]
     },
