@@ -1261,6 +1261,13 @@
         "eor v16.16b, v16.16b, v17.16b"
       ]
     },
+    "pxor xmm0, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x66 0x0f 0xef",
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
     "psllw xmm0, xmm1": {
       "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0xf1",
