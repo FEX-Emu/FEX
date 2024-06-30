@@ -2804,14 +2804,13 @@
       ]
     },
     "vmovntps [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stnp q16, q2, [x4]"
       ]
     },
     "vmovntpd [rax], xmm0": {
@@ -2824,14 +2823,13 @@
       ]
     },
     "vmovntpd [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stnp q16, q2, [x4]"
       ]
     },
     "vcvttss2si eax, xmm0": {
@@ -4880,14 +4878,13 @@
       ]
     },
     "vmovntdq [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0xe7 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stnp q16, q2, [x4]"
       ]
     },
     "vpsubsb xmm0, xmm1, xmm2": {
