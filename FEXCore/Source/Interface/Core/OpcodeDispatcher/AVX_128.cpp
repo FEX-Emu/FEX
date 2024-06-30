@@ -2455,6 +2455,8 @@ void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uin
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
+  const auto RegisterSize = Scalar ? ElementSize : OpSize::i128Bit;
+
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
@@ -2466,7 +2468,7 @@ void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uin
   };
 
   RefPair Result {};
-  DeriveOp(Result_Low, IROp, _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
+  DeriveOp(Result_Low, IROp, _VFMLA(RegisterSize, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
   Result.Low = Result_Low;
   if (Is128Bit) {
     Result.High = LoadZeroVector(OpSize::i128Bit);
@@ -2477,7 +2479,7 @@ void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uin
     }
   } else {
     DeriveOp(Result_High, IROp,
-             _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, Sources[AddendIdx - 1].High));
+             _VFMLA(RegisterSize, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, Sources[AddendIdx - 1].High));
     Result.High = Result_High;
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
