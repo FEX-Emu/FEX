@@ -234,29 +234,27 @@
       ]
     },
     "vmovlps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b00 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x4]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v17.d[1]",
+        "mov v16.16b, v17.16b",
+        "ld1 {v16.d}[0], [x4]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vmovlpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b01 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x4]",
-        "mov v16.16b, v2.16b",
-        "mov v16.d[1], v17.d[1]",
+        "mov v16.16b, v17.16b",
+        "ld1 {v16.d}[0], [x4]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
@@ -439,8 +437,8 @@
         "Map 1 0b00 0x16 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "zip1 v16.2d, v17.2d, v2.2d",
+        "mov v16.16b, v17.16b",
+        "ld1 {v16.d}[1], [x4]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
@@ -451,8 +449,8 @@
         "Map 1 0b01 0x16 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "zip1 v16.2d, v17.2d, v2.2d",
+        "mov v16.16b, v17.16b",
+        "ld1 {v16.d}[1], [x4]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
@@ -483,25 +481,21 @@
       ]
     },
     "vmovhps [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "Can be more optimal with an element store.",
         "Map 1 0b00 0x17 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "dup v2.2d, v16.d[1]",
-        "str d2, [x4]"
+        "st1 {v16.d}[1], [x4]"
       ]
     },
     "vmovhpd [rax], xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
-        "Can be more optimal with an element store.",
         "Map 1 0b01 0x17 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "dup v2.2d, v16.d[1]",
-        "str d2, [x4]"
+        "st1 {v16.d}[1], [x4]"
       ]
     },
     "vmovmskps rax, xmm0": {
