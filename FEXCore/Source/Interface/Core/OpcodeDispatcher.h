@@ -454,6 +454,8 @@ public:
   void MOVSSOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUOp(OpcodeArgs);
+  void VectorXOROp(OpcodeArgs);
+
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUROp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
@@ -545,6 +547,7 @@ public:
   // AVX Ops
   template<IROps IROp, size_t ElementSize>
   void AVXVectorALUOp(OpcodeArgs);
+  void AVXVectorXOROp(OpcodeArgs);
   template<IROps IROp, size_t ElementSize>
   void AVXVectorUnaryOp(OpcodeArgs);
 
@@ -1053,6 +1056,7 @@ public:
 
   template<IROps IROp, size_t ElementSize>
   void AVX128_VectorALU(OpcodeArgs);
+  void AVX128_VectorXOR(OpcodeArgs);
   template<IROps IROp, size_t ElementSize>
   void AVX128_VectorUnary(OpcodeArgs);
 

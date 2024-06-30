@@ -234,12 +234,24 @@ void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
   VectorALUOpImpl(Op, IROp, ElementSize);
 }
 
+void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+
+  // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+    const auto ZeroRegister = LoadZeroVector(Size);
+    StoreResult(FPRClass, Op, ZeroRegister, -1);
+    return;
+  }
+
+  ///< Regular code path
+  VectorALUOpImpl(Op, OP_VXOR, Size);
+}
+
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 8>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 8>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>(OpcodeArgs);
 template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
@@ -316,6 +328,19 @@ void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
   AVXVectorALUOpImpl(Op, IROp, ElementSize);
 }
 
+void OpDispatchBuilder::AVXVectorXOROp(OpcodeArgs) {
+  // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
+  if (Op->Src[0].IsGPR() && Op->Src[1].IsGPR() && Op->Src[0].Data.GPR.GPR == Op->Src[1].Data.GPR.GPR) {
+    const auto DstSize = GetDstSize(Op);
+    const auto ZeroRegister = LoadZeroVector(DstSize);
+    StoreResult(FPRClass, Op, ZeroRegister, -1);
+    return;
+  }
+
+  ///< Regular code path
+  AVXVectorALUOpImpl(Op, OP_VXOR, OpSize::i128Bit);
+}
+
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 1>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 2>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
@@ -357,7 +382,6 @@ template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>(OpcodeArgs);
 
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 1>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
