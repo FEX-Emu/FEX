@@ -989,13 +989,7 @@ template void OpDispatchBuilder::VPUNPCKHOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2) {
-  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
-
-  // We perform the 256-bit version as two 128-bit operations due to
-  // the lane splitting behavior, so cap the maximum size at 16.
-  const auto SanitizedSrcSize = std::min(SrcSize, uint8_t {16});
-
+Ref OpDispatchBuilder::GeneratePSHUFBMask(uint8_t SrcSize) {
   // PSHUFB doesn't 100% match VTBL behaviour
   // VTBL will set the element zero if the index is greater than
   // the number of elements in the array
@@ -1006,7 +1000,16 @@ Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2) {
   // Bits [6:3] is reserved for 64-bit
   const uint8_t MaskImm = SrcSize == 8 ? 0b1000'0111 : 0b1000'1111;
 
-  Ref MaskVector = _VectorImm(SrcSize, 1, MaskImm);
+  return _VectorImm(SrcSize, 1, MaskImm);
+}
+
+Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector) {
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  // We perform the 256-bit version as two 128-bit operations due to
+  // the lane splitting behavior, so cap the maximum size at 16.
+  const auto SanitizedSrcSize = std::min(SrcSize, uint8_t {16});
+
   Ref MaskedIndices = _VAnd(SrcSize, SrcSize, Src2, MaskVector);
 
   Ref Low = _VTBL1(SanitizedSrcSize, Src1, MaskedIndices);
@@ -1024,7 +1027,7 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  Ref Result = PSHUFBOpImpl(SrcSize, Src1, Src2);
+  Ref Result = PSHUFBOpImpl(SrcSize, Src1, Src2, GeneratePSHUFBMask(SrcSize));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1033,7 +1036,7 @@ void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-  Ref Result = PSHUFBOpImpl(SrcSize, Src1, Src2);
+  Ref Result = PSHUFBOpImpl(SrcSize, Src1, Src2, GeneratePSHUFBMask(SrcSize));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
