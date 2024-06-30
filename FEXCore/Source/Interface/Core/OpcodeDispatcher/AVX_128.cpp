@@ -837,8 +837,8 @@ void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
     ///< VMOVLPS/PD xmm1, xmm2, mem64
     // Bits[63:0] come from Src2[63:0]
     // Bits[127:64] come from Src1[127:64]
-    auto Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags);
-    Ref Result_Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src2, Src1.Low);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    Ref Result_Low = _VLoadVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 0, Src2);
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
 
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
@@ -857,18 +857,18 @@ void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
 
   if (Op->Dest.IsGPR()) {
-    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags, {.LoadData = false});
 
     // Bits[63:0] come from Src1[63:0]
     // Bits[127:64] come from Src2[63:0]
-    Ref Result_Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, Src2.Low);
+    Ref Result_Low = _VLoadVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1, Src2);
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
 
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   } else {
-    // Need to store Bits[127:64]. Duplicate the element to get it in the low bits.
-    Src1.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+    // Need to store Bits[127:64]. Use a vector element store.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    _VStoreVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1, Dest);
   }
 }
 
