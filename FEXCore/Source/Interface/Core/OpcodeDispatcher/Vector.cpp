@@ -43,8 +43,27 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
-  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
+  const auto Size = GetDstSize(Op);
+
+  if (Op->Dest.IsGPR()) {
+    ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
+    StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
+  } else {
+    LOGMAN_THROW_A_FMT(!Op->Dest.IsGPR(), "Destination can't be GPR for non-temporal stores");
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
+    if (Size < OpSize::i128Bit) {
+      // Normal streaming store if less than 128-bit
+      // XMM Scalar 32-bit and 64-bit comes from SSE4a MOVNTSS, MOVNTSD
+      // MMX 64-bit comes from MOVNTQ
+      StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
+    } else {
+      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+
+      // Single store non-temporal for larger operations.
+      _VStoreNonTemporal(Size, Src, Dest, 0);
+    }
+  }
 }
 
 void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
