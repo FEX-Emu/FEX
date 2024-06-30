@@ -2171,5 +2171,47 @@ DEF_OP(Prefetch) {
   prfm(PrefetchType[LUT], MemSrc);
 }
 
+DEF_OP(VStoreNonTemporal) {
+  const auto Op = IROp->C<IR::IROp_VStoreNonTemporal>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto Value = GetVReg(Op->Value.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto Offset = Op->Offset;
+
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreNonTemporal with 256-bit operation");
+    const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
+    const auto OffsetScaled = Offset / 32;
+    stnt1b(Value.Z(), GoverningPredicate, MemReg, OffsetScaled);
+  } else if (Is128Bit && HostSupportsSVE128) {
+    const auto GoverningPredicate = PRED_TMP_16B.Zeroing();
+    const auto OffsetScaled = Offset / 16;
+    stnt1b(Value.Z(), GoverningPredicate, MemReg, OffsetScaled);
+  } else {
+    // Treat the non-temporal store as a regular vector store in this case for compatibility
+    str(Value.Q(), MemReg, Offset);
+  }
+}
+
+DEF_OP(VStoreNonTemporalPair) {
+  const auto Op = IROp->C<IR::IROp_VStoreNonTemporalPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  LOGMAN_THROW_A_FMT(Is128Bit, "This IR operation only operates at 128-bit wide");
+
+  const auto ValueLow = GetVReg(Op->ValueLow.ID());
+  const auto ValueHigh = GetVReg(Op->ValueHigh.ID());
+
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto Offset = Op->Offset;
+
+  stnp(ValueLow.Q(), ValueHigh.Q(), MemReg, Offset);
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU
