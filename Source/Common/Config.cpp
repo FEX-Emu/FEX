@@ -182,7 +182,7 @@ AppLoader::AppLoader(const fextl::string& Filename, FEXCore::Config::LayerType T
 }
 
 void AppLoader::Load() {
-  LogMan::Msg::DFmt("[AppLoader] Loading config file: {}", Config.c_str());
+  LogMan::Msg::DFmt("[AppLoader] Loading config file: {}", Config);
   JSON::LoadJSonConfig(Config, [this](const char* Name, const char* ConfigString) { MapNameToOption(Name, ConfigString); });
 }
 
