@@ -21,12 +21,12 @@ vmovapd ymm0, [rdx + 32 * 0]
 vmovapd ymm1, [rdx + 32 * 1]
 
 ; Register only
-vpcmpgtb ymm2, ymm0, ymm1
-vpcmpgtb xmm3, xmm0, xmm1
+vpcmpgtw ymm2, ymm0, ymm1
+vpcmpgtw xmm3, xmm0, xmm1
 
 ; Memory operand
-vpcmpgtb ymm4, ymm0, [rdx + 32 * 1]
-vpcmpgtb xmm5, xmm0, [rdx + 32 * 1]
+vpcmpgtw ymm4, ymm0, [rdx + 32 * 1]
+vpcmpgtw xmm5, xmm0, [rdx + 32 * 1]
 
 hlt
 
