@@ -420,6 +420,18 @@
         "mov v16.d[1], v3.d[0]"
       ]
     },
+    "vmovlhps xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 1 0b01 0x16 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v2.8b, v17.8b",
+        "mov v3.8b, v17.8b",
+        "mov v16.16b, v2.16b",
+        "mov v16.d[1], v3.d[0]"
+      ]
+    },
     "vmovshdup xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Comment": [

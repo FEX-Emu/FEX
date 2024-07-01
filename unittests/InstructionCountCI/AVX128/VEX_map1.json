@@ -455,6 +455,17 @@
         "str q2, [x28, #16]"
       ]
     },
+    "vmovlhps xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b01 0x16 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 v16.2d, v17.2d, v17.2d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
     "vmovshdup xmm0, [rax]": {
       "ExpectedInstructionCount": 4,
       "Comment": [

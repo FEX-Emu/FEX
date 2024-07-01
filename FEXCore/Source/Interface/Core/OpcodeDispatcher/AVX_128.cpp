@@ -856,7 +856,13 @@ void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
 
-  if (Op->Dest.IsGPR()) {
+  if (!Op->Dest.IsGPR()) {
+    ///< VMOVHPS/PD mem64, xmm1
+    // Need to store Bits[127:64]. Use a vector element store.
+    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    _VStoreVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1, Dest);
+  } else if (!Op->Src[1].IsGPR()) {
+    ///< VMOVHPS/PD xmm2, xmm1, mem64
     auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags, {.LoadData = false});
 
     // Bits[63:0] come from Src1[63:0]
@@ -866,9 +872,13 @@ void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
 
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   } else {
-    // Need to store Bits[127:64]. Use a vector element store.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i64Bit, Op->Flags, {.LoadData = false});
-    _VStoreVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1, Dest);
+    // VMOVLHPS xmm1, xmm2, xmm3
+    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+
+    Ref Result_Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, Src2.Low);
+    Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
+
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = ZeroVector});
   }
 }
 
