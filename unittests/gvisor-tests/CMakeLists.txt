@@ -23,8 +23,6 @@ foreach(TEST ${TESTS})
 
 endforeach()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
 set(RM_DIR_COMMAND "rm $ENV{ROOTFS}/tmp 2> /dev/null || true")
 
 add_custom_target(
@@ -33,4 +31,4 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "sh" "-c" "${RM_DIR_COMMAND}"
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.gvisor$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*.gvisor$$")
