@@ -1,0 +1,73 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "vmovntps [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b00 0x2B 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "stnt1b {z16.b}, p6, [x4]"
+      ]
+    },
+    "vmovntps [rax], ymm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 1 0b00 0x2B 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #16]",
+        "stnp q16, q2, [x4]"
+      ]
+    },
+    "vmovntpd [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b01 0x2B 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "stnt1b {z16.b}, p6, [x4]"
+      ]
+    },
+    "vmovntpd [rax], ymm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 1 0b01 0x2B 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #16]",
+        "stnp q16, q2, [x4]"
+      ]
+    },
+    "vmovntdq [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b01 0xe7 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "stnt1b {z16.b}, p6, [x4]"
+      ]
+    },
+    "vmovntdq [rax], ymm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 1 0b01 0xe7 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #16]",
+        "stnp q16, q2, [x4]"
+      ]
+    }
+  }
+}

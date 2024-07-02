@@ -3246,7 +3246,7 @@
         "Map 1 0b00 0x2B 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q16, [x4]"
+        "stnt1b {z16.b}, p6, [x4]"
       ]
     },
     "vmovntps [rax], ymm0": {
@@ -3255,7 +3255,7 @@
         "Map 1 0b00 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "st1b {z16.b}, p7, [x4]"
+        "stnt1b {z16.b}, p7, [x4]"
       ]
     },
     "vmovntpd [rax], xmm0": {
@@ -3264,7 +3264,7 @@
         "Map 1 0b01 0x2B 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q16, [x4]"
+        "stnt1b {z16.b}, p6, [x4]"
       ]
     },
     "vmovntpd [rax], ymm0": {
@@ -3273,7 +3273,7 @@
         "Map 1 0b01 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "st1b {z16.b}, p7, [x4]"
+        "stnt1b {z16.b}, p7, [x4]"
       ]
     },
     "vcvttss2si eax, xmm0": {
@@ -5004,7 +5004,7 @@
         "Map 1 0b01 0xe7 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q16, [x4]"
+        "stnt1b {z16.b}, p6, [x4]"
       ]
     },
     "vmovntdq [rax], ymm0": {
@@ -5013,7 +5013,7 @@
         "Map 1 0b01 0xe7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "st1b {z16.b}, p7, [x4]"
+        "stnt1b {z16.b}, p7, [x4]"
       ]
     },
     "vpsubsb xmm0, xmm1, xmm2": {

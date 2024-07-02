@@ -816,12 +816,25 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+  if (Op->Dest.IsGPR()) {
+    ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
+    auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+    if (Is128Bit) {
+      Src.High = LoadZeroVector(OpSize::i128Bit);
+    }
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
+  } else {
+    auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+    Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
 
-  if (Op->Dest.IsGPR() && Is128Bit) {
-    Src.High = LoadZeroVector(OpSize::i128Bit);
+    if (Is128Bit) {
+      // Single store non-temporal for 128-bit operations.
+      _VStoreNonTemporal(OpSize::i128Bit, Src.Low, Dest, 0);
+    } else {
+      // For a 256-bit store, use a non-temporal store pair
+      _VStoreNonTemporalPair(OpSize::i128Bit, Src.Low, Src.High, Dest, 0);
+    }
   }
-  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
 }
 
 void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {

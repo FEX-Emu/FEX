@@ -4539,6 +4539,24 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures 
                                                                                               "[x29, x30, lsl #3]");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous non-temporal store (scalar plus immediate)") {
+  TEST_SINGLE(stnt1b(ZReg::z31, PReg::p6, Reg::r29, 0), "stnt1b {z31.b}, p6, [x29]");
+  TEST_SINGLE(stnt1b(ZReg::z31, PReg::p6, Reg::r29, -8), "stnt1b {z31.b}, p6, [x29, #-8, mul vl]");
+  TEST_SINGLE(stnt1b(ZReg::z31, PReg::p6, Reg::r29, 7), "stnt1b {z31.b}, p6, [x29, #7, mul vl]");
+
+  TEST_SINGLE(stnt1h(ZReg::z31, PReg::p6, Reg::r29, 0), "stnt1h {z31.h}, p6, [x29]");
+  TEST_SINGLE(stnt1h(ZReg::z31, PReg::p6, Reg::r29, -8), "stnt1h {z31.h}, p6, [x29, #-8, mul vl]");
+  TEST_SINGLE(stnt1h(ZReg::z31, PReg::p6, Reg::r29, 7), "stnt1h {z31.h}, p6, [x29, #7, mul vl]");
+
+  TEST_SINGLE(stnt1w(ZReg::z31, PReg::p6, Reg::r29, 0), "stnt1w {z31.s}, p6, [x29]");
+  TEST_SINGLE(stnt1w(ZReg::z31, PReg::p6, Reg::r29, -8), "stnt1w {z31.s}, p6, [x29, #-8, mul vl]");
+  TEST_SINGLE(stnt1w(ZReg::z31, PReg::p6, Reg::r29, 7), "stnt1w {z31.s}, p6, [x29, #7, mul vl]");
+
+  TEST_SINGLE(stnt1d(ZReg::z31, PReg::p6, Reg::r29, 0), "stnt1d {z31.d}, p6, [x29]");
+  TEST_SINGLE(stnt1d(ZReg::z31, PReg::p6, Reg::r29, -8), "stnt1d {z31.d}, p6, [x29, #-8, mul vl]");
+  TEST_SINGLE(stnt1d(ZReg::z31, PReg::p6, Reg::r29, 7), "stnt1d {z31.d}, p6, [x29, #7, mul vl]");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0, PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");
