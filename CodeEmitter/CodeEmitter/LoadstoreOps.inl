@@ -3780,8 +3780,7 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
-      // strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+      strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
@@ -3811,8 +3810,7 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
-      // ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+      ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
@@ -3841,9 +3839,7 @@ public:
   void strh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
-      // strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+      strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
@@ -3872,9 +3868,7 @@ public:
   void ldrh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      LOGMAN_MSG_A_FMT("Nope"); // XXX: Implement
-      // ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+      ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
