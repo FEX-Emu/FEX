@@ -7,6 +7,8 @@
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
 
+#include <FEXCore/fextl/fmt.h>
+
 #include <chrono>
 #include <dirent.h>
 #include <fcntl.h>
@@ -26,18 +28,18 @@
 
 namespace Logging {
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
+  const auto Output = fextl::fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 
 void AssertHandler(const char* Message) {
-  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 
 void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, const char* MsgStr) {
-  const auto Output = fmt::format("[{}][{}.{}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
-                                  Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
+  const auto Output = fextl::fmt::format("[{}][{}.{}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
+                                         Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
   write(STDERR_FILENO, Output.c_str(), Output.size());
 }
 } // namespace Logging

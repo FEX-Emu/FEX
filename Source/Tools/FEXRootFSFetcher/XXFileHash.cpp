@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 #include "XXFileHash.h"
 
+#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/string.h>
+
 #include <chrono>
 #include <fcntl.h>
-#include <fmt/format.h>
 #include <unistd.h>
 #include <vector>
 #include <xxhash.h>
@@ -59,7 +61,7 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
     auto Cur = std::chrono::high_resolution_clock::now();
     auto Dur = Cur - Now;
     if (Dur >= std::chrono::seconds(1)) {
-      fmt::print("{:.2}% hashed\n", (double)CurrentOffset / SizeD * 100.0);
+      fextl::fmt::print("{:.2}% hashed\n", (double)CurrentOffset / SizeD * 100.0);
       Now = Cur;
     }
     CurrentOffset += Result;
