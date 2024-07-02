@@ -40,10 +40,13 @@ class OrderedNode;
 // FXCH
 // FCMOV
 // FST(register to register)
+// FCHS
 
 // State loading duplicated from X87.cpp, setting host rounding mode
 // See issue
 void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
+  // FIXME: almost a duplicate of x87 version.
+  CurrentHeader->HasX87 = true;
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
   // Init host rounding mode to zero
@@ -53,17 +56,21 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
 
   // Init FSW to 0
   SetX87Top(Zero);
+  // Tags all get marked as invalid
+  _StoreContext(1, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+
+  _InitStack();
 
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
-
-  // Tags all get marked as invalid
-  StoreContext(AbridgedFTWIndex, Zero);
 }
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
+  CurrentHeader->HasX87 = true;
+  _StackForceSlow();
+
   const auto Size = GetSrcSize(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
@@ -75,7 +82,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
-  ReconstructX87StateFromFSW(NewFSW);
+  ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
@@ -85,6 +92,9 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
 
 
 void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
+  CurrentHeader->HasX87 = true;
+  _StackForceSlow();
+
   Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
@@ -94,42 +104,29 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 }
 
 // F64 ops
-
 template<size_t width>
 void OpDispatchBuilder::FLDF64(OpcodeArgs) {
-  // Update TOP
-  auto orig_top = GetX87Top();
-  auto mask = _Constant(7);
+  static_assert(width == 32 || width == 64 || width == 80, "Unsupported FLD width");
 
+  CurrentHeader->HasX87 = true;
   size_t read_width = (width == 80) ? 16 : width / 8;
-
   Ref data {};
-  Ref converted {};
 
-  if (!Op->Src[0].IsNone()) {
+  if (Op->Src[0].IsNone()) {
+    // Implicit arg
+    data = _ReadStackValue(Op->OP & 7);
+  } else {
     // Read from memory
     data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags);
-    // Convert to 64bit float
-    if constexpr (width == 32) {
-      converted = _Float_FToF(8, 4, data);
-    } else if constexpr (width == 80) {
-      converted = _F80CVT(8, data);
-    } else {
-      converted = data;
-    }
-  } else {
-    // Implicit arg (does this need to change with width?)
-    auto offset = _Constant(Op->OP & 7);
-    data = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, offset), mask);
-    data = _LoadContextIndexed(data, 8, MMBaseOffset(), 16, FPRClass);
-    converted = data;
-  }
 
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), mask);
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-  // Write to ST[TOP]
-  _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
+    // Convert to 80bit float
+    if constexpr (width == 32) {
+      data = _Float_FToF(8, 4, data);
+    } else if constexpr (width == 80) {
+      data = _F80CVT(8, data);
+    }
+  }
+  _PushStack(data, OpSize::i64Bit, true, read_width);
 }
 
 template void OpDispatchBuilder::FLDF64<32>(OpcodeArgs);
@@ -137,45 +134,28 @@ template void OpDispatchBuilder::FLDF64<64>(OpcodeArgs);
 template void OpDispatchBuilder::FLDF64<80>(OpcodeArgs);
 
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
-  // Update TOP
-  auto orig_top = GetX87Top();
-  auto mask = _Constant(7);
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), mask);
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-
+  CurrentHeader->HasX87 = true;
   // Read from memory
   Ref data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
   Ref converted = _F80BCDLoad(data);
   converted = _F80CVT(8, converted);
-  _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
+  _PushStack(converted, i64Bit, true, 8);
 }
 
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-
-  Ref converted = _F80CVTTo(data, 8);
+  CurrentHeader->HasX87 = true;
+  Ref converted = _F80CVTTo(_ReadStackValue(0), 8);
   converted = _F80BCDStore(converted);
-
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
-
-  // if we are popping then we must first mark this location as empty
-  SetX87ValidTag(orig_top, false);
-  auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87Top(top);
+  _PopStackDestroy();
 }
 
 template<uint64_t num>
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
-  // Update TOP
-  auto orig_top = GetX87Top();
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
+  CurrentHeader->HasX87 = true;
+
   auto data = _VCastFromGPR(8, 8, _Constant(num));
-  // Write to ST[TOP]
-  _StoreContextIndexed(data, top, 8, MMBaseOffset(), 16, FPRClass);
+  _PushStack(data, OpSize::i64Bit, true, 8);
 }
 
 template void OpDispatchBuilder::FLDF64_Const<0x3FF0000000000000>(OpcodeArgs); // 1.0
@@ -187,46 +167,35 @@ template void OpDispatchBuilder::FLDF64_Const<0x3FE62E42FEFA39EF>(OpcodeArgs); /
 template void OpDispatchBuilder::FLDF64_Const<0>(OpcodeArgs);                  // 0.0
 
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
-  // Update TOP
-  auto orig_top = GetX87Top();
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-
+  CurrentHeader->HasX87 = true;
   size_t read_width = GetSrcSize(Op);
+
   // Read from memory
-  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags);
+  Ref data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags);
   if (read_width == 2) {
     data = _Sbfe(OpSize::i64Bit, read_width * 8, 0, data);
   }
   auto converted = _Float_FromGPR_S(8, read_width == 4 ? 4 : 8, data);
-  // Write to ST[TOP]
-  _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
+  _PushStack(converted, i64Bit, false, read_width);
 }
 
 template<size_t width>
 void OpDispatchBuilder::FSTF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  if constexpr (width == 64) {
-    // Store 64-bit float directly
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, data, 8, 1);
-  } else if constexpr (width == 32) {
-    // Convert to 32-bit float and store
-    auto result = _Float_FToF(4, 8, data);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, 4, 1);
-  } else if constexpr (width == 80) {
-    // Convert to 80-bit float
-    auto result = _F80CVTTo(data, 8);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, 10, 1);
+
+  static_assert(width == 32 || width == 64 || width == 80, "Unsupported FST width");
+  CurrentHeader->HasX87 = true;
+
+  if (Op->Src[0].IsNone()) { // Destination is stack
+    // FIXME: Why is this case not in x87f64 upstream code?
+    auto offset = Op->OP & 7;
+    _StoreStackToStack(offset);
+  } else {
+    Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+    _StoreStackMemory(Mem, OpSize::i64Bit, true, width / 8);
   }
 
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(orig_top, false);
-    // Set the new top now
-    auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-    SetX87Top(top);
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+    _PopStackDestroy();
   }
 }
 
@@ -236,10 +205,10 @@ template void OpDispatchBuilder::FSTF64<80>(OpcodeArgs);
 
 template<bool Truncate>
 void OpDispatchBuilder::FISTF64(OpcodeArgs) {
+  CurrentHeader->HasX87 = true;
   auto Size = GetSrcSize(Op);
 
-  auto orig_top = GetX87Top();
-  Ref data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
+  Ref data = _ReadStackValue(0);
   if constexpr (Truncate) {
     data = _Float_ToGPR_ZS(Size == 4 ? 4 : 8, 8, data);
   } else {
@@ -248,11 +217,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(orig_top, false);
-    // Set the new top now
-    auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-    SetX87Top(top);
+    _PopStackDestroy();
   }
 }
 
@@ -261,50 +226,46 @@ template void OpDispatchBuilder::FISTF64<true>(OpcodeArgs);
 
 template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FADDF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  Ref StackLocation = top;
+  static_assert(width == 16 || width == 32 || width == 64 || width == 80, "Unsupported FADD width");
 
-  Ref arg {};
-  Ref b {};
+  CurrentHeader->HasX87 = true;
 
-  auto mask = _Constant(7);
-
-  if (!Op->Src[0].IsNone()) {
-    // Memory arg
-    if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (width == 16) {
-        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
-      }
-      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
-    } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      b = _Float_FToF(8, 4, arg);
-    } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    }
-  } else {
-    // Implicit arg
-    auto offset = _Constant(Op->OP & 7);
-    arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
+  if (Op->Src[0].IsNone()) { // Implicit argument case
+    auto offset = Op->OP & 7;
+    auto st0 = 0;
     if constexpr (ResInST0 == OpResult::RES_STI) {
-      StackLocation = arg;
+      _F80AddStack(offset, st0);
+    } else {
+      _F80AddStack(st0, offset);
     }
-    b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
+    if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+      _PopStackDestroy();
+    }
+    return;
   }
 
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto result = _VFAdd(8, 8, a, b);
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    // Set the new top now
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+  // We have one memory argument
+  Ref arg {};
+
+  if constexpr (Integer) {
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    if (width == 16) {
+      arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
+    }
+    arg = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
+  } else if constexpr (width == 32) {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _Float_FToF(8, 4, arg);
+  } else if constexpr (width == 64) {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
+  // top of stack is at offset zero
+  _F80AddValue(0, arg);
+
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+    _PopStackDestroy();
+  }
 }
 
 template void OpDispatchBuilder::FADDF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -315,54 +276,49 @@ template void OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult:
 template void OpDispatchBuilder::FADDF64<16, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FADDF64<32, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
+// FIXME: following is very similar to FADDF64
 template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FMULF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  Ref StackLocation = top;
-  Ref arg {};
-  Ref b {};
+  static_assert(width == 16 || width == 32 || width == 64 || width == 80, "Unsupported FMUL width");
 
-  auto mask = _Constant(7);
+  CurrentHeader->HasX87 = true;
 
-  if (!Op->Src[0].IsNone()) {
-    // Memory arg
-    if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (width == 16) {
-        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
-      }
-      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
-    } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      b = _Float_FToF(8, 4, arg);
-    } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    }
-  } else {
-    // Implicit arg
-    auto offset = _Constant(Op->OP & 7);
-    arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
+  if (Op->Src[0].IsNone()) { // Implicit argument case
+    auto offset = Op->OP & 7;
+    auto st0 = 0;
     if constexpr (ResInST0 == OpResult::RES_STI) {
-      StackLocation = arg;
+      _F80MulStack(offset, st0);
+    } else {
+      _F80MulStack(st0, offset);
     }
-
-    b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
+    if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+      _PopStackDestroy();
+    }
+    return;
   }
 
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
+  // We have one memory argument
+  Ref arg {};
 
-  auto result = _VFMul(8, 8, a, b);
-
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    // Set the new top now
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+  if constexpr (Integer) {
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    if (width == 16) {
+      arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
+    }
+    arg = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
+  } else if constexpr (width == 32) {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _Float_FToF(8, 4, arg);
+  } else if constexpr (width == 64) {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
+  // top of stack is at offset zero
+  _F80MulValue(0, arg);
+
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+    _PopStackDestroy();
+  }
 }
 
 template void OpDispatchBuilder::FMULF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -375,57 +331,61 @@ template void OpDispatchBuilder::FMULF64<32, true, OpDispatchBuilder::OpResult::
 
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  Ref StackLocation = top;
+  static_assert(width == 16 || width == 32 || width == 64 || width == 80, "Unsupported FDIV width");
+  CurrentHeader->HasX87 = true;
+
+  if (Op->Src[0].IsNone()) {
+    const auto offset = Op->OP & 7;
+    const auto st0 = 0;
+
+    if constexpr (reverse) {
+      if constexpr (ResInST0 == OpResult::RES_STI) {
+        _F80DivStack(offset, st0, offset);
+      } else {
+        _F80DivStack(st0, offset, st0);
+      }
+    } else {
+      if constexpr (ResInST0 == OpResult::RES_STI) {
+        _F80DivStack(offset, offset, st0);
+      } else {
+        _F80DivStack(st0, st0, offset);
+      }
+    }
+
+    if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+      _PopStackDestroy();
+    }
+    return;
+  }
+
+  // We have one memory argument
   Ref arg {};
-  Ref b {};
 
-  auto mask = _Constant(7);
-
-  if (!Op->Src[0].IsNone()) {
-    // Memory arg
+  if constexpr (width == 16 || width == 32 || width == 64) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if (width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
-      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
+      arg = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      b = _Float_FToF(8, 4, arg);
+      arg = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
-  } else {
-    // Implicit arg
-    auto offset = _Constant(Op->OP & 7);
-    arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
-      StackLocation = arg;
-    }
-
-    b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
   }
 
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  Ref result {};
+  // top of stack is at offset zero
   if constexpr (reverse) {
-    result = _VFDiv(8, 8, b, a);
+    _F80DivRValue(arg, 0);
   } else {
-    result = _VFDiv(8, 8, a, b);
+    _F80DivValue(0, arg);
   }
 
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    // Set the new top now
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+    _PopStackDestroy();
   }
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
 
 template void OpDispatchBuilder::FDIVF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -446,60 +406,64 @@ template void OpDispatchBuilder::FDIVF64<16, true, true, OpDispatchBuilder::OpRe
 template void OpDispatchBuilder::FDIVF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FDIVF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
+
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  Ref StackLocation = top;
+  static_assert(width == 16 || width == 32 || width == 64 || width == 80, "Unsupported FSUB width");
+  CurrentHeader->HasX87 = true;
+
+  if (Op->Src[0].IsNone()) {
+    const auto offset = Op->OP & 7;
+    const auto st0 = 0;
+
+    if constexpr (reverse) {
+      if constexpr (ResInST0 == OpResult::RES_STI) {
+        _F80SubStack(offset, st0, offset);
+      } else {
+        _F80SubStack(st0, offset, st0);
+      }
+    } else {
+      if constexpr (ResInST0 == OpResult::RES_STI) {
+        _F80SubStack(offset, offset, st0);
+      } else {
+        _F80SubStack(st0, st0, offset);
+      }
+    }
+
+    if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+      _PopStackDestroy();
+    }
+    return;
+  }
+
+  // We have one memory argument
   Ref arg {};
-  Ref b {};
 
-  auto mask = _Constant(7);
-
-  if (!Op->Src[0].IsNone()) {
-    // Memory arg
+  if constexpr (width == 16 || width == 32 || width == 64) {
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
       if (width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
-      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
+      arg = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      b = _Float_FToF(8, 4, arg);
+      arg = _Float_FToF(8, 4, arg);
     } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
-  } else {
-    // Implicit arg
-    auto offset = _Constant(Op->OP & 7);
-    arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
-      StackLocation = arg;
-    }
-
-    b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
   }
 
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  Ref result {};
+  // top of stack is at offset zero
   if constexpr (reverse) {
-    result = _VFSub(8, 8, b, a);
+    _F80SubRValue(arg, 0);
   } else {
-    result = _VFSub(8, 8, a, b);
+    _F80SubValue(0, arg);
   }
 
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    // Set the new top now
-
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
+    _PopStackDestroy();
   }
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
 
 template void OpDispatchBuilder::FSUBF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -520,126 +484,65 @@ template void OpDispatchBuilder::FSUBF64<16, true, true, OpDispatchBuilder::OpRe
 template void OpDispatchBuilder::FSUBF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FSUBF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
-void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto result = _VFNeg(8, 8, a);
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-void OpDispatchBuilder::FABSF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto result = _VFAbs(8, 8, a);
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
 
 void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto low = _Constant(0);
-  Ref data = _VCastFromGPR(8, 8, low);
+  CurrentHeader->HasX87 = true;
 
   // We are going to clobber NZCV, make sure it's in a GPR first.
   GetNZCV();
 
   // Now we do our comparison.
-  _FCmp(8, a, data);
+  _F80StackTest(0, 0 /*No flags in reduced precision mode needed*/);
   PossiblySetNZCVBits = ~0;
   ConvertNZCVToX87();
 }
 
-// TODO: This should obey rounding mode
-void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto result = _Vector_FToI(8, 8, a, FEXCore::IR::Round_Host);
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-
-  auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  auto gpr = _VExtractToGPR(8, 8, a, 0);
-  Ref exp = _And(OpSize::i64Bit, gpr, _Constant(0x7ff0000000000000LL));
-  exp = _Lshr(OpSize::i64Bit, exp, _Constant(52));
-  exp = _Sub(OpSize::i64Bit, exp, _Constant(1023));
-  exp = _Float_FromGPR_S(8, 8, exp);
-  Ref sig = _And(OpSize::i64Bit, gpr, _Constant(0x800fffffffffffffLL));
-  sig = _Or(OpSize::i64Bit, sig, _Constant(0x3ff0000000000000LL));
-  sig = _VCastFromGPR(8, 8, sig);
-  // Write to ST[TOP]
-  _StoreContextIndexed(exp, orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  _StoreContextIndexed(sig, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-
 template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
 void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto mask = _Constant(7);
-
+  CurrentHeader->HasX87 = true;
   Ref arg {};
   Ref b {};
 
-  if (!Op->Src[0].IsNone()) {
-    // Memory arg
-    if constexpr (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (width == 16) {
-        arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
-      }
-      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
-    } else if constexpr (width == 32) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      b = _Float_FToF(8, 4, arg);
-    } else if constexpr (width == 64) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    }
-  } else {
+  if (Op->Src[0].IsNone()) {
     // Implicit arg
-    auto offset = _Constant(Op->OP & 7);
-    arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    b = _LoadContextIndexed(arg, 8, MMBaseOffset(), 16, FPRClass);
+    uint8_t offset = Op->OP & 7;
+    b = _ReadStackValue(offset);
+  } else {
+    // Memory arg
+    if constexpr (width == 16 || width == 32 || width == 64) {
+      if constexpr (Integer) {
+        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+        if (width == 16) {
+          arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
+        }
+        b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
+      } else if constexpr (width == 32) {
+        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+        b = _Float_FToF(8, 4, arg);
+      } else if constexpr (width == 64) {
+        b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      }
+    }
   }
-
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   if constexpr (whichflags == FCOMIFlags::FLAGS_X87) {
     // We are going to clobber NZCV, make sure it's in a GPR first.
     GetNZCV();
 
-    _FCmp(8, a, b);
+    _F80CmpValue(b, 0 /*Flags are unused in x87f64*/);
     PossiblySetNZCVBits = ~0;
     ConvertNZCVToX87();
   } else {
-    Comiss(8, a, b, true /* InvalidateAF */);
+    HandleNZCVWrite();
+    _F80CmpValue(b, 0 /*Flags are unused in x87f64*/);
+    ComissFlags(true /* InvalidateAF */);
   }
 
   if constexpr (poptwice) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87ValidTag(top, false);
-    // Set the new top now
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+    _PopStackDestroy();
+    _PopStackDestroy();
   } else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    // if we are popping then we must first mark this location as empty
-    SetX87ValidTag(top, false);
-    // Set the new top now
-    top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-    SetX87Top(top);
+    _PopStackDestroy();
   }
 }
 
@@ -655,145 +558,24 @@ template void OpDispatchBuilder::FCOMIF64<16, true, OpDispatchBuilder::FCOMIFlag
 
 template void OpDispatchBuilder::FCOMIF64<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
 
-
-void OpDispatchBuilder::FSQRTF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto result = _VFSqrt(8, 8, a);
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  DeriveOp(result, IROp, _F64SIN(a));
-
-  if constexpr (IROp == IR::OP_F64SIN || IROp == IR::OP_F64COS) {
-    // TODO: ACCURACY: should check source is in range –2^63 to +2^63
-    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-  }
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64F2XM1>(OpcodeArgs);
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64SIN>(OpcodeArgs);
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64COS>(OpcodeArgs);
-
-
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
-  auto top = GetX87Top();
-
-  auto mask = _Constant(7);
-  Ref st1 = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
-
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  st1 = _LoadContextIndexed(st1, 8, MMBaseOffset(), 16, FPRClass);
-
-  DeriveOp(result, IROp, _F64ATAN(a, st1));
-
-  if constexpr (IROp == IR::OP_F64FPREM || IROp == IR::OP_F64FPREM1) {
-    // TODO: Set C0 to Q2, C3 to Q1, C1 to Q0
-    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-  }
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM1>(OpcodeArgs);
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM>(OpcodeArgs);
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64SCALE>(OpcodeArgs);
-
-void OpDispatchBuilder::X87SinCosF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-
-  auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto sin = _F64SIN(a);
-  auto cos = _F64COS(a);
-
-  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(sin, orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  _StoreContextIndexed(cos, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
 void OpDispatchBuilder::X87FYL2XF64(OpcodeArgs) {
-  bool Plus1 = Op->OP == 0x01F9; // FYL2XP
+  CurrentHeader->HasX87 = true;
 
-  auto orig_top = GetX87Top();
-  // if we are popping then we must first mark this location as empty
-  SetX87ValidTag(orig_top, false);
-  auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87Top(top);
-
-  Ref st0 = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  Ref st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  if (Plus1) {
-    auto one = _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000));
-    st0 = _VFAdd(8, 8, st0, one);
+  if (Op->OP == 0x01F9) { // fyl2xp1
+    // create an add between top of stack and 1.
+    Ref One = _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000));
+    _F80AddValue(0, One);
   }
 
-  auto result = _F64FYL2X(st0, st1);
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
+  _F80StackFYL2X();
 }
 
-void OpDispatchBuilder::X87TANF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87ValidTag(top, true);
-  SetX87Top(top);
-
-  auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto result = _F64TAN(a);
-
-  auto one = _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000));
-
-  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  _StoreContextIndexed(one, top, 8, MMBaseOffset(), 16, FPRClass);
-}
-
-void OpDispatchBuilder::X87ATANF64(OpcodeArgs) {
-  auto orig_top = GetX87Top();
-  // if we are popping then we must first mark this location as empty
-  SetX87ValidTag(orig_top, false);
-  auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
-  SetX87Top(top);
-
-  auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  Ref st1 = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto result = _F64ATAN(st1, a);
-
-  // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
-}
 
 // This function converts to F80 on save for compatibility
 
 void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
+  CurrentHeader->HasX87 = true;
+  _SyncStackToSlow();
   // 14 bytes for 16bit
   // 2 Bytes : FCW
   // 2 Bytes : FSW
@@ -821,13 +603,13 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1); }
 
   auto ZeroConst = _Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
@@ -876,6 +658,8 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
 // This function converts from F80 on load for compatibility
 
 void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
+  CurrentHeader->HasX87 = true;
+  _StackForceSlow();
   const auto Size = GetSrcSize(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
@@ -892,7 +676,7 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
-  auto Top = ReconstructX87StateFromFSW(NewFSW);
+  Ref Top = ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
@@ -929,33 +713,5 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   Reg = _F80CVT(8, Reg); // Convert to double precision
   _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
 }
-
-
-// FXAM needs change
-void OpDispatchBuilder::X87FXAMF64(OpcodeArgs) {
-  auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  Ref Result = _VExtractToGPR(8, 8, a, 0);
-
-  // Extract the sign bit
-  Result = _Bfe(OpSize::i64Bit, 1, 63, Result);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
-
-  // Claim this is a normal number
-  // We don't support anything else
-  auto TopValid = GetX87ValidTag(top);
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_EQ, TopValid, OneConst, ZeroConst, OneConst);
-
-  auto C2 = TopValid;
-  auto C0 = C3; // Mirror C3 until something other than zero is supported
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
-}
-
 
 } // namespace FEXCore::IR
