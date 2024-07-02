@@ -23,11 +23,8 @@ foreach(POSIX_TEST ${POSIX_TESTS})
 
 endforeach()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   posix_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.posix")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*.posix")

@@ -49,18 +49,15 @@ endforeach()
 add_custom_target(instcountci_test_files ALL
   DEPENDS "${JSON_DEPENDS}")
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   instcountci_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS instcountci_test_files
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*.instcountci$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "InstCountCI/\.*.instcountci$$")
 
 add_custom_target(
   instcountci_update_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "InstCountCI/\.*new_numbers$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "InstCountCI/\.*new_numbers$$")

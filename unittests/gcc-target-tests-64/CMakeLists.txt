@@ -23,11 +23,8 @@ foreach(TEST ${TESTS})
 
 endforeach()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   gcc_target_tests_64
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "20" "-j${CORES}" "-R" "\.*.gcc-target-64$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "20" ${TEST_JOB_FLAG} "-R" "\.*.gcc-target-64$$")

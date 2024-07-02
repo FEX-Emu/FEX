@@ -162,11 +162,8 @@ foreach(Index RANGE 0 ${ARG_COUNT} 2)
   set_property(TEST ${TEST_NAME_ARCH}_aarch64 APPEND PROPERTY DEPENDS "${HEADER}")
 endforeach()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   struct_verifier
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "Test_verify*")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "Test_verify*")

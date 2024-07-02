@@ -32,26 +32,23 @@ endfunction()
 AddTest("/usr/bin/glxinfo" "GLThunks.json")
 AddTest("/usr/bin/vulkaninfo" "VulkanThunks.json")
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   thunk_functional_tests_nothunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-NoThunks-\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest-NoThunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
 add_custom_target(
   thunk_functional_tests_thunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest-Thunks-\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest-Thunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
 add_custom_target(
   thunk_functional_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "ThunkFunctionalTest\.*"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")

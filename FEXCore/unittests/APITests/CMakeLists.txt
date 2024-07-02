@@ -10,12 +10,9 @@ foreach(TEST ${TESTS})
   catch_discover_tests(FEXCore_Tests_${TEST_NAME} TEST_SUFFIX ".${TEST_NAME}.FEXCore_Tests")
 endforeach()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   fexcore_apitests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*.FEXCore_Tests$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*.FEXCore_Tests$$")
 
