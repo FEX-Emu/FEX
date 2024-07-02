@@ -1768,6 +1768,7 @@ DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
   const auto OpSize = IROp->Size;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorFalse = GetVReg(Op->VectorFalse.ID());
@@ -1788,6 +1789,11 @@ DEF_OP(VBSL) {
       bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
       mov(Dst.Z(), VTMP1.Z());
     }
+  } else if (!HostSupportsSVE256 && HostSupportsSVE128 && Is128Bit && Dst != VectorFalse && Dst != VectorTrue && Dst != VectorMask) {
+    // Needs to move but SVE movprfx+bsl is slightly more efficient than ASIMD mov+bsl on CPUs that support
+    // movprfx fusion and NOT zero-cycle vector register moves.
+    movprfx(Dst.Z(), VectorTrue.Z());
+    bsl(Dst.Z(), Dst.Z(), VectorFalse.Z(), VectorMask.Z());
   } else {
     if (VectorMask == Dst) {
       // Can use BSL without any moves.
