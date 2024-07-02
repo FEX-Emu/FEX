@@ -614,20 +614,6 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         DecodedInfo = &Block.DecodedInstructions[i];
         bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
-        // Do a partial register cache flush before every instruction. This
-        // prevents cross-instruction static register caching, while allowing
-        // context load/stores to be optimized within a block. Theoretically,
-        // this flush is not required for correctness, all mandatory flushes are
-        // included in instruction-specific handlers. Instead, this is a blunt
-        // heuristic to make the register cache less aggressive, as the current
-        // RA generates bad code in common cases with tied registers otherwise.
-        //
-        // However, it makes our exception handling behaviour more predictable.
-        // It is potentially correctness bearing in that sense, but that is a
-        // side effect here and (if that behaviour is required) we should handle
-        // that more explicitly later.
-        Thread->OpDispatcher->FlushRegisterCache(true);
-
         if (ExtendedDebugInfo || Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
           Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
         }
