@@ -919,6 +919,50 @@
         "str q2, [x28, #16]"
       ]
     },
+    "vxorps xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b00 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vxorps ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b00 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vxorpd xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vxorpd ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
     "vpunpcklbw xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 3,
       "Comment": [
@@ -5141,6 +5185,28 @@
         "eor v16.16b, v17.16b, v18.16b",
         "eor v2.16b, v2.16b, v3.16b",
         "str q2, [x28, #16]"
+      ]
+    },
+    "vpxor xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0xef 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vpxor ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0xef 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
       ]
     },
     "vlddqu xmm0, [rax]": {

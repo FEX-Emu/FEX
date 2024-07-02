@@ -5074,8 +5074,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
     {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
 
-    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>},
-    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>},
+    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
+    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
     {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 4>},
     {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 8>},
@@ -5207,7 +5207,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 1>},
     {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 2>},
     {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 2>},
-    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>},
+    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
@@ -5637,7 +5637,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
-    {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
+    {0x57, 1, &OpDispatchBuilder::VectorXOROp},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>},
@@ -5696,7 +5696,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
     {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
     {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
-    {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 8>},
+    {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
     {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
     {0xF2, 1, &OpDispatchBuilder::PSLL<4>},
@@ -5926,7 +5926,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
-    {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
+    {0x57, 1, &OpDispatchBuilder::VectorXOROp},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
     {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
@@ -5997,7 +5997,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
     {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
     {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
-    {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
+    {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
     {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
     {0xF2, 1, &OpDispatchBuilder::PSLL<4>},

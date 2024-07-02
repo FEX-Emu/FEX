@@ -847,6 +847,46 @@
         "eor z16.d, z16.d, z17.d"
       ]
     },
+    "vxorps xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b00 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
+    "vxorps ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b00 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
+    "vxorpd xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0x57 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
+    "vxorpd ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0x57 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
     "vpunpcklbw xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 1,
       "Comment": [
@@ -5160,6 +5200,26 @@
       ],
       "ExpectedArm64ASM": [
         "eor z16.d, z17.d, z18.d"
+      ]
+    },
+    "vpxor xmm0, xmm1, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0xef 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
+    "vpxor ymm0, ymm1, ymm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "xor with itself to get zero register",
+        "Map 1 0b01 0xef 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
       ]
     },
     "vlddqu xmm0, [rax]": {

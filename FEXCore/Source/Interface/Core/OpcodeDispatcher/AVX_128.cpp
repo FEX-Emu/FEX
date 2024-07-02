@@ -97,8 +97,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VOR, 16>},
     {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VOR, 16>},
 
-    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VXOR, 16>},
-    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VXOR, 16>},
+    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVX128_VectorXOR},
+    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVX128_VectorXOR},
 
     {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFADD, 4>},
     {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VFADD, 8>},
@@ -230,7 +230,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSQADD, 1>},
     {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSQADD, 2>},
     {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VSMAX, 2>},
-    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorALU<IR::OP_VXOR, 16>},
+    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorXOR},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::AVX128_MOVVectorUnaligned},
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::AVX128_VPSLL<2>},
@@ -765,6 +765,17 @@ void OpDispatchBuilder::AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize
 template<IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::AVX128_VectorALU(OpcodeArgs) {
   AVX128_VectorALUImpl(Op, IROp, ElementSize);
+}
+
+void OpDispatchBuilder::AVX128_VectorXOR(OpcodeArgs) {
+  // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
+  if (Op->Src[0].IsGPR() && Op->Src[1].IsGPR() && Op->Src[0].Data.GPR.GPR == Op->Src[1].Data.GPR.GPR) {
+    AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(LoadZeroVector(OpSize::i128Bit)));
+    return;
+  }
+
+  ///< Regular code path
+  AVX128_VectorALUImpl(Op, OP_VXOR, OpSize::i128Bit);
 }
 
 template<IROps IROp, size_t ElementSize>

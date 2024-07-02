@@ -719,6 +719,13 @@
         "eor v16.16b, v16.16b, v17.16b"
       ]
     },
+    "xorps xmm0, xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "0x0f 0x57",
+      "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0"
+      ]
+    },
     "addps xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0x58",
@@ -3646,6 +3653,14 @@
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
         "eor v2.16b, v3.16b, v2.16b",
+        "str d2, [x28, #1040]"
+      ]
+    },
+    "pxor mm0, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0x0f 0xef",
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
         "str d2, [x28, #1040]"
       ]
     },
