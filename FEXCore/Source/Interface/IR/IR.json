@@ -562,6 +562,7 @@
           "determines whether or not that element will be loaded from memory.",
           "Most of VSIB encoding is passed directly through to the IR operation."
         ],
+        "TiedSource": 0,
         "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize",
