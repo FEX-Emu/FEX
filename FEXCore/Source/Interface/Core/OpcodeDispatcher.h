@@ -1301,6 +1301,8 @@ public:
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
         _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
+      } else {
+        _StoreContext(CacheIndexToSize(Index), CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
       }
 
       Bits &= ~(1ull << Index);
@@ -1812,9 +1814,18 @@ private:
   static const int GPR15Index = 15;
   static const int PFIndex = 16;
   static const int AFIndex = 17;
+  static const int AbridgedFTWIndex = 28;
+  /* Gap 29..30 */
   static const int DFIndex = 31;
   static const int FPR0Index = 32;
   static const int FPR15Index = 47;
+
+  int CacheIndexToContextOffset(int Index) {
+    switch (Index) {
+    case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
+    default: return -1;
+    }
+  }
 
   RegisterClassType CacheIndexClass(int Index) {
     if (Index >= FPR0Index) {
@@ -1822,6 +1833,10 @@ private:
     } else {
       return GPRClass;
     }
+  }
+
+  unsigned CacheIndexToSize(int Index) {
+    return 1;
   }
 
   struct {
@@ -1843,6 +1858,8 @@ private:
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
+      } else if (Index == AbridgedFTWIndex) {
+        RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
       } else {
         RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
       }
@@ -1855,6 +1872,10 @@ private:
 
   Ref LoadGPR(uint8_t Reg) {
     return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
+  }
+
+  Ref LoadContext(uint8_t Index) {
+    return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), CacheIndexToSize(Index));
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
