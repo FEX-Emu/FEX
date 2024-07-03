@@ -1299,6 +1299,8 @@ public:
         _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
+      } else if (Index == DFIndex) {
+        _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
       }
 
       Bits &= ~(1ull << Index);
@@ -1763,10 +1765,10 @@ private:
 
       // For DF, we need to transform 0/1 into 1/-1
       if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
-        Value = _SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1);
+        StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
+      } else {
+        _StoreFlag(Value, BitOffset);
       }
-
-      _StoreFlag(Value, BitOffset);
     }
   }
 
@@ -1810,6 +1812,7 @@ private:
   static const int GPR15Index = 15;
   static const int PFIndex = 16;
   static const int AFIndex = 17;
+  static const int DFIndex = 31;
   static const int FPR0Index = 32;
   static const int FPR15Index = 47;
 
@@ -1838,7 +1841,12 @@ private:
     uint64_t Bit = (1ull << (uint64_t)Index);
 
     if (!(RegCache.Cached & Bit)) {
-      RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
+      if (Index == DFIndex) {
+        RegCache.Value[Index] = _LoadDF();
+      } else {
+        RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
+      }
+
       RegCache.Cached |= Bit;
     }
 
@@ -1851,6 +1859,10 @@ private:
 
   Ref LoadXMMRegister(uint8_t Reg) {
     return LoadRegCache(Reg, FPR0Index + Reg, FPRClass, GetGuestVectorLength());
+  }
+
+  Ref LoadDF() {
+    return LoadGPR(DFIndex);
   }
 
   void StoreContext(uint8_t Index, Ref Value) {
@@ -1866,6 +1878,10 @@ private:
 
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
     StoreContext(Reg + (FPR ? FPR0Index : GPR0Index), Value);
+  }
+
+  void StoreDF(Ref Value) {
+    StoreContext(DFIndex, Value);
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
@@ -1889,7 +1905,7 @@ private:
       return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
-      return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
+      return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
       return _LoadFlag(BitOffset);
     }
@@ -1897,7 +1913,7 @@ private:
 
   // Returns (DF ? -Size : Size)
   Ref LoadDir(const unsigned Size) {
-    auto Dir = _LoadDF();
+    auto Dir = LoadDF();
     auto Shift = FEXCore::ilog2(Size);
 
     if (Shift) {
@@ -1911,7 +1927,7 @@ private:
   Ref OffsetByDir(Ref X, const unsigned Size) {
     auto Shift = FEXCore::ilog2(Size);
 
-    return _AddShift(OpSize::i64Bit, X, _LoadDF(), ShiftType::LSL, Shift);
+    return _AddShift(OpSize::i64Bit, X, LoadDF(), ShiftType::LSL, Shift);
   }
 
   // Compares two floats and sets flags for a COMISS instruction
