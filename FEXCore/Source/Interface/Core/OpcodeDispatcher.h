@@ -1819,9 +1819,12 @@ private:
   static const int DFIndex = 31;
   static const int FPR0Index = 32;
   static const int FPR15Index = 47;
+  static const int AVXHigh0Index = 48;
+  static const int AVXHigh15Index = 63;
 
   int CacheIndexToContextOffset(int Index) {
     switch (Index) {
+    case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
     case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
     default: return -1;
     }
@@ -1836,7 +1839,11 @@ private:
   }
 
   unsigned CacheIndexToSize(int Index) {
-    return 1;
+    if (Index >= AVXHigh0Index) {
+      return 16;
+    } else {
+      return 1;
+    }
   }
 
   struct {
@@ -1858,7 +1865,7 @@ private:
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
-      } else if (Index == AbridgedFTWIndex) {
+      } else if (Index == AbridgedFTWIndex || Index >= AVXHigh0Index) {
         RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
       } else {
         RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
