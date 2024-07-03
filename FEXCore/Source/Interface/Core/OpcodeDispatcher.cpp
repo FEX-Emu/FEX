@@ -4425,10 +4425,6 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
   return Reg;
 }
 
-Ref OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
-  return _LoadRegister(XMM, FPRClass, GetGuestVectorLength());
-}
-
 void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size, uint8_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   if (Size == -1) {
@@ -4445,7 +4441,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Siz
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, const Ref Src) {
-  _StoreRegister(Src, XMM, FPRClass, GetGuestVectorLength());
+  StoreRegister(XMM, true, Src);
 }
 
 Ref OpDispatchBuilder::LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,

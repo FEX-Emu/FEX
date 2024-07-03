@@ -1272,6 +1272,7 @@ public:
     CalculateDeferredFlags();
 
     const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto VectorSize = GetGuestVectorLength();
 
     // Write backwards. This is a heuristic to improve coalescing, since we
     // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
@@ -1284,8 +1285,9 @@ public:
 
     if (SRAOnly) {
       const uint64_t GPRMask = ((1ull << (AFIndex - GPR0Index + 1)) - 1) << GPR0Index;
+      const uint64_t FPRMask = ((1ull << (FPR15Index - FPR0Index + 1)) - 1) << FPR0Index;
 
-      Mask &= (GPRMask);
+      Mask &= (GPRMask | FPRMask);
       Bits &= Mask;
     }
 
@@ -1295,6 +1297,8 @@ public:
 
       if (Index >= GPR0Index && Index <= AFIndex) {
         _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
+      } else if (Index >= FPR0Index && Index <= FPR15Index) {
+        _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       }
 
       Bits &= ~(1ull << Index);
@@ -1534,7 +1538,6 @@ private:
   void UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg);
 
   Ref LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
-  Ref LoadXMMRegister(uint32_t XMM);
   void StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size = -1, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
@@ -1807,6 +1810,16 @@ private:
   static const int GPR15Index = 15;
   static const int PFIndex = 16;
   static const int AFIndex = 17;
+  static const int FPR0Index = 32;
+  static const int FPR15Index = 47;
+
+  RegisterClassType CacheIndexClass(int Index) {
+    if (Index >= FPR0Index) {
+      return FPRClass;
+    } else {
+      return GPRClass;
+    }
+  }
 
   struct {
     uint64_t Cached;
@@ -1836,6 +1849,10 @@ private:
     return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
   }
 
+  Ref LoadXMMRegister(uint8_t Reg) {
+    return LoadRegCache(Reg, FPR0Index + Reg, FPRClass, GetGuestVectorLength());
+  }
+
   void StoreContext(uint8_t Index, Ref Value) {
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
@@ -1848,7 +1865,7 @@ private:
   }
 
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
-    StoreContext(Reg + GPR0Index, Value);
+    StoreContext(Reg + (FPR ? FPR0Index : GPR0Index), Value);
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {

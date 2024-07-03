@@ -564,7 +564,7 @@ Ref OpDispatchBuilder::AVX128_LoadXMMRegister(uint32_t XMM, bool High) {
   if (High) {
     return _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, avx_high[XMM][0]));
   } else {
-    return _LoadRegister(XMM, FPRClass, 16);
+    return LoadXMMRegister(XMM);
   }
 }
 
@@ -572,7 +572,7 @@ void OpDispatchBuilder::AVX128_StoreXMMRegister(uint32_t XMM, const Ref Src, boo
   if (High) {
     _StoreContext(16, FPRClass, Src, offsetof(FEXCore::Core::CPUState, avx_high[XMM][0]));
   } else {
-    _StoreRegister(Src, XMM, FPRClass, 16);
+    StoreXMMRegister(XMM, Src);
   }
 }
 
