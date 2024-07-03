@@ -113,7 +113,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, 8);
   }
 
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6], DefaultSyscallFlags);
 
   if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER &&
@@ -395,7 +395,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
@@ -408,7 +408,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   auto NewSP = _Push(GPRSize, Size, Src, OldSP);
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
@@ -458,7 +458,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 template<uint32_t SegmentReg>
@@ -843,7 +843,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     Target &= 0xFFFFFFFFU;
   }
 
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
@@ -4007,7 +4007,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
 
 void OpDispatchBuilder::Finalize() {
   // This usually doesn't emit any IR but in the case of hitting the block instruction limit it will
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Node 0 is invalid node
@@ -4716,7 +4716,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   // Calculate flags early.
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 
   const uint8_t GPRSize = CTX->GetGPRSize();
 
