@@ -3379,8 +3379,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
         // We'll calculate PF/AF after the loop, so use them as temporaries here.
-        _StoreRegister(Src1, Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
-        _StoreRegister(Src2, Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+        StoreRegister(Core::CPUState::PF_AS_GREG, false, Src1);
+        StoreRegister(Core::CPUState::AF_AS_GREG, false, Src2);
 
         Ref TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -3419,8 +3419,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     // Make sure to start a new block after ending this one
     {
       // Grab the sources from the last iteration so we can set flags.
-      auto Src1 = _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
-      auto Src2 = _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      auto Src1 = LoadGPR(Core::CPUState::PF_AS_GREG);
+      auto Src2 = LoadGPR(Core::CPUState::AF_AS_GREG);
       CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
     }
     auto Jump_ = Jump();
@@ -4411,7 +4411,7 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
   if (Size == -1) {
     Size = GPRSize;
   }
-  Ref Reg = _LoadRegister(GPR, GPRClass, GPRSize);
+  Ref Reg = LoadGPR(GPR);
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
@@ -4438,11 +4438,10 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Siz
   Ref Reg = Src;
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    Reg = LoadGPRRegister(GPR);
-    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, Reg, Src);
+    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, LoadGPRRegister(GPR), Src);
   }
 
-  _StoreRegister(Reg, GPR, GPRClass, GPRSize);
+  StoreRegister(GPR, false, Reg);
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, const Ref Src) {
@@ -4563,6 +4562,8 @@ void OpDispatchBuilder::ResetWorkingList() {
   DecodeFailure = false;
   ShouldDump = false;
   CurrentCodeBlock = nullptr;
+  RegCache.Written = 0;
+  RegCache.Cached = 0;
 }
 
 void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {

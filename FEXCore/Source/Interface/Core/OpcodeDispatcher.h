@@ -16,6 +16,7 @@
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <bit>
 #include <cstdint>
 #include <fmt/format.h>
 #include <stddef.h>
@@ -1269,6 +1270,38 @@ public:
 
   void FlushRegisterCache(bool SRAOnly = false) {
     CalculateDeferredFlags();
+
+    const uint8_t GPRSize = CTX->GetGPRSize();
+
+    // Write backwards. This is a heuristic to improve coalescing, since we
+    // often copy from (low) fixed GPRs to (high) PF/AF for celebrity
+    // instructions like "add rax, 1". This hack will go away with clauses.
+    uint64_t Bits = RegCache.Written;
+
+    // We have an SRA only mode that exists as a hack to make register caching
+    // less aggressive. We should get rid of this once RA can take it.
+    uint64_t Mask = ~0ULL;
+
+    if (SRAOnly) {
+      const uint64_t GPRMask = ((1ull << (AFIndex - GPR0Index + 1)) - 1) << GPR0Index;
+
+      Mask &= (GPRMask);
+      Bits &= Mask;
+    }
+
+    while (Bits != 0) {
+      uint32_t Index = 63 - std::countl_zero(Bits);
+      Ref Value = RegCache.Value[Index];
+
+      if (Index >= GPR0Index && Index <= AFIndex) {
+        _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
+      }
+
+      Bits &= ~(1ull << Index);
+    }
+
+    RegCache.Written &= ~Mask;
+    RegCache.Cached &= ~Mask;
   }
 
 protected:
@@ -1717,9 +1750,9 @@ private:
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::PF_AS_GREG, false, Value);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      _StoreRegister(Value, Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      StoreRegister(Core::CPUState::AF_AS_GREG, false, Value);
     } else {
       if (ValueOffset || MustMask) {
         Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
@@ -1746,10 +1779,13 @@ private:
 
   void InvalidateAF() {
     _InvalidateFlags((1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   void InvalidatePF_AF() {
     _InvalidateFlags((1u << X86State::RFLAG_PF_RAW_LOC) | (1u << X86State::RFLAG_AF_RAW_LOC));
+    InvalidateReg(Core::CPUState::PF_AS_GREG);
+    InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
@@ -1764,6 +1800,55 @@ private:
 
     default: FEX_UNREACHABLE;
     }
+  }
+
+  /* Layout of cache indices. We use a single 64-bit bitmask for the cache */
+  static const int GPR0Index = 0;
+  static const int GPR15Index = 15;
+  static const int PFIndex = 16;
+  static const int AFIndex = 17;
+
+  struct {
+    uint64_t Cached;
+    uint64_t Written;
+    Ref Value[64];
+  } RegCache {};
+
+  void InvalidateReg(uint8_t Index) {
+    uint64_t Bit = (1ull << (uint64_t)Index);
+    RegCache.Cached &= ~Bit;
+    RegCache.Written &= ~Bit;
+  }
+
+  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    if (!(RegCache.Cached & Bit)) {
+      RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
+      RegCache.Cached |= Bit;
+    }
+
+    return RegCache.Value[Index];
+  }
+
+  Ref LoadGPR(uint8_t Reg) {
+    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
+  }
+
+  void StoreContext(uint8_t Index, Ref Value) {
+    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
+    LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
+
+    uint64_t Bit = (1ull << (uint64_t)Index);
+
+    RegCache.Value[Index] = Value;
+    RegCache.Cached |= Bit;
+    RegCache.Written |= Bit;
+  }
+
+  void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
+    StoreContext(Reg + GPR0Index, Value);
   }
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
@@ -1782,9 +1867,9 @@ private:
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::PF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
-      return _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, _LoadDF(), _Constant(63));
