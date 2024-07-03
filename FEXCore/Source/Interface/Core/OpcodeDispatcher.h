@@ -1302,7 +1302,9 @@ public:
       } else if (Index == DFIndex) {
         _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
       } else {
-        _StoreContext(CacheIndexToSize(Index), CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
+        bool Partial = RegCache.Partial & (1ull << Index);
+        unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
+        _StoreContext(Size, CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
       }
 
       Bits &= ~(1ull << Index);
@@ -1310,6 +1312,7 @@ public:
 
     RegCache.Written &= ~Mask;
     RegCache.Cached &= ~Mask;
+    RegCache.Partial &= ~Mask;
   }
 
 protected:
@@ -1814,6 +1817,9 @@ private:
   static const int GPR15Index = 15;
   static const int PFIndex = 16;
   static const int AFIndex = 17;
+  /* Gap 18..19 */
+  static const int MM0Index = 20;
+  static const int MM7Index = 27;
   static const int AbridgedFTWIndex = 28;
   /* Gap 29..30 */
   static const int DFIndex = 31;
@@ -1824,6 +1830,7 @@ private:
 
   int CacheIndexToContextOffset(int Index) {
     switch (Index) {
+    case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
     case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
     case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
     default: return -1;
@@ -1831,7 +1838,7 @@ private:
   }
 
   RegisterClassType CacheIndexClass(int Index) {
-    if (Index >= FPR0Index) {
+    if ((Index >= MM0Index && Index <= MM7Index) || Index >= FPR0Index) {
       return FPRClass;
     } else {
       return GPRClass;
@@ -1839,7 +1846,9 @@ private:
   }
 
   unsigned CacheIndexToSize(int Index) {
-    if (Index >= AVXHigh0Index) {
+    // MMX registers are rounded up to 128-bit since they are shared with 80-bit
+    // x87 registers, even though MMX is logically only 64-bit.
+    if (Index >= AVXHigh0Index || ((Index >= MM0Index && Index <= MM7Index))) {
       return 16;
     } else {
       return 1;
@@ -1849,6 +1858,11 @@ private:
   struct {
     uint64_t Cached;
     uint64_t Written;
+
+    // Indicates that Value contains only the lower 64-bit of the full 80-bit
+    // register. Used for MMX/x87 optimization.
+    uint64_t Partial;
+
     Ref Value[64];
   } RegCache {};
 
@@ -1862,11 +1876,29 @@ private:
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
+    if (Size == 16 && (RegCache.Partial & Bit)) {
+      // We need to load the full register extend if we previously did a partial access.
+      Ref Value = RegCache.Value[Index];
+      Ref Full = _LoadContext(Size, RegClass, Offset);
+
+      // If we did a partial store, we're inserting into the full register
+      if (RegCache.Written & Bit) {
+        Full = _VInsElement(16, 8, 0, 0, Full, Value);
+      }
+
+      RegCache.Value[Index] = Full;
+    }
+
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
-      } else if (Index == AbridgedFTWIndex || Index >= AVXHigh0Index) {
+      } else if ((Index >= MM0Index && Index <= AbridgedFTWIndex) || Index >= AVXHigh0Index) {
         RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
+
+        // We may have done a partial load, this requires special handling.
+        if (Size == 8) {
+          RegCache.Partial |= Bit;
+        }
       } else {
         RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
       }
@@ -1881,8 +1913,12 @@ private:
     return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
   }
 
+  Ref LoadContext(uint8_t Size, uint8_t Index) {
+    return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
+  }
+
   Ref LoadContext(uint8_t Index) {
-    return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), CacheIndexToSize(Index));
+    return LoadContext(CacheIndexToSize(Index), Index);
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
@@ -1902,6 +1938,12 @@ private:
     RegCache.Value[Index] = Value;
     RegCache.Cached |= Bit;
     RegCache.Written |= Bit;
+  }
+
+  void StoreContextPartial(uint8_t Index, Ref Value) {
+    StoreContext(Index, Value);
+
+    RegCache.Partial |= (1ull << (uint64_t)Index);
   }
 
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {

@@ -4374,7 +4374,9 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      A.Base = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+
+      A.Base = LoadContext(8, MM0Index + gpr - FEXCore::X86State::REG_MM_0);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
@@ -4460,7 +4462,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      _StoreContext(OpSize, Class, Src, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      LOGMAN_THROW_A_FMT(Class == FPRClass, "MMX is floaty");
+
+      // Partial store into bottom 64-bits, leave the upper bits unaffected.
+      // XXX: We actually should set the upper bits to all-1s?
+      StoreContextPartial(MM0Index + gpr - FEXCore::X86State::REG_MM_0, Src);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       const auto VectorSize = (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? 32 : 16;
