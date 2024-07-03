@@ -153,7 +153,6 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, MMBaseOffset(), 16, FPRClass);
-  //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
 }
 
 template void OpDispatchBuilder::FLD<32>(OpcodeArgs);
