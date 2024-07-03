@@ -97,15 +97,12 @@ if(TEST thunk_testlib.64.jit.flt)
   set_property(TEST "thunk_testlib.64.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 # Only emulated
 add_custom_target(
   fex_linux_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.jit\.flt$$"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.jit\.flt$$"
   DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
   )
 
@@ -114,7 +111,7 @@ add_custom_target(
   fex_linux_tests_host
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.host\.flt$$"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.host\.flt$$"
   DEPENDS FEXLinuxTests FEXLinuxTests_32
   )
 
@@ -123,6 +120,6 @@ add_custom_target(
   fex_linux_tests_all
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.flt$$"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.flt$$"
   DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
   )

@@ -110,13 +110,10 @@ endforeach()
 add_custom_target(32bit_asm_files ALL
   DEPENDS "${ASM_DEPENDS}")
 
-execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
-string(STRIP ${CORES} CORES)
-
 add_custom_target(
   32bit_asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS 32bit_asm_files
   DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
-  COMMAND "ctest" "--output-on-failure" "--timeout" "302" "-j${CORES}" "-R" "\.*32Bit\.*.asm$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*32Bit\.*.asm$$")
