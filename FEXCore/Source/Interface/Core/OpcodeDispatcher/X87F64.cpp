@@ -60,7 +60,7 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
 
   // Tags all get marked as invalid
-  StoreContext(AbridgedFTWIndex, Zero);
+  _StoreContext(1, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {

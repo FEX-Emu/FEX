@@ -625,7 +625,7 @@ DEF_OP(ShiftFlags) {
 
   // Set the output outside the branch to avoid needing an extra leg of the
   // branch. We specifically do not hardcode the PF register anywhere (relying
-  // on a tied SRA register instead) to avoid fighting with RA.
+  // on a tied SRA register instead) to avoid fighting with RA/RCLSE.
   if (PFTemp != PFInput) {
     mov(ARMEmitter::Size::i64Bit, PFTemp, PFInput);
   }

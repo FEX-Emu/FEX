@@ -18,8 +18,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrlw xmm0, xmm1, 15": {
@@ -51,8 +51,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrlw ymm0, ymm1, 15": {
@@ -86,8 +86,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsraw xmm0, xmm1, 15": {
@@ -119,8 +119,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsraw ymm0, ymm1, 15": {
@@ -154,8 +154,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsllw xmm0, xmm1, 15": {
@@ -187,8 +187,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsllw ymm0, ymm1, 15": {
@@ -222,8 +222,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrld xmm0, xmm1, 31": {
@@ -255,8 +255,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrld ymm0, ymm1, 31": {
@@ -290,8 +290,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrad xmm0, xmm1, 31": {
@@ -323,8 +323,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrad ymm0, ymm1, 31": {
@@ -358,8 +358,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpslld xmm0, xmm1, 31": {
@@ -391,8 +391,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpslld ymm0, ymm1, 31": {
@@ -426,8 +426,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrlq xmm0, xmm1, 63": {
@@ -459,8 +459,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrlq ymm0, ymm1, 63": {
@@ -494,8 +494,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrldq xmm0, xmm1, 15": {
@@ -526,8 +526,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsrldq ymm0, ymm1, 15": {
@@ -559,8 +559,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsllq xmm0, xmm1, 63": {
@@ -592,8 +592,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpsllq ymm0, ymm1, 63": {
@@ -627,8 +627,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpslldq xmm0, xmm1, 15": {
@@ -659,8 +659,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "str q2, [x28, #16]",
-        "mov v16.16b, v17.16b"
+        "mov v16.16b, v17.16b",
+        "str q2, [x28, #16]"
       ]
     },
     "vpslldq ymm0, ymm1, 15": {

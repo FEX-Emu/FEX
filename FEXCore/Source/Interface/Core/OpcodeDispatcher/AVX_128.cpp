@@ -562,17 +562,17 @@ void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::Decode
 
 Ref OpDispatchBuilder::AVX128_LoadXMMRegister(uint32_t XMM, bool High) {
   if (High) {
-    return LoadContext(AVXHigh0Index + XMM);
+    return _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, avx_high[XMM][0]));
   } else {
-    return LoadXMMRegister(XMM);
+    return _LoadRegister(XMM, FPRClass, 16);
   }
 }
 
 void OpDispatchBuilder::AVX128_StoreXMMRegister(uint32_t XMM, const Ref Src, bool High) {
   if (High) {
-    StoreContext(AVXHigh0Index + XMM, Src);
+    _StoreContext(16, FPRClass, Src, offsetof(FEXCore::Core::CPUState, avx_high[XMM][0]));
   } else {
-    StoreXMMRegister(XMM, Src);
+    _StoreRegister(Src, XMM, FPRClass, 16);
   }
 }
 

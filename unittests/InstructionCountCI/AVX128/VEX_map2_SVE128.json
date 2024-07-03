@@ -22,8 +22,8 @@
         "cmplt p0.s, p6/z, z17.s, #0",
         "ld1w {z16.s}, p0/z, [x4]",
         "movi v2.2d, #0x0",
-        "msr nzcv, x20",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps ymm0, ymm1, [rax]": {
@@ -39,8 +39,8 @@
         "add x21, x4, #0x10 (16)",
         "cmplt p0.s, p6/z, z2.s, #0",
         "ld1w {z2.s}, p0/z, [x21]",
-        "msr nzcv, x20",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd xmm0, xmm1, [rax]": {
@@ -53,8 +53,8 @@
         "cmplt p0.d, p6/z, z17.d, #0",
         "ld1d {z16.d}, p0/z, [x4]",
         "movi v2.2d, #0x0",
-        "msr nzcv, x20",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovpd ymm0, ymm1, [rax]": {
@@ -70,8 +70,8 @@
         "add x21, x4, #0x10 (16)",
         "cmplt p0.d, p6/z, z2.d, #0",
         "ld1d {z2.d}, p0/z, [x21]",
-        "msr nzcv, x20",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "msr nzcv, x20"
       ]
     },
     "vmaskmovps [rax], xmm0, xmm1": {
@@ -160,9 +160,9 @@
         "add x1, x4, w0, sxtw #1",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd xmm0, [xmm1*4 + rax], xmm2": {
@@ -176,9 +176,9 @@
         "ld1w {z0.s}, p0/z, [x4, z17.s, sxtw #2]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd xmm0, [xmm1*8 + rax], xmm2": {
@@ -209,9 +209,9 @@
         "add x1, x4, w0, sxtw #3",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*1 + rax], ymm2": {
@@ -230,10 +230,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [x4, z3.s, sxtw]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*2 + rax], ymm2": {
@@ -286,10 +286,10 @@
         "smov x0, v3.s[3]",
         "add x1, x4, w0, sxtw #1",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*4 + rax], ymm2": {
@@ -308,10 +308,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [x4, z3.s, sxtw #2]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*8 + rax], ymm2": {
@@ -364,10 +364,10 @@
         "smov x0, v3.s[3]",
         "add x1, x4, w0, sxtw #3",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*1 + rax], xmm2": {
@@ -388,9 +388,9 @@
         "add x1, x4, w0, sxtw",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*2 + rax], xmm2": {
@@ -411,9 +411,9 @@
         "add x1, x4, w0, sxtw #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*4 + rax], xmm2": {
@@ -434,9 +434,9 @@
         "add x1, x4, w0, sxtw #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*8 + rax], xmm2": {
@@ -457,9 +457,9 @@
         "add x1, x4, w0, sxtw #3",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*1 + rax], ymm2": {
@@ -492,10 +492,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*2 + rax], ymm2": {
@@ -528,10 +528,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*4 + rax], ymm2": {
@@ -564,10 +564,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*8 + rax], ymm2": {
@@ -600,10 +600,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #3",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*1 + rax], xmm2": {
@@ -626,9 +626,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*2 + rax], xmm2": {
@@ -651,9 +651,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*4 + rax], xmm2": {
@@ -676,9 +676,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*8 + rax], xmm2": {
@@ -701,9 +701,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*1 + rax], xmm2": {
@@ -737,9 +737,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*2 + rax], xmm2": {
@@ -773,9 +773,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*4 + rax], xmm2": {
@@ -809,9 +809,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*8 + rax], xmm2": {
@@ -845,9 +845,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*1 + rax], xmm2": {
@@ -861,9 +861,9 @@
         "ld1d {z0.d}, p0/z, [x4, z17.d]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*2 + rax], xmm2": {
@@ -884,9 +884,9 @@
         "add x1, x4, x0, lsl #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*4 + rax], xmm2": {
@@ -907,9 +907,9 @@
         "add x1, x4, x0, lsl #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*8 + rax], xmm2": {
@@ -923,9 +923,9 @@
         "ld1d {z0.d}, p0/z, [x4, z17.d, lsl #3]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*1 + rax], ymm2": {
@@ -944,10 +944,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [x4, z3.d]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*2 + rax], ymm2": {
@@ -980,10 +980,10 @@
         "mov x0, v3.d[1]",
         "add x1, x4, x0, lsl #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*4 + rax], ymm2": {
@@ -1016,10 +1016,10 @@
         "mov x0, v3.d[1]",
         "add x1, x4, x0, lsl #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*8 + rax], ymm2": {
@@ -1038,10 +1038,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [x4, z3.d, lsl #3]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*1 + rax], xmm2": {
@@ -1055,9 +1055,9 @@
         "ld1w {z0.s}, p0/z, [x4, z17.s, sxtw]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*2 + rax], xmm2": {
@@ -1088,9 +1088,9 @@
         "add x1, x4, w0, sxtw #1",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*4 + rax], xmm2": {
@@ -1104,9 +1104,9 @@
         "ld1w {z0.s}, p0/z, [x4, z17.s, sxtw #2]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*8 + rax], xmm2": {
@@ -1137,9 +1137,9 @@
         "add x1, x4, w0, sxtw #3",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*1 + rax], ymm2": {
@@ -1158,10 +1158,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [x4, z3.s, sxtw]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*2 + rax], ymm2": {
@@ -1214,10 +1214,10 @@
         "smov x0, v3.s[3]",
         "add x1, x4, w0, sxtw #1",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*4 + rax], ymm2": {
@@ -1236,10 +1236,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [x4, z3.s, sxtw #2]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*8 + rax], ymm2": {
@@ -1292,10 +1292,10 @@
         "smov x0, v3.s[3]",
         "add x1, x4, w0, sxtw #3",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*1 + rax], xmm2": {
@@ -1316,9 +1316,9 @@
         "add x1, x4, w0, sxtw",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*2 + rax], xmm2": {
@@ -1339,9 +1339,9 @@
         "add x1, x4, w0, sxtw #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*4 + rax], xmm2": {
@@ -1362,9 +1362,9 @@
         "add x1, x4, w0, sxtw #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*8 + rax], xmm2": {
@@ -1385,9 +1385,9 @@
         "add x1, x4, w0, sxtw #3",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*1 + rax], ymm2": {
@@ -1420,10 +1420,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*2 + rax], ymm2": {
@@ -1456,10 +1456,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*4 + rax], ymm2": {
@@ -1492,10 +1492,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*8 + rax], ymm2": {
@@ -1528,10 +1528,10 @@
         "smov x0, v17.s[3]",
         "add x1, x4, w0, sxtw #3",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*1 + rax], xmm2": {
@@ -1554,9 +1554,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*2 + rax], xmm2": {
@@ -1579,9 +1579,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*4 + rax], xmm2": {
@@ -1604,9 +1604,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*8 + rax], xmm2": {
@@ -1629,9 +1629,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*1 + rax], xmm2": {
@@ -1665,9 +1665,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*2 + rax], xmm2": {
@@ -1701,9 +1701,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*4 + rax], xmm2": {
@@ -1737,9 +1737,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*8 + rax], xmm2": {
@@ -1773,9 +1773,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*1 + rax], xmm2": {
@@ -1789,9 +1789,9 @@
         "ld1d {z0.d}, p0/z, [x4, z17.d]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*2 + rax], xmm2": {
@@ -1812,9 +1812,9 @@
         "add x1, x4, x0, lsl #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*4 + rax], xmm2": {
@@ -1835,9 +1835,9 @@
         "add x1, x4, x0, lsl #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*8 + rax], xmm2": {
@@ -1851,9 +1851,9 @@
         "ld1d {z0.d}, p0/z, [x4, z17.d, lsl #3]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*1 + rax], ymm2": {
@@ -1872,10 +1872,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [x4, z3.d]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*2 + rax], ymm2": {
@@ -1908,10 +1908,10 @@
         "mov x0, v3.d[1]",
         "add x1, x4, x0, lsl #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*4 + rax], ymm2": {
@@ -1944,10 +1944,10 @@
         "mov x0, v3.d[1]",
         "add x1, x4, x0, lsl #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*8 + rax], ymm2": {
@@ -1966,10 +1966,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [x4, z3.d, lsl #3]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd xmm0, [xmm1*2], xmm2": {
@@ -2000,9 +2000,9 @@
         "sbfiz x1, x0, #1, #32",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd xmm0, [xmm1*4], xmm2": {
@@ -2017,9 +2017,9 @@
         "ld1w {z0.s}, p0/z, [x0, z17.s, sxtw #2]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd xmm0, [xmm1*8], xmm2": {
@@ -2050,9 +2050,9 @@
         "sbfiz x1, x0, #3, #32",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*1], ymm2": {
@@ -2071,10 +2071,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [z3.s]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*2], ymm2": {
@@ -2127,10 +2127,10 @@
         "smov x0, v3.s[3]",
         "sbfiz x1, x0, #1, #32",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*4], ymm2": {
@@ -2151,10 +2151,10 @@
         "mov w0, #0x0",
         "ld1w {z0.s}, p0/z, [x0, z3.s, sxtw #2]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdd ymm0, [ymm1*8], ymm2": {
@@ -2207,10 +2207,10 @@
         "smov x0, v3.s[3]",
         "sbfiz x1, x0, #3, #32",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*1], xmm2": {
@@ -2231,9 +2231,9 @@
         "sxtw x1, w0",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*2], xmm2": {
@@ -2254,9 +2254,9 @@
         "sbfiz x1, x0, #1, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*4], xmm2": {
@@ -2277,9 +2277,9 @@
         "sbfiz x1, x0, #2, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq xmm0, [xmm1*8], xmm2": {
@@ -2300,9 +2300,9 @@
         "sbfiz x1, x0, #3, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*1], ymm2": {
@@ -2335,10 +2335,10 @@
         "smov x0, v17.s[3]",
         "sxtw x1, w0",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*2], ymm2": {
@@ -2371,10 +2371,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #1, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*4], ymm2": {
@@ -2407,10 +2407,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #2, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherdq ymm0, [xmm1*8], ymm2": {
@@ -2443,10 +2443,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #3, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*1], xmm2": {
@@ -2469,9 +2469,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*2], xmm2": {
@@ -2494,9 +2494,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*4], xmm2": {
@@ -2519,9 +2519,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [xmm1*8], xmm2": {
@@ -2544,9 +2544,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*1], xmm2": {
@@ -2580,9 +2580,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*2], xmm2": {
@@ -2616,9 +2616,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*4], xmm2": {
@@ -2652,9 +2652,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqd xmm0, [ymm1*8], xmm2": {
@@ -2688,9 +2688,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*1], xmm2": {
@@ -2704,9 +2704,9 @@
         "ld1d {z0.d}, p0/z, [z17.d]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*2], xmm2": {
@@ -2727,9 +2727,9 @@
         "lsl x1, x0, #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*4], xmm2": {
@@ -2750,9 +2750,9 @@
         "lsl x1, x0, #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq xmm0, [xmm1*8], xmm2": {
@@ -2767,9 +2767,9 @@
         "ld1d {z0.d}, p0/z, [x0, z17.d, lsl #3]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*1], ymm2": {
@@ -2788,10 +2788,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [z3.d]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*2], ymm2": {
@@ -2824,10 +2824,10 @@
         "mov x0, v3.d[1]",
         "lsl x1, x0, #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*4], ymm2": {
@@ -2860,10 +2860,10 @@
         "mov x0, v3.d[1]",
         "lsl x1, x0, #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vpgatherqq ymm0, [ymm1*8], ymm2": {
@@ -2884,10 +2884,10 @@
         "mov w0, #0x0",
         "ld1d {z0.d}, p0/z, [x0, z3.d, lsl #3]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*1], xmm2": {
@@ -2901,9 +2901,9 @@
         "ld1w {z0.s}, p0/z, [z17.s]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*2], xmm2": {
@@ -2934,9 +2934,9 @@
         "sbfiz x1, x0, #1, #32",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*4], xmm2": {
@@ -2951,9 +2951,9 @@
         "ld1w {z0.s}, p0/z, [x0, z17.s, sxtw #2]",
         "mov z16.s, p0/m, z0.s",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps xmm0, [xmm1*8], xmm2": {
@@ -2984,9 +2984,9 @@
         "sbfiz x1, x0, #3, #32",
         "ld1 {v16.s}[3], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*1], ymm2": {
@@ -3005,10 +3005,10 @@
         "cmplt p0.s, p6/z, z4.s, #0",
         "ld1w {z0.s}, p0/z, [z3.s]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*2], ymm2": {
@@ -3061,10 +3061,10 @@
         "smov x0, v3.s[3]",
         "sbfiz x1, x0, #1, #32",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*4], ymm2": {
@@ -3085,10 +3085,10 @@
         "mov w0, #0x0",
         "ld1w {z0.s}, p0/z, [x0, z3.s, sxtw #2]",
         "mov z2.s, p0/m, z0.s",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdps ymm0, [ymm1*8], ymm2": {
@@ -3141,10 +3141,10 @@
         "smov x0, v3.s[3]",
         "sbfiz x1, x0, #3, #32",
         "ld1 {v2.s}[3], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*1], xmm2": {
@@ -3165,9 +3165,9 @@
         "sxtw x1, w0",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*2], xmm2": {
@@ -3188,9 +3188,9 @@
         "sbfiz x1, x0, #1, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*4], xmm2": {
@@ -3211,9 +3211,9 @@
         "sbfiz x1, x0, #2, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd xmm0, [xmm1*8], xmm2": {
@@ -3234,9 +3234,9 @@
         "sbfiz x1, x0, #3, #32",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*1], ymm2": {
@@ -3269,10 +3269,10 @@
         "smov x0, v17.s[3]",
         "sxtw x1, w0",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*2], ymm2": {
@@ -3305,10 +3305,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #1, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*4], ymm2": {
@@ -3341,10 +3341,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #2, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherdpd ymm0, [xmm1*8], ymm2": {
@@ -3377,10 +3377,10 @@
         "smov x0, v17.s[3]",
         "sbfiz x1, x0, #3, #32",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*1], xmm2": {
@@ -3403,9 +3403,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*2], xmm2": {
@@ -3428,9 +3428,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*4], xmm2": {
@@ -3453,9 +3453,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [xmm1*8], xmm2": {
@@ -3478,9 +3478,9 @@
         "ld1 {v2.s}[1], [x1]",
         "movi v18.2d, #0x0",
         "zip1 v16.2d, v2.2d, v18.2d",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*1], xmm2": {
@@ -3514,9 +3514,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*2], xmm2": {
@@ -3550,9 +3550,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*4], xmm2": {
@@ -3586,9 +3586,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqps xmm0, [ymm1*8], xmm2": {
@@ -3622,9 +3622,9 @@
         "ld1 {v3.s}[3], [x1]",
         "mov v16.16b, v3.16b",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*1], xmm2": {
@@ -3638,9 +3638,9 @@
         "ld1d {z0.d}, p0/z, [z17.d]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*2], xmm2": {
@@ -3661,9 +3661,9 @@
         "lsl x1, x0, #1",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*4], xmm2": {
@@ -3684,9 +3684,9 @@
         "lsl x1, x0, #2",
         "ld1 {v16.d}[1], [x1]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd xmm0, [xmm1*8], xmm2": {
@@ -3701,9 +3701,9 @@
         "ld1d {z0.d}, p0/z, [x0, z17.d, lsl #3]",
         "mov z16.d, p0/m, z0.d",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
+        "str q18, [x28, #16]",
         "str q18, [x28, #48]",
-        "str q18, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*1], ymm2": {
@@ -3722,10 +3722,10 @@
         "cmplt p0.d, p6/z, z4.d, #0",
         "ld1d {z0.d}, p0/z, [z3.d]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*2], ymm2": {
@@ -3758,10 +3758,10 @@
         "mov x0, v3.d[1]",
         "lsl x1, x0, #1",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*4], ymm2": {
@@ -3794,10 +3794,10 @@
         "mov x0, v3.d[1]",
         "lsl x1, x0, #2",
         "ld1 {v2.d}[1], [x1]",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vgatherqpd ymm0, [ymm1*8], ymm2": {
@@ -3818,10 +3818,10 @@
         "mov w0, #0x0",
         "ld1d {z0.d}, p0/z, [x0, z3.d, lsl #3]",
         "mov z2.d, p0/m, z0.d",
+        "str q2, [x28, #16]",
         "movi v18.2d, #0x0",
-        "msr nzcv, x20",
         "str q18, [x28, #48]",
-        "str q2, [x28, #16]"
+        "msr nzcv, x20"
       ]
     },
     "vfmaddsub132ps xmm0, xmm1, xmm2": {
