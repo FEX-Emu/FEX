@@ -1695,7 +1695,9 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
     }
   };
 
-  Calculate_ShiftVariable(LoadShift(true), [this, LoadShift, Op]() {
+  Calculate_ShiftVariable(
+    Op, LoadShift(true),
+    [this, LoadShift, Op]() {
     const uint32_t Size = GetSrcBitSize(Op);
     const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
 
@@ -1734,7 +1736,8 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
       auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
     }
-  });
+    },
+    GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
@@ -2069,6 +2072,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   if (IsValueConstant(WrapNode(Src), &Const)) {
     Const &= Mask;
     if (!Const) {
+      ZeroShiftResult(Op);
       return;
     }
 
@@ -2103,7 +2107,9 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   }
 
   Ref SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
-  Calculate_ShiftVariable(SrcMasked, [this, Op, Size, OpSize]() {
+  Calculate_ShiftVariable(
+    Op, SrcMasked,
+    [this, Op, Size, OpSize]() {
     // Rematerialize loads to avoid crossblock liveness
     Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
     Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -2139,7 +2145,8 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, Size - 2, true);
 
     StoreResult(GPRClass, Op, Res, -1);
-  });
+    },
+    GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
 void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
@@ -2153,7 +2160,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
     Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -2289,6 +2296,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   if (IsValueConstant(WrapNode(Src), &Const)) {
     Const &= Mask;
     if (!Const) {
+      ZeroShiftResult(Op);
       return;
     }
 
@@ -2322,7 +2330,9 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   }
 
   Ref SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
-  Calculate_ShiftVariable(SrcMasked, [this, Op, Size, OpSize]() {
+  Calculate_ShiftVariable(
+    Op, SrcMasked,
+    [this, Op, Size, OpSize]() {
     // Rematerialized to avoid crossblock liveness
     Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -2355,7 +2365,8 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
 
     StoreResult(GPRClass, Op, Res, -1);
-  });
+    },
+    GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
 void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
@@ -2369,7 +2380,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
     Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
     Src = AndConst(OpSize::i32Bit, Src, 0x1F);

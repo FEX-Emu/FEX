@@ -2100,13 +2100,28 @@ private:
     return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
   }
 
+  void ZeroShiftResult(FEXCore::X86Tables::DecodedOp Op) {
+    // In the case of zero-rotate, we need to store the destination still to deal with 32-bit semantics.
+    const uint32_t Size = GetSrcSize(Op);
+    if (Size != OpSize::i32Bit) {
+      return;
+    }
+    auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+    StoreResult(GPRClass, Op, Dest, -1);
+  }
+
+  using ZeroShiftFunctionPtr = void (OpDispatchBuilder::*)(FEXCore::X86Tables::DecodedOp Op);
+
   template<typename F>
-  void Calculate_ShiftVariable(Ref Shift, F&& Calculate) {
+  void Calculate_ShiftVariable(FEXCore::X86Tables::DecodedOp Op, Ref Shift, F&& Calculate,
+                               std::optional<ZeroShiftFunctionPtr> ZeroShiftResult = std::nullopt) {
     // RCR can call this with constants, so handle that without branching.
     uint64_t Const;
     if (IsValueConstant(WrapNode(Shift), &Const)) {
       if (Const) {
         Calculate();
+      } else if (ZeroShiftResult) {
+        (this->*(*ZeroShiftResult))(Op);
       }
 
       return;
@@ -2118,14 +2133,32 @@ private:
 
     // If the shift is zero, do not touch the flags.
     auto SetBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-    auto EndBlock = CreateNewCodeBlockAfter(SetBlock);
-    CondJump(Shift, Zero, EndBlock, SetBlock, {COND_EQ});
+    IRPair<IROp_CodeBlock> NextBlock = SetBlock;
+    IRPair<IROp_CodeBlock> ZeroShiftBlock;
+    if (ZeroShiftResult) {
+      ZeroShiftBlock = CreateNewCodeBlockAfter(NextBlock);
+      NextBlock = ZeroShiftBlock;
+    }
+    auto EndBlock = CreateNewCodeBlockAfter(NextBlock);
+
+    ///< Jump to zeroshift block or end block depending on if it was provided.
+    IRPair<IROp_CodeBlock> TailHandling = ZeroShiftResult ? ZeroShiftBlock : EndBlock;
+    CondJump(Shift, Zero, TailHandling, SetBlock, {COND_EQ});
 
     SetCurrentCodeBlock(SetBlock);
     StartNewBlock();
     {
       Calculate();
       Jump(EndBlock);
+    }
+
+    if (ZeroShiftResult) {
+      SetCurrentCodeBlock(ZeroShiftBlock);
+      StartNewBlock();
+      {
+        (this->*(*ZeroShiftResult))(Op);
+        Jump(EndBlock);
+      }
     }
 
     SetCurrentCodeBlock(EndBlock);
