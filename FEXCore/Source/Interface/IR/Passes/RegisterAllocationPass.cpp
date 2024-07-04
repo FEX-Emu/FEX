@@ -461,7 +461,12 @@ private:
       // If that scalar is free because it is killed by this instruction, it
       // needs to be shuffled too, since the copy would clobber it.
       for (auto s = 0; s < IR::GetRAArgs(Pivot->Op); ++s) {
-        const PhysicalRegister ClobberReg = SSAToReg[Pivot->Args[s].ID().Value];
+        // It is possible that the argument is to be remapped, but the actual
+        // remapping in the IR only happens later in the pass so we need to
+        // Map() explicitly. This can be hit with SRA shuffles.
+        Ref New = Map(IR->GetNode(Pivot->Args[s]));
+        const PhysicalRegister ClobberReg = SSAToReg[IR->GetID(New).Value];
+
         if (ClobberReg.Class == GPRClass && ClobberReg.Reg == NewReg) {
           Clobber = IR->GetNode(Pivot->Args[s]);
           break;
