@@ -1,4 +1,4 @@
-# FEX-2406
+# FEX-2407
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -58,6 +58,7 @@ Metadata that drives the frontend x86/64 decoding
 - [X86Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables.cpp)
 
 #### x86-to-ir
+- [AVX_128.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/AVX_128.cpp): Handles x86/64 AVX instructions to 128-bit IR
 - [Crypto.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
 - [Flags.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
 - [Vector.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
@@ -124,6 +125,7 @@ IR to IR Optimization
 - [CPUID.cpp](../FEXCore/Source/Interface/Core/CPUID.cpp): Handles presented capability bits for guest cpu
 
 #### dispatcher-implementations
+- [AVX_128.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/AVX_128.cpp): Handles x86/64 AVX instructions to 128-bit IR
 - [Crypto.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
 - [Flags.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
 - [Vector.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
