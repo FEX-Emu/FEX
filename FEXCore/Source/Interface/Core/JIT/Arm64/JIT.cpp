@@ -47,8 +47,8 @@ static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   return Res;
 }
 
-static int64_t LDIV(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
-  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+static int64_t LDIV(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
   __int128_t Res = Source / Divisor;
   return Res;
 }
@@ -59,8 +59,8 @@ static uint64_t LUREM(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   return Res;
 }
 
-static int64_t LREM(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
-  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+static int64_t LREM(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
   __int128_t Res = Source % Divisor;
   return Res;
 }
