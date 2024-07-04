@@ -383,15 +383,14 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
   } else {
     // Zero extend for correct comparison behaviour with Src1 = 0xffff.
     Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
+    Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
 
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    auto Src1MinusCF = _Sub(OpSize, Src1, CF);
+    auto Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
 
-    Res = _Sub(OpSize, Src1MinusCF, Src2);
+    Res = _Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
-    // Need to zero-extend for correct comparisons below
-    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Src1MinusCF, Res, One, Zero);
+    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Src1, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
