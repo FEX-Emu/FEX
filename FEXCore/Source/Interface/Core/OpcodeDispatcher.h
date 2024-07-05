@@ -96,14 +96,6 @@ public:
     TYPE_LSHRI,
     TYPE_LSHRDI,
     TYPE_ASHRI,
-    TYPE_BEXTR,
-    TYPE_BLSI,
-    TYPE_BLSMSK,
-    TYPE_BLSR,
-    TYPE_POPCOUNT,
-    TYPE_BZHI,
-    TYPE_ZCNT,
-    TYPE_RDRAND,
   };
 
   Ref GetNewJumpBlock(uint64_t RIP) {
@@ -2326,91 +2318,6 @@ private:
               .Imm = Shift,
             },
         },
-    };
-  }
-
-  void GenerateFlags_BEXTR(FEXCore::X86Tables::DecodedOp Op, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BEXTR,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_BLSI(FEXCore::X86Tables::DecodedOp Op, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BLSI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BLSMSK,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSource =
-            {
-              .Src1 = Src,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_BLSR(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BLSR,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSource =
-            {
-              .Src1 = Src,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_POPCOUNT(FEXCore::X86Tables::DecodedOp Op, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_POPCOUNT,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_BZHI(FEXCore::X86Tables::DecodedOp Op, Ref Result, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_BZHI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Result,
-      .Sources =
-        {
-          .OneSource =
-            {
-              .Src1 = Src,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_ZCNT(FEXCore::X86Tables::DecodedOp Op, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ZCNT,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
-    };
-  }
-
-  void GenerateFlags_RDRAND(FEXCore::X86Tables::DecodedOp Op, Ref Src) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_RDRAND,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Src,
     };
   }
 

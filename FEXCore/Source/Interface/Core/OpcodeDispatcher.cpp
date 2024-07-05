@@ -1787,7 +1787,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
 
-  GenerateFlags_BEXTR(Op, Dest);
+  CalculateFlags_BEXTR(Dest);
 }
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
@@ -1802,7 +1802,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
 
-  GenerateFlags_BLSI(Op, Result);
+  CalculateFlags_BLSI(GetSrcSize(Op), Result);
 }
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
@@ -1814,7 +1814,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  GenerateFlags_BLSMSK(Op, Result, Src);
+  CalculateFlags_BLSMSK(GetSrcSize(Op), Result, Src);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
@@ -1826,7 +1826,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
-  GenerateFlags_BLSR(Op, Result, Src);
+  CalculateFlags_BLSR(GetSrcSize(Op), Result, Src);
 }
 
 // Handles SARX, SHLX, and SHRX
@@ -1882,7 +1882,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
   auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_NEQ}, One, Zero);
-  GenerateFlags_BZHI(Op, Result, CF);
+  CalculateFlags_BZHI(Size, Result, CF);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
@@ -2823,7 +2823,7 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  GenerateFlags_POPCOUNT(Op, Src);
+  CalculateFlags_POPCOUNT(Src);
 }
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
@@ -4765,7 +4765,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  GenerateFlags_ZCNT(Op, Src);
+  CalculateFlags_ZCNT(GetSrcSize(Op), Src);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -4774,7 +4774,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, -1);
-  GenerateFlags_ZCNT(Op, Res);
+  CalculateFlags_ZCNT(GetSrcSize(Op), Res);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
@@ -4894,7 +4894,7 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
   auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
 
   StoreResult(GPRClass, Op, Result_Lower, -1);
-  GenerateFlags_RDRAND(Op, Result_Upper);
+  CalculateFlags_RDRAND(Result_Upper);
 }
 
 

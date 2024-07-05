@@ -295,20 +295,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     CalculateFlags_SignShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
                                            CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
     break;
-  case FlagsGenerationType::TYPE_BEXTR: CalculateFlags_BEXTR(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BLSI: CalculateFlags_BLSI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BLSMSK:
-    CalculateFlags_BLSMSK(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_BLSR:
-    CalculateFlags_BLSR(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_POPCOUNT: CalculateFlags_POPCOUNT(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BZHI:
-    CalculateFlags_BZHI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_ZCNT: CalculateFlags_ZCNT(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_RDRAND: CalculateFlags_RDRAND(CurrentDeferredFlags.Res); break;
   case FlagsGenerationType::TYPE_NONE:
   default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
   }
