@@ -1991,11 +1991,11 @@
       ]
     },
     "rol eax, cl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": "GROUP2 0xd3 /0",
       "ExpectedArm64ASM": [
         "and x20, x5, #0x1f",
-        "cbz x20, #+0x28",
+        "cbz x20, #+0x2c",
         "neg w20, w5",
         "ror w4, w4, w20",
         "ubfx x20, x4, #0, #1",
@@ -2004,7 +2004,9 @@
         "eor w20, w4, w4, lsr #31",
         "ubfx x20, x20, #0, #1",
         "bfi w21, w20, #28, #1",
-        "msr nzcv, x21"
+        "msr nzcv, x21",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rol rax, cl": {
@@ -2044,11 +2046,11 @@
       ]
     },
     "ror eax, cl": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "GROUP2 0xd3 /1",
       "ExpectedArm64ASM": [
         "and x20, x5, #0x1f",
-        "cbz x20, #+0x24",
+        "cbz x20, #+0x28",
         "ror w4, w4, w5",
         "ubfx x20, x4, #31, #1",
         "mrs x21, nzcv",
@@ -2056,7 +2058,9 @@
         "eor w20, w4, w4, lsr #1",
         "ubfx x20, x20, #30, #1",
         "bfi w21, w20, #28, #1",
-        "msr nzcv, x21"
+        "msr nzcv, x21",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "ror rax, cl": {
@@ -2108,11 +2112,11 @@
       ]
     },
     "rcl eax, cl": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 20,
       "Comment": "GROUP2 0xd3 /2",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x44",
+        "cbz x20, #+0x48",
         "lsl w20, w4, w5",
         "cset w21, hs",
         "neg w22, w5",
@@ -2128,7 +2132,9 @@
         "eor w20, w4, w22, lsl #31",
         "ubfx x20, x20, #31, #1",
         "bfi w24, w20, #28, #1",
-        "msr nzcv, x24"
+        "msr nzcv, x24",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rcl rax, cl": {
@@ -2180,11 +2186,11 @@
       ]
     },
     "rcr eax, cl": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 20,
       "Comment": "GROUP2 0xd3 /3",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x44",
+        "cbz x20, #+0x48",
         "lsr w20, w4, w5",
         "cset w21, hs",
         "neg w22, w5",
@@ -2200,7 +2206,9 @@
         "eor w20, w4, w4, lsr #1",
         "ubfx x20, x20, #30, #1",
         "bfi w24, w20, #28, #1",
-        "msr nzcv, x24"
+        "msr nzcv, x24",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rcr rax, cl": {

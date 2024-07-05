@@ -1688,16 +1688,18 @@
       ]
     },
     "rol eax, cl": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP2 0xd3 /0",
       "ExpectedArm64ASM": [
         "and x20, x5, #0x1f",
-        "cbz x20, #+0x18",
+        "cbz x20, #+0x1c",
         "neg w20, w5",
         "ror w4, w4, w20",
         "rmif x4, #63, #nzCv",
         "eor w20, w4, w4, lsr #31",
-        "rmif x20, #0, #nzcV"
+        "rmif x20, #0, #nzcV",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rol rax, cl": {
@@ -1729,15 +1731,17 @@
       ]
     },
     "ror eax, cl": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd3 /1",
       "ExpectedArm64ASM": [
         "and x20, x5, #0x1f",
-        "cbz x20, #+0x14",
+        "cbz x20, #+0x18",
         "ror w4, w4, w5",
         "rmif x4, #30, #nzCv",
         "eor w20, w4, w4, lsr #1",
-        "rmif x20, #30, #nzcV"
+        "rmif x20, #30, #nzcV",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "ror rax, cl": {
@@ -1781,11 +1785,11 @@
       ]
     },
     "rcl eax, cl": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 16,
       "Comment": "GROUP2 0xd3 /2",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x34",
+        "cbz x20, #+0x38",
         "lsl w20, w4, w5",
         "cset w21, hs",
         "neg w22, w5",
@@ -1797,7 +1801,9 @@
         "lsl w21, w21, w23",
         "orr w4, w20, w21",
         "eor w20, w4, w22, lsl #31",
-        "rmif x20, #31, #nzcV"
+        "rmif x20, #31, #nzcV",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rcl rax, cl": {
@@ -1841,11 +1847,11 @@
       ]
     },
     "rcr eax, cl": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 16,
       "Comment": "GROUP2 0xd3 /3",
       "ExpectedArm64ASM": [
         "and w20, w5, #0x1f",
-        "cbz x20, #+0x34",
+        "cbz x20, #+0x38",
         "lsr w20, w4, w5",
         "cset w21, hs",
         "neg w22, w5",
@@ -1857,7 +1863,9 @@
         "lsl w21, w21, w22",
         "orr w4, w20, w21",
         "eor w20, w4, w4, lsr #1",
-        "rmif x20, #30, #nzcV"
+        "rmif x20, #30, #nzcV",
+        "b #+0x8",
+        "mov w4, w4"
       ]
     },
     "rcr rax, cl": {
