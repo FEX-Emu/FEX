@@ -452,9 +452,8 @@ struct FEX_PACKED X80SoftFloat {
 
   operator int16_t() const {
     auto rv = extF80_to_i32(*this, softfloat_roundingMode, false);
-    if (rv > INT16_MAX) {
-      return INT16_MAX;
-    } else if (rv < INT16_MIN) {
+    if (rv > INT16_MAX || rv < INT16_MIN) {
+      ///< Indefinite value for 16-bit conversions.
       return INT16_MIN;
     } else {
       return rv;
