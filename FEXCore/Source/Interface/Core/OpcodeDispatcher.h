@@ -89,10 +89,6 @@ class OpDispatchBuilder final : public IREmitter {
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
-    TYPE_LSHLI,
-    TYPE_LSHRI,
-    TYPE_LSHRDI,
-    TYPE_ASHRI,
   };
 
   Ref GetNewJumpBlock(uint64_t RIP) {
@@ -2189,95 +2185,6 @@ private:
   void CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result);
   void CalculateFlags_RDRAND(Ref Src);
   /**  @} */
-
-  /**
-   * @name These functions generated deferred RFLAGs tracking.
-   *
-   * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
-   * @{ */
-  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, uint64_t Shift) {
-    // No flags changed if shift is zero.
-    if (Shift == 0) {
-      return;
-    }
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_LSHLI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSrcImmediate =
-            {
-              .Src1 = Src1,
-              .Imm = Shift,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, uint64_t Shift) {
-    // No flags changed if shift is zero.
-    if (Shift == 0) {
-      return;
-    }
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_ASHRI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSrcImmediate =
-            {
-              .Src1 = Src1,
-              .Imm = Shift,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, uint64_t Shift) {
-    // No flags changed if shift is zero.
-    if (Shift == 0) {
-      return;
-    }
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_LSHRI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSrcImmediate =
-            {
-              .Src1 = Src1,
-              .Imm = Shift,
-            },
-        },
-    };
-  }
-
-  void GenerateFlags_ShiftRightDoubleImmediate(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, uint64_t Shift) {
-    // No flags changed if shift is zero.
-    if (Shift == 0) {
-      return;
-    }
-
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_LSHRDI,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .OneSrcImmediate =
-            {
-              .Src1 = Src1,
-              .Imm = Shift,
-            },
-        },
-    };
-  }
 
   Ref AndConst(FEXCore::IR::OpSize Size, Ref Node, uint64_t Const) {
     uint64_t NodeConst;

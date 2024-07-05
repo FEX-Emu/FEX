@@ -1482,7 +1482,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   Ref Src = _Constant(Size, Shift);
   Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  GenerateFlags_ShiftLeftImmediate(Op, Result, Dest, Shift);
+  CalculateFlags_ShiftLeftImmediate(GetSrcSize(Op), Result, Dest, Shift);
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -1506,7 +1506,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   Ref Src = _Constant(Size, Shift);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  GenerateFlags_ShiftRightImmediate(Op, ALUOp, Dest, Shift);
+  CalculateFlags_ShiftRightImmediate(GetSrcSize(Op), ALUOp, Dest, Shift);
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, ALUOp, -1);
 }
@@ -1575,7 +1575,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
-    GenerateFlags_ShiftLeftImmediate(Op, Res, Dest, Shift);
+    CalculateFlags_ShiftLeftImmediate(GetSrcSize(Op), Res, Dest, Shift);
     CalculateDeferredFlags();
     StoreResult(GPRClass, Op, Res, -1);
   } else if (Shift == 0 && Size == 32) {
@@ -1641,7 +1641,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
 
     StoreResult(GPRClass, Op, Res, -1);
-    GenerateFlags_ShiftRightDoubleImmediate(Op, Res, Dest, Shift);
+    CalculateFlags_ShiftRightDoubleImmediate(GetSrcSize(Op), Res, Dest, Shift);
   } else if (Shift == 0 && Size == 32) {
     // Ensure Zext still occurs
     StoreResult(GPRClass, Op, Dest, -1);
@@ -1667,7 +1667,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
     uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
     Ref Result = _Ashr(IR::SizeToOpSize(OpSize), Dest, _Constant(Shift));
 
-    GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, Shift);
+    CalculateFlags_SignShiftRightImmediate(GetSrcSize(Op), Result, Dest, Shift);
     CalculateDeferredFlags();
     StoreResult(GPRClass, Op, Result, -1);
   } else {

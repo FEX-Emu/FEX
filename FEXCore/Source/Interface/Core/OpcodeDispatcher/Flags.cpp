@@ -271,22 +271,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   }
 
   switch (CurrentDeferredFlags.Type) {
-  case FlagsGenerationType::TYPE_LSHLI:
-    CalculateFlags_ShiftLeftImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                      CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_LSHRI:
-    CalculateFlags_ShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                       CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_LSHRDI:
-    CalculateFlags_ShiftRightDoubleImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                             CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_ASHRI:
-    CalculateFlags_SignShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                           CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
   case FlagsGenerationType::TYPE_NONE:
   default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
   }
