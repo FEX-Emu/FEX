@@ -2224,9 +2224,10 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
       Tmp = _Bfi(OpSize::i64Bit, 17, 34, Tmp, Tmp);
     }
 
-    // Entire bitfield has been setup
-    // Just extract the 8 or 16bits we need
-    Ref Res = _Lshr(OpSize::i32Bit, Tmp, Src);
+    // Entire bitfield has been setup. Just extract the 8 or 16bits we need.
+    // 64-bit shift used because we want to rotate in our cascaded upper bits
+    // rather than zeroes.
+    Ref Res = _Lshr(OpSize::i64Bit, Tmp, Src);
 
     StoreResult(GPRClass, Op, Res, -1);
 
