@@ -89,7 +89,6 @@ class OpDispatchBuilder final : public IREmitter {
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
-    TYPE_LOGICAL,
     TYPE_LSHLI,
     TYPE_LSHRI,
     TYPE_LSHRDI,
@@ -2196,22 +2195,6 @@ private:
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
    * @{ */
-  void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, Ref Src2) {
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_LOGICAL,
-      .SrcSize = GetSrcSize(Op),
-      .Res = Res,
-      .Sources =
-        {
-          .TwoSource =
-            {
-              .Src1 = Src1,
-              .Src2 = Src2,
-            },
-        },
-    };
-  }
-
   void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref Src1, uint64_t Shift) {
     // No flags changed if shift is zero.
     if (Shift == 0) {

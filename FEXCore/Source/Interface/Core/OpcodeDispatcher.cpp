@@ -1747,7 +1747,7 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
   StoreResult(GPRClass, Op, Dest, -1);
-  GenerateFlags_Logical(Op, Dest, Src1, Src2);
+  CalculateFlags_Logical(GetSrcSize(Op), Dest, Src1, Src2);
 }
 
 void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
@@ -4593,7 +4593,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
 
     auto Result = _Constant(0);
     StoreResult(GPRClass, Op, Result, -1);
-    GenerateFlags_Logical(Op, Result, Result, Result);
+    CalculateFlags_Logical(GetSrcSize(Op), Result, Result, Result);
     return;
   }
 
@@ -4630,7 +4630,7 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   case FEXCore::IR::IROps::OP_SUB: Result = CalculateFlags_SUB(Size, Dest, Src); break;
   case FEXCore::IR::IROps::OP_XOR:
   case FEXCore::IR::IROps::OP_OR: {
-    GenerateFlags_Logical(Op, Result, Dest, Src);
+    CalculateFlags_Logical(Size, Result, Dest, Src);
     break;
   }
   case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {

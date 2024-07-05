@@ -271,10 +271,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   }
 
   switch (CurrentDeferredFlags.Type) {
-  case FlagsGenerationType::TYPE_LOGICAL:
-    CalculateFlags_Logical(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.TwoSource.Src1,
-                           CurrentDeferredFlags.Sources.TwoSource.Src2);
-    break;
   case FlagsGenerationType::TYPE_LSHLI:
     CalculateFlags_ShiftLeftImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
                                       CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
