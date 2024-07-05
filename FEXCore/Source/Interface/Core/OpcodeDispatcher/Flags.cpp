@@ -271,10 +271,6 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   }
 
   switch (CurrentDeferredFlags.Type) {
-  case FlagsGenerationType::TYPE_SUB:
-    CalculateFlags_SUB(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
-                       CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2, CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
-    break;
   case FlagsGenerationType::TYPE_MUL:
     CalculateFlags_MUL(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
     break;

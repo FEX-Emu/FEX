@@ -89,7 +89,6 @@ class OpDispatchBuilder final : public IREmitter {
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
-    TYPE_SUB,
     TYPE_MUL,
     TYPE_UMUL,
     TYPE_LOGICAL,
@@ -2207,26 +2206,6 @@ private:
    *
    * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
    * @{ */
-  void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Ref Src1, Ref Src2, bool UpdateCF = true) {
-    if (!UpdateCF) {
-      // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
-      CalculateDeferredFlags();
-    }
-    CurrentDeferredFlags = DeferredFlagData {
-      .Type = FlagsGenerationType::TYPE_SUB,
-      .SrcSize = GetSrcSize(Op),
-      .Sources =
-        {
-          .TwoSrcImmediate =
-            {
-              .Src1 = Src1,
-              .Src2 = Src2,
-              .UpdateCF = UpdateCF,
-            },
-        },
-    };
-  }
-
   void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, Ref Res, Ref High) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_MUL,
