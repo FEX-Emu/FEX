@@ -508,12 +508,13 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref U
 
   // CF
   {
-    // Extract the last bit shifted in to CF
+    // Extract the last bit shifted in to CF. Shift is already masked, but for
+    // 8/16-bit it might be >= SrcSizeBits, in which case CF is cleared. There's
+    // nothing to do in that case since we already cleared CF above.
     auto SrcSizeBits = SrcSize * 8;
-    if (SrcSizeBits < Shift) {
-      Shift &= (SrcSizeBits - 1);
+    if (Shift < SrcSizeBits) {
+      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, SrcSizeBits - Shift, true);
     }
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, SrcSizeBits - Shift, true);
   }
 
   CalculatePF(UnmaskedRes);
