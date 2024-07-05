@@ -2607,7 +2607,7 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   }
 
   StoreResult(GPRClass, Op, Dest, -1);
-  GenerateFlags_MUL(Op, Dest, ResultHigh);
+  CalculateFlags_MUL(Size, Dest, ResultHigh);
 }
 
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
@@ -2645,7 +2645,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   }
 
   StoreResult(GPRClass, Op, Dest, -1);
-  GenerateFlags_MUL(Op, Dest, ResultHigh);
+  CalculateFlags_MUL(Size, Dest, ResultHigh);
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
@@ -2696,7 +2696,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
 
-  GenerateFlags_MUL(Op, Result, ResultHigh);
+  CalculateFlags_MUL(Size, Result, ResultHigh);
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
@@ -2742,7 +2742,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
 
-  GenerateFlags_UMUL(Op, ResultHigh);
+  CalculateFlags_UMUL(ResultHigh);
 }
 
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
