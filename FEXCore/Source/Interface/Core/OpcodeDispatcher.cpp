@@ -4002,8 +4002,6 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
   auto Block = GetNewJumpBlock(RIP);
   SetCurrentCodeBlock(Block);
   IRHeader.first->Blocks = Block->Wrapped(DualListData.ListBegin());
-
-  LOGMAN_THROW_A_FMT(IsDeferredFlagsStored(), "Something failed to calculate flags and now we began with invalid state");
 }
 
 void OpDispatchBuilder::Finalize() {

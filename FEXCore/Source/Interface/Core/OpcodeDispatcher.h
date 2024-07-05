@@ -87,10 +87,6 @@ class OpDispatchBuilder final : public IREmitter {
   friend class FEXCore::IR::PassManager;
 
 public:
-  enum class FlagsGenerationType : uint8_t {
-    TYPE_NONE,
-  };
-
   Ref GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
     LOGMAN_THROW_A_FMT(it != JumpTargets.end(), "Couldn't find block generated for 0x{:x}", RIP);
@@ -194,10 +190,6 @@ public:
         Jump(it->second.BlockEntry);
         return true;
       }
-    }
-
-    if (LastOp) {
-      LOGMAN_THROW_A_FMT(IsDeferredFlagsStored(), "FinishOp: Deferred flags weren't generated at end of block");
     }
 
     BlockSetRIP = false;
@@ -1992,96 +1984,16 @@ private:
   Ref SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
 
   /**
-   * @name Deferred RFLAG calculation and generation.
-   *
-   * Only handles the six flags that ALU ops typically generate.
-   * Specifically: CF, PF, AF, ZF, SF, OF
-   *  These six flags are heavily generated through basic ALU ops and balloon the IR if not early eliminated.
-   *  This tracking structure only tracks single blocks and requires RFLAGS calculation at block-ending ops.
-   *  Some flags generating ALU ops only touch part of the registers, In these cases it will do calculation up front.
-   *  This means we still need our IR passes to eliminate all redundant flags accesses but this light OpcodeDispatcher optimization
-   *  doesn't take it to that level.
-   * @{ */
-
-  // Deferred flag generation tracking structure.
-  // This structure is used to track RFlags from ALU ops for invalidation.
-  //
-  // Future ideas: Use an invalidation mask to do partial generation of flags.
-  // Particularly for the instructions that don't do the full set of flags calculations.
-  // These instructions currently calculate the deferred RFLAGS immediately then overwrite rflags state.
-  // RCLSE IR pass will catch and remove redundant rflags stores like this currently.
-  struct DeferredFlagData {
-    // What type of flags to generate
-    FlagsGenerationType Type {FlagsGenerationType::TYPE_NONE};
-
-    // Source size of the op
-    uint8_t SrcSize;
-
-    // Every flag generation type has a result
-    Ref Res {};
-
-    union {
-      // UMUL, BEXTR, BLSI, POPCOUNT, ZCNT, RDRAND
-      struct {
-      } NoSource;
-
-      // MUL, BLSR, BLSMSKB, BZHI
-      struct {
-        Ref Src1;
-      } OneSource;
-
-      // Logical
-      struct {
-        Ref Src1;
-        Ref Src2;
-      } TwoSource;
-
-      // LSHLI, LSHRI, ASHRI
-      struct {
-        Ref Src1;
-        uint64_t Imm;
-      } OneSrcImmediate;
-
-      // ADD, SUB
-      struct {
-        Ref Src1;
-        Ref Src2;
-
-        bool UpdateCF;
-      } TwoSrcImmediate;
-    } Sources {};
-  };
-
-  DeferredFlagData CurrentDeferredFlags {};
-
-  /**
-   * @brief Takes the current deferred flag state and stores the result in to RFLAGS.
-   *
-   * Once executed there will no longer be any deferred flag state and RFLAGS will have the correct flags in it.
-   * Necessary to do when leaving a IR block, or if an instruction is doing a partial overwrite of the flags.
+   * @brief Flushes NZCV. Mostly vestigial.
    */
-  void CalculateDeferredFlags(uint32_t FlagsToCalculateMask = ~0U);
+  void CalculateDeferredFlags();
 
   /**
-   * @brief Invalidates the current deferred flags structure.
-   *
-   * If the emulated instruction is going to overwrite all of the flags but isn't tracked using the deferred flag system
-   * then use this function to stop tracking the current active deferred flags.
+   * @brief Invalidates NZCV. Mostly vestigial.
    */
   void InvalidateDeferredFlags() {
-    CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
-
     // No NZCV bits will be set, they are all invalid.
     PossiblySetNZCVBits = 0;
-  }
-
-  /**
-   * @brief Checks if there is any deferred flag state active.
-   *
-   * @return True if RFLAGs contains the flags. False if deferred flags is tracking the data.
-   */
-  bool IsDeferredFlagsStored() const {
-    return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
   }
 
   void ZeroShiftResult(FEXCore::X86Tables::DecodedOp Op) {
@@ -2275,14 +2187,3 @@ private:
 void InstallOpcodeHandlers(Context::OperatingMode Mode);
 
 } // namespace FEXCore::IR
-template<>
-struct fmt::formatter<FEXCore::IR::OpDispatchBuilder::FlagsGenerationType> : fmt::formatter<int> {
-  using Base = fmt::formatter<int>;
-
-  // Pass-through the underlying value, so IDs can
-  // be formatted like any integral value.
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::OpDispatchBuilder::FlagsGenerationType& ID, FormatContext& ctx) {
-    return Base::format(static_cast<int>(ID), ctx);
-  }
-};

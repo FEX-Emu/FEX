@@ -258,26 +258,7 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
-  if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
-    // Nothing to do
-    if (NZCVDirty && CachedNZCV) {
-      _StoreNZCV(CachedNZCV);
-    }
-
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    return;
-  }
-
-  switch (CurrentDeferredFlags.Type) {
-  case FlagsGenerationType::TYPE_NONE:
-  default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
-  }
-
-  // Done calculating
-  CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
-
+void OpDispatchBuilder::CalculateDeferredFlags() {
   if (NZCVDirty && CachedNZCV) {
     _StoreNZCV(CachedNZCV);
   }
