@@ -630,8 +630,12 @@ DEF_OP(ShiftFlags) {
     mov(ARMEmitter::Size::i64Bit, PFTemp, PFInput);
   }
 
+  // We need to mask the source before comparing it. We don't just skip flag
+  // updates for Src2=0 but anything that masks to zero.
+  and_(ARMEmitter::Size::i32Bit, TMP1, Src2, OpSize == 8 ? 0x3f : 0x1f);
+
   ARMEmitter::SingleUseForwardLabel Done;
-  cbz(EmitSize, Src2, &Done);
+  cbz(EmitSize, TMP1, &Done);
   {
     // PF/SF/ZF/OF
     if (OpSize >= 4) {
