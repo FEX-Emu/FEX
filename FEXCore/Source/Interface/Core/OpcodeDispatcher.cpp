@@ -1174,7 +1174,7 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-  GenerateFlags_SUB(Op, Dest, Src);
+  CalculateFlags_SUB(GetSrcSize(Op), Dest, Src);
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
@@ -3331,7 +3331,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
-    GenerateFlags_SUB(Op, Src2, Src1);
+    CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
 
     auto PtrDir = LoadDir(Size);
 
@@ -3420,7 +3420,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       // Grab the sources from the last iteration so we can set flags.
       auto Src1 = _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
       auto Src2 = _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
-      GenerateFlags_SUB(Op, Src2, Src1);
+      CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
     }
     auto Jump_ = Jump();
 
@@ -3531,7 +3531,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-    GenerateFlags_SUB(Op, Src1, Src2);
+    CalculateFlags_SUB(GetSrcSize(Op), Src1, Src2);
 
     // Offset the pointer
     Ref TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
@@ -3569,7 +3569,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
         auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-        GenerateFlags_SUB(Op, Src1, Src2);
+        CalculateFlags_SUB(GetSrcSize(Op), Src1, Src2);
 
         // Calculate flags early.
         CalculateDeferredFlags();
@@ -3870,7 +3870,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     }
 
     // Compare RAX with the destination, setting flags accordingly.
-    GenerateFlags_SUB(Op, Src3Lower, Src1Lower);
+    CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, Src1Lower);
     CalculateDeferredFlags();
 
     if (!Trivial) {
@@ -3924,7 +3924,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       Size = 8;
     }
 
-    GenerateFlags_SUB(Op, Src3Lower, CASResult);
+    CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, CASResult);
     CalculateDeferredFlags();
 
     // RAX gets the result of the CAS op
