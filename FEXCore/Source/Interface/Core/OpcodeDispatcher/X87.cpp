@@ -1021,26 +1021,14 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
-  Ref Result = _VExtractToGPR(16, 8, a, 1);
+  auto Tag = GetX87ValidTag(top);
 
-  // Extract the sign bit
-  Result = _Bfe(OpSize::i64Bit, 1, 15, Result);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
-
-  // Claim this is a normal number
-  // We don't support anything else
-  auto TopValid = GetX87ValidTag(top);
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_NEQ, TopValid, OneConst, OneConst, ZeroConst);
-
-  auto C2 = TopValid;
-  auto C0 = C3; // Mirror C3 until something other than zero is supported
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  ///< Flags return in C3:C2:C1:C0 format
+  Ref Flags = _F80XAM(Tag, a);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Bfe(OpSize::i32Bit, 1, 0, Flags));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Bfe(OpSize::i32Bit, 1, 1, Flags));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Bfe(OpSize::i32Bit, 1, 2, Flags));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Bfe(OpSize::i32Bit, 1, 3, Flags));
 }
 
 void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {

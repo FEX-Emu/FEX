@@ -2987,6 +2987,10 @@
         ],
         "X87": true,
         "HasSideEffects": true
+      },
+      "GPR = F80XAM GPR:$TopValid, FPR:$X80Src": {
+        "X87": true,
+        "DestSize": "4"
       }
     },
     "Backend": {

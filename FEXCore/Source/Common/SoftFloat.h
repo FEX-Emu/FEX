@@ -548,7 +548,7 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   static bool IsNan(const X80SoftFloat& lhs) {
-    return (lhs.Exponent == 0x7FFF) && (lhs.Significand & IntegerBit) && (lhs.Significand & Bottom62Significand);
+    return (lhs.Exponent == 0x7FFF) && (lhs.Significand & Bottom62Significand);
   }
 
   static bool SignBit(const X80SoftFloat& lhs) {

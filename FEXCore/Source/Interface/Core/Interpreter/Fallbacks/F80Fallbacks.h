@@ -412,4 +412,55 @@ struct OpHandlers<IR::OP_F80BCDLOAD> {
   }
 };
 
+template<>
+struct OpHandlers<IR::OP_F80XAM> {
+  FEXCORE_PRESERVE_ALL_ATTR static uint64_t handle(uint32_t TopValid, X80SoftFloat Src) {
+    // Return flag results in the order of C3:C2:C1:C0
+    // ✅0b0000: +Unsupported format
+    // ✅0b0001: +NaN
+    // ✅0b0010: -Unsupported format
+    // ✅0b0011: -NaN
+    // ✅0b0100: +Normal
+    // ✅0b0101: +Infinity
+    // ✅0b0110: -Normal
+    // ✅0b0111: -Infinity
+    // ✅0b1000: +0
+    // ✅0b1001: +empty
+    // ✅0b1010: -0
+    // ✅0b1011: -empty
+    // ✅0b1100: +denormal
+    // ✅0b1110: -denormal
+    // 0b1111: ?????????
+
+    ///< Sign of what is in the register is always passed through.
+    uint32_t Sign = X80SoftFloat::SignBit(Src);
+
+    uint32_t Result {};
+    if (!TopValid) {
+      ///< Top invalid takes priority.
+      Result = (1 << 3) | 1;
+    } else if (Src.Exponent == 0x7FFF) {
+      if (Src.Significand == (1ULL << 63)) {
+        ///< Inf
+        Result = (1 << 2) | 1;
+      } else if (Src.Significand & (1ULL << 63)) {
+        ///< NaN
+        Result = 1;
+      }
+    } else if (Src.Exponent == 0) {
+      if (Src.Significand == 0) {
+        ///< Zero
+        Result = (1 << 3);
+      } else {
+        ///< Denormal
+        Result = (1 << 3) | (1 << 2);
+      }
+    } else if (Src.Significand & (1ULL << 63)) {
+      ///< Normal
+      Result = 1 << 2;
+    }
+    return Result | (Sign << 1);
+  }
+};
+
 } // namespace FEXCore::CPU

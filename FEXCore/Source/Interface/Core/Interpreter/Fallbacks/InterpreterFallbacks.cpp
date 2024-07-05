@@ -50,6 +50,7 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t* Info) {
   Info[Core::OPINDEX_F80XTRACT_SIG] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80XTRACT_SIG>::handle);
   Info[Core::OPINDEX_F80BCDSTORE] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80BCDSTORE>::handle);
   Info[Core::OPINDEX_F80BCDLOAD] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80BCDLOAD>::handle);
+  Info[Core::OPINDEX_F80XAM] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80XAM>::handle);
 
   // Binary
   Info[Core::OPINDEX_F80ADD] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80ADD>::handle);
@@ -126,10 +127,10 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     }
     case 4: {
       if (Op->Truncate) {
-        *Info = {FABI_I32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t, Core::OPINDEX_F80CVTINT_TRUNC4,
+        *Info = {FABI_I32_FCW_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t, Core::OPINDEX_F80CVTINT_TRUNC4,
                  SupportsPreserveAllABI};
       } else {
-        *Info = {FABI_I32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4, Core::OPINDEX_F80CVTINT_4, SupportsPreserveAllABI};
+        *Info = {FABI_I32_FCW_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4, Core::OPINDEX_F80CVTINT_4, SupportsPreserveAllABI};
       }
       return true;
     }
@@ -198,6 +199,10 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     COMMON_UNARY_X87_OP(XTRACT_SIG)
     COMMON_UNARY_X87_OP(BCDSTORE)
     COMMON_UNARY_X87_OP(BCDLOAD)
+  case IR::OP_F80XAM: {
+    *Info = {FABI_I32_I32_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80XAM>::handle, Core::OPINDEX_F80XAM, SupportsPreserveAllABI};
+    return true;
+  }
 
     // Binary
     COMMON_BINARY_X87_OP(ADD)
