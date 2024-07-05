@@ -646,19 +646,22 @@ DEF_OP(ShiftFlags) {
       mov(ARMEmitter::Size::i64Bit, PFTemp, Dst);
     }
 
+    auto CFWord = TMP1;
+    unsigned CFBit = 0;
+
     // Extract the last bit shifted in to CF
     if (Op->Shift == IR::ShiftType::LSL) {
       if (OpSize >= 4) {
-        neg(EmitSize, TMP1, Src2);
+        neg(EmitSize, CFWord, Src2);
+        lsrv(EmitSize, CFWord, Src1, CFWord);
       } else {
-        mov(EmitSize, TMP1, OpSize * 8);
-        sub(EmitSize, TMP1, TMP1, Src2);
+        CFWord = Dst.X();
+        CFBit = (OpSize * 8);
       }
     } else {
-      sub(ARMEmitter::Size::i64Bit, TMP1, Src2, 1);
+      sub(ARMEmitter::Size::i64Bit, CFWord, Src2, 1);
+      lsrv(EmitSize, CFWord, Src1, CFWord);
     }
-
-    lsrv(EmitSize, TMP1, Src1, TMP1);
 
     bool SetOF = Op->Shift != IR::ShiftType::ASR;
     if (SetOF) {
@@ -668,14 +671,20 @@ DEF_OP(ShiftFlags) {
     }
 
     if (CTX->HostFeatures.SupportsFlagM) {
-      rmif(TMP1, 63, (1 << 1) /* C */);
+      rmif(CFWord, (CFBit - 1) % 64, (1 << 1) /* C */);
 
       if (SetOF) {
         rmif(TMP3, OpSize * 8 - 1, (1 << 0) /* V */);
       }
     } else {
       mrs(TMP2, ARMEmitter::SystemRegister::NZCV);
-      bfi(ARMEmitter::Size::i32Bit, TMP2, TMP1, 29 /* C */, 1);
+
+      if (CFBit != 0) {
+        lsr(ARMEmitter::Size::i64Bit, TMP1, CFWord, CFBit);
+        CFWord = TMP1;
+      }
+
+      bfi(ARMEmitter::Size::i32Bit, TMP2, CFWord, 29 /* C */, 1);
 
       if (SetOF) {
         lsr(EmitSize, TMP3, TMP3, OpSize * 8 - 1);
