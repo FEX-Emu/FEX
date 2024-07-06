@@ -2683,6 +2683,46 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   return Result;
 }
 
+OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherQPSImpl(Ref Dest, Ref Mask, RefVSIB VSIB) {
+
+  ///< BaseAddr doesn't need to exist, calculate that here.
+  Ref BaseAddr = VSIB.BaseAddr;
+  if (BaseAddr && VSIB.Displacement) {
+    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, _Constant(VSIB.Displacement));
+  } else if (VSIB.Displacement) {
+    BaseAddr = _Constant(VSIB.Displacement);
+  } else if (!BaseAddr) {
+    BaseAddr = Invalid();
+  }
+
+  bool NeedsSVEScale = (VSIB.Scale == 2 || VSIB.Scale == 8) || (BaseAddr == Invalid() && VSIB.Scale != 1);
+
+  if (CTX->HostFeatures.SupportsSVE128 && NeedsSVEScale) {
+    // SVE gather instructions don't support scaling their vector elements by anything other than 1 or the address element size.
+    // Pre-scale 64-bit addresses in the case that scale doesn't match in-order to hit SVE code paths more frequently.
+    // Only hit this path if the host supports SVE. Otherwise it's a degradation for the ASIMD codepath.
+    VSIB.Low = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+    if (VSIB.High != Invalid()) {
+      VSIB.High = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.High, FEXCore::ilog2(VSIB.Scale));
+    }
+    ///< Set the scale to one now that it has been prescaled.
+    VSIB.Scale = 1;
+  }
+
+  RefPair Result {};
+
+  ///< Calculate the low-half.
+  Result.Low = _VLoadVectorGatherMaskedQPS(OpSize::i128Bit, OpSize::i32Bit, Dest, Mask, BaseAddr, VSIB.Low, VSIB.High, VSIB.Scale);
+  Result.High = LoadZeroVector(OpSize::i128Bit);
+  if (VSIB.High == Invalid()) {
+    // Special case for only loading two floats.
+    // The upper 64-bits of the lower lane also gets zero.
+    Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, Result.High);
+  }
+
+  return Result;
+}
+
 template<OpSize AddrElementSize>
 void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 
@@ -2703,7 +2743,11 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
+  if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+    Result = AVX128_VPGatherQPSImpl(Dest.Low, Mask.Low, VSIB);
+  } else {
+    Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
+  }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 
   ///< Assume non-faulting behaviour and clear the mask register.
