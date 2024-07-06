@@ -2603,6 +2603,19 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
     BaseAddr = Invalid();
   }
 
+  if (ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i64Bit && (VSIB.Scale == 2 || VSIB.Scale == 4) &&
+      CTX->HostFeatures.SupportsSVE128) {
+    // SVE gather instructions don't support scaling their vector elements by anything other than 1 or the address element size.
+    // Pre-scale 64-bit addresses in the case that scale doesn't match in-order to hit SVE code paths more frequently.
+    // Only hit this path if the host supports SVE. Otherwise it's a degradation for the ASIMD codepath.
+    VSIB.Low = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+    if (!Is128Bit) {
+      VSIB.High = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.High, FEXCore::ilog2(VSIB.Scale));
+    }
+    ///< Set the scale to one now that it has been prescaled.
+    VSIB.Scale = 1;
+  }
+
   RefPair Result {};
   ///< Calculate the low-half.
   Result.Low = _VLoadVectorGatherMasked(OpSize::i128Bit, ElementLoadSize, Dest.Low, Mask.Low, BaseAddr, VSIB.Low, VSIB.High,
