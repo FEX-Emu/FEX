@@ -940,6 +940,117 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
+void Arm64JITCore::Emulate128BitGather(
+  size_t Size, size_t ElementSize, ARMEmitter::VRegister Dst, ARMEmitter::VRegister IncomingDst,
+  std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
+  ARMEmitter::VRegister MaskReg, size_t VectorIndexSize, size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale) {
+
+  const auto PerformSMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+    switch (ElementSize) {
+    case 1: smov<ARMEmitter::SubRegSize::i8Bit>(Dst.X(), Vector, index); break;
+    case 2: smov<ARMEmitter::SubRegSize::i16Bit>(Dst.X(), Vector, index); break;
+    case 4: smov<ARMEmitter::SubRegSize::i32Bit>(Dst.X(), Vector, index); break;
+    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst.X(), Vector, index); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
+    }
+  };
+
+  const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+    switch (ElementSize) {
+    case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+    case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+    case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
+    }
+  };
+
+  // FEX needs to use a temporary destination vector register in a couple of instances.
+  // When Dst overlaps MaskReg, VectorIndexLow, or VectorIndexHigh
+  // Due to x86 gather instruction limitations, it is highly likely that a destination temporary isn't required.
+  const bool NeedsDestTmp = Dst == MaskReg || Dst == VectorIndexLow || (VectorIndexHigh.has_value() && Dst == *VectorIndexHigh);
+
+  // If the incoming destination isn't the destination then we need to move.
+  const bool NeedsIncomingDestMove = Dst != IncomingDst || NeedsDestTmp;
+
+  ///< Adventurers beware, emulated ASIMD style gather masked load operation.
+  // Number of elements to load is calculated by the number of index elements available.
+  size_t NumAddrElements = (VectorIndexHigh.has_value() ? 32 : 16) / VectorIndexSize;
+  // The number of elements is clamped by the resulting register size.
+  size_t NumDataElements = std::min<size_t>(Size / ElementSize, NumAddrElements);
+
+  size_t IndexElementsSizeBytes = NumAddrElements * VectorIndexSize;
+  if (IndexElementsSizeBytes > 16) {
+    // We must have a high register in this case.
+    LOGMAN_THROW_A_FMT(VectorIndexHigh.has_value(), "Need High vector index register!");
+  }
+
+  auto ResultReg = Dst;
+  if (NeedsDestTmp) {
+    // Use VTMP1 as the temporary destination
+    ResultReg = VTMP1;
+  }
+  auto WorkingReg = TMP1;
+  auto TempMemReg = TMP2;
+  const uint64_t ElementSizeInBits = ElementSize * 8;
+
+  if (NeedsIncomingDestMove) {
+    mov(ResultReg.Q(), IncomingDst.Q());
+  }
+
+  for (size_t i = DataElementOffsetStart, IndexElement = IndexElementOffsetStart; i < NumDataElements; ++i, ++IndexElement) {
+    ARMEmitter::SingleUseForwardLabel Skip {};
+    // Extract mask element
+    PerformMove(ElementSize, WorkingReg, MaskReg, i);
+
+    // Skip if the mask's sign bit isn't set
+    tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+
+    // Extract Index Element
+    if ((IndexElement * VectorIndexSize) >= 16) {
+      // Fetch from the high index register.
+      PerformSMove(VectorIndexSize, WorkingReg, *VectorIndexHigh, IndexElement - (16 / VectorIndexSize));
+    } else {
+      // Fetch from the low index register.
+      PerformSMove(VectorIndexSize, WorkingReg, VectorIndexLow, IndexElement);
+    }
+
+    // Calculate memory position for this gather load
+    if (BaseAddr.has_value()) {
+      if (VectorIndexSize == 4) {
+        add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
+      } else {
+        add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
+      }
+    } else {
+      ///< In this case we have no base address, All addresses come from the vector register itself
+      if (VectorIndexSize == 4) {
+        // Sign extend and shift in to the 64-bit register
+        sbfiz(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale), 32);
+      } else {
+        lsl(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale));
+      }
+    }
+
+    // Now that the address is calculated. Do the load.
+    switch (ElementSize) {
+    case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case 16: ldr(ResultReg.Q(), TempMemReg, 0); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); FEX_UNREACHABLE;
+    }
+
+    Bind(&Skip);
+  }
+
+  if (NeedsDestTmp) {
+    // Move result.
+    mov(Dst.Q(), ResultReg.Q());
+  }
+}
+
 DEF_OP(VLoadVectorGatherMasked) {
   const auto Op = IROp->C<IR::IROp_VLoadVectorGatherMasked>();
   const auto OpSize = IROp->Size;
@@ -977,31 +1088,11 @@ DEF_OP(VLoadVectorGatherMasked) {
 
   ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
   const bool SupportsSVELoad = (HostSupportsSVE128 || HostSupportsSVE256) && (OffsetScale == 1 || OffsetScale == VectorIndexSize) &&
-                               (VectorIndexSize == IROp->ElementSize);
-
-  const auto PerformSMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
-    switch (ElementSize) {
-    case 1: smov<ARMEmitter::SubRegSize::i8Bit>(Dst.X(), Vector, index); break;
-    case 2: smov<ARMEmitter::SubRegSize::i16Bit>(Dst.X(), Vector, index); break;
-    case 4: smov<ARMEmitter::SubRegSize::i32Bit>(Dst.X(), Vector, index); break;
-    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst.X(), Vector, index); break;
-    default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
-    }
-  };
-
-  const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
-    switch (ElementSize) {
-    case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
-    case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
-    case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
-    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
-    default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
-    }
-  };
+                               VectorIndexSize == IROp->ElementSize;
 
   if (SupportsSVELoad) {
-    ARMEmitter::SVEModType ModType = ARMEmitter::SVEModType::MOD_NONE;
     uint8_t SVEScale = FEXCore::ilog2(OffsetScale);
+    ARMEmitter::SVEModType ModType = ARMEmitter::SVEModType::MOD_NONE;
     if (VectorIndexSize == 4) {
       ModType = ARMEmitter::SVEModType::MOD_SXTW;
     } else if (VectorIndexSize == 8 && OffsetScale != 1) {
@@ -1054,91 +1145,8 @@ DEF_OP(VLoadVectorGatherMasked) {
     sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
-
-    // FEX needs to use a temporary destination vector register in a couple of instances.
-    // When Dst overlaps MaskReg, VectorIndexLow, or VectorIndexHigh
-    // Due to x86 gather instruction limitations, it is highly likely that a destination temporary isn't required.
-    const bool NeedsDestTmp = Dst == MaskReg || Dst == VectorIndexLow || (VectorIndexHigh.has_value() && Dst == *VectorIndexHigh);
-
-    // If the incoming destination isn't the destination then we need to move.
-    const bool NeedsIncomingDestMove = Dst != IncomingDst || NeedsDestTmp;
-
-    ///< Adventurers beware, emulated ASIMD style gather masked load operation.
-    // Number of elements to load is calculated by the number of index elements available.
-    size_t NumAddrElements = (VectorIndexHigh.has_value() ? 32 : 16) / VectorIndexSize;
-    // The number of elements is clamped by the resulting register size.
-    size_t NumDataElements = std::min<size_t>(IROp->Size / IROp->ElementSize, NumAddrElements);
-
-    size_t IndexElementsSizeBytes = NumAddrElements * VectorIndexSize;
-    if (IndexElementsSizeBytes > 16) {
-      // We must have a high register in this case.
-      LOGMAN_THROW_A_FMT(VectorIndexHigh.has_value(), "Need High vector index register!");
-    }
-
-    auto ResultReg = Dst;
-    if (NeedsDestTmp) {
-      // Use VTMP1 as the temporary destination
-      ResultReg = VTMP1;
-    }
-    auto WorkingReg = TMP1;
-    auto TempMemReg = TMP2;
-    const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
-
-    if (NeedsIncomingDestMove) {
-      mov(ResultReg.Q(), IncomingDst.Q());
-    }
-
-    for (size_t i = DataElementOffsetStart, IndexElement = IndexElementOffsetStart; i < NumDataElements; ++i, ++IndexElement) {
-      ARMEmitter::SingleUseForwardLabel Skip {};
-      // Extract mask element
-      PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
-
-      // Skip if the mask's sign bit isn't set
-      tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
-
-      // Extract Index Element
-      if ((IndexElement * VectorIndexSize) >= 16) {
-        // Fetch from the high index register.
-        PerformSMove(VectorIndexSize, WorkingReg, *VectorIndexHigh, IndexElement - (16 / VectorIndexSize));
-      } else {
-        // Fetch from the low index register.
-        PerformSMove(VectorIndexSize, WorkingReg, VectorIndexLow, IndexElement);
-      }
-
-      // Calculate memory position for this gather load
-      if (BaseAddr.has_value()) {
-        if (VectorIndexSize == 4) {
-          add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
-        } else {
-          add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
-        }
-      } else {
-        ///< In this case we have no base address, All addresses come from the vector register itself
-        if (VectorIndexSize == 4) {
-          // Sign extend and shift in to the 64-bit register
-          sbfiz(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale), 32);
-        } else {
-          lsl(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale));
-        }
-      }
-
-      // Now that the address is calculated. Do the load.
-      switch (IROp->ElementSize) {
-      case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(ResultReg.Q(), i, TempMemReg); break;
-      case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(ResultReg.Q(), i, TempMemReg); break;
-      case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(ResultReg.Q(), i, TempMemReg); break;
-      case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(ResultReg.Q(), i, TempMemReg); break;
-      case 16: ldr(ResultReg.Q(), TempMemReg, 0); break;
-      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); FEX_UNREACHABLE;
-      }
-
-      Bind(&Skip);
-    }
-
-    if (NeedsDestTmp) {
-      // Move result.
-      mov(Dst.Q(), ResultReg.Q());
-    }
+    Emulate128BitGather(IROp->Size, IROp->ElementSize, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
+                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
   }
 }
 
