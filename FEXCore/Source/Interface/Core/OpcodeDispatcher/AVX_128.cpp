@@ -2588,8 +2588,8 @@ void OpDispatchBuilder::AVX128_VFMSUBADD(OpcodeArgs) {
   AVX128_VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
 }
 
-template<size_t AddrElementSize>
-OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, RefPair Dest, RefPair Mask, RefVSIB VSIB) {
+OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest,
+                                                                  RefPair Mask, RefVSIB VSIB) {
   LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2669,7 +2669,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   return Result;
 }
 
-template<size_t AddrElementSize>
+template<OpSize AddrElementSize>
 void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 
   const auto Size = GetDstSize(Op);
@@ -2683,7 +2683,7 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest, Mask, VSIB);
+  Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 
   ///< Assume non-faulting behaviour and clear the mask register.

@@ -5174,7 +5174,7 @@ OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedO
   };
 }
 
-template<size_t AddrElementSize>
+template<OpSize AddrElementSize>
 void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
 
@@ -5212,7 +5212,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
       VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
     }
 
-    auto Result128 = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest128, Mask128, VSIB128);
+    auto Result128 = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest128, Mask128, VSIB128);
     // The registers are current split, need to merge them.
     Result = _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Result128.Low, Result128.High);
   } else {
@@ -5253,7 +5253,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Src[1], Zero, Size, -1);
 }
 
-template void OpDispatchBuilder::VPGATHER<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPGATHER<8>(OpcodeArgs);
+template void OpDispatchBuilder::VPGATHER<OpSize::i32Bit>(OpcodeArgs);
+template void OpDispatchBuilder::VPGATHER<OpSize::i64Bit>(OpcodeArgs);
 
 } // namespace FEXCore::IR
