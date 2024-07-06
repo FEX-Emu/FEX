@@ -3165,6 +3165,48 @@ DEF_OP(VSXTL2) {
   }
 }
 
+DEF_OP(VSSHLL) {
+  const auto Op = IROp->C<IR::IROp_VSSHLL>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+  LOGMAN_THROW_A_FMT(BitShift < ((IROp->ElementSize >> 1) * 8), "Bitshift size too large for source element size: {} < {}", BitShift,
+                     (IROp->ElementSize >> 1) * 8);
+
+  if (Is256Bit) {
+    sunpklo(SubRegSize, Dst.Z(), Vector.Z());
+    lsl(SubRegSize, Dst.Z(), Dst.Z(), BitShift);
+  } else {
+    sshll(SubRegSize, Dst.D(), Vector.D(), BitShift);
+  }
+}
+
+DEF_OP(VSSHLL2) {
+  const auto Op = IROp->C<IR::IROp_VSSHLL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  const auto BitShift = Op->BitShift;
+  LOGMAN_THROW_A_FMT(BitShift < ((IROp->ElementSize >> 1) * 8), "Bitshift size too large for source element size: {} < {}", BitShift,
+                     (IROp->ElementSize >> 1) * 8);
+
+  if (Is256Bit) {
+    sunpkhi(SubRegSize, Dst.Z(), Vector.Z());
+    lsl(SubRegSize, Dst.Z(), Dst.Z(), BitShift);
+  } else {
+    sshll2(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+  }
+}
+
 DEF_OP(VUXTL) {
   const auto Op = IROp->C<IR::IROp_VUXTL>();
   const auto OpSize = IROp->Size;
