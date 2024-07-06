@@ -132,6 +132,22 @@
         "msr nzcv, x20"
       ]
     },
+    "vpgatherdd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": 8,
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mrs x20, nzcv",
+        "cmplt p0.s, p6/z, z18.s, #0",
+        "ld1w {z0.s}, p0/z, [x4, z17.s, sxtw]",
+        "mov z16.s, p0/m, z0.s",
+        "movi v18.2d, #0x0",
+        "str q18, [x28, #16]",
+        "str q18, [x28, #48]",
+        "msr nzcv, x20"
+      ]
+    },
     "vpgatherdd xmm0, [xmm1*2 + rax], xmm2": {
       "ExpectedInstructionCount": 25,
       "Comment": [

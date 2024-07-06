@@ -2550,6 +2550,37 @@
         "st1 {v3.d}[1], [x1]"
       ]
     },
+    "vpgatherdd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": 23,
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w0, v18.s[0]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[0]",
+        "add x1, x4, w0, sxtw",
+        "ld1 {v16.s}[0], [x1]",
+        "mov w0, v18.s[1]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[1]",
+        "add x1, x4, w0, sxtw",
+        "ld1 {v16.s}[1], [x1]",
+        "mov w0, v18.s[2]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[2]",
+        "add x1, x4, w0, sxtw",
+        "ld1 {v16.s}[2], [x1]",
+        "mov w0, v18.s[3]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[3]",
+        "add x1, x4, w0, sxtw",
+        "ld1 {v16.s}[3], [x1]",
+        "movi v18.2d, #0x0",
+        "str q18, [x28, #16]",
+        "str q18, [x28, #48]"
+      ]
+    },
     "vpgatherdd xmm0, [xmm1*2 + rax], xmm2": {
       "ExpectedInstructionCount": 23,
       "Comment": [
