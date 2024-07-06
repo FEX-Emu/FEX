@@ -5184,6 +5184,12 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
+  // We only need the high address register if the number of data elements is more than what the low half can consume.
+  // But also the number of address elements is clamped by the destination size as well.
+  const size_t NumDataElements = Size / ElementLoadSize;
+  const size_t NumAddrElementBytes = std::min<size_t>(Size, (NumDataElements * AddrElementSize));
+  const bool Needs128BitHighAddrBytes = NumAddrElementBytes > OpSize::i128Bit;
+
   auto VSIB = LoadVSIB(Op, Op->Src[0], Op->Flags);
 
   const bool SupportsSVELoad = (VSIB.Scale == 1 || VSIB.Scale == AddrElementSize) && (AddrElementSize == ElementLoadSize);
@@ -5205,11 +5211,15 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
     };
 
     RefVSIB VSIB128 = VSIB;
-    if (Is128Bit) {
-      ///< A bit careful for the VSIB index register duplicating.
-      VSIB128.High = VSIB128.Low;
-    } else {
-      VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
+    VSIB128.High = Invalid();
+
+    if (Needs128BitHighAddrBytes) {
+      if (Is128Bit) {
+        ///< A bit careful for the VSIB index register duplicating.
+        VSIB128.High = VSIB128.Low;
+      } else {
+        VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
+      }
     }
 
     auto Result128 = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest128, Mask128, VSIB128);

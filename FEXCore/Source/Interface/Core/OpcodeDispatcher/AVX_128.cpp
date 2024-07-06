@@ -2678,8 +2678,14 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
+  // We only need the high address register if the number of data elements is more than what the low half can consume.
+  // But also the number of address elements is clamped by the destination size as well.
+  const size_t NumDataElements = Size / ElementLoadSize;
+  const size_t NumAddrElementBytes = std::min<size_t>(Size, (NumDataElements * AddrElementSize));
+  const bool NeedsHighAddrBytes = NumAddrElementBytes > OpSize::i128Bit;
+
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
-  auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, NeedsHighAddrBytes);
   auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
