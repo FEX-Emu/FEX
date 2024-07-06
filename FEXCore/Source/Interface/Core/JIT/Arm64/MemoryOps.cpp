@@ -1150,6 +1150,84 @@ DEF_OP(VLoadVectorGatherMasked) {
   }
 }
 
+DEF_OP(VLoadVectorGatherMaskedQPS) {
+  const auto Op = IROp->C<IR::IROp_VLoadVectorGatherMaskedQPS>();
+
+  /// This instruction behaves similarly to the non-QPS version except for some STRICT limitations
+  /// - Only supports 32-bit element data size!
+  /// - Only supports 64-bit element address size!
+  /// - Only masks elements based on 32-bit element data size! (NOT ADDR SIZE!)
+  /// - Optimally uses SVE's `ld1w {zt.D}` variant instruction!
+  /// - Only outputs a single 128-bit result, while consuming 128-bit or 256-bit of address indexes!
+  /// - Matches VGATHERQPS/VPGATHERQD behaviour!
+  const auto OffsetScale = Op->OffsetScale;
+  const auto Dst = GetVReg(Node);
+  const auto IncomingDst = GetVReg(Op->Incoming.ID());
+
+  const auto MaskReg = GetVReg(Op->MaskReg.ID());
+  std::optional<ARMEmitter::Register> BaseAddr = !Op->AddrBase.IsInvalid() ? std::make_optional(GetReg(Op->AddrBase.ID())) : std::nullopt;
+  const auto VectorIndexLow = GetVReg(Op->VectorIndexLow.ID());
+  std::optional<ARMEmitter::VRegister> VectorIndexHigh =
+    !Op->VectorIndexHigh.IsInvalid() ? std::make_optional(GetVReg(Op->VectorIndexHigh.ID())) : std::nullopt;
+
+  ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
+  if (HostSupportsSVE128 && (OffsetScale == 1 || OffsetScale == 4)) {
+    ARMEmitter::SVEModType ModType = ARMEmitter::SVEModType::MOD_NONE;
+    if (OffsetScale != 1) {
+      ModType = ARMEmitter::SVEModType::MOD_LSL;
+    }
+
+    const auto CMPPredicate = ARMEmitter::PReg::p0;
+    const auto CMPPredicate2 = ARMEmitter::PReg::p1;
+
+    const auto GoverningPredicate = PRED_TMP_16B;
+
+    // Check if the sign bit is set for the given element size.
+    // This will set the predicate bits for elements [0, 1, 2, 3]
+    // We then use punpklo to extend the low results to be for 64-bit elements.
+    cmplt(ARMEmitter::SubRegSize::i32Bit, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+    punpklo(CMPPredicate2, CMPPredicate);
+    auto TempDst = VTMP1;
+
+    auto GatherExtend = [this](ARMEmitter::VRegister Dst, std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndex,
+                               ARMEmitter::PRegister CMPPredicate, ARMEmitter::SVEModType ModType, uint8_t OffsetScale) {
+      // No need to load a temporary register in the case that we weren't provided a base address and there is no scaling.
+      uint8_t SVEScale = FEXCore::ilog2(OffsetScale);
+      ARMEmitter::SVEMemOperand MemDst {ARMEmitter::SVEMemOperand(VectorIndex.Z(), 0)};
+      if (BaseAddr.has_value() || OffsetScale != 1) {
+        ARMEmitter::Register AddrReg = TMP1;
+        if (BaseAddr.has_value()) {
+          AddrReg = *BaseAddr;
+        } else {
+          ///< OpcodeDispatcher didn't provide a Base address while SVE requires one.
+          LoadConstant(ARMEmitter::Size::i64Bit, AddrReg, 0);
+        }
+        MemDst = ARMEmitter::SVEMemOperand(AddrReg.X(), VectorIndex.Z(), ModType, SVEScale);
+      }
+
+      ld1w<ARMEmitter::SubRegSize::i64Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemDst);
+    };
+
+    GatherExtend(TempDst, BaseAddr, VectorIndexLow, CMPPredicate2, ModType, OffsetScale);
+
+    if (VectorIndexHigh.has_value()) {
+      punpkhi(CMPPredicate2, CMPPredicate);
+      GatherExtend(VTMP2, BaseAddr, *VectorIndexHigh, CMPPredicate2, ModType, OffsetScale);
+      // Move elements to the lower half.
+      uzp1(ARMEmitter::SubRegSize::i32Bit, TempDst.Q(), TempDst.Q(), VTMP2.Q());
+      ///< Merge elements based on predicate.
+      sel(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
+    } else {
+      // Move elements to the lower half.
+      xtn(ARMEmitter::SubRegSize::i32Bit, TempDst.Q(), TempDst.Q());
+      ///< Merge elements based on predicate.
+      sel(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
+    }
+  } else {
+    Emulate128BitGather(16, 4, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg, 8, 0, 0, OffsetScale);
+  }
+}
+
 DEF_OP(VLoadVectorElement) {
   const auto Op = IROp->C<IR::IROp_VLoadVectorElement>();
   const auto OpSize = IROp->Size;
