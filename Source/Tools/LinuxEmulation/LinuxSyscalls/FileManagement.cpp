@@ -330,40 +330,36 @@ FileManager::~FileManager() {
 }
 
 fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
-  if (!pathname ||                  // If no pathname
-      pathname[0] != '/' ||         // If relative
-      strcmp(pathname, "/") == 0) { // If we are getting root
-    return {};
-  }
 
-  auto thunkOverlay = ThunkOverlays.find(pathname);
-  if (thunkOverlay != ThunkOverlays.end()) {
-    return thunkOverlay->second;
-  }
+  FDPathTmpData TmpFilename;
 
   const auto& RootFSPath = LDPath();
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
   }
 
-  fextl::string Path = RootFSPath + pathname;
-  if (FollowSymlink) {
-    char Filename[PATH_MAX];
-    while (FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
-      auto SymlinkSize = FEX::HLE::GetSymlink(AT_FDCWD, Path.c_str(), Filename, PATH_MAX - 1);
-      if (SymlinkSize > 0 && Filename[0] == '/') {
-        Path = RootFSPath;
-        Path += std::string_view(Filename, SymlinkSize);
-      } else {
-        break;
-      }
-    }
+  auto FdPath = GetEmulatedFDPath(AT_FDCWD, pathname, FollowSymlink, TmpFilename);
+
+  if (!FdPath.second) {
+    return {};
   }
+
+  fextl::string Path = RootFSPath + "/" + FdPath.second;
+
   return Path;
 }
 
 std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) {
   constexpr auto NoEntry = std::make_pair(-1, nullptr);
+
+  // The two temporary paths.
+  const std::array<char*, 2> TmpPaths = {
+    TmpFilename[0],
+    TmpFilename[1],
+  };
+
+  // Current index for the temporary path to use.
+  uint32_t CurrentIndex {};
 
   if (!pathname) {
     // No pathname.
@@ -375,13 +371,146 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
     dirfd = AT_FDCWD;
   }
 
-  if (pathname[0] != '/' || // If relative
-      pathname[1] == 0 ||   // If we are getting root
-      dirfd != AT_FDCWD) {  // If dirfd isn't special FDCWD
+  if (dirfd != AT_FDCWD) {
+    auto Tmp = TmpPaths[1];
+    auto PathLength = FEX::get_fdpath(dirfd, Tmp);
+    if (PathLength != -1) {
+      if (pathname) {
+        Tmp[PathLength] = '/';
+        PathLength += 1;
+        strncpy(&Tmp[PathLength], pathname, PATH_MAX - PathLength);
+      } else {
+        Tmp[PathLength] = '\0';
+      }
+    } else {
+      strncpy(TmpPaths[1], pathname, PATH_MAX);
+    }
+    dirfd = AT_FDCWD;
+  } else {
+    strncpy(TmpPaths[1], pathname, PATH_MAX);
+  }
+
+  char* SubPath = TmpPaths[1];
+
+  if (!strcmp(SubPath, "/")) { // If we are getting root
     return NoEntry;
   }
 
-  auto thunkOverlay = ThunkOverlays.find(pathname);
+  int tries = 40;
+retry:
+  char* right = SubPath;
+  // If this is an absolute path, skip the first delimiter
+  while (*right == '/') {
+    right++;
+  }
+
+  for (; char* delim = strchr(right, '/');) {
+    char* cur_element = right;
+    while (delim[1] == '/') {
+      delim++;
+    }
+
+    if (!delim[1]) {
+      break;
+    }
+
+    *delim = 0;
+    right = delim + 1;
+
+    struct stat Buffer {};
+
+    // Scan the rootFS if this is an absolute path
+    int Result = -1;
+    bool rootfs = true;
+
+    errno = ENOENT;
+    if (SubPath[0] == '/') {
+      Result = fstatat(RootFSFD, &SubPath[1], &Buffer, AT_SYMLINK_NOFOLLOW);
+    }
+
+    // Otherwise just scan the dirfd
+    if (Result != 0 && errno == ENOENT) {
+      rootfs = false;
+      Result = fstatat(dirfd, SubPath, &Buffer, AT_SYMLINK_NOFOLLOW);
+    }
+
+    if (Result != 0) {
+      // Some path component does not exist (or other error)
+      return NoEntry;
+    }
+
+    const bool IsLink = S_ISLNK(Buffer.st_mode);
+
+    if (IsLink) {
+      // Choose the current temporary working path.
+      auto CurrentTmp = TmpPaths[CurrentIndex];
+
+      // Get the symlink of RootFS FD + stripped subpath.
+      int SymlinkSize;
+      if (rootfs) {
+        SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
+      } else {
+        SymlinkSize = FEX::HLE::GetSymlink(dirfd, SubPath, CurrentTmp, PATH_MAX - 1);
+      }
+
+      if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
+        // If the symlink is absolute:
+        // Strip leading redundant slashes
+        while (SymlinkSize > 1 && CurrentTmp[1] == '/') {
+          CurrentTmp++;
+          SymlinkSize--;
+        }
+        // If it's not just a link to the root, append a slash
+        if (SymlinkSize > 1) {
+          CurrentTmp[SymlinkSize] = '/';
+          SymlinkSize++;
+        }
+        // Append the current right side
+        strncpy(&CurrentTmp[SymlinkSize], right, PATH_MAX - SymlinkSize);
+        SubPath = CurrentTmp;
+        // And switch buffers
+        CurrentIndex ^= 1;
+        if (!--tries) {
+          return NoEntry; // Max depth exceeded
+        }
+        goto retry;
+      } else if (SymlinkSize > 0) {
+        // If the symlink is relative:
+        // Calculate the total path length
+        auto left_len = cur_element - SubPath;
+        auto right_len = strlen(right);
+
+        if ((left_len + right_len + SymlinkSize + 1) >= PATH_MAX) {
+          return NoEntry; // Max path exceeded
+        }
+
+        // Move the symlink target to the right position in the buffer
+        memmove(&CurrentTmp[left_len], CurrentTmp, SymlinkSize);
+        // Insert the left side
+        memcpy(CurrentTmp, SubPath, left_len);
+        CurrentTmp[left_len + SymlinkSize] = '/';
+        // Append the right side
+        memcpy(&CurrentTmp[left_len + SymlinkSize + 1], right, right_len);
+        // Terminate
+        CurrentTmp[left_len + SymlinkSize + 1 + right_len] = 0;
+
+        // Continue processing starting at the symlink target
+        right = &CurrentTmp[left_len];
+
+        SubPath = CurrentTmp;
+        CurrentIndex ^= 1;
+
+        if (!--tries) {
+          return NoEntry; // Max depth exceeded
+        }
+
+        continue;
+      }
+    }
+    *delim = '/';
+  }
+
+  auto thunkOverlay = ThunkOverlays.find(SubPath);
   if (thunkOverlay != ThunkOverlays.end()) {
     return std::make_pair(AT_FDCWD, thunkOverlay->second.c_str());
   }
@@ -391,17 +520,10 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
     return NoEntry;
   }
 
-  // Starting subpath is the pathname passed in.
-  const char* SubPath = pathname;
-
-  // Current index for the temporary path to use.
-  uint32_t CurrentIndex {};
-
-  // The two temporary paths.
-  const std::array<char*, 2> TmpPaths = {
-    TmpFilename[0],
-    TmpFilename[1],
-  };
+  // If relative or we're getting root
+  if (SubPath[0] != '/' || SubPath[1] == 0) {
+    return NoEntry;
+  }
 
   if (FollowSymlink) {
     // Check if the combination of RootFS FD and subpath with the front '/' stripped off is a symlink.
@@ -447,6 +569,11 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
         break;
       }
     }
+  }
+
+  // If we wound up at the root again
+  if (!strcmp(SubPath, "/")) {
+    return NoEntry;
   }
 
   // Return the pair of rootfs FD plus relative subpath by stripping off the front '/'
