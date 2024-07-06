@@ -2163,6 +2163,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
     Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
