@@ -43,6 +43,7 @@ $end_info$
 #include <wine/debug.h>
 
 class ECSyscallHandler;
+void* X64ReturnInstr; // See Module.S
 extern void* ExitFunctionEC;
 
 struct ThreadCPUArea {
@@ -166,6 +167,9 @@ void ProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
   CPUFeatures.emplace(*CTX);
+
+  X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 }
 
 void ProcessTerm() {}

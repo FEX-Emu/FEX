@@ -55,8 +55,17 @@ ExitFunctionEC:
   add x17, x17, x23 // Resolve entry thunk address.
 
   mov x4, sp
+  tbz x4, #3, ret_sp_misaligned
   ldr lr, [x4], #0x8 // Pop the return address into lr.
   mov sp, x4
 
 ret_sp_aligned:
+  br x17
+
+ret_sp_misaligned:
+  // In the case of the x64 caller leaving sp only 8-byte aligned, leave the return address on the stack to keep 16-byte
+  // alignment and have the callee return to an x86 ret instruction. FEX can then return to the actual caller keeping
+  // the misaligned RSP.
+  adrp lr, X64ReturnInstr
+  ldr lr, [lr, #:lo12:X64ReturnInstr]
   br x17
