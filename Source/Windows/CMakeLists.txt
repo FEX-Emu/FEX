@@ -12,6 +12,13 @@ function(build_implib name)
   add_dependencies(${name_ex} ${name_ex}lib)
 endfunction()
 
+function(patch_library_wine target)
+  add_custom_command(
+    TARGET ${target} POST_BUILD
+    COMMAND dd bs=32 count=1 seek=2 conv=notrunc if=${CMAKE_SOURCE_DIR}/Source/Windows/wine_builtin.bin of=$<TARGET_FILE:${target}>
+  )
+endfunction()
+
 build_implib(ntdll)
 build_implib(wow64)
 
