@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
+#include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
 #include "DummyHandlers.h"
@@ -263,30 +264,7 @@ WOW64_CONTEXT ReconstructWowContext(CONTEXT* Context) {
   return WowContext;
 }
 
-class TSOHandlerConfig final {
-public:
-  TSOHandlerConfig() {
-    if (ParanoidTSO()) {
-      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::Paranoid;
-    } else if (HalfBarrierTSOEnabled()) {
-      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier;
-    } else {
-      UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::NonAtomic;
-    }
-  }
-
-  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType GetUnalignedHandlerType() const {
-    return UnalignedHandlerType;
-  }
-
-private:
-  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-  FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
-
-  FEXCore::ArchHelpers::Arm64::UnalignedHandlerType UnalignedHandlerType {FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier};
-};
-
-static std::optional<TSOHandlerConfig> HandlerConfig;
+static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 
 bool HandleUnalignedAccess(CONTEXT* Context) {
   auto Thread = GetTLS().ThreadState();
