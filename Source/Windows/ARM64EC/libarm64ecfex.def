@@ -1,0 +1,21 @@
+LIBRARY libarm64ecfex.dll
+
+EXPORTS
+  BTCpu64FlushInstructionCache
+  BTCpu64IsProcessorFeaturePresent
+  DispatchJump DATA
+  RetToEntryThunk DATA
+  ExitToX64 DATA
+  BeginSimulation DATA
+;  FlushInstructionCacheHeavy
+;  NotifyMapViewOfSection
+  NotifyMemoryAlloc
+  NotifyMemoryFree
+  NotifyMemoryProtect
+  NotifyUnmapViewOfSection
+  ProcessInit
+  ProcessTerm
+;  ResetToConsistentState
+  ThreadInit
+  ThreadTerm
+  UpdateProcessorInformation

@@ -13,6 +13,20 @@ extern "C" {
 
 #define WOW64_TLS_MAX_NUMBER 19
 
+#ifdef _M_ARM_64EC
+typedef struct _CHPE_V2_CPU_AREA_INFO {
+  BOOLEAN InSimulation;             /* 000 */
+  BOOLEAN InSyscallCallback;        /* 001 */
+  ULONG64 EmulatorStackBase;        /* 008 */
+  ULONG64 EmulatorStackLimit;       /* 010 */
+  ARM64EC_NT_CONTEXT* ContextAmd64; /* 018 */
+  ULONG* SuspendDoorbell;           /* 020 */
+  ULONG64 LoadingModuleModflag;     /* 028 */
+  void* EmulatorData[4];            /* 030 */
+  ULONG64 EmulatorDataInline;       /* 050 */
+} CHPE_V2_CPU_AREA_INFO, *PCHPE_V2_CPU_AREA_INFO;
+#endif
+
 typedef struct _THREAD_BASIC_INFORMATION {
   NTSTATUS ExitStatus;
   PVOID TebBaseAddress;
