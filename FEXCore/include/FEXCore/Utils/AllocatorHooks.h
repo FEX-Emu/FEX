@@ -50,16 +50,17 @@ FEX_DEF_NUM_OPS(ProtectOptions)
 
 #ifdef _WIN32
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
+  // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
 #ifdef _M_ARM_64EC
   MEM_EXTENDED_PARAMETER Parameter {};
   if (Execute) {
     Parameter.Type = MemExtendedParameterAttributeFlags;
     Parameter.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
   };
-  return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0), Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE,
-                         &Parameter, Execute ? 1 : 0);
+  return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0) | MEM_TOP_DOWN,
+                         Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, &Parameter, Execute ? 1 : 0);
 #else
-  return ::VirtualAlloc(Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0), Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  return ::VirtualAlloc(Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0) | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 #endif
 }
 
