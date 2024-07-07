@@ -2235,23 +2235,16 @@
       ]
     },
     "vpgatherdq xmm0, [xmm1*1 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x90 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sxtl v2.2d, v17.2s",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -2261,23 +2254,16 @@
       ]
     },
     "vpgatherdq xmm0, [xmm1*2 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x90 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #1",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #1",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #1",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -2287,23 +2273,16 @@
       ]
     },
     "vpgatherdq xmm0, [xmm1*4 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x90 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #2",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #2",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #2",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -2313,23 +2292,16 @@
       ]
     },
     "vpgatherdq xmm0, [xmm1*8 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x90 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #3",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #3",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #3",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -3095,23 +3067,16 @@
       ]
     },
     "vgatherdpd xmm0, [xmm1*1 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x92 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sxtl v2.2d, v17.2s",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -3121,23 +3086,16 @@
       ]
     },
     "vgatherdpd xmm0, [xmm1*2 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x92 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #1",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #1",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #1",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -3147,23 +3105,16 @@
       ]
     },
     "vgatherdpd xmm0, [xmm1*4 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x92 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #2",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #2",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #2",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
@@ -3173,23 +3124,16 @@
       ]
     },
     "vgatherdpd xmm0, [xmm1*8 + rax], xmm2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 2 0b01 0x92 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "sshll v2.2d, v17.2s, #3",
         "mrs x20, nzcv",
-        "mov v2.16b, v16.16b",
-        "mov x0, v18.d[0]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[0]",
-        "add x1, x4, w0, sxtw #3",
-        "ld1 {v2.d}[0], [x1]",
-        "mov x0, v18.d[1]",
-        "tbz x0, #63, #+0x10",
-        "smov x0, v17.s[1]",
-        "add x1, x4, w0, sxtw #3",
-        "ld1 {v2.d}[1], [x1]",
+        "cmplt p0.d, p6/z, z18.d, #0",
+        "ld1d {z0.d}, p0/z, [x4, z2.d]",
+        "sel z2.d, p0, z0.d, z16.d",
         "movi v18.2d, #0x0",
         "mov z1.q, q18",
         "not p0.b, p7/z, p6.b",
