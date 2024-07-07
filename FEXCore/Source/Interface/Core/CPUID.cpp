@@ -34,6 +34,8 @@ namespace ProductNames {
   static const char ARM_A76AE[] = "Cortex-A76AE";
   static const char ARM_V1[] = "Neoverse V1";
   static const char ARM_V2[] = "Neoverse V2";
+  static const char ARM_V3[] = "Neoverse V3";
+  static const char ARM_V3AE[] = "Neoverse V3AE";
   static const char ARM_A77[] = "Cortex-A77";
   static const char ARM_A78[] = "Cortex-A78";
   static const char ARM_A78AE[] = "Cortex-A78AE";
@@ -41,13 +43,16 @@ namespace ProductNames {
   static const char ARM_A710[] = "Cortex-A710";
   static const char ARM_A715[] = "Cortex-A715";
   static const char ARM_A720[] = "Cortex-A720";
+  static const char ARM_A725[] = "Cortex-A725";
   static const char ARM_X1[] = "Cortex-X1";
   static const char ARM_X1C[] = "Cortex-X1C";
   static const char ARM_X2[] = "Cortex-X2";
   static const char ARM_X3[] = "Cortex-X3";
   static const char ARM_X4[] = "Cortex-X4";
+  static const char ARM_X925[] = "Cortex-X925";
   static const char ARM_N1[] = "Neoverse N1";
   static const char ARM_N2[] = "Neoverse N2";
+  static const char ARM_N3[] = "Neoverse N3";
   static const char ARM_E1[] = "Neoverse E1";
   static const char ARM_A35[] = "Cortex-A35";
   static const char ARM_A53[] = "Cortex-A53";
@@ -142,12 +147,17 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 43> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 48> CPUMIDRs = {{
     // Typically big CPU cores
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
     {0x61, 0x023, 1, ProductNames::ARM_Firestorm}, // Apple M1 Firestorm
 
+    {0x41, 0xd85, 1, ProductNames::ARM_X925},    // X925
+    {0x41, 0xd87, 1, ProductNames::ARM_A725},    // A725
+    {0x41, 0xd84, 1, ProductNames::ARM_V3},      // V3
+    {0x41, 0xd83, 1, ProductNames::ARM_V3AE},    // V3AE
+    {0x41, 0xd8e, 1, ProductNames::ARM_N3},      // N3
     {0x41, 0xd82, 1, ProductNames::ARM_X4},      // X4
     {0x41, 0xd81, 1, ProductNames::ARM_A720},    // A720
     {0x41, 0xd4e, 1, ProductNames::ARM_X3},      // X3
