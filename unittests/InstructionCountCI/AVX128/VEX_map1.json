@@ -3872,13 +3872,12 @@
       ]
     },
     "vmovq xmm0, qword [rax]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b01 0x6e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "mov v16.8b, v2.8b",
+        "ldr d16, [x4]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
