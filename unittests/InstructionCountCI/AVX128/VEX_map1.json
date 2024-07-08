@@ -4836,30 +4836,34 @@
       ]
     },
     "vcvttpd2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b01 0xe6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcvtn v2.2s, v17.2d",
-        "fcvtzs v16.4s, v2.4s",
+        "frintz v16.2d, v17.2d",
+        "fcvtn v16.2s, v16.2d",
+        "fcvtzs v16.2s, v16.2s",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vcvttpd2dq xmm0, ymm1": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 1 0b01 0xe6 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "fcvtn v3.2s, v17.2d",
-        "fcvtzs v3.4s, v3.4s",
+        "frintz v3.2d, v17.2d",
+        "fcvtn v3.2s, v3.2d",
+        "fcvtzs v3.2s, v3.2s",
+        "frintz v2.2d, v2.2d",
         "fcvtn v2.2s, v2.2d",
-        "fcvtzs v2.4s, v2.4s",
-        "mov v16.16b, v3.16b",
-        "mov v16.d[1], v2.d[0]"
+        "fcvtzs v2.2s, v2.2s",
+        "zip1 v16.2d, v3.2d, v2.2d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vcvtdq2pd xmm0, xmm1": {
@@ -4893,28 +4897,29 @@
         "Map 1 0b11 0xe6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcvtn v2.2s, v17.2d",
-        "frinti v16.4s, v2.4s",
-        "fcvtzs v16.4s, v16.4s",
+        "frinti v16.2d, v17.2d",
+        "fcvtn v16.2s, v16.2d",
+        "fcvtzs v16.2s, v16.2s",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vcvtpd2dq xmm0, ymm1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 1 0b11 0xe6 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "fcvtn v3.2s, v17.2d",
-        "frinti v3.4s, v3.4s",
-        "fcvtzs v3.4s, v3.4s",
+        "frinti v3.2d, v17.2d",
+        "fcvtn v3.2s, v3.2d",
+        "fcvtzs v3.2s, v3.2s",
+        "frinti v2.2d, v2.2d",
         "fcvtn v2.2s, v2.2d",
-        "frinti v2.4s, v2.4s",
-        "fcvtzs v2.4s, v2.4s",
-        "mov v16.16b, v3.16b",
-        "mov v16.d[1], v2.d[0]"
+        "fcvtzs v2.2s, v2.2s",
+        "zip1 v16.2d, v3.2d, v2.2d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vmovntdq [rax], xmm0": {
