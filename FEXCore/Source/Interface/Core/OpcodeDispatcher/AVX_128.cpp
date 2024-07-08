@@ -843,7 +843,13 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
-  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  RefPair Src {};
+  if (Op->Src[0].IsGPR()) {
+    Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
+  } else {
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
+  }
+
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 256bit
   if (Op->Dest.IsGPR()) {
     // Zero bits [127:64] as well.
