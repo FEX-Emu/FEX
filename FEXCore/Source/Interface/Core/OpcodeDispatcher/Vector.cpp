@@ -5174,7 +5174,7 @@ OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedO
   };
 }
 
-template<size_t AddrElementSize>
+template<OpSize AddrElementSize>
 void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
 
@@ -5183,6 +5183,12 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
 
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  // We only need the high address register if the number of data elements is more than what the low half can consume.
+  // But also the number of address elements is clamped by the destination size as well.
+  const size_t NumDataElements = Size / ElementLoadSize;
+  const size_t NumAddrElementBytes = std::min<size_t>(Size, (NumDataElements * AddrElementSize));
+  const bool Needs128BitHighAddrBytes = NumAddrElementBytes > OpSize::i128Bit;
 
   auto VSIB = LoadVSIB(Op, Op->Src[0], Op->Flags);
 
@@ -5205,14 +5211,18 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
     };
 
     RefVSIB VSIB128 = VSIB;
-    if (Is128Bit) {
-      ///< A bit careful for the VSIB index register duplicating.
-      VSIB128.High = VSIB128.Low;
-    } else {
-      VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
+    VSIB128.High = Invalid();
+
+    if (Needs128BitHighAddrBytes) {
+      if (Is128Bit) {
+        ///< A bit careful for the VSIB index register duplicating.
+        VSIB128.High = VSIB128.Low;
+      } else {
+        VSIB128.High = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, VSIB128.Low, 1);
+      }
     }
 
-    auto Result128 = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest128, Mask128, VSIB128);
+    auto Result128 = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest128, Mask128, VSIB128);
     // The registers are current split, need to merge them.
     Result = _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Result128.Low, Result128.High);
   } else {
@@ -5253,7 +5263,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Src[1], Zero, Size, -1);
 }
 
-template void OpDispatchBuilder::VPGATHER<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPGATHER<8>(OpcodeArgs);
+template void OpDispatchBuilder::VPGATHER<OpSize::i32Bit>(OpcodeArgs);
+template void OpDispatchBuilder::VPGATHER<OpSize::i64Bit>(OpcodeArgs);
 
 } // namespace FEXCore::IR

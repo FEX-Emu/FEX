@@ -985,7 +985,7 @@ public:
   };
 
   RefVSIB LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags);
-  template<size_t AddrElementSize>
+  template<OpSize AddrElementSize>
   void VPGATHER(OpcodeArgs);
 
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
@@ -1262,10 +1262,9 @@ public:
   template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
   void AVX128_VFMSUBADD(OpcodeArgs);
 
-  template<size_t AddrElementSize>
-  RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
+  RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
 
-  template<size_t AddrElementSize>
+  template<OpSize AddrElementSize>
   void AVX128_VPGATHER(OpcodeArgs);
 
   void AVX128_VCVTPH2PS(OpcodeArgs);

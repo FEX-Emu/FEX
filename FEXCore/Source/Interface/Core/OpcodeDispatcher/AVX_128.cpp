@@ -2588,8 +2588,8 @@ void OpDispatchBuilder::AVX128_VFMSUBADD(OpcodeArgs) {
   AVX128_VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
 }
 
-template<size_t AddrElementSize>
-OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, RefPair Dest, RefPair Mask, RefVSIB VSIB) {
+OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest,
+                                                                  RefPair Mask, RefVSIB VSIB) {
   LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2603,17 +2603,31 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
     BaseAddr = Invalid();
   }
 
-  if (ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i64Bit && (VSIB.Scale == 2 || VSIB.Scale == 4) &&
-      CTX->HostFeatures.SupportsSVE128) {
-    // SVE gather instructions don't support scaling their vector elements by anything other than 1 or the address element size.
-    // Pre-scale 64-bit addresses in the case that scale doesn't match in-order to hit SVE code paths more frequently.
-    // Only hit this path if the host supports SVE. Otherwise it's a degradation for the ASIMD codepath.
-    VSIB.Low = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
-    if (!Is128Bit) {
-      VSIB.High = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.High, FEXCore::ilog2(VSIB.Scale));
+  if (CTX->HostFeatures.SupportsSVE128) {
+    if (!Is128Bit && ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i32Bit) {
+      // In the case that FEX is loading 256-bits of data with only 128-bits of source address size then we can optimize this case.
+      // Since FEX is splitting the operation in to two gather regardless, then we can extend the address elements from 32-bits to 64-bit.
+      LOGMAN_THROW_A_FMT(VSIB.High == Invalid(), "Need to not have a high VSIB source");
+
+      VSIB.High = _VSSHLL2(OpSize::i128Bit, OpSize::i32Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+      VSIB.Low = _VSSHLL(OpSize::i128Bit, OpSize::i32Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+
+      ///< Set the scale to one now that it has been prescaled as well.
+      VSIB.Scale = 1;
+
+      // Set the address element size to 64-bit now that the elements are extended.
+      AddrElementSize = OpSize::i64Bit;
+    } else if (ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i64Bit && (VSIB.Scale == 2 || VSIB.Scale == 4)) {
+      // SVE gather instructions don't support scaling their vector elements by anything other than 1 or the address element size.
+      // Pre-scale 64-bit addresses in the case that scale doesn't match in-order to hit SVE code paths more frequently.
+      // Only hit this path if the host supports SVE. Otherwise it's a degradation for the ASIMD codepath.
+      VSIB.Low = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+      if (!Is128Bit) {
+        VSIB.High = _VShlI(OpSize::i128Bit, OpSize::i64Bit, VSIB.High, FEXCore::ilog2(VSIB.Scale));
+      }
+      ///< Set the scale to one now that it has been prescaled.
+      VSIB.Scale = 1;
     }
-    ///< Set the scale to one now that it has been prescaled.
-    VSIB.Scale = 1;
   }
 
   RefPair Result {};
@@ -2669,7 +2683,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   return Result;
 }
 
-template<size_t AddrElementSize>
+template<OpSize AddrElementSize>
 void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 
   const auto Size = GetDstSize(Op);
@@ -2678,12 +2692,18 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
+  // We only need the high address register if the number of data elements is more than what the low half can consume.
+  // But also the number of address elements is clamped by the destination size as well.
+  const size_t NumDataElements = Size / ElementLoadSize;
+  const size_t NumAddrElementBytes = std::min<size_t>(Size, (NumDataElements * AddrElementSize));
+  const bool NeedsHighAddrBytes = NumAddrElementBytes > OpSize::i128Bit;
+
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
-  auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, NeedsHighAddrBytes);
   auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result = AVX128_VPGatherImpl<AddrElementSize>(SizeToOpSize(Size), ElementLoadSize, Dest, Mask, VSIB);
+  Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 
   ///< Assume non-faulting behaviour and clear the mask register.
