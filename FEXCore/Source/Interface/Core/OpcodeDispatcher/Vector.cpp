@@ -2284,7 +2284,15 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElement
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   const size_t DstSize = GetDstSize(Op);
-  Ref Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+
+  Ref Result {};
+  if (SrcElementSize == 8 && Narrow) {
+    ///< Special case for CVTTPD2DQ because it has weird rounding requirements.
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Result = _Vector_F64ToI32(DstSize, Src, HostRoundingMode ? Round_Host : Round_Towards_Zero, true);
+  } else {
+    Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+  }
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
@@ -2300,14 +2308,15 @@ template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
-  // VCVTPD2DQ/VCVTTPD2DQ only use the bottom lane, even for the 256-bit version.
-  const auto Truncate = SrcElementSize == 8 && Narrow;
-
-  Ref Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
-
-  if (Truncate) {
-    Result = _VMov(16, Result);
+  Ref Result {};
+  if (SrcElementSize == 8 && Narrow) {
+    ///< Special case for CVTPD2DQ/CVTTPD2DQ because it has weird rounding requirements.
+    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Result = _Vector_F64ToI32(DstSize, Src, HostRoundingMode ? Round_Host : Round_Towards_Zero, true);
+  } else {
+    Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
   }
+
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 

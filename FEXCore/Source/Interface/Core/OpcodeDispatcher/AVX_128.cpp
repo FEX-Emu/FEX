@@ -1657,32 +1657,47 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
 
   // VCVTPD2DQ/VCVTTPD2DQ only use the bottom lane, even for the 256-bit version.
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
-
-  auto Convert = [this](Ref Src) -> Ref {
-    size_t ElementSize = SrcElementSize;
-    if (Narrow) {
-      ElementSize >>= 1;
-      Src = _Vector_FToF(OpSize::i128Bit, ElementSize, Src, SrcElementSize);
-    }
-
-    if (HostRoundingMode) {
-      return _Vector_FToS(OpSize::i128Bit, ElementSize, Src);
-    } else {
-      return _Vector_FToZS(OpSize::i128Bit, ElementSize, Src);
-    }
-  };
-
   RefPair Result {};
 
-  Result.Low = Convert(Src.Low);
+  if (SrcElementSize == 8 && Narrow) {
+    ///< Special case for VCVTPD2DQ/CVTTPD2DQ because it has weird rounding requirements.
+    Result.Low = _Vector_F64ToI32(OpSize::i128Bit, Src.Low, HostRoundingMode ? Round_Host : Round_Towards_Zero, Is128BitSrc);
 
-  if (!Is128BitSrc) {
-    if (!Narrow) {
-      Result.High = Convert(Src.High);
-    } else {
-      Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Result.Low, Convert(Src.High));
+    if (!Is128BitSrc) {
+      // Also convert the upper 128-bit lane
+      auto ResultHigh = _Vector_F64ToI32(OpSize::i128Bit, Src.High, HostRoundingMode ? Round_Host : Round_Towards_Zero, false);
+
+      // Zip the two halves together in to the lower 128-bits
+      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, ResultHigh);
     }
   } else {
+    auto Convert = [this](Ref Src) -> Ref {
+      size_t ElementSize = SrcElementSize;
+      if (Narrow) {
+        ElementSize >>= 1;
+        Src = _Vector_FToF(OpSize::i128Bit, ElementSize, Src, SrcElementSize);
+      }
+
+      if (HostRoundingMode) {
+        return _Vector_FToS(OpSize::i128Bit, ElementSize, Src);
+      } else {
+        return _Vector_FToZS(OpSize::i128Bit, ElementSize, Src);
+      }
+    };
+
+    Result.Low = Convert(Src.Low);
+
+    if (!Is128BitSrc) {
+      if (!Narrow) {
+        Result.High = Convert(Src.High);
+      } else {
+        Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Result.Low, Convert(Src.High));
+      }
+    }
+  }
+
+  if (Narrow || Is128BitSrc) {
+    // Zero the upper 128-bit lane of the result.
     Result = AVX128_Zext(Result.Low);
   }
 
