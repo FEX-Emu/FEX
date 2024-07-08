@@ -4005,12 +4005,16 @@ DEF_OP(VFMLA) {
     const auto Mask = PRED_TMP_32B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else {
@@ -4026,7 +4030,11 @@ DEF_OP(VFMLA) {
     }
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Q(), VectorAddend.Q());
     }
     if (OpSize == 16) {
@@ -4035,7 +4043,7 @@ DEF_OP(VFMLA) {
       fmla(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
     }
 
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Q(), DestTmp.Q());
     }
   }
@@ -4063,24 +4071,32 @@ DEF_OP(VFMLS) {
     const auto Mask = PRED_TMP_32B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fnmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else if (HostSupportsSVE128 && Is128Bit) {
     const auto Mask = PRED_TMP_16B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fnmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else {
@@ -4096,15 +4112,29 @@ DEF_OP(VFMLS) {
     }
 
     // Addend needs to get negated to match correct behaviour here.
-    ARMEmitter::VRegister DestTmp = VTMP1;
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst == Vector1 || Dst == Vector2) {
+      DestTmp = VTMP1;
+    }
+
     if (Is128Bit) {
       fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
-      fmla(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
-      mov(Dst.Q(), DestTmp.Q());
     } else {
       fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
+    }
+
+    if (Is128Bit) {
+      fmla(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+    } else {
       fmla(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
-      mov(Dst.D(), DestTmp.D());
+    }
+
+    if (DestTmp != Dst) {
+      if (Is128Bit) {
+        mov(Dst.Q(), DestTmp.Q());
+      } else {
+        mov(Dst.D(), DestTmp.D());
+      }
     }
   }
 }
@@ -4130,12 +4160,16 @@ DEF_OP(VFNMLA) {
     const auto Mask = PRED_TMP_32B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fmls(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else {
@@ -4152,7 +4186,11 @@ DEF_OP(VFNMLA) {
 
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Q(), VectorAddend.Q());
     }
     if (OpSize == 16) {
@@ -4161,7 +4199,7 @@ DEF_OP(VFNMLA) {
       fmls(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
     }
 
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Q(), DestTmp.Q());
     }
   }
@@ -4190,24 +4228,32 @@ DEF_OP(VFNMLS) {
     const auto Mask = PRED_TMP_32B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fnmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else if (HostSupportsSVE128 && Is128Bit) {
     const auto Mask = PRED_TMP_16B.Merging();
     ARMEmitter::VRegister DestTmp = Dst;
     if (Dst != VectorAddend) {
-      DestTmp = VTMP1;
+      if (Dst != Vector1 && Dst != Vector2) {
+        DestTmp = Dst;
+      } else {
+        DestTmp = VTMP1;
+      }
       mov(DestTmp.Z(), VectorAddend.Z());
     }
 
     fnmla(SubRegSize, DestTmp.Z(), Mask, Vector1.Z(), Vector2.Z());
-    if (Dst != VectorAddend) {
+    if (Dst != DestTmp) {
       mov(Dst.Z(), DestTmp.Z());
     }
   } else {
@@ -4223,15 +4269,29 @@ DEF_OP(VFNMLS) {
     }
 
     // Addend needs to get negated to match correct behaviour here.
-    ARMEmitter::VRegister DestTmp = VTMP1;
+    ARMEmitter::VRegister DestTmp = Dst;
+    if (Dst == Vector1 || Dst == Vector2) {
+      DestTmp = VTMP1;
+    }
+
     if (Is128Bit) {
       fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
-      fmls(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
-      mov(Dst.Q(), DestTmp.Q());
     } else {
       fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
+    }
+
+    if (Is128Bit) {
+      fmls(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+    } else {
       fmls(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
-      mov(Dst.D(), DestTmp.D());
+    }
+
+    if (DestTmp != Dst) {
+      if (Is128Bit) {
+        mov(Dst.Q(), DestTmp.Q());
+      } else {
+        mov(Dst.D(), DestTmp.D());
+      }
     }
   }
 }
