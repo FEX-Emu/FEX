@@ -432,6 +432,11 @@ public:
   void SGDTOp(OpcodeArgs);
   void SMSWOp(OpcodeArgs);
 
+  enum class VectorOpType {
+    MMX,
+    SSE,
+    AVX,
+  };
   // SSE
   void MOVLPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
@@ -445,7 +450,7 @@ public:
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
-  void MOVQOp(OpcodeArgs);
+  void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
@@ -489,7 +494,7 @@ public:
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
-  void MOVBetweenGPR_FPR(OpcodeArgs);
+  void MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType);
   void TZCNT(OpcodeArgs);
   void LZCNT(OpcodeArgs);
   template<size_t ElementSize>
@@ -1171,6 +1176,36 @@ public:
   void AVX128_VCVTPS2PH(OpcodeArgs);
 
   // End of AVX 128-bit implementation
+
+  // AVX 256-bit operations
+  void StoreResult_WithAVXInsert(VectorOpType Type, FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
+                                 int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+    if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
+        GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
+      const auto gpr = Op->Dest.Data.GPR.GPR;
+      const auto gprIndex = gpr - X86State::REG_XMM_0;
+      auto DestVector = LoadXMMRegister(gprIndex);
+      Value = _VInsElement(GetGuestVectorLength(), OpSize::i128Bit, 0, 0, DestVector, Value);
+      StoreXMMRegister(gprIndex, Value);
+      return;
+    }
+
+    StoreResult(Class, Op, Value, Align, AccessType);
+  }
+
+  void StoreXMMRegister_WithAVXInsert(VectorOpType Type, uint32_t XMM, Ref Value) {
+    if (GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
+      ///< SSE vector stores need to insert in the low 128-bit lane of the 256-bit register.
+      auto DestVector = LoadXMMRegister(XMM);
+      Value = _VInsElement(GetGuestVectorLength(), OpSize::i128Bit, 0, 0, DestVector, Value);
+      StoreXMMRegister(XMM, Value);
+      return;
+    }
+    StoreXMMRegister(XMM, Value);
+  }
+
+  // End of AVX 256-bit implementation
+
   void InvalidOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);

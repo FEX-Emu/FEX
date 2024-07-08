@@ -681,7 +681,7 @@ void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
 template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>(OpcodeArgs);
 
-void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVQOp(OpcodeArgs, VectorOpType VectorType) {
   const auto SrcSize = Op->Src[0].IsGPR() ? 16U : GetSrcSize(Op);
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
@@ -690,7 +690,7 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
     const auto gprIndex = gpr - X86State::REG_XMM_0;
 
     auto Reg = _VMov(8, Src);
-    StoreXMMRegister(gprIndex, Reg);
+    StoreXMMRegister_WithAVXInsert(VectorType, gprIndex, Reg);
   } else {
     // This is simple, just store the result
     StoreResult(FPRClass, Op, Src, -1);
@@ -2327,19 +2327,20 @@ void OpDispatchBuilder::VPMASKMOVOp(OpcodeArgs) {
 template void OpDispatchBuilder::VPMASKMOVOp<false>(OpcodeArgs);
 template void OpDispatchBuilder::VPMASKMOVOp<true>(OpcodeArgs);
 
-void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
+void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
   if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+    Ref Result {};
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
       Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
       // zext to 128bit
-      auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
-      StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
+      Result = _VCastFromGPR(16, GetSrcSize(Op), Src);
     } else {
       // Loading from Memory as a scalar. Zero extend
-      Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      StoreResult(FPRClass, Op, Op->Dest, Src, -1);
+      Result = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
+
+    StoreResult_WithAVXInsert(VectorType, FPRClass, Op, Result, -1);
   } else {
     Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
