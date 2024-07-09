@@ -5,6 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
@@ -446,6 +447,64 @@ DEF_OP(Vector_FToI) {
       case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Q(), Vector.Q()); break;
       }
     }
+  }
+}
+
+DEF_OP(Vector_F64ToI32) {
+  const auto Op = IROp->C<IR::IROp_Vector_F64ToI32>();
+  const auto OpSize = IROp->Size;
+  const auto Round = Op->Round;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+  if (HostSupportsSVE128 || HostSupportsSVE256) {
+    const auto Mask = Is256Bit ? PRED_TMP_32B.Merging() : PRED_TMP_16B.Merging();
+    // First step is to round the f64 values to integrals (frint*)
+    // Then convert to integers using fcvtzs.
+    auto CVTReg = Dst.Z();
+    switch (Round) {
+    case IR::Round_Nearest.Val: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::Round_Negative_Infinity.Val: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::Round_Positive_Infinity.Val: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::Round_Towards_Zero.Val: CVTReg = Vector.Z(); break;
+    case IR::Round_Host.Val: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    }
+
+    fcvtzs(Dst.Z(), ARMEmitter::SubRegSize::i32Bit, Mask, CVTReg, ARMEmitter::SubRegSize::i64Bit);
+
+    ///< Fixup format of register that fcvtzs returns.
+    uzp1(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
+    if (Op->EnsureZeroUpperHalf) {
+      ///< Match CVTPD2DQ/CVTTPD2DQ behaviour if necessary by zeroing the upper bits here.
+      if (Is256Bit) {
+        mov(Dst.Q(), Dst.Q());
+      } else {
+        mov(Dst.D(), Dst.D());
+      }
+    }
+  } else {
+    // This has a known precision issue that isn't easily resolvable without throwing away performance.
+    // Doing the conversion in multi-stage steps has an issue that you can lose precision in the f32->i32 step if your source was f64.
+    // To get around this with ASIMD FEX needs to use fcvtzs (Scalar, Integer, to GPR) for each F64 to be directly converted to i32.
+    // This is a very costly transform that the SVE path doesn't need to do since it supports f64->i32 directly.
+    // If this precision issue is necessary then we can add an option for it in the future.
+
+    ///< Round float to integral depending on rounding mode.
+    switch (Round) {
+    case FEXCore::IR::Round_Nearest.Val: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case FEXCore::IR::Round_Negative_Infinity.Val: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case FEXCore::IR::Round_Positive_Infinity.Val: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case FEXCore::IR::Round_Towards_Zero.Val: frintz(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case FEXCore::IR::Round_Host.Val: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    }
+
+    // Now narrow from f64 to f32.
+    fcvtn(ARMEmitter::SubRegSize::i32Bit, Dst.Q(), Dst.Q());
+
+    ///< Convert the two F32 integrals to real integers.
+    fcvtzs(ARMEmitter::SubRegSize::i32Bit, Dst.D(), Dst.D());
   }
 }
 

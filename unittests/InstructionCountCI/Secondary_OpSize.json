@@ -1191,11 +1191,12 @@
       ]
     },
     "cvttpd2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "fcvtn v2.2s, v17.2d",
-        "fcvtzs v16.4s, v2.4s"
+        "frintz v16.2d, v17.2d",
+        "fcvtn v16.2s, v16.2d",
+        "fcvtzs v16.2s, v16.2s"
       ]
     },
     "movntdq [rax], xmm0": {

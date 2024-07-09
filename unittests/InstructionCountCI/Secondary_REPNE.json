@@ -469,9 +469,9 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "fcvtn v2.2s, v17.2d",
-        "frinti v16.4s, v2.4s",
-        "fcvtzs v16.4s, v16.4s"
+        "frinti v16.2d, v17.2d",
+        "fcvtn v16.2s, v16.2d",
+        "fcvtzs v16.2s, v16.2s"
       ]
     },
     "lddqu xmm0, [rax]": {
