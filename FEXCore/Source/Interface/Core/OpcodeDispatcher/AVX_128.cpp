@@ -2604,12 +2604,15 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   }
 
   if (CTX->HostFeatures.SupportsSVE128) {
-    if (!Is128Bit && ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i32Bit) {
-      // In the case that FEX is loading 256-bits of data with only 128-bits of source address size then we can optimize this case.
-      // Since FEX is splitting the operation in to two gather regardless, then we can extend the address elements from 32-bits to 64-bit.
+    if (ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i32Bit) {
+      // In the case that FEX is loading double the amount of data than the number of address bits then we can optimize this case.
+      // For 256-bits of data we need to sign extend all four 32-bit address elements to be 64-bit.
+      // For 128-bits of data we only need to sign extend the lower two 32-bit address elements.
       LOGMAN_THROW_A_FMT(VSIB.High == Invalid(), "Need to not have a high VSIB source");
 
-      VSIB.High = _VSSHLL2(OpSize::i128Bit, OpSize::i32Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+      if (!Is128Bit) {
+        VSIB.High = _VSSHLL2(OpSize::i128Bit, OpSize::i32Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
+      }
       VSIB.Low = _VSSHLL(OpSize::i128Bit, OpSize::i32Bit, VSIB.Low, FEXCore::ilog2(VSIB.Scale));
 
       ///< Set the scale to one now that it has been prescaled as well.
