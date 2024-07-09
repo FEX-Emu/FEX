@@ -570,6 +570,22 @@
           "$VectorIndexElementSize == OpSize::i32Bit || $VectorIndexElementSize == OpSize::i64Bit"
         ]
       },
+      "FPR = VLoadVectorGatherMaskedQPS u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale": {
+        "Desc": [
+          "Does a masked load similar to VPGATHERQPS where the upper bit of each element",
+          "determines whether or not that element will be loaded from memory.",
+          "Most of VSIB encoding is passed directly through to the IR operation.",
+          "Only supports the case of 32-bit data element sizes from 64-bit addresses"
+        ],
+        "TiedSource": 0,
+        "ImplicitFlagClobber": true,
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "EmitValidation": [
+          "ElementSize == OpSize::i32Bit",
+          "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
+        ]
+      },
       "FPR = VLoadVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory load to a single element of a vector.",
                  "Leaves the rest of the vector's data intact.",

@@ -1262,6 +1262,7 @@ public:
   template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
   void AVX128_VFMSUBADD(OpcodeArgs);
 
+  RefPair AVX128_VPGatherQPSImpl(Ref Dest, Ref Mask, RefVSIB VSIB);
   RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
 
   template<OpSize AddrElementSize>
@@ -1309,6 +1310,7 @@ protected:
 
     case OP_VLOADVECTORMASKED:
     case OP_VLOADVECTORGATHERMASKED:
+    case OP_VLOADVECTORGATHERMASKEDQPS:
     case OP_VSTOREVECTORMASKED:
       /* On ASIMD platforms, the emulation happens to preserve NZCV, unlike the
        * more optimal SVE implementation that clobbers.
