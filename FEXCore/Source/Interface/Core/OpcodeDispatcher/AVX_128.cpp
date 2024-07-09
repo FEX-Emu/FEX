@@ -2742,8 +2742,42 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, NeedsHighAddrBytes);
   auto Mask = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
+  bool NeedsSVEScale = (VSIB.Scale == 2 || VSIB.Scale == 8) || (VSIB.BaseAddr == Invalid() && VSIB.Scale != 1);
+
+  const bool NeedsExplicitSVEPath =
+    CTX->HostFeatures.SupportsSVE128 && AddrElementSize == OpSize::i32Bit && ElementLoadSize == OpSize::i32Bit && NeedsSVEScale;
+
   RefPair Result {};
-  if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
+  if (NeedsExplicitSVEPath) {
+    // Special case for VGATHERDPS/VPGATHERDD (32-bit addresses loading 32-bit elements) that can't use the SVE codepath.
+    // The problem is due to the scale not matching SVE limitations, we need to prescale the addresses to be 64-bit.
+    auto ScaleVSIBHalf = [this](Ref VSIB, Ref BaseAddr, int32_t Displacement, uint8_t Scale) -> RefVSIB {
+      RefVSIB Result {};
+      Result.High = _VSSHLL2(OpSize::i128Bit, OpSize::i32Bit, VSIB, FEXCore::ilog2(Scale));
+      Result.Low = _VSSHLL(OpSize::i128Bit, OpSize::i32Bit, VSIB, FEXCore::ilog2(Scale));
+
+      Result.Displacement = Displacement;
+      Result.BaseAddr = BaseAddr;
+
+      ///< Set the scale to one now that it has been prescaled as well.
+      Result.Scale = 1;
+      return Result;
+    };
+
+    RefVSIB VSIBLow = ScaleVSIBHalf(VSIB.Low, VSIB.BaseAddr, VSIB.Displacement, VSIB.Scale);
+    RefVSIB VSIBHigh {};
+
+    if (NeedsHighAddrBytes) {
+      VSIBHigh = ScaleVSIBHalf(VSIB.High, VSIB.BaseAddr, VSIB.Displacement, VSIB.Scale);
+    }
+
+    ///< AddressElementSize is now OpSize::i64Bit
+    Result = AVX128_VPGatherQPSImpl(Dest.Low, Mask.Low, VSIBLow);
+    if (NeedsHighAddrBytes) {
+      auto Res = AVX128_VPGatherQPSImpl(Dest.High, Mask.High, VSIBHigh);
+      Result.High = Res.Low;
+    }
+  } else if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
     Result = AVX128_VPGatherQPSImpl(Dest.Low, Mask.Low, VSIB);
   } else {
     Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
