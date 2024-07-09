@@ -4047,22 +4047,21 @@
       ]
     },
     "vfmaddsub231ps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Map 2 0b01 0xb6 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2384]",
         "eor v2.16b, v16.16b, v2.16b",
-        "mov v0.16b, v2.16b",
-        "fmla v0.4s, v17.4s, v18.4s",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v2.16b",
+        "fmla v16.4s, v17.4s, v18.4s",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vfmaddsub231ps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0xb6 256-bit"
       ],
@@ -4072,31 +4071,29 @@
         "ldr q4, [x28, #48]",
         "ldr q5, [x28, #2384]",
         "eor v6.16b, v16.16b, v5.16b",
-        "mov v0.16b, v6.16b",
-        "fmla v0.4s, v17.4s, v18.4s",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v6.16b",
+        "fmla v16.4s, v17.4s, v18.4s",
         "eor v2.16b, v2.16b, v5.16b",
         "fmla v2.4s, v3.4s, v4.4s",
         "str q2, [x28, #16]"
       ]
     },
     "vfmaddsub231pd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Map 2 0b01 0xb6 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2416]",
         "eor v2.16b, v16.16b, v2.16b",
-        "mov v0.16b, v2.16b",
-        "fmla v0.2d, v17.2d, v18.2d",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v2.16b",
+        "fmla v16.2d, v17.2d, v18.2d",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vfmaddsub231pd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0xb6 256-bit"
       ],
@@ -4106,31 +4103,29 @@
         "ldr q4, [x28, #48]",
         "ldr q5, [x28, #2416]",
         "eor v6.16b, v16.16b, v5.16b",
-        "mov v0.16b, v6.16b",
-        "fmla v0.2d, v17.2d, v18.2d",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v6.16b",
+        "fmla v16.2d, v17.2d, v18.2d",
         "eor v2.16b, v2.16b, v5.16b",
         "fmla v2.2d, v3.2d, v4.2d",
         "str q2, [x28, #16]"
       ]
     },
     "vfmsubadd231ps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Map 2 0b01 0xb7 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2448]",
         "eor v2.16b, v16.16b, v2.16b",
-        "mov v0.16b, v2.16b",
-        "fmla v0.4s, v17.4s, v18.4s",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v2.16b",
+        "fmla v16.4s, v17.4s, v18.4s",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vfmsubadd231ps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0xb7 256-bit"
       ],
@@ -4140,31 +4135,29 @@
         "ldr q4, [x28, #48]",
         "ldr q5, [x28, #2448]",
         "eor v6.16b, v16.16b, v5.16b",
-        "mov v0.16b, v6.16b",
-        "fmla v0.4s, v17.4s, v18.4s",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v6.16b",
+        "fmla v16.4s, v17.4s, v18.4s",
         "eor v2.16b, v2.16b, v5.16b",
         "fmla v2.4s, v3.4s, v4.4s",
         "str q2, [x28, #16]"
       ]
     },
     "vfmsubadd231pd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Map 2 0b01 0xb7 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2480]",
         "eor v2.16b, v16.16b, v2.16b",
-        "mov v0.16b, v2.16b",
-        "fmla v0.2d, v17.2d, v18.2d",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v2.16b",
+        "fmla v16.2d, v17.2d, v18.2d",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
     },
     "vfmsubadd231pd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0xb7 256-bit"
       ],
@@ -4174,9 +4167,8 @@
         "ldr q4, [x28, #48]",
         "ldr q5, [x28, #2480]",
         "eor v6.16b, v16.16b, v5.16b",
-        "mov v0.16b, v6.16b",
-        "fmla v0.2d, v17.2d, v18.2d",
-        "mov v16.16b, v0.16b",
+        "mov v16.16b, v6.16b",
+        "fmla v16.2d, v17.2d, v18.2d",
         "eor v2.16b, v2.16b, v5.16b",
         "fmla v2.2d, v3.2d, v4.2d",
         "str q2, [x28, #16]"
