@@ -747,52 +747,6 @@ def print_ir_allocator_helpers():
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")
 
-def print_ir_parser_switch_helper():
-    output_file.write("#ifdef IROP_PARSER_SWITCH_HELPERS\n")
-    for op in IROps:
-        if op.Name != "Last" and op.SwitchGen:
-            output_file.write("\tcase FEXCore::IR::IROps::OP_%s: {\n" % (op.Name.upper()))
-
-            for i in range(0, len(op.Arguments)):
-                arg = op.Arguments[i]
-                LastArg = len(op.Arguments) - i - 1 == 0
-
-                if arg.Temporary:
-                    CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("\t\tauto arg{} = DecodeValue<{}>(Def.Args[{}]);\n".format(i, CType, i))
-                    output_file.write("\t\tif (!CheckPrintErrorArg(Def, arg{}.first, {})) return false;\n".format(i, i))
-                elif arg.IsSSA:
-                    # SSA value
-                    output_file.write("\t\tauto arg{} = DecodeValue<OrderedNode*>(Def.Args[{}]);\n".format(i, i))
-                    output_file.write("\t\tif (!CheckPrintErrorArg(Def, arg{}.first, {})) return false;\n".format(i, i))
-                else:
-                    # User defined op that is stored
-                    CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("\t\tauto arg{} = DecodeValue<{}>(Def.Args[{}]);\n".format(i, CType, i))
-                    output_file.write("\t\tif (!CheckPrintErrorArg(Def, arg{}.first, {})) return false;\n".format(i, i))
-
-            output_file.write("\t\tDef.Node = _{}(\n".format(op.Name))
-
-            for i in range(0, len(op.Arguments)):
-                arg = op.Arguments[i]
-                LastArg = len(op.Arguments) - i - 1 == 0
-                output_file.write("\t\t\targ{}.second".format(i))
-                if not LastArg:
-                    output_file.write(",\n")
-                else:
-                    output_file.write("\n")
-
-            output_file.write("\t\t);\n")
-
-            output_file.write("\t\tSSANameMapper[Def.Definition] = Def.Node;\n")
-
-            output_file.write("\t\tbreak;\n")
-            output_file.write("\t}\n")
-
-
-    output_file.write("#undef IROP_PARSER_SWITCH_HELPERS\n")
-    output_file.write("#endif\n")
-
 def print_ir_dispatcher_defs():
     output_dispatch_file.write("#ifdef IROP_DISPATCH_DEFS\n")
     for op in IROps:
@@ -851,7 +805,6 @@ print_ir_hassideeffects()
 print_ir_gethasdest()
 print_ir_arg_printer()
 print_ir_allocator_helpers()
-print_ir_parser_switch_helper()
 
 output_file.close()
 
