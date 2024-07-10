@@ -1092,6 +1092,7 @@ public:
   void AVX128_UCOMISx(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void AVX128_VectorScalarInsertALU(OpcodeArgs);
+  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
@@ -1102,6 +1103,7 @@ public:
   void AVX128_PExtr(OpcodeArgs);
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void AVX128_ExtendVectorElements(OpcodeArgs);
+  void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
