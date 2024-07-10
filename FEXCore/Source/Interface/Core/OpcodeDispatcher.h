@@ -293,6 +293,7 @@ public:
   void INTOp(OpcodeArgs);
   template<bool IsSyscallInst>
   void SyscallOp(OpcodeArgs);
+  void SyscallOp(OpcodeArgs, bool IsSyscallInst);
   void ThunkOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
   void NOPOp(OpcodeArgs);
@@ -357,6 +358,7 @@ public:
   void ASHROp(OpcodeArgs);
   template<bool Left, bool IsImmediate, bool Is1Bit>
   void RotateOp(OpcodeArgs);
+  void RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
   void RCROp(OpcodeArgs);
@@ -367,6 +369,7 @@ public:
 
   template<uint32_t SrcIndex, enum BTAction Action>
   void BTOp(OpcodeArgs);
+  void BTOp(OpcodeArgs, uint32_t SrcIndex, enum BTAction Action);
 
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);

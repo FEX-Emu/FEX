@@ -35,8 +35,7 @@ using X86Tables::OpToIndex;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
-template<bool IsSyscallInst>
-void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
+void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   constexpr size_t SyscallArgs = 7;
   using SyscallArray = std::array<uint64_t, SyscallArgs>;
 
@@ -128,6 +127,11 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
     ExitFunction(NewRIP);
   }
+}
+
+template<bool IsSyscallInst>
+void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
+  SyscallOp(Op, IsSyscallInst);
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
@@ -1678,11 +1682,10 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   }
 }
 
-template<bool Left, bool IsImmediate, bool Is1Bit>
-void OpDispatchBuilder::RotateOp(OpcodeArgs) {
+void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit) {
   CalculateDeferredFlags();
 
-  auto LoadShift = [this, Op](bool MustMask) -> Ref {
+  auto LoadShift = [=, this](bool MustMask) -> Ref {
     if (Is1Bit || IsImmediate) {
       return _Constant(LoadConstantShift(Op, Is1Bit));
     } else {
@@ -1697,7 +1700,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
 
   Calculate_ShiftVariable(
     Op, LoadShift(true),
-    [this, LoadShift, Op]() {
+    [this, LoadShift, Op, Left]() {
     const uint32_t Size = GetSrcBitSize(Op);
     const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
 
@@ -1738,6 +1741,11 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs) {
     }
     },
     GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
+}
+
+template<bool Left, bool IsImmediate, bool Is1Bit>
+void OpDispatchBuilder::RotateOp(OpcodeArgs) {
+  RotateOp(Op, Left, IsImmediate, Is1Bit);
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
@@ -2428,8 +2436,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   });
 }
 
-template<uint32_t SrcIndex, BTAction Action>
-void OpDispatchBuilder::BTOp(OpcodeArgs) {
+void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   Ref Value;
   Ref Src {};
   bool IsNonconstant = Op->Src[SrcIndex].IsGPR();
@@ -2571,6 +2578,11 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     // OF/SF/ZF/AF/PF undefined.
     SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
   }
+}
+
+template<uint32_t SrcIndex, BTAction Action>
+void OpDispatchBuilder::BTOp(OpcodeArgs) {
+  BTOp(Op, SrcIndex, Action);
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
