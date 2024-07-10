@@ -83,7 +83,7 @@ struct AOTIRCacheEntry {
   AOTIRInlineIndex* Array;
   void* FilePtr;
   size_t Size;
-  std::unique_ptr<FEXCore::HLE::SourcecodeMap> SourcecodeMap;
+  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SourcecodeMap;
   fextl::string FileId;
   fextl::string Filename;
   bool ContainsCode;
